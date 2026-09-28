@@ -15,3 +15,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = "AowVN-Monika"
 include(":app")
+// J2ME Loader nhúng sẵn (Apache-2.0) để chạy game Java ngay trong app.
+include(":j2me", ":dexlib")

@@ -28,7 +28,7 @@ class ConfigTest {
                 "libretro" -> if (s.core == null || s.core !in cfg.cores) errors += "${s.id}: lõi '${s.core}' không có trong 'cores'"
                 "web" -> if (s.webPlayer != "html5" && s.webPlayer !in cfg.webPlayers) errors += "${s.id}: webPlayer '${s.webPlayer}' không có"
                 "external" -> if (cfg.externalApp(s.externalApp ?: "") == null) errors += "${s.id}: externalApp '${s.externalApp}' không có"
-                "apk" -> Unit
+                "apk", "j2me" -> Unit
                 else -> errors += "${s.id}: runner '${s.runner}' không hợp lệ"
             }
         }

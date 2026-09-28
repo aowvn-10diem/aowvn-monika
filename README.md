@@ -13,7 +13,8 @@ App Android "tất cả trong một" cho cộng đồng [aow.vn](https://www.aow
 | Giả lập nhúng sẵn | NDS, GBA, GBC, PS1, PSP, RPG Maker 2000/2003 (lõi libretro tải khi cần) |
 | Chạy dạng web | Flash (Ruffle), RPG Maker MV/MZ, TyranoScript |
 | APK | Mở trình cài đặt Android |
-| App ngoài | Kirikiroid2, JoiPlay (Ren'Py, RPG Maker XP/VX/Ace), J2ME Loader, ONScripter: kiểm tra đã cài, link tải, hướng dẫn cài |
+| Java (J2ME) | J2ME Loader nhúng sẵn (Apache-2.0), phím ảo kiểu Monika — xem docs/J2ME-LOADER.md |
+| App ngoài | Kirikiroid2, JoiPlay (Ren'Py, RPG Maker XP/VX/Ace), ONScripter: kiểm tra đã cài, link tải, hướng dẫn cài |
 
 ## Nguyên tắc: dễ cập nhật, dễ sửa
 

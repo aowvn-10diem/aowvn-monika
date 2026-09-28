@@ -1,5 +1,5 @@
 {
-  "configVersion": 4,
+  "configVersion": 5,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
 
   "app": {
@@ -25,7 +25,7 @@
     { "id": "rpg2k", "name": "RPG Maker 2000/2003", "runner": "libretro", "core": "easyrpg",     "extensions": ["ldb"],                     "labels": ["RPGmaker Việt Hoá"] },
     { "id": "flash", "name": "Flash",              "runner": "web",      "webPlayer": "ruffle",  "extensions": ["swf"],                     "labels": [] },
     { "id": "apk",   "name": "Android (APK)",      "runner": "apk",                              "extensions": ["apk"],                     "labels": ["Game Android Việt Hóa"] },
-    { "id": "java",  "name": "Java (J2ME)",        "runner": "external", "externalApp": "j2meloader", "extensions": ["jar", "jad"],         "labels": ["Game Java Việt Hóa"] },
+    { "id": "java",  "name": "Java (J2ME)",        "runner": "j2me",                              "extensions": ["jar", "jad"],         "labels": ["Game Java Việt Hóa"] },
     { "id": "rpgmv", "name": "RPG Maker MV/MZ",    "runner": "web",      "webPlayer": "html5",   "extensions": [],                          "labels": ["RPGmaker Việt Hoá"] },
     { "id": "tyrano","name": "TyranoScript",       "runner": "web",      "webPlayer": "html5",   "extensions": [],                          "labels": ["Visual Novel Việt Hóa"] },
     { "id": "kirikiri","name": "Kirikiri (KAG)",   "runner": "external", "externalApp": "kirikiroid2", "extensions": ["xp3"],               "labels": ["Visual Novel Việt Hóa"] },
@@ -91,17 +91,6 @@
         "Tải và cài plugin đúng loại game: RPG Maker Plugin hoặc Ren'Py Plugin.",
         "Mở JoiPlay một lần để cấp quyền bộ nhớ.",
         "Quay lại AowVN Monika, bấm Chơi lại game."
-      ]
-    },
-    {
-      "id": "j2meloader",
-      "name": "J2ME Loader",
-      "description": "Chạy game Java (.jar).",
-      "packageNames": ["ru.playsoftware.j2meloader"],
-      "downloadUrl": "https://www.aow.vn/p/tai-trinh-gia-lap-java.html",
-      "guide": [
-        "Tải và cài J2ME Loader.",
-        "Quay lại AowVN Monika, bấm Chơi lại game .jar."
       ]
     },
     {

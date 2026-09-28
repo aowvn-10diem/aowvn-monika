@@ -53,6 +53,11 @@ android {
         compose = true
         buildConfig = true
     }
+    // Thư viện native trùng tên giữa các gói (LibretroDroid, ffmpeg của J2ME Loader...) → lấy 1 bản.
+    packaging {
+        jniLibs { pickFirsts += listOf("**/libc++_shared.so") }
+        resources { excludes += listOf("META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.kotlin_module") }
+    }
     // Bản cấu hình dự phòng đóng gói trong APK = đúng file config/ ở gốc repo (1 nguồn duy nhất).
     sourceSets["main"].assets.srcDirs("src/main/assets", "../config")
 }
@@ -75,5 +80,6 @@ dependencies {
     implementation(libs.androidx.webkit)
     implementation(libs.libretrodroid)
     implementation(libs.libarchive) // Giải nén zip/rar/rar5/7z
+    implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
     testImplementation(libs.junit)
 }

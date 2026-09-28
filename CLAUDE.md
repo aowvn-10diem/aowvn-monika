@@ -13,6 +13,7 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 - Giao diện theo design spec "Aow Monika" (nền cream, charcoal, gradient cam–hồng–tím, bo lớn, menu nổi `ui/theme/FloatingDock.kt`). Màn hình chỉ dùng token `Monika.colors/type/motion`, `Radius`, `primaryGradient()` trong `ui/theme/Theme.kt` và thành phần trong `ui/theme/Components.kt`. Font Manrope (OFL) `res/font/manrope.ttf`. Icon: Fluent System Icons (MIT) chép lẻ `res/drawable/ic_fluent_*`; minh họa 3D Fluent Emoji `res/drawable-nodpi/fluent3d_*`.
 - Chuyển động tự điều chỉnh: `PerformanceTier` FULL/LITE/OFF (`detectTier`: RAM < 3GB hoặc < 6 nhân → LITE; tỉ lệ hoạt ảnh Android = 0 → OFF; user chọn được trong Cài đặt). Mọi animation phải lấy thời lượng từ `Monika.motion`.
 - Màn chơi game: `runner/RetroActivity.kt` (GLRetroView) + `runner/GamePadOverlay.kt` (Compose nổi). Phím theo vị trí Android: dưới=BUTTON_A, phải=BUTTON_B, trái=X, trên=Y.
+- Game Java: J2ME Loader nhúng ở module `j2me/` + `dexlib/` (Apache-2.0, bản gốc commit 9b0fa48). Chỉ sửa chỗ có chú thích `Aow Monika:`; chi tiết + cách cập nhật: `docs/J2ME-LOADER.md`. Module này giữ build.gradle riêng (Groovy), ngoại lệ của quy tắc version catalog. Cần NDK 22.1.7171670.
 - Không bao giờ commit keystore/mật khẩu ký; chỉ dùng GitHub Secrets.
 
 ## Sự thật đã xác minh
@@ -37,5 +38,5 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 2. ĐÃ CÓ: tay cầm theo hệ máy, kéo đổi chỗ + cỡ (lưu Prefs), save/load state 1 slot, ảnh bìa game từ bài viết (`library/GameMeta.kt`, file `.monika.json` trong thư mục game). Còn: nhiều slot save, core options, chọn lõi melonDS/desmume.
 3. Chưa test trên máy thật — mọi thứ mới chỉ build + unit test.
 4. Giải nén: đã có zip/rar/rar5/7z (libarchive 1.1.6; 1.1.7 đòi compileSdk 37). Còn thiếu: file chia nhiều phần, 7z có mật khẩu, thanh % tiến độ. Chưa test trên máy thật.
-5. Nhúng J2ME Loader, ONScripter (hiện chạy qua app ngoài).
+5. ĐÃ nhúng J2ME Loader (runner "j2me") + phím ảo kiểu Monika. Còn: ONScripter (native C++ + SDL, cần high).
 6. Port Ren'Py, mkxp-z (RPG Maker XP/VX/Ace) — khó, làm sau.

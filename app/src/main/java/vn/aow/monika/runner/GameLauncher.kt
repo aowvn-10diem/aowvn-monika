@@ -48,6 +48,11 @@ class GameLauncher(private val configRepo: ConfigRepository) {
                 LaunchResult.Started
             }
             "apk" -> Installer.install(activity, entry)
+            "j2me" -> {
+                // J2ME Loader nhúng sẵn: lần đầu cài (chuyển .jar → .dex), các lần sau chạy luôn.
+                activity.startActivity(ru.playsoftware.j2meloader.J2meRuntime.openGameIntent(activity, Installer.uriFor(activity, entry)))
+                LaunchResult.Started
+            }
             "external" -> launchExternal(activity, system.externalApp, entry)
             else -> LaunchResult.Failed("Kiểu trình chạy '${system.runner}' chưa được hỗ trợ ở bản app này. Hãy cập nhật app.")
         }
