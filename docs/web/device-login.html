@@ -1,0 +1,207 @@
+<!--
+  AowVN — Trang đăng nhập cho ứng dụng (aow.vn/p/device-login.html)
+  Dán TOÀN BỘ file này vào Blogger: Trang → Trang mới → chế độ "HTML" → tiêu đề "Đăng nhập ứng dụng",
+  đường dẫn tùy chỉnh: device-login. Xuất bản.
+
+  2 chế độ:
+  A) App Android "Aow Monika":
+     /p/device-login.html?app=monika&state=<chuỗi ngẫu nhiên 16–64 ký tự>
+     → đăng nhập Google → chuyển về app: aowmonika://login#state=..&uid=..&id_token=..&refresh_token=..&name=..&email=..&photo=..
+     Token KHÔNG lưu lên database, chỉ đi thẳng về app trên chính máy người dùng.
+  B) Desktop / Patch C# (Device Authorization Flow, tài liệu chương 2.2):
+     /p/device-login.html?code=AOW-7842
+     → đăng nhập Google → ghi /deviceAuth/{code} = {status:'APPROVED', uid, idToken, approvedAt}
+     (chỉ khi mã đang PENDING và chưa hết hạn). App desktop poll GAS như cũ.
+-->
+<div id="aow-dl" class="aow-dl">
+  <div class="aow-dl-card">
+    <div class="aow-dl-logo" aria-hidden="true">
+      <svg viewBox="0 0 512 512" width="64" height="64"><rect width="512" height="512" rx="112" fill="#202124"/>
+        <path d="M84 400V130Q84 94 120 94H146Q174 94 194 118L256 193L318 118Q338 94 366 94H392Q428 94 428 130V400" transform="translate(40 40) scale(.84)"
+          fill="none" stroke="#FF7A32" stroke-width="68" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <h1 id="aow-dl-title">Đăng nhập ứng dụng</h1>
+    <p id="aow-dl-desc" class="aow-dl-muted">Đang kiểm tra…</p>
+
+    <div id="aow-dl-code" class="aow-dl-code" hidden></div>
+
+    <div id="aow-dl-user" class="aow-dl-user" hidden>
+      <img id="aow-dl-avatar" alt="" referrerpolicy="no-referrer">
+      <div><b id="aow-dl-name"></b><br><span id="aow-dl-email" class="aow-dl-muted"></span></div>
+    </div>
+
+    <p id="aow-dl-perm" class="aow-dl-perm" hidden>
+      Ứng dụng sẽ dùng tài khoản này để: vote game, đánh giá bản dịch, điểm danh và xem điểm thưởng.
+      Ứng dụng <b>không</b> biết mật khẩu Google của bạn.
+    </p>
+
+    <button id="aow-dl-login" class="aow-dl-btn" hidden>Đăng nhập bằng Google</button>
+    <button id="aow-dl-allow" class="aow-dl-btn" hidden>Cho phép</button>
+    <button id="aow-dl-switch" class="aow-dl-link" hidden>Dùng tài khoản khác</button>
+    <a id="aow-dl-open" class="aow-dl-btn" hidden>Mở lại Aow Monika</a>
+
+    <p id="aow-dl-msg" class="aow-dl-msg" role="status"></p>
+  </div>
+</div>
+
+<style>
+  .aow-dl [hidden]{display:none!important}
+  .aow-dl{display:flex;justify-content:center;padding:24px 12px;font-family:Manrope,system-ui,-apple-system,Roboto,sans-serif}
+  .aow-dl-card{width:100%;max-width:420px;background:#fff;color:#202124;border-radius:28px;padding:28px 22px;text-align:center;
+    box-shadow:0 12px 40px rgba(30,24,24,.12)}
+  .aow-dl-logo{display:flex;justify-content:center;margin-bottom:8px}
+  .aow-dl h1{font-size:22px;margin:6px 0 4px;font-weight:800}
+  .aow-dl-muted{color:#6b6770;font-size:14px;margin:0}
+  .aow-dl-code{margin:16px auto 4px;font:800 26px/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:3px;background:#FFF1E8;color:#C9561A;
+    border-radius:16px;padding:10px 16px;display:inline-block}
+  .aow-dl-user{display:flex;gap:12px;align-items:center;text-align:left;background:#F4F5F2;border-radius:20px;padding:12px 14px;margin:18px 0 6px}
+  .aow-dl-user img{width:44px;height:44px;border-radius:50%;background:#ddd;object-fit:cover}
+  .aow-dl-perm{font-size:13px;color:#5A575D;line-height:1.5;margin:12px 0 4px}
+  .aow-dl-btn{display:block;width:100%;box-sizing:border-box;margin-top:16px;border:0;border-radius:999px;padding:14px 18px;font:700 16px Manrope,system-ui,sans-serif;
+    color:#fff;background:linear-gradient(110deg,#FFB052,#FF7F78 50%,#E95CC8);cursor:pointer;text-decoration:none}
+  .aow-dl-btn:disabled{opacity:.6;cursor:default}
+  .aow-dl-link{margin-top:12px;border:0;background:none;color:#C9561A;font:600 14px Manrope,system-ui,sans-serif;cursor:pointer}
+  .aow-dl-msg{min-height:20px;font-size:14px;margin:14px 0 0}
+  .aow-dl-msg.err{color:#D93025}.aow-dl-msg.ok{color:#188038}
+  @media (prefers-color-scheme:dark){
+    .aow-dl-card{background:#201F21;color:#F4F1F6;box-shadow:none;border:1px solid #333}
+    .aow-dl-user{background:#2A292C}.aow-dl-muted,.aow-dl-perm{color:#C8C5CB}.aow-dl-code{background:#3A2A20;color:#FFB285}
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+  // Cấu hình Firebase dùng chung với theme AowVN (tài liệu tích hợp, chương 1).
+  var FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyDGJO0F4bJD7THxQ68Dz8blg94EylzCqSw',
+    authDomain: 'system.aow.vn',
+    databaseURL: 'https://aowvn-xemtrang.firebaseio.com',
+    projectId: 'aow-game-app',
+    storageBucket: 'aow-game-app.appspot.com'
+  };
+  var SDK = 'https://www.gstatic.com/firebasejs/10.8.0/';
+  // Chỉ trả token về đúng các app đã khai báo (chống trang lạ lợi dụng để lấy token).
+  var APPS = { monika: { name: 'Aow Monika', scheme: 'aowmonika://login' } };
+
+  var q = new URLSearchParams(location.search);
+  var appId = q.get('app');
+  var state = q.get('state') || '';
+  var code = (q.get('code') || '').toUpperCase();
+  var app = appId ? APPS[appId] : null;
+  var MODE = app ? 'app' : (code ? 'code' : null);
+
+  var $ = function (id) { return document.getElementById(id); };
+  function show(id, on) { $(id).hidden = !on; }
+  function msg(text, kind) { var m = $('aow-dl-msg'); m.textContent = text || ''; m.className = 'aow-dl-msg' + (kind ? ' ' + kind : ''); }
+
+  if (!MODE) { $('aow-dl-desc').textContent = 'Liên kết không hợp lệ. Hãy mở trang này từ ứng dụng.'; return; }
+  if (MODE === 'app' && !/^[A-Za-z0-9_-]{16,64}$/.test(state)) { $('aow-dl-desc').textContent = 'Liên kết đăng nhập không hợp lệ (thiếu mã bảo mật). Hãy mở lại từ ứng dụng.'; return; }
+  if (MODE === 'code' && !/^[A-Z0-9-]{4,16}$/.test(code)) { $('aow-dl-desc').textContent = 'Mã đăng nhập không hợp lệ.'; return; }
+
+  $('aow-dl-title').textContent = MODE === 'app' ? 'Đăng nhập ' + app.name : 'Đăng nhập ứng dụng máy tính';
+  if (MODE === 'code') { $('aow-dl-code').textContent = code; show('aow-dl-code', true); }
+
+  function loadScript(src) {
+    return new Promise(function (ok, fail) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = fail; document.head.appendChild(s); });
+  }
+  // Dùng Firebase của theme nếu đã có, không thì tự nạp SDK compat 10.8.0.
+  function ensureFirebase() {
+    var ready = function () {
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      return firebase;
+    };
+    if (window.firebase && firebase.auth && firebase.database) return Promise.resolve(ready());
+    return loadScript(SDK + 'firebase-app-compat.js')
+      .then(function () { return loadScript(SDK + 'firebase-auth-compat.js'); })
+      .then(function () { return loadScript(SDK + 'firebase-database-compat.js'); })
+      .then(ready);
+  }
+
+  var currentUser = null;
+
+  function render(user) {
+    currentUser = user;
+    show('aow-dl-user', !!user); show('aow-dl-perm', !!user);
+    show('aow-dl-allow', !!user); show('aow-dl-switch', !!user); show('aow-dl-login', !user);
+    if (user) {
+      $('aow-dl-name').textContent = user.displayName || 'Thành viên AowVN';
+      $('aow-dl-email').textContent = user.email || '';
+      if (user.photoURL) $('aow-dl-avatar').src = user.photoURL;
+      $('aow-dl-desc').textContent = 'Bạn đang đăng nhập với tài khoản:';
+      $('aow-dl-allow').textContent = MODE === 'app' ? 'Cho phép ' + app.name : 'Cho phép ứng dụng';
+    } else {
+      $('aow-dl-desc').textContent = 'Đăng nhập tài khoản Google đã dùng trên aow.vn.';
+    }
+  }
+
+  function signIn() {
+    msg('');
+    var provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    return firebase.auth().signInWithPopup(provider).catch(function (e) {
+      // Trình duyệt chặn popup (thường gặp trong app) → chuyển trang để đăng nhập.
+      if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment' || e.code === 'auth/cancelled-popup-request')) {
+        return firebase.auth().signInWithRedirect(provider);
+      }
+      if (e && e.code !== 'auth/popup-closed-by-user') msg('Đăng nhập lỗi: ' + (e.message || e.code), 'err');
+    });
+  }
+
+  function approveApp(user) {
+    return user.getIdToken(true).then(function (idToken) {
+      var p = new URLSearchParams();
+      p.set('state', state);
+      p.set('uid', user.uid);
+      p.set('id_token', idToken);
+      p.set('refresh_token', user.refreshToken || '');
+      p.set('name', user.displayName || '');
+      p.set('email', user.email || '');
+      p.set('photo', user.photoURL || '');
+      // Token nằm sau dấu # → không gửi lên máy chủ nào, không vào lịch sử truy cập của web.
+      var url = app.scheme + '#' + p.toString();
+      $('aow-dl-open').href = url; show('aow-dl-open', true);
+      show('aow-dl-allow', false); show('aow-dl-switch', false);
+      msg('Đã cho phép. Đang quay lại ' + app.name + '…', 'ok');
+      location.replace(url);
+      // Xóa token khỏi nút sau 2 phút (phòng người khác mượn máy).
+      setTimeout(function () { $('aow-dl-open').removeAttribute('href'); show('aow-dl-open', false); msg('Liên kết đã hết hạn. Hãy đăng nhập lại từ ứng dụng.', ''); }, 120000);
+    });
+  }
+
+  function approveCode(user) {
+    var ref = firebase.database().ref('deviceAuth/' + code);
+    return ref.once('value').then(function (snap) {
+      var d = snap.val();
+      if (!d) throw new Error('Không tìm thấy mã ' + code + '. Hãy tạo mã mới trong ứng dụng.');
+      if (d.status !== 'PENDING') throw new Error('Mã này đã được dùng hoặc bị hủy.');
+      if (d.expiresAt && Date.now() > d.expiresAt) throw new Error('Mã đã hết hạn (10 phút). Hãy tạo mã mới trong ứng dụng.');
+      return user.getIdToken(true).then(function (idToken) {
+        return ref.update({ status: 'APPROVED', uid: user.uid, idToken: idToken, approvedAt: firebase.database.ServerValue.TIMESTAMP });
+      });
+    }).then(function () {
+      show('aow-dl-allow', false); show('aow-dl-switch', false);
+      msg('Đã cho phép. Quay lại ứng dụng trên máy tính, ứng dụng sẽ tự đăng nhập trong vài giây.', 'ok');
+    });
+  }
+
+  $('aow-dl-login').onclick = function () { signIn(); };
+  $('aow-dl-switch').onclick = function () { firebase.auth().signOut().then(signIn); };
+  $('aow-dl-allow').onclick = function () {
+    if (!currentUser) return;
+    var b = $('aow-dl-allow'); b.disabled = true; msg('Đang xử lý…');
+    (MODE === 'app' ? approveApp(currentUser) : approveCode(currentUser))
+      .catch(function (e) { msg(e.message || String(e), 'err'); })
+      .then(function () { b.disabled = false; });
+  };
+
+  ensureFirebase().then(function () {
+    firebase.auth().getRedirectResult().catch(function (e) {
+      if (e && e.code !== 'auth/operation-not-supported-in-this-environment') msg('Đăng nhập lỗi: ' + (e.message || e.code), 'err');
+    });
+    firebase.auth().onAuthStateChanged(render);
+  }).catch(function () {
+    $('aow-dl-desc').textContent = 'Không tải được hệ thống đăng nhập. Kiểm tra mạng rồi tải lại trang.';
+  });
+})();
+</script>
