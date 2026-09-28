@@ -74,6 +74,14 @@
             android:hardwareAccelerated="true"
             android:theme="@style/Theme.Monika.Fullscreen" />
 
+        <!-- Màn báo lỗi khi app crash (tiến trình riêng). -->
+        <activity
+            android:name=".CrashActivity"
+            android:process=":crash"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
         <!-- Nhận kết quả đăng nhập từ aow.vn/p/device-login.html (aowmonika://login#...). -->
         <activity
             android:name=".account.AuthCallbackActivity"

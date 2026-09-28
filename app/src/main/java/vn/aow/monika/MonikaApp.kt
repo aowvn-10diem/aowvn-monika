@@ -13,7 +13,7 @@ import vn.aow.monika.library.StorageCleaner
 import vn.aow.monika.notify.NewPostWorker
 import vn.aow.monika.notify.Notifier
 
-class MonikaApp : Application(), coil.ImageLoaderFactory {
+open class MonikaApp : Application(), coil.ImageLoaderFactory {
     /** Ảnh toàn app: hiện dần (crossfade), bộ đệm RAM 20% + đĩa 250 MB → quay lại màn cũ ảnh có ngay. */
     override fun newImageLoader(): coil.ImageLoader = coil.ImageLoader.Builder(this)
         .crossfade(280)
@@ -26,12 +26,16 @@ class MonikaApp : Application(), coil.ImageLoaderFactory {
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)
+        // Bắt lỗi trước mọi thứ (kể cả khởi tạo J2ME) → crash lúc mở app cũng xem được nội dung lỗi.
+        if (!isCrashProcess()) CrashReporter.install(this)
         // J2ME Loader nhúng sẵn cần context sớm, ở mọi tiến trình (kể cả ":midlet" chạy game Java).
-        J2meRuntime.init(this)
+        if (isCrashProcess()) return
+        initJ2me()
     }
 
     override fun onCreate() {
         super.onCreate()
+        if (isCrashProcess()) return
         AppGraph.init(this)
         // Tiến trình ":midlet" chỉ để chạy game Java → không đặt lịch/tải cấu hình ở đó.
         if (isGameProcess()) return
@@ -46,6 +50,12 @@ class MonikaApp : Application(), coil.ImageLoaderFactory {
             AppGraph.config.refresh().onSuccess { NewPostWorker.schedule(this@MonikaApp, it.feed.pollMinutes) }
         }
     }
+
+    /** Tách riêng để test khởi động (Robolectric không nạp được lớp javax.* của J2ME). */
+    protected open fun initJ2me() = J2meRuntime.init(this)
+
+    private fun isCrashProcess(): Boolean =
+        Build.VERSION.SDK_INT >= 28 && getProcessName().endsWith(":crash")
 
     private fun isGameProcess(): Boolean =
         Build.VERSION.SDK_INT >= 28 && getProcessName().endsWith(":midlet")
