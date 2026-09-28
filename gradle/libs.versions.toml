@@ -18,6 +18,8 @@ robolectric = "4.16.1"
 libarchive = "1.1.6" # 1.1.7 đòi compileSdk 37
 commonsCompress = "1.27.1" # chỉ dùng cho 7z có mật khẩu
 xz = "1.10"
+sevenZipAndroid = "Release-16.02-2.02" # 7-Zip native: RAR/RAR5 có mật khẩu
+sevenZipJvm = "16.02-2.01" # chỉ để chạy test trên máy tính
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -37,6 +39,8 @@ androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
 libarchive = { module = "me.zhanghai.android.libarchive:library", version.ref = "libarchive" }
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 xz = { module = "org.tukaani:xz", version.ref = "xz" }
+sevenzip-android = { module = "com.github.omicronapps:7-Zip-JBinding-4Android", version.ref = "sevenZipAndroid" }
+sevenzip-jvm-natives = { module = "net.sf.sevenzipjbinding:sevenzipjbinding-all-platforms", version.ref = "sevenZipJvm" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }

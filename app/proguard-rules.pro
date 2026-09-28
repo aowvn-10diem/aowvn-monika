@@ -16,3 +16,5 @@
 -dontwarn org.tukaani.xz.**
 -keep class org.apache.commons.compress.archivers.sevenz.** { *; }
 -keep class org.tukaani.xz.** { *; }
+# 7-Zip-JBinding: mã C gọi ngược lớp Java theo tên
+-keep class net.sf.sevenzipjbinding.** { *; }

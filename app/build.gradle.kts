@@ -77,6 +77,21 @@ android {
     sourceSets["main"].assets.srcDirs("src/main/assets", "../config")
 }
 
+// Test trên máy tính: lấy lib7-Zip-JBinding.so bản Linux (cùng bản 16.02) để chạy code 7-Zip của Android.
+val sevenZipTestNatives: Configuration by configurations.creating
+val unpackSevenZipNatives by tasks.registering(Copy::class) {
+    from({ sevenZipTestNatives.map { zipTree(it) } }) { include("Linux-amd64/*.so"); eachFile { path = name } }
+    into(layout.buildDirectory.dir("sevenzip-natives"))
+    includeEmptyDirs = false
+}
+tasks.withType<Test>().configureEach {
+    dependsOn(unpackSevenZipNatives)
+    systemProperty("java.library.path", layout.buildDirectory.dir("sevenzip-natives").get().asFile.absolutePath)
+    // Giống Android: tên file luôn UTF-8 (máy CI có thể để locale POSIX → tên tiếng Việt thành "??").
+    environment("LC_ALL", "C.UTF-8")
+    jvmArgs("-Dsun.jnu.encoding=UTF-8", "-Dfile.encoding=UTF-8")
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
@@ -96,6 +111,8 @@ dependencies {
     implementation(libs.libarchive) // Giải nén zip/rar/rar5/7z
     implementation(libs.commons.compress) // 7z có mật khẩu (libarchive không hỗ trợ)
     implementation(libs.xz) // LZMA/LZMA2 cho 7z
+    implementation(libs.sevenzip.android) // 7-Zip native: RAR/RAR5 có mật khẩu, RAR nhiều phần
+    sevenZipTestNatives(libs.sevenzip.jvm.natives)
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
     testImplementation(libs.junit)
     // Test giao diện trên JVM (Robolectric): mở từng màn hình, bắt crash, chụp ảnh → app/build/screenshots/

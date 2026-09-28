@@ -28,6 +28,9 @@ class ConfigRepository(
     val config: StateFlow<MonikaConfig> = _config
     val current: MonikaConfig get() = _config.value
 
+    /** Bản đóng gói trong APK: không bao giờ dùng bản nào cũ hơn bản này. */
+    private val bundledVersion by lazy { parse(context.assets.open(ASSET_NAME).bufferedReader().use { it.readText() }).configVersion }
+
     private fun loadLocal(): MonikaConfig {
         val bundled = parse(context.assets.open(ASSET_NAME).bufferedReader().use { it.readText() })
         val cached = runCatching { parse(cacheFile.readText()) }.getOrNull()
@@ -42,6 +45,9 @@ class ConfigRepository(
                 response.body!!.string()
             }
             val cfg = parse(text) // Lỗi cú pháp sẽ ném ra đây, trước khi ghi cache.
+            // Bản trên mạng cũ hơn bản trong APK (quên đồng bộ Cloudflare) → giữ bản trong APK.
+            // Trước đây áp dụng luôn → config cũ đè mất hệ máy mới (vd. file .jar "Chưa nhận diện").
+            if (cfg.configVersion < bundledVersion) return@runCatching current
             cacheFile.writeText(text)
             _config.value = cfg
             cfg

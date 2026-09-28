@@ -36,15 +36,24 @@ object ArchiveExtractor {
             readAll(parts, target, passwords, progress)
         } catch (e: ArchiveException) {
             val error = translate(e)
-            // libarchive không giải được 7z có mật khẩu → thử bộ giải 7z thuần Java.
-            if (!is7z(parts.first())) throw error
+            // libarchive không giải được RAR có mật khẩu, 7z mã hóa… → thử 7-Zip (native).
             target.listFiles()?.forEach { it.deleteRecursively() }
-            try {
-                SevenZipExtractor.extract(parts, target, passwords, progress)
-            } catch (e7: IOException) {
-                target.listFiles()?.forEach { it.deleteRecursively() }
-                throw if (e7 is PasswordException) e7 else error
+            val e7 = runCatching { SevenZipNative.extract(parts, target, passwords, progress) }.exceptionOrNull() ?: return
+            target.listFiles()?.forEach { it.deleteRecursively() }
+            if (e7 is PasswordException) throw e7
+            // 7-Zip native không nạp được (máy lạ) và là 7z → bộ giải 7z thuần Java.
+            if (e7 is UnsatisfiedLinkError || e7 is net.sf.sevenzipjbinding.SevenZipNativeInitializationException) {
+                if (is7z(parts.first())) {
+                    try {
+                        SevenZipExtractor.extract(parts, target, passwords, progress)
+                        return
+                    } catch (e3: IOException) {
+                        target.listFiles()?.forEach { it.deleteRecursively() }
+                        if (e3 is PasswordException) throw e3
+                    }
+                }
             }
+            throw error
         }
     }
 
