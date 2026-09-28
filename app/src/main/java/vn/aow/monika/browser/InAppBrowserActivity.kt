@@ -9,6 +9,21 @@ import android.os.Bundle
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import vn.aow.monika.AppGraph
+import vn.aow.monika.ui.theme.Radius
+import vn.aow.monika.ui.theme.primaryGradient
+import java.io.ByteArrayInputStream
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
@@ -51,11 +66,30 @@ class InAppBrowserActivity : ComponentActivity() {
     private var host by mutableStateOf("")
     private var loadProgress by mutableFloatStateOf(0f)
 
+    // Chặn quảng cáo: trạng thái bộ lọc + số yêu cầu đã chặn trên trang này.
+    private var adState by mutableStateOf(AdState.OFF)
+    private var blocked by mutableIntStateOf(0)
+    @Volatile private var adOn = true
+    private lateinit var allow: List<String>
+
+    private enum class AdState { OFF, LOADING, ON, FAILED }
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val url = intent.getStringExtra(EXTRA_URL) ?: return finish()
         host = Uri.parse(url).host.orEmpty()
+
+        val cfg = AppGraph.config.current.adblock
+        allow = cfg.allow.map { it.lowercase() }
+        if (cfg.enabled) {
+            adState = if (AppGraph.adblock.ready) AdState.ON else AdState.LOADING
+            // Lần đầu: tải bộ lọc về (vài giây); các lần sau: nạp bản đã lưu, quá hạn thì cập nhật ngầm.
+            lifecycleScope.launch {
+                val ok = AppGraph.adblock.ensure(cfg.lists, cfg.updateHours)
+                adState = if (ok) AdState.ON else AdState.FAILED
+            }
+        }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -76,6 +110,26 @@ class InAppBrowserActivity : ComponentActivity() {
                         Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                             Text(pageTitle.ifBlank { host }, style = Monika.type.bodyStrong, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(host, style = Monika.type.caption, color = c.textSecondary, maxLines = 1)
+                        }
+                        if (adState != AdState.OFF) {
+                            val label = when {
+                                adState == AdState.LOADING -> "Đang tải chặn QC…"
+                                adState == AdState.FAILED -> "Chặn QC lỗi"
+                                !adOn -> "Chặn QC: tắt"
+                                else -> "Đã chặn $blocked"
+                            }
+                            Row(
+                                Modifier.padding(end = 8.dp).clip(Radius.pill)
+                                    .background(if (adState == AdState.ON && adOn) primaryGradient() else Brush.linearGradient(listOf(c.surfaceSoft, c.surfaceSoft)))
+                                    .clickable(enabled = adState == AdState.ON) { adOn = !adOn; blocked = 0; web?.reload() }
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(painterResource(R.drawable.ic_fluent_shield_checkmark_24_regular), "Chặn quảng cáo", Modifier.size(18.dp),
+                                    tint = if (adState == AdState.ON && adOn) Color.White else c.textSecondary)
+                                Text(label, style = Monika.type.caption, color = if (adState == AdState.ON && adOn) Color.White else c.textSecondary,
+                                    modifier = Modifier.padding(start = 4.dp))
+                            }
                         }
                         CircleButton(R.drawable.ic_fluent_open_24_regular, "Mở bằng trình duyệt", {
                             runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(web?.url ?: url))) }
@@ -106,6 +160,16 @@ class InAppBrowserActivity : ComponentActivity() {
             override fun onReceivedTitle(view: WebView, t: String?) { this@InAppBrowserActivity.pageTitle = t.orEmpty() }
         }
         webViewClient = object : WebViewClient() {
+            // Chạy trên luồng nền của WebView: yêu cầu tới tên miền quảng cáo → trả về rỗng.
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                if (!adOn || adState != AdState.ON || request.isForMainFrame) return null
+                val h = request.url.host?.lowercase() ?: return null
+                if (allow.any { h == it || h.endsWith(".$it") }) return null
+                if (!AppGraph.adblock.blocks(h)) return null
+                runOnUiThread { blocked++ }
+                return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
+            }
+
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val u = request.url
                 if (u.scheme == "http" || u.scheme == "https") return false
@@ -117,6 +181,7 @@ class InAppBrowserActivity : ComponentActivity() {
                 return true
             }
             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
+                blocked = 0
                 this@InAppBrowserActivity.host = url?.let { Uri.parse(it).host }.orEmpty()
             }
         }

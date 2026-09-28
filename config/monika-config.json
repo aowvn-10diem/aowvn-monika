@@ -52,6 +52,17 @@
     "discord": ""
   },
 
+  "_adblock_ghi_chu": "Chặn quảng cáo trong trình duyệt nhúng (Discord/Facebook...). Bộ lọc tải về lần đầu mở, cập nhật mỗi updateHours giờ. allow = tên miền không bao giờ chặn.",
+  "adblock": {
+    "enabled": true,
+    "lists": [
+      "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro-onlydomains.txt",
+      "https://abpvn.com/android/abpvn.txt"
+    ],
+    "allow": ["aow.vn", "discord.com", "discord.gg", "discordapp.com", "discordapp.net", "discord.media", "facebook.com", "fbcdn.net", "messenger.com", "hcaptcha.com", "recaptcha.net", "gstatic.com", "googleapis.com", "pixeldrain.com"],
+    "updateHours": 72
+  },
+
   "cores": {
     "desmume":      { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip" },
     "melonds":      { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/melonds_libretro_android.so.zip" },

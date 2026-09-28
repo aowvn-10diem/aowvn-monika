@@ -43,4 +43,5 @@ object AppGraph {
     val downloader by lazy { Downloader(app, http, prefs) }
     val library by lazy { GameLibrary(app, config) }
     val launcher by lazy { GameLauncher(config) }
+    val adblock by lazy { vn.aow.monika.browser.AdBlock(app, http) }
 }

@@ -21,6 +21,8 @@ data class MonikaConfig(
     val archivePasswords: List<String> = emptyList(),
     /** Link cộng đồng AowVN (group Facebook, Discord). Để trống = ẩn nút. */
     val community: CommunityConfig = CommunityConfig(),
+    /** Chặn quảng cáo trong trình duyệt nhúng. */
+    val adblock: AdBlockConfig = AdBlockConfig(),
 ) {
     fun system(id: String): SystemDef? = systems.firstOrNull { it.id == id }
     fun externalApp(id: String): ExternalApp? = externalApps.firstOrNull { it.id == id }
@@ -28,6 +30,16 @@ data class MonikaConfig(
     /** Nhãn blog dùng làm bộ lọc, giữ thứ tự khai báo, bỏ trùng. */
     fun feedLabels(): List<String> = systems.flatMap { it.labels }.distinct()
 }
+
+@Serializable
+data class AdBlockConfig(
+    val enabled: Boolean = true,
+    /** Bộ lọc dạng tên miền / hosts / ||domain^. */
+    val lists: List<String> = emptyList(),
+    /** Tên miền không bao giờ chặn (kể cả tên miền con). */
+    val allow: List<String> = emptyList(),
+    val updateHours: Int = 72,
+)
 
 @Serializable
 data class CommunityConfig(
