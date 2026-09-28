@@ -40,6 +40,7 @@ import vn.aow.monika.R
 import vn.aow.monika.ui.screens.DownloadsScreen
 import vn.aow.monika.ui.screens.GamesScreen
 import vn.aow.monika.ui.screens.HomeScreen
+import vn.aow.monika.ui.screens.HubScreen
 import vn.aow.monika.ui.screens.LibraryScreen
 import vn.aow.monika.ui.screens.PostScreen
 import vn.aow.monika.ui.screens.SettingsScreen
@@ -125,7 +126,7 @@ private val dockItems = listOf(
     DockItem("Game", R.drawable.ic_fluent_games_24_regular, R.drawable.ic_fluent_games_24_filled),
     DockItem("Tìm kiếm", R.drawable.ic_fluent_search_24_regular, R.drawable.ic_fluent_search_24_filled),
     DockItem("Thư viện", R.drawable.ic_fluent_library_24_regular, R.drawable.ic_fluent_library_24_filled),
-    DockItem("Tải xuống", R.drawable.ic_fluent_arrow_download_24_regular, R.drawable.ic_fluent_arrow_download_24_filled),
+    DockItem("Tải xuống & Cài đặt", R.drawable.ic_fluent_settings_24_regular, R.drawable.ic_fluent_settings_24_filled),
 )
 
 /** Điều hướng tab qua menu nổi, giữ trạng thái từng tab. */
@@ -141,6 +142,8 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
     val current by nav.currentBackStackEntryAsState()
     val route = current?.destination?.route
     val motion = Monika.motion
+    // Tab cuối: 0 = Tải xuống, 1 = Cài đặt (giữ khi chuyển tab).
+    val hubSegment = androidx.compose.runtime.saveable.rememberSaveable(saver = androidx.compose.runtime.saveable.Saver({ it.intValue }, { androidx.compose.runtime.mutableIntStateOf(it) })) { androidx.compose.runtime.mutableIntStateOf(0) }
 
     LaunchedEffect(deepLink) {
         deepLink ?: return@LaunchedEffect
@@ -157,14 +160,20 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
             composable(Routes.HOME) {
                 HomeScreen(
                     onOpenPost = { nav.navigate("post/${it.id}") },
-                    onGo = { r -> if (r in Routes.tabs) nav.goTab(r) else nav.navigate(r) },
+                    onGo = { r ->
+                        when (r) {
+                            Routes.SETTINGS -> { hubSegment.intValue = 1; nav.goTab(Routes.DOWNLOADS) }
+                            in Routes.tabs -> { if (r == Routes.DOWNLOADS) hubSegment.intValue = 0; nav.goTab(r) }
+                            else -> nav.navigate(r)
+                        }
+                    },
                 )
             }
             composable(Routes.GAMES) { GamesScreen(onOpen = { nav.navigate("post/${it.id}") }) }
             // Tab Tìm kiếm: cùng màn Game nhưng bật sẵn bàn phím ở ô tìm.
             composable(Routes.SEARCH) { GamesScreen(onOpen = { nav.navigate("post/${it.id}") }, focusSearch = true) }
-            composable(Routes.EMULATOR) { LibraryScreen(onSettings = { nav.navigate(Routes.SETTINGS) }) }
-            composable(Routes.DOWNLOADS) { DownloadsScreen(onOpenLibrary = { nav.goTab(Routes.EMULATOR) }) }
+            composable(Routes.EMULATOR) { LibraryScreen(onSettings = { hubSegment.intValue = 1; nav.goTab(Routes.DOWNLOADS) }) }
+            composable(Routes.DOWNLOADS) { HubScreen(hubSegment, onOpenLibrary = { nav.goTab(Routes.EMULATOR) }) }
             composable(Routes.SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.VOTE) { VoteScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.POST) { entry -> PostScreen(entry.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }

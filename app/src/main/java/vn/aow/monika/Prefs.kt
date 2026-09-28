@@ -31,7 +31,15 @@ class Prefs(context: Context) {
         set(value) = sp.edit().putString("motion_mode", value).apply()
 
     /** Lần chơi gần nhất của từng game (theo đường dẫn thư mục). */
-    fun markPlayed(gameDir: String) = sp.edit().putLong("played_$gameDir", System.currentTimeMillis()).apply()
+    fun markPlayed(gameDir: String) {
+        sp.edit().putLong("played_$gameDir", System.currentTimeMillis())
+            .putInt("playcount_$gameDir", playCount(gameDir) + 1).apply()
+        playedTick.value++
+    }
+    /** Số lần mở chơi (cho mục "Thường xuyên chơi"). */
+    fun playCount(gameDir: String): Int = sp.getInt("playcount_$gameDir", 0)
+    /** Tăng mỗi lần chơi 1 game → Trang chủ / Thư viện tự cập nhật "Đang chơi dở". */
+    val playedTick = kotlinx.coroutines.flow.MutableStateFlow(0)
     fun lastPlayed(gameDir: String): Long = sp.getLong("played_$gameDir", 0L)
 
     /**

@@ -104,7 +104,8 @@ fun LibraryScreen(onSettings: () -> Unit) {
     var password by remember { mutableStateOf("") }
     var pinned by remember { mutableStateOf(AppGraph.prefs.pinnedGames) }
 
-    LaunchedEffect(reloadKey) {
+    val playedTick by AppGraph.prefs.playedTick.collectAsState()
+    LaunchedEffect(reloadKey, playedTick) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             scanned = withContext(Dispatchers.IO) { AppGraph.library.list() }
         }
@@ -294,9 +295,12 @@ fun LibraryScreen(onSettings: () -> Unit) {
             text = { Text("Xóa \"${game.name}\" khỏi máy. Dữ liệu lưu game vẫn giữ.", style = Monika.type.body, color = c.textSecondary) },
             confirmButton = {
                 GradientButton("Xóa", {
+                    toDelete = null
+                    scanned = scanned?.filterNot { it.dir == game.dir } // Ẩn ngay, không chờ quét lại.
                     scope.launch {
-                        withContext(Dispatchers.IO) { AppGraph.library.delete(game) }
-                        toDelete = null
+                        val ok = withContext(Dispatchers.IO) { AppGraph.library.delete(game) }
+                        if (!ok) info = "Chưa xóa hết \"${game.name}\": một số file do lần cài app trước tạo ra nên Android không cho xóa.\n\n" +
+                            "Cấp quyền \"Truy cập mọi tệp\" (thẻ đầu Thư viện) rồi xóa lại, hoặc xóa thư mục bằng trình quản lý file:\n${game.dir.absolutePath}"
                         reloadKey++
                     }
                 }, height = 44.dp)

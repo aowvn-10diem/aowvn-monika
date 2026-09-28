@@ -70,7 +70,7 @@ class Account(private val context: Context, private val http: OkHttpClient, priv
      * Kiểm `state` khớp lượt đăng nhập vừa mở (chống trang lạ nhét tài khoản khác vào app).
      */
     fun complete(fragment: String?): String? {
-        val p = Uri.parse("x://x?" + (fragment ?: ""))
+        val p = Uri.parse("x://x?" + (fragment ?: "")) // chuỗi dạng a=1&b=2 (đã mã hóa URL)
         val expected = sp.getString("pending_state", null)
         val at = sp.getLong("pending_at", 0)
         sp.edit().remove("pending_state").remove("pending_at").apply()

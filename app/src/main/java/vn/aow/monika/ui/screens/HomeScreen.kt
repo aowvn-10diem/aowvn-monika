@@ -79,7 +79,8 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
         fresh.getOrNull()?.let { prefetchImages(context, it) }
     }
     // Game đang chơi dở (quét thư viện ở nền nếu chưa có).
-    val continueGame by produceState(AppGraph.library.lastPlayed(AppGraph.prefs)) {
+    val playedTick by AppGraph.prefs.playedTick.collectAsState()
+    val continueGame by produceState(AppGraph.library.lastPlayed(AppGraph.prefs), playedTick) {
         value = withContext(Dispatchers.IO) { runCatching { AppGraph.library.lastPlayed(AppGraph.prefs, AppGraph.library.list()) }.getOrNull() }
     }
     val quick = remember {

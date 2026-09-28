@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.DockClearance
 import android.content.Context
 import android.widget.Toast
 import androidx.annotation.DrawableRes
@@ -71,7 +72,7 @@ import vn.aow.monika.ui.theme.secondaryGradient
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit)? = null) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val cfg by AppGraph.config.config.collectAsState()
@@ -81,8 +82,9 @@ fun SettingsScreen(onBack: () -> Unit) {
     var subscribed by remember { mutableStateOf(AppGraph.prefs.subscribedLabels) }
 
     Screen {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 24.dp)) {
-            MonikaHeader("Cài đặt", subtitle = "Aow Monika", left = { CircleButton(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại", onBack) })
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = if (onBack == null) DockClearance else 24.dp)) {
+            if (header != null) header()
+            else MonikaHeader("Cài đặt", subtitle = "Aow Monika", left = onBack?.let { back -> { CircleButton(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại", back) } })
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (cfg.account.enabled) AccountCard()
                 // Thẻ tối: app + phiên bản + cập nhật.

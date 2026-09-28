@@ -78,7 +78,7 @@ private data class StorageInfo(val total: Long, val free: Long, val games: Long)
 
 /** Màn "Tải xuống": dung lượng máy + các lượt tải của app (đọc từ DownloadManager, cập nhật mỗi giây). */
 @Composable
-fun DownloadsScreen(onOpenLibrary: () -> Unit = {}) {
+fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> Unit)? = null) {
     val context = LocalContext.current
     val c = Monika.colors
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -109,7 +109,7 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}) {
 
     Screen {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            item { Box(Modifier.padding(horizontal = (0).dp)) { MonikaHeader("Tải xuống") } }
+            item { if (header != null) header() else MonikaHeader("Tải xuống") }
             storage?.let { s -> item { StorageCard(s) } }
             item { SectionRow("Đang tải xuống", active.size) }
             if (loaded == null) item { Box(Modifier.fillMaxWidth().height(120.dp), Alignment.Center) { Spinner() } }

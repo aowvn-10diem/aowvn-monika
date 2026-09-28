@@ -44,7 +44,12 @@ class GameLibrary(private val context: Context, private val configRepo: ConfigRe
     fun lastPlayed(prefs: vn.aow.monika.Prefs, from: List<Game>? = cached): Game? =
         from.orEmpty().filter { it.system != null && prefs.lastPlayed(it.dir.path) > 0 }.maxByOrNull { prefs.lastPlayed(it.dir.path) }
 
-    fun delete(game: Game) = game.dir.deleteRecursively()
+    /** Xóa game. Trả về false nếu còn file không xóa được (thường là file của lần cài trước, Android khóa). */
+    fun delete(game: Game): Boolean {
+        val ok = game.dir.deleteRecursively() || !game.dir.exists()
+        cached = cached?.filterNot { it.dir == game.dir && ok }
+        return ok
+    }
 }
 
 /**

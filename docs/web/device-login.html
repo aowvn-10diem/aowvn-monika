@@ -6,7 +6,8 @@
   2 chế độ:
   A) App Android "Aow Monika":
      /p/device-login.html?app=monika&state=<chuỗi ngẫu nhiên 16–64 ký tự>
-     → đăng nhập Google → chuyển về app: aowmonika://login#state=..&uid=..&id_token=..&refresh_token=..&name=..&email=..&photo=..
+     → đăng nhập Google (điện thoại: chuyển trang) → bấm Cho phép → về app qua
+       intent://login?state=..&uid=..&id_token=..&refresh_token=..#Intent;scheme=aowmonika;package=com.aow.monika;end
      Token KHÔNG lưu lên database, chỉ đi thẳng về app trên chính máy người dùng.
   B) Desktop / Patch C# (Device Authorization Flow, tài liệu chương 2.2):
      /p/device-login.html?code=AOW-7842
@@ -84,7 +85,7 @@
   };
   var SDK = 'https://www.gstatic.com/firebasejs/10.8.0/';
   // Chỉ trả token về đúng các app đã khai báo (chống trang lạ lợi dụng để lấy token).
-  var APPS = { monika: { name: 'Aow Monika', scheme: 'aowmonika://login' } };
+  var APPS = { monika: { name: 'Aow Monika', scheme: 'aowmonika://login', pkg: 'com.aow.monika' } };
 
   var q = new URLSearchParams(location.search);
   var appId = q.get('app');
@@ -124,6 +125,7 @@
 
   function render(user) {
     currentUser = user;
+    prefetchToken(user);
     show('aow-dl-user', !!user); show('aow-dl-perm', !!user);
     show('aow-dl-allow', !!user); show('aow-dl-switch', !!user); show('aow-dl-login', !user);
     if (user) {
@@ -141,6 +143,7 @@
     msg('');
     var provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
+    if (/Android|iPhone|iPad/i.test(navigator.userAgent)) return firebase.auth().signInWithRedirect(provider);
     return firebase.auth().signInWithPopup(provider).catch(function (e) {
       // Trình duyệt chặn popup (thường gặp trong app) → chuyển trang để đăng nhập.
       if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment' || e.code === 'auth/cancelled-popup-request')) {
@@ -150,25 +153,43 @@
     });
   }
 
+  // Lấy sẵn token ngay khi biết tài khoản → bấm "Cho phép" chuyển về app NGAY trong cú bấm
+  // (Chrome chặn chuyển sang app nếu không có cú bấm của người dùng, nên không được chờ mạng lúc bấm).
+  var readyToken = null;
+  function prefetchToken(user) {
+    readyToken = null;
+    if (MODE !== 'app' || !user) return;
+    user.getIdToken(true).then(function (t) { if (currentUser === user) readyToken = t; });
+  }
+
+  function appUrl(user, idToken) {
+    var p = new URLSearchParams();
+    p.set('state', state);
+    p.set('uid', user.uid);
+    p.set('id_token', idToken);
+    p.set('refresh_token', user.refreshToken || '');
+    p.set('name', user.displayName || '');
+    p.set('email', user.email || '');
+    p.set('photo', user.photoURL || '');
+    // Android: link intent:// (Chrome mở thẳng app Monika, không hỏi). Máy khác: aowmonika://
+    if (/Android/i.test(navigator.userAgent)) {
+      return 'intent://login?' + p.toString() + '#Intent;scheme=aowmonika;package=' + app.pkg + ';end';
+    }
+    return app.scheme + '?' + p.toString();
+  }
+
   function approveApp(user) {
-    return user.getIdToken(true).then(function (idToken) {
-      var p = new URLSearchParams();
-      p.set('state', state);
-      p.set('uid', user.uid);
-      p.set('id_token', idToken);
-      p.set('refresh_token', user.refreshToken || '');
-      p.set('name', user.displayName || '');
-      p.set('email', user.email || '');
-      p.set('photo', user.photoURL || '');
-      // Token nằm sau dấu # → không gửi lên máy chủ nào, không vào lịch sử truy cập của web.
-      var url = app.scheme + '#' + p.toString();
-      $('aow-dl-open').href = url; show('aow-dl-open', true);
+    var go = function (idToken) {
+      var url = appUrl(user, idToken);
+      var a = $('aow-dl-open'); a.href = url; show('aow-dl-open', true);
       show('aow-dl-allow', false); show('aow-dl-switch', false);
-      msg('Đã cho phép. Đang quay lại ' + app.name + '…', 'ok');
-      location.replace(url);
+      msg('Đã cho phép. Nếu chưa tự quay lại, bấm nút "Mở lại ' + app.name + '".', 'ok');
+      location.href = url;
       // Xóa token khỏi nút sau 2 phút (phòng người khác mượn máy).
-      setTimeout(function () { $('aow-dl-open').removeAttribute('href'); show('aow-dl-open', false); msg('Liên kết đã hết hạn. Hãy đăng nhập lại từ ứng dụng.', ''); }, 120000);
-    });
+      setTimeout(function () { a.removeAttribute('href'); show('aow-dl-open', false); msg('Liên kết đã hết hạn. Hãy đăng nhập lại từ ứng dụng.', ''); }, 120000);
+    };
+    if (readyToken) { go(readyToken); return Promise.resolve(); }
+    return user.getIdToken(true).then(go);
   }
 
   function approveCode(user) {
