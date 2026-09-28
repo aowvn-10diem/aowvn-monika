@@ -44,7 +44,7 @@ app/src/main/java/vn/aow/monika/
 ./gradlew assembleDebug       # APK: app/build/outputs/apk/debug/
 ```
 
-Mỗi lần push, GitHub Actions build APK debug (xem tab Actions → Artifacts). Tag `v*` → build APK đã ký và đăng lên Releases.
+Mỗi lần push, GitHub Actions build APK debug (xem tab Actions → Artifacts). Tag `v*` → build APK đã ký và đăng lên Releases, đồng thời up lên Pixeldrain nếu repo có secret `PIXELDRAIN_API_KEY` (link nằm ở trang tóm tắt của lượt chạy). Up tay: `PIXELDRAIN_API_KEY=... scripts/pixeldrain-upload.sh file.apk`.
 
 ## Giấy phép
 

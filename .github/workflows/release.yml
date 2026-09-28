@@ -39,3 +39,9 @@ jobs:
         with:
           files: AowVN-Monika-*.apk
           generate_release_notes: true
+      - name: Up APK lên Pixeldrain (nếu có secret PIXELDRAIN_API_KEY)
+        env:
+          PIXELDRAIN_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
+        run: |
+          if [ -z "$PIXELDRAIN_API_KEY" ]; then echo "Bỏ qua: chưa có secret PIXELDRAIN_API_KEY"; exit 0; fi
+          scripts/pixeldrain-upload.sh "AowVN-Monika-${GITHUB_REF_NAME}.apk"

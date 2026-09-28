@@ -31,6 +31,7 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 
 - `./gradlew testDebugUnitTest` — test config/logic (chạy trước mọi push).
 - `./gradlew assembleDebug` — build APK.
+- `PIXELDRAIN_API_KEY=... scripts/pixeldrain-upload.sh <apk>` — up APK lên Pixeldrain, in link `pixeldrain.com/u/{id}` (APK > 30 MB không gửi qua chat được). Key do chủ repo đưa, không ghi vào repo. Release CI tự up nếu có secret `PIXELDRAIN_API_KEY`.
 
 ## Việc còn lại (theo thứ tự ưu tiên)
 
