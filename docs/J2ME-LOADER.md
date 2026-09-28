@@ -28,6 +28,9 @@ sau đó chạy. Game chạy trong tiến trình riêng `:midlet` (như bản g�
 | `VirtualKeyboard.java` | `MONIKA_STYLE`: phím bo tròn hẳn, có khối 3D, viền sáng, chữ đậm, nhấn = lún + gradient | Tối ưu nút bấm |
 | `CanvasWrapper.java` | Thêm hàm vẽ bo góc số thực, shader, độ dày viền, chữ đậm | Phục vụ vẽ phím mới |
 | `ContextHolder.java` | Rung "tick" hệ thống (Android 10+), máy cũ 15ms | Rung giòn, đỡ tốn pin |
+| `AndroidManifest.xml` (MainActivity) | Bỏ intent-filter mở file .jar/.jad/.kjx | File từ ngoài vào Monika trước, nhận diện đúng hệ máy |
+| `res/values/strings.xml` | Tiếng Việt làm mặc định, dịch lại cho dễ hiểu (xóa `values-vi`); app chỉ giữ tài nguyên `vi` | Máy đặt ngôn ngữ nào cũng hiện tiếng Việt |
+| `res/values*/colors.xml`, `styles.xml`, `drawable/bg_*.xml`, `font/manrope.ttf` | Bảng màu Monika, nút viên thuốc gradient, thẻ/hộp thoại bo lớn, font Manrope | Giao diện đồng bộ Monika |
 
 Mọi chỗ sửa đều có chú thích `Aow Monika:` → tìm nhanh bằng `grep -rn "Aow Monika" j2me/`.
 

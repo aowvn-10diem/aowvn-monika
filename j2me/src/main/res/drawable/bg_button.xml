@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Aow Monika: nút bo tròn hẳn (viên thuốc), gradient cam–hồng như app chính. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_pressed="true">
         <shape>
-            <solid android:color="@color/btn_bg_pressed"/>
-            <corners android:radius="3dp"/>
+            <gradient android:angle="0" android:startColor="#E0621E" android:endColor="#D9487F" />
+            <corners android:radius="999dp"/>
         </shape>
     </item>
     <item>
         <shape>
-            <solid android:color="@color/btn_bg_normal"/>
-            <corners android:radius="3dp"/>
+            <gradient android:angle="0" android:startColor="#FFB052" android:centerColor="#FF7F78" android:endColor="#E95CC8" />
+            <corners android:radius="999dp"/>
         </shape>
     </item>
 </selector>

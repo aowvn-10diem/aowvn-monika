@@ -15,6 +15,8 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 - Màn chơi game: `runner/RetroActivity.kt` (GLRetroView) + `runner/GamePadOverlay.kt` (Compose nổi). Phím theo vị trí Android: dưới=BUTTON_A, phải=BUTTON_B, trái=X, trên=Y.
 - Game Java: J2ME Loader nhúng ở module `j2me/` + `dexlib/` (Apache-2.0, bản gốc commit 9b0fa48). Chỉ sửa chỗ có chú thích `Aow Monika:`; chi tiết + cách cập nhật: `docs/J2ME-LOADER.md`. Module này giữ build.gradle riêng (Groovy), ngoại lệ của quy tắc version catalog. Cần NDK 22.1.7171670.
 - Bản release bật R8 + tách APK theo chip (arm64-v8a, armeabi-v7a, universal; bỏ x86). Thêm thư viện có JNI/reflection → thêm luật `-keep` vào `app/proguard-rules.pro`, rồi kiểm lớp còn trong dex bằng `build-tools/*/dexdump`.
+- Giải nén: libarchive → lỗi thì 7-Zip native (`library/SevenZipNative.kt`, RAR/RAR5 mật khẩu, nhiều phần) → 7z thuần Java. Test chạy `.so` Linux cùng bản 16.02 (Gradle tự giải nén vào build/sevenzip-natives); file mẫu RAR tạo bằng `rar` với `LC_ALL=C.UTF-8` (không thì tên tiếng Việt hỏng).
+- Config từ xa có `configVersion` thấp hơn bản trong APK bị bỏ qua. Nhớ tăng `configVersion` và đồng bộ Cloudflare khi sửa config.
 - Không bao giờ commit keystore/mật khẩu ký; chỉ dùng GitHub Secrets.
 
 ## Sự thật đã xác minh
