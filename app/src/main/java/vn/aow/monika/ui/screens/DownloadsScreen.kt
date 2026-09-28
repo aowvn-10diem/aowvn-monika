@@ -1,5 +1,7 @@
 package vn.aow.monika.ui.screens
 
+import kotlinx.coroutines.launch
+import vn.aow.monika.ui.theme.Spinner
 import vn.aow.monika.AppGraph
 import android.app.DownloadManager
 import android.content.Context
@@ -80,17 +82,20 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}) {
     val context = LocalContext.current
     val c = Monika.colors
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    var rows by remember { mutableStateOf<List<DownloadRow>>(emptyList()) }
-    var storage by remember { mutableStateOf<StorageInfo?>(null) }
+    // Bản lần trước → mở tab là có ngay; null = chưa đọc lần nào.
+    var loaded by remember { mutableStateOf(lastRows) }
+    val rows = loaded.orEmpty()
+    var storage by remember { mutableStateOf(lastStorage) }
     var tick by remember { mutableStateOf(0) }
 
     LaunchedEffect(tick) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            storage = withContext(Dispatchers.IO) { readStorage(context) }
+            // Quét dung lượng thư mục game (có thể mất vài giây) chạy riêng, không chặn danh sách tải.
+            launch { storage = withContext(Dispatchers.IO) { readStorage(context) }.also { lastStorage = it } }
             val last = mutableMapOf<Long, Long>()
             while (true) {
                 val now = withContext(Dispatchers.IO) { queryDownloads(context, last) }
-                rows = now
+                loaded = now; lastRows = now
                 now.forEach { last[it.id] = it.done }
                 delay(1000)
             }
@@ -107,7 +112,8 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}) {
             item { Box(Modifier.padding(horizontal = (0).dp)) { MonikaHeader("Tải xuống") } }
             storage?.let { s -> item { StorageCard(s) } }
             item { SectionRow("Đang tải xuống", active.size) }
-            if (active.isEmpty()) item {
+            if (loaded == null) item { Box(Modifier.fillMaxWidth().height(120.dp), Alignment.Center) { Spinner() } }
+            else if (active.isEmpty()) item {
                 Text("Không có lượt tải nào. Bấm \"Tải game\" trong bài viết để bắt đầu.", style = Monika.type.body, color = c.textSecondary)
             }
             items(active, key = { it.id }) { r -> ActiveRow(r) { dm.remove(r.id); tick++ } }
@@ -121,7 +127,7 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}) {
                     if (done.isNotEmpty()) SoftPillButton("Xóa tất cả", { done.forEach { dm.remove(it.id) }; tick++ }, R.drawable.ic_fluent_delete_24_regular)
                 }
             }
-            if (done.isEmpty() && active.isEmpty()) item {
+            if (loaded != null && done.isEmpty() && active.isEmpty()) item {
                 EmptyState(R.drawable.fluent3d_package, "Chưa tải gì", "Game tải xong sẽ tự giải nén vào tab Giả lập.")
             }
             items(done, key = { it.id }) { r ->
@@ -245,6 +251,10 @@ private fun DoneRow(r: DownloadRow, ok: Boolean, onOpen: (() -> Unit)? = null, o
         }
     }
 }
+
+// Giữ giữa các lần mở tab (trong phiên chạy app).
+private var lastRows: List<DownloadRow>? = null
+private var lastStorage: StorageInfo? = null
 
 private fun queryDownloads(context: Context, last: Map<Long, Long>): List<DownloadRow> {
     val dm = context.getSystemService(DownloadManager::class.java)

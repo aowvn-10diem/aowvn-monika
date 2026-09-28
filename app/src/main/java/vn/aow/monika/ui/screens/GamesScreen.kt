@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.feed.Thumbs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.remember
@@ -72,7 +73,10 @@ class FeedViewModel : ViewModel() {
     var error by mutableStateOf<String?>(null); private set
     var endReached by mutableStateOf(false); private set
 
-    init { load(reset = true) }
+    // Hiện ngay trang đầu đã lưu (nếu có), rồi tải bản mới.
+    init { AppGraph.feed.cachedList(key())?.let { posts.addAll(it) }; load(reset = true) }
+
+    private fun key() = "games:" + (label ?: "")
 
     fun selectLabel(value: String?) {
         if (value == label) return
@@ -90,7 +94,10 @@ class FeedViewModel : ViewModel() {
         loading = true
         error = null
         viewModelScope.launch {
-            runCatching { AppGraph.feed.fetch(label = label, startIndex = if (reset) 1 else posts.size + 1, query = query) }
+            runCatching {
+                if (reset && query.isBlank()) AppGraph.feed.fetchList(key(), label = label)
+                else AppGraph.feed.fetch(label = label, startIndex = if (reset) 1 else posts.size + 1, query = query)
+            }
                 .onSuccess {
                     if (reset) posts.clear()
                     posts.addAll(it.filter { p -> posts.none { old -> old.id == p.id } })
@@ -174,7 +181,7 @@ fun GamesScreen(onOpen: (Post) -> Unit, focusSearch: Boolean = false, vm: FeedVi
 private fun FeaturedArticle(p: Post, onClick: () -> Unit) {
     MonikaCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp), dark = true, shape = Radius.hero, padding = PaddingValues(0.dp), onClick = onClick) {
         Box(Modifier.fillMaxWidth().height(260.dp)) {
-            AsyncImage(p.thumbnail, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            AsyncImage(Thumbs.card(p.thumbnail), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             Box(Modifier.fillMaxSize().background(artworkScrim()))
             Column(Modifier.align(Alignment.BottomStart).padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Tag("Nổi bật", accent = true)
@@ -191,7 +198,7 @@ private fun ArticleRow(p: Post, onClick: () -> Unit) {
     MonikaCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp), shape = Radius.medium, padding = PaddingValues(10.dp), onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
-                p.thumbnail, null, contentScale = ContentScale.Crop,
+                Thumbs.card(p.thumbnail), null, contentScale = ContentScale.Crop,
                 modifier = Modifier.size(width = 120.dp, height = 90.dp).clip(Radius.thumb).background(c.surfaceSoft),
             )
             Column(Modifier.weight(1f).padding(start = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

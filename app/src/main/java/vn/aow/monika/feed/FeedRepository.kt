@@ -14,6 +14,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import vn.aow.monika.config.ConfigRepository
 
+@kotlinx.serialization.Serializable
 data class Post(
     /** Mã bài của Blogger (phần sau ".post-"). */
     val id: String,
@@ -29,8 +30,29 @@ data class Post(
 class FeedRepository(
     private val http: OkHttpClient,
     private val configRepo: ConfigRepository,
+    private val cacheDir: java.io.File? = null,
 ) {
     private val cache = mutableMapOf<String, Post>()
+
+    /** Trang đầu của từng danh sách (Trang chủ, tab Game…) lưu RAM + đĩa: mở lại app hiện ngay, không tải lại từ đầu. */
+    private val lists = java.util.concurrent.ConcurrentHashMap<String, List<Post>>()
+    private val listJson = Json { ignoreUnknownKeys = true }
+
+    private fun listFile(key: String) = cacheDir?.let { java.io.File(it, "feed-" + key.hashCode().toUInt().toString(16) + ".json") }
+
+    /** Bản đã lưu của danh sách [key] (RAM trước, rồi đĩa). Null nếu chưa từng tải. */
+    fun cachedList(key: String): List<Post>? = lists[key] ?: runCatching {
+        listFile(key)?.takeIf { it.exists() }?.readText()?.let { listJson.decodeFromString(kotlinx.serialization.builtins.ListSerializer(Post.serializer()), it) }
+    }.getOrNull()?.also { lists[key] = it; it.forEach { p -> cache[p.id] = p } }
+
+    /** Tải danh sách và cập nhật bản lưu. */
+    suspend fun fetchList(key: String, label: String? = null, max: Int? = null): List<Post> =
+        fetch(label = label, max = max).also { list ->
+            lists[key] = list
+            withContext(Dispatchers.IO) {
+                runCatching { listFile(key)?.writeText(listJson.encodeToString(kotlinx.serialization.builtins.ListSerializer(Post.serializer()), list)) }
+            }
+        }
 
     fun cached(id: String): Post? = cache[id]
 

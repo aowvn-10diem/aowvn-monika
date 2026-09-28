@@ -1,5 +1,9 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.MonikaWordmark
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import vn.aow.monika.feed.Thumbs
 import vn.aow.monika.community.Community
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
@@ -67,12 +71,22 @@ private data class QuickAction(val title: String, val subtitle: String, @Drawabl
 @Composable
 fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
     val c = Monika.colors
-    val posts by produceState<Result<List<Post>>?>(null) { value = runCatching { AppGraph.feed.fetch(max = 12) } }
+    val context = LocalContext.current
+    // Hiện ngay bản đã lưu (lần trước), rồi tải bản mới ở nền → quay lại Trang chủ không phải chờ.
+    val posts by produceState<Result<List<Post>>?>(AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }) {
+        val fresh = runCatching { AppGraph.feed.fetchList(HOME_KEY, max = 12) }
+        if (fresh.isSuccess || value == null) value = fresh
+        fresh.getOrNull()?.let { prefetchImages(context, it) }
+    }
+    // Game đang chơi dở (quét thư viện ở nền nếu chưa có).
+    val continueGame by produceState(AppGraph.library.lastPlayed(AppGraph.prefs)) {
+        value = withContext(Dispatchers.IO) { AppGraph.library.lastPlayed(AppGraph.prefs, AppGraph.library.list()) }
+    }
     val quick = remember {
         listOf(
             QuickAction("Web", "Duyệt aow.vn", R.drawable.ic_fluent_globe_24_regular, secondaryGradient(), Routes.GAMES),
             QuickAction("Game", "Khám phá game", R.drawable.ic_fluent_games_24_regular, primaryGradient(), Routes.GAMES),
-            QuickAction("Giả lập", "Đa hệ máy", R.drawable.ic_fluent_layer_24_regular, Brush.linearGradient(listOf(Color(0xFF9975FF), Color(0xFF638EFF))), Routes.EMULATOR),
+            QuickAction("Thư viện", "Game của bạn", R.drawable.ic_fluent_library_24_regular, Brush.linearGradient(listOf(Color(0xFF9975FF), Color(0xFF638EFF))), Routes.EMULATOR),
             QuickAction("Tải xuống", "Quản lý file", R.drawable.ic_fluent_arrow_download_24_regular, Brush.linearGradient(listOf(Color(0xFF63D68A), Color(0xFF66CFF3))), Routes.DOWNLOADS),
         )
     }
@@ -81,7 +95,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DockClearance)) {
             item {
                 MonikaHeader(
-                    title = "Aow Monika",
+                    title = "Aow Monika", titleContent = { MonikaWordmark() },
                     left = { CircleButton(R.drawable.ic_fluent_navigation_24_regular, "Cài đặt", { onGo(Routes.SETTINGS) }) },
                     right = { CircleButton(R.drawable.ic_fluent_alert_24_regular, "Thông báo", { onGo(Routes.SETTINGS) }) },
                 )
@@ -101,6 +115,18 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                     EmptyState(R.drawable.fluent3d_newspaper, "Chưa tải được bài viết", posts?.exceptionOrNull()?.message ?: "Kiểm tra kết nối mạng.")
                 }
                 else -> item { HeroCarousel(list.take(3), onOpenPost) }
+            }
+            continueGame?.let { g ->
+                item { SectionHeader("Đang chơi dở", "Thư viện", { onGo(Routes.EMULATOR) }) }
+                item {
+                    Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        ContinueCard(g) {
+                            val activity = context as? android.app.Activity
+                            if (activity != null && AppGraph.launcher.launch(activity, g) == vn.aow.monika.runner.LaunchResult.Started) AppGraph.prefs.markPlayed(g.dir.path)
+                            else onGo(Routes.EMULATOR) // Cần app ngoài / lỗi → để tab Thư viện hướng dẫn.
+                        }
+                    }
+                }
             }
             item {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -129,7 +155,7 @@ private fun HeroCarousel(posts: List<Post>, onOpen: (Post) -> Unit) {
             val p = posts[i]
             val interaction = remember { MutableInteractionSource() }
             Box(Modifier.fillMaxWidth().height(330.dp).clip(Radius.hero).background(Monika.colors.surfaceDark).pressable(interaction, { onOpen(p) }, target = 0.98f)) {
-                AsyncImage(p.thumbnail, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                AsyncImage(Thumbs.hero(p.thumbnail), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 Box(Modifier.fillMaxSize().background(artworkScrim()))
                 Column(Modifier.align(Alignment.BottomStart).padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Tag(if (i == 0) "Mới nhất" else "Nổi bật", accent = true)
@@ -179,6 +205,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.communityItem() = ite
     }
 }
 
+private const val HOME_KEY = "home"
+
+/** Tải trước ảnh (thẻ lớn + ảnh đầu bài) vào bộ đệm → vuốt thẻ / mở bài hiện ảnh ngay. */
+private fun prefetchImages(context: android.content.Context, posts: List<Post>) {
+    val loader = coil.Coil.imageLoader(context)
+    posts.take(3).forEach { loader.enqueue(coil.request.ImageRequest.Builder(context).data(Thumbs.hero(it.thumbnail)).build()) }
+    posts.drop(3).forEach { loader.enqueue(coil.request.ImageRequest.Builder(context).data(Thumbs.cover(it.thumbnail)).build()) }
+}
+
 @Composable
 private fun QuickActionCard(q: QuickAction, modifier: Modifier, onClick: () -> Unit) {
     MonikaCard(modifier, dark = true, shape = Radius.large, padding = PaddingValues(12.dp), onClick = onClick) {
@@ -197,7 +232,7 @@ private fun FeaturedCard(p: Post, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     Column(Modifier.width(170.dp).pressable(interaction, onClick, target = 0.97f)) {
         AsyncImage(
-            p.thumbnail, null, contentScale = ContentScale.Crop,
+            Thumbs.cover(p.thumbnail), null, contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxWidth().aspectRatio(0.8f).clip(Radius.medium).background(c.surfaceSoft),
         )
         Spacer(Modifier.height(8.dp))

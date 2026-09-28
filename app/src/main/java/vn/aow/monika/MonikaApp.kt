@@ -13,7 +13,15 @@ import vn.aow.monika.library.StorageCleaner
 import vn.aow.monika.notify.NewPostWorker
 import vn.aow.monika.notify.Notifier
 
-class MonikaApp : Application() {
+class MonikaApp : Application(), coil.ImageLoaderFactory {
+    /** Ảnh toàn app: hiện dần (crossfade), bộ đệm RAM 20% + đĩa 250 MB → quay lại màn cũ ảnh có ngay. */
+    override fun newImageLoader(): coil.ImageLoader = coil.ImageLoader.Builder(this)
+        .crossfade(280)
+        .memoryCache { coil.memory.MemoryCache.Builder(this).maxSizePercent(0.20).build() }
+        .diskCache { coil.disk.DiskCache.Builder().directory(cacheDir.resolve("images")).maxSizeBytes(250L * 1024 * 1024).build() }
+        .respectCacheHeaders(false) // Ảnh Blogger không đổi theo link → giữ lâu.
+        .build()
+
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun attachBaseContext(base: Context) {
@@ -27,6 +35,8 @@ class MonikaApp : Application() {
         AppGraph.init(this)
         // Tiến trình ":midlet" chỉ để chạy game Java → không đặt lịch/tải cấu hình ở đó.
         if (isGameProcess()) return
+        // Quét sẵn thư viện ở nền → mở tab Thư viện / "Đang chơi dở" hiện ngay.
+        scope.launch(Dispatchers.IO) { runCatching { AppGraph.library.list() } }
         Notifier.createChannels(this)
         NewPostWorker.schedule(this, AppGraph.config.current.feed.pollMinutes)
         CacheCleanWorker.schedule(this)

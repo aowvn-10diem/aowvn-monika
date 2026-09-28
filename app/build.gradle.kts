@@ -94,6 +94,7 @@ tasks.withType<Test>().configureEach {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.splashscreen) // Màn chờ khi mở app
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

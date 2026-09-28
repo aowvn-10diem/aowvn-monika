@@ -297,6 +297,8 @@ fun MonikaHeader(
     subtitle: String? = null,
     left: (@Composable () -> Unit)? = null,
     right: @Composable RowScope.() -> Unit = {},
+    /** Thay tiêu đề chữ bằng nội dung riêng (vd. logo chữ Monika ở Trang chủ). */
+    titleContent: (@Composable () -> Unit)? = null,
 ) {
     val c = Monika.colors
     Row(
@@ -305,11 +307,19 @@ fun MonikaHeader(
     ) {
         Box(Modifier.width(104.dp)) { left?.invoke() }
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+            if (titleContent != null) { titleContent(); return@Column }
             Text(title, style = Monika.type.cardTitle.copy(fontSize = Monika.type.sectionTitle.fontSize), color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (subtitle != null) Text(subtitle, style = Monika.type.caption, color = c.textSecondary, maxLines = 1)
         }
         Row(Modifier.width(104.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), content = right)
     }
+}
+
+/** Logo chữ "Monika" (bộ nhận diện M Portal), tự đổi bản sáng/tối theo giao diện. */
+@Composable
+fun MonikaWordmark(modifier: Modifier = Modifier) {
+    val res = if (androidx.compose.foundation.isSystemInDarkTheme()) vn.aow.monika.R.drawable.monika_wordmark_on_dark else vn.aow.monika.R.drawable.monika_wordmark_on_light
+    androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(res), "Aow Monika", modifier.height(40.dp))
 }
 
 /** Nền màn hình: cream + chừa đáy cho menu nổi. */

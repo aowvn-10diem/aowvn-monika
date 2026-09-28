@@ -1,5 +1,6 @@
 package vn.aow.monika.ui
 
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import vn.aow.monika.AppGraph
 import android.Manifest
 import android.content.Intent
@@ -54,6 +55,11 @@ class MainActivity : ComponentActivity() {
     private val deepLink = mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Màn chờ: logo M Portal trên nền than, rời đi bằng hiệu ứng phóng + mờ dần.
+        installSplashScreen().setOnExitAnimationListener { splash ->
+            splash.view.animate().alpha(0f).scaleX(1.08f).scaleY(1.08f).setDuration(260)
+                .withEndAction { splash.remove() }.start()
+        }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         askPermissions()
@@ -116,7 +122,7 @@ private val dockItems = listOf(
     DockItem("Trang chủ", R.drawable.ic_fluent_home_24_regular, R.drawable.ic_fluent_home_24_filled),
     DockItem("Game", R.drawable.ic_fluent_games_24_regular, R.drawable.ic_fluent_games_24_filled),
     DockItem("Tìm kiếm", R.drawable.ic_fluent_search_24_regular, R.drawable.ic_fluent_search_24_filled),
-    DockItem("Giả lập", R.drawable.ic_fluent_xbox_controller_24_regular, R.drawable.ic_fluent_xbox_controller_24_filled),
+    DockItem("Thư viện", R.drawable.ic_fluent_library_24_regular, R.drawable.ic_fluent_library_24_filled),
     DockItem("Tải xuống", R.drawable.ic_fluent_arrow_download_24_regular, R.drawable.ic_fluent_arrow_download_24_filled),
 )
 

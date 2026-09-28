@@ -41,6 +41,6 @@ data class GameMeta(
             .ifBlank { title }
 
         /** Ảnh bìa lớn hơn (Blogger cho đổi cỡ qua đường dẫn). */
-        fun largeCover(url: String?): String? = url?.replace("/w640-h360-c/", "/w800-h1000-c/")
+        fun largeCover(url: String?): String? = vn.aow.monika.feed.Thumbs.cover(url)
     }
 }

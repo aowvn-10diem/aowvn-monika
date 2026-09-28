@@ -233,7 +233,7 @@ fun handleLink(context: Context, scope: CoroutineScope, url: String, post: Post?
 private fun Color.css() = "#%06X".format(toArgb() and 0xFFFFFF)
 
 private fun renderHtml(post: Post, c: MonikaColors): String {
-    val hero = post.thumbnail?.replace("/w640-h360-c/", "/w1200-h900-c/")
+    val hero = vn.aow.monika.feed.Thumbs.hero(post.thumbnail)
     return """
 <!doctype html><html><head>
 <meta name="viewport" content="width=device-width,initial-scale=1">

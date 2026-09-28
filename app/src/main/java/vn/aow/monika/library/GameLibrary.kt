@@ -23,11 +23,20 @@ data class Game(
 
 class GameLibrary(private val context: Context, private val configRepo: ConfigRepository) {
 
+    /** Danh sách lần quét gần nhất: mở tab Thư viện hiện ngay, không chớp màn "Chưa có game". */
+    @Volatile var cached: List<Game>? = null
+        private set
+
     fun list(): List<Game> =
         GameStorage.games(context).listFiles().orEmpty()
             .filter { it.isDirectory }
             .sortedByDescending { it.lastModified() }
             .map { GameDetector.detect(it, configRepo.current) }
+            .also { cached = it }
+
+    /** Game chơi gần nhất (đã nhận diện được hệ máy). */
+    fun lastPlayed(prefs: vn.aow.monika.Prefs, from: List<Game>? = cached): Game? =
+        from.orEmpty().filter { it.system != null && prefs.lastPlayed(it.dir.path) > 0 }.maxByOrNull { prefs.lastPlayed(it.dir.path) }
 
     fun delete(game: Game) = game.dir.deleteRecursively()
 }

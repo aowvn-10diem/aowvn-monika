@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.Spinner
 import androidx.compose.runtime.collectAsState
 import android.app.Activity
 import android.widget.Toast
@@ -84,7 +85,8 @@ fun LibraryScreen(onSettings: () -> Unit) {
     val scope = rememberCoroutineScope()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val c = Monika.colors
-    var games by remember { mutableStateOf<List<Game>>(emptyList()) }
+    var scanned by remember { mutableStateOf(AppGraph.library.cached) } // null = đang quét lần đầu
+    val games = scanned.orEmpty()
     var reloadKey by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
     var percent by remember { mutableStateOf<Int?>(null) } // % giải nén, null = chưa biết
@@ -99,7 +101,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
 
     LaunchedEffect(reloadKey) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            games = withContext(Dispatchers.IO) { AppGraph.library.list() }
+            scanned = withContext(Dispatchers.IO) { AppGraph.library.list() }
         }
     }
 
@@ -160,13 +162,12 @@ fun LibraryScreen(onSettings: () -> Unit) {
 
     val systems = games.mapNotNull { it.system?.name }.distinct()
     val shown = games.filter { filter == null || it.system?.name == filter }
-    val lastPlayed = games.filter { it.system != null }.maxByOrNull { AppGraph.prefs.lastPlayed(it.dir.path) }
-        ?.takeIf { AppGraph.prefs.lastPlayed(it.dir.path) > 0 }
+    val lastPlayed = AppGraph.library.lastPlayed(AppGraph.prefs, games)
 
     Screen {
       Column(Modifier.fillMaxSize()) {
         MonikaHeader(
-            "Giả lập", subtitle = "${games.size} game trong máy",
+            "Thư viện", subtitle = if (scanned == null) "Đang quét…" else "${games.size} game trong máy",
             left = { CircleButton(R.drawable.ic_fluent_settings_24_regular, "Cài đặt giả lập", onSettings) },
             right = { CircleButton(R.drawable.ic_fluent_folder_add_24_regular, "Thêm game từ máy", { picker.launch(arrayOf("*/*")) }) },
         )
@@ -190,7 +191,9 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 item(span = { GridItemSpan(2) }) { Text("Tiếp tục chơi", style = Monika.type.sectionTitle, color = c.text) }
                 item(span = { GridItemSpan(2) }) { ContinueCard(g) { play(g) } }
             }
-            if (games.isEmpty()) item(span = { GridItemSpan(2) }) {
+            if (scanned == null) item(span = { GridItemSpan(2) }) {
+                Box(Modifier.fillMaxWidth().height(240.dp), Alignment.Center) { Spinner() }
+            } else if (games.isEmpty()) item(span = { GridItemSpan(2) }) {
                 EmptyState(
                     R.drawable.fluent3d_video_game, "Chưa có game",
                     "Tải game ở tab Game, hoặc thêm file (.zip .rar .7z .nds .gba .iso…) có sẵn trong máy.\n\nThư mục: ${GameStorage.games(context).absolutePath}",
@@ -291,7 +294,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
 
 /** Thẻ "Tiếp tục chơi": charcoal + minh họa 3D + nút play gradient. */
 @Composable
-private fun ContinueCard(g: Game, onPlay: () -> Unit) {
+internal fun ContinueCard(g: Game, onPlay: () -> Unit) {
     MonikaCard(Modifier.fillMaxWidth(), dark = true, shape = Radius.hero, padding = PaddingValues(0.dp), onClick = onPlay) {
       Box {
         g.meta?.cover?.let {
