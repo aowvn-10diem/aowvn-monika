@@ -1,0 +1,73 @@
+name: Test Lab (máy thật trên cloud)
+
+# Chạy tay: Actions → "Test Lab" → Run workflow.
+# Build APK release (có R8) rồi cho robot của Firebase Test Lab tự bấm khắp app trên máy thật,
+# bắt crash + chụp màn hình. Kết quả: link ở trang tóm tắt của lượt chạy + file tải về (Artifacts).
+# Cần secret GCP_SA_KEY (JSON tài khoản dịch vụ) và GCP_PROJECT_ID — xem docs/TEST-LAB.md.
+# Lưu ý: máy của Test Lab ở nước ngoài → aow.vn chặn (Cloudflare), phần đọc bài sẽ báo lỗi mạng; đó là bình thường.
+on:
+  workflow_dispatch:
+    inputs:
+      devices:
+        description: "Máy test, cách nhau bởi dấu ; (vd. model=oriole,version=33). Để trống = tự chọn 2 máy thật."
+        required: false
+        default: ""
+      timeout:
+        description: "Thời gian robot bấm thử mỗi máy"
+        required: false
+        default: "5m"
+
+jobs:
+  robo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Cài NDK cho J2ME Loader
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" > /dev/null
+      - name: Build APK release (R8, ký bằng khóa debug)
+        run: ./gradlew assembleRelease --console=plain
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Chọn máy
+        id: dev
+        run: |
+          if [ -n "${{ inputs.devices }}" ]; then
+            echo "args=$(echo '${{ inputs.devices }}' | tr ';' '\n' | sed 's/^/--device /' | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Tự chọn: 2 máy thật (PHYSICAL) có Android 8+ (minSdk 26), ưu tiên bản Android mới nhất.
+          gcloud firebase test android models list --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --filter="form=PHYSICAL" --format=json > models.json
+          args=$(jq -r '[.[] | {id, v: ([.supportedVersionIds[] | tonumber] | map(select(. >= 26)) | max)} | select(.v != null)]
+                        | sort_by(-.v) | .[:2][] | "--device model=\(.id),version=\(.v)"' models.json | tr '\n' ' ')
+          echo "Máy đã chọn: $args"
+          echo "args=$args" >> "$GITHUB_OUTPUT"
+      - name: Chạy robot test
+        run: |
+          gcloud firebase test android run --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --type robo \
+            --app app/build/outputs/apk/release/app-universal-release.apk \
+            ${{ steps.dev.outputs.args }} \
+            --timeout "${{ inputs.timeout }}" \
+            --results-dir "monika-${GITHUB_RUN_ID}" \
+            --format=json 2>&1 | tee result.txt
+      - name: Tải kết quả (ảnh chụp, log, video)
+        if: always()
+        run: |
+          # gcloud in ra link dạng .../storage/browser/<bucket>/monika-<id>/ → lấy tên bucket.
+          bucket=$(grep -oE 'storage/browser/[^/ ]+' result.txt | head -1 | cut -d/ -f3)
+          if [ -n "$bucket" ]; then gsutil -m cp -r "gs://$bucket/monika-${GITHUB_RUN_ID}" ./testlab || true; fi
+          grep -oE 'https://console.firebase.google.com[^ ]+' result.txt | head -1 | sed 's/^/Kết quả: /' >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: testlab-ket-qua
+          path: testlab/
+          if-no-files-found: ignore
