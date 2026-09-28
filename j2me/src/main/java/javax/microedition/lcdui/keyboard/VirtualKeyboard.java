@@ -80,6 +80,10 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	private static final int TYPE_ARR_NUM = 4;
 	private static final int TYPE_NUMBERS = 5;
 	private static final int TYPE_ARROWS = 6;
+	/** Aow Monika: bàn phím kiểu điện thoại chia 2 nửa — trái bàn số 3×4, phải L ↑ R / ← OK → / ↓ (mặc định). */
+	public static final int TYPE_MONIKA = 7;
+	private static final float MONIKA_ROWS = 4;
+	private static final float MONIKA_KEY_SCALE_Y = 0.78f;
 
 	private static final float PHONE_KEY_ROWS = 5;
 	private static final float PHONE_KEY_SCALE_X = 2.0f;
@@ -280,6 +284,44 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	private void resetLayout(int variant) {
 		switch (variant) {
+			case TYPE_MONIKA:
+				// Aow Monika: 6 cột đều nhau (mỗi phím rộng 1/6 màn), 4 hàng dưới khung game.
+				for (int j = 0, len = keyScales.length; j < len;) {
+					keyScales[j++] = 1.0f;
+					keyScales[j++] = MONIKA_KEY_SCALE_Y;
+				}
+				// Nửa trái: bàn số điện thoại.
+				setSnap(KEY_STAR, SCREEN, RectSnap.INT_SOUTHWEST, true);
+				setSnap(KEY_NUM0, KEY_STAR, RectSnap.EXT_EAST, true);
+				setSnap(KEY_POUND, KEY_NUM0, RectSnap.EXT_EAST, true);
+				setSnap(KEY_NUM7, KEY_STAR, RectSnap.EXT_NORTH, true);
+				setSnap(KEY_NUM8, KEY_NUM0, RectSnap.EXT_NORTH, true);
+				setSnap(KEY_NUM9, KEY_POUND, RectSnap.EXT_NORTH, true);
+				setSnap(KEY_NUM4, KEY_NUM7, RectSnap.EXT_NORTH, true);
+				setSnap(KEY_NUM5, KEY_NUM8, RectSnap.EXT_NORTH, true);
+				setSnap(KEY_NUM6, KEY_NUM9, RectSnap.EXT_NORTH, true);
+				setSnap(KEY_NUM1, KEY_NUM4, RectSnap.EXT_NORTH, true);
+				setSnap(KEY_NUM2, KEY_NUM5, RectSnap.EXT_NORTH, true);
+				setSnap(KEY_NUM3, KEY_NUM6, RectSnap.EXT_NORTH, true);
+				// Nửa phải: L ↑ R / ← OK → / (trống) ↓ Menu.
+				setSnap(KEY_SOFT_LEFT, KEY_NUM3, RectSnap.EXT_EAST, true);
+				setSnap(KEY_UP, KEY_SOFT_LEFT, RectSnap.EXT_EAST, true);
+				setSnap(KEY_SOFT_RIGHT, KEY_UP, RectSnap.EXT_EAST, true);
+				setSnap(KEY_LEFT, KEY_NUM6, RectSnap.EXT_EAST, true);
+				setSnap(KEY_FIRE, KEY_LEFT, RectSnap.EXT_EAST, true);
+				setSnap(KEY_RIGHT, KEY_FIRE, RectSnap.EXT_EAST, true);
+				setSnap(KEY_DOWN, KEY_FIRE, RectSnap.EXT_SOUTH, true);
+				setSnap(KEY_MENU, KEY_RIGHT, RectSnap.EXT_SOUTH, true);
+				// Phím phụ ẩn (bật lại được trong menu "Ẩn/hiện phím").
+				setSnap(KEY_UP_LEFT, KEY_SOFT_LEFT, RectSnap.EXT_SOUTH, false);
+				setSnap(KEY_UP_RIGHT, KEY_SOFT_RIGHT, RectSnap.EXT_SOUTH, false);
+				setSnap(KEY_DOWN_LEFT, KEY_DOWN, RectSnap.EXT_WEST, false);
+				setSnap(KEY_DOWN_RIGHT, KEY_MENU, RectSnap.EXT_SOUTH, false);
+				setSnap(KEY_A, SCREEN, RectSnap.INT_NORTHWEST, false);
+				setSnap(KEY_B, SCREEN, RectSnap.INT_NORTHEAST, false);
+				setSnap(KEY_C, KEY_A, RectSnap.EXT_SOUTH, false);
+				setSnap(KEY_D, KEY_B, RectSnap.EXT_SOUTH, false);
+				break;
 			case TYPE_PHONE:
 				for (int j = 0, len = keyScales.length; j < len;) {
 					keyScales[j++] = PHONE_KEY_SCALE_X;
@@ -493,6 +535,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	}
 
 	public float getPhoneKeyboardHeight(float w, float h) {
+		if (layoutVariant == TYPE_MONIKA) return MONIKA_ROWS * getKeySize(w, h) * MONIKA_KEY_SCALE_Y;
 		return PHONE_KEY_ROWS * getKeySize(w, h) * PHONE_KEY_SCALE_Y;
 	}
 
@@ -813,7 +856,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	}
 
 	public boolean isPhone() {
-		return layoutVariant == TYPE_PHONE || layoutVariant == TYPE_PHONE_ARROWS;
+		return layoutVariant == TYPE_PHONE || layoutVariant == TYPE_PHONE_ARROWS || layoutVariant == TYPE_MONIKA;
 	}
 
 	private void highlightGroup(int group) {
@@ -1283,6 +1326,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		 * Nhấn: phím lún (co 6%, mất bóng) + gradient cam → san hô → hồng (nếu user chưa đổi màu nhấn).
 		 */
 		private void paintMonika(CanvasWrapper g, int alpha, int bgColor, int fgColor) {
+			if (layoutVariant == TYPE_MONIKA) { paintMonikaPhone(g, alpha); return; }
 			float density = ContextHolder.getAppContext().getResources().getDisplayMetrics().density;
 			float min = Math.min(rect.width(), rect.height());
 			face.set(rect);
@@ -1317,6 +1361,41 @@ public class VirtualKeyboard implements Overlay, Runnable {
 			g.setTextColor(Math.max(a, 0xE0) << 24 | fgColor);
 			g.setTextBold(true);
 			g.drawString(label, face.centerX(), face.centerY());
+			g.setTextBold(false);
+		}
+
+		/**
+		 * Aow Monika: phím kiểu điện thoại tối màu, viền màu theo nhóm (giống giả lập Java trên web):
+		 * 2/4/6/8 vàng (hướng đi), 5 đỏ (bắn), L/R tím, mũi tên xanh, OK xanh đặc; số có chữ ABC nhỏ bên dưới.
+		 */
+		private void paintMonikaPhone(CanvasWrapper g, int alpha) {
+			float density = ContextHolder.getAppContext().getResources().getDisplayMetrics().density;
+			int[] c = monikaColors(keyCode);
+			face.set(rect);
+			face.inset(4 * density, 4 * density);
+			if (selected) face.inset(density, density);
+			float radius = 12 * density;
+			int a = Math.max(alpha >>> 24, 0xC0); // bàn phím nằm ngoài khung game → đậm hơn cho dễ nhìn
+			boolean filled = keyCode == Canvas.KEY_FIRE;
+			g.setFillColor((a << 24) | (selected || filled ? c[1] : c[0]));
+			g.fillRoundRect(face, radius, radius);
+			g.setDrawColor((a << 24) | (selected ? c[2] : c[1]));
+			g.setStrokeWidth(1.5f * density);
+			g.drawRoundRect(face, radius, radius);
+			g.setStrokeWidth(0);
+			String text = keyCode == Canvas.KEY_FIRE ? "OK" : label;
+			String sub = monikaLetters(keyCode);
+			g.setTextColor(0xFF000000 | (selected || filled ? 0xFFFFFF : c[2]));
+			g.setTextBold(filled);
+			if (sub == null) {
+				g.drawString(text, face.centerX(), face.centerY());
+			} else {
+				g.drawString(text, face.centerX(), face.centerY() - face.height() * 0.12f);
+				g.setTextScale(0.45f);
+				g.setTextColor(0xA0000000 | (selected ? 0xFFFFFF : c[2]));
+				g.drawString(sub, face.centerX(), face.centerY() + face.height() * 0.26f);
+				g.setTextScale(1f);
+			}
 			g.setTextBold(false);
 		}
 
@@ -1428,6 +1507,39 @@ public class VirtualKeyboard implements Overlay, Runnable {
 			if (activity != null) {
 				activity.runOnUiThread(activity::showExitConfirmation);
 			}
+		}
+	}
+
+	/** Aow Monika: {nền, viền, chữ} của từng nhóm phím trong bàn phím kiểu Monika. */
+	private static int[] monikaColors(int keyCode) {
+		switch (keyCode) {
+			case Canvas.KEY_NUM2: case Canvas.KEY_NUM4: case Canvas.KEY_NUM6: case Canvas.KEY_NUM8:
+				return new int[]{0x2A2412, 0x9C7A26, 0xFFD65A};
+			case Canvas.KEY_NUM5:
+				return new int[]{0x3A1418, 0xB3313B, 0xFF6068};
+			case Canvas.KEY_SOFT_LEFT: case Canvas.KEY_SOFT_RIGHT:
+				return new int[]{0x241A3D, 0x6D4AD8, 0xC7A6FF};
+			case Canvas.KEY_UP: case Canvas.KEY_DOWN: case Canvas.KEY_LEFT: case Canvas.KEY_RIGHT:
+				return new int[]{0x0F2530, 0x1F5568, 0x46D2F5};
+			case Canvas.KEY_FIRE:
+				return new int[]{0x0F2530, 0x16BFE0, 0xFFFFFF};
+			default:
+				return new int[]{0x151D27, 0x2C4152, 0x46C8F0};
+		}
+	}
+
+	private static String monikaLetters(int keyCode) {
+		switch (keyCode) {
+			case Canvas.KEY_NUM2: return "ABC";
+			case Canvas.KEY_NUM3: return "DEF";
+			case Canvas.KEY_NUM4: return "GHI";
+			case Canvas.KEY_NUM5: return "JKL";
+			case Canvas.KEY_NUM6: return "MNO";
+			case Canvas.KEY_NUM7: return "PQRS";
+			case Canvas.KEY_NUM8: return "TUV";
+			case Canvas.KEY_NUM9: return "WXYZ";
+			case Canvas.KEY_NUM0: return "+";
+			default: return null;
 		}
 	}
 }

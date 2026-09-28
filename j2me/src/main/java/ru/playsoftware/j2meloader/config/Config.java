@@ -129,7 +129,9 @@ public class Config {
 		String workDir = appDir.getParentFile().getParent();
 		File file = new File(workDir + Config.MIDLET_CONFIGS_DIR + appDir.getName());
 		if (showSettings || !file.exists()) {
-			Intent intent = new Intent(ACTION_EDIT, Uri.parse(path),
+			// Aow Monika: game mới chưa có cấu hình → ConfigActivity tự tạo cấu hình mặc định rồi chạy luôn
+			// (không hiện màn cài đặt riêng của game). Chỉ hiện khi người dùng chủ động mở cài đặt.
+			Intent intent = new Intent(showSettings ? ACTION_EDIT : Intent.ACTION_DEFAULT, Uri.parse(path),
 					context, ConfigActivity.class);
 			intent.putExtra(KEY_MIDLET_NAME, name);
 			intent.putExtra(KEY_START_ARGUMENTS, arguments);

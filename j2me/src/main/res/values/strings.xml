@@ -5,7 +5,7 @@
     <string name="navigation_drawer_close" translatable="false">Đóng menu</string>
 
     <string name="close">Đóng</string>
-    <string name="exit">Thoát</string>
+    <string name="exit">Thoát về Monika</string>
     <string name="about">Giới thiệu</string>
     <string name="help">Trợ giúp</string>
     <string name="more">Thêm</string>
@@ -258,4 +258,11 @@
     <string name="default_label">"%s (mặc định)"</string>
     <string name="not_saved_exists">Đã tồn tại</string>
     <string name="alert_rewrite_profile">Đã có cấu hình tên \"%1$s\".\nGhi đè?</string>
+    <!-- Aow Monika -->
+    <string name="pref_vk_type_monika">Monika: bàn số + mũi tên (dưới màn hình)</string>
+    <string name="monika_exit_title">Thoát về Aow Monika?</string>
+    <string name="monika_exit_message">Nhớ lưu game trong menu của game trước khi thoát để không mất tiến trình.</string>
+    <string name="monika_exit_ok">Thoát</string>
+    <string name="monika_game_settings">Cài đặt game</string>
+    <string name="monika_keep_playing">Chơi tiếp</string>
 </resources>

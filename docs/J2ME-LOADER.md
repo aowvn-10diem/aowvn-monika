@@ -30,6 +30,10 @@ sau đó chạy. Game chạy trong tiến trình riêng `:midlet` (như bản g�
 | `ContextHolder.java` | Rung "tick" hệ thống (Android 10+), máy cũ 15ms | Rung giòn, đỡ tốn pin |
 | `AndroidManifest.xml` (MainActivity) | Bỏ intent-filter mở file .jar/.jad/.kjx | File từ ngoài vào Monika trước, nhận diện đúng hệ máy |
 | `res/values/strings.xml` | Tiếng Việt làm mặc định, dịch lại cho dễ hiểu (xóa `values-vi`); app chỉ giữ tài nguyên `vi` | Máy đặt ngôn ngữ nào cũng hiện tiếng Việt |
+| `installer/MonikaLaunchActivity.java` (mới) + `J2meRuntime.openGameIntent` | Màn "chuẩn bị game" kiểu Monika: tự cài lần đầu, tự chạy; không qua danh sách app/hộp thoại cài | Game Java mở như 1 phần của Monika |
+| `Config.startApp`, `ConfigActivity` | Game mới: tạo cấu hình mặc định rồi chạy luôn (không bắt vào màn cài đặt riêng) | Bớt bước thừa |
+| `MicroActivity` + chuỗi `monika_*` | Hộp thoại thoát: "Thoát về Aow Monika?" / Chơi tiếp / Cài đặt game | Thoát là về Monika |
+| `VirtualKeyboard` `TYPE_MONIKA`, `ProfileModel.vkType` | Bàn phím mặc định: trái bàn số 3×4, phải L ↑ R / ← OK → / ↓ Menu; màu theo nhóm phím | Giống cảm giác điện thoại, dễ bấm |
 | `res/values*/colors.xml`, `styles.xml`, `drawable/bg_*.xml`, `font/manrope.ttf` | Bảng màu Monika, nút viên thuốc gradient, thẻ/hộp thoại bo lớn, font Manrope | Giao diện đồng bộ Monika |
 
 Mọi chỗ sửa đều có chú thích `Aow Monika:` → tìm nhanh bằng `grep -rn "Aow Monika" j2me/`.

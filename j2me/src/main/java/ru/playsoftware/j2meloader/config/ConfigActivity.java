@@ -152,7 +152,9 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 		defProfile = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
 				.getString(PREF_DEFAULT_PROFILE, null);
 		loadConfig();
-		if (!params.isNew && !needShow) {
+		if (!needShow) {
+			// Aow Monika: game mới → lưu cấu hình mặc định rồi chạy luôn (bản gốc bắt vào màn cài đặt trước).
+			if (params.isNew) ProfilesManager.saveConfig(params);
 			startMIDlet();
 			return;
 		}

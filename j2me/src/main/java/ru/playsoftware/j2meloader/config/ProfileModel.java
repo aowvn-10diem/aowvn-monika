@@ -189,6 +189,7 @@ public class ProfileModel {
 
 		// Aow Monika: phím mặc định theo hệ thiết kế Monika (than kính mờ, nhấn = cam hồng), bật rung.
 		vkButtonShape = VirtualKeyboard.ROUND_RECT_SHAPE;
+		vkType = VirtualKeyboard.TYPE_MONIKA; // bàn phím kiểu điện thoại Monika (dưới khung game)
 		vkAlpha = 140;
 		vkFeedback = true;
 

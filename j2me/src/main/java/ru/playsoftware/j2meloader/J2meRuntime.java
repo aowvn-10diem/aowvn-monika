@@ -39,8 +39,9 @@ public final class J2meRuntime {
 	 * @param uri content:// (FileProvider) của file game, đã cấp quyền đọc.
 	 */
 	public static Intent openGameIntent(android.content.Context context, Uri uri) {
+		// Aow Monika: đi thẳng màn chuẩn bị + chạy game (không qua danh sách app của J2ME Loader).
 		return new Intent(Intent.ACTION_VIEW)
-				.setClass(context, MainActivity.class)
+				.setClass(context, ru.woesss.j2me.installer.MonikaLaunchActivity.class)
 				.setDataAndType(uri, "application/java-archive")
 				.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 	}

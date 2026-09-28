@@ -37,6 +37,11 @@
             <!-- Aow Monika: bỏ các intent-filter mở file .jar/.jad. File từ ngoài vào Aow Monika trước,
                  nhận diện hệ máy rồi mới chuyển sang đây (J2meRuntime.openGameIntent). -->
         </activity>
+        <!-- Aow Monika: màn chuẩn bị + chạy game Java (thay danh sách app / hộp thoại cài). -->
+        <activity
+            android:name="ru.woesss.j2me.installer.MonikaLaunchActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:exported="false" />
         <activity
             android:theme="@style/AppTheme"
             android:name=".config.ConfigActivity"

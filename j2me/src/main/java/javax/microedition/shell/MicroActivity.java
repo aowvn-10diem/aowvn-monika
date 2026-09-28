@@ -343,18 +343,19 @@ public class MicroActivity extends AppCompatActivity {
 
 	public void showExitConfirmation() {
 		AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
-		alertBuilder.setTitle(R.string.CONFIRMATION_REQUIRED)
-				.setMessage(R.string.FORCE_CLOSE_CONFIRMATION)
-				.setPositiveButton(android.R.string.ok, (d, w) -> {
+		// Aow Monika: hỏi nhẹ nhàng, thoát là về thẳng Monika.
+		alertBuilder.setTitle(R.string.monika_exit_title)
+				.setMessage(R.string.monika_exit_message)
+				.setPositiveButton(R.string.monika_exit_ok, (d, w) -> {
 					hideSoftInput();
 					MidletThread.destroyApp();
 				})
-				.setNeutralButton(R.string.action_settings, (d, w) -> {
+				.setNeutralButton(R.string.monika_game_settings, (d, w) -> {
 					hideSoftInput();
 					Config.startApp(this, appName, appPath, true);
 					MidletThread.destroyApp();
 				})
-				.setNegativeButton(android.R.string.cancel, null);
+				.setNegativeButton(R.string.monika_keep_playing, null);
 		alertBuilder.create().show();
 	}
 
