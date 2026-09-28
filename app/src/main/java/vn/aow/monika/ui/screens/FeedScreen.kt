@@ -99,7 +99,7 @@ fun FeedScreen(onOpen: (Post) -> Unit, vm: FeedViewModel = viewModel()) {
                     when {
                         vm.loading -> FluentSpinner()
                         vm.error != null -> FluentEmptyState(
-                            R.drawable.ic_fluent_alert_24_regular, "Không tải được bài viết", vm.error.orEmpty(),
+                            R.drawable.fluent3d_newspaper, "Không tải được bài viết", vm.error.orEmpty(),
                         ) { FluentButton("Thử lại", { vm.load(reset = vm.posts.isEmpty()) }, style = FluentButtonStyle.Outline) }
                         !vm.endReached && vm.posts.isNotEmpty() ->
                             FluentButton("Xem thêm bài", { vm.load(reset = false) }, style = FluentButtonStyle.Subtle)

@@ -10,16 +10,16 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "vn.aow.monika"
+        applicationId = "com.aow.monika"
         minSdk = 26 // Android 8.0+
         targetSdk = 35
         // Tăng versionCode mỗi lần phát hành; app so số này với config để nhắc cập nhật.
         versionCode = 1
         versionName = "0.1.0"
-        // Link file cấu hình từ xa. Đổi được mà không cần sửa code.
+        // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
         buildConfigField(
             "String", "REMOTE_CONFIG_URL",
-            "\"https://raw.githubusercontent.com/aowvn-10diem/aowvn-monika/main/config/monika-config.json\""
+            "\"https://aowvn-monika.aowvn-system.workers.dev/config.json\""
         )
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }

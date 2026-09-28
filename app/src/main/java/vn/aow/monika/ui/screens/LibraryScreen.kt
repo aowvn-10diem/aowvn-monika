@@ -51,6 +51,7 @@ import vn.aow.monika.library.GameStorage
 import vn.aow.monika.library.Importer
 import vn.aow.monika.runner.LaunchResult
 import vn.aow.monika.ui.theme.Fluent
+import vn.aow.monika.ui.theme.Fluent3D
 import vn.aow.monika.ui.theme.FluentButton
 import vn.aow.monika.ui.theme.FluentButtonStyle
 import vn.aow.monika.ui.theme.FluentCard
@@ -104,7 +105,7 @@ fun LibraryScreen() {
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().height(2.dp), color = c.brandForeground, trackColor = c.stroke2)
         if (games.isEmpty()) {
             FluentEmptyState(
-                R.drawable.ic_fluent_games_24_regular, "Chưa có game",
+                R.drawable.fluent3d_video_game, "Chưa có game",
                 "Tải game ở tab Bài viết, hoặc thêm file game (.zip, .rar, .7z, .nds, .gba, .iso…) có sẵn trong máy.\n\nThư mục game: ${GameStorage.games(context).absolutePath}",
             ) { FluentButton("Thêm game từ máy", { picker.launch(arrayOf("*/*")) }, icon = R.drawable.ic_fluent_folder_add_24_regular) }
         }
@@ -196,11 +197,8 @@ private fun GameRow(game: Game, enabled: Boolean, onPlay: () -> Unit, onExtract:
     val waitingExtract = game.needsExtract && game.system == null
     FluentCard(Modifier.fillMaxWidth(), padding = PaddingValues(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(44.dp).clip(FluentRadius.card).background(if (waitingExtract) c.background3 else c.brandSubtle), contentAlignment = Alignment.Center) {
-                Icon(
-                    painterResource(if (waitingExtract) R.drawable.ic_fluent_archive_24_regular else R.drawable.ic_fluent_games_24_filled),
-                    null, Modifier.size(24.dp), tint = if (waitingExtract) c.foreground2 else c.brandForeground,
-                )
+            Box(Modifier.size(48.dp).clip(FluentRadius.card).background(if (waitingExtract) c.background3 else c.brandSubtle), contentAlignment = Alignment.Center) {
+                Fluent3D(if (waitingExtract) R.drawable.fluent3d_package else R.drawable.fluent3d_joystick, Modifier.size(34.dp))
             }
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text(game.name, style = Fluent.type.body1Strong, color = c.foreground1, maxLines = 2, overflow = TextOverflow.Ellipsis)

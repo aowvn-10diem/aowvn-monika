@@ -193,11 +193,15 @@ fun FluentSpinner(modifier: Modifier = Modifier) {
 fun FluentEmptyState(@DrawableRes icon: Int, title: String, message: String, action: (@Composable () -> Unit)? = null) {
     val c = Fluent.colors
     Column(Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Box(Modifier.size(64.dp).clip(FluentRadius.circular).background(c.brandSubtle), contentAlignment = Alignment.Center) {
-            Icon(painterResource(icon), null, Modifier.size(32.dp), tint = c.brandForeground)
-        }
+        Fluent3D(icon, Modifier.size(96.dp))
         Text(title, style = Fluent.type.title3, color = c.foreground1)
         Text(message, style = Fluent.type.body2, color = c.foreground3)
         action?.invoke()
     }
+}
+
+/** Ảnh 3D Fluent Emoji (Microsoft, MIT) — dùng cho minh họa, không dùng làm icon điều khiển. */
+@Composable
+fun Fluent3D(@DrawableRes image: Int, modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Image(painterResource(image), null, modifier)
 }

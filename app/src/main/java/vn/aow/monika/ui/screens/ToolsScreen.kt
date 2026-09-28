@@ -43,6 +43,7 @@ import vn.aow.monika.download.DownloadLink
 import vn.aow.monika.download.LinkResolver
 import vn.aow.monika.runner.ExternalApps
 import vn.aow.monika.ui.theme.Fluent
+import vn.aow.monika.ui.theme.Fluent3D
 import vn.aow.monika.ui.theme.FluentButton
 import vn.aow.monika.ui.theme.FluentButtonStyle
 import vn.aow.monika.ui.theme.FluentCard
@@ -92,6 +93,7 @@ fun ToolsScreen() {
             // 3. Thông báo
             FluentSectionHeader("THÔNG BÁO BÀI MỚI")
             FluentCard(Modifier.fillMaxWidth()) {
+                Fluent3D(R.drawable.fluent3d_bell, Modifier.size(40.dp).padding(bottom = 8.dp))
                 Text(
                     if (subscribed.isEmpty()) "Đang nhận tất cả bài mới. Chọn nhãn để chỉ nhận loại game bạn thích."
                     else "Chỉ nhận bài có nhãn đã chọn.",
@@ -181,7 +183,7 @@ fun ExternalAppDetails(app: ExternalApp, installed: Boolean) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(40.dp).clip(FluentRadius.card).background(c.brandSubtle), contentAlignment = Alignment.Center) {
-                Icon(painterResource(R.drawable.ic_fluent_games_24_regular), null, Modifier.size(22.dp), tint = c.brandForeground)
+                Fluent3D(R.drawable.fluent3d_toolbox, Modifier.size(28.dp))
             }
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text(app.name, style = Fluent.type.body1Strong, color = c.foreground1)

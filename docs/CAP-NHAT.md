@@ -4,7 +4,7 @@
 
 Sửa file, **tăng `configVersion` lên 1**, commit và push lên `main`. App của user sẽ lấy config mới khi mở app hoặc khi bấm "Cập nhật cấu hình" ở tab Trình chạy.
 
-> Điều kiện: app đọc config tại `raw.githubusercontent.com/aowvn-10diem/aowvn-monika/main/config/monika-config.json`. Link này chỉ hoạt động khi repo để **public**. Muốn giữ repo private thì đổi `REMOTE_CONFIG_URL` trong `app/build.gradle.kts` sang nơi khác (Cloudflare Pages, Gist...).
+> App đọc config tại `https://aowvn-monika.aowvn-system.workers.dev/config.json` (Cloudflare Worker + KV, repo giữ private). Workflow `sync-config.yml` tự đẩy file lên khi push main; cần secret `CLOUDFLARE_API_TOKEN` (quyền Workers KV Storage: Edit). Mã Worker: `cloudflare/worker.js`.
 
 ### 1. Thêm/sửa link tải app ngoài (Kirikiroid2, JoiPlay...)
 
@@ -56,12 +56,13 @@ Sửa khối `app`: `latestVersionCode`, `latestVersionName`, `apkUrl`, `changel
 ### Tạo khóa ký lần đầu (chỉ làm 1 lần, GIỮ KỸ, mất là user phải gỡ app cài lại)
 
 ```bash
-keytool -genkey -v -keystore monika.jks -keyalg RSA -keysize 2048 -validity 10000 -alias monika
-base64 -w0 monika.jks   # copy kết quả
+# Đã tạo sẵn khóa chung AowVN (alias: aowvn). Chỉ tạo mới nếu mất khóa:
+keytool -genkeypair -storetype PKCS12 -keystore aowvn-release.jks -keyalg RSA -keysize 4096 -validity 36500 -alias aowvn
+base64 -w0 aowvn-release.jks   # copy kết quả
 ```
 
 Vào GitHub repo > Settings > Secrets and variables > Actions, thêm 4 secret:
-`MONIKA_KEYSTORE_BASE64`, `MONIKA_KEYSTORE_PASSWORD`, `MONIKA_KEY_ALIAS` (= monika), `MONIKA_KEY_PASSWORD`.
+`MONIKA_KEYSTORE_BASE64`, `MONIKA_KEYSTORE_PASSWORD`, `MONIKA_KEY_ALIAS` (= aowvn), `MONIKA_KEY_PASSWORD`.
 
 ## C. Sửa lỗi thường gặp
 

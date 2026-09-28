@@ -69,7 +69,7 @@ fun PostScreen(postId: String, onBack: () -> Unit) {
         when {
             result == null -> Box(Modifier.fillMaxSize(), Alignment.Center) { FluentSpinner() }
             result.isFailure -> FluentEmptyState(
-                R.drawable.ic_fluent_alert_24_regular, "Không mở được bài", result.exceptionOrNull()?.message.orEmpty(),
+                R.drawable.fluent3d_newspaper, "Không mở được bài", result.exceptionOrNull()?.message.orEmpty(),
             ) { FluentButton("Quay lại", onBack, style = FluentButtonStyle.Outline) }
             else -> PostContent(result.getOrThrow())
         }
