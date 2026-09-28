@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Monika" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Monika" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/cream</item>
+    </style>
     <style name="Theme.Monika.Fullscreen" parent="android:Theme.Material.NoActionBar.Fullscreen">
         <item name="android:windowBackground">@android:color/black</item>
     </style>
-    <color name="brand">#E8457C</color>
+    <color name="brand">#FF7F78</color>
+    <color name="cream">#F4F5F2</color>
 </resources>

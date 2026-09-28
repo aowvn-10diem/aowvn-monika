@@ -54,6 +54,8 @@ data class SystemDef(
     val externalApp: String? = null,
     val extensions: List<String> = emptyList(),
     val labels: List<String> = emptyList(),
+    /** Bố cục tay cầm ảo: gb | gba | nds | ps | rpg. Null = tự chọn theo lõi. */
+    val pad: String? = null,
 )
 
 @Serializable
@@ -68,6 +70,8 @@ data class CoreDef(
     val version: String,
     val url: String,
     val systemFiles: String? = null,
+    /** Tỉ lệ khung hình (rộng/cao) để xếp màn chơi dọc. Null = dùng mặc định theo lõi. */
+    val aspectRatio: Float? = null,
 )
 
 @Serializable

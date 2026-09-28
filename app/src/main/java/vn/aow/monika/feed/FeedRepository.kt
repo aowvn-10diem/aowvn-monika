@@ -34,10 +34,12 @@ class FeedRepository(
 
     fun cached(id: String): Post? = cache[id]
 
-    suspend fun fetch(label: String? = null, startIndex: Int = 1, max: Int? = null): List<Post> {
+    /** @param query tìm kiếm toàn văn (tham số q của Blogger). */
+    suspend fun fetch(label: String? = null, startIndex: Int = 1, max: Int? = null, query: String? = null): List<Post> {
         val feed = configRepo.current.feed
         val base = feed.url.trimEnd('/') + (label?.let { "/-/" + Uri.encode(it) } ?: "")
-        val url = "$base?alt=json&orderby=published&start-index=$startIndex&max-results=${max ?: feed.pageSize}"
+        val q = query?.takeIf { it.isNotBlank() }?.let { "&q=" + Uri.encode(it) } ?: ""
+        val url = "$base?alt=json&orderby=published&start-index=$startIndex&max-results=${max ?: feed.pageSize}$q"
         val root = getJson(url).jsonObject["feed"]!!.jsonObject
         val entries = root["entry"] as? JsonArray ?: return emptyList()
         return entries.map { parseEntry(it.jsonObject) }.onEach { cache[it.id] = it }

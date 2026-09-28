@@ -8,45 +8,48 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.DrawableRes
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import vn.aow.monika.R
-import vn.aow.monika.ui.screens.FeedScreen
+import vn.aow.monika.ui.screens.DownloadsScreen
+import vn.aow.monika.ui.screens.GamesScreen
+import vn.aow.monika.ui.screens.HomeScreen
 import vn.aow.monika.ui.screens.LibraryScreen
 import vn.aow.monika.ui.screens.PostScreen
-import vn.aow.monika.ui.screens.ToolsScreen
-import vn.aow.monika.ui.theme.Fluent
-import vn.aow.monika.ui.theme.FluentDivider
+import vn.aow.monika.ui.screens.SettingsScreen
+import vn.aow.monika.ui.theme.DockItem
+import vn.aow.monika.ui.theme.FloatingDock
+import vn.aow.monika.ui.theme.Monika
+import vn.aow.monika.ui.theme.MonikaMotion
 import vn.aow.monika.ui.theme.MonikaTheme
+import vn.aow.monika.ui.theme.dockOffset
 
 class MainActivity : ComponentActivity() {
-    /** Yêu cầu mở từ thông báo: mã bài viết hoặc "library". */
+    /** Yêu cầu mở từ thông báo: mã bài viết hoặc "emulator". */
     private val deepLink = mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,7 +67,7 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIntent(intent: Intent?) {
         intent?.getStringExtra(EXTRA_POST_ID)?.let { deepLink.value = "post/$it" }
-        if (intent?.getBooleanExtra(EXTRA_OPEN_LIBRARY, false) == true) deepLink.value = Routes.LIBRARY
+        if (intent?.getBooleanExtra(EXTRA_OPEN_LIBRARY, false) == true) deepLink.value = Routes.EMULATOR
     }
 
     private fun askPermissions() {
@@ -84,60 +87,99 @@ class MainActivity : ComponentActivity() {
 }
 
 object Routes {
-    const val FEED = "feed"
-    const val LIBRARY = "library"
-    const val TOOLS = "tools"
+    const val HOME = "home"
+    const val GAMES = "games"
+    const val EMULATOR = "emulator"
+    const val DOWNLOADS = "downloads"
+    const val SETTINGS = "settings"
     const val POST = "post/{id}"
+    val tabs = listOf(HOME, GAMES, EMULATOR, DOWNLOADS)
 }
 
-private data class Tab(val route: String, val label: String, @DrawableRes val icon: Int, @DrawableRes val iconSelected: Int)
-
-private val tabs = listOf(
-    Tab(Routes.FEED, "Bài viết", R.drawable.ic_fluent_news_24_regular, R.drawable.ic_fluent_news_24_filled),
-    Tab(Routes.LIBRARY, "Thư viện", R.drawable.ic_fluent_games_24_regular, R.drawable.ic_fluent_games_24_filled),
-    Tab(Routes.TOOLS, "Trình chạy", R.drawable.ic_fluent_wrench_24_regular, R.drawable.ic_fluent_wrench_24_filled),
+private val dockItems = listOf(
+    DockItem("Trang chủ", R.drawable.ic_fluent_home_24_regular, R.drawable.ic_fluent_home_24_filled),
+    DockItem("Game", R.drawable.ic_fluent_games_24_regular, R.drawable.ic_fluent_games_24_filled),
+    DockItem("Giả lập", R.drawable.ic_fluent_xbox_controller_24_regular, R.drawable.ic_fluent_xbox_controller_24_filled),
+    DockItem("Tải xuống", R.drawable.ic_fluent_arrow_download_24_regular, R.drawable.ic_fluent_arrow_download_24_filled),
 )
+
+/** Điều hướng tab qua menu nổi, giữ trạng thái từng tab. */
+fun NavHostController.goTab(route: String) = navigate(route) {
+    popUpTo(graph.findStartDestination().id) { saveState = true }
+    launchSingleTop = true
+    restoreState = true
+}
 
 @Composable
 private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
     val nav = rememberNavController()
     val current by nav.currentBackStackEntryAsState()
-    val c = Fluent.colors
+    val route = current?.destination?.route
+    val motion = Monika.motion
 
     LaunchedEffect(deepLink) {
         deepLink ?: return@LaunchedEffect
-        nav.navigate(deepLink)
+        if (deepLink in Routes.tabs) nav.goTab(deepLink) else nav.navigate(deepLink)
         onDeepLinkHandled()
     }
 
-    Column(Modifier.fillMaxSize().background(c.background2)) {
-        NavHost(nav, startDestination = Routes.FEED, modifier = Modifier.weight(1f)) {
-            composable(Routes.FEED) { FeedScreen(onOpen = { nav.navigate("post/${it.id}") }) }
-            composable(Routes.POST) { entry -> PostScreen(entry.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
-            composable(Routes.LIBRARY) { LibraryScreen() }
-            composable(Routes.TOOLS) { ToolsScreen() }
-        }
-        // Thanh tab dưới kiểu Fluent: nền trung tính, viền trên, mục chọn đổi icon đặc + màu thương hiệu.
-        FluentDivider()
-        Row(Modifier.fillMaxWidth().background(c.background1).navigationBarsPadding().height(56.dp)) {
-            tabs.forEach { tab ->
-                val selected = current?.destination?.route == tab.route
-                Column(
-                    Modifier.weight(1f).fillMaxHeight().clickable(role = Role.Tab) {
-                        nav.navigate(tab.route) {
-                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    val tint = if (selected) c.brandForeground else c.foreground3
-                    Icon(painterResource(if (selected) tab.iconSelected else tab.icon), null, Modifier.size(24.dp), tint = tint)
-                    Text(tab.label, style = Fluent.type.caption2, color = tint)
-                }
+    Box(Modifier.fillMaxSize()) {
+        NavHost(
+            nav, startDestination = Routes.HOME, modifier = Modifier.fillMaxSize(),
+            enterTransition = { enter(motion) }, exitTransition = { exit(motion) },
+            popEnterTransition = { enter(motion) }, popExitTransition = { exit(motion) },
+        ) {
+            composable(Routes.HOME) {
+                HomeScreen(
+                    onOpenPost = { nav.navigate("post/${it.id}") },
+                    onGo = { r -> if (r in Routes.tabs) nav.goTab(r) else nav.navigate(r) },
+                )
             }
+            composable(Routes.GAMES) { GamesScreen(onOpen = { nav.navigate("post/${it.id}") }) }
+            composable(Routes.EMULATOR) { LibraryScreen(onSettings = { nav.navigate(Routes.SETTINGS) }) }
+            composable(Routes.DOWNLOADS) { DownloadsScreen() }
+            composable(Routes.SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
+            composable(Routes.POST) { entry -> PostScreen(entry.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
         }
+        // Menu nổi: chỉ hiện ở 4 tab chính; đọc bài / cài đặt thì trượt xuống ẩn đi.
+        FloatingDock(
+            items = dockItems,
+            selected = Routes.tabs.indexOf(route),
+            onSelect = { nav.goTab(Routes.tabs[it]) },
+            modifier = Modifier.align(Alignment.BottomCenter).dockOffset(route in Routes.tabs),
+        )
+    }
+}
+
+private fun tabIndex(entry: NavBackStackEntry) = Routes.tabs.indexOf(entry.destination.route)
+
+/**
+ * Chuyển cảnh theo cấu hình máy:
+ * - Tab ↔ tab: trượt ngang theo hướng tab (máy khỏe) / mờ dần (máy yếu).
+ * - Mở trang con (bài viết, cài đặt): trượt lên + phóng nhẹ.
+ */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.enter(m: MonikaMotion): EnterTransition {
+    if (!m.enabled) return EnterTransition.None
+    val from = tabIndex(initialState)
+    val to = tabIndex(targetState)
+    val fade = fadeIn(tween(m.normal, easing = m.easing))
+    if (!m.rich) return fade
+    return when {
+        from >= 0 && to >= 0 -> fade + slideInHorizontally(tween(m.slow, easing = m.easing)) { w -> if (to > from) w / 6 else -w / 6 }
+        to < 0 -> fade + slideInVertically(tween(m.slow, easing = m.easing)) { h -> h / 10 } + scaleIn(tween(m.slow, easing = m.easing), 0.96f)
+        else -> fade
+    }
+}
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.exit(m: MonikaMotion): ExitTransition {
+    if (!m.enabled) return ExitTransition.None
+    val from = tabIndex(initialState)
+    val to = tabIndex(targetState)
+    val fade = fadeOut(tween(m.fast, easing = m.easing))
+    if (!m.rich) return fade
+    return when {
+        from >= 0 && to >= 0 -> fade + slideOutHorizontally(tween(m.slow, easing = m.easing)) { w -> if (to > from) -w / 6 else w / 6 }
+        from < 0 -> fade + slideOutVertically(tween(m.normal, easing = m.easing)) { h -> h / 10 }
+        else -> fade
     }
 }

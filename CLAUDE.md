@@ -10,7 +10,9 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 - Thêm hệ/trình chạy: sửa config + (nếu runner mới) thêm nhánh trong `runner/GameLauncher.kt`. Cập nhật `ConfigTest` nếu thêm loại runner.
 - Tất cả thành phần tạo trong `AppGraph.kt` (DI thủ công, không thêm Hilt/Koin).
 - Phiên bản thư viện chỉ sửa trong `gradle/libs.versions.toml`.
-- Giao diện theo Fluent 2: màn hình chỉ dùng token trong `ui/theme/Theme.kt` (Fluent.colors / Fluent.type / FluentRadius) và thành phần trong `ui/theme/FluentComponents.kt`. Icon: Fluent System Icons (MIT) chép lẻ vào `res/drawable/ic_fluent_*` (không thêm cả gói 30MB).
+- Giao diện theo design spec "Aow Monika" (nền cream, charcoal, gradient cam–hồng–tím, bo lớn, menu nổi `ui/theme/FloatingDock.kt`). Màn hình chỉ dùng token `Monika.colors/type/motion`, `Radius`, `primaryGradient()` trong `ui/theme/Theme.kt` và thành phần trong `ui/theme/Components.kt`. Font Manrope (OFL) `res/font/manrope.ttf`. Icon: Fluent System Icons (MIT) chép lẻ `res/drawable/ic_fluent_*`; minh họa 3D Fluent Emoji `res/drawable-nodpi/fluent3d_*`.
+- Chuyển động tự điều chỉnh: `PerformanceTier` FULL/LITE/OFF (`detectTier`: RAM < 3GB hoặc < 6 nhân → LITE; tỉ lệ hoạt ảnh Android = 0 → OFF; user chọn được trong Cài đặt). Mọi animation phải lấy thời lượng từ `Monika.motion`.
+- Màn chơi game: `runner/RetroActivity.kt` (GLRetroView) + `runner/GamePadOverlay.kt` (Compose nổi). Phím theo vị trí Android: dưới=BUTTON_A, phải=BUTTON_B, trái=X, trên=Y.
 - Không bao giờ commit keystore/mật khẩu ký; chỉ dùng GitHub Secrets.
 
 ## Sự thật đã xác minh

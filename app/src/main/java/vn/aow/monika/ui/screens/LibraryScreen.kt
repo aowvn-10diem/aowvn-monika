@@ -10,13 +10,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -33,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,33 +56,39 @@ import vn.aow.monika.library.Game
 import vn.aow.monika.library.GameStorage
 import vn.aow.monika.library.Importer
 import vn.aow.monika.runner.LaunchResult
-import vn.aow.monika.ui.theme.Fluent
-import vn.aow.monika.ui.theme.Fluent3D
-import vn.aow.monika.ui.theme.FluentButton
-import vn.aow.monika.ui.theme.FluentButtonStyle
-import vn.aow.monika.ui.theme.FluentCard
-import vn.aow.monika.ui.theme.FluentEmptyState
-import vn.aow.monika.ui.theme.FluentIconButton
-import vn.aow.monika.ui.theme.FluentRadius
-import vn.aow.monika.ui.theme.FluentTopBar
+import vn.aow.monika.ui.theme.ChipBar
+import vn.aow.monika.ui.theme.CircleButton
+import vn.aow.monika.ui.theme.DarkButton
+import vn.aow.monika.ui.theme.DockClearance
+import vn.aow.monika.ui.theme.EmptyState
+import vn.aow.monika.ui.theme.GradientButton
+import vn.aow.monika.ui.theme.Illustration
+import vn.aow.monika.ui.theme.Monika
+import vn.aow.monika.ui.theme.MonikaCard
+import vn.aow.monika.ui.theme.MonikaHeader
+import vn.aow.monika.ui.theme.Radius
+import vn.aow.monika.ui.theme.Screen
+import vn.aow.monika.ui.theme.Tag
+import vn.aow.monika.ui.theme.primaryGradient
 
+/** Màn "Giả lập": thư viện game trong máy, lọc theo hệ, tiếp tục chơi. */
 @Composable
-fun LibraryScreen() {
+fun LibraryScreen(onSettings: () -> Unit) {
     val context = LocalContext.current
     val activity = context as Activity
     val scope = rememberCoroutineScope()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val c = Fluent.colors
+    val c = Monika.colors
     var games by remember { mutableStateOf<List<Game>>(emptyList()) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
+    var filter by remember { mutableStateOf<String?>(null) }
     var needApp by remember { mutableStateOf<ExternalApp?>(null) }
     var info by remember { mutableStateOf<String?>(null) }
     var toDelete by remember { mutableStateOf<Game?>(null) }
     var toExtract by remember { mutableStateOf<Game?>(null) }
     var password by remember { mutableStateOf("") }
 
-    // Tải lại danh sách mỗi khi quay lại màn hình (vd. vừa tải game xong).
     LaunchedEffect(reloadKey) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             games = withContext(Dispatchers.IO) { AppGraph.library.list() }
@@ -98,118 +110,169 @@ fun LibraryScreen() {
         }
     }
 
-    Column(Modifier.fillMaxSize().background(c.background2)) {
-        FluentTopBar("Thư viện", subtitle = "${games.size} game", actions = {
-            FluentIconButton(R.drawable.ic_fluent_folder_add_24_regular, "Thêm game từ máy", { picker.launch(arrayOf("*/*")) })
-        })
-        if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().height(2.dp), color = c.brandForeground, trackColor = c.stroke2)
-        if (games.isEmpty()) {
-            FluentEmptyState(
-                R.drawable.fluent3d_video_game, "Chưa có game",
-                "Tải game ở tab Bài viết, hoặc thêm file game (.zip, .rar, .7z, .nds, .gba, .iso…) có sẵn trong máy.\n\nThư mục game: ${GameStorage.games(context).absolutePath}",
-            ) { FluentButton("Thêm game từ máy", { picker.launch(arrayOf("*/*")) }, icon = R.drawable.ic_fluent_folder_add_24_regular) }
+    fun play(game: Game) {
+        when (val r = AppGraph.launcher.launch(activity, game)) {
+            is LaunchResult.NeedApp -> needApp = r.app
+            is LaunchResult.OpenedApp -> { AppGraph.prefs.markPlayed(game.dir.path); info = "Đã mở ${r.app.name}. Trong app đó, chọn thư mục:\n${r.gamePath}" }
+            is LaunchResult.Failed -> info = r.message
+            LaunchResult.Started -> AppGraph.prefs.markPlayed(game.dir.path)
         }
-        LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(games, key = { it.dir.path }) { game ->
-                GameRow(
-                    game = game,
-                    enabled = !busy,
-                    onPlay = {
-                        when (val r = AppGraph.launcher.launch(activity, game)) {
-                            is LaunchResult.NeedApp -> needApp = r.app
-                            is LaunchResult.OpenedApp -> info = "Đã mở ${r.app.name}. Trong app đó, chọn thư mục:\n${r.gamePath}"
-                            is LaunchResult.Failed -> info = r.message
-                            LaunchResult.Started -> Unit
-                        }
-                    },
-                    onExtract = { password = ""; toExtract = game },
-                    onDelete = { toDelete = game },
-                )
+    }
+
+    val systems = games.mapNotNull { it.system?.name }.distinct()
+    val shown = games.filter { filter == null || it.system?.name == filter }
+    val lastPlayed = games.filter { it.system != null }.maxByOrNull { AppGraph.prefs.lastPlayed(it.dir.path) }
+        ?.takeIf { AppGraph.prefs.lastPlayed(it.dir.path) > 0 }
+
+    Screen {
+      Column(Modifier.fillMaxSize()) {
+        MonikaHeader(
+            "Giả lập", subtitle = "${games.size} game trong máy",
+            left = { CircleButton(R.drawable.ic_fluent_settings_24_regular, "Cài đặt giả lập", onSettings) },
+            right = { CircleButton(R.drawable.ic_fluent_folder_add_24_regular, "Thêm game từ máy", { picker.launch(arrayOf("*/*")) }) },
+        )
+        LazyVerticalGrid(
+            GridCells.Fixed(2), Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance),
+            horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (busy) item(span = { GridItemSpan(2) }) {
+                LinearProgressIndicator(Modifier.fillMaxWidth().clip(Radius.pill), color = c.accentCoral, trackColor = c.track)
+            }
+            if (systems.size > 1) item(span = { GridItemSpan(2) }) {
+                ChipBar(listOf<String?>(null) + systems, filter, { it ?: "Tất cả" }, { filter = it }, accent = true, contentPadding = PaddingValues(0.dp))
+            }
+            lastPlayed?.let { g ->
+                item(span = { GridItemSpan(2) }) { Text("Tiếp tục chơi", style = Monika.type.sectionTitle, color = c.text) }
+                item(span = { GridItemSpan(2) }) { ContinueCard(g) { play(g) } }
+            }
+            if (games.isEmpty()) item(span = { GridItemSpan(2) }) {
+                EmptyState(
+                    R.drawable.fluent3d_video_game, "Chưa có game",
+                    "Tải game ở tab Game, hoặc thêm file (.zip .rar .7z .nds .gba .iso…) có sẵn trong máy.\n\nThư mục: ${GameStorage.games(context).absolutePath}",
+                ) { GradientButton("Thêm game từ máy", { picker.launch(arrayOf("*/*")) }, icon = R.drawable.ic_fluent_folder_add_24_regular) }
+            } else item(span = { GridItemSpan(2) }) {
+                Text("Thư viện", style = Monika.type.sectionTitle, color = c.text, modifier = Modifier.padding(top = 4.dp))
+            }
+            items(shown, key = { it.dir.path }) { g ->
+                GameTile(g, enabled = !busy, onPlay = { play(g) }, onExtract = { password = ""; toExtract = g }, onDelete = { toDelete = g })
             }
         }
+      }
     }
 
     needApp?.let { app ->
         AlertDialog(
             onDismissRequest = { needApp = null },
-            confirmButton = { FluentButton("Đóng", { needApp = null }, style = FluentButtonStyle.Subtle) },
-            title = { Text("Cần cài ${app.name}", style = Fluent.type.title3) },
+            confirmButton = { DarkButton("Đóng", { needApp = null }) },
+            title = { Text("Cần cài ${app.name}", style = Monika.type.sectionTitle) },
             text = { ExternalAppDetails(app, installed = false) },
+            containerColor = c.surface, shape = Radius.large,
         )
     }
     info?.let {
         AlertDialog(
             onDismissRequest = { info = null },
-            confirmButton = { FluentButton("OK", { info = null }) },
-            text = { Text(it, style = Fluent.type.body2) },
+            confirmButton = { GradientButton("OK", { info = null }, height = 44.dp) },
+            text = { Text(it, style = Monika.type.body, color = c.text) },
+            containerColor = c.surface, shape = Radius.large,
         )
     }
     toExtract?.let { game ->
         AlertDialog(
             onDismissRequest = { toExtract = null },
-            title = { Text("Giải nén \"${game.name}\"", style = Fluent.type.title3) },
+            title = { Text("Giải nén \"${game.name}\"", style = Monika.type.cardTitle) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Nhập mật khẩu nếu có (thường ghi cuối bài viết). App đã tự thử mật khẩu quen dùng của AowVN.", style = Fluent.type.body2)
-                    OutlinedTextField(password, { password = it }, label = { Text("Mật khẩu") }, singleLine = true)
+                    Text("Nhập mật khẩu nếu có (thường ghi cuối bài). App đã tự thử mật khẩu quen dùng của AowVN.", style = Monika.type.body, color = c.textSecondary)
+                    OutlinedTextField(password, { password = it }, label = { Text("Mật khẩu") }, singleLine = true, shape = Radius.small)
                 }
             },
             confirmButton = {
-                FluentButton("Giải nén", {
+                GradientButton("Giải nén", {
                     val target = game
                     toExtract = null
                     busy = true
                     scope.launch {
-                        val passwords = listOf(password) + AppGraph.config.current.archivePasswords
-                        val r = withContext(Dispatchers.IO) { Importer.extractInPlace(target.dir, passwords) }
+                        val r = withContext(Dispatchers.IO) { Importer.extractInPlace(target.dir, listOf(password) + AppGraph.config.current.archivePasswords) }
                         busy = false
-                        if (r.error == null) Toast.makeText(context, "Giải nén xong", Toast.LENGTH_SHORT).show()
-                        else info = r.error
+                        if (r.error == null) Toast.makeText(context, "Giải nén xong", Toast.LENGTH_SHORT).show() else info = r.error
                         reloadKey++
                     }
-                })
+                }, height = 44.dp)
             },
-            dismissButton = { FluentButton("Hủy", { toExtract = null }, style = FluentButtonStyle.Subtle) },
+            dismissButton = { DarkButton("Hủy", { toExtract = null }) },
+            containerColor = c.surface, shape = Radius.large,
         )
     }
     toDelete?.let { game ->
         AlertDialog(
             onDismissRequest = { toDelete = null },
-            title = { Text("Xóa game?", style = Fluent.type.title3) },
-            text = { Text("Xóa \"${game.name}\" khỏi máy. Dữ liệu lưu game trong app vẫn giữ.", style = Fluent.type.body2) },
+            title = { Text("Xóa game?", style = Monika.type.cardTitle) },
+            text = { Text("Xóa \"${game.name}\" khỏi máy. Dữ liệu lưu game vẫn giữ.", style = Monika.type.body, color = c.textSecondary) },
             confirmButton = {
-                FluentButton("Xóa", {
+                GradientButton("Xóa", {
                     scope.launch {
                         withContext(Dispatchers.IO) { AppGraph.library.delete(game) }
                         toDelete = null
                         reloadKey++
                     }
-                })
+                }, height = 44.dp)
             },
-            dismissButton = { FluentButton("Hủy", { toDelete = null }, style = FluentButtonStyle.Subtle) },
+            dismissButton = { DarkButton("Hủy", { toDelete = null }) },
+            containerColor = c.surface, shape = Radius.large,
         )
     }
 }
 
+/** Thẻ "Tiếp tục chơi": charcoal + minh họa 3D + nút play gradient. */
 @Composable
-private fun GameRow(game: Game, enabled: Boolean, onPlay: () -> Unit, onExtract: () -> Unit, onDelete: () -> Unit) {
-    val c = Fluent.colors
-    val waitingExtract = game.needsExtract && game.system == null
-    FluentCard(Modifier.fillMaxWidth(), padding = PaddingValues(12.dp)) {
+private fun ContinueCard(g: Game, onPlay: () -> Unit) {
+    MonikaCard(Modifier.fillMaxWidth(), dark = true, shape = Radius.hero, padding = PaddingValues(20.dp), onClick = onPlay) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(48.dp).clip(FluentRadius.card).background(if (waitingExtract) c.background3 else c.brandSubtle), contentAlignment = Alignment.Center) {
-                Fluent3D(if (waitingExtract) R.drawable.fluent3d_package else R.drawable.fluent3d_joystick, Modifier.size(34.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(g.name, style = Monika.type.sectionTitle, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    g.system?.let { Tag(it.name, onDark = true) }
+                    Tag("Việt hóa", onDark = true)
+                }
             }
-            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(game.name, style = Fluent.type.body1Strong, color = c.foreground1, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(
-                    game.system?.name ?: if (game.needsExtract) "Chưa giải nén" else "Chưa nhận diện",
-                    style = Fluent.type.caption1, color = c.foreground3,
-                )
+            Box(Modifier.size(64.dp).clip(Radius.pill).background(primaryGradient()), contentAlignment = Alignment.Center) {
+                Icon(painterResource(R.drawable.ic_fluent_play_24_filled), "Chơi", Modifier.size(30.dp), tint = Color.White)
             }
-            FluentIconButton(R.drawable.ic_fluent_delete_24_regular, "Xóa", onDelete, tint = c.foreground3)
-            if (waitingExtract) FluentButton("Giải nén", onExtract, style = FluentButtonStyle.Outline, enabled = enabled)
-            else FluentButton("Chơi", onPlay, icon = R.drawable.ic_fluent_play_24_filled, enabled = enabled)
         }
+    }
+}
+
+private val tileGradients = listOf(
+    Brush.linearGradient(listOf(Color(0xFFFFB052), Color(0xFFE95CC8))),
+    Brush.linearGradient(listOf(Color(0xFF8076FF), Color(0xFF628DF4))),
+    Brush.linearGradient(listOf(Color(0xFF63D68A), Color(0xFF66CFF3))),
+    Brush.linearGradient(listOf(Color(0xFFFF806E), Color(0xFFFFC95C))),
+)
+
+/** Ô game: ảnh bìa gradient + minh họa 3D (chưa có ảnh bìa thật), tên, hệ máy. */
+@Composable
+private fun GameTile(g: Game, enabled: Boolean, onPlay: () -> Unit, onExtract: () -> Unit, onDelete: () -> Unit) {
+    val c = Monika.colors
+    val waiting = g.needsExtract && g.system == null
+    Column {
+        Box(
+            Modifier.fillMaxWidth().aspectRatio(0.8f).clip(Radius.medium)
+                .background(if (waiting) Brush.linearGradient(listOf(c.surfaceSoft, c.track)) else tileGradients[(g.name.hashCode() and 0x7fffffff) % tileGradients.size]),
+            contentAlignment = Alignment.Center,
+        ) {
+            Illustration(if (waiting) R.drawable.fluent3d_package else R.drawable.fluent3d_joystick, Modifier.size(72.dp))
+            Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+                CircleButton(R.drawable.ic_fluent_delete_24_regular, "Xóa", onDelete, style = vn.aow.monika.ui.theme.CircleStyle.Glass, size = 36.dp)
+            }
+            Box(Modifier.align(Alignment.BottomCenter).padding(10.dp).fillMaxWidth()) {
+                if (waiting) DarkButton("Giải nén", onExtract, Modifier.fillMaxWidth(), enabled = enabled)
+                else GradientButton("Chơi", onPlay, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_play_24_filled, enabled = enabled, height = 44.dp)
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(g.name, style = Monika.type.bodyStrong, color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(g.system?.name ?: if (g.needsExtract) "Chưa giải nén" else "Chưa nhận diện", style = Monika.type.caption, color = c.textSecondary)
     }
 }

@@ -38,7 +38,7 @@ class GameLauncher(private val configRepo: ConfigRepository) {
         return when (system.runner) {
             "libretro" -> {
                 val core = system.core ?: return LaunchResult.Failed("Cấu hình hệ ${system.name} thiếu 'core'.")
-                RetroActivity.start(activity, core, entry)
+                RetroActivity.start(activity, core, entry, system.name, game.name, system.pad)
                 LaunchResult.Started
             }
             "web" -> {

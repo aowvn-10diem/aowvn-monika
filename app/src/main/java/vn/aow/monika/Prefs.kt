@@ -20,4 +20,18 @@ class Prefs(context: Context) {
     fun markToolDownload(id: Long) = sp.edit().putBoolean("tool_$id", true).apply()
     fun isToolDownload(id: Long) = sp.getBoolean("tool_$id", false)
     fun clearDownload(id: Long) = sp.edit().remove("tool_$id").apply()
+
+    /** Mức hiệu ứng: "auto" (tự theo cấu hình máy) | "FULL" | "LITE" | "OFF". */
+    var motionMode: String
+        get() = sp.getString("motion_mode", "auto")!!
+        set(value) = sp.edit().putString("motion_mode", value).apply()
+
+    /** Lần chơi gần nhất của từng game (theo đường dẫn thư mục). */
+    fun markPlayed(gameDir: String) = sp.edit().putLong("played_$gameDir", System.currentTimeMillis()).apply()
+    fun lastPlayed(gameDir: String): Long = sp.getLong("played_$gameDir", 0L)
+
+    /** Độ mờ tay cầm ảo (0.2–1.0). */
+    var padOpacity: Float
+        get() = sp.getFloat("pad_opacity", 0.65f)
+        set(value) = sp.edit().putFloat("pad_opacity", value).apply()
 }
