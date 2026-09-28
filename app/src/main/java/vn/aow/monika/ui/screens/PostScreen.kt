@@ -1,5 +1,7 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.community.Community
+import vn.aow.monika.community.CommunityLink
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -84,6 +86,9 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
     val links = remember(post, cfg) { LinkResolver.extract(post.contentHtml, cfg.downloadHosts) }
     val html = remember(post, c) { renderHtml(post, c) }
     var showLinks by remember { mutableStateOf(false) }
+    // Link FB / Discord trong bài (thường của nhóm dịch; bản dịch cần vào Discord để lấy file / báo lỗi).
+    val community = remember(post) { Community.extract(post.contentHtml) }
+    var showCommunity by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize()) {
         // Nội dung đầy đủ (ảnh lớn + tiêu đề + bài) trong WebView, CSS theo hệ thiết kế Monika.
@@ -97,6 +102,7 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
             CircleButton(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại", onBack, style = CircleStyle.Glass)
             Box(Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (community.isNotEmpty()) CircleButton(R.drawable.ic_fluent_people_community_24_regular, "Nhóm dịch", { showCommunity = true }, style = CircleStyle.Glass)
                 CircleButton(R.drawable.ic_fluent_share_24_regular, "Chia sẻ", {
                     context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${post.title}\n${post.url}"), "Chia sẻ"))
                 }, style = CircleStyle.Glass)
@@ -121,6 +127,21 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
                     icon = R.drawable.ic_fluent_arrow_download_24_regular,
                     subtitle = direct?.let { listOf(it.label, it.hostName).filter(String::isNotBlank).distinct().joinToString(" · ") } ?: "Mở trình duyệt",
                 )
+            }
+        }
+    }
+
+    if (showCommunity) {
+        ModalBottomSheet(onDismissRequest = { showCommunity = false }, containerColor = c.surface) {
+            Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Nhóm dịch & cộng đồng", style = Monika.type.sectionTitle, color = c.text)
+                Text("Link trong bài. Có app Facebook / Discord thì mở thẳng bằng app.", style = Monika.type.caption, color = c.textSecondary)
+                community.forEach { l ->
+                    val title = "${l.kind.label} · ${Community.shortName(l)}"
+                    val icon = if (l.kind == CommunityLink.Kind.DISCORD) R.drawable.ic_fluent_chat_multiple_24_regular else R.drawable.ic_fluent_people_community_24_regular
+                    if (l.kind == CommunityLink.Kind.DISCORD) GradientButton(title, { showCommunity = false; Community.open(context, l.url) }, Modifier.fillMaxWidth(), icon = icon)
+                    else DarkButton(title, { showCommunity = false; Community.open(context, l.url) }, Modifier.fillMaxWidth(), icon = icon)
+                }
             }
         }
     }

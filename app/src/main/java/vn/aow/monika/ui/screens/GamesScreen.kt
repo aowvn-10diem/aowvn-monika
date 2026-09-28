@@ -25,6 +25,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -101,11 +103,13 @@ class FeedViewModel : ViewModel() {
 }
 
 @Composable
-fun GamesScreen(onOpen: (Post) -> Unit, vm: FeedViewModel = viewModel()) {
+fun GamesScreen(onOpen: (Post) -> Unit, focusSearch: Boolean = false, vm: FeedViewModel = viewModel()) {
     val c = Monika.colors
     val cfg by AppGraph.config.config.collectAsState()
     var text by remember { mutableStateOf(vm.query) }
     LaunchedEffect(Unit) { if (vm.posts.isEmpty() && !vm.loading) vm.load(reset = true) }
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(focusSearch) { if (focusSearch) runCatching { focus.requestFocus() } }
 
     Screen {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DockClearance), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -129,7 +133,7 @@ fun GamesScreen(onOpen: (Post) -> Unit, vm: FeedViewModel = viewModel()) {
                                 textStyle = Monika.type.body.copy(color = c.text), cursorBrush = SolidColor(c.accentCoral),
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                                 keyboardActions = KeyboardActions(onSearch = { vm.search(text.trim()) }),
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().focusRequester(focus),
                             )
                         }
                         if (text.isNotEmpty()) {

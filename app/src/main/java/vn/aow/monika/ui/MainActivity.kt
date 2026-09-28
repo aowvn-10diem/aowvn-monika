@@ -89,16 +89,18 @@ class MainActivity : ComponentActivity() {
 object Routes {
     const val HOME = "home"
     const val GAMES = "games"
+    const val SEARCH = "search"
     const val EMULATOR = "emulator"
     const val DOWNLOADS = "downloads"
     const val SETTINGS = "settings"
     const val POST = "post/{id}"
-    val tabs = listOf(HOME, GAMES, EMULATOR, DOWNLOADS)
+    val tabs = listOf(HOME, GAMES, SEARCH, EMULATOR, DOWNLOADS)
 }
 
 private val dockItems = listOf(
     DockItem("Trang chủ", R.drawable.ic_fluent_home_24_regular, R.drawable.ic_fluent_home_24_filled),
     DockItem("Game", R.drawable.ic_fluent_games_24_regular, R.drawable.ic_fluent_games_24_filled),
+    DockItem("Tìm kiếm", R.drawable.ic_fluent_search_24_regular, R.drawable.ic_fluent_search_24_filled),
     DockItem("Giả lập", R.drawable.ic_fluent_xbox_controller_24_regular, R.drawable.ic_fluent_xbox_controller_24_filled),
     DockItem("Tải xuống", R.drawable.ic_fluent_arrow_download_24_regular, R.drawable.ic_fluent_arrow_download_24_filled),
 )
@@ -136,12 +138,14 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
                 )
             }
             composable(Routes.GAMES) { GamesScreen(onOpen = { nav.navigate("post/${it.id}") }) }
+            // Tab Tìm kiếm: cùng màn Game nhưng bật sẵn bàn phím ở ô tìm.
+            composable(Routes.SEARCH) { GamesScreen(onOpen = { nav.navigate("post/${it.id}") }, focusSearch = true) }
             composable(Routes.EMULATOR) { LibraryScreen(onSettings = { nav.navigate(Routes.SETTINGS) }) }
             composable(Routes.DOWNLOADS) { DownloadsScreen() }
             composable(Routes.SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.POST) { entry -> PostScreen(entry.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
         }
-        // Menu nổi: chỉ hiện ở 4 tab chính; đọc bài / cài đặt thì trượt xuống ẩn đi.
+        // Menu nổi: chỉ hiện ở 5 tab chính; đọc bài / cài đặt thì trượt xuống ẩn đi.
         FloatingDock(
             items = dockItems,
             selected = Routes.tabs.indexOf(route),

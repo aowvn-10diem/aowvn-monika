@@ -19,6 +19,8 @@ data class MonikaConfig(
     val downloadHosts: List<DownloadHost> = emptyList(),
     /** Mật khẩu file nén app tự thử khi giải nén (vd. mật khẩu quen dùng của aow.vn). */
     val archivePasswords: List<String> = emptyList(),
+    /** Link cộng đồng AowVN (group Facebook, Discord). Để trống = ẩn nút. */
+    val community: CommunityConfig = CommunityConfig(),
 ) {
     fun system(id: String): SystemDef? = systems.firstOrNull { it.id == id }
     fun externalApp(id: String): ExternalApp? = externalApps.firstOrNull { it.id == id }
@@ -26,6 +28,12 @@ data class MonikaConfig(
     /** Nhãn blog dùng làm bộ lọc, giữ thứ tự khai báo, bỏ trùng. */
     fun feedLabels(): List<String> = systems.flatMap { it.labels }.distinct()
 }
+
+@Serializable
+data class CommunityConfig(
+    val facebookGroup: String = "",
+    val discord: String = "",
+)
 
 @Serializable
 data class AppInfo(

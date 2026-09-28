@@ -1,5 +1,8 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.community.Community
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.collectAsState
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -89,16 +92,6 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                         Text("Khám phá", style = Monika.type.pageTitle, color = c.text)
                         Text("Thế giới game Việt hóa trong tầm tay ✨", style = Monika.type.body, color = c.textSecondary)
                     }
-                    val interaction = remember { MutableInteractionSource() }
-                    Row(
-                        Modifier.clip(Radius.pill).background(c.surface).pressable(interaction, { onGo(Routes.GAMES) })
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(painterResource(R.drawable.ic_fluent_search_24_regular), null, Modifier.size(20.dp), tint = c.text)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Tìm kiếm", style = Monika.type.body, color = c.text)
-                    }
                 }
             }
             val list = posts?.getOrNull()
@@ -114,6 +107,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                     quick.forEach { q -> QuickActionCard(q, Modifier.weight(1f)) { onGo(q.route) } }
                 }
             }
+            communityItem()
             if (!list.isNullOrEmpty() && list.size > 3) {
                 item { SectionHeader("Game nổi bật", "Xem tất cả", { onGo(Routes.GAMES) }) }
                 item {
@@ -148,6 +142,38 @@ private fun HeroCarousel(posts: List<Post>, onOpen: (Post) -> Unit) {
         Row(Modifier.align(Alignment.BottomEnd).padding(24.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             repeat(posts.size) { i ->
                 Box(Modifier.size(if (i == pager.currentPage) 8.dp else 6.dp).clip(Radius.pill).background(Color.White.copy(alpha = if (i == pager.currentPage) 1f else 0.5f)))
+            }
+        }
+    }
+}
+
+/** Khối "Cộng đồng AowVN": group Facebook + Discord (link trong config `community`, trống = ẩn). */
+private fun androidx.compose.foundation.lazy.LazyListScope.communityItem() = item {
+    val cfg by AppGraph.config.config.collectAsState()
+    val context = LocalContext.current
+    val links = listOf(
+        Triple("Group Facebook", "Hỏi đáp, xin game", cfg.community.facebookGroup) to Brush.linearGradient(listOf(Color(0xFF4F8BFF), Color(0xFF6C63FF))),
+        Triple("Discord", "Chat, nhóm dịch", cfg.community.discord) to Brush.linearGradient(listOf(Color(0xFF7289FF), Color(0xFFA06CFF))),
+    ).filter { it.first.third.isNotBlank() }
+    if (links.isEmpty()) return@item
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Cộng đồng AowVN", style = Monika.type.sectionTitle, color = Monika.colors.text)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            links.forEach { (t, brush) ->
+                MonikaCard(Modifier.weight(1f), dark = true, shape = Radius.large, padding = PaddingValues(12.dp), onClick = { Community.open(context, t.third) }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(40.dp).clip(Radius.thumb).background(brush), contentAlignment = Alignment.Center) {
+                            Icon(
+                                painterResource(if (t.first == "Discord") R.drawable.ic_fluent_chat_multiple_24_regular else R.drawable.ic_fluent_people_community_24_regular),
+                                null, Modifier.size(22.dp), tint = Color.White,
+                            )
+                        }
+                        Column(Modifier.padding(start = 10.dp)) {
+                            Text(t.first, style = Monika.type.bodyStrong, color = Color.White, maxLines = 1)
+                            Text(t.second, style = Monika.type.caption, color = Monika.colors.textOnDarkSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
             }
         }
     }
