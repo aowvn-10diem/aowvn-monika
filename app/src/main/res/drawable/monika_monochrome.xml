@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icon 1 màu (Android 13+ tô theo màu hình nền). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <group android:translateX="23.280" android:translateY="24.360" android:scaleX="0.12000" android:scaleY="0.12000">
+        <!-- Thân chữ M, dừng ở vai phải. Không dùng clip-path: Android vẽ clip không khử răng cưa. -->
+        <path android:pathData="M84,400V130Q84,94 120,94H146Q174,94 194,118L256,193L318,118Q338,94 366,94H392Q428,94 428,130V135" android:strokeWidth="68" android:strokeLineCap="round" android:strokeLineJoin="round" android:strokeColor="#FF000000" />
+        <!-- Khe "portal": chân phải tách rời khỏi vai, 2 đầu bo tròn. -->
+        <path android:pathData="M428,223V400" android:strokeWidth="68" android:strokeLineCap="round" android:strokeColor="#FF000000" />
+    </group>
+</vector>

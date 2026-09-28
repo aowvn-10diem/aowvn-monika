@@ -3,6 +3,7 @@ package vn.aow.monika.runner
 import android.content.Context
 import android.os.Build
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -30,14 +31,34 @@ class CoreManager(
     fun installedVersion(id: String): String? = versionFile(id).takeIf { it.exists() }?.readText()
     fun delete(id: String) = coreDir(id).deleteRecursively()
 
-    suspend fun ensureCore(id: String, onStatus: (String) -> Unit = {}): File = withContext(Dispatchers.IO) {
+    /** Mỗi lõi 1 khóa: tải sẵn ngầm và bấm Chơi cùng lúc không tải 2 lần. */
+    private val locks = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.sync.Mutex>()
+
+    fun isReady(id: String): Boolean {
+        val def = configRepo.current.cores[id] ?: return false
+        return File(coreDir(id), "${id}_libretro_android.so").exists() && installedVersion(id) == def.version &&
+            (def.systemFiles == null || File(systemDir(), ".$id-${def.version}").exists())
+    }
+
+    /** Tải sẵn lõi cho các hệ máy đang có game (chạy ngầm) → bấm Chơi vào game ngay, không chờ tải. */
+    suspend fun prefetch(ids: Collection<String>) {
+        for (id in ids.distinct()) if (!isReady(id)) runCatching { ensureCore(id) }
+    }
+
+    suspend fun ensureCore(id: String, onStatus: (String) -> Unit = {}): File =
+        locks.getOrPut(id) { kotlinx.coroutines.sync.Mutex() }.withLock { ensureCoreLocked(id, onStatus) }
+
+    private suspend fun ensureCoreLocked(id: String, onStatus: (String) -> Unit): File = withContext(Dispatchers.IO) {
         val def = configRepo.current.cores[id] ?: throw IOException("Cấu hình chưa có lõi '$id'")
         val so = File(coreDir(id), "${id}_libretro_android.so")
         if (!so.exists() || installedVersion(id) != def.version) {
-            withContext(Dispatchers.Main) { onStatus("Đang tải lõi giả lập $id (chỉ lần đầu)…") }
+            withContext(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)…") }
             coreDir(id).mkdirs()
             val tmp = File(coreDir(id), "download.tmp")
-            download(def.url.replace("{abi}", abi)) { zip ->
+            var lastPct = -1
+            download(def.url.replace("{abi}", abi), { pct ->
+                if (pct != lastPct) { lastPct = pct; kotlinx.coroutines.runBlocking(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)… $pct%") } }
+            }) { zip ->
                 while (true) {
                     val entry = zip.nextEntry ?: throw IOException("Gói lõi không chứa file .so")
                     if (entry.name.endsWith(".so")) {
@@ -63,10 +84,19 @@ class CoreManager(
         so
     }
 
-    private fun download(url: String, consume: (ZipInputStream) -> Unit) {
+    private fun download(url: String, progress: ((Int) -> Unit)? = null, consume: (ZipInputStream) -> Unit) {
         http.newCall(Request.Builder().url(url).build()).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Tải thất bại (HTTP ${response.code}): $url")
-            ZipInputStream(response.body!!.byteStream().buffered()).use(consume)
+            val body = response.body!!
+            val total = body.contentLength()
+            // Đếm byte đã tải để báo % (máy chậm mạng biết đang tải chứ không phải treo).
+            val counting = object : java.io.FilterInputStream(body.byteStream()) {
+                var read = 0L
+                private fun tick(n: Long) { if (n > 0) { read += n; if (total > 0) progress?.invoke((read * 100 / total).toInt().coerceIn(0, 100)) } }
+                override fun read(): Int = super.read().also { if (it >= 0) tick(1) }
+                override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also { tick(it.toLong()) }
+            }
+            ZipInputStream(counting.buffered()).use(consume)
         }
     }
 

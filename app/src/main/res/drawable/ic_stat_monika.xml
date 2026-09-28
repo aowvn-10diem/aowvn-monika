@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Icon tạm: chữ M. Thay bằng logo AowVN sau (Android Studio > New > Image Asset). -->
+<!-- Icon thanh thông báo: M Portal trắng, phóng to cho rõ ở 24dp. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF"
-        android:pathData="M34,74 L34,34 L44,34 L54,52 L64,34 L74,34 L74,74 L65,74 L65,50 L56,66 L52,66 L43,50 L43,74 Z" />
+    <group android:translateX="2.800" android:translateY="4.600" android:scaleX="0.20000" android:scaleY="0.20000">
+        <!-- Thân chữ M, dừng ở vai phải. Không dùng clip-path: Android vẽ clip không khử răng cưa. -->
+        <path android:pathData="M84,400V130Q84,94 120,94H146Q174,94 194,118L256,193L318,118Q338,94 366,94H392Q428,94 428,130V135" android:strokeWidth="68" android:strokeLineCap="round" android:strokeLineJoin="round" android:strokeColor="#FFFFFFFF" />
+        <!-- Khe "portal": chân phải tách rời khỏi vai, 2 đầu bo tròn. -->
+        <path android:pathData="M428,223V400" android:strokeWidth="68" android:strokeLineCap="round" android:strokeColor="#FFFFFFFF" />
+    </group>
 </vector>

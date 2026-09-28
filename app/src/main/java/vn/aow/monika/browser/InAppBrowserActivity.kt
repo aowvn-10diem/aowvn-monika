@@ -1,5 +1,15 @@
 package vn.aow.monika.browser
 
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Composable
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.BasicTextField
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -74,6 +84,21 @@ class InAppBrowserActivity : ComponentActivity() {
 
     private enum class AdState { OFF, LOADING, ON, FAILED }
 
+    private var searching by mutableStateOf(false)
+    private var query by mutableStateOf("")
+
+    /** Tìm trong trang đang xem: Facebook → tìm trên Facebook; trang khác → tìm Google. Luôn mở ngay trong app. */
+    private fun search(q: String) {
+        val t = q.trim()
+        if (t.isEmpty()) return
+        val url = when {
+            host.contains("facebook.com") -> "https://m.facebook.com/search/top/?q=" + Uri.encode(t)
+            else -> "https://www.google.com/search?q=" + Uri.encode(t)
+        }
+        searching = false
+        web?.loadUrl(url)
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,38 +127,50 @@ class InAppBrowserActivity : ComponentActivity() {
             MonikaTheme {
                 val c = Monika.colors
                 Column(Modifier.fillMaxSize().background(c.bg)) {
+                    // Thanh công cụ mảnh kiểu app: ← quay lại trang · tên trang · chặn QC · 🔍 · ⟳ · ⌂ về Monika.
                     Row(
-                        Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
+                        Modifier.fillMaxWidth().statusBarsPadding().height(48.dp).padding(horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        CircleButton(R.drawable.ic_fluent_dismiss_24_regular, "Đóng", { finish() })
-                        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                            Text(pageTitle.ifBlank { host }, style = Monika.type.bodyStrong, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(host, style = Monika.type.caption, color = c.textSecondary, maxLines = 1)
+                        ToolIcon(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại") {
+                            val w = web
+                            if (w != null && w.canGoBack()) w.goBack() else finish()
                         }
-                        if (adState != AdState.OFF) {
-                            val label = when {
-                                adState == AdState.LOADING -> "Đang tải chặn QC…"
-                                adState == AdState.FAILED -> "Chặn QC lỗi"
-                                !adOn -> "Chặn QC: tắt"
-                                else -> "Đã chặn $blocked"
-                            }
-                            Row(
-                                Modifier.padding(end = 8.dp).clip(Radius.pill)
-                                    .background(if (adState == AdState.ON && adOn) primaryGradient() else Brush.linearGradient(listOf(c.surfaceSoft, c.surfaceSoft)))
-                                    .clickable(enabled = adState == AdState.ON) { adOn = !adOn; blocked = 0; web?.reload() }
-                                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(painterResource(R.drawable.ic_fluent_shield_checkmark_24_regular), "Chặn quảng cáo", Modifier.size(18.dp),
-                                    tint = if (adState == AdState.ON && adOn) Color.White else c.textSecondary)
-                                Text(label, style = Monika.type.caption, color = if (adState == AdState.ON && adOn) Color.White else c.textSecondary,
-                                    modifier = Modifier.padding(start = 4.dp))
+                        if (searching) {
+                            val focus = remember { FocusRequester() }
+                            LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+                            BasicTextField(
+                                query, { query = it }, singleLine = true,
+                                textStyle = Monika.type.body.copy(color = c.text), cursorBrush = SolidColor(c.accentCoral),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                keyboardActions = KeyboardActions(onSearch = { search(query) }),
+                                decorationBox = { inner ->
+                                    Box(Modifier.clip(Radius.pill).background(c.surfaceSoft).padding(horizontal = 12.dp, vertical = 8.dp)) {
+                                        if (query.isEmpty()) Text(if (host.contains("facebook")) "Tìm trên Facebook…" else "Tìm kiếm…", style = Monika.type.body, color = c.textTertiary)
+                                        inner()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).padding(horizontal = 4.dp).focusRequester(focus),
+                            )
+                        } else {
+                            Column(Modifier.weight(1f).padding(horizontal = 6.dp)) {
+                                Text(pageTitle.ifBlank { host }, style = Monika.type.bodyStrong, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(host, style = Monika.type.caption, color = c.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                                    if (adState == AdState.ON) {
+                                        Icon(painterResource(R.drawable.ic_fluent_shield_checkmark_24_regular), "Chặn quảng cáo",
+                                            Modifier.padding(start = 6.dp).size(12.dp).clickable { adOn = !adOn; blocked = 0; web?.reload() },
+                                            tint = if (adOn) c.accentCoral else c.textTertiary)
+                                        Text(if (adOn) " $blocked" else " tắt", style = Monika.type.caption, color = c.textTertiary)
+                                    }
+                                }
                             }
                         }
-                        CircleButton(R.drawable.ic_fluent_open_24_regular, "Mở bằng trình duyệt", {
-                            runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(web?.url ?: url))) }
-                        })
+                        ToolIcon(if (searching) R.drawable.ic_fluent_dismiss_24_regular else R.drawable.ic_fluent_search_24_regular, "Tìm kiếm") {
+                            searching = !searching
+                        }
+                        ToolIcon(R.drawable.ic_fluent_arrow_clockwise_24_regular, "Tải lại") { web?.reload() }
+                        ToolIcon(R.drawable.ic_fluent_home_24_regular, "Về Aow Monika") { finish() }
                     }
                     Box(Modifier.fillMaxWidth().height(3.dp)) {
                         if (loadProgress in 0.01f..0.99f) LinearProgressIndicator({ loadProgress }, Modifier.fillMaxWidth(), color = c.accentCoral, trackColor = c.track)
@@ -173,11 +210,16 @@ class InAppBrowserActivity : ComponentActivity() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val u = request.url
                 if (u.scheme == "http" || u.scheme == "https") return false
-                // discord://, fb://, intent://… → để app tương ứng xử lý (nếu có).
-                runCatching {
-                    val i = if (u.scheme == "intent") Intent.parseUri(u.toString(), Intent.URI_INTENT_SCHEME) else Intent(Intent.ACTION_VIEW, u)
-                    startActivity(i)
+                val intent = runCatching {
+                    if (u.scheme == "intent") Intent.parseUri(u.toString(), Intent.URI_INTENT_SCHEME) else Intent(Intent.ACTION_VIEW, u)
+                }.getOrNull() ?: return true
+                // Facebook: KHÔNG bao giờ nhảy sang app FB (bấm Quay lại sẽ kẹt trong app FB) → ở lại trong trình duyệt nhúng.
+                if (isFacebookApp(u, intent)) {
+                    intent.getStringExtra("browser_fallback_url")?.let { view.loadUrl(it) }
+                    return true
                 }
+                // App khác (discord://, zalo…): mở app tương ứng nếu có.
+                runCatching { startActivity(intent) }
                 return true
             }
             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
@@ -196,6 +238,20 @@ class InAppBrowserActivity : ComponentActivity() {
         web?.destroy()
         web = null
         super.onDestroy()
+    }
+
+    private fun isFacebookApp(u: Uri, i: Intent): Boolean {
+        val scheme = u.scheme.orEmpty().lowercase()
+        val target = (i.`package` ?: "") + " " + (i.data?.scheme ?: "") + " " + (i.data?.host ?: "")
+        return scheme.startsWith("fb") || scheme == "messenger" || target.contains("facebook") || target.contains("fb") ||
+            u.toString().contains("com.facebook", ignoreCase = true)
+    }
+
+    @Composable
+    private fun ToolIcon(@androidx.annotation.DrawableRes icon: Int, desc: String, onClick: () -> Unit) {
+        Box(Modifier.size(44.dp).clip(Radius.pill).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+            Icon(painterResource(icon), desc, Modifier.size(22.dp), tint = Monika.colors.text)
+        }
     }
 
     companion object {

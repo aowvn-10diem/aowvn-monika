@@ -51,6 +51,10 @@ class RetroActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        // Cho game vẽ tràn cả vùng camera (máy ngang đỡ viền đen); phần giao diện tự né bằng insets.
+        if (android.os.Build.VERSION.SDK_INT >= 28) window.attributes = window.attributes.apply {
+            layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
         WindowInsetsControllerCompat(window, window.decorView).apply {
             hide(WindowInsetsCompat.Type.systemBars())
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -73,15 +77,29 @@ class RetroActivity : ComponentActivity() {
         stateFile = File(File(filesDir, "states").apply { mkdirs() }, "$key.state")
         refreshSlots()
 
+        // Màn chờ: tên game + vòng quay + trạng thái, giữ tới khi game vẽ khung hình đầu tiên (không còn màn đen).
         val status = TextView(this).apply {
             text = "Đang chuẩn bị…"
-            setTextColor(Color.WHITE)
+            setTextColor(Color.parseColor("#C8C5CB"))
             gravity = Gravity.CENTER
-            textSize = 16f
+            textSize = 14f
+        }
+        val loading = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.parseColor("#141315"))
+            addView(TextView(this@RetroActivity).apply {
+                text = title; setTextColor(Color.WHITE); textSize = 18f; gravity = Gravity.CENTER
+                setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(48, 0, 48, 24)
+            })
+            addView(android.widget.ProgressBar(this@RetroActivity).apply {
+                indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#FF7A32"))
+            })
+            addView(status.apply { setPadding(48, 24, 48, 0) })
         }
         root = FrameLayout(this).apply {
             setBackgroundColor(Color.parseColor("#141315"))
-            addView(status, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+            addView(loading, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
         }
         val overlay = ComposeView(this).apply {
             setContent {
@@ -119,6 +137,11 @@ class RetroActivity : ComponentActivity() {
             }
         }
         setContentView(root)
+        // Biết vùng camera/cutout rồi mới đặt lại vị trí khung game.
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            retroView?.layoutParams = gameLayoutParams()
+            androidx.core.view.ViewCompat.onApplyWindowInsets(v, insets)
+        }
         root.addView(overlay, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
 
         lifecycleScope.launch {
@@ -135,12 +158,23 @@ class RetroActivity : ComponentActivity() {
                 variables = CoreOptions.initial(this@RetroActivity, coreId, AppGraph.config.current.cores[coreId]?.options.orEmpty())
                     .map { (k, v) -> Variable(k, v) }.toTypedArray()
             }
+            status.text = "Đang khởi động game…"
             val view = GLRetroView(this@RetroActivity, data)
             lifecycle.addObserver(view)
-            root.removeView(status)
-            root.addView(view, 0, gameLayoutParams())
+            root.addView(view, 0, gameLayoutParams()) // Dưới màn chờ; màn chờ bỏ đi khi có khung hình đầu.
             retroView = view
             ready = true
+            launch {
+                view.getGLRetroEvents().collect { e ->
+                    if (e is GLRetroView.GLRetroEvents.FrameRendered && loading.parent != null) {
+                        loading.animate().alpha(0f).setDuration(180).withEndAction { root.removeView(loading) }.start()
+                    }
+                }
+            }
+            launch {
+                delay(15_000)
+                if (loading.parent != null) status.text = "Game nặng, đang nạp… (lần đầu có thể lâu hơn)"
+            }
             launch {
                 view.getGLRetroErrors().collect { code -> showToast("Lỗi chạy game (mã $code). File game hỏng hoặc lõi không hợp.", 4000) }
             }
@@ -152,7 +186,10 @@ class RetroActivity : ComponentActivity() {
         val dm = resources.displayMetrics
         val portrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
         if (!portrait) return FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-        val top = (76 * dm.density).toInt()
+        // Khung game nằm dưới header; header đã bị đẩy xuống nếu máy có camera/cutout ở trên.
+        val cutoutTop = androidx.core.view.ViewCompat.getRootWindowInsets(root)
+            ?.getInsets(WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.statusBars())?.top ?: 0
+        val top = (76 * dm.density).toInt() + cutoutTop
         val h = (dm.widthPixels / aspect).toInt().coerceAtMost((dm.heightPixels * 0.58f).toInt())
         return FrameLayout.LayoutParams(MATCH_PARENT, h, Gravity.TOP).apply { topMargin = top }
     }

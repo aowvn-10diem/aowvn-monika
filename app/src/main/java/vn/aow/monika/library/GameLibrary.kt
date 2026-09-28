@@ -31,7 +31,12 @@ data class Game(
     val key: String get() = if (external) entry?.path ?: dir.path else dir.path
 }
 
-class GameLibrary(private val context: Context, private val configRepo: ConfigRepository) {
+class GameLibrary(
+    private val context: Context,
+    private val configRepo: ConfigRepository,
+    /** Gắn tên/ảnh tự tìm được cho game chưa có thông tin bài viết. */
+    private val info: GameInfoResolver? = null,
+) {
 
     /** Danh sách lần quét gần nhất: mở tab Thư viện hiện ngay, không chớp màn "Chưa có game". */
     @Volatile var cached: List<Game>? = null
@@ -39,7 +44,7 @@ class GameLibrary(private val context: Context, private val configRepo: ConfigRe
 
     val scanner = DeviceScanner(context)
 
-    fun list(): List<Game> = (internalGames() + externalGames()).also { cached = it }
+    fun list(): List<Game> = (internalGames() + externalGames()).map { g -> info?.apply(g) ?: g }.also { cached = it }
 
     /** Game quét được trong máy, nhận diện hệ theo đuôi file. */
     private fun externalGames(): List<Game> = runCatching {

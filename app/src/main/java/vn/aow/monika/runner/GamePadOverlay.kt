@@ -1,5 +1,12 @@
 package vn.aow.monika.runner
 
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.WindowInsets
 import android.view.KeyEvent
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
@@ -104,6 +111,11 @@ class InGameState {
     var options by mutableStateOf<List<CoreOption>?>(null)
 }
 
+/** Vùng an toàn phía trên: thanh trạng thái ∪ camera/cutout (cả khi thanh trạng thái bị ẩn), và 2 bên cạnh cutout khi máy ngang. */
+private val SafeTop: WindowInsets
+    @Composable get() = WindowInsets.statusBars.union(WindowInsets.displayCutout)
+        .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+
 @Composable
 fun InGameOverlay(
     state: InGameState,
@@ -125,7 +137,8 @@ fun InGameOverlay(
     val motion = Monika.motion
     Box(Modifier.fillMaxSize()) {
         // Header kính mờ
-        Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        // Né camera / "con nhộng" (display cutout) + thanh trạng thái — lúc chơi game thanh trạng thái bị ẩn nên phải dùng cutout.
+        Row(Modifier.fillMaxWidth().windowInsetsPadding(SafeTop).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             GlassCircle(R.drawable.ic_fluent_arrow_left_24_regular, "Thoát", onBack)
             Spacer(Modifier.width(10.dp))
             Row(
@@ -145,7 +158,7 @@ fun InGameOverlay(
         // Menu nhanh: phóng + mờ từ góc phải trên (nút "…"). Máy tắt hiệu ứng → hiện ngay.
         AnimatedVisibility(
             state.menuOpen,
-            modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 72.dp, end = 16.dp),
+            modifier = Modifier.align(Alignment.TopEnd).windowInsetsPadding(SafeTop).padding(top = 72.dp, end = 16.dp),
             enter = if (motion.enabled) scaleIn(tween(motion.normal, easing = motion.easing), 0.85f, TransformOrigin(1f, 0f)) + fadeIn(tween(motion.normal)) else fadeIn(tween(0)),
             exit = if (motion.enabled) scaleOut(tween(motion.fast), 0.9f, TransformOrigin(1f, 0f)) + fadeOut(tween(motion.fast)) else fadeOut(tween(0)),
         ) {

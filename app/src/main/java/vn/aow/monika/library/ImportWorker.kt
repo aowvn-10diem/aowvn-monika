@@ -43,6 +43,8 @@ class ImportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 .filter { it != result.dir && GameMeta.read(it)?.postId == m.postId && it.listFiles().orEmpty().all { f -> f.name == ".monika.json" } }
                 .forEach { it.deleteRecursively() }
         }
+        // Tải sẵn lõi giả lập cho game vừa nhận → lần đầu bấm Chơi không phải chờ.
+        runCatching { AppGraph.cores.prefetch(vn.aow.monika.ui.screens.coreIdsOf(AppGraph.library.list().filter { it.dir == result.dir })) }
         // Game mới tải có thể làm vượt giới hạn bộ đệm → dọn game cũ, không đụng game vừa tải.
         if (!result.pending) runCatching { StorageCleaner.clean(applicationContext, protect = result.dir) }
         val name = meta?.title?.ifBlank { null } ?: result.dir.name

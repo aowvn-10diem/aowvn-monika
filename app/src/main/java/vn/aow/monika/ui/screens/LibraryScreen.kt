@@ -106,9 +106,14 @@ fun LibraryScreen(onSettings: () -> Unit) {
     var pinned by remember { mutableStateOf(AppGraph.prefs.pinnedGames) }
 
     val playedTick by AppGraph.prefs.playedTick.collectAsState()
-    LaunchedEffect(reloadKey, playedTick) {
+    val infoTick by AppGraph.gameInfo.updated.collectAsState()
+    LaunchedEffect(reloadKey, playedTick, infoTick) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             scanned = withContext(Dispatchers.IO) { AppGraph.library.list() }
+            // Tải sẵn lõi giả lập cho các hệ đang có game (ngầm) → bấm Chơi vào game ngay.
+            AppGraph.app.let { app -> (app as? vn.aow.monika.MonikaApp)?.scope?.launch(Dispatchers.IO) { AppGraph.cores.prefetch(coreIdsOf(scanned.orEmpty())) } }
+            // Tự tìm tên + ảnh cho game chưa có (đọc trong file game, rồi tra aow.vn) — xong thì infoTick đổi → vẽ lại.
+            (AppGraph.app as? vn.aow.monika.MonikaApp)?.scope?.launch(Dispatchers.IO) { AppGraph.gameInfo.resolveAll(scanned.orEmpty()) }
         }
     }
 
@@ -375,11 +380,12 @@ fun LibraryScreen(onSettings: () -> Unit) {
 internal fun ContinueCard(g: Game, onPlay: () -> Unit) {
     MonikaCard(Modifier.fillMaxWidth(), dark = true, shape = Radius.hero, padding = PaddingValues(0.dp), onClick = onPlay) {
       Box {
-        g.meta?.cover?.let {
+        val cover = g.meta?.cover?.takeUnless { vn.aow.monika.library.GameInfoResolver.isIcon(it) }
+        cover?.let {
             AsyncImage(it, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
             Box(Modifier.matchParentSize().background(artworkScrim()))
         }
-        Row(Modifier.padding(20.dp).padding(top = if (g.meta?.cover != null) 90.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(20.dp).padding(top = if (cover != null) 90.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(g.name, style = Monika.type.sectionTitle, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -417,7 +423,10 @@ private fun GameTile(
             contentAlignment = Alignment.Center,
         ) {
             val cover = g.meta?.cover
-            if (cover != null) {
+            if (cover != null && vn.aow.monika.library.GameInfoResolver.isIcon(cover)) {
+                // Icon nhỏ đọc từ file game (NDS/Java): vẽ giữa ô, giữ nét pixel.
+                AsyncImage(cover, null, contentScale = ContentScale.Fit, filterQuality = androidx.compose.ui.graphics.FilterQuality.None, modifier = Modifier.size(88.dp).clip(Radius.small))
+            } else if (cover != null) {
                 // Ảnh bìa lấy từ bài viết aow.vn lúc tải.
                 AsyncImage(cover, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 Box(Modifier.fillMaxSize().background(artworkScrim(0.4f)))
@@ -432,7 +441,7 @@ private fun GameTile(
                 Box(Modifier.align(Alignment.Center)) { Tag("Đã dọn", onDark = true) }
             }
             // Giữ lại: game ghim không bao giờ bị dọn bộ nhớ đệm.
-            if (g.meta != null && !g.evicted) Box(Modifier.align(Alignment.TopStart).padding(8.dp)) {
+            if (g.meta != null && !g.evicted && !g.external) Box(Modifier.align(Alignment.TopStart).padding(8.dp)) {
                 CircleButton(
                     if (pinned) R.drawable.ic_fluent_heart_24_filled else R.drawable.ic_fluent_heart_24_regular,
                     if (pinned) "Bỏ giữ lại" else "Giữ lại (không tự dọn)", onTogglePin,
@@ -471,3 +480,9 @@ private fun openAllFilesAccess(context: android.content.Context) {
 
 private const val FILTER_FREQUENT = "⭐ Thường chơi"
 private const val FILTER_DEVICE = "📱 Trong máy"
+
+/** Lõi libretro cần cho các game (theo lõi user chọn hoặc lõi mặc định của hệ). */
+internal fun coreIdsOf(games: List<Game>): List<String> = games.mapNotNull { g ->
+    val sys = g.system?.takeIf { it.runner == "libretro" } ?: return@mapNotNull null
+    AppGraph.prefs.coreOverride(sys.id)?.takeIf { it in AppGraph.config.current.cores } ?: sys.core
+}.distinct()

@@ -1,5 +1,7 @@
 package vn.aow.monika.ui.screens
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import vn.aow.monika.ui.theme.MonikaWordmark
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
@@ -151,6 +153,17 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
 @Composable
 private fun HeroCarousel(posts: List<Post>, onOpen: (Post) -> Unit) {
     val pager = rememberPagerState { posts.size }
+    // Tự chuyển slide mỗi 4 giây; đang vuốt tay thì chờ, máy tắt hiệu ứng thì không tự chạy.
+    val motion = Monika.motion
+    val dragging by pager.interactionSource.collectIsDraggedAsState()
+    LaunchedEffect(posts.size, dragging, motion.enabled) {
+        if (posts.size < 2 || dragging || !motion.enabled) return@LaunchedEffect
+        while (true) {
+            kotlinx.coroutines.delay(4_000)
+            val next = (pager.currentPage + 1) % posts.size
+            pager.animateScrollToPage(next, animationSpec = androidx.compose.animation.core.tween(motion.slow * 2, easing = motion.easing))
+        }
+    }
     Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         HorizontalPager(pager, pageSpacing = 12.dp) { i ->
             val p = posts[i]
