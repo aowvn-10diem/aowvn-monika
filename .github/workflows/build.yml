@@ -19,6 +19,12 @@ jobs:
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" > /dev/null
       - name: Kiểm tra cấu hình + test
         run: ./gradlew testDebugUnitTest --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: anh-chup-giao-dien
+          path: app/build/screenshots/
+          if-no-files-found: ignore
       - name: Build APK debug
         run: ./gradlew assembleDebug --console=plain
       - uses: actions/upload-artifact@v4

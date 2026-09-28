@@ -14,6 +14,7 @@ coil = "2.7.0"
 libretrodroid = "0.14.0"
 webkit = "1.12.1"
 junit = "4.13.2"
+robolectric = "4.16.1"
 libarchive = "1.1.6" # 1.1.7 đòi compileSdk 37
 commonsCompress = "1.27.1" # chỉ dùng cho 7z có mật khẩu
 xz = "1.10"
@@ -37,6 +38,9 @@ libarchive = { module = "me.zhanghai.android.libarchive:library", version.ref = 
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 xz = { module = "org.tukaani:xz", version.ref = "xz" }
 junit = { module = "junit:junit", version.ref = "junit" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 libretrodroid = { module = "com.github.Swordfish90:LibretroDroid", version.ref = "libretrodroid" }
 
 [plugins]

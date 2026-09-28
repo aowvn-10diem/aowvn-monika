@@ -122,7 +122,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     )
                 }
 
-                SettingGroup("apps", open, { open = it }, R.drawable.ic_fluent_games_24_regular, secondaryGradient(), "App chạy game bổ sung", "Kirikiroid2, JoiPlay, J2ME Loader") {
+                SettingGroup("apps", open, { open = it }, R.drawable.ic_fluent_games_24_regular, secondaryGradient(), "App chạy game bổ sung", cfg.externalApps.joinToString(", ") { it.name }) {
                     cfg.externalApps.forEach { app ->
                         val installed = remember(app, refreshTick) { ExternalApps.installedPackage(context, app) != null }
                         MonikaCard(Modifier.fillMaxWidth(), shape = Radius.medium) { ExternalAppDetails(app, installed) }

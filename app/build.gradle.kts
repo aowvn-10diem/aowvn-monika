@@ -59,6 +59,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
+    testOptions { unitTests.isIncludeAndroidResources = true }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -97,4 +98,9 @@ dependencies {
     implementation(libs.xz) // LZMA/LZMA2 cho 7z
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
     testImplementation(libs.junit)
+    // Test giao diện trên JVM (Robolectric): mở từng màn hình, bắt crash, chụp ảnh → app/build/screenshots/
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 }
