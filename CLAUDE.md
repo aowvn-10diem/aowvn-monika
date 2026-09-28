@@ -14,6 +14,7 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 - Chuyển động tự điều chỉnh: `PerformanceTier` FULL/LITE/OFF (`detectTier`: RAM < 3GB hoặc < 6 nhân → LITE; tỉ lệ hoạt ảnh Android = 0 → OFF; user chọn được trong Cài đặt). Mọi animation phải lấy thời lượng từ `Monika.motion`.
 - Màn chơi game: `runner/RetroActivity.kt` (GLRetroView) + `runner/GamePadOverlay.kt` (Compose nổi). Phím theo vị trí Android: dưới=BUTTON_A, phải=BUTTON_B, trái=X, trên=Y.
 - Game Java: J2ME Loader nhúng ở module `j2me/` + `dexlib/` (Apache-2.0, bản gốc commit 9b0fa48). Chỉ sửa chỗ có chú thích `Aow Monika:`; chi tiết + cách cập nhật: `docs/J2ME-LOADER.md`. Module này giữ build.gradle riêng (Groovy), ngoại lệ của quy tắc version catalog. Cần NDK 22.1.7171670.
+- Bản release bật R8 + tách APK theo chip (arm64-v8a, armeabi-v7a, universal; bỏ x86). Thêm thư viện có JNI/reflection → thêm luật `-keep` vào `app/proguard-rules.pro`, rồi kiểm lớp còn trong dex bằng `build-tools/*/dexdump`.
 - Không bao giờ commit keystore/mật khẩu ký; chỉ dùng GitHub Secrets.
 
 ## Sự thật đã xác minh

@@ -21,7 +21,6 @@ android {
             "String", "REMOTE_CONFIG_URL",
             "\"https://aowvn-monika.aowvn-system.workers.dev/config.json\""
         )
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
 
     // Khóa ký bản phát hành lấy từ biến môi trường (GitHub Secrets), không bao giờ lưu trong repo.
@@ -40,8 +39,19 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName(if (keystore != null) "release" else "debug")
-            isMinifyEnabled = false
+            // R8: thu gọn + bỏ code thừa. Luật giữ lớp: proguard-rules.pro (+ luật của j2me/).
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+    // Mỗi loại chip 1 APK (nhẹ ~1/2) + 1 bản chung cho mọi máy.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a")
+            isUniversalApk = true
         }
     }
     compileOptions {
@@ -55,7 +65,11 @@ android {
     }
     // Thư viện native trùng tên giữa các gói (LibretroDroid, ffmpeg của J2ME Loader...) → lấy 1 bản.
     packaging {
-        jniLibs { pickFirsts += listOf("**/libc++_shared.so") }
+        jniLibs {
+            pickFirsts += listOf("**/libc++_shared.so")
+            // Chỉ hỗ trợ máy ARM (điện thoại thật); bỏ bản x86 của thư viện cho APK chung nhẹ đi.
+            excludes += listOf("lib/x86/**", "lib/x86_64/**")
+        }
         resources { excludes += listOf("META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.kotlin_module") }
     }
     // Bản cấu hình dự phòng đóng gói trong APK = đúng file config/ ở gốc repo (1 nguồn duy nhất).
@@ -72,7 +86,6 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
-    implementation(libs.compose.icons)
     implementation(libs.compose.tooling.preview)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)

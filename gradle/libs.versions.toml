@@ -26,7 +26,6 @@ androidx-work = { module = "androidx.work:work-runtime-ktx", version.ref = "work
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
-compose-icons = { module = "androidx.compose.material:material-icons-extended" }
 compose-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
