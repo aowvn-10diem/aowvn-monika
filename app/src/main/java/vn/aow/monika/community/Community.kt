@@ -33,10 +33,13 @@ object Community {
         return u.pathSegments.lastOrNull { it.isNotBlank() && it != "groups" && it != "invite" } ?: link.kind.label
     }
 
-    /** Gói app chính thức mở được link của từng loại (thử lần lượt). */
+    /**
+     * Gói app chính thức mở được link của từng loại (thử lần lượt).
+     * Facebook cố ý KHÔNG mở bằng app FB: bấm Quay lại sẽ ở lại app FB, không về Aow Monika
+     * → luôn dùng trình duyệt nhúng. Discord mở bằng app (cần app để chat/nhận file).
+     */
     private val APPS = mapOf(
         CommunityLink.Kind.DISCORD to listOf("com.discord"),
-        CommunityLink.Kind.FACEBOOK to listOf("com.facebook.katana", "com.facebook.lite"),
     )
 
     fun kindOf(url: String): CommunityLink.Kind? = when {
@@ -46,7 +49,7 @@ object Community {
     }
 
     /**
-     * Máy đã cài app Discord / Facebook → mở thẳng bằng app.
+     * Discord: máy đã cài app → mở bằng app. Facebook: luôn trình duyệt nhúng.
      * Chưa cài → mở bằng trình duyệt nhúng trong app ([InAppBrowserActivity]), không phải rời app.
      */
     fun open(context: Context, url: String) {

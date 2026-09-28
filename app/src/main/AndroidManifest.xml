@@ -38,6 +38,26 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- "Mở bằng Aow Monika" từ trình quản lý file / trình duyệt: file nén, .jar, rom (octet-stream).
+                 App nhận diện hệ máy theo config rồi mới chạy đúng giả lập. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/x-rar-compressed" />
+                <data android:mimeType="application/vnd.rar" />
+                <data android:mimeType="application/rar" />
+                <data android:mimeType="application/x-7z-compressed" />
+                <data android:mimeType="application/java-archive" />
+                <data android:mimeType="application/x-java-archive" />
+                <data android:mimeType="text/vnd.sun.j2me.app-descriptor" />
+                <data android:mimeType="application/x-shockwave-flash" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
         </activity>
 
         <activity

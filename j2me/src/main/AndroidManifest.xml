@@ -34,66 +34,8 @@
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:exported="true"
             android:launchMode="singleTask">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:mimeType="application/java" />
-                <data android:mimeType="application/java-archive" />
-                <data android:mimeType="application/x-java-archive" />
-                <data android:mimeType="text/vnd.sun.j2me.app-descriptor" />
-                <data android:host="*" />
-                <data android:scheme="file" />
-                <data android:scheme="content" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:mimeType="text/vnd.sun.j2me.app-descriptor" />
-                <data android:host="*" />
-                <data android:scheme="http" />
-                <data android:scheme="https" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:mimeType="*/*" />
-                <data android:host="*" />
-                <data android:scheme="file" />
-                <data android:scheme="content" />
-                <data android:pathPattern=".*.jar" />
-                <data android:pathPattern=".*..*.jar" />
-                <data android:pathPattern=".*..*..*.jar" />
-                <data android:pathPattern=".*..*..*..*.jar" />
-                <data android:pathPattern=".*.JAR" />
-                <data android:pathPattern=".*..*.JAR" />
-                <data android:pathPattern=".*..*..*.JAR" />
-                <data android:pathPattern=".*..*..*..*.JAR" />
-                <data android:pathPattern=".*.jad" />
-                <data android:pathPattern=".*..*.jad" />
-                <data android:pathPattern=".*..*..*.jad" />
-                <data android:pathPattern=".*..*..*..*.jad" />
-                <data android:pathPattern=".*.JAD" />
-                <data android:pathPattern=".*..*.JAD" />
-                <data android:pathPattern=".*..*..*.JAD" />
-                <data android:pathPattern=".*..*..*..*.JAD" />
-                <data android:pathPattern=".*.kjx" />
-                <data android:pathPattern=".*..*.kjx" />
-                <data android:pathPattern=".*..*..*.kjx" />
-                <data android:pathPattern=".*..*..*..*.kjx" />
-                <data android:pathPattern=".*.KJX" />
-                <data android:pathPattern=".*..*.KJX" />
-                <data android:pathPattern=".*..*..*.KJX" />
-                <data android:pathPattern=".*..*..*..*.KJX" />
-            </intent-filter>
+            <!-- Aow Monika: bỏ các intent-filter mở file .jar/.jad. File từ ngoài vào Aow Monika trước,
+                 nhận diện hệ máy rồi mới chuyển sang đây (J2meRuntime.openGameIntent). -->
         </activity>
         <activity
             android:theme="@style/AppTheme"

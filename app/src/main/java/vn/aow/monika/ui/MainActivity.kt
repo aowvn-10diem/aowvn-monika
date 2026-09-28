@@ -1,5 +1,6 @@
 package vn.aow.monika.ui
 
+import vn.aow.monika.AppGraph
 import android.Manifest
 import android.content.Intent
 import android.os.Build
@@ -68,6 +69,20 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent?) {
         intent?.getStringExtra(EXTRA_POST_ID)?.let { deepLink.value = "post/$it" }
         if (intent?.getBooleanExtra(EXTRA_OPEN_LIBRARY, false) == true) deepLink.value = Routes.EMULATOR
+        // "Mở bằng Aow Monika": đưa file vào Thư viện (nhận diện hệ máy), không chạy thẳng.
+        val uris = when (intent?.action) {
+            Intent.ACTION_VIEW -> listOfNotNull(intent.data)
+            Intent.ACTION_SEND -> listOfNotNull(
+                if (Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(Intent.EXTRA_STREAM, android.net.Uri::class.java)
+                else @Suppress("DEPRECATION") intent.getParcelableExtra(Intent.EXTRA_STREAM)
+            )
+            else -> emptyList()
+        }
+        if (uris.isNotEmpty()) {
+            AppGraph.pendingImports.value = uris
+            deepLink.value = Routes.EMULATOR
+            intent?.action = null // Xoay màn hình không nhận lại lần nữa.
+        }
     }
 
     private fun askPermissions() {
@@ -141,7 +156,7 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
             // Tab Tìm kiếm: cùng màn Game nhưng bật sẵn bàn phím ở ô tìm.
             composable(Routes.SEARCH) { GamesScreen(onOpen = { nav.navigate("post/${it.id}") }, focusSearch = true) }
             composable(Routes.EMULATOR) { LibraryScreen(onSettings = { nav.navigate(Routes.SETTINGS) }) }
-            composable(Routes.DOWNLOADS) { DownloadsScreen() }
+            composable(Routes.DOWNLOADS) { DownloadsScreen(onOpenLibrary = { nav.goTab(Routes.EMULATOR) }) }
             composable(Routes.SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.POST) { entry -> PostScreen(entry.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
         }

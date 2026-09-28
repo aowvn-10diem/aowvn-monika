@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.AppGraph
 import android.app.DownloadManager
 import android.content.Context
 import android.os.StatFs
@@ -67,13 +68,15 @@ private data class DownloadRow(
     val done: Long,
     val total: Long,
     val speed: Long,
+    /** File trên máy (null nếu chưa xong). Đã giải nén vào thư viện thì file gốc không còn. */
+    val file: File? = null,
 )
 
 private data class StorageInfo(val total: Long, val free: Long, val games: Long)
 
 /** Màn "Tải xuống": dung lượng máy + các lượt tải của app (đọc từ DownloadManager, cập nhật mỗi giây). */
 @Composable
-fun DownloadsScreen() {
+fun DownloadsScreen(onOpenLibrary: () -> Unit = {}) {
     val context = LocalContext.current
     val c = Monika.colors
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -121,7 +124,9 @@ fun DownloadsScreen() {
             if (done.isEmpty() && active.isEmpty()) item {
                 EmptyState(R.drawable.fluent3d_package, "Chưa tải gì", "Game tải xong sẽ tự giải nén vào tab Giả lập.")
             }
-            items(done, key = { it.id }) { r -> DoneRow(r, ok = true) { dm.remove(r.id); tick++ } }
+            items(done, key = { it.id }) { r ->
+                DoneRow(r, ok = true, onOpen = { openDone(context, r, onOpenLibrary) }) { dm.remove(r.id); tick++ }
+            }
         }
     }
 }
@@ -218,16 +223,22 @@ private fun ActiveRow(r: DownloadRow, onCancel: () -> Unit) {
 }
 
 @Composable
-private fun DoneRow(r: DownloadRow, ok: Boolean, onRemove: () -> Unit) {
+private fun DoneRow(r: DownloadRow, ok: Boolean, onOpen: (() -> Unit)? = null, onRemove: () -> Unit) {
     val c = Monika.colors
-    MonikaCard(Modifier.fillMaxWidth(), shape = Radius.medium, padding = PaddingValues(12.dp)) {
+    MonikaCard(Modifier.fillMaxWidth(), shape = Radius.medium, padding = PaddingValues(12.dp), onClick = onOpen) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(52.dp).clip(Radius.thumb).background(c.surfaceSoft), contentAlignment = Alignment.Center) {
                 Illustration(R.drawable.fluent3d_package, Modifier.size(34.dp))
             }
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text(r.title, style = Monika.type.bodyStrong, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(if (ok) "${mb(r.total)} • Đã tải xong" else "Tải thất bại", style = Monika.type.caption, color = if (ok) c.textSecondary else c.danger)
+                val hint = when {
+                    !ok -> "Tải thất bại"
+                    r.file?.extension.equals("apk", true) -> "${mb(r.total)} • Bấm để cài đặt"
+                    r.file != null -> "${mb(r.total)} • Bấm để giải nén & thêm vào Thư viện"
+                    else -> "${mb(r.total)} • Đã vào Thư viện · bấm để mở"
+                }
+                Text(hint, style = Monika.type.caption, color = if (ok) c.textSecondary else c.danger)
             }
             if (ok) Icon(painterResource(R.drawable.ic_fluent_checkmark_circle_24_filled), "Xong", Modifier.size(26.dp), tint = c.success)
             CircleButton(R.drawable.ic_fluent_dismiss_24_regular, "Xóa khỏi danh sách", onRemove, size = 40.dp)
@@ -250,11 +261,27 @@ private fun queryDownloads(context: Context, last: Map<Long, Long>): List<Downlo
                         done = done,
                         total = cur.getLong(cur.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)),
                         speed = (done - (last[id] ?: done)).coerceAtLeast(0),
+                        file = cur.getString(cur.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
+                            ?.let { android.net.Uri.parse(it).path }?.let(::File)?.takeIf { it.exists() },
                     )
                 )
             }
         }.sortedByDescending { it.id }
     }.orEmpty()
+}
+
+/** Bấm 1 lượt đã tải xong: APK → cài; file còn nằm ở thư mục tải → giải nén vào thư viện; đã vào thư viện → mở tab. */
+private fun openDone(context: Context, r: DownloadRow, onOpenLibrary: () -> Unit) {
+    val f = r.file
+    when {
+        f == null -> onOpenLibrary()
+        f.extension.equals("apk", true) -> runCatching { context.startActivity(vn.aow.monika.runner.Installer.installIntent(context, f)) }
+        else -> {
+            vn.aow.monika.library.ImportWorker.enqueue(context, f, AppGraph.prefs.downloadMeta(r.id))
+            android.widget.Toast.makeText(context, "Đang giải nén vào Thư viện…", android.widget.Toast.LENGTH_SHORT).show()
+            onOpenLibrary()
+        }
+    }
 }
 
 private fun readStorage(context: Context): StorageInfo {

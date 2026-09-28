@@ -1,5 +1,15 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.GradientProgress
+import vn.aow.monika.download.DownloadWatch
+import vn.aow.monika.download.DownloadState
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.runtime.LaunchedEffect
+import android.app.DownloadManager
 import vn.aow.monika.community.Community
 import vn.aow.monika.community.CommunityLink
 import android.annotation.SuppressLint
@@ -86,6 +96,14 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
     val links = remember(post, cfg) { LinkResolver.extract(post.contentHtml, cfg.downloadHosts) }
     val html = remember(post, c) { renderHtml(post, c) }
     var showLinks by remember { mutableStateOf(false) }
+    // Lượt tải của bài này: hiện tiến trình ngay trên thanh dưới (mở lại bài vẫn thấy).
+    var downloadId by remember(post.id) { mutableStateOf<Long?>(null) }
+    LaunchedEffect(post.id) { downloadId = withContext(Dispatchers.IO) { DownloadWatch.activeForPost(context, post.id) } }
+    val dl by produceState<DownloadState?>(null, downloadId) {
+        val id = downloadId ?: run { value = null; return@produceState }
+        DownloadWatch.watch(context, id).collect { value = it }
+    }
+    val startDownload: (String) -> Unit = { url -> handleLink(context, scope, url, post) { id -> downloadId = id } }
     // Link FB / Discord trong bài (thường của nhóm dịch; bản dịch cần vào Discord để lấy file / báo lỗi).
     val community = remember(post) { Community.extract(post.contentHtml) }
     var showCommunity by remember { mutableStateOf(false) }
@@ -120,9 +138,10 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 DarkButton("Liên kết", { showLinks = true }, icon = R.drawable.ic_fluent_open_24_regular, subtitle = "${links.size} link")
-                GradientButton(
+                val d = dl
+                if (d != null) DownloadBar(d, Modifier.weight(1f)) else GradientButton(
                     if (direct != null) "Tải game" else "Xem link tải",
-                    { if (direct != null) handleLink(context, scope, direct.pageUrl, post) else showLinks = true },
+                    { if (direct != null) startDownload(direct.pageUrl) else showLinks = true },
                     Modifier.weight(1f),
                     icon = R.drawable.ic_fluent_arrow_download_24_regular,
                     subtitle = direct?.let { listOf(it.label, it.hostName).filter(String::isNotBlank).distinct().joinToString(" · ") } ?: "Mở trình duyệt",
@@ -135,7 +154,7 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
         ModalBottomSheet(onDismissRequest = { showCommunity = false }, containerColor = c.surface) {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Nhóm dịch & cộng đồng", style = Monika.type.sectionTitle, color = c.text)
-                Text("Link trong bài. Máy có app Facebook / Discord thì mở bằng app, chưa có thì mở ngay trong Aow Monika.", style = Monika.type.caption, color = c.textSecondary)
+                Text("Link trong bài. Facebook mở ngay trong Aow Monika. Discord mở bằng app nếu máy đã cài.", style = Monika.type.caption, color = c.textSecondary)
                 community.forEach { l ->
                     val title = "${l.kind.label} · ${Community.shortName(l)}"
                     val icon = if (l.kind == CommunityLink.Kind.DISCORD) R.drawable.ic_fluent_chat_multiple_24_regular else R.drawable.ic_fluent_people_community_24_regular
@@ -151,9 +170,26 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Liên kết tải trong bài", style = Monika.type.sectionTitle, color = c.text)
                 Text("Nút gradient: tải thẳng trong app. Nút tối: mở trình duyệt, tải xong vào Giả lập → Thêm game.", style = Monika.type.caption, color = c.textSecondary)
-                links.forEach { link -> LinkButton(link) { showLinks = false; handleLink(context, scope, link.pageUrl, post) } }
+                links.forEach { link -> LinkButton(link) { showLinks = false; startDownload(link.pageUrl) } }
             }
         }
+    }
+}
+
+/** Tiến trình tải ngay trong bài: % + tốc độ; tải xong báo đang giải nén vào thư viện. */
+@Composable
+private fun DownloadBar(d: DownloadState, modifier: Modifier) {
+    Column(modifier.height(56.dp).padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center) {
+        val title = when {
+            d.status == DownloadManager.STATUS_SUCCESSFUL -> "Tải xong · đang giải nén vào Thư viện"
+            d.status == DownloadManager.STATUS_FAILED -> "Tải lỗi · xem tab Tải xuống"
+            d.status == DownloadManager.STATUS_PAUSED -> "Tạm dừng (chờ mạng) ${(d.progress * 100).toInt()}%"
+            d.total <= 0 -> "Đang bắt đầu tải…"
+            else -> "Đang tải ${(d.progress * 100).toInt()}%  ·  ${"%.1f".format(d.speed / 1_048_576.0).replace('.', ',')} MB/s"
+        }
+        Text(title, style = Monika.type.bodyStrong, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.height(6.dp))
+        GradientProgress(if (d.status == DownloadManager.STATUS_SUCCESSFUL) 1f else d.progress, height = 6.dp)
     }
 }
 
@@ -178,7 +214,7 @@ private fun createPostWebView(context: Context, scope: CoroutineScope, post: Pos
 }
 
 /** Bấm link: host tải thẳng → tải trong app (kèm tên + ảnh bìa từ bài); còn lại → trình duyệt. */
-fun handleLink(context: Context, scope: CoroutineScope, url: String, post: Post? = null) {
+fun handleLink(context: Context, scope: CoroutineScope, url: String, post: Post? = null, onStarted: (Long) -> Unit = {}) {
     val direct = LinkResolver.resolve(url, AppGraph.config.current.downloadHosts)?.directUrl
     if (direct == null) {
         openUrl(context, url)
@@ -189,7 +225,7 @@ fun handleLink(context: Context, scope: CoroutineScope, url: String, post: Post?
     }
     scope.launch {
         runCatching { AppGraph.downloader.enqueue(direct, meta = meta) }
-            .onSuccess { Toast.makeText(context, "Đang tải… xem ở tab Tải xuống", Toast.LENGTH_LONG).show() }
+            .onSuccess { id -> onStarted(id) }
             .onFailure { Toast.makeText(context, "Lỗi: ${it.message}", Toast.LENGTH_LONG).show() }
     }
 }

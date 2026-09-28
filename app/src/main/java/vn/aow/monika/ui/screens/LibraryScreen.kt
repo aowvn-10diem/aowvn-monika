@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import androidx.compose.runtime.collectAsState
 import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -102,18 +103,22 @@ fun LibraryScreen(onSettings: () -> Unit) {
         }
     }
 
-    // Chọn được nhiều file cùng lúc (vd. đủ các phần part1/part2 của 1 game).
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+    // Giữ tham chiếu hàm play (khai báo phía dưới) — mảng thường, không phải state, để không gây vẽ lại.
+    val playRef = remember { arrayOfNulls<(Game) -> Unit>(1) }
+
+    /** Nhận file vào thư viện. [autoPlay]: mở từ app khác → nhận diện xong thì chạy luôn đúng giả lập. */
+    fun importAll(uris: List<android.net.Uri>, autoPlay: Boolean) {
+        if (uris.isEmpty()) return
         busy = true; percent = null
         scope.launch {
             val messages = mutableListOf<String>()
+            var added: java.io.File? = null
             for (uri in uris) {
                 runCatching { withContext(Dispatchers.IO) { Importer.importUri(context, uri, AppGraph.config.current.archivePasswords, onProgress) } }
                     .onSuccess { r ->
                         when {
                             r.pending -> messages += r.error.orEmpty()
-                            r.error == null -> messages += "Đã thêm: ${r.dir.name}"
+                            r.error == null -> { messages += "Đã thêm: ${r.dir.name}"; added = r.dir }
                             else -> messages += "\"${r.dir.name}\" chưa giải nén được: ${r.error}\nBấm \"Giải nén\" ở game đó để thử lại."
                         }
                     }
@@ -121,10 +126,25 @@ fun LibraryScreen(onSettings: () -> Unit) {
             }
             busy = false; percent = null
             reloadKey++
+            val game = added?.let { d -> withContext(Dispatchers.IO) { AppGraph.library.list().firstOrNull { it.dir == d } } }
+            if (autoPlay && uris.size == 1 && game?.system != null) { playRef[0]?.invoke(game); return@launch }
             // Chỉ báo dòng cuối cho mỗi bộ (tránh lặp "đang chờ phần" khi đã đủ).
             val last = messages.lastOrNull().orEmpty()
             if (uris.size == 1 && last.startsWith("Đã thêm")) Toast.makeText(context, last, Toast.LENGTH_SHORT).show()
             else info = messages.distinct().takeLast(4).joinToString("\n\n")
+        }
+    }
+
+    // Chọn được nhiều file cùng lúc (vd. đủ các phần part1/part2 của 1 game).
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris -> importAll(uris, autoPlay = false) }
+
+    // File mở từ app khác ("Mở bằng Aow Monika").
+    val pending by AppGraph.pendingImports.collectAsState()
+    LaunchedEffect(pending) {
+        if (pending.isNotEmpty()) {
+            val list = pending
+            AppGraph.pendingImports.value = emptyList()
+            importAll(list, autoPlay = true)
         }
     }
 
@@ -136,6 +156,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
             LaunchResult.Started -> AppGraph.prefs.markPlayed(game.dir.path)
         }
     }
+    playRef[0] = ::play
 
     val systems = games.mapNotNull { it.system?.name }.distinct()
     val shown = games.filter { filter == null || it.system?.name == filter }
