@@ -1,5 +1,5 @@
 {
-  "configVersion": 1,
+  "configVersion": 2,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
 
   "app": {
@@ -61,14 +61,14 @@
     "ruffle": { "script": "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle/ruffle.js" }
   },
 
-  "_externalApps_ghi_chu": "App ngoài. packageNames: danh sách tên gói để nhận biết đã cài (CẦN XÁC NHẬN). downloadUrl để trống = app báo 'đang cập nhật link'.",
+  "_externalApps_ghi_chu": "App ngoài. packageNames: tên gói để nhận biết đã cài (CẦN XÁC NHẬN). downloadUrl: link APK/host tải thẳng, HOẶC link trang aow.vn/p/... (app tự đọc trang, lấy link tải thẳng đầu tiên, tải + cài trong app). Để trống = 'đang cập nhật link'.",
   "externalApps": [
     {
       "id": "kirikiroid2",
       "name": "Kirikiroid2",
       "description": "Chạy visual novel engine Kirikiri (file .xp3).",
       "packageNames": ["org.tvp.kirikiri2"],
-      "downloadUrl": "",
+      "downloadUrl": "https://www.aow.vn/p/tai-gia-lap-kirikiroid.html",
       "guide": [
         "Bấm nút Tải để tải file cài đặt Kirikiroid2.",
         "Khi Android hỏi, cho phép 'Cài ứng dụng không rõ nguồn gốc' cho AowVN Monika.",
@@ -81,7 +81,7 @@
       "name": "JoiPlay",
       "description": "Chạy Ren'Py và RPG Maker XP/VX/VX Ace. Cần cài thêm plugin tương ứng.",
       "packageNames": ["cyou.joiplay.joiplay"],
-      "downloadUrl": "",
+      "downloadUrl": "https://www.aow.vn/p/tai-gia-lap-joiplay.html",
       "plugins": [
         { "name": "RPG Maker Plugin", "downloadUrl": "" },
         { "name": "Ren'Py Plugin", "downloadUrl": "" }
@@ -98,7 +98,7 @@
       "name": "J2ME Loader",
       "description": "Chạy game Java (.jar).",
       "packageNames": ["ru.playsoftware.j2meloader"],
-      "downloadUrl": "",
+      "downloadUrl": "https://www.aow.vn/p/tai-trinh-gia-lap-java.html",
       "guide": [
         "Tải và cài J2ME Loader.",
         "Quay lại AowVN Monika, bấm Chơi lại game .jar."
@@ -115,11 +115,12 @@
   ],
 
   "_archivePasswords_ghi_chu": "Mật khẩu file nén app tự thử lần lượt khi giải nén. Sai hết thì app hỏi user.",
-  "archivePasswords": [],
+  "archivePasswords": ["aowvn.org"],
 
   "_downloadHosts_ghi_chu": "mode 'direct' = tải thẳng trong app theo 'directUrl' ($1 = nhóm bắt được của 'pattern'). mode 'browser' = mở trình duyệt.",
   "downloadHosts": [
     { "name": "Pixeldrain", "host": "pixeldrain.com", "mode": "direct", "pattern": "/u/([A-Za-z0-9]+)", "directUrl": "https://pixeldrain.com/api/file/$1?download" },
+    { "name": "Pixeldrain", "host": "pixeldrain.com", "mode": "direct", "pattern": "/d/([A-Za-z0-9]+)", "directUrl": "https://pixeldrain.com/api/filesystem/$1?attach" },
     { "name": "Pixeldrain", "host": "pixeldrain.com", "mode": "browser" },
     { "name": "Box",        "host": "box.com",        "mode": "browser" },
     { "name": "Viettel MyBox", "host": "mybox.vietteltelecom.vn", "mode": "browser" },

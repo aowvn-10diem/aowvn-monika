@@ -51,6 +51,17 @@ class ConfigTest {
     }
 
     @Test
+    fun `lay link pixeldrain dang thu muc va chu tren nut`() {
+        val html = """<li><a class="download" href="https://pixeldrain.com/d/yd6J5KeC" rel="nofollow">TẢI VỀ</a></li>"""
+        val link = LinkResolver.extract(html, cfg.downloadHosts).single()
+        assertEquals("https://pixeldrain.com/api/filesystem/yd6J5KeC?attach", link.directUrl)
+        assertEquals("TẢI VỀ", link.label)
+        assertTrue(LinkResolver.isBlogPage("https://www.aow.vn/p/tai-gia-lap-joiplay.html"))
+        assertTrue(!LinkResolver.isBlogPage("https://www.aow.vn/2026/02/game.html"))
+        assertTrue("aowvn.org" in cfg.archivePasswords)
+    }
+
+    @Test
     fun `nhan dien game theo file danh dau va duoi file`() {
         fun gameWith(vararg files: String): File {
             val dir = Files.createTempDirectory("game").toFile()

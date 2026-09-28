@@ -8,17 +8,23 @@ data class DownloadLink(
     val pageUrl: String,
     /** Có giá trị = tải thẳng trong app. Null = mở trình duyệt. */
     val directUrl: String?,
+    /** Chữ trên nút trong bài (vd. "TẢI VỀ", "DỰ PHÒNG", "RPG Maker Plugin"). */
+    val label: String = "",
 )
 
-/** Tách link tải trong nội dung bài theo danh sách downloadHosts của cấu hình. */
+/** Tách link tải trong nội dung bài/trang theo danh sách downloadHosts của cấu hình. */
 object LinkResolver {
-    private val hrefRegex = Regex("""href\s*=\s*"(https?://[^"]+)"""", RegexOption.IGNORE_CASE)
+    private val anchorRegex = Regex("""<a\b[^>]*href\s*=\s*["'](https?://[^"']+)["'][^>]*>(.*?)</a>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+    private val tagRegex = Regex("<[^>]+>")
 
     fun extract(html: String, hosts: List<DownloadHost>): List<DownloadLink> =
-        hrefRegex.findAll(html)
-            .map { it.groupValues[1].replace("&amp;", "&") }
-            .distinct()
-            .mapNotNull { resolve(it, hosts) }
+        anchorRegex.findAll(html)
+            .mapNotNull { m ->
+                val url = m.groupValues[1].replace("&amp;", "&")
+                val label = m.groupValues[2].replace(tagRegex, "").replace("&nbsp;", " ").replace("&amp;", "&").trim()
+                resolve(url, hosts)?.copy(label = label)
+            }
+            .distinctBy { it.pageUrl }
             .toList()
 
     fun resolve(url: String, hosts: List<DownloadHost>): DownloadLink? {
@@ -36,4 +42,10 @@ object LinkResolver {
         }
         return null
     }
+
+    /** Link trang tĩnh của blog (aow.vn/p/...) — app đọc trang qua feed để lấy link tải. */
+    fun isBlogPage(url: String): Boolean =
+        runCatching { URI(url) }.getOrNull()?.let { uri ->
+            uri.host?.removePrefix("www.") == "aow.vn" && uri.path.orEmpty().startsWith("/p/")
+        } ?: false
 }

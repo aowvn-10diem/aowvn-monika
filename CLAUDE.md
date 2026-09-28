@@ -10,12 +10,17 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 - Thêm hệ/trình chạy: sửa config + (nếu runner mới) thêm nhánh trong `runner/GameLauncher.kt`. Cập nhật `ConfigTest` nếu thêm loại runner.
 - Tất cả thành phần tạo trong `AppGraph.kt` (DI thủ công, không thêm Hilt/Koin).
 - Phiên bản thư viện chỉ sửa trong `gradle/libs.versions.toml`.
+- Giao diện theo Fluent 2: màn hình chỉ dùng token trong `ui/theme/Theme.kt` (Fluent.colors / Fluent.type / FluentRadius) và thành phần trong `ui/theme/FluentComponents.kt`. Icon: Fluent System Icons (MIT) chép lẻ vào `res/drawable/ic_fluent_*` (không thêm cả gói 30MB).
+- Không bao giờ commit keystore/mật khẩu ký; chỉ dùng GitHub Secrets.
 
 ## Sự thật đã xác minh
 
 - Feed: `https://www.aow.vn/feeds/posts/default?alt=json&orderby=published`, bài lẻ: `/feeds/posts/default/{postId}?alt=json`. Blog ID `4482370512868492154`.
 - aow.vn đứng sau Cloudflare với rule chặn IP ngoài VN/LA/CU. Máy chủ Claude chỉ được mở riêng đường dẫn `/feeds/` (rule skip theo IP). Vì vậy thông báo chạy **trong app** (WorkManager, IP user VN), không dùng server/GitHub Action nước ngoài.
 - LibretroDroid 0.14.0 (JitPack): `GLRetroView(context, GLRetroViewData)`, `serializeSRAM()`, `getGLRetroErrors()`.
+- Feed trả NGUYÊN bài (không bị cắt). Trang tĩnh đọc qua `/feeds/pages/default?alt=json` (dùng cho trang tải giả lập aow.vn/p/...).
+- Pixeldrain: `/u/{id}` → `/api/file/{id}?download`; `/d/{id}` → `/api/filesystem/{id}?attach` (đã thử, trả file + tên tiếng Việt qua filename*=UTF-8).
+- Mật khẩu file nén aow.vn: `aowvn.org` (ghi cuối bài).
 - libarchive (me.zhanghai.android.libarchive): giải nén bằng `readOpenFd` + `readDataIntoFd`; `readNextHeader` trả 0 khi hết file.
 - Lõi libretro Android: `https://buildbot.libretro.com/nightly/android/latest/{abi}/<core>_libretro_android.so.zip`.
 

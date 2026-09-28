@@ -53,7 +53,10 @@ class Downloader(
         val disposition = runCatching {
             http.newCall(Request.Builder().url(url).head().build()).execute().use { it.header("Content-Disposition") }
         }.getOrNull()
-        URLUtil.guessFileName(url, disposition, null).replace(Regex("""[\\/:*?"<>|]"""), "_")
+        // Hỗ trợ cả filename*=UTF-8''... (tên tiếng Việt) mà URLUtil không đọc được.
+        val utf8Name = disposition?.let { Regex("""filename\*=(?:UTF-8|utf-8)''([^;]+)""").find(it)?.groupValues?.get(1) }
+            ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrNull() }
+        (utf8Name ?: URLUtil.guessFileName(url, disposition, null)).replace(Regex("""[\\/:*?"<>|]"""), "_")
     }
 }
 

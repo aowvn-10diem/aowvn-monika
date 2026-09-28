@@ -12,7 +12,8 @@ Sửa file, **tăng `configVersion` lên 1**, commit và push lên `main`. App c
 { "id": "kirikiroid2", "downloadUrl": "https://link-chinh-thuc/kirikiroid2.apk", ... }
 ```
 
-- Link kết thúc bằng `.apk` → app tự tải, tải xong bấm thông báo để cài.
+- **Cách khuyên dùng:** để `downloadUrl` là trang aow.vn (vd. `https://www.aow.vn/p/tai-gia-lap-joiplay.html`). App tự đọc trang, hiện các nút tải theo đúng chữ trên nút trong trang. Link Pixeldrain → tải + cài ngay trong app. Sếp chỉ cần sửa trang trên Blogger, không cần đụng config.
+- Link kết thúc bằng `.apk` hoặc link Pixeldrain → app tự tải, tải xong bấm thông báo để cài.
 - Link trang web → app mở trình duyệt.
 - `guide`: các bước hướng dẫn, mỗi dòng là 1 bước.
 - `packageNames`: tên gói để app biết đã cài hay chưa. Xem tên gói: cài app rồi vào Cài đặt > Ứng dụng, hoặc xem trong link Google Play (`id=...`).

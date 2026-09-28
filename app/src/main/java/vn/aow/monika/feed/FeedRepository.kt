@@ -49,6 +49,22 @@ class FeedRepository(
         return parseEntry(getJson(url).jsonObject["entry"]!!.jsonObject).also { cache[it.id] = it }
     }
 
+    private var pagesCache: List<Post>? = null
+
+    /**
+     * Đọc 1 trang tĩnh của blog (aow.vn/p/...) qua feed pages, không cần mở trình duyệt.
+     * Dùng cho trang tải giả lập: sếp sửa trang trên Blogger là app nhận link mới.
+     */
+    suspend fun fetchPage(pageUrl: String, forceRefresh: Boolean = false): Post? {
+        val path = pageUrl.substringAfter("://").substringAfter('/').substringBefore('?')
+        val pages = pagesCache.takeUnless { forceRefresh } ?: run {
+            val url = configRepo.current.feed.url.replace("/posts/", "/pages/").trimEnd('/') + "?alt=json&max-results=500"
+            val root = getJson(url).jsonObject["feed"]!!.jsonObject
+            (root["entry"] as? JsonArray).orEmpty().map { parseEntry(it.jsonObject) }.also { pagesCache = it }
+        }
+        return pages.firstOrNull { it.url.substringAfter("://").substringAfter('/') == path }
+    }
+
     private suspend fun getJson(url: String): JsonElement = withContext(Dispatchers.IO) {
         http.newCall(Request.Builder().url(url).build()).execute().use { response ->
             check(response.isSuccessful) { "Không tải được bài viết (HTTP ${response.code})" }
