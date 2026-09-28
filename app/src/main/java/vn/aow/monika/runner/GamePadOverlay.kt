@@ -269,7 +269,7 @@ private fun OptionsPanel(
                 ) {
                     Text(o.label, style = Monika.type.body, color = Color.White, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text(
-                        o.value, style = Monika.type.bodyStrong, color = Color.White, maxLines = 1,
+                        o.display(), style = Monika.type.bodyStrong, color = Color.White, maxLines = 1,
                         modifier = Modifier.padding(start = 10.dp).clip(Radius.pill).background(primaryGradient()).padding(horizontal = 12.dp, vertical = 6.dp),
                     )
                 }

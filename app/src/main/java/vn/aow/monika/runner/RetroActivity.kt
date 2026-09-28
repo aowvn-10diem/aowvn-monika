@@ -165,7 +165,7 @@ class RetroActivity : ComponentActivity() {
     /** Đọc danh sách tùy chọn lõi đang chạy (lõi tự khai báo) rồi mở bảng chỉnh. */
     private fun openOptions(coreId: String) {
         val view = retroView ?: run { showToast("Game chưa chạy xong"); return }
-        val list = runCatching { view.getVariables().mapNotNull { CoreOptions.parse(it.key ?: return@mapNotNull null, it.description, it.value) } }
+        val list = runCatching { view.getVariables().mapNotNull { CoreOptions.parse(it.key ?: return@mapNotNull null, it.description, it.value, AppGraph.config.current.coreOptionText) } }
             .getOrDefault(emptyList())
             .sortedBy { it.label.lowercase() }
         ui.options = list

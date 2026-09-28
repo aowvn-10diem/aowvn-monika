@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.SoftPillButton
 import android.net.Uri
 import android.content.Intent
 import android.provider.Settings
@@ -146,6 +147,26 @@ fun LibraryScreen(onSettings: () -> Unit) {
     // Chọn được nhiều file cùng lúc (vd. đủ các phần part1/part2 của 1 game).
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris -> importAll(uris, autoPlay = false) }
 
+    var deviceScanning by remember { mutableStateOf(false) }
+    var scanDirs by remember { mutableStateOf(0) }
+    fun scanDevice() {
+        if (deviceScanning) return
+        deviceScanning = true
+        scope.launch {
+            val n = withContext(Dispatchers.IO) {
+                runCatching { AppGraph.library.scanner.scan(AppGraph.config.current) { d -> scanDirs = d } }.getOrDefault(0)
+            }
+            deviceScanning = false
+            reloadKey++
+            Toast.makeText(context, if (n > 0) "Tìm thấy $n game trong máy" else "Không tìm thấy game nào khác trong máy", Toast.LENGTH_SHORT).show()
+        }
+    }
+    // Có quyền + lần quét trước đã hơn 1 ngày → tự quét ngầm.
+    LaunchedEffect(Unit) {
+        val sc = AppGraph.library.scanner
+        if (sc.canScanAll() && System.currentTimeMillis() - sc.lastScan > 24 * 3_600_000L) scanDevice()
+    }
+
     // File mở từ app khác ("Mở bằng Aow Monika").
     val pending by AppGraph.pendingImports.collectAsState()
     LaunchedEffect(pending) {
@@ -159,15 +180,28 @@ fun LibraryScreen(onSettings: () -> Unit) {
     fun play(game: Game) {
         when (val r = AppGraph.launcher.launch(activity, game)) {
             is LaunchResult.NeedApp -> needApp = r.app
-            is LaunchResult.OpenedApp -> { AppGraph.prefs.markPlayed(game.dir.path); info = "Đã mở ${r.app.name}. Trong app đó, chọn thư mục:\n${r.gamePath}" }
+            is LaunchResult.OpenedApp -> { AppGraph.prefs.markPlayed(game.key); info = "Đã mở ${r.app.name}. Trong app đó, chọn thư mục:\n${r.gamePath}" }
             is LaunchResult.Failed -> info = r.message
-            LaunchResult.Started -> AppGraph.prefs.markPlayed(game.dir.path)
+            LaunchResult.Started -> AppGraph.prefs.markPlayed(game.key)
         }
     }
     playRef[0] = ::play
 
+    // Bộ lọc: Tất cả · Thường chơi · Trong máy (quét được) · từng hệ máy.
     val systems = games.mapNotNull { it.system?.name }.distinct()
-    val shown = games.filter { filter == null || it.system?.name == filter }
+    val frequent = games.filter { AppGraph.prefs.playCount(it.key) >= 2 }.sortedByDescending { AppGraph.prefs.playCount(it.key) }
+    val filters = buildList<String?> {
+        add(null)
+        if (frequent.isNotEmpty()) add(FILTER_FREQUENT)
+        if (games.any { it.external }) add(FILTER_DEVICE)
+        addAll(systems)
+    }
+    val shown = when (filter) {
+        null -> games
+        FILTER_FREQUENT -> frequent
+        FILTER_DEVICE -> games.filter { it.external }
+        else -> games.filter { it.system?.name == filter }
+    }
     val lastPlayed = AppGraph.library.lastPlayed(AppGraph.prefs, games)
 
     Screen {
@@ -192,7 +226,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
             }
             // Game của lần cài trước chưa đọc được → xin quyền "Truy cập mọi tệp" (Android 11+).
             val lockedCount = games.count { it.locked }
-            if (lockedCount > 0 && Build.VERSION.SDK_INT >= 30 && !Environment.isExternalStorageManager()) item(span = { GridItemSpan(2) }) {
+            if (lockedCount > 0 && !AppGraph.library.scanner.canScanAll()) item(span = { GridItemSpan(2) }) {
                 MonikaCard(Modifier.fillMaxWidth(), shape = Radius.large, padding = PaddingValues(16.dp)) {
                     Text("$lockedCount game từ lần cài trước chưa mở được", style = Monika.type.cardTitle, color = c.text)
                     Text("Do bạn gỡ app rồi cài lại, Android chặn đọc game cũ. Cho phép \"Truy cập mọi tệp\" để chơi tiếp mà không phải tải lại.",
@@ -200,8 +234,27 @@ fun LibraryScreen(onSettings: () -> Unit) {
                     GradientButton("Cấp quyền", { openAllFilesAccess(context) }, Modifier.fillMaxWidth().padding(top = 12.dp), height = 44.dp)
                 }
             }
-            if (systems.size > 1) item(span = { GridItemSpan(2) }) {
-                ChipBar(listOf<String?>(null) + systems, filter, { it ?: "Tất cả" }, { filter = it }, accent = true, contentPadding = PaddingValues(0.dp))
+            // Quét cả máy tìm game (cần quyền "Truy cập mọi tệp" để thấy file của app khác).
+            item(span = { GridItemSpan(2) }) {
+                MonikaCard(Modifier.fillMaxWidth(), shape = Radius.large, padding = PaddingValues(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(if (deviceScanning) "Đang quét máy… ($scanDirs thư mục)" else "Tìm game có sẵn trong máy", style = Monika.type.bodyStrong, color = c.text)
+                            Text(
+                                if (!AppGraph.library.scanner.canScanAll()) "Cần quyền \"Truy cập mọi tệp\" để thấy game trong Zalo, Download, ZArchiver…"
+                                else "Tự quét mỗi ngày. Game tìm thấy chơi thẳng, không chép thêm.",
+                                style = Monika.type.caption, color = c.textSecondary,
+                            )
+                        }
+                        if (deviceScanning) Spinner()
+                        else SoftPillButton("Quét", {
+                            if (!AppGraph.library.scanner.canScanAll()) openAllFilesAccess(context) else scanDevice()
+                        }, R.drawable.ic_fluent_search_24_regular)
+                    }
+                }
+            }
+            if (filters.size > 2) item(span = { GridItemSpan(2) }) {
+                ChipBar(filters, filter, { it ?: "Tất cả" }, { filter = it }, accent = true, contentPadding = PaddingValues(0.dp))
             }
             lastPlayed?.let { g ->
                 item(span = { GridItemSpan(2) }) { Text("Tiếp tục chơi", style = Monika.type.sectionTitle, color = c.text) }
@@ -217,14 +270,14 @@ fun LibraryScreen(onSettings: () -> Unit) {
             } else item(span = { GridItemSpan(2) }) {
                 Text("Thư viện", style = Monika.type.sectionTitle, color = c.text, modifier = Modifier.padding(top = 4.dp))
             }
-            items(shown, key = { it.dir.path }) { g ->
+            items(shown, key = { it.key }) { g ->
                 GameTile(
                     g, enabled = !busy, onPlay = { play(g) }, onExtract = { password = ""; toExtract = g }, onDelete = { toDelete = g },
-                    pinned = g.dir.path in pinned,
+                    pinned = g.key in pinned,
                     onTogglePin = {
-                        pinned = if (g.dir.path in pinned) pinned - g.dir.path else pinned + g.dir.path
+                        pinned = if (g.key in pinned) pinned - g.key else pinned + g.key
                         AppGraph.prefs.pinnedGames = pinned
-                        Toast.makeText(context, if (g.dir.path in pinned) "Đã giữ lại: không tự dọn game này" else "Đã bỏ giữ lại", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, if (g.key in pinned) "Đã giữ lại: không tự dọn game này" else "Đã bỏ giữ lại", Toast.LENGTH_SHORT).show()
                     },
                     onRedownload = {
                         // Mở lại bài viết gốc để tải lại (bài có nút "Tải game").
@@ -291,12 +344,18 @@ fun LibraryScreen(onSettings: () -> Unit) {
     toDelete?.let { game ->
         AlertDialog(
             onDismissRequest = { toDelete = null },
-            title = { Text("Xóa game?", style = Monika.type.cardTitle) },
-            text = { Text("Xóa \"${game.name}\" khỏi máy. Dữ liệu lưu game vẫn giữ.", style = Monika.type.body, color = c.textSecondary) },
+            title = { Text(if (game.external) "Ẩn khỏi Thư viện?" else "Xóa game?", style = Monika.type.cardTitle) },
+            text = {
+                Text(
+                    if (game.external) "Ẩn \"${game.name}\" khỏi Thư viện. File game trong máy KHÔNG bị xóa:\n${game.entry?.path}"
+                    else "Xóa \"${game.name}\" khỏi máy. Dữ liệu lưu game vẫn giữ.",
+                    style = Monika.type.body, color = c.textSecondary,
+                )
+            },
             confirmButton = {
-                GradientButton("Xóa", {
+                GradientButton(if (game.external) "Ẩn" else "Xóa", {
                     toDelete = null
-                    scanned = scanned?.filterNot { it.dir == game.dir } // Ẩn ngay, không chờ quét lại.
+                    scanned = scanned?.filterNot { it.key == game.key } // Ẩn ngay, không chờ quét lại.
                     scope.launch {
                         val ok = withContext(Dispatchers.IO) { AppGraph.library.delete(game) }
                         if (!ok) info = "Chưa xóa hết \"${game.name}\": một số file do lần cài app trước tạo ra nên Android không cho xóa.\n\n" +
@@ -409,3 +468,6 @@ private fun openAllFilesAccess(context: android.content.Context) {
         context.startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + context.packageName)))
     }.onFailure { runCatching { context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)) } }
 }
+
+private const val FILTER_FREQUENT = "⭐ Thường chơi"
+private const val FILTER_DEVICE = "📱 Trong máy"

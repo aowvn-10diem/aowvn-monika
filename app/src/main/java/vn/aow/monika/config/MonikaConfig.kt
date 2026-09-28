@@ -25,6 +25,8 @@ data class MonikaConfig(
     val adblock: AdBlockConfig = AdBlockConfig(),
     /** Tài khoản AowVN (Firebase của web aow.vn): đăng nhập, điểm danh, đánh giá, vote/donate. */
     val account: AccountConfig = AccountConfig(),
+    /** Bản dịch tên/giá trị tùy chọn lõi giả lập (tiếng Anh → tiếng Việt). */
+    val coreOptionText: CoreOptionText = CoreOptionText(),
 ) {
     fun system(id: String): SystemDef? = systems.firstOrNull { it.id == id }
     fun externalApp(id: String): ExternalApp? = externalApps.firstOrNull { it.id == id }
@@ -32,6 +34,12 @@ data class MonikaConfig(
     /** Nhãn blog dùng làm bộ lọc, giữ thứ tự khai báo, bỏ trùng. */
     fun feedLabels(): List<String> = systems.flatMap { it.labels }.distinct()
 }
+
+@Serializable
+data class CoreOptionText(
+    val labels: Map<String, String> = emptyMap(),
+    val values: Map<String, String> = emptyMap(),
+)
 
 @Serializable
 data class AccountConfig(

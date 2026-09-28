@@ -3,7 +3,16 @@ package vn.aow.monika.runner
 import android.content.Context
 
 /** 1 tùy chọn của lõi libretro, vd. "Độ phân giải trong: 1x|2x|3x". */
-data class CoreOption(val key: String, val label: String, val values: List<String>, val value: String) {
+data class CoreOption(
+    val key: String,
+    val label: String,
+    val values: List<String>,
+    val value: String,
+    /** Bản dịch giá trị để HIỂN THỊ (giá trị gửi cho lõi vẫn là bản gốc). */
+    val valueText: Map<String, String> = emptyMap(),
+) {
+    fun display(v: String = value): String = valueText[v] ?: valueText[v.lowercase()] ?: v
+
     /** Giá trị kế tiếp (bấm để xoay vòng). */
     fun next(): String = values.getOrNull((values.indexOf(value) + 1) % values.size.coerceAtLeast(1)) ?: value
 }
@@ -19,14 +28,15 @@ object CoreOptions {
      * Lõi libretro mô tả tùy chọn dạng "Tên; giá trị1|giá trị2|…" (giá trị đầu là mặc định).
      * Mô tả không đúng dạng → bỏ qua (không có danh sách để chọn).
      */
-    fun parse(key: String, description: String?, current: String?): CoreOption? {
+    fun parse(key: String, description: String?, current: String?, text: vn.aow.monika.config.CoreOptionText = vn.aow.monika.config.CoreOptionText()): CoreOption? {
         val d = description ?: return null
         val sep = d.indexOf(';')
         if (sep < 0) return null
         val values = d.substring(sep + 1).trim().split('|').map { it.trim() }.filter { it.isNotEmpty() }
         if (values.size < 2) return null
         val value = current?.takeIf { it in values } ?: values.first()
-        return CoreOption(key, d.substring(0, sep).trim(), values, value)
+        val label = d.substring(0, sep).trim()
+        return CoreOption(key, text.labels[label] ?: label, values, value, text.values)
     }
 
     /** Giá trị áp khi mở game = mặc định trong config, đè bằng giá trị user đã chọn. */

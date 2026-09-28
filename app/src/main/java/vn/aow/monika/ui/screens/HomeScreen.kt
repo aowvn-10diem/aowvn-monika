@@ -123,7 +123,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                     Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                         ContinueCard(g) {
                             val activity = context as? android.app.Activity
-                            if (activity != null && AppGraph.launcher.launch(activity, g) == vn.aow.monika.runner.LaunchResult.Started) AppGraph.prefs.markPlayed(g.dir.path)
+                            if (activity != null && AppGraph.launcher.launch(activity, g) == vn.aow.monika.runner.LaunchResult.Started) AppGraph.prefs.markPlayed(g.key)
                             else onGo(Routes.EMULATOR) // Cần app ngoài / lỗi → để tab Thư viện hướng dẫn.
                         }
                     }

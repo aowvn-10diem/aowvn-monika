@@ -24,7 +24,12 @@ data class Game(
      * chặn đọc file cũ trong Download). Cần quyền "Truy cập mọi tệp" mới chơi được.
      */
     val locked: Boolean = false,
-)
+    /** Game tìm thấy khi quét máy (nằm ngoài thư mục Monika) — chơi thẳng từ chỗ cũ, "xóa" = ẩn khỏi Thư viện. */
+    val external: Boolean = false,
+) {
+    /** Khóa riêng của game (lưu lần chơi, giữ lại…): game quét được dùng đường dẫn file vì nhiều game có thể chung 1 thư mục. */
+    val key: String get() = if (external) entry?.path ?: dir.path else dir.path
+}
 
 class GameLibrary(private val context: Context, private val configRepo: ConfigRepository) {
 
@@ -32,22 +37,35 @@ class GameLibrary(private val context: Context, private val configRepo: ConfigRe
     @Volatile var cached: List<Game>? = null
         private set
 
-    fun list(): List<Game> =
+    val scanner = DeviceScanner(context)
+
+    fun list(): List<Game> = (internalGames() + externalGames()).also { cached = it }
+
+    /** Game quét được trong máy, nhận diện hệ theo đuôi file. */
+    private fun externalGames(): List<Game> = runCatching {
+        val cfg = configRepo.current
+        scanner.found().mapNotNull { f ->
+            val system = cfg.systems.firstOrNull { s -> s.extensions.any { it.equals(f.extension, true) } } ?: return@mapNotNull null
+            Game(f.parentFile ?: f, f.nameWithoutExtension.replace('_', ' '), system, f, external = true)
+        }
+    }.getOrDefault(emptyList())
+
+    private fun internalGames(): List<Game> =
         GameStorage.games(context).listFiles().orEmpty()
             .filter { it.isDirectory }
             .sortedByDescending { it.lastModified() }
             // 1 thư mục lỗi không được làm hỏng cả thư viện (và không bao giờ làm app crash).
             .mapNotNull { dir -> runCatching { GameDetector.detect(dir, configRepo.current) }.getOrElse { Game(dir, dir.name, null, null, locked = true) } }
-            .also { cached = it }
 
     /** Game chơi gần nhất (đã nhận diện được hệ máy). */
     fun lastPlayed(prefs: vn.aow.monika.Prefs, from: List<Game>? = cached): Game? =
-        from.orEmpty().filter { it.system != null && prefs.lastPlayed(it.dir.path) > 0 }.maxByOrNull { prefs.lastPlayed(it.dir.path) }
+        from.orEmpty().filter { it.system != null && prefs.lastPlayed(it.key) > 0 }.maxByOrNull { prefs.lastPlayed(it.key) }
 
     /** Xóa game. Trả về false nếu còn file không xóa được (thường là file của lần cài trước, Android khóa). */
     fun delete(game: Game): Boolean {
+        if (game.external) { scanner.hide(game.key); cached = cached?.filterNot { it.key == game.key }; return true }
         val ok = game.dir.deleteRecursively() || !game.dir.exists()
-        cached = cached?.filterNot { it.dir == game.dir && ok }
+        cached = cached?.filterNot { it.key == game.key && ok }
         return ok
     }
 }

@@ -26,3 +26,14 @@ class CoreOptionsTest {
         assertNull(CoreOptions.parse("k", "Chỉ 1 giá trị; on", null))
     }
 }
+
+class CoreOptionTextTest {
+    @org.junit.Test fun translatesFromBundledConfig() {
+        val cfg = vn.aow.monika.config.ConfigRepository.parse(java.io.File("../config/monika-config.json").readText())
+        val o = vn.aow.monika.runner.CoreOptions.parse("desmume_screens_layout", "Screen Layout; top/bottom|left/right|hybrid/top", "left/right", cfg.coreOptionText)!!
+        org.junit.Assert.assertEquals("Bố cục 2 màn hình", o.label)
+        org.junit.Assert.assertEquals("left/right", o.value) // giá trị gửi cho lõi giữ nguyên
+        org.junit.Assert.assertEquals("Trái / Phải", o.display())
+        org.junit.Assert.assertEquals("Bật", o.copy(value = "enabled").display())
+    }
+}
