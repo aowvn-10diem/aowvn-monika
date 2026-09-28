@@ -12,6 +12,9 @@
          App phát hành ngoài CH Play nên dùng được. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
+    <!-- Chỉ xin khi cần: đọc game do bản cài TRƯỚC tạo trong Download (gỡ app rồi cài lại, Android 11+ chặn). -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"

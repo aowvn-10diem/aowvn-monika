@@ -80,7 +80,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
     }
     // Game đang chơi dở (quét thư viện ở nền nếu chưa có).
     val continueGame by produceState(AppGraph.library.lastPlayed(AppGraph.prefs)) {
-        value = withContext(Dispatchers.IO) { AppGraph.library.lastPlayed(AppGraph.prefs, AppGraph.library.list()) }
+        value = withContext(Dispatchers.IO) { runCatching { AppGraph.library.lastPlayed(AppGraph.prefs, AppGraph.library.list()) }.getOrNull() }
     }
     val quick = remember {
         listOf(

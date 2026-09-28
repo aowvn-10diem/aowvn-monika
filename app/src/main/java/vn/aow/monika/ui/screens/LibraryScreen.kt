@@ -1,5 +1,10 @@
 package vn.aow.monika.ui.screens
 
+import android.net.Uri
+import android.content.Intent
+import android.provider.Settings
+import android.os.Environment
+import android.os.Build
 import vn.aow.monika.ui.theme.Spinner
 import androidx.compose.runtime.collectAsState
 import android.app.Activity
@@ -184,6 +189,16 @@ fun LibraryScreen(onSettings: () -> Unit) {
                     LinearProgressIndicator({ p / 100f }, Modifier.fillMaxWidth().clip(Radius.pill), color = c.accentCoral, trackColor = c.track)
                 }
             }
+            // Game của lần cài trước chưa đọc được → xin quyền "Truy cập mọi tệp" (Android 11+).
+            val lockedCount = games.count { it.locked }
+            if (lockedCount > 0 && Build.VERSION.SDK_INT >= 30 && !Environment.isExternalStorageManager()) item(span = { GridItemSpan(2) }) {
+                MonikaCard(Modifier.fillMaxWidth(), shape = Radius.large, padding = PaddingValues(16.dp)) {
+                    Text("$lockedCount game từ lần cài trước chưa mở được", style = Monika.type.cardTitle, color = c.text)
+                    Text("Do bạn gỡ app rồi cài lại, Android chặn đọc game cũ. Cho phép \"Truy cập mọi tệp\" để chơi tiếp mà không phải tải lại.",
+                        style = Monika.type.caption, color = c.textSecondary, modifier = Modifier.padding(top = 4.dp))
+                    GradientButton("Cấp quyền", { openAllFilesAccess(context) }, Modifier.fillMaxWidth().padding(top = 12.dp), height = 44.dp)
+                }
+            }
             if (systems.size > 1) item(span = { GridItemSpan(2) }) {
                 ChipBar(listOf<String?>(null) + systems, filter, { it ?: "Tất cả" }, { filter = it }, accent = true, contentPadding = PaddingValues(0.dp))
             }
@@ -364,6 +379,7 @@ private fun GameTile(
             Box(Modifier.align(Alignment.BottomCenter).padding(10.dp).fillMaxWidth()) {
                 when {
                     g.evicted -> DarkButton("Tải lại", onRedownload, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_arrow_download_24_regular)
+                    g.locked -> { val ctx = LocalContext.current; DarkButton("Cấp quyền để mở", { openAllFilesAccess(ctx) }, Modifier.fillMaxWidth()) }
                     waiting -> DarkButton("Giải nén", onExtract, Modifier.fillMaxWidth(), enabled = enabled)
                     else -> GradientButton("Chơi", onPlay, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_play_24_filled, enabled = enabled, height = 44.dp)
                 }
@@ -374,9 +390,18 @@ private fun GameTile(
         Text(
             when {
                 g.evicted -> "Đã dọn để tiết kiệm bộ nhớ · save vẫn giữ"
+                g.locked -> "Của lần cài trước · cấp quyền để mở"
                 else -> g.system?.name ?: if (g.needsExtract) "Chưa giải nén" else "Chưa nhận diện"
             },
             style = Monika.type.caption, color = c.textSecondary,
         )
     }
+}
+
+/** Mở màn cài đặt "Truy cập mọi tệp" của app (Android 11+). */
+private fun openAllFilesAccess(context: android.content.Context) {
+    if (Build.VERSION.SDK_INT < 30) return
+    runCatching {
+        context.startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + context.packageName)))
+    }.onFailure { runCatching { context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)) } }
 }

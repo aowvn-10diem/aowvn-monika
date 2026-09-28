@@ -19,6 +19,11 @@ data class Game(
     val meta: GameMeta? = null,
     /** Đã bị dọn bộ đệm (chỉ còn thông tin bài viết) → hiện "Tải lại". */
     val evicted: Boolean = false,
+    /**
+     * Có file không đọc được: game tải từ LẦN CÀI TRƯỚC (gỡ app rồi cài lại → Android 11+ coi là app khác,
+     * chặn đọc file cũ trong Download). Cần quyền "Truy cập mọi tệp" mới chơi được.
+     */
+    val locked: Boolean = false,
 )
 
 class GameLibrary(private val context: Context, private val configRepo: ConfigRepository) {
@@ -31,7 +36,8 @@ class GameLibrary(private val context: Context, private val configRepo: ConfigRe
         GameStorage.games(context).listFiles().orEmpty()
             .filter { it.isDirectory }
             .sortedByDescending { it.lastModified() }
-            .map { GameDetector.detect(it, configRepo.current) }
+            // 1 thư mục lỗi không được làm hỏng cả thư viện (và không bao giờ làm app crash).
+            .mapNotNull { dir -> runCatching { GameDetector.detect(dir, configRepo.current) }.getOrElse { Game(dir, dir.name, null, null, locked = true) } }
             .also { cached = it }
 
     /** Game chơi gần nhất (đã nhận diện được hệ máy). */
@@ -54,8 +60,13 @@ object GameDetector {
         if (meta != null && dir.listFiles().orEmpty().all { it.name == ".monika.json" }) {
             return Game(dir, meta.title.ifBlank { dir.name }, null, null, meta = meta, evicted = true)
         }
-        return detectFiles(dir, cfg).copy(name = meta?.title?.ifBlank { null } ?: dir.name, meta = meta)
+        val game = detectFiles(dir, cfg).copy(name = meta?.title?.ifBlank { null } ?: dir.name, meta = meta)
+        return if (isLocked(dir)) game.copy(locked = true) else game
     }
+
+    /** Có file thấy được nhưng không mở được (của bản cài trước) → cần quyền "Truy cập mọi tệp". */
+    fun isLocked(dir: File): Boolean =
+        dir.walkTopDown().maxDepth(MAX_DEPTH).filter { it.isFile }.take(8).any { !it.canRead() || runCatching { it.inputStream().use { s -> s.read() } }.isFailure }
 
     private fun detectFiles(dir: File, cfg: MonikaConfig): Game {
         val files = dir.walkTopDown().maxDepth(MAX_DEPTH).filter { it.isFile }.toList()

@@ -23,7 +23,8 @@ data class GameMeta(
         private val json = Json { ignoreUnknownKeys = true }
 
         fun fromJson(text: String?): GameMeta? = text?.let { runCatching { json.decodeFromString(serializer(), it) }.getOrNull() }
-        fun read(dir: File): GameMeta? = File(dir, FILE).takeIf { it.isFile }?.let { fromJson(it.readText()) }
+        /** Không đọc được (file do bản cài trước tạo, Android 11+ chặn) → null, không bao giờ ném lỗi. */
+        fun read(dir: File): GameMeta? = runCatching { File(dir, FILE).takeIf { it.isFile }?.let { fromJson(it.readText()) } }.getOrNull()
         fun write(dir: File, meta: GameMeta) = runCatching { File(dir, FILE).writeText(meta.toJson()) }
 
         /** "[MỚI] Game Pokemon Fire Red Việt Hóa | GBA Android PC - ..." → "Pokemon Fire Red". */
