@@ -11,3 +11,8 @@
 -keep class com.android.dx.** { *; }
 -dontwarn com.android.dx.**
 -keepattributes SourceFile,LineNumberTable
+# Commons Compress: nhiều định dạng tùy chọn (brotli, zstd, asm...) không đóng gói → bỏ cảnh báo.
+-dontwarn org.apache.commons.compress.**
+-dontwarn org.tukaani.xz.**
+-keep class org.apache.commons.compress.archivers.sevenz.** { *; }
+-keep class org.tukaani.xz.** { *; }

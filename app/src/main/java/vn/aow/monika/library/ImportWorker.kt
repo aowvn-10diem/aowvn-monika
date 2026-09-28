@@ -1,5 +1,6 @@
 package vn.aow.monika.library
 
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -27,7 +28,13 @@ class ImportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         // Android 12+ có thể không cho chạy dịch vụ nền từ lúc này; khi đó vẫn giải nén bình thường.
         runCatching { setForeground(getForegroundInfo()) }
 
-        val result = Importer.importFile(applicationContext, file, deleteSource = true, AppGraph.config.current.archivePasswords)
+        // Cập nhật % trên thông báo đang chạy.
+        val nm = applicationContext.getSystemService(NotificationManager::class.java)
+        val progress = ExtractProgress { p ->
+            // Cùng ID với thông báo foreground → hệ thống thay nội dung, không tạo thông báo mới.
+            runCatching { nm.notify(NOTIFICATION_ID, Notifier.progress(applicationContext, "Đang giải nén", file.name, p)) }
+        }
+        val result = Importer.importFile(applicationContext, file, deleteSource = true, AppGraph.config.current.archivePasswords, progress)
         val meta = GameMeta.fromJson(inputData.getString(KEY_META))
         meta?.let { m ->
             GameMeta.write(result.dir, m)
@@ -52,9 +59,11 @@ class ImportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         return Result.success()
     }
 
-    override suspend fun getForegroundInfo(): ForegroundInfo {
-        val name = inputData.getString(KEY_FILE)?.let { File(it).name }.orEmpty()
-        val notification = Notifier.progress(applicationContext, "Đang giải nén", name)
+    override suspend fun getForegroundInfo(): ForegroundInfo =
+        foregroundInfo(inputData.getString(KEY_FILE)?.let { File(it).name }.orEmpty(), null)
+
+    private fun foregroundInfo(name: String, percent: Int?): ForegroundInfo {
+        val notification = Notifier.progress(applicationContext, "Đang giải nén", name, percent)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ForegroundInfo(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {

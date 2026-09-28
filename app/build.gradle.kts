@@ -93,6 +93,8 @@ dependencies {
     implementation(libs.androidx.webkit)
     implementation(libs.libretrodroid)
     implementation(libs.libarchive) // Giải nén zip/rar/rar5/7z
+    implementation(libs.commons.compress) // 7z có mật khẩu (libarchive không hỗ trợ)
+    implementation(libs.xz) // LZMA/LZMA2 cho 7z
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
     testImplementation(libs.junit)
 }

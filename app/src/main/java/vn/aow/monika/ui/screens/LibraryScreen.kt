@@ -54,6 +54,7 @@ import vn.aow.monika.R
 import vn.aow.monika.config.ExternalApp
 import vn.aow.monika.library.Game
 import vn.aow.monika.library.GameStorage
+import vn.aow.monika.library.ExtractProgress
 import vn.aow.monika.library.Importer
 import vn.aow.monika.runner.LaunchResult
 import vn.aow.monika.ui.theme.ChipBar
@@ -85,6 +86,8 @@ fun LibraryScreen(onSettings: () -> Unit) {
     var games by remember { mutableStateOf<List<Game>>(emptyList()) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
+    var percent by remember { mutableStateOf<Int?>(null) } // % giải nén, null = chưa biết
+    val onProgress = remember { ExtractProgress { percent = it } }
     var filter by remember { mutableStateOf<String?>(null) }
     var needApp by remember { mutableStateOf<ExternalApp?>(null) }
     var info by remember { mutableStateOf<String?>(null) }
@@ -102,11 +105,11 @@ fun LibraryScreen(onSettings: () -> Unit) {
     // Chọn được nhiều file cùng lúc (vd. đủ các phần part1/part2 của 1 game).
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         if (uris.isEmpty()) return@rememberLauncherForActivityResult
-        busy = true
+        busy = true; percent = null
         scope.launch {
             val messages = mutableListOf<String>()
             for (uri in uris) {
-                runCatching { withContext(Dispatchers.IO) { Importer.importUri(context, uri, AppGraph.config.current.archivePasswords) } }
+                runCatching { withContext(Dispatchers.IO) { Importer.importUri(context, uri, AppGraph.config.current.archivePasswords, onProgress) } }
                     .onSuccess { r ->
                         when {
                             r.pending -> messages += r.error.orEmpty()
@@ -116,7 +119,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
                     }
                     .onFailure { messages += "Lỗi thêm game: ${it.message}" }
             }
-            busy = false
+            busy = false; percent = null
             reloadKey++
             // Chỉ báo dòng cuối cho mỗi bộ (tránh lặp "đang chờ phần" khi đã đủ).
             val last = messages.lastOrNull().orEmpty()
@@ -152,7 +155,12 @@ fun LibraryScreen(onSettings: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (busy) item(span = { GridItemSpan(2) }) {
-                LinearProgressIndicator(Modifier.fillMaxWidth().clip(Radius.pill), color = c.accentCoral, trackColor = c.track)
+                val p = percent
+                if (p == null) LinearProgressIndicator(Modifier.fillMaxWidth().clip(Radius.pill), color = c.accentCoral, trackColor = c.track)
+                else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Đang giải nén $p%", style = Monika.type.caption, color = c.textSecondary)
+                    LinearProgressIndicator({ p / 100f }, Modifier.fillMaxWidth().clip(Radius.pill), color = c.accentCoral, trackColor = c.track)
+                }
             }
             if (systems.size > 1) item(span = { GridItemSpan(2) }) {
                 ChipBar(listOf<String?>(null) + systems, filter, { it ?: "Tất cả" }, { filter = it }, accent = true, contentPadding = PaddingValues(0.dp))
@@ -227,10 +235,10 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 GradientButton("Giải nén", {
                     val target = game
                     toExtract = null
-                    busy = true
+                    busy = true; percent = null
                     scope.launch {
-                        val r = withContext(Dispatchers.IO) { Importer.extractInPlace(target.dir, listOf(password) + AppGraph.config.current.archivePasswords) }
-                        busy = false
+                        val r = withContext(Dispatchers.IO) { Importer.extractInPlace(target.dir, listOf(password) + AppGraph.config.current.archivePasswords, onProgress) }
+                        busy = false; percent = null
                         if (r.error == null) Toast.makeText(context, "Giải nén xong", Toast.LENGTH_SHORT).show() else info = r.error
                         reloadKey++
                     }

@@ -38,12 +38,14 @@ object Notifier {
         show(context, CH_DOWNLOADS, title.hashCode(), title, text, intent)
 
     /** Thông báo đang chạy (giải nén...) cho tác vụ nền. */
-    fun progress(context: Context, title: String, text: String): Notification =
+    /** [percent] null = thanh chạy vô định (chưa biết tiến độ). */
+    fun progress(context: Context, title: String, text: String, percent: Int? = null): Notification =
         NotificationCompat.Builder(context, CH_DOWNLOADS)
             .setSmallIcon(R.drawable.ic_stat_monika)
-            .setContentTitle(title)
+            .setContentTitle(if (percent == null) title else "$title $percent%")
             .setContentText(text)
-            .setProgress(0, 0, true)
+            .setProgress(100, percent ?: 0, percent == null)
+            .setOnlyAlertOnce(true)
             .setOngoing(true)
             .build()
 

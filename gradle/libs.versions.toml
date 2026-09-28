@@ -15,6 +15,8 @@ libretrodroid = "0.14.0"
 webkit = "1.12.1"
 junit = "4.13.2"
 libarchive = "1.1.6" # 1.1.7 đòi compileSdk 37
+commonsCompress = "1.27.1" # chỉ dùng cho 7z có mật khẩu
+xz = "1.10"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -32,6 +34,8 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
 libarchive = { module = "me.zhanghai.android.libarchive:library", version.ref = "libarchive" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
+xz = { module = "org.tukaani:xz", version.ref = "xz" }
 junit = { module = "junit:junit", version.ref = "junit" }
 libretrodroid = { module = "com.github.Swordfish90:LibretroDroid", version.ref = "libretrodroid" }
 

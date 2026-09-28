@@ -39,6 +39,6 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 1. Link chính thức cho app ngoài (chủ repo cung cấp) → điền `externalApps[].downloadUrl`, xác nhận `packageNames`.
 2. ĐÃ CÓ: tay cầm theo hệ máy, kéo đổi chỗ + cỡ (lưu Prefs), save/load state 1 slot, ảnh bìa game từ bài viết (`library/GameMeta.kt`, file `.monika.json` trong thư mục game). Còn: nhiều slot save, core options, chọn lõi melonDS/desmume.
 3. Chưa test trên máy thật — mọi thứ mới chỉ build + unit test.
-4. Giải nén: đã có zip/rar/rar5/7z (libarchive 1.1.6; 1.1.7 đòi compileSdk 37). Còn thiếu: file chia nhiều phần, 7z có mật khẩu, thanh % tiến độ. Chưa test trên máy thật.
+4. Giải nén: zip/rar/rar5/7z (libarchive 1.1.6; 1.1.7 đòi compileSdk 37), file chia nhiều phần, % tiến độ (thông báo + màn Thư viện). 7z có mật khẩu: libarchive lỗi → `SevenZipExtractor` (Commons Compress, test `SevenZipTest` với file mẫu `app/src/test/resources/7z/`). Chưa test trên máy thật.
 5. ĐÃ nhúng J2ME Loader (runner "j2me") + phím ảo kiểu Monika. Còn: ONScripter (native C++ + SDL, cần high).
 6. Port Ren'Py, mkxp-z (RPG Maker XP/VX/Ace) — khó, làm sau.
