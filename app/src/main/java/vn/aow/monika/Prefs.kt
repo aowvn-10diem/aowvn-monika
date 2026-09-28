@@ -51,6 +51,15 @@ class Prefs(context: Context) {
         get() = sp.getInt("auto_del_media", 7)
         set(value) = sp.edit().putInt("auto_del_media", value).apply()
 
+    /** Lõi user chọn cho 1 hệ máy (null = dùng mặc định trong config). */
+    fun coreOverride(systemId: String): String? = sp.getString("core_$systemId", null)
+    fun setCoreOverride(systemId: String, core: String?) = sp.edit().putString("core_$systemId", core).apply()
+
+    /** Game được "Giữ lại": không bao giờ bị dọn bộ đệm. */
+    var pinnedGames: Set<String>
+        get() = sp.getStringSet("pinned_games", emptySet())!!.toSet()
+        set(value) = sp.edit().putStringSet("pinned_games", value).apply()
+
     /** Cỡ tay cầm ảo (0.8 / 1.0 / 1.2) và độ lệch vị trí (px) của cụm D-pad và cụm nút. */
     var padScale: Float
         get() = sp.getFloat("pad_scale", 1f)

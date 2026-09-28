@@ -70,6 +70,7 @@ class RetroActivity : ComponentActivity() {
         val key = "${File(gamePath).nameWithoutExtension}-${gamePath.hashCode()}"
         sramFile = File(File(filesDir, "saves").apply { mkdirs() }, "$key.srm")
         stateFile = File(File(filesDir, "states").apply { mkdirs() }, "$key.state")
+        refreshSlots()
 
         val status = TextView(this).apply {
             text = "Đang chuẩn bị…"
@@ -147,24 +148,36 @@ class RetroActivity : ComponentActivity() {
         retroView?.layoutParams = gameLayoutParams()
     }
 
+    /** Ô 1 giữ tên file cũ (tương thích bản trước); ô 2, 3 thêm hậu tố. */
+    private fun slotFile(slot: Int): File =
+        if (slot == 1) stateFile else File(stateFile.parentFile, stateFile.nameWithoutExtension + ".s$slot.state")
+
+    private fun refreshSlots() {
+        ui.filledSlots = (1..3).filter { slotFile(it).exists() }.toSet()
+    }
+
     private fun saveState() {
         val view = retroView ?: return
+        val slot = ui.slot
         ui.menuOpen = false
         lifecycleScope.launch {
             val ok = withContext(Dispatchers.IO) {
-                runCatching { view.serializeState().also { stateFile.writeBytes(it) }.isNotEmpty() }.getOrDefault(false)
+                runCatching { view.serializeState().also { slotFile(slot).writeBytes(it) }.isNotEmpty() }.getOrDefault(false)
             }
-            showToast(if (ok) "Đã lưu trạng thái" else "Lõi này chưa hỗ trợ lưu trạng thái")
+            refreshSlots()
+            showToast(if (ok) "Đã lưu vào ô $slot" else "Lõi này chưa hỗ trợ lưu trạng thái")
         }
     }
 
     private fun loadState() {
         val view = retroView ?: return
+        val slot = ui.slot
         ui.menuOpen = false
-        if (!stateFile.exists()) { showToast("Chưa có trạng thái đã lưu"); return }
+        val file = slotFile(slot)
+        if (!file.exists()) { showToast("Ô $slot chưa có dữ liệu"); return }
         lifecycleScope.launch {
-            val ok = withContext(Dispatchers.IO) { runCatching { view.unserializeState(stateFile.readBytes()) }.getOrDefault(false) }
-            showToast(if (ok) "Đã tải trạng thái" else "Không tải được trạng thái")
+            val ok = withContext(Dispatchers.IO) { runCatching { view.unserializeState(file.readBytes()) }.getOrDefault(false) }
+            showToast(if (ok) "Đã tải ô $slot" else "Không tải được ô $slot")
         }
     }
 

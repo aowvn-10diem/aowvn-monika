@@ -1,5 +1,5 @@
 {
-  "configVersion": 3,
+  "configVersion": 4,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
 
   "app": {
@@ -17,7 +17,7 @@
   },
 
   "systems": [
-    { "id": "nds",   "name": "Nintendo DS",        "runner": "libretro", "core": "desmume",      "extensions": ["nds"],                     "labels": ["Game NDS Việt Hóa"] },
+    { "id": "nds",   "name": "Nintendo DS",        "runner": "libretro", "core": "desmume",      "extensions": ["nds"],                     "labels": ["Game NDS Việt Hóa"], "altCores": ["desmume", "melonds"] },
     { "id": "gba",   "name": "Game Boy Advance",   "runner": "libretro", "core": "mgba",         "extensions": ["gba"],                     "labels": ["Game GBA Việt Hóa"] },
     { "id": "gbc",   "name": "Game Boy / Color",   "runner": "libretro", "core": "gambatte",     "extensions": ["gb", "gbc"],               "labels": [] },
     { "id": "ps1",   "name": "PlayStation 1",      "runner": "libretro", "core": "pcsx_rearmed", "extensions": ["cue", "pbp", "chd", "m3u"], "labels": ["Game PS1"] },

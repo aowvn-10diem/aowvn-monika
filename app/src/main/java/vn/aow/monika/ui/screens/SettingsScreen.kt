@@ -156,6 +156,16 @@ fun SettingsScreen(onBack: () -> Unit) {
                 ) { StorageSettingsContent() }
 
                 SettingGroup("cores", open, { open = it }, R.drawable.ic_fluent_layer_24_regular, Brush.linearGradient(listOf(Color(0xFF63D68A), Color(0xFF66CFF3))), "Lõi giả lập", "${cfg.cores.size} lõi · tải khi chơi lần đầu") {
+                    // Hệ có nhiều lõi (vd. NDS): user tự chọn; game chạy lỗi thì đổi lõi khác thử.
+                    cfg.systems.filter { it.altCores.size > 1 }.forEach { sys ->
+                        var chosen by remember(sys.id) { mutableStateOf(AppGraph.prefs.coreOverride(sys.id) ?: sys.core.orEmpty()) }
+                        Text("Lõi cho ${sys.name}", style = Monika.type.bodyStrong, color = c.text)
+                        ChipBar(sys.altCores, chosen, { it }, {
+                            chosen = it
+                            AppGraph.prefs.setCoreOverride(sys.id, it)
+                        }, accent = true, contentPadding = PaddingValues(0.dp))
+                    }
+                    Text("Game chạy lỗi hoặc giật thì thử đổi lõi khác. Lõi mới tự tải khi chơi lần đầu.", style = Monika.type.caption, color = c.textSecondary)
                     cfg.cores.forEach { (id, def) ->
                         val installed = remember(id, refreshTick) { AppGraph.cores.installedVersion(id) }
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

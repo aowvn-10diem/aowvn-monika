@@ -20,9 +20,19 @@ object ArchiveExtractor {
 
     class PasswordException(message: String) : IOException(message)
 
-    fun isArchive(file: File) = file.extension.lowercase() in EXTENSIONS
+    fun isArchive(file: File) = file.extension.lowercase() in EXTENSIONS || MultiPart.parse(file.name) != null
 
-    fun extract(source: ParcelFileDescriptor, target: File, passwords: List<String>) {
+    fun extract(source: ParcelFileDescriptor, target: File, passwords: List<String>) =
+        readAll(target, passwords) { Archive.readOpenFd(it, source.fd, BLOCK_SIZE) }
+
+    /** File nén chia nhiều phần (part1.rar, part2.rar… / .7z.001, .002…): mở tất cả phần theo thứ tự. */
+    fun extractParts(parts: List<File>, target: File, passwords: List<String>) =
+        readAll(target, passwords) { archive ->
+            val names = parts.map { it.absolutePath.toByteArray() }.toTypedArray()
+            Archive.readOpenFileNames(archive, names, BLOCK_SIZE)
+        }
+
+    private fun readAll(target: File, passwords: List<String>, open: (Long) -> Unit) {
         target.mkdirs()
         val root = target.canonicalPath + File.separator
         val archive = Archive.readNew()
@@ -30,7 +40,7 @@ object ArchiveExtractor {
             Archive.readSupportFilterAll(archive)
             Archive.readSupportFormatAll(archive)
             passwords.filter { it.isNotEmpty() }.forEach { Archive.readAddPassphrase(archive, it.toByteArray()) }
-            Archive.readOpenFd(archive, source.fd, BLOCK_SIZE)
+            open(archive)
             while (true) {
                 val entry = try {
                     Archive.readNextHeader(archive)

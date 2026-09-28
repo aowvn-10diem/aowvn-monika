@@ -87,6 +87,10 @@ class InGameState {
     var opacity by mutableStateOf(0.65f)
     var toast by mutableStateOf<String?>(null)
 
+    /** Ô lưu trạng thái đang chọn (1–3) và ô nào đã có dữ liệu. */
+    var slot by mutableStateOf(1)
+    var filledSlots by mutableStateOf(setOf<Int>())
+
     /** Chế độ chỉnh tay cầm: kéo cụm phím đổi chỗ, chọn cỡ. */
     var editing by mutableStateOf(false)
     var scale by mutableStateOf(1f)
@@ -140,8 +144,15 @@ fun InGameOverlay(
                 Modifier.width(220.dp).clip(Radius.large).background(Color(0xE6201F21)).border(1.dp, Color(0x24FFFFFF), Radius.large).padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                MenuItem(R.drawable.ic_fluent_save_24_regular, "Lưu trạng thái", highlight = true, onSave)
-                MenuItem(R.drawable.ic_fluent_folder_open_24_regular, "Tải trạng thái", false, onLoad)
+                // Chọn ô lưu: chấm nhỏ = ô đã có dữ liệu.
+                Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Ô lưu", style = Monika.type.caption, color = Color(0xFFC8C5CB))
+                    (1..3).forEach { s ->
+                        EditChip(if (s in state.filledSlots) "$s •" else "$s", state.slot == s) { state.slot = s }
+                    }
+                }
+                MenuItem(R.drawable.ic_fluent_save_24_regular, "Lưu vào ô ${state.slot}", highlight = true, onSave)
+                MenuItem(R.drawable.ic_fluent_folder_open_24_regular, "Tải từ ô ${state.slot}", false, onLoad)
                 MenuItem(R.drawable.ic_fluent_top_speed_24_regular, if (state.turbo) "Tốc độ: 2x" else "Tốc độ: 1x", state.turbo, onTurbo)
                 MenuItem(R.drawable.ic_fluent_eye_24_regular, "Độ mờ phím: ${(state.opacity * 100).toInt()}%", false, onOpacity)
                 MenuItem(R.drawable.ic_fluent_xbox_controller_24_regular, "Chỉnh vị trí & cỡ phím", false) { state.menuOpen = false; state.editing = true }

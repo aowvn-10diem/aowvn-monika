@@ -101,7 +101,8 @@ object StorageCleaner {
         }
         // Game tải từ bài viết (có link bài để tải lại). Game tự thêm từ máy KHÔNG nằm trong bộ đệm.
         val prefs: Prefs = AppGraph.prefs
-        GameStorage.games(context).listFiles().orEmpty().filter { it.isDirectory }.forEach { dir ->
+        val pinned = prefs.pinnedGames
+        GameStorage.games(context).listFiles().orEmpty().filter { it.isDirectory && it.path !in pinned }.forEach { dir ->
             val meta = GameMeta.read(dir) ?: return@forEach
             if (meta.postUrl.isNullOrBlank() && meta.postId.isNullOrBlank()) return@forEach
             val size = sizeOf(dir) - (File(dir, META).takeIf { it.exists() }?.length() ?: 0)

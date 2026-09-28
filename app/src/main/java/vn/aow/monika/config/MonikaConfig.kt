@@ -56,6 +56,8 @@ data class SystemDef(
     val labels: List<String> = emptyList(),
     /** Bố cục tay cầm ảo: gb | gba | nds | ps | rpg. Null = tự chọn theo lõi. */
     val pad: String? = null,
+    /** Lõi thay thế user được chọn trong Cài đặt (vd. NDS: desmume, melonds). */
+    val altCores: List<String> = emptyList(),
 )
 
 @Serializable

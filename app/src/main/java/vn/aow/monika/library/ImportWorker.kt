@@ -37,12 +37,14 @@ class ImportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 .forEach { it.deleteRecursively() }
         }
         // Game mới tải có thể làm vượt giới hạn bộ đệm → dọn game cũ, không đụng game vừa tải.
-        runCatching { StorageCleaner.clean(applicationContext, protect = result.dir) }
+        if (!result.pending) runCatching { StorageCleaner.clean(applicationContext, protect = result.dir) }
         val name = meta?.title?.ifBlank { null } ?: result.dir.name
         val open = Intent(applicationContext, MainActivity::class.java)
             .putExtra(MainActivity.EXTRA_OPEN_LIBRARY, true)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        if (result.error == null) {
+        if (result.pending) {
+            Notifier.downloadDone(applicationContext, "Đang chờ phần tiếp theo: $name", result.error.orEmpty(), open)
+        } else if (result.error == null) {
             Notifier.downloadDone(applicationContext, "Đã tải xong: $name", "Bấm để mở thư viện và chơi", open)
         } else {
             Notifier.downloadDone(applicationContext, "Chưa giải nén được: $name", "${result.error}\nVào Thư viện → Giải nén để thử lại.", open)

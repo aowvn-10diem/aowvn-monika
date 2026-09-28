@@ -62,6 +62,28 @@ class ConfigTest {
     }
 
     @Test
+    fun `nhan dien file nen chia nhieu phan`() {
+        val mp = vn.aow.monika.library.MultiPart
+        assertEquals(vn.aow.monika.library.MultiPart.Piece("game.rar", 1), mp.parse("Game.part1.rar"))
+        assertEquals(vn.aow.monika.library.MultiPart.Piece("game.rar", 12), mp.parse("Game.part012.rar"))
+        assertEquals(vn.aow.monika.library.MultiPart.Piece("pokemon.7z", 2), mp.parse("Pokemon.7z.002"))
+        assertEquals(vn.aow.monika.library.MultiPart.Piece("old.rar", 1), mp.parse("old.r00"))
+        assertNull(mp.parse("Game.rar"))
+        assertNull(mp.parse("pokemon.gba"))
+        val dir = Files.createTempDirectory("parts").toFile()
+        listOf("G.part2.rar", "G.part1.rar", "G.part3.rar").forEach { File(dir, it).writeText("") }
+        val parts = mp.siblings(dir, mp.parse("G.part1.rar")!!)
+        assertEquals(listOf("G.part1.rar", "G.part2.rar", "G.part3.rar"), parts.map { it.name })
+        assertTrue(mp.looksContiguous(parts))
+        assertTrue(!mp.looksContiguous(parts.filter { it.name != "G.part2.rar" }))
+    }
+
+    @Test
+    fun `loi thay the phai co trong cores`() {
+        cfg.systems.forEach { s -> s.altCores.forEach { assertTrue("${s.id}: lõi '$it' không có trong cores", it in cfg.cores) } }
+    }
+
+    @Test
     fun `rut gon ten game tu tieu de bai`() {
         fun clean(t: String) = vn.aow.monika.library.GameMeta.cleanTitle(t)
         assertEquals("Pokemon Fire Red: Rocket Edition", clean("[MỚI] Game Pokemon Fire Red: Rocket Edition Việt Hóa | GBA Android PC IOS - Giả lập Rocket"))

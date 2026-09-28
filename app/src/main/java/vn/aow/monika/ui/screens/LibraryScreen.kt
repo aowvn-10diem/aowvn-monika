@@ -91,6 +91,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
     var toDelete by remember { mutableStateOf<Game?>(null) }
     var toExtract by remember { mutableStateOf<Game?>(null) }
     var password by remember { mutableStateOf("") }
+    var pinned by remember { mutableStateOf(AppGraph.prefs.pinnedGames) }
 
     LaunchedEffect(reloadKey) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -98,18 +99,29 @@ fun LibraryScreen(onSettings: () -> Unit) {
         }
     }
 
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
+    // Chọn được nhiều file cùng lúc (vd. đủ các phần part1/part2 của 1 game).
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isEmpty()) return@rememberLauncherForActivityResult
         busy = true
         scope.launch {
-            runCatching { withContext(Dispatchers.IO) { Importer.importUri(context, uri, AppGraph.config.current.archivePasswords) } }
-                .onSuccess { r ->
-                    if (r.error == null) Toast.makeText(context, "Đã thêm: ${r.dir.name}", Toast.LENGTH_SHORT).show()
-                    else info = "Đã thêm \"${r.dir.name}\" nhưng chưa giải nén được:\n${r.error}\n\nBấm \"Giải nén\" ở game đó để thử lại."
-                }
-                .onFailure { Toast.makeText(context, "Lỗi thêm game: ${it.message}", Toast.LENGTH_LONG).show() }
+            val messages = mutableListOf<String>()
+            for (uri in uris) {
+                runCatching { withContext(Dispatchers.IO) { Importer.importUri(context, uri, AppGraph.config.current.archivePasswords) } }
+                    .onSuccess { r ->
+                        when {
+                            r.pending -> messages += r.error.orEmpty()
+                            r.error == null -> messages += "Đã thêm: ${r.dir.name}"
+                            else -> messages += "\"${r.dir.name}\" chưa giải nén được: ${r.error}\nBấm \"Giải nén\" ở game đó để thử lại."
+                        }
+                    }
+                    .onFailure { messages += "Lỗi thêm game: ${it.message}" }
+            }
             busy = false
             reloadKey++
+            // Chỉ báo dòng cuối cho mỗi bộ (tránh lặp "đang chờ phần" khi đã đủ).
+            val last = messages.lastOrNull().orEmpty()
+            if (uris.size == 1 && last.startsWith("Đã thêm")) Toast.makeText(context, last, Toast.LENGTH_SHORT).show()
+            else info = messages.distinct().takeLast(4).joinToString("\n\n")
         }
     }
 
@@ -160,6 +172,12 @@ fun LibraryScreen(onSettings: () -> Unit) {
             items(shown, key = { it.dir.path }) { g ->
                 GameTile(
                     g, enabled = !busy, onPlay = { play(g) }, onExtract = { password = ""; toExtract = g }, onDelete = { toDelete = g },
+                    pinned = g.dir.path in pinned,
+                    onTogglePin = {
+                        pinned = if (g.dir.path in pinned) pinned - g.dir.path else pinned + g.dir.path
+                        AppGraph.prefs.pinnedGames = pinned
+                        Toast.makeText(context, if (g.dir.path in pinned) "Đã giữ lại: không tự dọn game này" else "Đã bỏ giữ lại", Toast.LENGTH_SHORT).show()
+                    },
                     onRedownload = {
                         // Mở lại bài viết gốc để tải lại (bài có nút "Tải game").
                         val meta = g.meta
@@ -276,7 +294,10 @@ private val tileGradients = listOf(
 
 /** Ô game: ảnh bìa gradient + minh họa 3D (chưa có ảnh bìa thật), tên, hệ máy. */
 @Composable
-private fun GameTile(g: Game, enabled: Boolean, onPlay: () -> Unit, onExtract: () -> Unit, onDelete: () -> Unit, onRedownload: () -> Unit) {
+private fun GameTile(
+    g: Game, enabled: Boolean, onPlay: () -> Unit, onExtract: () -> Unit, onDelete: () -> Unit, onRedownload: () -> Unit,
+    pinned: Boolean, onTogglePin: () -> Unit,
+) {
     val c = Monika.colors
     val waiting = g.needsExtract && g.system == null
     Column {
@@ -298,7 +319,15 @@ private fun GameTile(g: Game, enabled: Boolean, onPlay: () -> Unit, onExtract: (
             }
             if (g.evicted) {
                 Box(Modifier.fillMaxSize().background(Color(0x8C181719)))
-                Box(Modifier.align(Alignment.TopStart).padding(10.dp)) { Tag("Đã dọn", onDark = true) }
+                Box(Modifier.align(Alignment.Center)) { Tag("Đã dọn", onDark = true) }
+            }
+            // Giữ lại: game ghim không bao giờ bị dọn bộ nhớ đệm.
+            if (g.meta != null && !g.evicted) Box(Modifier.align(Alignment.TopStart).padding(8.dp)) {
+                CircleButton(
+                    if (pinned) R.drawable.ic_fluent_heart_24_filled else R.drawable.ic_fluent_heart_24_regular,
+                    if (pinned) "Bỏ giữ lại" else "Giữ lại (không tự dọn)", onTogglePin,
+                    style = vn.aow.monika.ui.theme.CircleStyle.Glass, size = 36.dp,
+                )
             }
             Box(Modifier.align(Alignment.BottomCenter).padding(10.dp).fillMaxWidth()) {
                 when {
