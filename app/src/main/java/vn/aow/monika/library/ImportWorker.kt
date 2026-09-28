@@ -28,13 +28,24 @@ class ImportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         runCatching { setForeground(getForegroundInfo()) }
 
         val result = Importer.importFile(applicationContext, file, deleteSource = true, AppGraph.config.current.archivePasswords)
+        val meta = GameMeta.fromJson(inputData.getString(KEY_META))
+        meta?.let { m ->
+            GameMeta.write(result.dir, m)
+            // Tải lại game từng bị dọn → bỏ ô "Đã dọn" cũ của cùng bài viết.
+            if (m.postId != null) GameStorage.games(applicationContext).listFiles().orEmpty()
+                .filter { it != result.dir && GameMeta.read(it)?.postId == m.postId && it.listFiles().orEmpty().all { f -> f.name == ".monika.json" } }
+                .forEach { it.deleteRecursively() }
+        }
+        // Game mới tải có thể làm vượt giới hạn bộ đệm → dọn game cũ, không đụng game vừa tải.
+        runCatching { StorageCleaner.clean(applicationContext, protect = result.dir) }
+        val name = meta?.title?.ifBlank { null } ?: result.dir.name
         val open = Intent(applicationContext, MainActivity::class.java)
             .putExtra(MainActivity.EXTRA_OPEN_LIBRARY, true)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         if (result.error == null) {
-            Notifier.downloadDone(applicationContext, "Đã tải xong: ${result.dir.name}", "Bấm để mở thư viện và chơi", open)
+            Notifier.downloadDone(applicationContext, "Đã tải xong: $name", "Bấm để mở thư viện và chơi", open)
         } else {
-            Notifier.downloadDone(applicationContext, "Chưa giải nén được: ${result.dir.name}", "${result.error}\nVào Thư viện → Giải nén để thử lại.", open)
+            Notifier.downloadDone(applicationContext, "Chưa giải nén được: $name", "${result.error}\nVào Thư viện → Giải nén để thử lại.", open)
         }
         return Result.success()
     }
@@ -51,11 +62,13 @@ class ImportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
 
     companion object {
         private const val KEY_FILE = "file"
+        private const val KEY_META = "meta"
         private const val NOTIFICATION_ID = 4201
 
-        fun enqueue(context: Context, file: File) {
+        fun enqueue(context: Context, file: File, metaJson: String? = null) {
             WorkManager.getInstance(context).enqueue(
-                OneTimeWorkRequestBuilder<ImportWorker>().setInputData(workDataOf(KEY_FILE to file.absolutePath)).build()
+                OneTimeWorkRequestBuilder<ImportWorker>()
+                    .setInputData(workDataOf(KEY_FILE to file.absolutePath, KEY_META to metaJson)).build()
             )
         }
     }

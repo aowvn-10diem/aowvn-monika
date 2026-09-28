@@ -70,6 +70,9 @@ import vn.aow.monika.ui.theme.Radius
 import vn.aow.monika.ui.theme.Screen
 import vn.aow.monika.ui.theme.Tag
 import vn.aow.monika.ui.theme.primaryGradient
+import vn.aow.monika.ui.theme.artworkScrim
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 
 /** Màn "Giả lập": thư viện game trong máy, lọc theo hệ, tiếp tục chơi. */
 @Composable
@@ -155,7 +158,21 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 Text("Thư viện", style = Monika.type.sectionTitle, color = c.text, modifier = Modifier.padding(top = 4.dp))
             }
             items(shown, key = { it.dir.path }) { g ->
-                GameTile(g, enabled = !busy, onPlay = { play(g) }, onExtract = { password = ""; toExtract = g }, onDelete = { toDelete = g })
+                GameTile(
+                    g, enabled = !busy, onPlay = { play(g) }, onExtract = { password = ""; toExtract = g }, onDelete = { toDelete = g },
+                    onRedownload = {
+                        // Mở lại bài viết gốc để tải lại (bài có nút "Tải game").
+                        val meta = g.meta
+                        when {
+                            meta?.postId != null -> context.startActivity(
+                                android.content.Intent(context, vn.aow.monika.ui.MainActivity::class.java)
+                                    .putExtra(vn.aow.monika.ui.MainActivity.EXTRA_POST_ID, meta.postId)
+                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                            )
+                            meta?.postUrl != null -> openUrl(context, meta.postUrl)
+                        }
+                    },
+                )
             }
         }
       }
@@ -228,8 +245,13 @@ fun LibraryScreen(onSettings: () -> Unit) {
 /** Thẻ "Tiếp tục chơi": charcoal + minh họa 3D + nút play gradient. */
 @Composable
 private fun ContinueCard(g: Game, onPlay: () -> Unit) {
-    MonikaCard(Modifier.fillMaxWidth(), dark = true, shape = Radius.hero, padding = PaddingValues(20.dp), onClick = onPlay) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    MonikaCard(Modifier.fillMaxWidth(), dark = true, shape = Radius.hero, padding = PaddingValues(0.dp), onClick = onPlay) {
+      Box {
+        g.meta?.cover?.let {
+            AsyncImage(it, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+            Box(Modifier.matchParentSize().background(artworkScrim()))
+        }
+        Row(Modifier.padding(20.dp).padding(top = if (g.meta?.cover != null) 90.dp else 0.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(g.name, style = Monika.type.sectionTitle, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -241,6 +263,7 @@ private fun ContinueCard(g: Game, onPlay: () -> Unit) {
                 Icon(painterResource(R.drawable.ic_fluent_play_24_filled), "Chơi", Modifier.size(30.dp), tint = Color.White)
             }
         }
+      }
     }
 }
 
@@ -253,7 +276,7 @@ private val tileGradients = listOf(
 
 /** Ô game: ảnh bìa gradient + minh họa 3D (chưa có ảnh bìa thật), tên, hệ máy. */
 @Composable
-private fun GameTile(g: Game, enabled: Boolean, onPlay: () -> Unit, onExtract: () -> Unit, onDelete: () -> Unit) {
+private fun GameTile(g: Game, enabled: Boolean, onPlay: () -> Unit, onExtract: () -> Unit, onDelete: () -> Unit, onRedownload: () -> Unit) {
     val c = Monika.colors
     val waiting = g.needsExtract && g.system == null
     Column {
@@ -262,17 +285,37 @@ private fun GameTile(g: Game, enabled: Boolean, onPlay: () -> Unit, onExtract: (
                 .background(if (waiting) Brush.linearGradient(listOf(c.surfaceSoft, c.track)) else tileGradients[(g.name.hashCode() and 0x7fffffff) % tileGradients.size]),
             contentAlignment = Alignment.Center,
         ) {
-            Illustration(if (waiting) R.drawable.fluent3d_package else R.drawable.fluent3d_joystick, Modifier.size(72.dp))
+            val cover = g.meta?.cover
+            if (cover != null) {
+                // Ảnh bìa lấy từ bài viết aow.vn lúc tải.
+                AsyncImage(cover, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                Box(Modifier.fillMaxSize().background(artworkScrim(0.4f)))
+            } else {
+                Illustration(if (waiting) R.drawable.fluent3d_package else R.drawable.fluent3d_joystick, Modifier.size(72.dp))
+            }
             Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) {
                 CircleButton(R.drawable.ic_fluent_delete_24_regular, "Xóa", onDelete, style = vn.aow.monika.ui.theme.CircleStyle.Glass, size = 36.dp)
             }
+            if (g.evicted) {
+                Box(Modifier.fillMaxSize().background(Color(0x8C181719)))
+                Box(Modifier.align(Alignment.TopStart).padding(10.dp)) { Tag("Đã dọn", onDark = true) }
+            }
             Box(Modifier.align(Alignment.BottomCenter).padding(10.dp).fillMaxWidth()) {
-                if (waiting) DarkButton("Giải nén", onExtract, Modifier.fillMaxWidth(), enabled = enabled)
-                else GradientButton("Chơi", onPlay, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_play_24_filled, enabled = enabled, height = 44.dp)
+                when {
+                    g.evicted -> DarkButton("Tải lại", onRedownload, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_arrow_download_24_regular)
+                    waiting -> DarkButton("Giải nén", onExtract, Modifier.fillMaxWidth(), enabled = enabled)
+                    else -> GradientButton("Chơi", onPlay, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_play_24_filled, enabled = enabled, height = 44.dp)
+                }
             }
         }
         Spacer(Modifier.height(8.dp))
         Text(g.name, style = Monika.type.bodyStrong, color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Text(g.system?.name ?: if (g.needsExtract) "Chưa giải nén" else "Chưa nhận diện", style = Monika.type.caption, color = c.textSecondary)
+        Text(
+            when {
+                g.evicted -> "Đã dọn để tiết kiệm bộ nhớ · save vẫn giữ"
+                else -> g.system?.name ?: if (g.needsExtract) "Chưa giải nén" else "Chưa nhận diện"
+            },
+            style = Monika.type.caption, color = c.textSecondary,
+        )
     }
 }

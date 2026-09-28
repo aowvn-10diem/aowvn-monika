@@ -61,7 +61,11 @@ class RetroActivity : ComponentActivity() {
         val title = intent.getStringExtra(EXTRA_TITLE) ?: File(gamePath).nameWithoutExtension
         val layout = padFor(coreId, intent.getStringExtra(EXTRA_PAD))
         aspect = AppGraph.config.current.cores[coreId]?.aspectRatio ?: DEFAULT_ASPECT[coreId] ?: 4f / 3f
-        ui.opacity = AppGraph.prefs.padOpacity
+        val prefs = AppGraph.prefs
+        ui.opacity = prefs.padOpacity
+        ui.scale = prefs.padScale
+        ui.dpadOffset = prefs.padOffset("dpad").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
+        ui.faceOffset = prefs.padOffset("face").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
 
         val key = "${File(gamePath).nameWithoutExtension}-${gamePath.hashCode()}"
         sramFile = File(File(filesDir, "saves").apply { mkdirs() }, "$key.srm")
@@ -90,6 +94,12 @@ class RetroActivity : ComponentActivity() {
                         onOpacity = {
                             ui.opacity = when { ui.opacity < 0.4f -> 0.65f; ui.opacity < 0.9f -> 1f; else -> 0.3f }
                             AppGraph.prefs.padOpacity = ui.opacity
+                        },
+                        onEditDone = {
+                            prefs.padScale = ui.scale
+                            prefs.setPadOffset("dpad", ui.dpadOffset.x, ui.dpadOffset.y)
+                            prefs.setPadOffset("face", ui.faceOffset.x, ui.faceOffset.y)
+                            showToast("Đã lưu vị trí phím")
                         },
                     )
                 }

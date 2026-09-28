@@ -15,6 +15,10 @@ data class Game(
     val entry: File?,
     /** Còn file nén chưa giải nén được (sai mật khẩu...). */
     val needsExtract: Boolean = false,
+    /** Thông tin từ bài viết aow.vn (ảnh bìa, link bài). Null = game thêm tay từ máy. */
+    val meta: GameMeta? = null,
+    /** Đã bị dọn bộ đệm (chỉ còn thông tin bài viết) → hiện "Tải lại". */
+    val evicted: Boolean = false,
 )
 
 class GameLibrary(private val context: Context, private val configRepo: ConfigRepository) {
@@ -37,6 +41,14 @@ object GameDetector {
     private const val MAX_DEPTH = 4
 
     fun detect(dir: File, cfg: MonikaConfig): Game {
+        val meta = GameMeta.read(dir)
+        if (meta != null && dir.listFiles().orEmpty().all { it.name == ".monika.json" }) {
+            return Game(dir, meta.title.ifBlank { dir.name }, null, null, meta = meta, evicted = true)
+        }
+        return detectFiles(dir, cfg).copy(name = meta?.title?.ifBlank { null } ?: dir.name, meta = meta)
+    }
+
+    private fun detectFiles(dir: File, cfg: MonikaConfig): Game {
         val files = dir.walkTopDown().maxDepth(MAX_DEPTH).filter { it.isFile }.toList()
         val paths = files.map { it to it.path.replace('\\', '/') }
 

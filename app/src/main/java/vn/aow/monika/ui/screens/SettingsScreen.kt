@@ -149,6 +149,12 @@ fun SettingsScreen(onBack: () -> Unit) {
                     }
                 }
 
+                SettingGroup(
+                    "storage", open, { open = it }, R.drawable.ic_fluent_storage_24_regular,
+                    Brush.linearGradient(listOf(Color(0xFF638EFF), Color(0xFF66CFF3))),
+                    "Dung lượng & bộ nhớ đệm", "Tự dọn khi đầy · giới hạn ${cacheLimitLabel()}",
+                ) { StorageSettingsContent() }
+
                 SettingGroup("cores", open, { open = it }, R.drawable.ic_fluent_layer_24_regular, Brush.linearGradient(listOf(Color(0xFF63D68A), Color(0xFF66CFF3))), "Lõi giả lập", "${cfg.cores.size} lõi · tải khi chơi lần đầu") {
                     cfg.cores.forEach { (id, def) ->
                         val installed = remember(id, refreshTick) { AppGraph.cores.installedVersion(id) }

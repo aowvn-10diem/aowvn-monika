@@ -62,6 +62,14 @@ class ConfigTest {
     }
 
     @Test
+    fun `rut gon ten game tu tieu de bai`() {
+        fun clean(t: String) = vn.aow.monika.library.GameMeta.cleanTitle(t)
+        assertEquals("Pokemon Fire Red: Rocket Edition", clean("[MỚI] Game Pokemon Fire Red: Rocket Edition Việt Hóa | GBA Android PC IOS - Giả lập Rocket"))
+        assertEquals("Dragon Ball: Advanced Adventure", clean("[GBA] Game Dragon Ball: Advanced Adventure Việt Hoá | Android"))
+        assertEquals("Pokemon Black 2 Kaizo", clean("[NDS] Fan game Pokemon Black 2 Kaizo Việt Hóa"))
+    }
+
+    @Test
     fun `nhan dien game theo file danh dau va duoi file`() {
         fun gameWith(vararg files: String): File {
             val dir = Files.createTempDirectory("game").toFile()

@@ -44,6 +44,7 @@ import vn.aow.monika.R
 import vn.aow.monika.download.DownloadLink
 import vn.aow.monika.download.LinkResolver
 import vn.aow.monika.feed.Post
+import vn.aow.monika.library.GameMeta
 import vn.aow.monika.ui.theme.CircleButton
 import vn.aow.monika.ui.theme.CircleStyle
 import vn.aow.monika.ui.theme.DarkButton
@@ -87,7 +88,7 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
     Box(Modifier.fillMaxSize()) {
         // Nội dung đầy đủ (ảnh lớn + tiêu đề + bài) trong WebView, CSS theo hệ thiết kế Monika.
         AndroidView(
-            factory = { ctx -> createPostWebView(ctx, scope) },
+            factory = { ctx -> createPostWebView(ctx, scope, post) },
             update = { it.loadDataWithBaseURL("https://www.aow.vn/", html, "text/html", "utf-8", null) },
             modifier = Modifier.fillMaxSize(),
         )
@@ -115,7 +116,7 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
                 DarkButton("Liên kết", { showLinks = true }, icon = R.drawable.ic_fluent_open_24_regular, subtitle = "${links.size} link")
                 GradientButton(
                     if (direct != null) "Tải game" else "Xem link tải",
-                    { if (direct != null) handleLink(context, scope, direct.pageUrl) else showLinks = true },
+                    { if (direct != null) handleLink(context, scope, direct.pageUrl, post) else showLinks = true },
                     Modifier.weight(1f),
                     icon = R.drawable.ic_fluent_arrow_download_24_regular,
                     subtitle = direct?.let { listOf(it.label, it.hostName).filter(String::isNotBlank).distinct().joinToString(" · ") } ?: "Mở trình duyệt",
@@ -129,7 +130,7 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Liên kết tải trong bài", style = Monika.type.sectionTitle, color = c.text)
                 Text("Nút gradient: tải thẳng trong app. Nút tối: mở trình duyệt, tải xong vào Giả lập → Thêm game.", style = Monika.type.caption, color = c.textSecondary)
-                links.forEach { link -> LinkButton(link) { showLinks = false; handleLink(context, scope, link.pageUrl) } }
+                links.forEach { link -> LinkButton(link) { showLinks = false; handleLink(context, scope, link.pageUrl, post) } }
             }
         }
     }
@@ -143,27 +144,30 @@ private fun LinkButton(link: DownloadLink, onClick: () -> Unit) {
 }
 
 @SuppressLint("SetJavaScriptEnabled")
-private fun createPostWebView(context: Context, scope: CoroutineScope) = WebView(context).apply {
+private fun createPostWebView(context: Context, scope: CoroutineScope, post: Post) = WebView(context).apply {
     setBackgroundColor(0)
     settings.javaScriptEnabled = true // Cho video YouTube nhúng trong bài.
     settings.domStorageEnabled = true
     webViewClient = object : WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-            handleLink(context, scope, request.url.toString())
+            handleLink(context, scope, request.url.toString(), post)
             return true
         }
     }
 }
 
-/** Bấm link: host tải thẳng → tải trong app; còn lại → trình duyệt. */
-fun handleLink(context: Context, scope: CoroutineScope, url: String) {
+/** Bấm link: host tải thẳng → tải trong app (kèm tên + ảnh bìa từ bài); còn lại → trình duyệt. */
+fun handleLink(context: Context, scope: CoroutineScope, url: String, post: Post? = null) {
     val direct = LinkResolver.resolve(url, AppGraph.config.current.downloadHosts)?.directUrl
     if (direct == null) {
         openUrl(context, url)
         return
     }
+    val meta = post?.let {
+        GameMeta(GameMeta.cleanTitle(it.title), GameMeta.largeCover(it.thumbnail), it.url, it.id, it.labels)
+    }
     scope.launch {
-        runCatching { AppGraph.downloader.enqueue(direct) }
+        runCatching { AppGraph.downloader.enqueue(direct, meta = meta) }
             .onSuccess { Toast.makeText(context, "Đang tải… xem ở tab Tải xuống", Toast.LENGTH_LONG).show() }
             .onFailure { Toast.makeText(context, "Lỗi: ${it.message}", Toast.LENGTH_LONG).show() }
     }

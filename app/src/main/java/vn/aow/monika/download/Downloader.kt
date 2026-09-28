@@ -16,6 +16,7 @@ import okhttp3.Request
 import vn.aow.monika.AppGraph
 import vn.aow.monika.Prefs
 import vn.aow.monika.library.GameStorage
+import vn.aow.monika.library.GameMeta
 import vn.aow.monika.library.ImportWorker
 import vn.aow.monika.notify.Notifier
 import vn.aow.monika.runner.Installer
@@ -32,8 +33,11 @@ class Downloader(
 ) {
     private val dm = context.getSystemService(DownloadManager::class.java)
 
-    /** @param isTool true = app/plugin cần cài ngay, không đưa vào thư viện game. */
-    suspend fun enqueue(url: String, isTool: Boolean = false): Long {
+    /**
+     * @param isTool true = app/plugin cần cài ngay, không đưa vào thư viện game.
+     * @param meta thông tin bài viết (tên, ảnh bìa) để game tải xong hiển thị đẹp.
+     */
+    suspend fun enqueue(url: String, isTool: Boolean = false, meta: GameMeta? = null): Long {
         val name = resolveFileName(url)
         val request = DownloadManager.Request(Uri.parse(url))
             .setTitle(name)
@@ -45,7 +49,10 @@ class Downloader(
         } else {
             request.setDestinationInExternalFilesDir(context, GameStorage.FOLDER, sub)
         }
-        return dm.enqueue(request).also { if (isTool) prefs.markToolDownload(it) }
+        return dm.enqueue(request).also { id ->
+            if (isTool) prefs.markToolDownload(id)
+            meta?.let { prefs.setDownloadMeta(id, it.toJson()) }
+        }
     }
 
     /** Hỏi tên file thật qua Content-Disposition (link kiểu /api/file/xxx không có tên trong URL). */
@@ -84,6 +91,7 @@ class DownloadReceiver : BroadcastReceiver() {
             if (status == DownloadManager.STATUS_SUCCESSFUL && local != null) Uri.parse(local).path?.let(::File) else null
         }
         val isTool = prefs.isToolDownload(id)
+        val meta = prefs.downloadMeta(id)
         prefs.clearDownload(id)
         if (file == null || !file.exists()) return
 
@@ -91,6 +99,6 @@ class DownloadReceiver : BroadcastReceiver() {
             Notifier.downloadDone(context, "Đã tải ${file.name}", "Bấm để cài đặt", Installer.installIntent(context, file))
             return
         }
-        ImportWorker.enqueue(context, file)
+        ImportWorker.enqueue(context, file, meta)
     }
 }

@@ -1,13 +1,13 @@
 {
-  "configVersion": 2,
+  "configVersion": 3,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
 
   "app": {
-    "latestVersionCode": 1,
-    "latestVersionName": "0.1.0",
+    "latestVersionCode": 2,
+    "latestVersionName": "0.2.0",
     "minVersionCode": 1,
     "apkUrl": "",
-    "changelog": "Bản khung đầu tiên."
+    "changelog": "Giao diện mới, menu nổi, lưu trạng thái game, ảnh bìa game, chỉnh vị trí phím."
   },
 
   "feed": {

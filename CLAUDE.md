@@ -34,8 +34,8 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 ## Việc còn lại (theo thứ tự ưu tiên)
 
 1. Link chính thức cho app ngoài (chủ repo cung cấp) → điền `externalApps[].downloadUrl`, xác nhận `packageNames`.
-2. Tay cầm ảo đẹp hơn (RadialGamePad), layout riêng cho NDS 2 màn hình.
-3. Save state, cài đặt lõi (core options), chọn lõi melonDS/desmume.
+2. ĐÃ CÓ: tay cầm theo hệ máy, kéo đổi chỗ + cỡ (lưu Prefs), save/load state 1 slot, ảnh bìa game từ bài viết (`library/GameMeta.kt`, file `.monika.json` trong thư mục game). Còn: nhiều slot save, core options, chọn lõi melonDS/desmume.
+3. Chưa test trên máy thật — mọi thứ mới chỉ build + unit test.
 4. Giải nén: đã có zip/rar/rar5/7z (libarchive 1.1.6; 1.1.7 đòi compileSdk 37). Còn thiếu: file chia nhiều phần, 7z có mật khẩu, thanh % tiến độ. Chưa test trên máy thật.
 5. Nhúng J2ME Loader, ONScripter (hiện chạy qua app ngoài).
 6. Port Ren'Py, mkxp-z (RPG Maker XP/VX/Ace) — khó, làm sau.

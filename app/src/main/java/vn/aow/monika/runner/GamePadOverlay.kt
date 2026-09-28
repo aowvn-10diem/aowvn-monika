@@ -12,6 +12,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -82,6 +86,12 @@ class InGameState {
     var turbo by mutableStateOf(false)
     var opacity by mutableStateOf(0.65f)
     var toast by mutableStateOf<String?>(null)
+
+    /** Chế độ chỉnh tay cầm: kéo cụm phím đổi chỗ, chọn cỡ. */
+    var editing by mutableStateOf(false)
+    var scale by mutableStateOf(1f)
+    var dpadOffset by mutableStateOf(Offset.Zero)
+    var faceOffset by mutableStateOf(Offset.Zero)
 }
 
 @Composable
@@ -97,6 +107,7 @@ fun InGameOverlay(
     onLoad: () -> Unit,
     onTurbo: () -> Unit,
     onOpacity: () -> Unit,
+    onEditDone: () -> Unit,
 ) {
     val motion = Monika.motion
     Box(Modifier.fillMaxSize()) {
@@ -133,6 +144,7 @@ fun InGameOverlay(
                 MenuItem(R.drawable.ic_fluent_folder_open_24_regular, "Tải trạng thái", false, onLoad)
                 MenuItem(R.drawable.ic_fluent_top_speed_24_regular, if (state.turbo) "Tốc độ: 2x" else "Tốc độ: 1x", state.turbo, onTurbo)
                 MenuItem(R.drawable.ic_fluent_eye_24_regular, "Độ mờ phím: ${(state.opacity * 100).toInt()}%", false, onOpacity)
+                MenuItem(R.drawable.ic_fluent_xbox_controller_24_regular, "Chỉnh vị trí & cỡ phím", false) { state.menuOpen = false; state.editing = true }
                 MenuItem(R.drawable.ic_fluent_dismiss_24_regular, "Thoát trò chơi", false, onBack)
             }
         }
@@ -144,7 +156,54 @@ fun InGameOverlay(
             )
         }
 
-        if (showPad) VirtualPad(layout, state.opacity, send, Modifier.align(Alignment.BottomCenter))
+        if (showPad) VirtualPad(layout, state, send, Modifier.align(Alignment.BottomCenter))
+
+        // Thanh chỉnh tay cầm: chọn cỡ, về mặc định, xong (lưu lại).
+        if (state.editing) {
+            Column(
+                Modifier.align(Alignment.Center).clip(Radius.large).background(Color(0xE6201F21)).border(1.dp, Color(0x24FFFFFF), Radius.large).padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text("Kéo cụm D-pad / cụm nút để đổi chỗ", style = Monika.type.bodyStrong, color = Color.White)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Nhỏ" to 0.85f, "Vừa" to 1f, "Lớn" to 1.2f).forEach { (label, v) ->
+                        EditChip(label, state.scale == v) { state.scale = v }
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    EditChip("Mặc định", false) { state.scale = 1f; state.dpadOffset = Offset.Zero; state.faceOffset = Offset.Zero }
+                    EditChip("Xong", true) { state.editing = false; onEditDone() }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditChip(text: String, on: Boolean, onClick: () -> Unit) {
+    Text(
+        text, style = Monika.type.bodyStrong, color = Color.White,
+        modifier = Modifier.clip(Radius.pill)
+            .background(if (on) primaryGradient() else Brush.linearGradient(listOf(Color(0x24FFFFFF), Color(0x24FFFFFF))))
+            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); if (awaitRelease()) onClick() } }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+    )
+}
+
+/** Cụm phím kéo được khi đang chỉnh; lúc chơi thì phím hoạt động bình thường. */
+@Composable
+private fun Movable(state: InGameState, offset: Offset, onMove: (Offset) -> Unit, content: @Composable () -> Unit) {
+    Box(
+        Modifier.offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
+            .graphicsLayer { scaleX = state.scale; scaleY = state.scale },
+    ) {
+        content()
+        if (state.editing) {
+            Box(
+                Modifier.matchParentSize().clip(Radius.large).border(2.dp, Color(0xFFFF7F78), Radius.large).background(Color(0x22FF7F78))
+                    .pointerInput(Unit) { detectDragGestures { ch, drag -> ch.consume(); onMove(drag) } },
+            )
+        }
     }
 }
 
@@ -182,9 +241,9 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.awa
 }
 
 @Composable
-private fun VirtualPad(layout: PadLayout, opacity: Float, send: (Int, Int) -> Unit, modifier: Modifier) {
+private fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) -> Unit, modifier: Modifier) {
     val shoulders = layout == PadLayout.GBA || layout == PadLayout.NDS || layout == PadLayout.PS
-    Column(modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 16.dp).alpha(opacity)) {
+    Column(modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 16.dp).alpha(if (state.editing) 1f else state.opacity)) {
         if (shoulders) {
             Row(Modifier.fillMaxWidth()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -200,9 +259,9 @@ private fun VirtualPad(layout: PadLayout, opacity: Float, send: (Int, Int) -> Un
             Spacer(Modifier.height(12.dp))
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            DPad(send)
+            Movable(state, state.dpadOffset, { state.dpadOffset += it }) { DPad(send) }
             Spacer(Modifier.weight(1f))
-            FaceButtons(layout, send)
+            Movable(state, state.faceOffset, { state.faceOffset += it }) { FaceButtons(layout, send) }
         }
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {

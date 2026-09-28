@@ -14,8 +14,8 @@ android {
         minSdk = 26 // Android 8.0+
         targetSdk = 35
         // Tăng versionCode mỗi lần phát hành; app so số này với config để nhắc cập nhật.
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
         buildConfigField(
             "String", "REMOTE_CONFIG_URL",

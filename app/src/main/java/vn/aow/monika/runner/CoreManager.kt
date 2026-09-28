@@ -58,6 +58,8 @@ class CoreManager(
                 marker.writeText("ok")
             }
         }
+        // Đánh dấu vừa dùng → bộ dọn bộ đệm không xóa lõi đang dùng thường xuyên.
+        coreDir(id).setLastModified(System.currentTimeMillis())
         so
     }
 
