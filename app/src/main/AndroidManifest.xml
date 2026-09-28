@@ -53,6 +53,12 @@
             android:hardwareAccelerated="true"
             android:theme="@style/Theme.Monika.Fullscreen" />
 
+        <!-- Trình duyệt nhúng: Discord / Facebook khi máy chưa cài app. -->
+        <activity
+            android:name=".browser.InAppBrowserActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
+            android:windowSoftInputMode="adjustResize" />
+
         <receiver
             android:name=".download.DownloadReceiver"
             android:exported="true">

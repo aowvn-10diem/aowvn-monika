@@ -48,7 +48,7 @@
   "_cores_ghi_chu": "Lõi libretro tải khi cần. {abi} tự thay bằng kiến trúc máy. Đổi 'version' để ép app tải lại lõi mới.",
   "_community_ghi_chu": "Link cộng đồng AowVN hiện ở Trang chủ. Để trống = ẩn nút.",
   "community": {
-    "facebookGroup": "",
+    "facebookGroup": "https://www.facebook.com/groups/aowvn",
     "discord": ""
   },
 

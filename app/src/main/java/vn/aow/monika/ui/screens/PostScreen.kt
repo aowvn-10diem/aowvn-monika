@@ -135,7 +135,7 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
         ModalBottomSheet(onDismissRequest = { showCommunity = false }, containerColor = c.surface) {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Nhóm dịch & cộng đồng", style = Monika.type.sectionTitle, color = c.text)
-                Text("Link trong bài. Có app Facebook / Discord thì mở thẳng bằng app.", style = Monika.type.caption, color = c.textSecondary)
+                Text("Link trong bài. Máy có app Facebook / Discord thì mở bằng app, chưa có thì mở ngay trong Aow Monika.", style = Monika.type.caption, color = c.textSecondary)
                 community.forEach { l ->
                     val title = "${l.kind.label} · ${Community.shortName(l)}"
                     val icon = if (l.kind == CommunityLink.Kind.DISCORD) R.drawable.ic_fluent_chat_multiple_24_regular else R.drawable.ic_fluent_people_community_24_regular

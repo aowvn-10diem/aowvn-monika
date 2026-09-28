@@ -23,3 +23,11 @@ class CommunityTest {
 
     @Test fun noLinks() = assertEquals(0, Community.extract("<p>Không có gì</p>").size)
 }
+
+class CommunityKindTest {
+    @Test fun kinds() {
+        assertEquals(Kind.FACEBOOK, Community.kindOf("https://www.facebook.com/groups/aowvn"))
+        assertEquals(Kind.DISCORD, Community.kindOf("https://discord.gg/abc"))
+        assertEquals(null, Community.kindOf("https://www.aow.vn/"))
+    }
+}

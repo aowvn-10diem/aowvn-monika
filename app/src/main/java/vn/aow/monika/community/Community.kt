@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import vn.aow.monika.browser.InAppBrowserActivity
 
 /** 1 liên kết cộng đồng: group/trang Facebook hoặc máy chủ Discord. */
 data class CommunityLink(val kind: Kind, val url: String) {
@@ -32,15 +33,40 @@ object Community {
         return u.pathSegments.lastOrNull { it.isNotBlank() && it != "groups" && it != "invite" } ?: link.kind.label
     }
 
+    /** Gói app chính thức mở được link của từng loại (thử lần lượt). */
+    private val APPS = mapOf(
+        CommunityLink.Kind.DISCORD to listOf("com.discord"),
+        CommunityLink.Kind.FACEBOOK to listOf("com.facebook.katana", "com.facebook.lite"),
+    )
+
+    fun kindOf(url: String): CommunityLink.Kind? = when {
+        DISCORD.containsMatchIn(url) -> CommunityLink.Kind.DISCORD
+        FACEBOOK.containsMatchIn(url) -> CommunityLink.Kind.FACEBOOK
+        else -> null
+    }
+
     /**
-     * Mở bằng app Facebook / Discord nếu máy đã cài (Android tự chuyển link sang app), không có thì mở trình duyệt.
-     * Không nhúng đăng nhập FB/Discord trong app: 2 nền tảng này chặn đăng nhập trong WebView, và giữ tài khoản user an toàn.
+     * Máy đã cài app Discord / Facebook → mở thẳng bằng app.
+     * Chưa cài → mở bằng trình duyệt nhúng trong app ([InAppBrowserActivity]), không phải rời app.
      */
     fun open(context: Context, url: String) {
+        val kind = kindOf(url)
+        val pkg = APPS[kind].orEmpty().firstOrNull { installed(context, it) }
+        if (pkg != null) {
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).setPackage(pkg).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return
+            } catch (_: ActivityNotFoundException) {
+                // App có cài nhưng không nhận link này → dùng trình duyệt nhúng.
+            }
+        }
         try {
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        } catch (_: ActivityNotFoundException) {
-            Toast.makeText(context, "Không có app nào mở được link này", Toast.LENGTH_SHORT).show()
+            InAppBrowserActivity.start(context, url)
+        } catch (_: Exception) {
+            Toast.makeText(context, "Không mở được link này", Toast.LENGTH_SHORT).show()
         }
     }
+
+    private fun installed(context: Context, pkg: String) =
+        runCatching { context.packageManager.getPackageInfo(pkg, 0); true }.getOrDefault(false)
 }
