@@ -1,0 +1,46 @@
+package vn.aow.monika
+
+import android.app.Application
+import okhttp3.OkHttpClient
+import vn.aow.monika.config.ConfigRepository
+import vn.aow.monika.download.Downloader
+import vn.aow.monika.feed.FeedRepository
+import vn.aow.monika.library.GameLibrary
+import vn.aow.monika.runner.CoreManager
+import vn.aow.monika.runner.GameLauncher
+import java.util.concurrent.TimeUnit
+
+/**
+ * Nơi duy nhất tạo các thành phần của app (DI thủ công, không cần thư viện).
+ * Muốn thay 1 thành phần: sửa đúng 1 dòng ở đây.
+ */
+object AppGraph {
+    lateinit var app: Application
+        private set
+
+    fun init(application: Application) {
+        app = application
+    }
+
+    val http: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                chain.proceed(
+                    chain.request().newBuilder()
+                        .header("User-Agent", "AowVN-Monika/${BuildConfig.VERSION_NAME} (Android)")
+                        .build()
+                )
+            }
+            .build()
+    }
+
+    val prefs by lazy { Prefs(app) }
+    val config by lazy { ConfigRepository(app, http) }
+    val feed by lazy { FeedRepository(http, config) }
+    val cores by lazy { CoreManager(app, http, config) }
+    val downloader by lazy { Downloader(app, http, prefs) }
+    val library by lazy { GameLibrary(app, config) }
+    val launcher by lazy { GameLauncher(config) }
+}

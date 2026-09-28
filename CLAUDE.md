@@ -1,0 +1,33 @@
+# AowVN Monika — ghi chú cho Claude
+
+App Android (Kotlin, Jetpack Compose) của aow.vn: đọc bài (Blogger feed), thông báo bài mới, tải và chạy game.
+Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viết tiếng Việt.
+
+## Nguyên tắc thiết kế (bắt buộc giữ)
+
+- **Config-first**: thứ gì có thể thay đổi (link, lõi, hệ máy, host, hướng dẫn) phải nằm trong `config/monika-config.json`, không hard-code. Trường mới trong `MonikaConfig.kt` luôn có giá trị mặc định (tương thích config cũ).
+- `config/` là nguồn duy nhất: Gradle đóng gói chính file này vào assets (`sourceSets ... srcDirs("../config")`).
+- Thêm hệ/trình chạy: sửa config + (nếu runner mới) thêm nhánh trong `runner/GameLauncher.kt`. Cập nhật `ConfigTest` nếu thêm loại runner.
+- Tất cả thành phần tạo trong `AppGraph.kt` (DI thủ công, không thêm Hilt/Koin).
+- Phiên bản thư viện chỉ sửa trong `gradle/libs.versions.toml`.
+
+## Sự thật đã xác minh
+
+- Feed: `https://www.aow.vn/feeds/posts/default?alt=json&orderby=published`, bài lẻ: `/feeds/posts/default/{postId}?alt=json`. Blog ID `4482370512868492154`.
+- aow.vn đứng sau Cloudflare với rule chặn IP ngoài VN/LA/CU. Máy chủ Claude chỉ được mở riêng đường dẫn `/feeds/` (rule skip theo IP). Vì vậy thông báo chạy **trong app** (WorkManager, IP user VN), không dùng server/GitHub Action nước ngoài.
+- LibretroDroid 0.14.0 (JitPack): `GLRetroView(context, GLRetroViewData)`, `serializeSRAM()`, `getGLRetroErrors()`.
+- Lõi libretro Android: `https://buildbot.libretro.com/nightly/android/latest/{abi}/<core>_libretro_android.so.zip`.
+
+## Lệnh
+
+- `./gradlew testDebugUnitTest` — test config/logic (chạy trước mọi push).
+- `./gradlew assembleDebug` — build APK.
+
+## Việc còn lại (theo thứ tự ưu tiên)
+
+1. Link chính thức cho app ngoài (chủ repo cung cấp) → điền `externalApps[].downloadUrl`, xác nhận `packageNames`.
+2. Tay cầm ảo đẹp hơn (RadialGamePad), layout riêng cho NDS 2 màn hình.
+3. Save state, cài đặt lõi (core options), chọn lõi melonDS/desmume.
+4. Giải nén .rar/.7z.
+5. Nhúng J2ME Loader, ONScripter (hiện chạy qua app ngoài).
+6. Port Ren'Py, mkxp-z (RPG Maker XP/VX/Ace) — khó, làm sau.

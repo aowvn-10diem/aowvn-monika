@@ -1,0 +1,49 @@
+# AowVN Monika
+
+App Android "tất cả trong một" cho cộng đồng [aow.vn](https://www.aow.vn): đọc bài viết, nhận thông báo bài mới, tải game và chơi ngay trong app.
+
+## Tính năng (bản khung 0.1.0)
+
+| Mảng | Nội dung |
+|---|---|
+| Bài viết | Đọc feed Blogger của aow.vn, lọc theo nhãn, xem link tải trong bài |
+| Thông báo | App tự kiểm tra bài mới định kỳ (mặc định 60 phút), lọc theo nhãn user chọn |
+| Tải game | Host hỗ trợ tải thẳng (Pixeldrain) → tự giải nén .zip vào thư viện. Host khác → mở trình duyệt, rồi "Thêm game từ máy" |
+| Giả lập nhúng sẵn | NDS, GBA, GBC, PS1, PSP, RPG Maker 2000/2003 (lõi libretro tải khi cần) |
+| Chạy dạng web | Flash (Ruffle), RPG Maker MV/MZ, TyranoScript |
+| APK | Mở trình cài đặt Android |
+| App ngoài | Kirikiroid2, JoiPlay (Ren'Py, RPG Maker XP/VX/Ace), J2ME Loader, ONScripter: kiểm tra đã cài, link tải, hướng dẫn cài |
+
+## Nguyên tắc: dễ cập nhật, dễ sửa
+
+- **Gần như mọi thứ nằm trong [`config/monika-config.json`](config/monika-config.json)**: hệ máy, lõi giả lập, link app ngoài, hướng dẫn cài, host tải, chu kỳ thông báo. Sửa file này rồi push là app của user tự cập nhật, **không cần phát hành APK mới**. Hướng dẫn: [docs/CAP-NHAT.md](docs/CAP-NHAT.md).
+- Config từ xa bị lỗi thì app bỏ qua và giữ bản đang chạy tốt.
+- CI tự kiểm tra config (`ConfigTest`) mỗi lần push, sai đâu báo đó.
+- Phiên bản thư viện gom ở [`gradle/libs.versions.toml`](gradle/libs.versions.toml).
+
+## Cấu trúc code
+
+```
+app/src/main/java/vn/aow/monika/
+├── AppGraph.kt          # Tạo mọi thành phần (DI thủ công)
+├── config/              # Đọc cấu hình (từ xa → cache → bản đóng gói)
+├── feed/                # Đọc feed Blogger
+├── notify/              # Kiểm tra bài mới + thông báo
+├── download/            # Tách link tải, tải bằng DownloadManager
+├── library/             # Thư mục game, giải nén, nhận diện loại game
+├── runner/              # Trình chạy: libretro, web, apk, app ngoài
+└── ui/                  # Giao diện Compose (3 tab)
+```
+
+## Build
+
+```bash
+./gradlew testDebugUnitTest   # test cấu hình + logic
+./gradlew assembleDebug       # APK: app/build/outputs/apk/debug/
+```
+
+Mỗi lần push, GitHub Actions build APK debug (xem tab Actions → Artifacts). Tag `v*` → build APK đã ký và đăng lên Releases.
+
+## Giấy phép
+
+GPL-3.0 (do dùng [LibretroDroid](https://github.com/Swordfish90/LibretroDroid), GPL-3.0). Khi phát hành APK phải công khai mã nguồn.

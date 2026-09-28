@@ -1,0 +1,129 @@
+{
+  "configVersion": 1,
+  "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
+
+  "app": {
+    "latestVersionCode": 1,
+    "latestVersionName": "0.1.0",
+    "minVersionCode": 1,
+    "apkUrl": "",
+    "changelog": "Bản khung đầu tiên."
+  },
+
+  "feed": {
+    "url": "https://www.aow.vn/feeds/posts/default",
+    "pageSize": 20,
+    "pollMinutes": 60
+  },
+
+  "systems": [
+    { "id": "nds",   "name": "Nintendo DS",        "runner": "libretro", "core": "desmume",      "extensions": ["nds"],                     "labels": ["Game NDS Việt Hóa"] },
+    { "id": "gba",   "name": "Game Boy Advance",   "runner": "libretro", "core": "mgba",         "extensions": ["gba"],                     "labels": ["Game GBA Việt Hóa"] },
+    { "id": "gbc",   "name": "Game Boy / Color",   "runner": "libretro", "core": "gambatte",     "extensions": ["gb", "gbc"],               "labels": [] },
+    { "id": "ps1",   "name": "PlayStation 1",      "runner": "libretro", "core": "pcsx_rearmed", "extensions": ["cue", "pbp", "chd", "m3u"], "labels": ["Game PS1"] },
+    { "id": "psp",   "name": "PSP",                "runner": "libretro", "core": "ppsspp",       "extensions": ["iso", "cso"],              "labels": ["Game PS & PSP Việt Hóa"] },
+    { "id": "rpg2k", "name": "RPG Maker 2000/2003", "runner": "libretro", "core": "easyrpg",     "extensions": ["ldb"],                     "labels": ["RPGmaker Việt Hoá"] },
+    { "id": "flash", "name": "Flash",              "runner": "web",      "webPlayer": "ruffle",  "extensions": ["swf"],                     "labels": [] },
+    { "id": "apk",   "name": "Android (APK)",      "runner": "apk",                              "extensions": ["apk"],                     "labels": ["Game Android Việt Hóa"] },
+    { "id": "java",  "name": "Java (J2ME)",        "runner": "external", "externalApp": "j2meloader", "extensions": ["jar", "jad"],         "labels": ["Game Java Việt Hóa"] },
+    { "id": "rpgmv", "name": "RPG Maker MV/MZ",    "runner": "web",      "webPlayer": "html5",   "extensions": [],                          "labels": ["RPGmaker Việt Hoá"] },
+    { "id": "tyrano","name": "TyranoScript",       "runner": "web",      "webPlayer": "html5",   "extensions": [],                          "labels": ["Visual Novel Việt Hóa"] },
+    { "id": "kirikiri","name": "Kirikiri (KAG)",   "runner": "external", "externalApp": "kirikiroid2", "extensions": ["xp3"],               "labels": ["Visual Novel Việt Hóa"] },
+    { "id": "renpy", "name": "Ren'Py",             "runner": "external", "externalApp": "joiplay", "extensions": [],                        "labels": ["Visual Novel Việt Hóa"] },
+    { "id": "rgss",  "name": "RPG Maker XP/VX/Ace", "runner": "external", "externalApp": "joiplay", "extensions": [],                       "labels": ["RPGmaker Việt Hoá"] },
+    { "id": "onscripter", "name": "ONScripter",    "runner": "external", "externalApp": "onscripter", "extensions": [],                     "labels": ["Visual Novel Việt Hóa"] }
+  ],
+
+  "_engines_ghi_chu": "Nhận diện game dạng thư mục (sau khi giải nén). Quy tắc nào khớp trước thắng. 'entry' = file sẽ mở để chạy.",
+  "engines": [
+    { "system": "rpgmv",      "markers": ["www/js/rpg_core.js", "js/rpg_core.js", "js/rmmz_core.js", "www/js/rmmz_core.js"], "entry": ["www/index.html", "index.html"] },
+    { "system": "tyrano",     "markers": ["tyrano/tyrano.js", "tyrano/libs.js"],                                        "entry": ["index.html"] },
+    { "system": "rpg2k",      "markers": ["RPG_RT.ldb"],                                                                "entry": ["RPG_RT.ldb"] },
+    { "system": "kirikiri",   "markers": ["data.xp3"],                                                                  "entry": ["data.xp3"] },
+    { "system": "renpy",      "markers": ["renpy/__init__.py", "renpy/__init__.pyo", "game/script.rpyc", "game/archive.rpa"], "entry": [] },
+    { "system": "rgss",       "markers": ["Game.rgssad", "Game.rgss2a", "Game.rgss3a", "Data/Scripts.rxdata", "Data/Scripts.rvdata2", "Data/Scripts.rvdata"], "entry": [] },
+    { "system": "onscripter", "markers": ["0.txt", "00.txt", "nscript.dat", "arc.nsa"],                                 "entry": [] }
+  ],
+
+  "_cores_ghi_chu": "Lõi libretro tải khi cần. {abi} tự thay bằng kiến trúc máy. Đổi 'version' để ép app tải lại lõi mới.",
+  "cores": {
+    "desmume":      { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip" },
+    "melonds":      { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/melonds_libretro_android.so.zip" },
+    "mgba":         { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mgba_libretro_android.so.zip" },
+    "gambatte":     { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/gambatte_libretro_android.so.zip" },
+    "pcsx_rearmed": { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/pcsx_rearmed_libretro_android.so.zip" },
+    "ppsspp":       { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/ppsspp_libretro_android.so.zip",
+                      "systemFiles": "https://buildbot.libretro.com/assets/system/PPSSPP.zip" },
+    "easyrpg":      { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/easyrpg_libretro_android.so.zip" }
+  },
+
+  "webPlayers": {
+    "ruffle": { "script": "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle/ruffle.js" }
+  },
+
+  "_externalApps_ghi_chu": "App ngoài. packageNames: danh sách tên gói để nhận biết đã cài (CẦN XÁC NHẬN). downloadUrl để trống = app báo 'đang cập nhật link'.",
+  "externalApps": [
+    {
+      "id": "kirikiroid2",
+      "name": "Kirikiroid2",
+      "description": "Chạy visual novel engine Kirikiri (file .xp3).",
+      "packageNames": ["org.tvp.kirikiri2"],
+      "downloadUrl": "",
+      "guide": [
+        "Bấm nút Tải để tải file cài đặt Kirikiroid2.",
+        "Khi Android hỏi, cho phép 'Cài ứng dụng không rõ nguồn gốc' cho AowVN Monika.",
+        "Mở file vừa tải và bấm Cài đặt.",
+        "Quay lại AowVN Monika, bấm Chơi lại game."
+      ]
+    },
+    {
+      "id": "joiplay",
+      "name": "JoiPlay",
+      "description": "Chạy Ren'Py và RPG Maker XP/VX/VX Ace. Cần cài thêm plugin tương ứng.",
+      "packageNames": ["cyou.joiplay.joiplay"],
+      "downloadUrl": "",
+      "plugins": [
+        { "name": "RPG Maker Plugin", "downloadUrl": "" },
+        { "name": "Ren'Py Plugin", "downloadUrl": "" }
+      ],
+      "guide": [
+        "Tải và cài JoiPlay.",
+        "Tải và cài plugin đúng loại game: RPG Maker Plugin hoặc Ren'Py Plugin.",
+        "Mở JoiPlay một lần để cấp quyền bộ nhớ.",
+        "Quay lại AowVN Monika, bấm Chơi lại game."
+      ]
+    },
+    {
+      "id": "j2meloader",
+      "name": "J2ME Loader",
+      "description": "Chạy game Java (.jar).",
+      "packageNames": ["ru.playsoftware.j2meloader"],
+      "downloadUrl": "",
+      "guide": [
+        "Tải và cài J2ME Loader.",
+        "Quay lại AowVN Monika, bấm Chơi lại game .jar."
+      ]
+    },
+    {
+      "id": "onscripter",
+      "name": "ONScripter",
+      "description": "Chạy visual novel NScripter/ONScripter.",
+      "packageNames": [],
+      "downloadUrl": "",
+      "guide": ["Link đang được cập nhật."]
+    }
+  ],
+
+  "_downloadHosts_ghi_chu": "mode 'direct' = tải thẳng trong app theo 'directUrl' ($1 = nhóm bắt được của 'pattern'). mode 'browser' = mở trình duyệt.",
+  "downloadHosts": [
+    { "name": "Pixeldrain", "host": "pixeldrain.com", "mode": "direct", "pattern": "/u/([A-Za-z0-9]+)", "directUrl": "https://pixeldrain.com/api/file/$1?download" },
+    { "name": "Pixeldrain", "host": "pixeldrain.com", "mode": "browser" },
+    { "name": "Box",        "host": "box.com",        "mode": "browser" },
+    { "name": "Viettel MyBox", "host": "mybox.vietteltelecom.vn", "mode": "browser" },
+    { "name": "TeraBox",    "host": "terabox.com",    "mode": "browser" },
+    { "name": "Google Drive", "host": "drive.google.com", "mode": "browser" },
+    { "name": "MediaFire",  "host": "mediafire.com",  "mode": "browser" },
+    { "name": "MEGA",       "host": "mega.nz",        "mode": "browser" },
+    { "name": "AowVN US",   "host": "aowvn.us",       "mode": "browser" }
+  ]
+}
