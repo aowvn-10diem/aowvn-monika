@@ -23,6 +23,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
+import com.swordfish.libretrodroid.Variable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -102,6 +103,17 @@ class RetroActivity : ComponentActivity() {
                             prefs.setPadOffset("face", ui.faceOffset.x, ui.faceOffset.y)
                             showToast("Đã lưu vị trí phím")
                         },
+                        onOptions = { openOptions(coreId) },
+                        onOptionChange = { o, v ->
+                            retroView?.updateVariables(Variable(o.key, v))
+                            CoreOptions.save(this@RetroActivity, coreId, o.key, v)
+                            ui.options = ui.options?.map { if (it.key == o.key) it.copy(value = v) else it }
+                        },
+                        onOptionsReset = {
+                            CoreOptions.reset(this@RetroActivity, coreId)
+                            ui.options = null
+                            showToast("Đã về mặc định. Mở lại game để áp dụng hết.", 2600)
+                        },
                     )
                 }
             }
@@ -120,6 +132,8 @@ class RetroActivity : ComponentActivity() {
                 systemDirectory = AppGraph.cores.systemDir().absolutePath
                 savesDirectory = sramFile.parentFile!!.absolutePath
                 saveRAMState = sramFile.takeIf { it.exists() }?.readBytes()
+                variables = CoreOptions.initial(this@RetroActivity, coreId, AppGraph.config.current.cores[coreId]?.options.orEmpty())
+                    .map { (k, v) -> Variable(k, v) }.toTypedArray()
             }
             val view = GLRetroView(this@RetroActivity, data)
             lifecycle.addObserver(view)
@@ -146,6 +160,15 @@ class RetroActivity : ComponentActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         retroView?.layoutParams = gameLayoutParams()
+    }
+
+    /** Đọc danh sách tùy chọn lõi đang chạy (lõi tự khai báo) rồi mở bảng chỉnh. */
+    private fun openOptions(coreId: String) {
+        val view = retroView ?: run { showToast("Game chưa chạy xong"); return }
+        val list = runCatching { view.getVariables().mapNotNull { CoreOptions.parse(it.key ?: return@mapNotNull null, it.description, it.value) } }
+            .getOrDefault(emptyList())
+            .sortedBy { it.label.lowercase() }
+        ui.options = list
     }
 
     /** Ô 1 giữ tên file cũ (tương thích bản trước); ô 2, 3 thêm hậu tố. */

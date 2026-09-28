@@ -37,7 +37,7 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 ## Việc còn lại (theo thứ tự ưu tiên)
 
 1. Link chính thức cho app ngoài (chủ repo cung cấp) → điền `externalApps[].downloadUrl`, xác nhận `packageNames`.
-2. ĐÃ CÓ: tay cầm theo hệ máy, kéo đổi chỗ + cỡ (lưu Prefs), save/load state 1 slot, ảnh bìa game từ bài viết (`library/GameMeta.kt`, file `.monika.json` trong thư mục game). Còn: nhiều slot save, core options, chọn lõi melonDS/desmume.
+2. ĐÃ CÓ: tay cầm theo hệ máy, kéo đổi chỗ + cỡ (lưu Prefs), save/load state 1 slot, ảnh bìa game từ bài viết (`library/GameMeta.kt`, file `.monika.json` trong thư mục game). ĐÃ CÓ thêm: 3 ô save, chọn lõi NDS, tùy chọn lõi (`runner/CoreOptions.kt`: đọc `GLRetroView.getVariables()` dạng "Tên; a|b|c", lưu theo lõi; mặc định trong config `cores.<id>.options` — chưa điền key nào, cần xác nhận key thật của từng lõi).
 3. Chưa test trên máy thật — mọi thứ mới chỉ build + unit test.
 4. Giải nén: zip/rar/rar5/7z (libarchive 1.1.6; 1.1.7 đòi compileSdk 37), file chia nhiều phần, % tiến độ (thông báo + màn Thư viện). 7z có mật khẩu: libarchive lỗi → `SevenZipExtractor` (Commons Compress, test `SevenZipTest` với file mẫu `app/src/test/resources/7z/`). Chưa test trên máy thật.
 5. ĐÃ nhúng J2ME Loader (runner "j2me") + phím ảo kiểu Monika. Còn: ONScripter (native C++ + SDL, cần high).

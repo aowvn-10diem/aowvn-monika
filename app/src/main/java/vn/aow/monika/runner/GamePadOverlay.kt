@@ -25,6 +25,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -96,6 +99,9 @@ class InGameState {
     var scale by mutableStateOf(1f)
     var dpadOffset by mutableStateOf(Offset.Zero)
     var faceOffset by mutableStateOf(Offset.Zero)
+
+    /** Khác null = đang mở bảng tùy chọn giả lập. */
+    var options by mutableStateOf<List<CoreOption>?>(null)
 }
 
 @Composable
@@ -112,6 +118,9 @@ fun InGameOverlay(
     onTurbo: () -> Unit,
     onOpacity: () -> Unit,
     onEditDone: () -> Unit,
+    onOptions: () -> Unit = {},
+    onOptionChange: (CoreOption, String) -> Unit = { _, _ -> },
+    onOptionsReset: () -> Unit = {},
 ) {
     val motion = Monika.motion
     Box(Modifier.fillMaxSize()) {
@@ -156,6 +165,7 @@ fun InGameOverlay(
                 MenuItem(R.drawable.ic_fluent_top_speed_24_regular, if (state.turbo) "Tốc độ: 2x" else "Tốc độ: 1x", state.turbo, onTurbo)
                 MenuItem(R.drawable.ic_fluent_eye_24_regular, "Độ mờ phím: ${(state.opacity * 100).toInt()}%", false, onOpacity)
                 MenuItem(R.drawable.ic_fluent_xbox_controller_24_regular, "Chỉnh vị trí & cỡ phím", false) { state.menuOpen = false; state.editing = true }
+                MenuItem(R.drawable.ic_fluent_settings_24_regular, "Tùy chọn giả lập", false) { state.menuOpen = false; onOptions() }
                 MenuItem(R.drawable.ic_fluent_dismiss_24_regular, "Thoát trò chơi", false, onBack)
             }
         }
@@ -168,6 +178,8 @@ fun InGameOverlay(
         }
 
         if (showPad) VirtualPad(layout, state, send, Modifier.align(Alignment.BottomCenter))
+
+        state.options?.let { opts -> OptionsPanel(opts, onOptionChange, onOptionsReset, { state.options = null }, Modifier.align(Alignment.Center)) }
 
         // Thanh chỉnh tay cầm: chọn cỡ, về mặc định, xong (lưu lại).
         if (state.editing) {
@@ -227,6 +239,48 @@ private fun GlassCircle(@DrawableRes icon: Int, desc: String, onClick: () -> Uni
             .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); val up = awaitRelease(); if (up) onClick() } },
         contentAlignment = Alignment.Center,
     ) { Icon(painterResource(icon), desc, Modifier.size(24.dp), tint = Color.White) }
+}
+
+/** Bảng tùy chọn lõi: bấm 1 dòng = chuyển sang giá trị kế tiếp, áp ngay vào game. */
+@Composable
+private fun OptionsPanel(
+    options: List<CoreOption>,
+    onChange: (CoreOption, String) -> Unit,
+    onReset: () -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier,
+) {
+    Column(
+        modifier.fillMaxWidth(0.92f).heightIn(max = 520.dp).clip(Radius.large).background(Color(0xF0201F21))
+            .border(1.dp, Color(0x24FFFFFF), Radius.large).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text("Tùy chọn giả lập", style = Monika.type.cardTitle, color = Color.White, modifier = Modifier.padding(4.dp))
+        if (options.isEmpty()) {
+            Text("Lõi này không có tùy chọn chỉnh được.", style = Monika.type.body, color = Color(0xFFC8C5CB), modifier = Modifier.padding(4.dp))
+        }
+        LazyColumn(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            items(options, key = { it.key }) { o ->
+                Row(
+                    Modifier.fillMaxWidth().clip(Radius.medium).background(Color(0x14FFFFFF))
+                        .pointerInput(o) { awaitEachGesture { awaitFirstDown(); if (awaitRelease()) onChange(o, o.next()) } }
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(o.label, style = Monika.type.body, color = Color.White, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        o.value, style = Monika.type.bodyStrong, color = Color.White, maxLines = 1,
+                        modifier = Modifier.padding(start = 10.dp).clip(Radius.pill).background(primaryGradient()).padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
+                }
+            }
+        }
+        Text("Vài tùy chọn chỉ có tác dụng sau khi mở lại game.", style = Monika.type.caption, color = Color(0xFFC8C5CB), modifier = Modifier.padding(horizontal = 4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f)) { MenuItem(R.drawable.ic_fluent_dismiss_24_regular, "Về mặc định", false, onReset) }
+            Box(Modifier.weight(1f)) { MenuItem(R.drawable.ic_fluent_save_24_regular, "Xong", true, onClose) }
+        }
+    }
 }
 
 @Composable

@@ -74,6 +74,8 @@ data class CoreDef(
     val systemFiles: String? = null,
     /** Tỉ lệ khung hình (rộng/cao) để xếp màn chơi dọc. Null = dùng mặc định theo lõi. */
     val aspectRatio: Float? = null,
+    /** Tùy chọn lõi mặc định (key libretro → giá trị). User chỉnh trong game sẽ đè lên. */
+    val options: Map<String, String> = emptyMap(),
 )
 
 @Serializable
