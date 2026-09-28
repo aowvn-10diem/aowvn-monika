@@ -84,6 +84,7 @@ fun SettingsScreen(onBack: () -> Unit) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 24.dp)) {
             MonikaHeader("Cài đặt", subtitle = "Aow Monika", left = { CircleButton(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại", onBack) })
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (cfg.account.enabled) AccountCard()
                 // Thẻ tối: app + phiên bản + cập nhật.
                 MonikaCard(Modifier.fillMaxWidth(), dark = true, shape = Radius.hero, padding = PaddingValues(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

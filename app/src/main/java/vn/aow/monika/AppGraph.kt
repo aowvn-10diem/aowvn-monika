@@ -45,5 +45,7 @@ object AppGraph {
     val launcher by lazy { GameLauncher(config) }
     /** File mở từ app khác ("Mở bằng Aow Monika") đang chờ màn Thư viện nhận vào. */
     val pendingImports = kotlinx.coroutines.flow.MutableStateFlow<List<android.net.Uri>>(emptyList())
+    val account by lazy { vn.aow.monika.account.Account(app, http, config) }
+    val aow by lazy { vn.aow.monika.account.AowApi(http, config, account) }
     val adblock by lazy { vn.aow.monika.browser.AdBlock(app, http) }
 }

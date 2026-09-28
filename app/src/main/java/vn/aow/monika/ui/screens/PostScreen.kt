@@ -107,6 +107,7 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
     // Link FB / Discord trong bài (thường của nhóm dịch; bản dịch cần vào Discord để lấy file / báo lỗi).
     val community = remember(post) { Community.extract(post.contentHtml) }
     var showCommunity by remember { mutableStateOf(false) }
+    var showReviews by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize()) {
         // Nội dung đầy đủ (ảnh lớn + tiêu đề + bài) trong WebView, CSS theo hệ thiết kế Monika.
@@ -120,6 +121,7 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
             CircleButton(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại", onBack, style = CircleStyle.Glass)
             Box(Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CircleButton(R.drawable.ic_fluent_star_24_regular, "Đánh giá bản dịch", { showReviews = true }, style = CircleStyle.Glass)
                 if (community.isNotEmpty()) CircleButton(R.drawable.ic_fluent_people_community_24_regular, "Nhóm dịch", { showCommunity = true }, style = CircleStyle.Glass)
                 CircleButton(R.drawable.ic_fluent_share_24_regular, "Chia sẻ", {
                     context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${post.title}\n${post.url}"), "Chia sẻ"))
@@ -149,6 +151,8 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
             }
         }
     }
+
+    if (showReviews) ReviewsSheet(post.id) { showReviews = false }
 
     if (showCommunity) {
         ModalBottomSheet(onDismissRequest = { showCommunity = false }, containerColor = c.surface) {

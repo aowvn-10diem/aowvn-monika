@@ -84,7 +84,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
     }
     val quick = remember {
         listOf(
-            QuickAction("Web", "Duyệt aow.vn", R.drawable.ic_fluent_globe_24_regular, secondaryGradient(), Routes.GAMES),
+            QuickAction("Vote", "Góp quỹ Việt hóa", R.drawable.ic_fluent_vote_24_regular, secondaryGradient(), Routes.VOTE),
             QuickAction("Game", "Khám phá game", R.drawable.ic_fluent_games_24_regular, primaryGradient(), Routes.GAMES),
             QuickAction("Thư viện", "Game của bạn", R.drawable.ic_fluent_library_24_regular, Brush.linearGradient(listOf(Color(0xFF9975FF), Color(0xFF638EFF))), Routes.EMULATOR),
             QuickAction("Tải xuống", "Quản lý file", R.drawable.ic_fluent_arrow_download_24_regular, Brush.linearGradient(listOf(Color(0xFF63D68A), Color(0xFF66CFF3))), Routes.DOWNLOADS),

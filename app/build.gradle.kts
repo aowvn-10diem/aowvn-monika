@@ -98,6 +98,7 @@ tasks.withType<Test>().configureEach {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.splashscreen) // Màn chờ khi mở app
+    implementation(libs.androidx.browser) // Custom Tab: đăng nhập Google trên web
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

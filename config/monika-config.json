@@ -1,5 +1,5 @@
 {
-  "configVersion": 5,
+  "configVersion": 6,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
 
   "app": {
@@ -50,6 +50,23 @@
   "community": {
     "facebookGroup": "https://www.facebook.com/groups/aowvn",
     "discord": ""
+  },
+
+  "_account_ghi_chu": "Tài khoản AowVN = Firebase của web (lấy đúng như trang /p/vote-game.html). donate = thông tin VietQR, nội dung CK: '<memoPrefix> DONATE <8 ký tự đầu uid> <mã game>'.",
+  "account": {
+    "enabled": true,
+    "apiKey": "AIzaSyDGJO0F4bJD7THxQ68Dz8blg94EylzCqSw",
+    "databaseUrl": "https://aowvn-xemtrang.firebaseio.com",
+    "loginUrl": "https://www.aow.vn/p/device-login.html",
+    "voteUrl": "https://www.aow.vn/p/vote-game.html",
+    "donate": {
+      "bankId": "970454",
+      "accountNo": "9021870093495",
+      "accountName": "VU DOAN BINH MINH",
+      "template": "compact2",
+      "memoPrefix": "AowVN",
+      "amounts": [10000, 20000, 50000, 100000]
+    }
   },
 
   "_adblock_ghi_chu": "Chặn quảng cáo trong trình duyệt nhúng (Discord/Facebook...). Bộ lọc tải về lần đầu mở, cập nhật mỗi updateHours giờ. allow = tên miền không bao giờ chặn.",

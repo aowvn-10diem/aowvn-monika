@@ -74,6 +74,21 @@
             android:hardwareAccelerated="true"
             android:theme="@style/Theme.Monika.Fullscreen" />
 
+        <!-- Nhận kết quả đăng nhập từ aow.vn/p/device-login.html (aowmonika://login#...). -->
+        <activity
+            android:name=".account.AuthCallbackActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="aowmonika" android:host="login" />
+            </intent-filter>
+        </activity>
+
         <!-- Trình duyệt nhúng: Discord / Facebook khi máy chưa cài app. -->
         <activity
             android:name=".browser.InAppBrowserActivity"

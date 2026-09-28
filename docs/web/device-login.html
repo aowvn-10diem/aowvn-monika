@@ -72,13 +72,15 @@
 <script>
 (function () {
   'use strict';
-  // Cấu hình Firebase dùng chung với theme AowVN (tài liệu tích hợp, chương 1).
+  // Cấu hình Firebase — lấy đúng như trang /p/vote-game.html đang chạy (tài liệu ghi aow-game-app là CŨ).
   var FIREBASE_CONFIG = {
     apiKey: 'AIzaSyDGJO0F4bJD7THxQ68Dz8blg94EylzCqSw',
     authDomain: 'system.aow.vn',
     databaseURL: 'https://aowvn-xemtrang.firebaseio.com',
-    projectId: 'aow-game-app',
-    storageBucket: 'aow-game-app.appspot.com'
+    projectId: 'aowvn-xemtrang',
+    storageBucket: 'aowvn-xemtrang.firebasestorage.app',
+    messagingSenderId: '415539638817',
+    appId: '1:415539638817:web:c287916315895ad032a960'
   };
   var SDK = 'https://www.gstatic.com/firebasejs/10.8.0/';
   // Chỉ trả token về đúng các app đã khai báo (chống trang lạ lợi dụng để lấy token).
