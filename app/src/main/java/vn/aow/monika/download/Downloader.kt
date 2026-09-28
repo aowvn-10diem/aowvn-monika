@@ -16,10 +16,9 @@ import okhttp3.Request
 import vn.aow.monika.AppGraph
 import vn.aow.monika.Prefs
 import vn.aow.monika.library.GameStorage
-import vn.aow.monika.library.Importer
+import vn.aow.monika.library.ImportWorker
 import vn.aow.monika.notify.Notifier
 import vn.aow.monika.runner.Installer
-import vn.aow.monika.ui.MainActivity
 import java.io.File
 
 /**
@@ -89,10 +88,6 @@ class DownloadReceiver : BroadcastReceiver() {
             Notifier.downloadDone(context, "Đã tải ${file.name}", "Bấm để cài đặt", Installer.installIntent(context, file))
             return
         }
-        val dir = runCatching { Importer.importFile(context, file, deleteSource = true) }.getOrNull() ?: return
-        val open = Intent(context, MainActivity::class.java)
-            .putExtra(MainActivity.EXTRA_OPEN_LIBRARY, true)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        Notifier.downloadDone(context, "Đã tải xong: ${dir.name}", "Bấm để mở thư viện và chơi", open)
+        ImportWorker.enqueue(context, file)
     }
 }

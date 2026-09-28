@@ -31,7 +31,7 @@ class GameLauncher(private val configRepo: ConfigRepository) {
 
     fun launch(activity: Activity, game: Game): LaunchResult {
         val system = game.system ?: return LaunchResult.Failed(
-            if (game.needsExtract) "Game đang ở dạng .rar/.7z. Hãy giải nén bằng app khác (ZArchiver...) rồi chọn Thêm game từ máy."
+            if (game.needsExtract) "Game chưa được giải nén. Bấm \"Giải nén\" (nhập mật khẩu nếu có)."
             else "Chưa nhận diện được loại game này."
         )
         val entry = game.entry ?: game.dir

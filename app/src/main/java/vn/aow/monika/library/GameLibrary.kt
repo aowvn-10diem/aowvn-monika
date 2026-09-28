@@ -13,7 +13,7 @@ data class Game(
     val system: SystemDef?,
     /** File/thư mục sẽ mở để chạy. */
     val entry: File?,
-    /** Có file .rar/.7z chưa giải nén. */
+    /** Còn file nén chưa giải nén được (sai mật khẩu...). */
     val needsExtract: Boolean = false,
 )
 
@@ -55,7 +55,7 @@ object GameDetector {
                     ?.let { return Game(dir, dir.name, system, it) }
             }
         }
-        val needsExtract = files.any { it.extension.lowercase() in Importer.UNSUPPORTED_ARCHIVES }
+        val needsExtract = files.any { ArchiveExtractor.isArchive(it) }
         return Game(dir, dir.name, null, null, needsExtract)
     }
 }

@@ -16,6 +16,7 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 - Feed: `https://www.aow.vn/feeds/posts/default?alt=json&orderby=published`, bài lẻ: `/feeds/posts/default/{postId}?alt=json`. Blog ID `4482370512868492154`.
 - aow.vn đứng sau Cloudflare với rule chặn IP ngoài VN/LA/CU. Máy chủ Claude chỉ được mở riêng đường dẫn `/feeds/` (rule skip theo IP). Vì vậy thông báo chạy **trong app** (WorkManager, IP user VN), không dùng server/GitHub Action nước ngoài.
 - LibretroDroid 0.14.0 (JitPack): `GLRetroView(context, GLRetroViewData)`, `serializeSRAM()`, `getGLRetroErrors()`.
+- libarchive (me.zhanghai.android.libarchive): giải nén bằng `readOpenFd` + `readDataIntoFd`; `readNextHeader` trả 0 khi hết file.
 - Lõi libretro Android: `https://buildbot.libretro.com/nightly/android/latest/{abi}/<core>_libretro_android.so.zip`.
 
 ## Lệnh
@@ -28,6 +29,6 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 1. Link chính thức cho app ngoài (chủ repo cung cấp) → điền `externalApps[].downloadUrl`, xác nhận `packageNames`.
 2. Tay cầm ảo đẹp hơn (RadialGamePad), layout riêng cho NDS 2 màn hình.
 3. Save state, cài đặt lõi (core options), chọn lõi melonDS/desmume.
-4. Giải nén .rar/.7z.
+4. Giải nén: đã có zip/rar/rar5/7z (libarchive 1.1.6; 1.1.7 đòi compileSdk 37). Còn thiếu: file chia nhiều phần, 7z có mật khẩu, thanh % tiến độ. Chưa test trên máy thật.
 5. Nhúng J2ME Loader, ONScripter (hiện chạy qua app ngoài).
 6. Port Ren'Py, mkxp-z (RPG Maker XP/VX/Ace) — khó, làm sau.

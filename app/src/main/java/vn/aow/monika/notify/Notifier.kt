@@ -1,6 +1,7 @@
 package vn.aow.monika.notify
 
 import android.Manifest
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -35,6 +36,16 @@ object Notifier {
 
     fun downloadDone(context: Context, title: String, text: String, intent: Intent) =
         show(context, CH_DOWNLOADS, title.hashCode(), title, text, intent)
+
+    /** Thông báo đang chạy (giải nén...) cho tác vụ nền. */
+    fun progress(context: Context, title: String, text: String): Notification =
+        NotificationCompat.Builder(context, CH_DOWNLOADS)
+            .setSmallIcon(R.drawable.ic_stat_monika)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setProgress(0, 0, true)
+            .setOngoing(true)
+            .build()
 
     private fun show(context: Context, channel: String, id: Int, title: String, text: String, intent: Intent) {
         if (Build.VERSION.SDK_INT >= 33 &&

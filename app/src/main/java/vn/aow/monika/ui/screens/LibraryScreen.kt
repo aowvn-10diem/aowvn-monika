@@ -22,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -61,6 +62,8 @@ fun LibraryScreen() {
     var needApp by remember { mutableStateOf<ExternalApp?>(null) }
     var info by remember { mutableStateOf<String?>(null) }
     var toDelete by remember { mutableStateOf<Game?>(null) }
+    var toExtract by remember { mutableStateOf<Game?>(null) }
+    var password by remember { mutableStateOf("") }
 
     // Tải lại danh sách mỗi khi quay lại màn hình (vd. vừa tải game xong).
     LaunchedEffect(reloadKey) {
@@ -73,8 +76,11 @@ fun LibraryScreen() {
         uri ?: return@rememberLauncherForActivityResult
         importing = true
         scope.launch {
-            runCatching { withContext(Dispatchers.IO) { Importer.importUri(context, uri) } }
-                .onSuccess { Toast.makeText(context, "Đã thêm: ${it.name}", Toast.LENGTH_SHORT).show() }
+            runCatching { withContext(Dispatchers.IO) { Importer.importUri(context, uri, AppGraph.config.current.archivePasswords) } }
+                .onSuccess { r ->
+                    if (r.error == null) Toast.makeText(context, "Đã thêm: ${r.dir.name}", Toast.LENGTH_SHORT).show()
+                    else info = "Đã thêm \"${r.dir.name}\" nhưng chưa giải nén được:\n${r.error}\n\nBấm \"Giải nén\" ở game đó để thử lại."
+                }
                 .onFailure { Toast.makeText(context, "Lỗi thêm game: ${it.message}", Toast.LENGTH_LONG).show() }
             importing = false
             reloadKey++
@@ -100,12 +106,14 @@ fun LibraryScreen() {
                         Column(Modifier.weight(1f)) {
                             Text(game.name, style = MaterialTheme.typography.titleMedium)
                             Text(
-                                game.system?.name ?: if (game.needsExtract) "Cần giải nén (.rar/.7z)" else "Chưa nhận diện",
+                                game.system?.name ?: if (game.needsExtract) "Chưa giải nén (có thể cần mật khẩu)" else "Chưa nhận diện",
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
                         IconButton({ toDelete = game }) { Icon(Icons.Filled.Delete, "Xóa") }
-                        Button({
+                        if (game.needsExtract && game.system == null) Button({ password = ""; toExtract = game }, enabled = !importing) {
+                            Text("Giải nén")
+                        } else Button({
                             when (val r = AppGraph.launcher.launch(activity, game)) {
                                 is LaunchResult.NeedApp -> needApp = r.app
                                 is LaunchResult.OpenedApp -> info = "Đã mở ${r.app.name}. Trong app đó, chọn thư mục:\n${r.gamePath}"
@@ -132,6 +140,34 @@ fun LibraryScreen() {
             onDismissRequest = { info = null },
             confirmButton = { TextButton({ info = null }) { Text("OK") } },
             text = { Text(it) },
+        )
+    }
+    toExtract?.let { game ->
+        AlertDialog(
+            onDismissRequest = { toExtract = null },
+            title = { Text("Giải nén \"${game.name}\"") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Nhập mật khẩu nếu file có mật khẩu (thường ghi trong bài viết). Không có thì để trống.")
+                    OutlinedTextField(password, { password = it }, label = { Text("Mật khẩu") }, singleLine = true)
+                }
+            },
+            confirmButton = {
+                TextButton({
+                    val target = game
+                    toExtract = null
+                    importing = true
+                    scope.launch {
+                        val passwords = listOf(password) + AppGraph.config.current.archivePasswords
+                        val r = withContext(Dispatchers.IO) { Importer.extractInPlace(target.dir, passwords) }
+                        importing = false
+                        if (r.error == null) Toast.makeText(context, "Giải nén xong", Toast.LENGTH_SHORT).show()
+                        else info = r.error
+                        reloadKey++
+                    }
+                }) { Text("Giải nén") }
+            },
+            dismissButton = { TextButton({ toExtract = null }) { Text("Hủy") } },
         )
     }
     toDelete?.let { game ->

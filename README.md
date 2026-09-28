@@ -8,7 +8,8 @@ App Android "tất cả trong một" cho cộng đồng [aow.vn](https://www.aow
 |---|---|
 | Bài viết | Đọc feed Blogger của aow.vn, lọc theo nhãn, xem link tải trong bài |
 | Thông báo | App tự kiểm tra bài mới định kỳ (mặc định 60 phút), lọc theo nhãn user chọn |
-| Tải game | Host hỗ trợ tải thẳng (Pixeldrain) → tự giải nén .zip vào thư viện. Host khác → mở trình duyệt, rồi "Thêm game từ máy" |
+| Tải game | Host hỗ trợ tải thẳng (Pixeldrain) → tải nền rồi tự giải nén vào thư viện. Host khác → mở trình duyệt, rồi "Thêm game từ máy" |
+| Giải nén | .zip, .rar (cả RAR5), .7z bằng libarchive; hỗ trợ mật khẩu cho zip/rar, tự thử mật khẩu trong config |
 | Giả lập nhúng sẵn | NDS, GBA, GBC, PS1, PSP, RPG Maker 2000/2003 (lõi libretro tải khi cần) |
 | Chạy dạng web | Flash (Ruffle), RPG Maker MV/MZ, TyranoScript |
 | APK | Mở trình cài đặt Android |

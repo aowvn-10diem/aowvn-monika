@@ -17,6 +17,8 @@ data class MonikaConfig(
     val webPlayers: Map<String, WebPlayerDef> = emptyMap(),
     val externalApps: List<ExternalApp> = emptyList(),
     val downloadHosts: List<DownloadHost> = emptyList(),
+    /** Mật khẩu file nén app tự thử khi giải nén (vd. mật khẩu quen dùng của aow.vn). */
+    val archivePasswords: List<String> = emptyList(),
 ) {
     fun system(id: String): SystemDef? = systems.firstOrNull { it.id == id }
     fun externalApp(id: String): ExternalApp? = externalApps.firstOrNull { it.id == id }

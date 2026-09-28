@@ -37,7 +37,11 @@ Sửa file, **tăng `configVersion` lên 1**, commit và push lên `main`. App c
 
 Thêm quy tắc vào `engines`: `markers` = file đặc trưng của engine, `entry` = file mở để chạy.
 
-### 6. Báo có bản app mới
+### 6. Mật khẩu file nén
+
+Thêm mật khẩu aow.vn hay dùng vào `archivePasswords` (ví dụ `["aowvn.org"]`). App tự thử lần lượt khi giải nén; sai hết thì hỏi user.
+
+### 7. Báo có bản app mới
 
 Sửa khối `app`: `latestVersionCode`, `latestVersionName`, `apkUrl`, `changelog`. User thấy thẻ "Có bản mới" ở tab Trình chạy.
 
@@ -46,7 +50,7 @@ Sửa khối `app`: `latestVersionCode`, `latestVersionName`, `apkUrl`, `changel
 1. Tăng `versionCode` và `versionName` trong `app/build.gradle.kts`.
 2. Push tag: `git tag v0.2.0 && git push origin v0.2.0`.
 3. GitHub Actions build APK đã ký và đăng lên Releases.
-4. Cập nhật khối `app` trong config (mục A.6) để user được nhắc.
+4. Cập nhật khối `app` trong config (mục A.7) để user được nhắc.
 
 ### Tạo khóa ký lần đầu (chỉ làm 1 lần, GIỮ KỸ, mất là user phải gỡ app cài lại)
 
@@ -65,5 +69,5 @@ Vào GitHub repo > Settings > Secrets and variables > Actions, thêm 4 secret:
 | Tab Bài viết báo lỗi HTTP 403 | Cloudflare chặn (user ở nước ngoài, bị rule "Chặn toàn cầu") | Chủ ý theo cấu hình Cloudflare hiện tại |
 | Game báo "Chưa nhận diện" | Đuôi file/engine chưa có trong config | Thêm `extensions` hoặc quy tắc `engines` |
 | "Không tải được lõi giả lập" | Link buildbot đổi/tạm lỗi | Kiểm tra link trong `cores`, đổi `version` để tải lại |
-| Game .rar/.7z không chạy | Bản khung chỉ giải nén .zip | User giải nén bằng ZArchiver rồi "Thêm game từ máy" |
+| Game hiện "Chưa giải nén" | Sai/thiếu mật khẩu, file nén chia nhiều phần (part1, part2), hoặc 7z có mật khẩu | Bấm "Giải nén" và nhập mật khẩu; thêm mật khẩu hay dùng vào `archivePasswords`; file chia phần/7z có mật khẩu thì giải nén bằng ZArchiver |
 | Push config xong CI đỏ | Config sai (lõi/app ngoài không tồn tại, trùng id...) | Đọc thông báo lỗi của `ConfigTest` trong tab Actions |

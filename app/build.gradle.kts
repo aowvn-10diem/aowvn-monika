@@ -74,5 +74,6 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.androidx.webkit)
     implementation(libs.libretrodroid)
+    implementation(libs.libarchive) // Giải nén zip/rar/rar5/7z
     testImplementation(libs.junit)
 }

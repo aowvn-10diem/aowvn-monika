@@ -2,49 +2,92 @@ package vn.aow.monika.library
 
 import android.content.Context
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.util.zip.ZipInputStream
 
-/** Đưa 1 file (tải về hoặc chọn từ máy) vào thư viện: giải nén .zip, còn lại chép vào thư mục riêng. */
+data class ImportResult(
+    /** Thư mục game trong thư viện. */
+    val dir: File,
+    /** Null = thành công. Có lỗi thì file nén gốc vẫn nằm trong [dir] để giải nén lại sau. */
+    val error: String? = null,
+)
+
+/**
+ * Đưa 1 file (tải về hoặc chọn từ máy) vào thư viện.
+ * - .zip/.rar/.7z: giải nén (ArchiveExtractor). Lỗi (sai mật khẩu...) thì giữ file nén để thử lại.
+ * - File khác: chép vào thư mục riêng.
+ */
 object Importer {
-    /** Định dạng nén chưa hỗ trợ: giữ nguyên file, thư viện sẽ nhắc user giải nén bằng app khác. */
-    val UNSUPPORTED_ARCHIVES = setOf("rar", "7z")
 
-    fun importFile(context: Context, src: File, deleteSource: Boolean): File {
-        val dir = src.inputStream().use { importStream(context, src.name, it) }
-        if (deleteSource) src.delete()
-        return dir
-    }
-
-    fun importUri(context: Context, uri: Uri): File {
-        val name = displayName(context, uri) ?: "game-${System.currentTimeMillis()}"
-        val input = context.contentResolver.openInputStream(uri) ?: throw IOException("Không mở được file")
-        return input.use { importStream(context, name, it) }
-    }
-
-    private fun importStream(context: Context, fileName: String, input: InputStream): File {
-        val dir = uniqueDir(GameStorage.games(context), fileName.substringBeforeLast('.').ifBlank { fileName })
-        dir.mkdirs()
-        try {
-            if (fileName.endsWith(".zip", ignoreCase = true)) unzip(input, dir)
-            else File(dir, fileName).outputStream().use { input.copyTo(it) }
-        } catch (e: Exception) {
-            dir.deleteRecursively()
-            throw e
+    fun importFile(context: Context, src: File, deleteSource: Boolean, passwords: List<String>): ImportResult {
+        val dir = newGameDir(context, src.name)
+        if (!ArchiveExtractor.isArchive(src)) {
+            val dest = File(dir, src.name)
+            if (!(deleteSource && src.renameTo(dest))) {
+                src.inputStream().use { input -> dest.outputStream().use { input.copyTo(it) } }
+                if (deleteSource) src.delete()
+            }
+            return ImportResult(dir)
         }
-        return dir
+        val error = runCatching {
+            ParcelFileDescriptor.open(src, ParcelFileDescriptor.MODE_READ_ONLY).use {
+                ArchiveExtractor.extract(it, dir, passwords)
+            }
+        }.exceptionOrNull()
+        if (error == null) {
+            if (deleteSource) src.delete()
+            return ImportResult(dir)
+        }
+        // Giải nén hỏng: dọn phần dở, giữ lại file nén trong thư mục game để user thử lại (nhập mật khẩu...).
+        dir.listFiles()?.forEach { it.deleteRecursively() }
+        val kept = File(dir, src.name)
+        if (!(deleteSource && src.renameTo(kept))) src.copyTo(kept, overwrite = true).also { if (deleteSource) src.delete() }
+        return ImportResult(dir, error.message)
     }
 
+    fun importUri(context: Context, uri: Uri, passwords: List<String>): ImportResult {
+        val name = displayName(context, uri) ?: "game-${System.currentTimeMillis()}"
+        val dir = newGameDir(context, name)
+        val resolver = context.contentResolver
+        val tmp = File(dir, name)
+        (resolver.openInputStream(uri) ?: throw IOException("Không mở được file")).use { input ->
+            tmp.outputStream().use { input.copyTo(it) }
+        }
+        if (!ArchiveExtractor.isArchive(tmp)) return ImportResult(dir)
+        return extractInPlace(dir, passwords)
+    }
+
+    /** Giải nén file nén đang nằm trong thư mục game (lần đầu lỗi, hoặc user vừa nhập mật khẩu). */
+    fun extractInPlace(dir: File, passwords: List<String>): ImportResult {
+        val archive = dir.listFiles().orEmpty().firstOrNull { it.isFile && ArchiveExtractor.isArchive(it) }
+            ?: return ImportResult(dir, "Không tìm thấy file nén trong thư mục game.")
+        val work = File(dir, ".dang-giai-nen").apply { deleteRecursively(); mkdirs() }
+        val error = runCatching {
+            ParcelFileDescriptor.open(archive, ParcelFileDescriptor.MODE_READ_ONLY).use {
+                ArchiveExtractor.extract(it, work, passwords)
+            }
+        }.exceptionOrNull()
+        if (error != null) {
+            work.deleteRecursively()
+            return ImportResult(dir, error.message)
+        }
+        archive.delete()
+        work.listFiles().orEmpty().forEach { it.renameTo(File(dir, it.name)) }
+        work.deleteRecursively()
+        return ImportResult(dir)
+    }
+
+    /** Giải nén zip từ luồng mạng (dùng cho file hệ thống của lõi giả lập). */
     fun unzip(input: InputStream, target: File) {
         val root = target.canonicalPath + File.separator
         ZipInputStream(input.buffered()).use { zip ->
             while (true) {
                 val entry = zip.nextEntry ?: break
                 val out = File(target, entry.name).canonicalFile
-                // Chặn file zip độc hại ghi ra ngoài thư mục game (zip slip).
                 if (!out.path.startsWith(root)) throw IOException("File nén không hợp lệ: ${entry.name}")
                 if (entry.isDirectory) out.mkdirs()
                 else {
@@ -55,12 +98,14 @@ object Importer {
         }
     }
 
-    private fun uniqueDir(parent: File, base: String): File {
-        val clean = base.replace(Regex("""[\\/:*?"<>|]"""), "_").take(80)
-        var dir = File(parent, clean)
+    private fun newGameDir(context: Context, fileName: String): File {
+        val base = fileName.substringBeforeLast('.').ifBlank { fileName }
+            .replace(Regex("""[\\/:*?"<>|]"""), "_").take(80)
+        val parent = GameStorage.games(context)
+        var dir = File(parent, base)
         var i = 2
-        while (dir.exists()) dir = File(parent, "$clean ($i)").also { i++ }
-        return dir
+        while (dir.exists()) dir = File(parent, "$base ($i)").also { i++ }
+        return dir.apply { mkdirs() }
     }
 
     private fun displayName(context: Context, uri: Uri): String? =
