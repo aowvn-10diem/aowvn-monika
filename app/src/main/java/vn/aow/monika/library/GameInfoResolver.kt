@@ -27,6 +27,8 @@ class GameInfoResolver(
     private val context: Context,
     private val feed: FeedRepository,
     private val config: () -> vn.aow.monika.config.MonikaConfig = { vn.aow.monika.AppGraph.config.current },
+    /** Nguồn ảnh bìa thứ 2 (kho libretro-thumbnails). Null = tắt. */
+    private val boxArts: BoxArts? = null,
 ) {
 
     @Serializable
@@ -57,7 +59,7 @@ class GameInfoResolver(
     @Volatile private var index: List<vn.aow.monika.feed.Post>? = null
 
     /** Danh mục bài: bản trên máy nếu còn mới (< 1 ngày), không thì tải lại; mất mạng → dùng bản cũ. */
-    private suspend fun postIndex(): List<vn.aow.monika.feed.Post>? {
+    suspend fun postIndex(): List<vn.aow.monika.feed.Post>? {
         index?.let { return it }
         val cached = runCatching { json.decodeFromString(postSer, indexFile.readText()) }.getOrNull()
         if (cached != null && System.currentTimeMillis() - indexFile.lastModified() < INDEX_TTL_MS) return cached.also { index = it }
@@ -133,6 +135,20 @@ class GameInfoResolver(
                 postId = best.id, postUrl = best.url, checkedAt = now, v = VERSION,
                 localTitle = local?.title, localIcon = local?.cover,
             )
+        }
+        // Không có bài trên aow.vn → ảnh bìa gốc của game từ kho libretro (như Daijishō).
+        val sys = g.system
+        if (boxArts != null && sys != null) {
+            for (repo in boxArts.reposFor(sys.id, sys.thumbnails)) {
+                val names = boxArts.names(repo) ?: continue
+                val hit = BoxArts.best(candidates, names) ?: continue
+                val junkName = tokens(fromName).none { t -> t.length >= 2 && t.any(Char::isLetter) }
+                return Info(
+                    title = if (g.meta?.title.isNullOrBlank() && (junkName || local?.title != null)) cleanName(hit) else null,
+                    cover = boxArts.url(repo, hit), checkedAt = now, v = VERSION,
+                    localTitle = local?.title, localIcon = local?.cover,
+                )
+            }
         }
         val title = local?.title?.takeIf { g.external || g.meta == null }?.let(::pretty)
         return Info(
@@ -213,7 +229,7 @@ class GameInfoResolver(
         private const val RETRY_MS = 3L * 24 * 3600 * 1000
         private const val INDEX_TTL_MS = 24L * 3600 * 1000
         /** Tăng khi đổi cách khớp → tra lại mọi game. */
-        const val VERSION = 2
+        const val VERSION = 3
         private const val MAX_PER_RUN = 40
         private const val MIN_SCORE = 0.6
 

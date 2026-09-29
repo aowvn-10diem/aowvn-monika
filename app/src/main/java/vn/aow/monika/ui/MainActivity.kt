@@ -72,6 +72,12 @@ class MainActivity : ComponentActivity() {
         setContent { MonikaTheme { MonikaNav(deepLink.value) { deepLink.value = null } } }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Vừa chơi game Java / app ngoài xong → cộng thời gian chơi.
+        AppGraph.prefs.endSession()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
@@ -179,8 +185,8 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
                 )
             }
             composable(Routes.GAMES) { GamesScreen(onOpen = { nav.navigate("post/${it.id}") }) }
-            // Tab Tìm kiếm: cùng màn Game nhưng bật sẵn bàn phím ở ô tìm.
-            composable(Routes.SEARCH) { GamesScreen(onOpen = { nav.navigate("post/${it.id}") }, focusSearch = true) }
+            // Tab Tìm kiếm riêng: lịch sử, đã xem gần đây, gợi ý tức thì khi gõ.
+            composable(Routes.SEARCH) { vn.aow.monika.ui.screens.SearchScreen(onOpenPost = { nav.navigate("post/${it.id}") }, onOpenLibrary = { nav.goTab(Routes.EMULATOR) }) }
             composable(Routes.EMULATOR) { LibraryScreen(onSettings = { hubSegment.intValue = 1; nav.goTab(Routes.DOWNLOADS) }) }
             composable(Routes.DOWNLOADS) { HubScreen(hubSegment, onOpenLibrary = { nav.goTab(Routes.EMULATOR) }) }
             composable(Routes.SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
@@ -192,7 +198,7 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
             items = dockItems.mapIndexed { i, d -> if (i == dockItems.lastIndex && unread > 0) d.copy(badge = if (unread > 9) "9+" else "$unread") else d },
             selected = if (menuOpen) dockItems.lastIndex else Routes.tabs.indexOf(route),
             onSelect = { i -> if (i == dockItems.lastIndex) menuOpen = !menuOpen else { menuOpen = false; nav.goTab(Routes.tabs[i]) } },
-            modifier = Modifier.align(Alignment.BottomCenter).dockOffset(route in Routes.tabs && !menuOpen),
+            modifier = Modifier.align(Alignment.BottomCenter).dockOffset(route in Routes.tabs && !menuOpen && vn.aow.monika.ui.theme.SheetsOpen.count.intValue == 0),
         )
         AppMenuSheet(menuOpen, { menuOpen = false }, onGo = { menuOpen = false; go(it) }, onOpenPost = { menuOpen = false; nav.navigate("post/$it") })
     }

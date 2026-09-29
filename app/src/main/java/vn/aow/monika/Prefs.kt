@@ -16,6 +16,29 @@ class Prefs(context: Context) {
         get() = sp.getString("inbox_seen", "").orEmpty()
         set(value) = sp.edit().putString("inbox_seen", value).apply()
 
+    /** Lịch sử tìm kiếm (mới nhất trước, tối đa 12). */
+    var searchHistory: List<String>
+        get() = sp.getString("search_history", "").orEmpty().split('\n').filter { it.isNotBlank() }
+        set(value) = sp.edit().putString("search_history", value.take(12).joinToString("\n")).apply()
+
+    fun addSearch(q: String) {
+        val t = q.trim().takeIf { it.length >= 2 } ?: return
+        searchHistory = listOf(t) + searchHistory.filterNot { it.equals(t, ignoreCase = true) }
+    }
+
+    private val postListSer = kotlinx.serialization.builtins.ListSerializer(vn.aow.monika.feed.Post.serializer())
+    private val lenientJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
+    /** Bài/game đã xem gần đây (hiện ở màn Tìm kiếm). */
+    val recentPosts: List<vn.aow.monika.feed.Post>
+        get() = runCatching { lenientJson.decodeFromString(postListSer, sp.getString("recent_posts", "[]")!!) }.getOrDefault(emptyList())
+
+    fun addRecentPost(p: vn.aow.monika.feed.Post) {
+        val lite = p.copy(contentHtml = "")
+        val list = (listOf(lite) + recentPosts.filterNot { it.id == p.id }).take(12)
+        sp.edit().putString("recent_posts", lenientJson.encodeToString(postListSer, list)).apply()
+    }
+
     /** Nhãn muốn nhận thông báo. Rỗng = nhận tất cả. */
     var subscribedLabels: Set<String>
         get() = sp.getStringSet("subscribed_labels", emptySet())!!.toSet()
@@ -38,8 +61,31 @@ class Prefs(context: Context) {
     /** Lần chơi gần nhất của từng game (theo đường dẫn thư mục). */
     fun markPlayed(gameDir: String) {
         sp.edit().putLong("played_$gameDir", System.currentTimeMillis())
-            .putInt("playcount_$gameDir", playCount(gameDir) + 1).apply()
+            .putInt("playcount_$gameDir", playCount(gameDir) + 1)
+            // Phiên chơi: game chạy ở app/tiến trình khác (Java, app ngoài) → tính giờ khi quay lại Monika.
+            .putString("session_key", gameDir).putLong("session_start", System.currentTimeMillis()).apply()
         playedTick.value++
+    }
+
+    /** Tổng thời gian đã chơi (ms). */
+    fun playTime(key: String): Long = sp.getLong("playtime_$key", 0L)
+
+    fun addPlayTime(key: String, ms: Long) {
+        if (ms < 3_000) return
+        sp.edit().putLong("playtime_$key", playTime(key) + ms).apply()
+        playedTick.value++
+    }
+
+    /** Giả lập tự đếm giờ chính xác (theo lúc màn game hiện) → bỏ phiên ước lượng. */
+    fun cancelSession() = sp.edit().remove("session_key").remove("session_start").apply()
+
+    /** Quay lại Monika: cộng thời gian phiên đang mở (tối đa 4 giờ, tránh tính cả lúc bỏ máy). */
+    fun endSession() {
+        val key = sp.getString("session_key", null) ?: return
+        val start = sp.getLong("session_start", 0L)
+        cancelSession()
+        val ms = System.currentTimeMillis() - start
+        if (start > 0 && ms in 10_000..4 * 3_600_000L) addPlayTime(key, ms)
     }
     /** Số lần mở chơi (cho mục "Thường xuyên chơi"). */
     fun playCount(gameDir: String): Int = sp.getInt("playcount_$gameDir", 0)

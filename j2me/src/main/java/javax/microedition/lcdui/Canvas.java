@@ -362,6 +362,19 @@ public abstract class Canvas extends Displayable {
 		} else {
 			scaledDisplayHeight = displayHeight;
 		}
+		// Aow Monika: khung game là "màn hình máy" bo tròn, cách mép; máy ngang thì nằm giữa 2 cụm phím.
+		int areaW = displayWidth;
+		int offX = 0;
+		int offY = 0;
+		if (vk != null && vk.isMonika()) {
+			float density = ContextHolder.getAppContext().getResources().getDisplayMetrics().density;
+			float side = vk.getMonikaSideWidth(displayWidth, displayHeight);
+			int edge = (int) (12 * density);
+			offX = side > 0 ? (int) side : edge;
+			offY = (int) ((side > 0 ? 12 : 28) * density);
+			areaW = displayWidth - 2 * offX;
+			scaledDisplayHeight = scaledDisplayHeight - offY - (side > 0 ? edge : 0);
+		}
 		if (virtualWidth > 0) {
 			if (virtualHeight > 0) {
 				/*
@@ -375,7 +388,7 @@ public abstract class Canvas extends Displayable {
 				 * height is selected by the ratio of the real screen
 				 */
 				width = virtualWidth;
-				height = scaledDisplayHeight * virtualWidth / displayWidth;
+				height = scaledDisplayHeight * virtualWidth / areaW;
 			}
 		} else {
 			if (virtualHeight > 0) {
@@ -383,13 +396,13 @@ public abstract class Canvas extends Displayable {
 				 * only the canvas height is set
 				 * width is selected by the ratio of the real screen
 				 */
-				width = displayWidth * virtualHeight / scaledDisplayHeight;
+				width = areaW * virtualHeight / scaledDisplayHeight;
 				height = virtualHeight;
 			} else {
 				/*
 				 * nothing is set - screen-sized canvas
 				 */
-				width = displayWidth;
+				width = areaW;
 				height = scaledDisplayHeight;
 			}
 		}
@@ -407,8 +420,8 @@ public abstract class Canvas extends Displayable {
 				break;
 			case 1:
 				// try to fit in width
-				onWidth = displayWidth;
-				onHeight = height * displayWidth / width;
+				onWidth = areaW;
+				onHeight = height * areaW / width;
 				if (onHeight > scaledDisplayHeight) {
 					// if height is too big, then fit in height
 					onHeight = scaledDisplayHeight;
@@ -421,7 +434,7 @@ public abstract class Canvas extends Displayable {
 			case 2:
 				// scaling without preserving the aspect ratio:
 				// just stretch the picture to full screen
-				onWidth = displayWidth;
+				onWidth = areaW;
 				onHeight = scaledDisplayHeight;
 				if (scaleRatio > 100) {
 					scaleRatio = 100;
@@ -438,23 +451,24 @@ public abstract class Canvas extends Displayable {
 				onY = (scaledDisplayHeight - onHeight) / 2;
 				break;
 			case 1: // top
-				onX = (displayWidth - onWidth) / 2;
+				onX = (areaW - onWidth) / 2;
 				onY = 0;
 				break;
 			case 2: // center
-				onX = (displayWidth - onWidth) / 2;
+				onX = (areaW - onWidth) / 2;
 				onY = (scaledDisplayHeight - onHeight) / 2;
 				break;
 			case 3: // right
-				onX = displayWidth - onWidth;
+				onX = areaW - onWidth;
 				onY = (scaledDisplayHeight - onHeight) / 2;
 				break;
 			case 4: // bottom
-				onX = (displayWidth - onWidth) / 2;
+				onX = (areaW - onWidth) / 2;
 				onY = scaledDisplayHeight - onHeight;
 				break;
 		}
-
+		onX += offX;
+		onY += offY;
 
 		/*
 		 * calculate the maximum height

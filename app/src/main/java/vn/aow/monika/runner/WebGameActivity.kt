@@ -44,6 +44,7 @@ class WebGameActivity : ComponentActivity() {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
 
+        clock = PlayClock(intent.getStringExtra(PlayClock.EXTRA_KEY))
         val entry = File(intent.getStringExtra(EXTRA_ENTRY) ?: return finish())
         val player = intent.getStringExtra(EXTRA_PLAYER) ?: "html5"
         val root = entry.parentFile ?: return finish()
@@ -73,7 +74,14 @@ class WebGameActivity : ComponentActivity() {
         val overlay = androidx.compose.ui.platform.ComposeView(this).apply {
             setContent {
                 vn.aow.monika.ui.theme.MonikaTheme {
-                    WebGameOverlay(title, system, onReload = { web.loadUrl(start) }, onExit = { finish() })
+                    WebGameOverlay(title, system, onReload = { web.loadUrl(start) }, onExit = { finish() }, onAsk = {
+                        // Game web tự lưu theo cách của game (localStorage) → chỉ cần chụp màn hình.
+                        val bmp = runCatching {
+                            android.graphics.Bitmap.createBitmap(web.width, web.height, android.graphics.Bitmap.Config.ARGB_8888)
+                                .also { web.draw(android.graphics.Canvas(it)) }
+                        }.getOrNull()
+                        vn.aow.monika.community.AskGroup.ask(this@WebGameActivity, bmp, title, system)
+                    })
                 }
             }
         }
@@ -82,6 +90,18 @@ class WebGameActivity : ComponentActivity() {
             addView(overlay)
         })
         web.loadUrl(start)
+    }
+
+    private var clock: PlayClock? = null
+
+    override fun onResume() {
+        super.onResume()
+        clock?.resume()
+    }
+
+    override fun onPause() {
+        clock?.pause()
+        super.onPause()
     }
 
     /** Phục vụ file trong thư mục game, chặn đọc ra ngoài thư mục. */
@@ -134,9 +154,10 @@ class WebGameActivity : ComponentActivity() {
         private const val EXTRA_PLAYER = "player"
         private const val EXTRA_TITLE = "title"
 
-        fun start(activity: Activity, entry: File, player: String, title: String? = null) {
+        fun start(activity: Activity, entry: File, player: String, title: String? = null, key: String? = null) {
             activity.startActivity(
                 Intent(activity, WebGameActivity::class.java)
+                    .putExtra(PlayClock.EXTRA_KEY, key)
                     .putExtra(EXTRA_ENTRY, entry.absolutePath)
                     .putExtra(EXTRA_PLAYER, player)
                     .putExtra(EXTRA_TITLE, title)
@@ -147,7 +168,7 @@ class WebGameActivity : ComponentActivity() {
 
 /** Nút menu nhỏ góc phải trên (né camera) + menu popup chung: Chơi tiếp · Tải lại · Thoát. Nút Back của máy cũng mở menu. */
 @androidx.compose.runtime.Composable
-private fun WebGameOverlay(title: String, system: String, onReload: () -> Unit, onExit: () -> Unit) {
+private fun WebGameOverlay(title: String, system: String, onReload: () -> Unit, onExit: () -> Unit, onAsk: () -> Unit) {
     var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     androidx.activity.compose.BackHandler(enabled = !open) { open = true }
     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
@@ -156,6 +177,7 @@ private fun WebGameOverlay(title: String, system: String, onReload: () -> Unit, 
             open, { open = false }, title = title, subtitle = system,
             actions = listOf(
                 vn.aow.monika.ui.theme.SheetAction("Chơi tiếp", vn.aow.monika.R.drawable.ic_fluent_play_24_regular, highlight = true) {},
+                vn.aow.monika.ui.theme.SheetAction("Hỏi nhóm FB", vn.aow.monika.R.drawable.ic_fluent_people_community_24_regular, onClick = onAsk),
                 vn.aow.monika.ui.theme.SheetAction("Tải lại game", vn.aow.monika.R.drawable.ic_fluent_arrow_clockwise_24_regular, onClick = onReload),
                 vn.aow.monika.ui.theme.SheetAction("Thoát game", vn.aow.monika.R.drawable.ic_fluent_door_arrow_left_24_regular, onClick = onExit),
             ),

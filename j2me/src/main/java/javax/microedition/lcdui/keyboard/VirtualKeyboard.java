@@ -303,15 +303,26 @@ public class VirtualKeyboard implements Overlay, Runnable {
 				setSnap(KEY_NUM1, KEY_NUM4, RectSnap.EXT_NORTH, true);
 				setSnap(KEY_NUM2, KEY_NUM5, RectSnap.EXT_NORTH, true);
 				setSnap(KEY_NUM3, KEY_NUM6, RectSnap.EXT_NORTH, true);
-				// Nửa phải: L ↑ R / ← OK → / (trống) ↓ Menu.
-				setSnap(KEY_SOFT_LEFT, KEY_NUM3, RectSnap.EXT_EAST, true);
-				setSnap(KEY_UP, KEY_SOFT_LEFT, RectSnap.EXT_EAST, true);
-				setSnap(KEY_SOFT_RIGHT, KEY_UP, RectSnap.EXT_EAST, true);
-				setSnap(KEY_LEFT, KEY_NUM6, RectSnap.EXT_EAST, true);
-				setSnap(KEY_FIRE, KEY_LEFT, RectSnap.EXT_EAST, true);
-				setSnap(KEY_RIGHT, KEY_FIRE, RectSnap.EXT_EAST, true);
+				if (monikaLandscape) {
+					// Máy ngang: cụm mũi tên dạt hẳn sang mép phải, game ở giữa 2 cụm phím.
+					setSnap(KEY_MENU, SCREEN, RectSnap.INT_SOUTHEAST, true);
+					setSnap(KEY_RIGHT, KEY_MENU, RectSnap.EXT_NORTH, true);
+					setSnap(KEY_FIRE, KEY_RIGHT, RectSnap.EXT_WEST, true);
+					setSnap(KEY_LEFT, KEY_FIRE, RectSnap.EXT_WEST, true);
+					setSnap(KEY_SOFT_RIGHT, KEY_RIGHT, RectSnap.EXT_NORTH, true);
+					setSnap(KEY_UP, KEY_SOFT_RIGHT, RectSnap.EXT_WEST, true);
+					setSnap(KEY_SOFT_LEFT, KEY_UP, RectSnap.EXT_WEST, true);
+				} else {
+					// Nửa phải: L ↑ R / ← OK → / (trống) ↓ Menu.
+					setSnap(KEY_SOFT_LEFT, KEY_NUM3, RectSnap.EXT_EAST, true);
+					setSnap(KEY_UP, KEY_SOFT_LEFT, RectSnap.EXT_EAST, true);
+					setSnap(KEY_SOFT_RIGHT, KEY_UP, RectSnap.EXT_EAST, true);
+					setSnap(KEY_LEFT, KEY_NUM6, RectSnap.EXT_EAST, true);
+					setSnap(KEY_FIRE, KEY_LEFT, RectSnap.EXT_EAST, true);
+					setSnap(KEY_RIGHT, KEY_FIRE, RectSnap.EXT_EAST, true);
+					setSnap(KEY_MENU, KEY_RIGHT, RectSnap.EXT_SOUTH, true);
+				}
 				setSnap(KEY_DOWN, KEY_FIRE, RectSnap.EXT_SOUTH, true);
-				setSnap(KEY_MENU, KEY_RIGHT, RectSnap.EXT_SOUTH, true);
 				// Phím phụ ẩn (bật lại được trong menu "Ẩn/hiện phím").
 				setSnap(KEY_UP_LEFT, KEY_SOFT_LEFT, RectSnap.EXT_SOUTH, false);
 				setSnap(KEY_UP_RIGHT, KEY_SOFT_RIGHT, RectSnap.EXT_SOUTH, false);
@@ -534,8 +545,90 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		return layoutVariant;
 	}
 
+	// ---- Aow Monika: "vỏ máy" — nền gradient, khung game bo tròn, khay phím kính mờ ----
+	private static final float MONIKA_EDGE = 10;      // cách mép màn hình
+	private static final float MONIKA_PANEL_PAD = 8;  // khay phím rộng hơn cụm phím
+	private static final float MONIKA_HANDLE = 14;    // khoảng vạch kéo trên khay
+	private static final float MONIKA_GAP = 12;       // khoảng giữa game và khay
+	private static final int[] MONIKA_BG = {0xFFF08A4B, 0xFFA0607A, 0xFF2C3566};
+	private boolean monikaLandscape;
+	private boolean monikaLaidOut;
+	private final RectF snapArea = new RectF();
+	private final RectF panelA = new RectF();
+	private final RectF panelB = new RectF();
+	private final android.graphics.Path skinPath = new android.graphics.Path();
+
+	static float dp(float v) {
+		return v * ContextHolder.getAppContext().getResources().getDisplayMetrics().density;
+	}
+
+	public boolean isMonika() {
+		return layoutVariant == TYPE_MONIKA;
+	}
+
+	/** Máy ngang + bàn phím Monika: bề rộng mỗi cụm phím 2 bên (game nằm giữa). 0 = không áp dụng. */
+	public float getMonikaSideWidth(float w, float h) {
+		if (layoutVariant != TYPE_MONIKA || w <= h) return 0;
+		return 3 * getKeySize(w - 2 * dp(MONIKA_EDGE), h) + dp(MONIKA_EDGE + MONIKA_PANEL_PAD + MONIKA_GAP);
+	}
+
+	private boolean isLeftGroup(int keyCode) {
+		return keyCode == Canvas.KEY_STAR || keyCode == Canvas.KEY_POUND || (keyCode >= Canvas.KEY_NUM0 && keyCode <= Canvas.KEY_NUM9);
+	}
+
+	/** Nền gradient phủ mọi chỗ trừ khung game (bo tròn), rồi khay kính mờ sau từng cụm phím. */
+	private void paintMonikaSkin(CanvasWrapper g) {
+		float r = dp(22);
+		skinPath.reset();
+		skinPath.setFillType(android.graphics.Path.FillType.EVEN_ODD);
+		skinPath.addRect(screen.left - 1, screen.top - 1, screen.right + 1, screen.bottom + 1, android.graphics.Path.Direction.CW);
+		skinPath.addRoundRect(virtualScreen, r, r, android.graphics.Path.Direction.CW);
+		g.setFillShader(new android.graphics.LinearGradient(screen.left, screen.top, screen.right, screen.bottom,
+				MONIKA_BG, null, android.graphics.Shader.TileMode.CLAMP));
+		g.setFillColor(0xFF000000);
+		g.fillPath(skinPath);
+		g.setFillShader(null);
+		// Viền mảnh quanh khung game.
+		g.setDrawColor(0x33FFFFFF);
+		g.setStrokeWidth(dp(1));
+		g.drawRoundRect(virtualScreen, r, r);
+		g.setStrokeWidth(0);
+
+		panelA.setEmpty();
+		panelB.setEmpty();
+		for (VirtualKey key : keypad) {
+			if (!key.visible) continue;
+			if (monikaLandscape && isLeftGroup(key.keyCode)) panelB.union(key.rect);
+			else panelA.union(key.rect);
+		}
+		paintPanel(g, panelA, !monikaLandscape);
+		paintPanel(g, panelB, false);
+	}
+
+	private void paintPanel(CanvasWrapper g, RectF p, boolean handle) {
+		if (p.isEmpty()) return;
+		p.inset(-dp(MONIKA_PANEL_PAD), -dp(MONIKA_PANEL_PAD));
+		if (handle) p.top -= dp(MONIKA_HANDLE);
+		float r = dp(28);
+		g.setFillColor(0x33FFFFFF);
+		g.fillRoundRect(p, r, r);
+		g.setDrawColor(0x40FFFFFF);
+		g.setStrokeWidth(dp(1));
+		g.drawRoundRect(p, r, r);
+		g.setStrokeWidth(0);
+		if (handle) {
+			RectF h = new RectF(p.centerX() - dp(18), p.top + dp(7), p.centerX() + dp(18), p.top + dp(11));
+			g.setFillColor(0x66FFFFFF);
+			g.fillRoundRect(h, dp(2), dp(2));
+		}
+	}
+
 	public float getPhoneKeyboardHeight(float w, float h) {
-		if (layoutVariant == TYPE_MONIKA) return MONIKA_ROWS * getKeySize(w, h) * MONIKA_KEY_SCALE_Y;
+		if (layoutVariant == TYPE_MONIKA) {
+			// Máy ngang: phím nằm 2 bên, không chiếm chiều cao.
+			if (w > h) return 0;
+			return MONIKA_ROWS * getKeySize(w - 2 * dp(MONIKA_EDGE), h) * MONIKA_KEY_SCALE_Y + dp(MONIKA_EDGE + MONIKA_PANEL_PAD + MONIKA_HANDLE + MONIKA_GAP);
+		}
 		return PHONE_KEY_ROWS * getKeySize(w, h) * PHONE_KEY_SCALE_Y;
 	}
 
@@ -822,7 +915,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		snapStack[level] = key;
 		VirtualKey vKey = keypad[key];
 		if (vKey.snapOrigin == SCREEN) {
-			RectSnap.snap(vKey.rect, screen, vKey.snapMode, vKey.snapOffset);
+			RectSnap.snap(vKey.rect, layoutVariant == TYPE_MONIKA ? snapArea : screen, vKey.snapMode, vKey.snapOffset);
 		} else {
 			if (!keypad[vKey.snapOrigin].snapValid) {
 				snapKey(vKey.snapOrigin, level + 1);
@@ -906,6 +999,17 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	public void resize(RectF screen, float left, float top, float right, float bottom) {
 		this.screen = screen;
 		virtualScreen.set(left, top, right, bottom);
+		if (layoutVariant == TYPE_MONIKA) {
+			// Cụm phím cách mép; xoay máy → đổi bố cục (dọc: dưới màn, ngang: 2 bên).
+			snapArea.set(screen);
+			snapArea.inset(dp(MONIKA_EDGE), dp(MONIKA_EDGE));
+			boolean land = screen.width() > screen.height();
+			if (land != monikaLandscape || !monikaLaidOut) {
+				monikaLandscape = land;
+				monikaLaidOut = true;
+				resetLayout(TYPE_MONIKA);
+			}
+		}
 		snapRadius = keyScales[0];
 		for (int i = 1; i < keyScales.length; i++) {
 			if (keyScales[i] < snapRadius) {
@@ -913,7 +1017,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 			}
 		}
 
-		float keySize = getKeySize(screen.width(), screen.height());
+		RectF keyArea = layoutVariant == TYPE_MONIKA ? snapArea : screen;
+		float keySize = getKeySize(keyArea.width(), keyArea.height());
 		snapRadius = keySize * snapRadius / 4;
 		this.keySize = keySize;
 		for (int group = 0; group < keyScaleGroups.length; group++) {
@@ -956,6 +1061,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	@Override
 	public void paint(CanvasWrapper g) {
+		if (layoutVariant == TYPE_MONIKA && screen != null) paintMonikaSkin(g);
 		if (visible) {
 			for (VirtualKey key : keypad) {
 				if (key.visible) {
@@ -1377,6 +1483,13 @@ public class VirtualKeyboard implements Overlay, Runnable {
 			float radius = 12 * density;
 			int a = Math.max(alpha >>> 24, 0xC0); // bàn phím nằm ngoài khung game → đậm hơn cho dễ nhìn
 			boolean filled = keyCode == Canvas.KEY_FIRE;
+			if (filled || selected) {
+				// Quầng sáng quanh phím OK / phím đang nhấn (như đèn nền bàn phím).
+				depth.set(face);
+				depth.inset(-3 * density, -3 * density);
+				g.setFillColor(0x55000000 | (c[1] & 0xFFFFFF));
+				g.fillRoundRect(depth, radius + 3 * density, radius + 3 * density);
+			}
 			g.setFillColor((a << 24) | (selected || filled ? c[1] : c[0]));
 			g.fillRoundRect(face, radius, radius);
 			g.setDrawColor((a << 24) | (selected ? c[2] : c[1]));

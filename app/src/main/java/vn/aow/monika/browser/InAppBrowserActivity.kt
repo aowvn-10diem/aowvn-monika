@@ -1,5 +1,12 @@
 package vn.aow.monika.browser
 
+import android.webkit.ValueCallback
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Spacer
+import java.io.File
+import vn.aow.monika.ui.theme.MonikaMenuSheet
+import vn.aow.monika.ui.theme.SheetAction
+
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.focus.focusRequester
@@ -123,65 +130,129 @@ class InAppBrowserActivity : ComponentActivity() {
             }
         })
 
+        attachment = intent.getStringExtra(EXTRA_ATTACH)?.let(::File)?.takeIf { it.isFile }
+
         setContent {
             MonikaTheme {
                 val c = Monika.colors
-                Column(Modifier.fillMaxSize().background(c.bg)) {
-                    // Thanh công cụ mảnh kiểu app: ← quay lại trang · tên trang · chặn QC · 🔍 · ⟳ · ⌂ về Monika.
-                    Row(
-                        Modifier.fillMaxWidth().statusBarsPadding().height(48.dp).padding(horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ToolIcon(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại") {
-                            val w = web
-                            if (w != null && w.canGoBack()) w.goBack() else finish()
+                var menu by remember { mutableStateOf(false) }
+                Box(Modifier.fillMaxSize().background(c.bg)) {
+                    Column(Modifier.fillMaxSize()) {
+                        Box(Modifier.fillMaxWidth().statusBarsPadding().height(3.dp)) {
+                            if (loadProgress in 0.01f..0.99f) LinearProgressIndicator({ loadProgress }, Modifier.fillMaxWidth(), color = c.accentCoral, trackColor = c.track)
                         }
-                        if (searching) {
-                            val focus = remember { FocusRequester() }
-                            LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-                            BasicTextField(
-                                query, { query = it }, singleLine = true,
-                                textStyle = Monika.type.body.copy(color = c.text), cursorBrush = SolidColor(c.accentCoral),
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                keyboardActions = KeyboardActions(onSearch = { search(query) }),
-                                decorationBox = { inner ->
-                                    Box(Modifier.clip(Radius.pill).background(c.surfaceSoft).padding(horizontal = 12.dp, vertical = 8.dp)) {
-                                        if (query.isEmpty()) Text(if (host.contains("facebook")) "Tìm trên Facebook…" else "Tìm kiếm…", style = Monika.type.body, color = c.textTertiary)
-                                        inner()
-                                    }
-                                },
-                                modifier = Modifier.weight(1f).padding(horizontal = 4.dp).focusRequester(focus),
-                            )
-                        } else {
-                            Column(Modifier.weight(1f).padding(horizontal = 6.dp)) {
-                                Text(pageTitle.ifBlank { host }, style = Monika.type.bodyStrong, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(host, style = Monika.type.caption, color = c.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                                    if (adState == AdState.ON) {
-                                        Icon(painterResource(R.drawable.ic_fluent_shield_checkmark_24_regular), "Chặn quảng cáo",
-                                            Modifier.padding(start = 6.dp).size(12.dp).clickable { adOn = !adOn; blocked = 0; web?.reload() },
-                                            tint = if (adOn) c.accentCoral else c.textTertiary)
-                                        Text(if (adOn) " $blocked" else " tắt", style = Monika.type.caption, color = c.textTertiary)
-                                    }
+                        // Ảnh chụp game đang chờ đăng hỏi nhóm.
+                        attachment?.let { f ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).clip(Radius.medium).background(c.surfaceDark).padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                coil.compose.AsyncImage(f, null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.size(44.dp).clip(Radius.thumb))
+                                Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
+                                    Text("Ảnh chụp game đã sẵn sàng", style = Monika.type.bodyStrong, color = Color.White)
+                                    Text("Tạo bài viết trong nhóm → bấm Ảnh: app tự đính kèm. Lời nhắn đã chép sẵn, dán vào là xong.",
+                                        style = Monika.type.caption, color = c.textOnDarkSecondary)
                                 }
+                                Icon(painterResource(R.drawable.ic_fluent_dismiss_24_regular), "Bỏ ảnh",
+                                    Modifier.size(32.dp).clip(Radius.pill).clickable { attachment = null }.padding(6.dp), tint = Color.White)
                             }
                         }
-                        ToolIcon(if (searching) R.drawable.ic_fluent_dismiss_24_regular else R.drawable.ic_fluent_search_24_regular, "Tìm kiếm") {
-                            searching = !searching
-                        }
-                        ToolIcon(R.drawable.ic_fluent_arrow_clockwise_24_regular, "Tải lại") { web?.reload() }
-                        ToolIcon(R.drawable.ic_fluent_home_24_regular, "Về Aow Monika") { finish() }
+                        AndroidView(
+                            factory = { ctx -> createWebView(ctx).also { web = it; if (savedInstanceState == null) it.loadUrl(url) } },
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                        )
+                        // Chừa chỗ cho thanh điều khiển nổi dưới đáy.
+                        Spacer(Modifier.navigationBarsPadding().height(84.dp))
                     }
-                    Box(Modifier.fillMaxWidth().height(3.dp)) {
-                        if (loadProgress in 0.01f..0.99f) LinearProgressIndicator({ loadProgress }, Modifier.fillMaxWidth(), color = c.accentCoral, trackColor = c.track)
-                    }
-                    AndroidView(
-                        factory = { ctx -> createWebView(ctx).also { web = it; if (savedInstanceState == null) it.loadUrl(url) } },
-                        modifier = Modifier.fillMaxWidth().weight(1f).navigationBarsPadding(),
+                    BottomBar(Modifier.align(Alignment.BottomCenter), onMenu = { menu = true })
+                    val fb = isFacebookHost(host)
+                    MonikaMenuSheet(
+                        menu, { menu = false },
+                        title = pageTitle.ifBlank { host }, subtitle = host,
+                        actions = buildList {
+                            add(SheetAction("Tiến", R.drawable.ic_fluent_chevron_right_24_regular, enabled = web?.canGoForward() == true) { web?.goForward() })
+                            add(SheetAction("Tìm kiếm", R.drawable.ic_fluent_search_24_regular) { searching = true })
+                            add(SheetAction("Tải lại", R.drawable.ic_fluent_arrow_clockwise_24_regular) { web?.reload() })
+                            add(SheetAction("Về Monika", R.drawable.ic_fluent_home_24_regular, highlight = true) { finish() })
+                            add(SheetAction("Chia sẻ link", R.drawable.ic_fluent_share_24_regular) {
+                                startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, web?.url.orEmpty()), "Chia sẻ"))
+                            })
+                            add(SheetAction("Sao chép link", R.drawable.ic_fluent_copy_24_regular) {
+                                getSystemService(android.content.ClipboardManager::class.java)?.setPrimaryClip(android.content.ClipData.newPlainText("link", web?.url.orEmpty()))
+                            })
+                            // Facebook: không chặn quảng cáo (tránh lỗi đăng bài / tải ảnh).
+                            if (adState == AdState.ON && !fb) add(SheetAction(if (adOn) "Chặn QC: bật ($blocked)" else "Chặn QC: tắt", R.drawable.ic_fluent_shield_checkmark_24_regular, highlight = adOn) {
+                                adOn = !adOn; blocked = 0; web?.reload()
+                            })
+                        },
                     )
                 }
             }
         }
+    }
+
+    /** Thanh điều khiển nổi dưới đáy (vùng ngón cái): ← · tên trang (bấm = tìm) · ⟳ · menu. */
+    @Composable
+    private fun BottomBar(modifier: Modifier, onMenu: () -> Unit) {
+        val c = Monika.colors
+        Row(
+            modifier.navigationBarsPadding().padding(horizontal = 12.dp).padding(bottom = 12.dp).fillMaxWidth().height(64.dp)
+                .clip(Radius.pill).background(Brush.verticalGradient(listOf(Color(0xFF34323A), Color(0xFF232227)))).padding(horizontal = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BarIcon(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại") {
+                val w = web
+                if (w != null && w.canGoBack()) w.goBack() else finish()
+            }
+            if (searching) {
+                val focus = remember { FocusRequester() }
+                LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+                BasicTextField(
+                    query, { query = it }, singleLine = true,
+                    textStyle = Monika.type.body.copy(color = Color.White), cursorBrush = SolidColor(c.accentCoral),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { search(query) }),
+                    decorationBox = { inner ->
+                        Box(Modifier.clip(Radius.pill).background(Color(0x1FFFFFFF)).padding(horizontal = 14.dp, vertical = 10.dp)) {
+                            if (query.isEmpty()) Text(if (isFacebookHost(host)) "Tìm trên Facebook…" else "Tìm kiếm Google…", style = Monika.type.body, color = Color(0x99FFFFFF))
+                            inner()
+                        }
+                    },
+                    modifier = Modifier.weight(1f).padding(horizontal = 4.dp).focusRequester(focus),
+                )
+                BarIcon(R.drawable.ic_fluent_dismiss_24_regular, "Đóng tìm kiếm") { searching = false }
+            } else {
+                Column(
+                    Modifier.weight(1f).clip(Radius.pill).background(Color(0x14FFFFFF)).clickable { searching = true }.padding(horizontal = 14.dp, vertical = 6.dp),
+                ) {
+                    Text(pageTitle.ifBlank { host }, style = Monika.type.bodyStrong, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painterResource(R.drawable.ic_fluent_search_24_regular), null, Modifier.size(12.dp), tint = Color(0xB3FFFFFF))
+                        Text(" $host", style = Monika.type.caption, color = Color(0xB3FFFFFF), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                BarIcon(R.drawable.ic_fluent_arrow_clockwise_24_regular, "Tải lại") { web?.reload() }
+                BarIcon(R.drawable.ic_fluent_grid_24_regular, "Menu", onMenu)
+            }
+        }
+    }
+
+    @Composable
+    private fun BarIcon(@androidx.annotation.DrawableRes icon: Int, desc: String, onClick: () -> Unit) {
+        Box(Modifier.size(48.dp).clip(Radius.pill).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
+            Icon(painterResource(icon), desc, Modifier.size(22.dp), tint = Color.White)
+        }
+    }
+
+    private fun isFacebookHost(h: String) = h.contains("facebook.com") || h.contains("fb.com") || h.contains("messenger.com")
+
+    // ---- Đính kèm ảnh chụp game khi đăng bài hỏi nhóm ----
+    private var attachment by mutableStateOf<File?>(null)
+    private var fileCallback: ValueCallback<Array<Uri>>? = null
+    private val pickFile = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        val uris = WebChromeClient.FileChooserParams.parseResult(r.resultCode, r.data)
+        fileCallback?.onReceiveValue(uris)
+        fileCallback = null
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -195,11 +266,34 @@ class InAppBrowserActivity : ComponentActivity() {
         webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView, p: Int) { this@InAppBrowserActivity.loadProgress = p / 100f }
             override fun onReceivedTitle(view: WebView, t: String?) { this@InAppBrowserActivity.pageTitle = t.orEmpty() }
+
+            // Chọn ảnh để đăng: có ảnh chụp game đang chờ → đính kèm luôn; không thì mở trình chọn file.
+            override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
+                fileCallback?.onReceiveValue(null)
+                val att = attachment
+                if (att != null) {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(this@InAppBrowserActivity, "$packageName.files", att)
+                    callback.onReceiveValue(arrayOf(uri))
+                    attachment = null
+                    android.widget.Toast.makeText(this@InAppBrowserActivity, "Đã đính kèm ảnh chụp game", android.widget.Toast.LENGTH_SHORT).show()
+                    return true
+                }
+                fileCallback = callback
+                return runCatching { pickFile.launch(params.createIntent()); true }.getOrElse { fileCallback = null; false }
+            }
+
+            // Facebook / Discord xin camera, micro (gọi video, quay story): cho phép trên các trang đó.
+            override fun onPermissionRequest(request: android.webkit.PermissionRequest) {
+                val h = request.origin?.host.orEmpty()
+                if (isFacebookHost(h) || h.contains("discord")) runOnUiThread { request.grant(request.resources) } else request.deny()
+            }
         }
         webViewClient = object : WebViewClient() {
             // Chạy trên luồng nền của WebView: yêu cầu tới tên miền quảng cáo → trả về rỗng.
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                 if (!adOn || adState != AdState.ON || request.isForMainFrame) return null
+                // Không chặn gì trên Facebook (dễ hỏng đăng bài / tải ảnh).
+                if (isFacebookHost(this@InAppBrowserActivity.host)) return null
                 val h = request.url.host?.lowercase() ?: return null
                 if (allow.any { h == it || h.endsWith(".$it") }) return null
                 if (!AppGraph.adblock.blocks(h)) return null
@@ -256,10 +350,13 @@ class InAppBrowserActivity : ComponentActivity() {
 
     companion object {
         private const val EXTRA_URL = "url"
+        private const val EXTRA_ATTACH = "attach"
 
-        fun start(context: Context, url: String) {
+        /** @param attach ảnh (vd. chụp màn hình game) tự đính kèm khi trang mở hộp chọn ảnh. */
+        fun start(context: Context, url: String, attach: File? = null) {
             context.startActivity(
-                Intent(context, InAppBrowserActivity::class.java).putExtra(EXTRA_URL, url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                Intent(context, InAppBrowserActivity::class.java).putExtra(EXTRA_URL, url).putExtra(EXTRA_ATTACH, attach?.absolutePath)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         }
     }

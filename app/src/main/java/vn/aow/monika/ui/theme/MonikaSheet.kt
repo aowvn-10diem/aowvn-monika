@@ -64,6 +64,11 @@ data class SheetAction(
     val onClick: () -> Unit,
 )
 
+/** Số menu popup đang mở (dock ẩn khi > 0). */
+object SheetsOpen {
+    val count = androidx.compose.runtime.mutableIntStateOf(0)
+}
+
 /** Màu cố định của menu popup: than tối như menu nổi — giống nhau ở app, giả lập, J2ME, game web. */
 object SheetColors {
     val text = Color.White
@@ -94,6 +99,11 @@ fun BoxScope.MonikaMenuSheet(
 ) {
     val motion = Monika.motion
     if (visible) BackHandler(onBack = onDismiss)
+    // Menu đang mở → menu nổi (dock) trượt xuống, không đè lên menu popup.
+    if (visible) androidx.compose.runtime.DisposableEffect(Unit) {
+        SheetsOpen.count.intValue++
+        onDispose { SheetsOpen.count.intValue-- }
+    }
     AnimatedVisibility(
         visible, Modifier.matchParentSize(),
         enter = fadeIn(tween(if (motion.enabled) motion.normal else 0)),

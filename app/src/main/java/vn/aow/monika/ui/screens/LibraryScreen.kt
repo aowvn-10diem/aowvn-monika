@@ -82,6 +82,15 @@ import vn.aow.monika.ui.theme.primaryGradient
 import vn.aow.monika.ui.theme.artworkScrim
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.produceState
+import vn.aow.monika.library.GameTask
+import vn.aow.monika.library.GameTasks
+import vn.aow.monika.ui.theme.MonikaMenuSheet
+import vn.aow.monika.ui.theme.SheetAction
+import vn.aow.monika.ui.theme.SheetChip
+import vn.aow.monika.ui.theme.SheetRow
 
 /** Màn "Giả lập": thư viện game trong máy, lọc theo hệ, tiếp tục chơi. */
 @Composable
@@ -95,9 +104,21 @@ fun LibraryScreen(onSettings: () -> Unit) {
     val games = scanned.orEmpty()
     var reloadKey by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
-    var percent by remember { mutableStateOf<Int?>(null) } // % giải nén, null = chưa biết
-    val onProgress = remember { ExtractProgress { percent = it } }
-    var filter by remember { mutableStateOf<String?>(null) }
+    var filter by remember { mutableStateOf(FILTER_ALL) }
+    var systemFilter by remember { mutableStateOf<String?>(null) }
+    var systemSheet by remember { mutableStateOf(false) }
+    var libMenu by remember { mutableStateOf(false) }
+    var gameMenu by remember { mutableStateOf<Game?>(null) }
+    // Game đang tải / giải nén: mỗi game 1 ô riêng có tiến độ (không còn thanh chung trên đầu).
+    val extracting by GameTasks.running.collectAsState()
+    val downloading by produceState(emptyList<GameTask>()) {
+        while (true) {
+            value = withContext(Dispatchers.IO) { GameTasks.downloads(context) }
+            // Có lượt tải đang chạy → cập nhật nhanh; không có → hỏi thưa.
+            kotlinx.coroutines.delay(if (value.isEmpty()) 4_000 else 1_000)
+        }
+    }
+    val tasks = downloading + extracting.values
     var needApp by remember { mutableStateOf<ExternalApp?>(null) }
     var info by remember { mutableStateOf<String?>(null) }
     var toDelete by remember { mutableStateOf<Game?>(null) }
@@ -123,12 +144,19 @@ fun LibraryScreen(onSettings: () -> Unit) {
     /** Nhận file vào thư viện. [autoPlay]: mở từ app khác → nhận diện xong thì chạy luôn đúng giả lập. */
     fun importAll(uris: List<android.net.Uri>, autoPlay: Boolean) {
         if (uris.isEmpty()) return
-        busy = true; percent = null
+        busy = true
         scope.launch {
             val messages = mutableListOf<String>()
             var added: java.io.File? = null
             for (uri in uris) {
-                runCatching { withContext(Dispatchers.IO) { Importer.importUri(context, uri, AppGraph.config.current.archivePasswords, onProgress) } }
+                val taskId = "add:$uri"
+                val name = uri.lastPathSegment?.substringAfterLast('/')?.substringBeforeLast('.') ?: "Game mới"
+                GameTasks.put(GameTask(taskId, name, null, "Đang thêm vào Thư viện", null))
+                runCatching {
+                    withContext(Dispatchers.IO) {
+                        Importer.importUri(context, uri, AppGraph.config.current.archivePasswords, ExtractProgress { p -> GameTasks.put(GameTask(taskId, name, null, "Đang giải nén", p)) })
+                    }
+                }.also { GameTasks.remove(taskId) }
                     .onSuccess { r ->
                         when {
                             r.pending -> messages += r.error.orEmpty()
@@ -138,7 +166,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
                     }
                     .onFailure { messages += "Lỗi thêm game: ${it.message}" }
             }
-            busy = false; percent = null
+            busy = false
             reloadKey++
             val game = added?.let { d -> withContext(Dispatchers.IO) { AppGraph.library.list().firstOrNull { it.dir == d } } }
             if (autoPlay && uris.size == 1 && game?.system != null) { playRef[0]?.invoke(game); return@launch }
@@ -192,43 +220,35 @@ fun LibraryScreen(onSettings: () -> Unit) {
     }
     playRef[0] = ::play
 
-    // Bộ lọc: Tất cả · Thường chơi · Trong máy (quét được) · từng hệ máy.
-    val systems = games.mapNotNull { it.system?.name }.distinct()
-    val frequent = games.filter { AppGraph.prefs.playCount(it.key) >= 2 }.sortedByDescending { AppGraph.prefs.playCount(it.key) }
-    val filters = buildList<String?> {
-        add(null)
-        if (frequent.isNotEmpty()) add(FILTER_FREQUENT)
-        if (games.any { it.external }) add(FILTER_DEVICE)
-        addAll(systems)
-    }
+    // Bộ lọc: Tất cả · Chơi gần đây · Chơi thường xuyên · Theo hệ máy (bấm → menu chọn hệ).
+    val prefs = AppGraph.prefs
+    val systems = games.mapNotNull { it.system?.name }.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }
     val shown = when (filter) {
-        null -> games
-        FILTER_FREQUENT -> frequent
-        FILTER_DEVICE -> games.filter { it.external }
-        else -> games.filter { it.system?.name == filter }
+        FILTER_RECENT -> games.filter { prefs.lastPlayed(it.key) > 0 }.sortedByDescending { prefs.lastPlayed(it.key) }
+        FILTER_FREQUENT -> games.filter { prefs.playCount(it.key) >= 2 || prefs.playTime(it.key) > 10 * 60_000 }
+            .sortedWith(compareByDescending<Game> { prefs.playTime(it.key) }.thenByDescending { prefs.playCount(it.key) })
+        FILTER_SYSTEM -> games.filter { it.system?.name == systemFilter }
+        else -> games
     }
     val lastPlayed = AppGraph.library.lastPlayed(AppGraph.prefs, games)
 
     Screen {
       Column(Modifier.fillMaxSize()) {
+        // Mọi nút của Thư viện gom vào 1 menu popup (cùng kiểu menu trung tâm).
         MonikaHeader(
-            "Thư viện", subtitle = if (scanned == null) "Đang quét…" else "${games.size} game trong máy",
-            left = { CircleButton(R.drawable.ic_fluent_settings_24_regular, "Cài đặt giả lập", onSettings) },
-            right = { CircleButton(R.drawable.ic_fluent_folder_add_24_regular, "Thêm game từ máy", { picker.launch(arrayOf("*/*")) }) },
+            "Thư viện",
+            subtitle = when {
+                scanned == null -> "Đang quét…"
+                deviceScanning -> "Đang quét máy… ($scanDirs thư mục)"
+                else -> "${games.size} game trong máy"
+            },
+            right = { CircleButton(R.drawable.ic_fluent_grid_24_regular, "Menu thư viện", { libMenu = true }) },
         )
         LazyVerticalGrid(
             GridCells.Fixed(2), Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance),
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (busy) item(span = { GridItemSpan(2) }) {
-                val p = percent
-                if (p == null) LinearProgressIndicator(Modifier.fillMaxWidth().clip(Radius.pill), color = c.accentCoral, trackColor = c.track)
-                else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Đang giải nén $p%", style = Monika.type.caption, color = c.textSecondary)
-                    LinearProgressIndicator({ p / 100f }, Modifier.fillMaxWidth().clip(Radius.pill), color = c.accentCoral, trackColor = c.track)
-                }
-            }
             // Game của lần cài trước chưa đọc được → xin quyền "Truy cập mọi tệp" (Android 11+).
             val lockedCount = games.count { it.locked }
             if (lockedCount > 0 && !AppGraph.library.scanner.canScanAll()) item(span = { GridItemSpan(2) }) {
@@ -239,28 +259,16 @@ fun LibraryScreen(onSettings: () -> Unit) {
                     GradientButton("Cấp quyền", { openAllFilesAccess(context) }, Modifier.fillMaxWidth().padding(top = 12.dp), height = 44.dp)
                 }
             }
-            // Quét cả máy tìm game (cần quyền "Truy cập mọi tệp" để thấy file của app khác).
-            item(span = { GridItemSpan(2) }) {
-                MonikaCard(Modifier.fillMaxWidth(), shape = Radius.large, padding = PaddingValues(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(if (deviceScanning) "Đang quét máy… ($scanDirs thư mục)" else "Tìm game có sẵn trong máy", style = Monika.type.bodyStrong, color = c.text)
-                            Text(
-                                if (!AppGraph.library.scanner.canScanAll()) "Cần quyền \"Truy cập mọi tệp\" để thấy game trong Zalo, Download, ZArchiver…"
-                                else "Tự quét mỗi ngày. Game tìm thấy chơi thẳng, không chép thêm.",
-                                style = Monika.type.caption, color = c.textSecondary,
-                            )
-                        }
-                        if (deviceScanning) Spinner()
-                        else SoftPillButton("Quét", {
-                            if (!AppGraph.library.scanner.canScanAll()) openAllFilesAccess(context) else scanDevice()
-                        }, R.drawable.ic_fluent_search_24_regular)
-                    }
-                }
+            if (games.isNotEmpty()) item(span = { GridItemSpan(2) }) {
+                ChipBar(
+                    listOf(FILTER_ALL, FILTER_RECENT, FILTER_FREQUENT, FILTER_SYSTEM), filter,
+                    { if (it == FILTER_SYSTEM) (if (filter == FILTER_SYSTEM) systemFilter else null)?.let { s -> "$s ▾" } ?: "Theo hệ máy ▾" else it },
+                    { if (it == FILTER_SYSTEM) systemSheet = true else filter = it },
+                    accent = true, contentPadding = PaddingValues(0.dp),
+                )
             }
-            if (filters.size > 2) item(span = { GridItemSpan(2) }) {
-                ChipBar(filters, filter, { it ?: "Tất cả" }, { filter = it }, accent = true, contentPadding = PaddingValues(0.dp))
-            }
+            // Game đang tải / giải nén — tiến độ ngay trên ô của game đó.
+            if (tasks.isNotEmpty()) items(tasks, key = { it.id }) { t -> TaskTile(t) }
             lastPlayed?.let { g ->
                 item(span = { GridItemSpan(2) }) { Text("Tiếp tục chơi", style = Monika.type.sectionTitle, color = c.text) }
                 item(span = { GridItemSpan(2) }) { ContinueCard(g) { play(g) } }
@@ -275,31 +283,69 @@ fun LibraryScreen(onSettings: () -> Unit) {
             } else item(span = { GridItemSpan(2) }) {
                 Text("Thư viện", style = Monika.type.sectionTitle, color = c.text, modifier = Modifier.padding(top = 4.dp))
             }
+            if (shown.isEmpty() && games.isNotEmpty()) item(span = { GridItemSpan(2) }) {
+                Text(
+                    when (filter) { FILTER_RECENT -> "Chưa chơi game nào."; FILTER_FREQUENT -> "Chơi một game vài lần là nó hiện ở đây."; else -> "Không có game." },
+                    style = Monika.type.body, color = c.textSecondary, modifier = Modifier.padding(vertical = 24.dp),
+                )
+            }
             items(shown, key = { it.key }) { g ->
                 GameTile(
-                    g, enabled = !busy, onPlay = { play(g) }, onExtract = { password = ""; toExtract = g }, onDelete = { toDelete = g },
-                    pinned = g.key in pinned,
-                    onTogglePin = {
-                        pinned = if (g.key in pinned) pinned - g.key else pinned + g.key
-                        AppGraph.prefs.pinnedGames = pinned
-                        Toast.makeText(context, if (g.key in pinned) "Đã giữ lại: không tự dọn game này" else "Đã bỏ giữ lại", Toast.LENGTH_SHORT).show()
-                    },
-                    onRedownload = {
-                        // Mở lại bài viết gốc để tải lại (bài có nút "Tải game").
-                        val meta = g.meta
-                        when {
-                            meta?.postId != null -> context.startActivity(
-                                android.content.Intent(context, vn.aow.monika.ui.MainActivity::class.java)
-                                    .putExtra(vn.aow.monika.ui.MainActivity.EXTRA_POST_ID, meta.postId)
-                                    .addFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                            )
-                            meta?.postUrl != null -> openUrl(context, meta.postUrl)
-                        }
-                    },
+                    g, onPlay = { play(g) }, onExtract = { password = ""; toExtract = g }, onMenu = { gameMenu = g },
+                    onRedownload = { redownload(context, g) },
                 )
             }
         }
       }
+
+        // ---- Menu popup (cùng thiết kế menu trung tâm) ----
+        MonikaMenuSheet(
+            systemSheet, { systemSheet = false }, emptyList(),
+            title = "Chọn hệ máy", subtitle = "${systems.size} hệ máy trong Thư viện",
+            header = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    systems.forEach { (name, count) ->
+                        SheetRow(
+                            name, subtitle = "$count game", icon = R.drawable.ic_fluent_xbox_controller_24_regular,
+                            trailing = if (filter == FILTER_SYSTEM && systemFilter == name) ({ SheetChip("Đang xem", true) {} }) else null,
+                            onClick = { systemFilter = name; filter = FILTER_SYSTEM; systemSheet = false },
+                        )
+                    }
+                }
+            },
+        )
+        val scanAll = AppGraph.library.scanner.canScanAll()
+        MonikaMenuSheet(
+            libMenu, { libMenu = false },
+            title = "Thư viện", subtitle = "${games.size} game · ${systems.size} hệ máy",
+            actions = buildList {
+                add(SheetAction("Thêm game từ máy", R.drawable.ic_fluent_folder_add_24_regular, highlight = true) { picker.launch(arrayOf("*/*")) })
+                add(SheetAction(if (deviceScanning) "Đang quét…" else "Quét cả máy", R.drawable.ic_fluent_search_24_regular, enabled = !deviceScanning) {
+                    if (!scanAll) openAllFilesAccess(context) else scanDevice()
+                })
+                add(SheetAction("Cài đặt giả lập", R.drawable.ic_fluent_settings_24_regular, onClick = onSettings))
+                add(SheetAction("Tải lại danh sách", R.drawable.ic_fluent_arrow_clockwise_24_regular) { reloadKey++ })
+                if (!scanAll) add(SheetAction("Cho phép đọc mọi tệp", R.drawable.ic_fluent_lock_closed_24_regular, badge = "") { openAllFilesAccess(context) })
+            },
+            header = {
+                SheetRow(
+                    if (scanAll) "Tự quét máy mỗi ngày" else "Chưa có quyền đọc mọi tệp",
+                    subtitle = if (scanAll) "Game tìm thấy chơi thẳng từ chỗ cũ, không chép thêm."
+                    else "Cấp quyền để thấy game trong Zalo, Download, ZArchiver…",
+                    icon = if (scanAll) R.drawable.ic_fluent_shield_checkmark_24_regular else R.drawable.ic_fluent_info_24_regular,
+                )
+            },
+        )
+        GameMenuSheet(gameMenu, { gameMenu = null }, pinned,
+            onPlay = { play(it) },
+            onExtract = { password = ""; toExtract = it },
+            onDelete = { toDelete = it },
+            onTogglePin = { g ->
+                pinned = if (g.key in pinned) pinned - g.key else pinned + g.key
+                AppGraph.prefs.pinnedGames = pinned
+                Toast.makeText(context, if (g.key in pinned) "Đã giữ lại: không tự dọn game này" else "Đã bỏ giữ lại", Toast.LENGTH_SHORT).show()
+            },
+        )
     }
 
     needApp?.let { app ->
@@ -333,10 +379,15 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 GradientButton("Giải nén", {
                     val target = game
                     toExtract = null
-                    busy = true; percent = null
+                    busy = true
+                    val taskId = "extract:${target.key}"
+                    GameTasks.put(GameTask(taskId, target.name, target.meta?.cover, "Đang giải nén", null))
                     scope.launch {
-                        val r = withContext(Dispatchers.IO) { Importer.extractInPlace(target.dir, listOf(password) + AppGraph.config.current.archivePasswords, onProgress) }
-                        busy = false; percent = null
+                        val r = withContext(Dispatchers.IO) {
+                            Importer.extractInPlace(target.dir, listOf(password) + AppGraph.config.current.archivePasswords, ExtractProgress { p -> GameTasks.progress(taskId, p) })
+                        }
+                        GameTasks.remove(taskId)
+                        busy = false
                         if (r.error == null) Toast.makeText(context, "Giải nén xong", Toast.LENGTH_SHORT).show() else info = r.error
                         reloadKey++
                     }
@@ -390,7 +441,8 @@ internal fun ContinueCard(g: Game, onPlay: () -> Unit) {
                 Text(g.name, style = Monika.type.sectionTitle, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     g.system?.let { Tag(it.name, onDark = true) }
-                    Tag("Việt hóa", onDark = true)
+                    val t = AppGraph.prefs.playTime(g.key)
+                    Tag(if (t > 0) "⏱ ${formatPlayTime(t)}" else "Việt hóa", onDark = true)
                 }
             }
             Box(Modifier.size(64.dp).clip(Radius.pill).background(primaryGradient()), contentAlignment = Alignment.Center) {
@@ -410,15 +462,15 @@ private val tileGradients = listOf(
 
 /** Ô game: ảnh bìa gradient + minh họa 3D (chưa có ảnh bìa thật), tên, hệ máy. */
 @Composable
-private fun GameTile(
-    g: Game, enabled: Boolean, onPlay: () -> Unit, onExtract: () -> Unit, onDelete: () -> Unit, onRedownload: () -> Unit,
-    pinned: Boolean, onTogglePin: () -> Unit,
-) {
+private fun GameTile(g: Game, onPlay: () -> Unit, onExtract: () -> Unit, onMenu: () -> Unit, onRedownload: () -> Unit) {
     val c = Monika.colors
     val waiting = g.needsExtract && g.system == null
+    val playTime = AppGraph.prefs.playTime(g.key)
     Column {
         Box(
             Modifier.fillMaxWidth().aspectRatio(0.8f).clip(Radius.medium)
+                // Giữ lâu ô game = mở menu của game.
+                .pointerInput(g.key) { detectTapGestures(onLongPress = { onMenu() }) }
                 .background(if (waiting) Brush.linearGradient(listOf(c.surfaceSoft, c.track)) else tileGradients[(g.name.hashCode() and 0x7fffffff) % tileGradients.size]),
             contentAlignment = Alignment.Center,
         ) {
@@ -434,26 +486,18 @@ private fun GameTile(
                 Illustration(if (waiting) R.drawable.fluent3d_package else R.drawable.fluent3d_joystick, Modifier.size(72.dp))
             }
             Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) {
-                CircleButton(R.drawable.ic_fluent_delete_24_regular, "Xóa", onDelete, style = vn.aow.monika.ui.theme.CircleStyle.Glass, size = 36.dp)
+                CircleButton(R.drawable.ic_fluent_more_horizontal_24_regular, "Menu game", onMenu, style = vn.aow.monika.ui.theme.CircleStyle.Glass, size = 36.dp)
             }
             if (g.evicted) {
                 Box(Modifier.fillMaxSize().background(Color(0x8C181719)))
                 Box(Modifier.align(Alignment.Center)) { Tag("Đã dọn", onDark = true) }
             }
-            // Giữ lại: game ghim không bao giờ bị dọn bộ nhớ đệm.
-            if (g.meta != null && !g.evicted && !g.external) Box(Modifier.align(Alignment.TopStart).padding(8.dp)) {
-                CircleButton(
-                    if (pinned) R.drawable.ic_fluent_heart_24_filled else R.drawable.ic_fluent_heart_24_regular,
-                    if (pinned) "Bỏ giữ lại" else "Giữ lại (không tự dọn)", onTogglePin,
-                    style = vn.aow.monika.ui.theme.CircleStyle.Glass, size = 36.dp,
-                )
-            }
             Box(Modifier.align(Alignment.BottomCenter).padding(10.dp).fillMaxWidth()) {
                 when {
                     g.evicted -> DarkButton("Tải lại", onRedownload, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_arrow_download_24_regular)
                     g.locked -> { val ctx = LocalContext.current; DarkButton("Cấp quyền để mở", { openAllFilesAccess(ctx) }, Modifier.fillMaxWidth()) }
-                    waiting -> DarkButton("Giải nén", onExtract, Modifier.fillMaxWidth(), enabled = enabled)
-                    else -> GradientButton("Chơi", onPlay, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_play_24_filled, enabled = enabled, height = 44.dp)
+                    waiting -> DarkButton("Giải nén", onExtract, Modifier.fillMaxWidth())
+                    else -> GradientButton("Chơi", onPlay, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_play_24_filled, height = 44.dp)
                 }
             }
         }
@@ -463,7 +507,8 @@ private fun GameTile(
             when {
                 g.evicted -> "Đã dọn để tiết kiệm bộ nhớ · save vẫn giữ"
                 g.locked -> "Của lần cài trước · cấp quyền để mở"
-                else -> g.system?.name ?: if (g.needsExtract) "Chưa giải nén" else "Chưa nhận diện"
+                else -> (g.system?.name ?: if (g.needsExtract) "Chưa giải nén" else "Chưa nhận diện") +
+                    (if (playTime > 0) " · ⏱ ${formatPlayTime(playTime)}" else "")
             },
             style = Monika.type.caption, color = c.textSecondary,
         )
@@ -478,8 +523,103 @@ private fun openAllFilesAccess(context: android.content.Context) {
     }.onFailure { runCatching { context.startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)) } }
 }
 
-private const val FILTER_FREQUENT = "⭐ Thường chơi"
-private const val FILTER_DEVICE = "📱 Trong máy"
+private const val FILTER_ALL = "Tất cả"
+private const val FILTER_RECENT = "Chơi gần đây"
+private const val FILTER_FREQUENT = "Chơi thường xuyên"
+private const val FILTER_SYSTEM = "__system"
+
+/** "2 giờ 5 phút" / "12 phút" / "dưới 1 phút". */
+internal fun formatPlayTime(ms: Long): String {
+    val min = ms / 60_000
+    return when {
+        min < 1 -> "dưới 1 phút"
+        min < 60 -> "$min phút"
+        min % 60 == 0L -> "${min / 60} giờ"
+        else -> "${min / 60} giờ ${min % 60} phút"
+    }
+}
+
+/** Mở lại bài viết gốc (tải lại game đã bị dọn / xem bài). */
+private fun redownload(context: android.content.Context, g: Game) {
+    val meta = g.meta
+    when {
+        meta?.postId != null -> context.startActivity(
+            Intent(context, vn.aow.monika.ui.MainActivity::class.java)
+                .putExtra(vn.aow.monika.ui.MainActivity.EXTRA_POST_ID, meta.postId)
+                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        )
+        meta?.postUrl != null -> openUrl(context, meta.postUrl)
+    }
+}
+
+/** Menu của 1 game (nút ⋯ trên ô hoặc giữ lâu): chơi, mở bài, giữ lại, giải nén, xóa/ẩn + thời gian đã chơi. */
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
+    game: Game?, onDismiss: () -> Unit, pinned: Set<String>,
+    onPlay: (Game) -> Unit, onExtract: (Game) -> Unit, onDelete: (Game) -> Unit, onTogglePin: (Game) -> Unit,
+) {
+    val context = LocalContext.current
+    // Giữ game cuối cùng để menu vẫn có nội dung khi đang trượt xuống.
+    var last by remember { mutableStateOf<Game?>(null) }
+    if (game != null) last = game
+    val g = last
+    val prefs = AppGraph.prefs
+    MonikaMenuSheet(
+        game != null, onDismiss,
+        title = g?.name,
+        subtitle = g?.let { x ->
+            listOfNotNull(
+                x.system?.name,
+                prefs.playTime(x.key).takeIf { it > 0 }?.let { "Đã chơi ${formatPlayTime(it)}" },
+                prefs.playCount(x.key).takeIf { it > 0 }?.let { "$it lần" },
+            ).joinToString(" · ").ifBlank { null }
+        },
+        actions = if (g == null) emptyList() else buildList {
+            if (g.system != null && !g.locked && !g.evicted) add(SheetAction("Chơi", R.drawable.ic_fluent_play_24_filled, highlight = true) { onPlay(g) })
+            if (g.needsExtract) add(SheetAction("Giải nén", R.drawable.ic_fluent_archive_24_regular) { onExtract(g) })
+            if (g.evicted) add(SheetAction("Tải lại", R.drawable.ic_fluent_arrow_download_24_regular, highlight = true) { redownload(context, g) })
+            if (!g.evicted && (g.meta?.postId != null || g.meta?.postUrl != null)) add(SheetAction("Xem bài viết", R.drawable.ic_fluent_news_24_regular) { redownload(context, g) })
+            if (g.meta != null && !g.external && !g.evicted) add(
+                SheetAction(if (g.key in pinned) "Bỏ giữ lại" else "Giữ lại", if (g.key in pinned) R.drawable.ic_fluent_heart_24_filled else R.drawable.ic_fluent_heart_24_regular) { onTogglePin(g) }
+            )
+            if (g.locked) add(SheetAction("Cấp quyền", R.drawable.ic_fluent_lock_closed_24_regular) { openAllFilesAccess(context) })
+            add(SheetAction(if (g.external) "Ẩn khỏi Thư viện" else "Xóa game", R.drawable.ic_fluent_delete_24_regular) { onDelete(g) })
+        },
+        header = if (g == null) null else ({
+            SheetRow(
+                (g.entry ?: g.dir).path, subtitle = if (g.external) "Game có sẵn trong máy" else "Thư mục game của Monika",
+                icon = R.drawable.ic_fluent_folder_open_24_regular,
+            )
+        }),
+    )
+}
+
+/** Ô game đang tải / giải nén: ảnh bìa (nếu có) + vòng tiến độ + %. */
+@Composable
+private fun TaskTile(t: GameTask) {
+    val c = Monika.colors
+    Column {
+        Box(
+            Modifier.fillMaxWidth().aspectRatio(0.8f).clip(Radius.medium).background(Brush.linearGradient(listOf(Color(0xFF2A292D), Color(0xFF1C1B1E)))),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (t.cover != null) {
+                AsyncImage(t.cover, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                Box(Modifier.fillMaxSize().background(Color(0xA0181719)))
+            }
+            Box(contentAlignment = Alignment.Center) {
+                val p = t.percent
+                if (p == null) androidx.compose.material3.CircularProgressIndicator(Modifier.size(72.dp), color = Color(0xFFFF7F78), trackColor = Color(0x33FFFFFF), strokeWidth = 6.dp)
+                else androidx.compose.material3.CircularProgressIndicator({ p / 100f }, Modifier.size(72.dp), color = Color(0xFFFF7F78), trackColor = Color(0x33FFFFFF), strokeWidth = 6.dp)
+                Text(p?.let { "$it%" } ?: "…", style = Monika.type.cardTitle, color = Color.White)
+            }
+            Box(Modifier.align(Alignment.BottomCenter).padding(10.dp)) { Tag(t.phase, onDark = true) }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(t.title, style = Monika.type.bodyStrong, color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(t.phase + (t.percent?.let { " · $it%" } ?: ""), style = Monika.type.caption, color = c.textSecondary)
+    }
+}
 
 /** Lõi libretro cần cho các game (theo lõi user chọn hoặc lõi mặc định của hệ). */
 internal fun coreIdsOf(games: List<Game>): List<String> = games.mapNotNull { g ->

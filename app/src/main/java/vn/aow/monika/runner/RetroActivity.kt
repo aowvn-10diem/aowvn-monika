@@ -60,6 +60,7 @@ class RetroActivity : ComponentActivity() {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
 
+        clock = PlayClock(intent.getStringExtra(PlayClock.EXTRA_KEY))
         val coreId = intent.getStringExtra(EXTRA_CORE) ?: return finish()
         val gamePath = intent.getStringExtra(EXTRA_GAME) ?: return finish()
         val systemName = intent.getStringExtra(EXTRA_SYSTEM).orEmpty()
@@ -122,6 +123,7 @@ class RetroActivity : ComponentActivity() {
                             showToast("Đã lưu vị trí phím")
                         },
                         onOptions = { openOptions(coreId) },
+                        onAsk = { askGroup(title, systemName) },
                         onOptionChange = { o, v ->
                             retroView?.updateVariables(Variable(o.key, v))
                             CoreOptions.save(this@RetroActivity, coreId, o.key, v)
@@ -208,13 +210,42 @@ class RetroActivity : ComponentActivity() {
         ui.options = list
     }
 
-    /** Ô 1 giữ tên file cũ (tương thích bản trước); ô 2, 3 thêm hậu tố. */
-    private fun slotFile(slot: Int): File =
-        if (slot == 1) stateFile else File(stateFile.parentFile, stateFile.nameWithoutExtension + ".s$slot.state")
+    /** Ô 1 giữ tên file cũ (tương thích bản trước); ô 2, 3 thêm hậu tố; ô 0 = bản tự lưu. */
+    private fun slotFile(slot: Int): File = when (slot) {
+        1 -> stateFile
+        0 -> File(stateFile.parentFile, stateFile.nameWithoutExtension + ".auto.state")
+        else -> File(stateFile.parentFile, stateFile.nameWithoutExtension + ".s$slot.state")
+    }
 
     private fun refreshSlots() {
-        ui.filledSlots = (1..3).filter { slotFile(it).exists() }.toSet()
+        ui.filledSlots = (0..3).filter { slotFile(it).exists() }.toSet()
     }
+
+    /** Hỏi nhóm: tự lưu game (ô "Tự lưu") → chụp màn hình game → mở Group FB với ảnh đính kèm sẵn. */
+    private fun askGroup(title: String, system: String) {
+        val view = retroView ?: run { showToast("Game chưa chạy xong"); return }
+        lifecycleScope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                runCatching { view.serializeState().also { slotFile(0).writeBytes(it) }.isNotEmpty() }.getOrDefault(false)
+            }
+            refreshSlots()
+            if (saved) showToast("Đã tự lưu game")
+            val shot = captureSurface(view)
+            vn.aow.monika.community.AskGroup.ask(this@RetroActivity, shot, title, system)
+        }
+    }
+
+    /** Chụp khung hình đang hiện của màn game (GL) bằng PixelCopy. */
+    private suspend fun captureSurface(v: android.view.SurfaceView): android.graphics.Bitmap? =
+        kotlinx.coroutines.suspendCancellableCoroutine { cont ->
+            if (v.width <= 0 || v.height <= 0) { cont.resumeWith(Result.success(null)); return@suspendCancellableCoroutine }
+            val bmp = android.graphics.Bitmap.createBitmap(v.width, v.height, android.graphics.Bitmap.Config.ARGB_8888)
+            runCatching {
+                android.view.PixelCopy.request(v, bmp, { r ->
+                    if (cont.isActive) cont.resumeWith(Result.success(if (r == android.view.PixelCopy.SUCCESS) bmp else null))
+                }, android.os.Handler(android.os.Looper.getMainLooper()))
+            }.onFailure { if (cont.isActive) cont.resumeWith(Result.success(null)) }
+        }
 
     private fun saveState() {
         val view = retroView ?: return
@@ -258,7 +289,15 @@ class RetroActivity : ComponentActivity() {
         return super.dispatchKeyEvent(event)
     }
 
+    private var clock: PlayClock? = null
+
+    override fun onResume() {
+        super.onResume()
+        clock?.resume()
+    }
+
     override fun onPause() {
+        clock?.pause()
         saveSram()
         super.onPause()
     }
@@ -285,9 +324,10 @@ class RetroActivity : ComponentActivity() {
             "pcsx_rearmed" to 4f / 3f, "ppsspp" to 480f / 272f, "easyrpg" to 4f / 3f,
         )
 
-        fun start(activity: Activity, coreId: String, game: File, system: String = "", title: String = "", pad: String? = null) {
+        fun start(activity: Activity, coreId: String, game: File, system: String = "", title: String = "", pad: String? = null, key: String? = null) {
             activity.startActivity(
                 Intent(activity, RetroActivity::class.java)
+                    .putExtra(PlayClock.EXTRA_KEY, key)
                     .putExtra(EXTRA_CORE, coreId)
                     .putExtra(EXTRA_GAME, game.absolutePath)
                     .putExtra(EXTRA_SYSTEM, system)

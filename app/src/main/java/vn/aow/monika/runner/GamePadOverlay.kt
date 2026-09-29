@@ -139,6 +139,8 @@ fun InGameOverlay(
     onOptions: () -> Unit = {},
     onOptionChange: (CoreOption, String) -> Unit = { _, _ -> },
     onOptionsReset: () -> Unit = {},
+    /** Chụp màn hình + tự lưu game + mở Group Facebook để hỏi. */
+    onAsk: () -> Unit = {},
 ) {
     // Nút Back của máy: mở menu (thay vì thoát ngay, dễ bấm nhầm khi đang chơi); đang chỉnh phím → xong.
     androidx.activity.compose.BackHandler(enabled = !state.menuOpen && state.options == null) {
@@ -201,15 +203,18 @@ fun InGameOverlay(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Ô lưu", style = Monika.type.bodyStrong, color = SheetColors.textSecondary, modifier = Modifier.padding(start = 4.dp, end = 4.dp))
                     (1..3).forEach { s -> SheetChip(if (s in state.filledSlots) "$s •" else "$s", state.slot == s, Modifier.weight(1f)) { state.slot = s } }
+                    // Bản tự lưu (tạo khi bấm "Hỏi nhóm").
+                    if (0 in state.filledSlots) SheetChip("Tự lưu", state.slot == 0) { state.slot = 0 }
                 }
             },
             actions = listOf(
-                SheetAction("Lưu ô ${state.slot}", R.drawable.ic_fluent_save_24_regular, highlight = true, onClick = onSave),
-                SheetAction("Tải ô ${state.slot}", R.drawable.ic_fluent_folder_open_24_regular, enabled = state.slot in state.filledSlots || state.filledSlots.isEmpty(), onClick = onLoad),
+                SheetAction(if (state.slot == 0) "Lưu bản tự lưu" else "Lưu ô ${state.slot}", R.drawable.ic_fluent_save_24_regular, highlight = true, onClick = onSave),
+                SheetAction(if (state.slot == 0) "Tải bản tự lưu" else "Tải ô ${state.slot}", R.drawable.ic_fluent_folder_open_24_regular, enabled = state.slot in state.filledSlots || state.filledSlots.isEmpty(), onClick = onLoad),
                 SheetAction(if (state.turbo) "Tốc độ 2x" else "Tốc độ 1x", R.drawable.ic_fluent_top_speed_24_regular, highlight = state.turbo, keepOpen = true, onClick = onTurbo),
                 SheetAction("Độ mờ phím ${(state.opacity * 100).toInt()}%", R.drawable.ic_fluent_eye_24_regular, keepOpen = true, onClick = onOpacity),
                 SheetAction("Chỉnh phím", R.drawable.ic_fluent_xbox_controller_24_regular) { state.editing = true },
                 SheetAction("Tùy chọn giả lập", R.drawable.ic_fluent_settings_24_regular, onClick = onOptions),
+                SheetAction("Hỏi nhóm FB", R.drawable.ic_fluent_people_community_24_regular, onClick = onAsk),
                 SheetAction("Chơi tiếp", R.drawable.ic_fluent_play_24_regular) {},
                 SheetAction("Thoát game", R.drawable.ic_fluent_door_arrow_left_24_regular, onClick = onBack),
             ),

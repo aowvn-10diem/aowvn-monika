@@ -51,6 +51,8 @@ data class AccountConfig(
     val loginUrl: String = "https://www.aow.vn/p/device-login.html",
     /** Trang vote/donate trên web (mở khi cần tính năng app chưa có). */
     val voteUrl: String = "https://www.aow.vn/p/vote-game.html",
+    /** Nút "Ủng hộ AowVN" ở Trang chủ mở trang này. Trống = dùng [voteUrl]. */
+    val donateUrl: String = "",
     val donate: DonateConfig = DonateConfig(),
 )
 
@@ -108,6 +110,8 @@ data class SystemDef(
     val externalApp: String? = null,
     val extensions: List<String> = emptyList(),
     val labels: List<String> = emptyList(),
+    /** Kho ảnh bìa libretro-thumbnails (vd. "Nintendo - Nintendo DS"). Trống = mặc định theo id hệ máy. */
+    val thumbnails: List<String> = emptyList(),
     /** Bố cục tay cầm ảo: gb | gba | nds | ps | rpg. Null = tự chọn theo lõi. */
     val pad: String? = null,
     /** Lõi thay thế user được chọn trong Cài đặt (vd. NDS: desmume, melonds). */

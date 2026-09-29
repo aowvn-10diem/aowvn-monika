@@ -177,7 +177,8 @@ public class MicroActivity extends AppCompatActivity {
 		if (vk != null) {
 			vk.setView(binding.overlayView);
 			binding.overlayView.addLayer(vk);
-			if (vk.isPhone()) {
+			// Aow Monika: bàn phím Monika xoay ngang được (phím tách 2 bên), kiểu điện thoại khác vẫn khóa dọc.
+			if (vk.isPhone() && !vk.isMonika()) {
 				orientation = ORIENTATION_PORTRAIT;
 			}
 		}
@@ -345,6 +346,7 @@ public class MicroActivity extends AppCompatActivity {
 	private static final int MONIKA_EXIT = -1;
 	private static final int MONIKA_CONTINUE = -2;
 	private static final int MONIKA_SETTINGS = -3;
+	private static final int MONIKA_ASK = -4;
 	/** Menu popup mỗi lần tạo mới → tự nhớ trạng thái "khóa xoay màn hình". */
 	private boolean orientationLocked;
 
@@ -363,10 +365,25 @@ public class MicroActivity extends AppCompatActivity {
 		if (lock != null) lock.setChecked(orientationLocked);
 		java.util.List<J2meRuntime.MenuEntry> entries = new java.util.ArrayList<>();
 		entries.add(new J2meRuntime.MenuEntry(MONIKA_CONTINUE, getString(R.string.monika_keep_playing), "monika_continue", false));
+		entries.add(new J2meRuntime.MenuEntry(MONIKA_ASK, getString(R.string.monika_ask_group), "monika_ask", false));
 		collectMenu(menu, entries);
 		entries.add(new J2meRuntime.MenuEntry(MONIKA_SETTINGS, getString(R.string.monika_game_settings), "monika_settings", false));
 		presenter.show(this, appName, getString(R.string.monika_java_game), entries, id -> {
 			if (id == MONIKA_CONTINUE) return;
+			if (id == MONIKA_ASK) {
+				// Game Java tự lưu theo cách của game → chỉ chụp màn hình rồi mở nhóm.
+				if (current instanceof Canvas) {
+					//noinspection ResultOfMethodCallIgnored
+					((Canvas) current).getScreenShot()
+							.subscribeOn(io.reactivex.schedulers.Schedulers.computation())
+							.observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
+							.subscribe(bmp -> presenter.askCommunity(this, bmp, appName),
+									e -> presenter.askCommunity(this, null, appName));
+				} else {
+					presenter.askCommunity(this, null, appName);
+				}
+				return;
+			}
 			if (id == MONIKA_SETTINGS) {
 				hideSoftInput();
 				Config.startApp(this, appName, appPath, true);
@@ -546,7 +563,7 @@ public class MicroActivity extends AppCompatActivity {
 		} else if (id == R.id.action_lock_orientation) {
 			if (item.isChecked()) {
 				VirtualKeyboard vk = ContextHolder.getVk();
-				int orientation = vk != null && vk.isPhone() ? ORIENTATION_PORTRAIT : microLoader.getOrientation();
+				int orientation = vk != null && vk.isPhone() && !vk.isMonika() ? ORIENTATION_PORTRAIT : microLoader.getOrientation();
 				setOrientation(orientation);
 				item.setChecked(false);
 			} else {
@@ -671,7 +688,7 @@ public class MicroActivity extends AppCompatActivity {
 				.setSingleChoiceItems(R.array.PREF_VK_TYPE_ENTRIES, vk.getLayout(), null)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
 					vk.setLayout(((AlertDialog) d).getListView().getCheckedItemPosition());
-					if (vk.isPhone()) {
+					if (vk.isPhone() && !vk.isMonika()) {
 						setOrientation(ORIENTATION_PORTRAIT);
 					} else {
 						setOrientation(microLoader.getOrientation());

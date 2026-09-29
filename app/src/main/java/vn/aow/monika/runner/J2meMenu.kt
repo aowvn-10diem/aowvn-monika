@@ -62,7 +62,11 @@ object J2meMenu : J2meRuntime.MenuPresenter {
         content.addView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
     }
 
+    override fun askCommunity(activity: Activity, shot: android.graphics.Bitmap?, gameName: String?) =
+        vn.aow.monika.community.AskGroup.ask(activity, shot, gameName.orEmpty().ifBlank { "game Java" }, "Java")
+
     private fun iconFor(key: String?): Int = when (key) {
+        "monika_ask" -> R.drawable.ic_fluent_people_community_24_regular
         "monika_continue" -> R.drawable.ic_fluent_play_24_regular
         "monika_settings" -> R.drawable.ic_fluent_settings_24_regular
         "action_exit_midlet" -> R.drawable.ic_fluent_door_arrow_left_24_regular

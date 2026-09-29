@@ -98,6 +98,7 @@ fun PostScreen(postId: String, onGo: (String) -> Unit = {}, onBack: () -> Unit) 
 @Composable
 private fun PostContent(post: Post, onGo: (String) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
+    LaunchedEffect(post.id) { AppGraph.prefs.addRecentPost(post) }
     val scope = rememberCoroutineScope()
     val cfg by AppGraph.config.config.collectAsState()
     val c = Monika.colors

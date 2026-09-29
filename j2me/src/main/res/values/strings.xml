@@ -266,4 +266,5 @@
     <string name="monika_game_settings">Cài đặt game</string>
     <string name="monika_keep_playing">Chơi tiếp</string>
     <string name="monika_java_game">Game Java (J2ME)</string>
+    <string name="monika_ask_group">Hỏi nhóm FB</string>
 </resources>

@@ -30,12 +30,20 @@ class ImportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
 
         // Cập nhật % trên thông báo đang chạy.
         val nm = applicationContext.getSystemService(NotificationManager::class.java)
+        val meta = GameMeta.fromJson(inputData.getString(KEY_META))
+        // Ô "Đang giải nén xx%" của đúng game này trong Thư viện.
+        val taskId = "import:${file.path}"
+        GameTasks.put(GameTask(taskId, meta?.title?.ifBlank { null } ?: file.nameWithoutExtension, meta?.cover, "Đang giải nén", null))
         val progress = ExtractProgress { p ->
+            GameTasks.progress(taskId, p)
             // Cùng ID với thông báo foreground → hệ thống thay nội dung, không tạo thông báo mới.
             runCatching { nm.notify(NOTIFICATION_ID, Notifier.progress(applicationContext, "Đang giải nén", file.name, p)) }
         }
-        val result = Importer.importFile(applicationContext, file, deleteSource = true, AppGraph.config.current.archivePasswords, progress)
-        val meta = GameMeta.fromJson(inputData.getString(KEY_META))
+        val result = try {
+            Importer.importFile(applicationContext, file, deleteSource = true, AppGraph.config.current.archivePasswords, progress)
+        } finally {
+            GameTasks.remove(taskId)
+        }
         meta?.let { m ->
             GameMeta.write(result.dir, m)
             // Tải lại game từng bị dọn → bỏ ô "Đã dọn" cũ của cùng bài viết.

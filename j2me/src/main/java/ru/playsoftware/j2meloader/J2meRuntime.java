@@ -45,6 +45,9 @@ public final class J2meRuntime {
 	public interface MenuPresenter {
 		void show(android.app.Activity activity, String title, String subtitle,
 				  java.util.List<MenuEntry> entries, java.util.function.IntConsumer onPick);
+
+		/** "Hỏi nhóm": ảnh chụp màn hình game (có thể null) + tên game → mở Group Facebook. */
+		void askCommunity(android.app.Activity activity, android.graphics.Bitmap shot, String gameName);
 	}
 
 	/** Null = dùng menu gốc của J2ME Loader. */

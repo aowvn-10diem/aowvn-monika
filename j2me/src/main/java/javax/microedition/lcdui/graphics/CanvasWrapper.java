@@ -78,6 +78,12 @@ public class CanvasWrapper {
 		canvas.drawRoundRect(rect, rx, ry, drawPaint);
 	}
 
+	/** Tô 1 đường (vd. nền trừ khung game bo tròn). */
+	public void fillPath(android.graphics.Path path) {
+		fillPaint.setAntiAlias(true);
+		canvas.drawPath(path, fillPaint);
+	}
+
 	/** Gradient cho nền phím; null = bỏ. */
 	public void setFillShader(android.graphics.Shader shader) {
 		fillPaint.setShader(shader);
