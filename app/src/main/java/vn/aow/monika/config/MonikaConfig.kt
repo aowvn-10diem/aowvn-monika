@@ -29,6 +29,8 @@ data class MonikaConfig(
     val coreOptionText: CoreOptionText = CoreOptionText(),
     /** Báo lỗi game / lõi giả lập. */
     val crash: CrashConfig = CrashConfig(),
+    /** Module engine tải khi cần (thư viện native ngoài lõi libretro), vd. "azahar" cho 3DS. */
+    val modules: Map<String, ModuleDef> = emptyMap(),
 ) {
     fun system(id: String): SystemDef? = systems.firstOrNull { it.id == id }
     fun externalApp(id: String): ExternalApp? = externalApps.firstOrNull { it.id == id }
@@ -36,6 +38,17 @@ data class MonikaConfig(
     /** Nhãn blog dùng làm bộ lọc, giữ thứ tự khai báo, bỏ trùng. */
     fun feedLabels(): List<String> = systems.flatMap { it.labels }.distinct()
 }
+
+/** Module engine tải khi người chơi có game: gói .zip chứa thư viện native + manifest. */
+@Serializable
+data class ModuleDef(
+    /** Đổi version → app tải lại module. */
+    val version: String,
+    /** Link gói .zip (vd. asset trong GitHub Releases của workflow build-engines). Trống = module chưa sẵn sàng. */
+    val url: String = "",
+    /** Kiến trúc CPU hỗ trợ; trống = mọi kiến trúc. */
+    val abis: List<String> = emptyList(),
+)
 
 @Serializable
 data class CrashConfig(
@@ -122,6 +135,8 @@ data class SystemDef(
     val labels: List<String> = emptyList(),
     /** Kho ảnh bìa libretro-thumbnails (vd. "Nintendo - Nintendo DS"). Trống = mặc định theo id hệ máy. */
     val thumbnails: List<String> = emptyList(),
+    /** Engine nhúng thay cho lõi libretro (vd. "azahar" cho 3DS). Chưa sẵn sàng / máy không hợp → tự dùng [core] libretro. */
+    val engine: String? = null,
     /** Bố cục tay cầm ảo: gb | gba | nds | ps | rpg. Null = tự chọn theo lõi. */
     val pad: String? = null,
     /** Lõi thay thế user được chọn trong Cài đặt (vd. NDS: desmume, melonds). */

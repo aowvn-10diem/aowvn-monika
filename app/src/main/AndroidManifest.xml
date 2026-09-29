@@ -72,6 +72,13 @@
             android:theme="@style/Theme.Monika.Fullscreen" />
 
         <activity
+            android:name=".azahar.AzaharActivity"
+            android:process=":game"
+            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize"
+            android:screenOrientation="fullUser"
+            android:theme="@style/Theme.Monika.Fullscreen" />
+
+        <activity
             android:name=".runner.WebGameActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize"
             android:screenOrientation="fullUser"

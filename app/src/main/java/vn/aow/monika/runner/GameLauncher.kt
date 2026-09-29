@@ -37,6 +37,12 @@ class GameLauncher(private val configRepo: ConfigRepository) {
         val entry = game.entry ?: game.dir
         return when (system.runner) {
             "libretro" -> {
+                // Engine nhúng (vd. Azahar cho 3DS) khi module có sẵn cho máy này; không thì lõi libretro như cũ.
+                if (system.engine == vn.aow.monika.azahar.AzaharModule.ID && vn.aow.monika.AppGraph.azahar.available() &&
+                    vn.aow.monika.AppGraph.prefs.coreOverride(system.id) == null) {
+                    vn.aow.monika.azahar.AzaharActivity.start(activity, entry, system.name, game.name, game.key)
+                    return LaunchResult.Started
+                }
                 // Lõi user chọn trong Cài đặt (nếu còn trong config), không thì lõi mặc định.
                 val core = vn.aow.monika.AppGraph.prefs.coreOverride(system.id)?.takeIf { it in configRepo.current.cores }
                     ?: system.core ?: return LaunchResult.Failed("Cấu hình hệ ${system.name} thiếu 'core'.")

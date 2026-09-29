@@ -22,3 +22,7 @@
 # Báo lỗi game (kotlinx.serialization) + thông tin game tự nhận diện
 -keep class vn.aow.monika.diag.** { *; }
 -keep class vn.aow.monika.library.GameInfoResolver* { *; }
+
+# Engine 3DS nhúng (Azahar): thư viện native gọi ngược lớp Kotlin theo tên/chữ ký
+-keep class org.citra.citra_emu.** { *; }
+-keep class vn.aow.monika.azahar.AzaharBridge { *; }
