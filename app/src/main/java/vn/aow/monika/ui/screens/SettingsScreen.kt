@@ -159,6 +159,34 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                 ) { StorageSettingsContent() }
 
                 SettingGroup(
+                    "vault", open, { open = it }, R.drawable.ic_fluent_storage_24_regular,
+                    Brush.linearGradient(listOf(Color(0xFFFFB347), Color(0xFFFF7A32))),
+                    "Save game", "Monika quản lý · sao lưu / chuyển máy",
+                ) {
+                    val ctx = androidx.compose.ui.platform.LocalContext.current
+                    val scope = androidx.compose.runtime.rememberCoroutineScope()
+                    var msg by remember { mutableStateOf<String?>(null) }
+                    var stat by remember { mutableStateOf(vn.aow.monika.library.SaveVault.summary(ctx)) }
+                    val exp = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/zip")) { u ->
+                        if (u != null) scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val n = runCatching { vn.aow.monika.library.SaveVault.export(ctx, u) }.getOrDefault(-1)
+                            msg = if (n >= 0) "Đã xuất $n file save" else "Xuất thất bại"
+                        }
+                    }
+                    val imp = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { u ->
+                        if (u != null) scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val n = runCatching { vn.aow.monika.library.SaveVault.import(ctx, u) }.getOrDefault(-1)
+                            stat = vn.aow.monika.library.SaveVault.summary(ctx)
+                            msg = if (n >= 0) "Đã nhập $n file save" else "Nhập thất bại (file không đúng)"
+                        }
+                    }
+                    Text("Đang giữ ${stat.first} file save · ${stat.second / 1024} KB (save pin, save state mọi giả lập, dữ liệu 3DS).", style = Monika.type.caption, color = c.textSecondary)
+                    SoftPillButton("Xuất save ra file .zip", { exp.launch("aow-monika-save.zip") }, R.drawable.ic_fluent_document_24_regular)
+                    SoftPillButton("Nhập save từ file .zip", { imp.launch(arrayOf("application/zip", "application/octet-stream")) }, R.drawable.ic_fluent_document_24_regular)
+                    msg?.let { Text(it, style = Monika.type.bodyStrong, color = c.text) }
+                }
+
+                SettingGroup(
                     "crashlog", open, { open = it }, R.drawable.ic_fluent_info_24_regular,
                     Brush.linearGradient(listOf(Color(0xFFFF806E), Color(0xFFE95CC8))),
                     "Nhật ký lỗi", "Game sập / lõi lỗi · gửi cho AowVN để sửa",
