@@ -93,11 +93,15 @@ data class DonateConfig(
 @Serializable
 data class AdBlockConfig(
     val enabled: Boolean = true,
-    /** Bộ lọc dạng tên miền / hosts / ||domain^. */
+    /** Bộ lọc: tên miền / hosts / ||domain^ và luật Adblock Plus (đường dẫn, tùy chọn, ẩn phần tử). */
     val lists: List<String> = emptyList(),
     /** Tên miền không bao giờ chặn (kể cả tên miền con). */
     val allow: List<String> = emptyList(),
     val updateHours: Int = 72,
+    /** Ẩn khung quảng cáo còn sót bằng CSS (luật ẩn phần tử của bộ lọc). */
+    val cosmetic: Boolean = true,
+    /** Chặn cửa sổ bật lên / chuyển hướng quảng cáo không do người dùng bấm. */
+    val popups: Boolean = true,
 )
 
 @Serializable

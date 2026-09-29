@@ -1,5 +1,5 @@
 {
-  "configVersion": 12,
+  "configVersion": 13,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -653,6 +653,8 @@
   "adblock": {
     "enabled": true,
     "lists": [
+      "https://cdn.jsdelivr.net/gh/abpvn/abpvn@master/filter/abpvn_ublock.txt",
+      "https://easylist.to/easylist/easylist.txt",
       "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro-onlydomains.txt",
       "https://abpvn.com/android/abpvn.txt"
     ],
@@ -672,7 +674,9 @@
       "googleapis.com",
       "pixeldrain.com"
     ],
-    "updateHours": 72
+    "updateHours": 72,
+    "cosmetic": true,
+    "popups": true
   },
   "cores": {
     "desmume": {

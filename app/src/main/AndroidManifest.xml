@@ -133,6 +133,11 @@
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
 
+        <service
+            android:name=".download.BrowserDownloadService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"

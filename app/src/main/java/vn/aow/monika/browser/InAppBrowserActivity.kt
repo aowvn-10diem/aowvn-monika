@@ -87,6 +87,10 @@ class InAppBrowserActivity : ComponentActivity() {
     private var adState by mutableStateOf(AdState.OFF)
     private var blocked by mutableIntStateOf(0)
     @Volatile private var adOn = true
+    @Volatile private var cosmeticOn = true
+    @Volatile private var popupsOn = true
+    /** Tên miền người dùng chủ động mở — không bao giờ coi là quảng cáo. */
+    @Volatile private var startHost = ""
     private lateinit var allow: List<String>
 
     private enum class AdState { OFF, LOADING, ON, FAILED }
@@ -111,9 +115,12 @@ class InAppBrowserActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val url = intent.getStringExtra(EXTRA_URL) ?: return finish()
         host = Uri.parse(url).host.orEmpty()
+        startHost = host.lowercase()
 
         val cfg = AppGraph.config.current.adblock
         allow = cfg.allow.map { it.lowercase() }
+        cosmeticOn = cfg.cosmetic
+        popupsOn = cfg.popups
         if (cfg.enabled) {
             adState = if (AppGraph.adblock.ready) AdState.ON else AdState.LOADING
             // Lần đầu: tải bộ lọc về (vài giây); các lần sau: nạp bản đã lưu, quá hạn thì cập nhật ngầm.
@@ -165,6 +172,8 @@ class InAppBrowserActivity : ComponentActivity() {
                         Spacer(Modifier.navigationBarsPadding().height(84.dp))
                     }
                     BottomBar(Modifier.align(Alignment.BottomCenter), onMenu = { menu = true })
+                    DownloadCorner(AppGraph.browserDownloads)
+                    DownloadSheet(AppGraph.browserDownloads) { pickFolder.launch(null) }
                     val fb = isFacebookHost(host)
                     MonikaMenuSheet(
                         menu, { menu = false },
@@ -248,6 +257,15 @@ class InAppBrowserActivity : ComponentActivity() {
 
     // ---- Đính kèm ảnh chụp game khi đăng bài hỏi nhóm ----
     private var attachment by mutableStateOf<File?>(null)
+
+    // ---- Tải file: bắt đầu tải NGAY, popup chọn tên/nơi lưu; chọn thư mục riêng qua trình chọn của hệ thống ----
+    private val pickFolder = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            runCatching { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
+            val label = androidx.documentfile.provider.DocumentFile.fromTreeUri(this, uri)?.name ?: "Thư mục đã chọn"
+            AppGraph.browserDownloads.pickedFolder = vn.aow.monika.download.SaveDest.Folder(uri.toString(), label)
+        }
+    }
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     private val pickFile = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         val uris = WebChromeClient.FileChooserParams.parseResult(r.resultCode, r.data)
@@ -261,11 +279,39 @@ class InAppBrowserActivity : ComponentActivity() {
         settings.domStorageEnabled = true // Discord web cần localStorage để giữ đăng nhập.
         settings.databaseEnabled = true
         settings.mediaPlaybackRequiresUserGesture = true
+        setDownloadListener { url, ua, disposition, mime, _ ->
+            if (url.startsWith("blob:") || url.startsWith("data:")) {
+                android.widget.Toast.makeText(this@InAppBrowserActivity, "Trang này tạo file ngay trong trình duyệt, chưa tải được bằng Monika", android.widget.Toast.LENGTH_LONG).show()
+            } else AppGraph.browserDownloads.start(url, ua, disposition, mime, referer = this.url)
+        }
+        settings.setSupportMultipleWindows(true) // để chủ động chặn cửa sổ bật lên (pop-up / pop-under) — xem onCreateWindow
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
         webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView, p: Int) { this@InAppBrowserActivity.loadProgress = p / 100f }
             override fun onReceivedTitle(view: WebView, t: String?) { this@InAppBrowserActivity.pageTitle = t.orEmpty() }
+
+            // Cửa sổ mới (target=_blank / window.open): chỉ cho khi người dùng vừa bấm, và mở NGAY trong trang này (không sinh cửa sổ ẩn).
+            override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: android.os.Message): Boolean {
+                if (!isUserGesture && popupsOn && adOn) { blocked++; return false }
+                val tmp = WebView(view.context)
+                tmp.webViewClient = object : WebViewClient() {
+                    private var done = false
+                    private fun redirect(u: String?) {
+                        if (done || u.isNullOrBlank() || u == "about:blank") return
+                        done = true
+                        val h = Uri.parse(u).host.orEmpty().lowercase()
+                        if (popupsOn && adOn && h.isNotEmpty() && AppGraph.adblock.blocks(h) && allow.none { h == it || h.endsWith(".$it") }) { blocked++ }
+                        else view.post { view.loadUrl(u) }
+                        view.post { tmp.destroy() }
+                    }
+                    override fun shouldOverrideUrlLoading(v: WebView, r: WebResourceRequest): Boolean { redirect(r.url.toString()); return true }
+                    override fun onPageStarted(v: WebView, url: String?, favicon: Bitmap?) { redirect(url) }
+                }
+                (resultMsg.obj as WebView.WebViewTransport).webView = tmp
+                resultMsg.sendToTarget()
+                return true
+            }
 
             // Chọn ảnh để đăng: có ảnh chụp game đang chờ → đính kèm luôn; không thì mở trình chọn file.
             override fun onShowFileChooser(view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
@@ -291,15 +337,20 @@ class InAppBrowserActivity : ComponentActivity() {
         webViewClient = object : WebViewClient() {
             // Chạy trên luồng nền của WebView: yêu cầu tới tên miền quảng cáo → trả về rỗng.
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
-                if (!adOn || adState != AdState.ON || request.isForMainFrame) return null
+                if (!adOn || adState != AdState.ON) return null
                 // Không chặn gì trên Facebook (dễ hỏng đăng bài / tải ảnh).
                 if (isFacebookHost(this@InAppBrowserActivity.host)) return null
                 val h = request.url.host?.lowercase() ?: return null
                 if (allow.any { h == it || h.endsWith(".$it") }) return null
-                if (!AppGraph.adblock.blocks(h)) return null
+                // Trang chính: chỉ chặn khi KHÔNG do người dùng bấm (chuyển hướng quảng cáo / pop-under).
+                if (request.isForMainFrame && (request.hasGesture() || !popupsOn || h == startHost || !AppGraph.adblock.blocks(h))) return null
+                val page = this@InAppBrowserActivity.host
+                if (!request.isForMainFrame && !AppGraph.adblock.blocksRequest(request.url.toString(), h, page.ifBlank { h }, typeOf(request))) return null
                 runOnUiThread { blocked++ }
                 return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
             }
+
+            override fun onPageFinished(view: WebView, url: String?) { hideAds(view) }
 
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val u = request.url
@@ -319,8 +370,37 @@ class InAppBrowserActivity : ComponentActivity() {
             override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
                 blocked = 0
                 this@InAppBrowserActivity.host = url?.let { Uri.parse(it).host }.orEmpty()
+                hideAds(view)
             }
         }
+    }
+
+    /** Loại tài nguyên đoán từ tiêu đề Accept / đuôi tệp (WebView không cho biết trực tiếp); 0 = không rõ. */
+    private fun typeOf(r: WebResourceRequest): Int {
+        val accept = r.requestHeaders["Accept"]?.lowercase().orEmpty()
+        val path = r.url.path?.lowercase().orEmpty()
+        return when {
+            accept.startsWith("text/css") || path.endsWith(".css") -> FilterEngine.STYLE
+            path.endsWith(".js") || path.endsWith(".mjs") -> FilterEngine.SCRIPT
+            accept.contains("text/html") -> if (r.isForMainFrame) 0 else FilterEngine.SUBDOC
+            accept.contains("image/") || Regex("""\.(png|jpe?g|gif|webp|avif|svg|ico)$""").containsMatchIn(path) -> FilterEngine.IMAGE
+            Regex("""\.(woff2?|ttf|otf)$""").containsMatchIn(path) -> FilterEngine.FONT
+            accept.startsWith("video/") || accept.startsWith("audio/") || Regex("""\.(mp4|webm|m3u8|mp3|ogg)$""").containsMatchIn(path) -> FilterEngine.MEDIA
+            else -> 0
+        }
+    }
+
+    /** Ẩn khung quảng cáo còn sót bằng CSS (luật ẩn phần tử theo trang) và giữ lại nếu trang gỡ đi. */
+    private fun hideAds(view: WebView) {
+        if (!adOn || adState != AdState.ON || !cosmeticOn) return
+        val h = host
+        if (h.isBlank() || isFacebookHost(h) || allow.any { h == it || h.endsWith(".$it") }) return
+        val css = AppGraph.adblock.cosmeticCss(h)
+        if (css.isEmpty()) return
+        val js = "(function(){var id='__monika_ab';function add(){if(document.getElementById(id))return;var s=document.createElement('style');s.id=id;" +
+            "s.textContent=" + org.json.JSONObject.quote(css) + ";(document.head||document.documentElement).appendChild(s);}" +
+            "add();if(!window.__monika_ab_o){window.__monika_ab_o=new MutationObserver(add);window.__monika_ab_o.observe(document.documentElement,{childList:true});}})();"
+        view.evaluateJavascript(js, null)
     }
 
     override fun onPause() {
@@ -329,6 +409,8 @@ class InAppBrowserActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        // Đóng trình duyệt khi chưa chọn nơi lưu → lưu theo lựa chọn lần trước (file đã tải rồi, không để mất).
+        AppGraph.browserDownloads.autoConfirmPending()
         web?.destroy()
         web = null
         super.onDestroy()

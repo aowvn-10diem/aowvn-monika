@@ -50,6 +50,17 @@ class Prefs(private val context: Context) {
         get() = sp.getStringSet("subscribed_labels", emptySet())!!.toSet()
         set(value) = sp.edit().putStringSet("subscribed_labels", value).apply()
 
+    /** Nơi lưu file tải từ trình duyệt nhúng lần trước: "lib" (Thư viện game) | "dl" (Tải xuống) | "folder" (thư mục tự chọn). */
+    var dlDest: String
+        get() = sp.getString("dl_dest", "lib") ?: "lib"
+        set(v) = sp.edit().putString("dl_dest", v).apply()
+    var dlFolder: String?
+        get() = sp.getString("dl_folder", null)
+        set(v) = sp.edit().putString("dl_folder", v).apply()
+    var dlFolderLabel: String?
+        get() = sp.getString("dl_folder_label", null)
+        set(v) = sp.edit().putString("dl_folder_label", v).apply()
+
     /** Lượt tải là app/plugin (cài đặt ngay) chứ không phải game. */
     fun markToolDownload(id: Long) = sp.edit().putBoolean("tool_$id", true).apply()
     fun isToolDownload(id: Long) = sp.getBoolean("tool_$id", false)

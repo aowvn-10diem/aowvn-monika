@@ -257,7 +257,7 @@ private fun createPostWebView(context: Context, scope: CoroutineScope, post: Pos
 fun handleLink(context: Context, scope: CoroutineScope, url: String, post: Post? = null, onStarted: (Long) -> Unit = {}) {
     val direct = LinkResolver.resolve(url, AppGraph.config.current.downloadHosts)?.directUrl
     if (direct == null) {
-        openUrl(context, url)
+        openInApp(context, url)
         return
     }
     val meta = post?.let {
@@ -314,6 +314,11 @@ ${post.contentHtml}
 }
 
 private fun String.htmlEscape() = replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+/** Link phải mở bằng trình duyệt (Mediafire, Drive, Mega…): mở NGAY trong trình duyệt của Monika để bắt được file tải và tải bằng trình quản lý tải của app. */
+fun openInApp(context: Context, url: String) {
+    if (url.startsWith("http://") || url.startsWith("https://")) vn.aow.monika.browser.InAppBrowserActivity.start(context, url) else openUrl(context, url)
+}
 
 fun openUrl(context: Context, url: String) {
     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }

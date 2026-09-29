@@ -329,7 +329,7 @@ fun ExternalAppDetails(app: ExternalApp, installed: Boolean) {
         pageLinks?.forEach { link ->
             val title = listOf(link.label.ifBlank { "Tải" }, link.hostName).distinct().joinToString(" · ")
             if (link.directUrl != null) GradientButton(title, { startToolDownload(context, scope, link.directUrl) }, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_arrow_download_24_regular, height = 48.dp)
-            else DarkButton(title, { openUrl(context, link.pageUrl) }, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_open_24_regular)
+            else DarkButton(title, { openInApp(context, link.pageUrl) }, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_open_24_regular)
         }
         app.plugins.forEach { plugin ->
             DarkButton(
@@ -354,12 +354,12 @@ private fun startToolDownload(context: Context, scope: CoroutineScope, url: Stri
     val direct = LinkResolver.resolve(url, AppGraph.config.current.downloadHosts)?.directUrl
         ?: url.takeIf { it.substringBefore('?').endsWith(".apk", ignoreCase = true) }
     if (direct == null) {
-        openUrl(context, url)
+        openInApp(context, url)
         return
     }
     scope.launch {
         runCatching { AppGraph.downloader.enqueue(direct, isTool = true) }
             .onSuccess { Toast.makeText(context, "Đang tải… xong bấm thông báo để cài", Toast.LENGTH_LONG).show() }
-            .onFailure { openUrl(context, url) }
+            .onFailure { openInApp(context, url) }
     }
 }

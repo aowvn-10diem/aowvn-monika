@@ -42,6 +42,7 @@ object AppGraph {
     val cores by lazy { CoreManager(app, http, config) }
     val azahar by lazy { vn.aow.monika.azahar.AzaharModule(app, http, config) }
     val downloader by lazy { Downloader(app, http, prefs) }
+    val browserDownloads by lazy { vn.aow.monika.download.BrowserDownloads(app, http, prefs) }
     val gameInfo by lazy {
         vn.aow.monika.library.GameInfoResolver(app, feed, boxArts = vn.aow.monika.library.BoxArts(http, java.io.File(app.filesDir, "boxarts")))
     }

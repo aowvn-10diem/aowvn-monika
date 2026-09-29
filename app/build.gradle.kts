@@ -17,8 +17,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 14
-        versionName = "0.4.1"
+        versionCode = 15
+        versionName = "0.4.2"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
         buildConfigField(
             "String", "REMOTE_CONFIG_URL",
@@ -99,6 +99,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.splashscreen) // Màn chờ khi mở app
     implementation(libs.androidx.browser) // Custom Tab: đăng nhập Google trên web
+    implementation(libs.androidx.documentfile) // Chọn thư mục lưu file tải (SAF)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

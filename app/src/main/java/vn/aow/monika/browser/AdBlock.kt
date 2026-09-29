@@ -19,18 +19,23 @@ import java.util.concurrent.TimeUnit
  */
 class AdBlock(private val context: Context, private val http: OkHttpClient) {
     @Volatile private var hashes: LongArray = LongArray(0)
+    @Volatile private var engine = FilterEngine()
     private val lock = Mutex()
     private val file get() = File(context.filesDir, "adblock/domains.bin")
+    /** Luật đường dẫn / tùy chọn / ẩn phần tử đã lọc từ các bộ lọc (định dạng Adblock Plus), nạp lại nhanh khi mở trình duyệt. */
+    private val rulesFile get() = File(context.filesDir, "adblock/rules.txt")
 
     /** Đã có bộ lọc trong máy chưa. */
     val ready get() = hashes.isNotEmpty()
-    val size get() = hashes.size
+    val size get() = hashes.size + engine.networkRules
+    val cosmeticRules get() = engine.cosmeticRules
 
     /** Nạp bộ lọc đã lưu; chưa có hoặc cũ quá hạn thì tải về. Trả về false nếu tải lỗi và chưa có bản nào. */
     suspend fun ensure(lists: List<String>, updateHours: Int): Boolean = lock.withLock {
         withContext(Dispatchers.IO) {
             if (hashes.isEmpty() && file.exists()) hashes = runCatching { load(file) }.getOrDefault(LongArray(0))
-            val stale = !file.exists() || System.currentTimeMillis() - file.lastModified() > updateHours * 3_600_000L
+            if (engine.networkRules == 0 && rulesFile.exists()) engine = runCatching { loadRules(rulesFile) }.getOrDefault(FilterEngine())
+            val stale = !file.exists() || !rulesFile.exists() || System.currentTimeMillis() - file.lastModified() > updateHours * 3_600_000L
             if (stale && lists.isNotEmpty()) runCatching { download(lists) }
             hashes.isNotEmpty()
         }
@@ -50,6 +55,13 @@ class AdBlock(private val context: Context, private val http: OkHttpClient) {
         }
     }
 
+    /** Chặn yêu cầu [url]: tên miền quảng cáo, hoặc khớp luật đường dẫn/mẫu (kèm loại tài nguyên [type], trang đang xem [pageHost]). */
+    fun blocksRequest(url: String, host: String, pageHost: String, type: Int): Boolean =
+        blocks(host) || engine.blocks(url, host, pageHost, type)
+
+    /** CSS ẩn khung quảng cáo còn sót (không chặn được ở tầng mạng) cho trang [pageHost]. */
+    fun cosmeticCss(pageHost: String): String = engine.cosmeticCss(pageHost, BUILTIN_HIDE)
+
     /** Dùng cho test: nạp thẳng danh sách tên miền. */
     internal fun setDomains(domains: Collection<String>) {
         hashes = domains.map { hash(it) }.distinct().toLongArray().also { it.sort() }
@@ -58,17 +70,27 @@ class AdBlock(private val context: Context, private val http: OkHttpClient) {
     private fun download(lists: List<String>) {
         val client = http.newBuilder().readTimeout(90, TimeUnit.SECONDS).build()
         val set = HashSet<Long>(300_000)
+        val fresh = FilterEngine()
+        val kept = StringBuilder()
         var anyOk = false
         for (url in lists) {
             runCatching {
                 client.newCall(Request.Builder().url(url).build()).execute().use { r ->
                     if (!r.isSuccessful) return@use
-                    r.body!!.charStream().buffered().useLines { lines -> lines.forEach { l -> parseLine(l)?.let { set += hash(it) } } }
+                    r.body!!.charStream().buffered().useLines { lines ->
+                        lines.forEach { l ->
+                            val d = parseLine(l)
+                            if (d != null) set += hash(d) else if (fresh.addLine(l)) kept.append(l.trim()).append('\n')
+                        }
+                    }
                     anyOk = true
                 }
             }
         }
-        if (!anyOk || set.isEmpty()) return
+        if (!anyOk || (set.isEmpty() && fresh.networkRules == 0)) return
+        rulesFile.parentFile?.mkdirs()
+        runCatching { File(rulesFile.path + ".tmp").also { it.writeText(kept.toString()) }.renameTo(rulesFile) }
+        engine = fresh
         val arr = set.toLongArray().also { it.sort() }
         file.parentFile?.mkdirs()
         val tmp = File(file.path + ".tmp")
@@ -77,11 +99,21 @@ class AdBlock(private val context: Context, private val http: OkHttpClient) {
         hashes = arr
     }
 
+    private fun loadRules(f: File): FilterEngine = FilterEngine().also { e -> f.forEachLine { e.addLine(it) } }
+
     private fun load(f: File): LongArray = DataInputStream(f.inputStream().buffered()).use { inp ->
         LongArray(inp.readInt()) { inp.readLong() }
     }
 
     companion object {
+        /** Khung quảng cáo phổ biến, an toàn để ẩn ở mọi trang. */
+        private val BUILTIN_HIDE = listOf(
+            "ins.adsbygoogle", ".adsbygoogle", "[id^=\"google_ads_\"]", "[id^=\"div-gpt-ad\"]",
+            "iframe[src*=\"doubleclick.net\"]", "iframe[src*=\"googlesyndication.com\"]", "iframe[src*=\"adservice.google.\"]",
+            "[id^=\"taboola-\"]", "[class*=\"taboola\"]", "[id^=\"outbrain\"]", ".OUTBRAIN", ".popup-ads", ".ads-popup", ".ad-popup",
+            ".ad-banner", ".ad-container", ".banner-ads", ".adv-banner", ".advertisement", "#ad-banner", "[data-ad-slot]", "[data-ad-client]",
+        )
+
         private val DOMAIN = Regex("""^[a-z0-9_-]+(\.[a-z0-9_-]+)+$""")
 
         /**
