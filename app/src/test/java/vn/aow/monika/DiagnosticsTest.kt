@@ -73,6 +73,22 @@ class DiagnosticsTest {
         assertEquals(1, Diagnostics.list(app).size)
     }
 
+    @Test fun postsToEndpointWhenConfigured() {
+        fakeDeadSession("first-frame")
+        val r = Diagnostics.collect(app)!!
+        var url = ""; var body = ""
+        val http = okhttp3.OkHttpClient.Builder().addInterceptor { chain ->
+            url = chain.request().url.toString()
+            val buf = okio.Buffer(); chain.request().body!!.writeTo(buf); body = buf.readUtf8()
+            okhttp3.Response.Builder().request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1).code(200).message("OK")
+                .body(okhttp3.ResponseBody.create(null, "{\"ok\":true}")).build()
+        }.build()
+        assertEquals(true, Diagnostics.send(app, http, r, "https://example.test/report"))
+        assertEquals("https://example.test/report", url)
+        assertTrue(body.contains("\"kind\"") && body.contains("Pokemon.nds") && body.contains("desmume"))
+        assertEquals(true, Diagnostics.list(app).first().sent) // đánh dấu đã gửi
+    }
+
     @Test fun clipboardFallbackWhenNoEndpoint() {
         fakeDeadSession("first-frame")
         val r = Diagnostics.collect(app)!!

@@ -1,0 +1,89 @@
+name: Build engines (visual novel)
+
+# Dựng engine ngoài từ mã nguồn mở, đưa lên Releases để Monika tải khi người chơi có game (không nhét vào APK).
+# Bước 1: ONScripter — OnscripterYuri bản web (wasm) chạy trong WebView như Ruffle chạy Flash.
+# Chạy tay: Actions → "Build engines" → Run workflow. Xong sẽ có Release "engines-onsyuri-<số lần chạy>".
+on:
+  workflow_dispatch:
+    inputs:
+      onsyuri_ref:
+        description: "Nhánh hoặc tag của OnscripterYuri"
+        default: "master"
+
+permissions:
+  contents: write
+
+jobs:
+  onsyuri-web:
+    runs-on: ubuntu-24.04
+    env:
+      EMSDK_HOME: /opt/emsdk
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lấy mã nguồn OnscripterYuri
+        run: |
+          git clone --depth 1 --branch "${{ inputs.onsyuri_ref }}" --recurse-submodules --shallow-submodules \
+            https://github.com/YuriSizuku/OnscripterYuri.git ons
+          echo "ONS_COMMIT=$(git -C ons rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Cache emsdk
+        id: emsdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.EMSDK_HOME }}
+          key: emsdk-onsyuri-v1
+
+      - name: Cài emsdk + thư viện SDL
+        if: steps.emsdk-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git "$EMSDK_HOME"
+          cd "$EMSDK_HOME"
+          ./emsdk install latest
+          ./emsdk activate latest
+          source ./emsdk_env.sh
+          embuilder build sdl2 sdl2_ttf sdl2_image sdl2_mixer bzip2 ogg vorbis mpg123
+
+      - name: Dựng onsyuri (web)
+        run: |
+          source "$EMSDK_HOME/emsdk_env.sh"
+          cd ons/script
+          EMCSDK="$EMSDK_HOME" bash ./cross_web.sh
+
+      - name: Xem kết quả build
+        run: |
+          ls -la ons/build_web
+          {
+            echo "### Kết quả build onsyuri"
+            echo '```'; ls -la ons/build_web; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Đóng gói module
+        run: |
+          set -e
+          mkdir -p pack/onsyuri
+          cp ons/build_web/onsyuri.html ons/build_web/onsyuri.js ons/build_web/onsyuri.wasm pack/onsyuri/
+          [ -f ons/build_web/onsyuri.data ] && cp ons/build_web/onsyuri.data pack/onsyuri/ || true
+          cp ons/build_web/onsyuri_index.py pack/onsyuri/ 2>/dev/null || true
+          cp ons/LICENSE pack/onsyuri/LICENSE
+          cat > pack/onsyuri/SOURCE.txt <<EOT
+          OnscripterYuri (GPLv2) — https://github.com/YuriSizuku/OnscripterYuri
+          Commit: $ONS_COMMIT
+          Dựng bằng emscripten bởi workflow build-engines của Aow Monika. Mã nguồn đầy đủ tại link trên.
+          EOT
+          echo "{\"engine\":\"onsyuri-web\",\"commit\":\"$ONS_COMMIT\",\"built\":\"$(date -u +%FT%TZ)\"}" > pack/onsyuri/manifest.json
+          cd pack && zip -r ../onsyuri-web.zip onsyuri && cd ..
+          ls -la onsyuri-web.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onsyuri-web
+          path: onsyuri-web.zip
+
+      - name: Đưa lên Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "engines-onsyuri-${{ github.run_number }}" onsyuri-web.zip \
+            --title "Engine ONScripter (web) #${{ github.run_number }}" \
+            --notes "OnscripterYuri @ $ONS_COMMIT (GPLv2). Module tải khi người chơi có game ONScripter."

@@ -1,5 +1,5 @@
 {
-  "configVersion": 9,
+  "configVersion": 10,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -894,5 +894,9 @@
       "host": "aowvn.us",
       "mode": "browser"
     }
-  ]
+  ],
+  "crash": {
+    "endpoint": "https://aowvn-monika-crash.aowvn-system.workers.dev/report",
+    "autoSend": false
+  }
 }
