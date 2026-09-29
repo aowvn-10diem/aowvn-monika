@@ -27,6 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
@@ -126,7 +129,8 @@ private val dockItems = listOf(
     DockItem("Game", R.drawable.ic_fluent_games_24_regular, R.drawable.ic_fluent_games_24_filled),
     DockItem("Tìm kiếm", R.drawable.ic_fluent_search_24_regular, R.drawable.ic_fluent_search_24_filled),
     DockItem("Thư viện", R.drawable.ic_fluent_library_24_regular, R.drawable.ic_fluent_library_24_filled),
-    DockItem("Tải xuống & Cài đặt", R.drawable.ic_fluent_settings_24_regular, R.drawable.ic_fluent_settings_24_filled),
+    // Nút cuối = menu popup (Tải xuống, Cài đặt, Thông báo…), không phải 1 tab.
+    DockItem("Menu", R.drawable.ic_fluent_grid_24_regular, R.drawable.ic_fluent_grid_24_filled),
 )
 
 /** Điều hướng tab qua menu nổi, giữ trạng thái từng tab. */
@@ -145,6 +149,17 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
     // Tab cuối: 0 = Tải xuống, 1 = Cài đặt (giữ khi chuyển tab).
     val hubSegment = androidx.compose.runtime.saveable.rememberSaveable(saver = androidx.compose.runtime.saveable.Saver({ it.intValue }, { androidx.compose.runtime.mutableIntStateOf(it) })) { androidx.compose.runtime.mutableIntStateOf(0) }
 
+    var menuOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val inboxTick by Inbox.tick.collectAsState()
+    val unread = remember(inboxTick, route) { Inbox.unread().size }
+    val go: (String) -> Unit = { r ->
+        when (r) {
+            Routes.SETTINGS -> { hubSegment.intValue = 1; nav.goTab(Routes.DOWNLOADS) }
+            in Routes.tabs -> { if (r == Routes.DOWNLOADS) hubSegment.intValue = 0; nav.goTab(r) }
+            else -> nav.navigate(r)
+        }
+    }
+
     LaunchedEffect(deepLink) {
         deepLink ?: return@LaunchedEffect
         if (deepLink in Routes.tabs) nav.goTab(deepLink) else nav.navigate(deepLink)
@@ -160,13 +175,7 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
             composable(Routes.HOME) {
                 HomeScreen(
                     onOpenPost = { nav.navigate("post/${it.id}") },
-                    onGo = { r ->
-                        when (r) {
-                            Routes.SETTINGS -> { hubSegment.intValue = 1; nav.goTab(Routes.DOWNLOADS) }
-                            in Routes.tabs -> { if (r == Routes.DOWNLOADS) hubSegment.intValue = 0; nav.goTab(r) }
-                            else -> nav.navigate(r)
-                        }
-                    },
+                    onGo = go,
                 )
             }
             composable(Routes.GAMES) { GamesScreen(onOpen = { nav.navigate("post/${it.id}") }) }
@@ -176,15 +185,16 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
             composable(Routes.DOWNLOADS) { HubScreen(hubSegment, onOpenLibrary = { nav.goTab(Routes.EMULATOR) }) }
             composable(Routes.SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.VOTE) { VoteScreen(onBack = { nav.popBackStack() }) }
-            composable(Routes.POST) { entry -> PostScreen(entry.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
+            composable(Routes.POST) { entry -> PostScreen(entry.arguments?.getString("id").orEmpty(), onGo = go) { nav.popBackStack() } }
         }
         // Menu nổi: chỉ hiện ở 5 tab chính; đọc bài / cài đặt thì trượt xuống ẩn đi.
         FloatingDock(
-            items = dockItems,
-            selected = Routes.tabs.indexOf(route),
-            onSelect = { nav.goTab(Routes.tabs[it]) },
-            modifier = Modifier.align(Alignment.BottomCenter).dockOffset(route in Routes.tabs),
+            items = dockItems.mapIndexed { i, d -> if (i == dockItems.lastIndex && unread > 0) d.copy(badge = if (unread > 9) "9+" else "$unread") else d },
+            selected = if (menuOpen) dockItems.lastIndex else Routes.tabs.indexOf(route),
+            onSelect = { i -> if (i == dockItems.lastIndex) menuOpen = !menuOpen else { menuOpen = false; nav.goTab(Routes.tabs[i]) } },
+            modifier = Modifier.align(Alignment.BottomCenter).dockOffset(route in Routes.tabs && !menuOpen),
         )
+        AppMenuSheet(menuOpen, { menuOpen = false }, onGo = { menuOpen = false; go(it) }, onOpenPost = { menuOpen = false; nav.navigate("post/$it") })
     }
 }
 

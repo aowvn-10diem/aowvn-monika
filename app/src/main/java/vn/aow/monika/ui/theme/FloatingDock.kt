@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,7 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 
-data class DockItem(val label: String, @DrawableRes val icon: Int, @DrawableRes val iconSelected: Int)
+data class DockItem(val label: String, @DrawableRes val icon: Int, @DrawableRes val iconSelected: Int, /** Số / chấm đỏ góc icon (vd. thông báo mới). "" = chỉ chấm. */ val badge: String? = null)
 
 private val ItemSize = 58.dp
 private val ItemGap = 8.dp
@@ -108,6 +109,14 @@ fun FloatingDock(items: List<DockItem>, selected: Int, onSelect: (Int) -> Unit, 
                         Modifier.size(26.dp).graphicsLayer { val k = scale * (0.6f + 0.4f * pop); scaleX = k; scaleY = k; alpha = pop },
                         tint = if (on) Color.White else Color(0xFFEDE9F0),
                     )
+                    item.badge?.let { b ->
+                        Box(
+                            Modifier.align(Alignment.TopEnd).offset(x = (-8).dp, y = 8.dp).height(if (b.isEmpty()) 10.dp else 18.dp)
+                                .widthIn(min = if (b.isEmpty()) 10.dp else 18.dp).clip(Radius.pill).background(Color(0xFFF25962))
+                                .border(2.dp, Color(0xFF2A292D), Radius.pill).padding(horizontal = if (b.isEmpty()) 0.dp else 4.dp),
+                            contentAlignment = Alignment.Center,
+                        ) { if (b.isNotEmpty()) androidx.compose.material3.Text(b, color = Color.White, fontSize = androidx.compose.ui.unit.TextUnit(10f, androidx.compose.ui.unit.TextUnitType.Sp), maxLines = 1) }
+                    }
                 }
             }
         }

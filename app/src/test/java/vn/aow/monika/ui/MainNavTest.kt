@@ -3,6 +3,7 @@ package vn.aow.monika.ui
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onNodeWithText
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -26,5 +27,15 @@ class MainNavTest {
         rule.onNodeWithContentDescription("Tìm kiếm").performClick()
         rule.mainClock.advanceTimeBy(1_500)
         rule.shot("12-tab-tim-kiem")
+    }
+
+    /** Nút cuối menu nổi = menu popup (Tải xuống, Cài đặt, Vote, Thông báo…). */
+    @Test fun appMenu() {
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithContentDescription("Menu").performClick()
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithText("Vote dịch").assertExists()
+        rule.onNodeWithText("Cài đặt").assertExists()
+        rule.shot("13-menu-app")
     }
 }

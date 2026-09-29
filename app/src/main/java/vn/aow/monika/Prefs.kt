@@ -11,6 +11,11 @@ class Prefs(context: Context) {
         get() = sp.getStringSet("seen_post_ids", emptySet())!!.toSet()
         set(value) = sp.edit().putStringSet("seen_post_ids", value).apply()
 
+    /** Mốc "published" của bài mới nhất đã xem trong menu Thông báo. Rỗng = chưa mở lần nào. */
+    var inboxSeen: String
+        get() = sp.getString("inbox_seen", "").orEmpty()
+        set(value) = sp.edit().putString("inbox_seen", value).apply()
+
     /** Nhãn muốn nhận thông báo. Rỗng = nhận tất cả. */
     var subscribedLabels: Set<String>
         get() = sp.getStringSet("subscribed_labels", emptySet())!!.toSet()

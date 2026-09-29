@@ -41,7 +41,7 @@ class GameInfoTest {
         }
         val body = """{"feed":{"entry":[${entries.joinToString(",")}]}}"""
         val http = OkHttpClient.Builder().addInterceptor { chain ->
-            asked += chain.request().url.queryParameter("q").orEmpty()
+            asked += chain.request().url.toString()
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
                 .body(body.toResponseBody("application/json".toMediaType())).build()
         }.build()
@@ -77,8 +77,9 @@ class GameInfoTest {
         assertEquals("Pokémon HeartGold", out.name)
         assertEquals("1", out.meta?.postId)
         assertTrue(out.meta?.cover!!.startsWith("https://"))
-        // Tên file "0001" vô nghĩa → tìm bằng tên trong banner.
-        assertEquals(listOf("POKEMON HeartGold Version"), asked)
+        // Tên file "0001" vô nghĩa → khớp bằng tên trong banner; chỉ tải danh mục bài 1 lần (bản tóm tắt).
+        assertEquals(1, asked.size)
+        assertTrue(asked.single().contains("/posts/summary"))
     }
 
     @Test fun offlineFallsBackToRomIcon() = runBlocking {

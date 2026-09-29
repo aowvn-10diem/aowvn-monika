@@ -52,7 +52,11 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
     }
 
     /** Tách riêng để test khởi động (Robolectric không nạp được lớp javax.* của J2ME). */
-    protected open fun initJ2me() = J2meRuntime.init(this)
+    protected open fun initJ2me() {
+        J2meRuntime.init(this)
+        // Menu trong game Java = menu popup Monika (cùng thiết kế với giả lập khác).
+        J2meRuntime.menuPresenter = vn.aow.monika.runner.J2meMenu
+    }
 
     private fun isCrashProcess(): Boolean =
         Build.VERSION.SDK_INT >= 28 && getProcessName().endsWith(":crash")

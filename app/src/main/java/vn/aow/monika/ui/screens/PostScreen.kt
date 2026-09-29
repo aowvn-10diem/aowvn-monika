@@ -68,9 +68,17 @@ import vn.aow.monika.ui.theme.Screen
 import vn.aow.monika.ui.theme.Spinner
 import vn.aow.monika.ui.theme.softShadow
 import vn.aow.monika.ui.theme.Radius
+import vn.aow.monika.ui.theme.MonikaMenuSheet
+import vn.aow.monika.ui.theme.SheetAction
+import vn.aow.monika.ui.theme.SheetChip
+import vn.aow.monika.ui.theme.SheetRow
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @Composable
-fun PostScreen(postId: String, onBack: () -> Unit) {
+fun PostScreen(postId: String, onGo: (String) -> Unit = {}, onBack: () -> Unit) {
     val state by produceState<Result<Post>?>(null, postId) { value = runCatching { AppGraph.feed.fetchPost(postId) } }
     val result = state
     Screen {
@@ -81,21 +89,21 @@ fun PostScreen(postId: String, onBack: () -> Unit) {
                     DarkButton("Quay lại", onBack)
                 }
             }
-            else -> PostContent(result.getOrThrow(), onBack)
+            else -> PostContent(result.getOrThrow(), onGo, onBack)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PostContent(post: Post, onBack: () -> Unit) {
+private fun PostContent(post: Post, onGo: (String) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val cfg by AppGraph.config.config.collectAsState()
     val c = Monika.colors
     val links = remember(post, cfg) { LinkResolver.extract(post.contentHtml, cfg.downloadHosts) }
     val html = remember(post, c) { renderHtml(post, c) }
-    var showLinks by remember { mutableStateOf(false) }
+    var sheet by remember { mutableStateOf(PostSheet.NONE) }
     // Lượt tải của bài này: hiện tiến trình ngay trên thanh dưới (mở lại bài vẫn thấy).
     var downloadId by remember(post.id) { mutableStateOf<Long?>(null) }
     LaunchedEffect(post.id) { downloadId = withContext(Dispatchers.IO) { DownloadWatch.activeForPost(context, post.id) } }
@@ -106,7 +114,6 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
     val startDownload: (String) -> Unit = { url -> handleLink(context, scope, url, post) { id -> downloadId = id } }
     // Link FB / Discord trong bài (thường của nhóm dịch; bản dịch cần vào Discord để lấy file / báo lỗi).
     val community = remember(post) { Community.extract(post.contentHtml) }
-    var showCommunity by remember { mutableStateOf(false) }
     var showReviews by remember { mutableStateOf(false) }
 
     Box(Modifier.fillMaxSize()) {
@@ -116,68 +123,104 @@ private fun PostContent(post: Post, onBack: () -> Unit) {
             update = { it.loadDataWithBaseURL("https://www.aow.vn/", html, "text/html", "utf-8", null) },
             modifier = Modifier.fillMaxSize(),
         )
-        // Nút nổi trên ảnh: quay lại / chia sẻ / mở web.
-        Row(Modifier.fillMaxWidth().statusBarsPadding().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            CircleButton(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại", onBack, style = CircleStyle.Glass)
-            Box(Modifier.weight(1f))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CircleButton(R.drawable.ic_fluent_star_24_regular, "Đánh giá bản dịch", { showReviews = true }, style = CircleStyle.Glass)
-                if (community.isNotEmpty()) CircleButton(R.drawable.ic_fluent_people_community_24_regular, "Nhóm dịch", { showCommunity = true }, style = CircleStyle.Glass)
-                CircleButton(R.drawable.ic_fluent_share_24_regular, "Chia sẻ", {
-                    context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${post.title}\n${post.url}"), "Chia sẻ"))
-                }, style = CircleStyle.Glass)
-                CircleButton(R.drawable.ic_fluent_open_24_regular, "Mở trên web", { openUrl(context, post.url) }, style = CircleStyle.Glass)
-            }
-        }
-        // Thanh hành động nổi (vùng ngón cái): tải game.
-        if (links.isNotEmpty()) {
-            val direct = links.firstOrNull { it.directUrl != null }
-            Row(
-                Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 18.dp)
-                    .softShadow(Radius.pill, floating = true)
-                    .clip(Radius.pill).background(Color(0xFF201F21)).padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                DarkButton("Liên kết", { showLinks = true }, icon = R.drawable.ic_fluent_open_24_regular, subtitle = "${links.size} link")
-                val d = dl
-                if (d != null) DownloadBar(d, Modifier.weight(1f)) else GradientButton(
+        // Mọi thao tác dồn xuống thanh nổi dưới đáy (vùng ngón cái): Quay lại · Tải game · Menu.
+        val direct = links.firstOrNull { it.directUrl != null }
+        Row(
+            Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 18.dp)
+                .softShadow(Radius.pill, floating = true)
+                .clip(Radius.pill).background(Color(0xFF201F21)).padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BarCircle(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại", onBack)
+            val d = dl
+            when {
+                d != null -> DownloadBar(d, Modifier.weight(1f))
+                links.isNotEmpty() -> GradientButton(
                     if (direct != null) "Tải game" else "Xem link tải",
-                    { if (direct != null) startDownload(direct.pageUrl) else showLinks = true },
+                    { if (direct != null) startDownload(direct.pageUrl) else sheet = PostSheet.LINKS },
                     Modifier.weight(1f),
                     icon = R.drawable.ic_fluent_arrow_download_24_regular,
-                    subtitle = direct?.let { listOf(it.label, it.hostName).filter(String::isNotBlank).distinct().joinToString(" · ") } ?: "Mở trình duyệt",
+                    subtitle = direct?.let { listOf(it.label, it.hostName).filter(String::isNotBlank).distinct().joinToString(" · ") } ?: "${links.size} link",
                 )
+                else -> DarkButton("Đánh giá bản dịch", { showReviews = true }, Modifier.weight(1f), icon = R.drawable.ic_fluent_star_24_regular)
             }
+            BarCircle(R.drawable.ic_fluent_grid_24_regular, "Menu bài viết", { sheet = if (sheet == PostSheet.MENU) PostSheet.NONE else PostSheet.MENU }, active = sheet == PostSheet.MENU)
         }
+
+        // Menu popup: cùng thiết kế với menu chính & menu trong game, thêm các nút riêng của bài viết.
+        val close = { sheet = PostSheet.NONE }
+        MonikaMenuSheet(
+            sheet == PostSheet.MENU, close,
+            title = post.title, subtitle = "AowVN · ${formatDate(post.published)}",
+            actions = buildList {
+                if (links.isNotEmpty()) add(SheetAction("Link tải (${links.size})", R.drawable.ic_fluent_link_24_regular, highlight = direct == null, keepOpen = true) { sheet = PostSheet.LINKS })
+                add(SheetAction("Đánh giá", R.drawable.ic_fluent_star_24_regular) { showReviews = true })
+                if (community.isNotEmpty()) add(SheetAction("Nhóm dịch", R.drawable.ic_fluent_people_community_24_regular, keepOpen = true) { sheet = PostSheet.COMMUNITY })
+                add(SheetAction("Chia sẻ", R.drawable.ic_fluent_share_24_regular) {
+                    context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "${post.title}\n${post.url}"), "Chia sẻ"))
+                })
+                add(SheetAction("Sao chép link", R.drawable.ic_fluent_copy_24_regular) {
+                    (context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+                        .setPrimaryClip(android.content.ClipData.newPlainText(post.title, post.url))
+                    Toast.makeText(context, "Đã sao chép link bài", Toast.LENGTH_SHORT).show()
+                })
+                add(SheetAction("Mở trên web", R.drawable.ic_fluent_globe_24_regular) { openUrl(context, post.url) })
+                add(SheetAction("Vote dịch", R.drawable.ic_fluent_vote_24_regular) { onGo(vn.aow.monika.ui.Routes.VOTE) })
+                add(SheetAction("Thư viện", R.drawable.ic_fluent_library_24_regular) { onGo(vn.aow.monika.ui.Routes.EMULATOR) })
+            },
+        )
+        MonikaMenuSheet(
+            sheet == PostSheet.LINKS, close, emptyList(),
+            title = "Liên kết tải trong bài",
+            subtitle = "Nút cam: tải thẳng vào Thư viện. Nút tối: mở trình duyệt để tải.",
+            header = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    links.forEach { link ->
+                        val title = listOf(link.label.ifBlank { "Tải" }, link.hostName).distinct().joinToString(" · ")
+                        SheetRow(
+                            title, icon = if (link.directUrl != null) R.drawable.ic_fluent_arrow_download_24_regular else R.drawable.ic_fluent_open_24_regular,
+                            subtitle = if (link.directUrl != null) "Tải trong app" else "Mở trình duyệt",
+                            trailing = { SheetChip(if (link.directUrl != null) "Tải" else "Mở", link.directUrl != null) { close(); startDownload(link.pageUrl) } },
+                            onClick = { close(); startDownload(link.pageUrl) },
+                        )
+                    }
+                }
+            },
+        )
+        MonikaMenuSheet(
+            sheet == PostSheet.COMMUNITY, close, emptyList(),
+            title = "Nhóm dịch & cộng đồng",
+            subtitle = "Facebook mở ngay trong Aow Monika. Discord mở bằng app nếu máy đã cài.",
+            header = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    community.forEach { l ->
+                        SheetRow(
+                            "${l.kind.label} · ${Community.shortName(l)}",
+                            icon = if (l.kind == CommunityLink.Kind.DISCORD) R.drawable.ic_fluent_chat_multiple_24_regular else R.drawable.ic_fluent_people_community_24_regular,
+                            onClick = { close(); Community.open(context, l.url) },
+                        )
+                    }
+                }
+            },
+        )
     }
 
     if (showReviews) ReviewsSheet(post.id) { showReviews = false }
+}
 
-    if (showCommunity) {
-        ModalBottomSheet(onDismissRequest = { showCommunity = false }, containerColor = c.surface) {
-            Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Nhóm dịch & cộng đồng", style = Monika.type.sectionTitle, color = c.text)
-                Text("Link trong bài. Facebook mở ngay trong Aow Monika. Discord mở bằng app nếu máy đã cài.", style = Monika.type.caption, color = c.textSecondary)
-                community.forEach { l ->
-                    val title = "${l.kind.label} · ${Community.shortName(l)}"
-                    val icon = if (l.kind == CommunityLink.Kind.DISCORD) R.drawable.ic_fluent_chat_multiple_24_regular else R.drawable.ic_fluent_people_community_24_regular
-                    if (l.kind == CommunityLink.Kind.DISCORD) GradientButton(title, { showCommunity = false; Community.open(context, l.url) }, Modifier.fillMaxWidth(), icon = icon)
-                    else DarkButton(title, { showCommunity = false; Community.open(context, l.url) }, Modifier.fillMaxWidth(), icon = icon)
-                }
-            }
-        }
-    }
+private enum class PostSheet { NONE, MENU, LINKS, COMMUNITY }
 
-    if (showLinks) {
-        ModalBottomSheet(onDismissRequest = { showLinks = false }, containerColor = c.surface) {
-            Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Liên kết tải trong bài", style = Monika.type.sectionTitle, color = c.text)
-                Text("Nút gradient: tải thẳng trong app. Nút tối: mở trình duyệt, tải xong vào Giả lập → Thêm game.", style = Monika.type.caption, color = c.textSecondary)
-                links.forEach { link -> LinkButton(link) { showLinks = false; startDownload(link.pageUrl) } }
-            }
-        }
-    }
+/** Nút tròn trên thanh nổi dưới đáy (nền than). */
+@Composable
+private fun BarCircle(@androidx.annotation.DrawableRes icon: Int, desc: String, onClick: () -> Unit, active: Boolean = false) {
+    Box(
+        Modifier.size(56.dp).clip(Radius.pill)
+            .background(if (active) vn.aow.monika.ui.theme.primaryGradient() else androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0x1AFFFFFF), Color(0x1AFFFFFF))))
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = desc, onClick = onClick)
+            .semantics { contentDescription = desc },
+        contentAlignment = Alignment.Center,
+    ) { androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(icon), desc, Modifier.size(24.dp), tint = Color.White) }
 }
 
 /** Tiến trình tải ngay trong bài: % + tốc độ; tải xong báo đang giải nén vào thư viện. */
@@ -195,13 +238,6 @@ private fun DownloadBar(d: DownloadState, modifier: Modifier) {
         Spacer(Modifier.height(6.dp))
         GradientProgress(if (d.status == DownloadManager.STATUS_SUCCESSFUL) 1f else d.progress, height = 6.dp)
     }
-}
-
-@Composable
-private fun LinkButton(link: DownloadLink, onClick: () -> Unit) {
-    val title = listOf(link.label.ifBlank { "Tải" }, link.hostName).distinct().joinToString(" · ")
-    if (link.directUrl != null) GradientButton(title, onClick, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_arrow_download_24_regular)
-    else DarkButton(title, onClick, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_open_24_regular)
 }
 
 @SuppressLint("SetJavaScriptEnabled")

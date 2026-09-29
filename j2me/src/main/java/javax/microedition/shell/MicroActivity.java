@@ -82,6 +82,7 @@ import io.reactivex.SingleObserver;
 import io.reactivex.disposables.Disposable;
 import ru.playsoftware.j2meloader.BuildConfig;
 import ru.playsoftware.j2meloader.R;
+import ru.playsoftware.j2meloader.J2meRuntime;
 import ru.playsoftware.j2meloader.config.Config;
 import ru.playsoftware.j2meloader.databinding.ActivityMicroBinding;
 import ru.playsoftware.j2meloader.util.Constants;
@@ -341,7 +342,84 @@ public class MicroActivity extends AppCompatActivity {
 		return visible;
 	}
 
+	private static final int MONIKA_EXIT = -1;
+	private static final int MONIKA_CONTINUE = -2;
+	private static final int MONIKA_SETTINGS = -3;
+	/** Menu popup mỗi lần tạo mới → tự nhớ trạng thái "khóa xoay màn hình". */
+	private boolean orientationLocked;
+
+	private void exitToMonika() {
+		hideSoftInput();
+		MidletThread.destroyApp();
+	}
+
+	/** Aow Monika: menu popup kiểu Monika — lấy đúng các mục của menu gốc (ẩn/hiện theo màn hình hiện tại). */
+	private void showMonikaMenu(J2meRuntime.MenuPresenter presenter) {
+		android.widget.PopupMenu popup = new android.widget.PopupMenu(this, binding.getRoot());
+		Menu menu = popup.getMenu();
+		onCreateOptionsMenu(menu);
+		onPrepareOptionsMenu(menu);
+		MenuItem lock = menu.findItem(R.id.action_lock_orientation);
+		if (lock != null) lock.setChecked(orientationLocked);
+		java.util.List<J2meRuntime.MenuEntry> entries = new java.util.ArrayList<>();
+		entries.add(new J2meRuntime.MenuEntry(MONIKA_CONTINUE, getString(R.string.monika_keep_playing), "monika_continue", false));
+		collectMenu(menu, entries);
+		entries.add(new J2meRuntime.MenuEntry(MONIKA_SETTINGS, getString(R.string.monika_game_settings), "monika_settings", false));
+		presenter.show(this, appName, getString(R.string.monika_java_game), entries, id -> {
+			if (id == MONIKA_CONTINUE) return;
+			if (id == MONIKA_SETTINGS) {
+				hideSoftInput();
+				Config.startApp(this, appName, appPath, true);
+				MidletThread.destroyApp();
+				return;
+			}
+			// Đã chọn "Thoát" trong menu → thoát luôn, không hỏi lần 2.
+			if (id == R.id.action_exit_midlet) {
+				exitToMonika();
+				return;
+			}
+			MenuItem item = menu.findItem(id);
+			if (item == null) return;
+			onOptionsItemSelected(item);
+			if (id == R.id.action_lock_orientation) orientationLocked = item.isChecked();
+		});
+	}
+
+	private void collectMenu(Menu menu, java.util.List<J2meRuntime.MenuEntry> out) {
+		for (int i = 0; i < menu.size(); i++) {
+			MenuItem item = menu.getItem(i);
+			if (!item.isVisible()) continue;
+			if (item.hasSubMenu()) {
+				collectMenu(item.getSubMenu(), out);
+				continue;
+			}
+			String key;
+			try {
+				key = getResources().getResourceEntryName(item.getItemId());
+			} catch (Exception e) {
+				key = "";
+			}
+			out.add(new J2meRuntime.MenuEntry(item.getItemId(), String.valueOf(item.getTitle()), key, item.isChecked()));
+		}
+	}
+
 	public void showExitConfirmation() {
+		J2meRuntime.MenuPresenter presenter = J2meRuntime.menuPresenter;
+		if (presenter != null) {
+			java.util.List<J2meRuntime.MenuEntry> entries = new java.util.ArrayList<>();
+			entries.add(new J2meRuntime.MenuEntry(MONIKA_CONTINUE, getString(R.string.monika_keep_playing), "monika_continue", false));
+			entries.add(new J2meRuntime.MenuEntry(MONIKA_SETTINGS, getString(R.string.monika_game_settings), "monika_settings", false));
+			entries.add(new J2meRuntime.MenuEntry(MONIKA_EXIT, getString(R.string.monika_exit_ok), "action_exit_midlet", false));
+			presenter.show(this, getString(R.string.monika_exit_title), getString(R.string.monika_exit_message), entries, id -> {
+				if (id == MONIKA_EXIT) exitToMonika();
+				else if (id == MONIKA_SETTINGS) {
+					hideSoftInput();
+					Config.startApp(this, appName, appPath, true);
+					MidletThread.destroyApp();
+				}
+			});
+			return;
+		}
 		AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
 		// Aow Monika: hỏi nhẹ nhàng, thoát là về thẳng Monika.
 		alertBuilder.setTitle(R.string.monika_exit_title)
@@ -379,6 +457,11 @@ public class MicroActivity extends AppCompatActivity {
 
 	@Override
 	public void openOptionsMenu() {
+		J2meRuntime.MenuPresenter presenter = J2meRuntime.menuPresenter;
+		if (presenter != null) {
+			showMonikaMenu(presenter);
+			return;
+		}
 		if (!actionBarEnabled &&
 				Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && current instanceof Canvas) {
 			showSystemUI();

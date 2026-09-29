@@ -67,6 +67,22 @@ class FeedRepository(
         return entries.map { parseEntry(it.jsonObject) }.onEach { cache[it.id] = it }
     }
 
+    /**
+     * Danh mục TẤT CẢ bài (bản tóm tắt: tiêu đề, ảnh, nhãn — không kèm nội dung) để nhận diện game trong Thư viện.
+     * aow.vn ~300 bài → 2-3 lần gọi, vài trăm KB.
+     */
+    suspend fun fetchIndex(maxPages: Int = 10): List<Post> {
+        val base = configRepo.current.feed.url.trimEnd('/').replace("/posts/default", "/posts/summary")
+        val out = mutableListOf<Post>()
+        for (page in 0 until maxPages) {
+            val url = "$base?alt=json&orderby=published&start-index=${page * INDEX_PAGE + 1}&max-results=$INDEX_PAGE"
+            val entries = getJson(url).jsonObject["feed"]!!.jsonObject["entry"] as? JsonArray ?: break
+            out += entries.map { parseEntry(it.jsonObject).copy(contentHtml = "") }
+            if (entries.size < INDEX_PAGE) break
+        }
+        return out.distinctBy { it.id }
+    }
+
     suspend fun fetchPost(id: String): Post {
         cache[id]?.let { return it }
         val url = configRepo.current.feed.url.trimEnd('/') + "/$id?alt=json"
@@ -112,5 +128,9 @@ class FeedRepository(
                 ?.replace("/s72-c/", "/w640-h360-c/"),
             contentHtml = e.text("content").ifEmpty { e.text("summary") },
         )
+    }
+
+    private companion object {
+        const val INDEX_PAGE = 150
     }
 }

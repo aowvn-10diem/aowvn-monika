@@ -1,5 +1,10 @@
 package vn.aow.monika.runner
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import vn.aow.monika.ui.theme.MonikaMenuSheet
+
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
@@ -61,8 +66,21 @@ class WebGameActivity : ComponentActivity() {
                     loader.shouldInterceptRequest(request.url)
             }
         }
-        setContentView(web)
         val start = if (player == "ruffle") "https://$HOST/__monika/ruffle.html" else "https://$HOST/game/" + android.net.Uri.encode(entry.name)
+        val title = intent.getStringExtra(EXTRA_TITLE) ?: entry.parentFile?.name ?: entry.nameWithoutExtension
+        val system = if (player == "ruffle") "Flash" else "Game web"
+        // Lớp giao diện Monika nổi trên game: nút menu tròn + menu popup dưới đáy (giống giả lập khác).
+        val overlay = androidx.compose.ui.platform.ComposeView(this).apply {
+            setContent {
+                vn.aow.monika.ui.theme.MonikaTheme {
+                    WebGameOverlay(title, system, onReload = { web.loadUrl(start) }, onExit = { finish() })
+                }
+            }
+        }
+        setContentView(android.widget.FrameLayout(this).apply {
+            addView(web)
+            addView(overlay)
+        })
         web.loadUrl(start)
     }
 
@@ -114,13 +132,33 @@ class WebGameActivity : ComponentActivity() {
         private const val HOST = "appassets.androidplatform.net"
         private const val EXTRA_ENTRY = "entry"
         private const val EXTRA_PLAYER = "player"
+        private const val EXTRA_TITLE = "title"
 
-        fun start(activity: Activity, entry: File, player: String) {
+        fun start(activity: Activity, entry: File, player: String, title: String? = null) {
             activity.startActivity(
                 Intent(activity, WebGameActivity::class.java)
                     .putExtra(EXTRA_ENTRY, entry.absolutePath)
                     .putExtra(EXTRA_PLAYER, player)
+                    .putExtra(EXTRA_TITLE, title)
             )
         }
+    }
+}
+
+/** Nút menu nhỏ góc phải trên (né camera) + menu popup chung: Chơi tiếp · Tải lại · Thoát. Nút Back của máy cũng mở menu. */
+@androidx.compose.runtime.Composable
+private fun WebGameOverlay(title: String, system: String, onReload: () -> Unit, onExit: () -> Unit) {
+    var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.activity.compose.BackHandler(enabled = !open) { open = true }
+    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+        GameMenuButton(open, { open = !open }, androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.TopEnd))
+        MonikaMenuSheet(
+            open, { open = false }, title = title, subtitle = system,
+            actions = listOf(
+                vn.aow.monika.ui.theme.SheetAction("Chơi tiếp", vn.aow.monika.R.drawable.ic_fluent_play_24_regular, highlight = true) {},
+                vn.aow.monika.ui.theme.SheetAction("Tải lại game", vn.aow.monika.R.drawable.ic_fluent_arrow_clockwise_24_regular, onClick = onReload),
+                vn.aow.monika.ui.theme.SheetAction("Thoát game", vn.aow.monika.R.drawable.ic_fluent_door_arrow_left_24_regular, onClick = onExit),
+            ),
+        )
     }
 }

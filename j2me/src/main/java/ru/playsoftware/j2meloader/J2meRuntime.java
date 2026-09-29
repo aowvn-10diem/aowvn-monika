@@ -26,6 +26,30 @@ public final class J2meRuntime {
 	private J2meRuntime() {
 	}
 
+	/** Aow Monika: 1 mục trong menu popup. key = tên id trong R (vd. "action_exit_midlet") để app chọn icon. */
+	public static final class MenuEntry {
+		public final int id;
+		public final String title;
+		public final String key;
+		public final boolean checked;
+
+		public MenuEntry(int id, String title, String key, boolean checked) {
+			this.id = id;
+			this.title = title;
+			this.key = key;
+			this.checked = checked;
+		}
+	}
+
+	/** Aow Monika: app chính vẽ menu popup dưới đáy (cùng thiết kế với giả lập khác) thay cho menu Android mặc định. */
+	public interface MenuPresenter {
+		void show(android.app.Activity activity, String title, String subtitle,
+				  java.util.List<MenuEntry> entries, java.util.function.IntConsumer onPick);
+	}
+
+	/** Null = dùng menu gốc của J2ME Loader. */
+	public static volatile MenuPresenter menuPresenter;
+
 	public static void init(Application app) {
 		ContextHolder.setApplication(app);
 		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(app);

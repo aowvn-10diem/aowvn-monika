@@ -78,6 +78,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
     val posts by produceState<Result<List<Post>>?>(AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }) {
         val fresh = runCatching { AppGraph.feed.fetchList(HOME_KEY, max = 12) }
         if (fresh.isSuccess || value == null) value = fresh
+        vn.aow.monika.ui.Inbox.tick.value++ // Có bài mới → chấm đỏ trên nút Menu.
         fresh.getOrNull()?.let { prefetchImages(context, it) }
     }
     // Game đang chơi dở (quét thư viện ở nền nếu chưa có).
@@ -97,11 +98,8 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
     Screen {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DockClearance)) {
             item {
-                MonikaHeader(
-                    title = "Aow Monika", titleContent = { MonikaWordmark() },
-                    left = { CircleButton(R.drawable.ic_fluent_navigation_24_regular, "Cài đặt", { onGo(Routes.SETTINGS) }) },
-                    right = { CircleButton(R.drawable.ic_fluent_alert_24_regular, "Thông báo", { onGo(Routes.SETTINGS) }) },
-                )
+                // Chỉ logo: menu + thông báo đã dồn xuống nút Menu ở menu nổi dưới đáy.
+                MonikaHeader(title = "Aow Monika", titleContent = { MonikaWordmark() })
             }
             item {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -219,7 +217,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.communityItem() = ite
     }
 }
 
-private const val HOME_KEY = "home"
+internal const val HOME_KEY = "home"
 
 /** Tải trước ảnh (thẻ lớn + ảnh đầu bài) vào bộ đệm → vuốt thẻ / mở bài hiện ảnh ngay. */
 private fun prefetchImages(context: android.content.Context, posts: List<Post>) {

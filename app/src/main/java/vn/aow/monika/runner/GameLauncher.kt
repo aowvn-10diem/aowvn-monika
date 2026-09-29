@@ -44,7 +44,7 @@ class GameLauncher(private val configRepo: ConfigRepository) {
                 LaunchResult.Started
             }
             "web" -> {
-                WebGameActivity.start(activity, entry, system.webPlayer ?: "html5")
+                WebGameActivity.start(activity, entry, system.webPlayer ?: "html5", game.name)
                 LaunchResult.Started
             }
             "apk" -> Installer.install(activity, entry)

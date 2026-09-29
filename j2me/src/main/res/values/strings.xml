@@ -265,4 +265,5 @@
     <string name="monika_exit_ok">Thoát</string>
     <string name="monika_game_settings">Cài đặt game</string>
     <string name="monika_keep_playing">Chơi tiếp</string>
+    <string name="monika_java_game">Game Java (J2ME)</string>
 </resources>
