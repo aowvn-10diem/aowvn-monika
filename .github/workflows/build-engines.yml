@@ -10,12 +10,24 @@ on:
       onsyuri_ref:
         description: "Nhánh hoặc tag của OnscripterYuri"
         default: "master"
+      only:
+        description: "Chạy job nào"
+        type: choice
+        default: all
+        options: [all, onsyuri, azahar]
+      azahar_repo:
+        description: "Kho Azahar để dựng (AzaharPlus đọc được cả ROM mã hóa)"
+        default: "AzaharPlus/AzaharPlus"
+      azahar_ref:
+        description: "Nhánh/tag Azahar"
+        default: "master"
 
 permissions:
   contents: write
 
 jobs:
   onsyuri-web:
+    if: ${{ inputs.only == 'all' || inputs.only == 'onsyuri' }}
     runs-on: ubuntu-24.04
     env:
       EMSDK_HOME: /opt/emsdk
@@ -89,76 +101,90 @@ jobs:
             --title "Engine ONScripter (web) #${{ github.run_number }}" \
             --notes "OnscripterYuri @ $ONS_COMMIT (GPLv2). Module tải khi người chơi có game ONScripter."
 
-  # ---- 3DS: Azahar / AzaharPlus → lõi libretro Android (arm64) ----
-  azahar-libretro:
+  # ---- 3DS: dựng bản Android của Azahar/AzaharPlus bằng Gradle của họ, trích lõi native libcitra-android.so ----
+  # Monika nhúng NHÚNG tầng JNI của Azahar (giao diện là của Monika) và tải thư viện native này khi người chơi có game 3DS.
+  azahar-android:
+    if: ${{ inputs.only == 'all' || inputs.only == 'azahar' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { name: azahar,     repo: azahar-emu/azahar }
-          - { name: azaharplus, repo: AzaharPlus/AzaharPlus }
+    timeout-minutes: 300
     steps:
-      - name: Lấy mã nguồn ${{ matrix.repo }}
+      - name: Lấy mã nguồn ${{ inputs.azahar_repo }}
         run: |
-          git clone --depth 1 --recurse-submodules --shallow-submodules -j8 https://github.com/${{ matrix.repo }}.git src
+          git clone --depth 1 --branch "${{ inputs.azahar_ref }}" --recurse-submodules --shallow-submodules -j8 \
+            https://github.com/${{ inputs.azahar_repo }}.git src
           echo "SRC_COMMIT=$(git -C src rev-parse HEAD)" >> "$GITHUB_ENV"
 
-      - uses: nttld/setup-ndk@v1
-        id: ndk
+      - uses: actions/setup-java@v4
         with:
-          ndk-version: r27c
+          distribution: temurin
+          java-version: "17"
 
-      - name: Cache ccache
+      - name: Cài NDK + CMake theo yêu cầu của Azahar
+        run: |
+          NDKV=$(grep -oP 'ndkVersion = "\K[^"]+' src/src/android/app/build.gradle.kts)
+          echo "NDK yêu cầu: $NDKV"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDKV" "cmake;3.31.6" "platforms;android-35"
+
+      - name: Chỉ dựng arm64 (Monika dùng arm64; x86_64 chỉ tốn thời gian)
+        run: |
+          sed -i 's/val abiFilter = listOf("arm64-v8a", "x86_64")/val abiFilter = listOf("arm64-v8a")/' src/src/android/app/build.gradle.kts
+          grep -n "abiFilter" src/src/android/app/build.gradle.kts | head -3
+
+      - name: Cache Gradle + ccache
         uses: actions/cache@v4
         with:
-          path: ~/.ccache
-          key: ccache-${{ matrix.name }}-${{ github.run_id }}
-          restore-keys: ccache-${{ matrix.name }}-
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: azahar-gradle-${{ hashFiles('src/src/android/**/*.kts', 'src/src/android/gradle/wrapper/*.properties') }}
+          restore-keys: azahar-gradle-
 
-      - name: Cấu hình CMake (lõi libretro, chỉ OpenGL ES — LibretroDroid chưa có Vulkan)
-        run: |
-          sudo apt-get update && sudo apt-get install -y ccache
-          cmake -S src -B build -G Ninja \
-            -DCMAKE_TOOLCHAIN_FILE="${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake" \
-            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-29 -DANDROID_STL=c++_static \
-            -DANDROID_ARM_NEON=true -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
-            -DCMAKE_BUILD_TYPE=Release -DENABLE_LTO=ON \
-            -DENABLE_LIBRETRO=ON -DENABLE_OPENGL=ON -DENABLE_VULKAN=OFF \
-            -DENABLE_TESTS=OFF -DENABLE_QT=OFF -DENABLE_SDL2=OFF -DENABLE_GDBSTUB=OFF -DENABLE_WEB_SERVICE=OFF \
-            -DCITRA_WARNINGS_AS_ERRORS=OFF -DENABLE_CCACHE=ON
+      - name: Biên dịch (Gradle assembleVanillaRelease)
+        working-directory: src/src/android
+        run: ./gradlew assembleVanillaRelease --no-daemon --stacktrace -Dorg.gradle.jvmargs="-Xmx4g"
 
-      - name: Biên dịch
-        run: cmake --build build --target citra_libretro -j"$(nproc)"
-
-      - name: Đóng gói
+      - name: Trích thư viện native
         run: |
           set -e
-          SO=$(find build -name 'azahar_libretro*.so' | head -1)
-          echo "Tìm thấy: $SO"; ls -la "$SO"
-          mkdir -p pack
-          cp "$SO" pack/${{ matrix.name }}_libretro_android.so
-          "${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded pack/${{ matrix.name }}_libretro_android.so
+          APK=$(find src/src/android/app/build/outputs/apk -name '*.apk' | head -1)
+          echo "APK: $APK"; ls -la "$APK"
+          mkdir -p x pack
+          unzip -o -q "$APK" 'lib/arm64-v8a/*' -d x
+          ls -la x/lib/arm64-v8a
+          # Bỏ lớp kiểm lỗi Vulkan (chỉ dành cho dev), giữ mọi thư viện còn lại.
+          cp x/lib/arm64-v8a/*.so pack/
+          rm -f pack/libVkLayer_*.so
+          NDK_DIR=$(ls -d "$ANDROID_HOME"/ndk/*/ | tail -1)
+          STRIP="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip"
+          READELF="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          NM="$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm"
+          # Hợp đồng JNI: mọi hàm native mà thư viện xuất ra (Monika kiểm khớp với lớp Kotlin nhúng)
+          "$NM" -D --defined-only pack/libcitra-android.so | awk '{print $3}' | grep '^Java_' | sort > pack/jni-symbols.txt
+          wc -l pack/jni-symbols.txt
+          # Phụ thuộc động (cần nạp trước theo đúng thứ tự)
+          "$READELF" -d pack/libcitra-android.so | grep NEEDED | sed 's/.*\[\(.*\)\]/\1/' > pack/needed.txt
+          cat pack/needed.txt
           cat > pack/SOURCE.txt <<EOT
-          ${{ matrix.repo }} (GPLv2) — https://github.com/${{ matrix.repo }}
+          ${{ inputs.azahar_repo }} (GPLv2 hoặc mới hơn) — https://github.com/${{ inputs.azahar_repo }}
           Commit: $SRC_COMMIT
-          Dựng thành lõi libretro Android arm64 bởi workflow build-engines của Aow Monika.
+          Dựng bởi workflow build-engines của Aow Monika (Gradle assembleVanillaRelease, arm64-v8a).
           EOT
-          cd pack && zip ../${{ matrix.name }}_libretro_android.so.zip ${{ matrix.name }}_libretro_android.so SOURCE.txt && cd ..
-          ls -la ${{ matrix.name }}_libretro_android.so.zip
-          { echo "### ${{ matrix.name }}"; ls -la pack; } >> "$GITHUB_STEP_SUMMARY"
+          echo "{\"engine\":\"azahar\",\"repo\":\"${{ inputs.azahar_repo }}\",\"commit\":\"$SRC_COMMIT\",\"built\":\"$(date -u +%FT%TZ)\"}" > pack/manifest.json
+          (cd pack && zip -r ../azahar-android-arm64.zip .)
+          ls -la azahar-android-arm64.zip pack
+          { echo "### azahar-android"; ls -la pack; echo '```'; cat pack/needed.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }}-libretro
-          path: ${{ matrix.name }}_libretro_android.so.zip
+          name: azahar-android-arm64
+          path: azahar-android-arm64.zip
 
       - name: Đưa lên Releases
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create "core-${{ matrix.name }}-${{ github.run_number }}" ${{ matrix.name }}_libretro_android.so.zip \
-            --title "Lõi 3DS ${{ matrix.name }} (arm64) #${{ github.run_number }}" \
-            --notes "${{ matrix.repo }} @ $SRC_COMMIT (GPLv2). Lõi libretro cho Aow Monika."
+          gh release create "engine-azahar-${{ github.run_number }}" azahar-android-arm64.zip \
+            --title "Engine 3DS (Azahar) arm64 #${{ github.run_number }}" \
+            --notes "${{ inputs.azahar_repo }} @ $SRC_COMMIT (GPLv2+). Thư viện native cho Aow Monika."
