@@ -108,7 +108,7 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     Row(Modifier.padding(top = 12.dp)) {
                         SoftPillButton("Cập nhật cấu hình", {
                             scope.launch {
-                                val r = AppGraph.config.refresh()
+                                val r = AppGraph.config.refresh(force = true)
                                 Toast.makeText(context, if (r.isSuccess) "Đã cập nhật cấu hình" else "Chưa cập nhật được: ${r.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
                             }
                         }, R.drawable.ic_fluent_arrow_sync_24_regular)

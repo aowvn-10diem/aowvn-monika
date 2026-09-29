@@ -66,7 +66,7 @@ object Inbox {
 }
 
 /**
- * Menu popup của app (nút cuối menu nổi): thông báo bài mới + lối tắt Tải xuống, Cài đặt, Vote, Cộng đồng.
+ * Menu popup của app (nút cuối menu nổi): thông báo bài mới + lối tắt Tải xuống, Cài đặt, Cộng đồng.
  * Cùng thiết kế với menu trong game ([MonikaMenuSheet]).
  */
 @Composable
@@ -82,7 +82,6 @@ fun BoxScope.AppMenuSheet(visible: Boolean, onDismiss: () -> Unit, onGo: (String
     val actions = buildList {
         add(SheetAction("Tải xuống", R.drawable.ic_fluent_arrow_download_24_regular) { onGo(Routes.DOWNLOADS) })
         add(SheetAction("Cài đặt", R.drawable.ic_fluent_settings_24_regular) { onGo(Routes.SETTINGS) })
-        add(SheetAction("Vote dịch", R.drawable.ic_fluent_vote_24_regular) { onGo(Routes.VOTE) })
         add(SheetAction("Nhận thông báo", R.drawable.ic_fluent_alert_24_regular) { onGo(Routes.SETTINGS) })
         if (cfg.community.facebookGroup.isNotBlank()) add(SheetAction("Group Facebook", R.drawable.ic_fluent_people_community_24_regular) { Community.open(context, cfg.community.facebookGroup) })
         if (cfg.community.discord.isNotBlank()) add(SheetAction("Discord", R.drawable.ic_fluent_chat_multiple_24_regular) { Community.open(context, cfg.community.discord) })

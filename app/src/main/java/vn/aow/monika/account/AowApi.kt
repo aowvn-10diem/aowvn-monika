@@ -36,11 +36,6 @@ data class Review(
     val content: String, val teamName: String, val createdAt: Long, val updatedAt: Long,
 )
 
-data class VoteGame(
-    val id: String, val title: String, val thumbnail: String?, val status: String,
-    val totalDonated: Long, val donors: Int, val note: String,
-)
-
 /**
  * Dữ liệu tài khoản AowVN qua REST của Firebase Realtime Database — cùng đường dẫn, cùng cấu trúc với web aow.vn
  * (đọc từ mã trang /p/vote-game.html, KHÔNG theo tài liệu cũ vì tài liệu lệch với dữ liệu thật).
@@ -131,17 +126,7 @@ class AowApi(private val http: OkHttpClient, private val config: ConfigRepositor
         call("DELETE", "post_reviews/$postId/${s.uid}", auth = true)
     }
 
-    // ---------- Vote / gây quỹ Việt hóa ----------
-
-    /** Danh sách game đang gây quỹ. Chỉ lấy tổng tiền + số lượt, KHÔNG đọc/hiện thông tin người donate. */
-    suspend fun votes(): List<VoteGame> {
-        val o = call("GET", "game_votes", auth = false).obj() ?: return emptyList()
-        return o.mapNotNull { (id, v) ->
-            val g = v.obj() ?: return@mapNotNull null
-            VoteGame(id, g.str("title").ifBlank { "Game #$id" }, g.str("thumbnail").ifBlank { null },
-                g.str("status").ifBlank { "voting" }, g.long("totalDonated"), g["donations"].obj()?.size ?: 0, g.str("completedNote"))
-        }.sortedWith(compareBy<VoteGame> { it.status == "completed" }.thenByDescending { it.totalDonated })
-    }
+    // ---------- Donate (chỉ tạo mã QR; danh sách vote đã bỏ để khỏi tốn băng thông Firebase) ----------
 
     /** Nội dung chuyển khoản để hệ thống tự ghi nhận donate (giống web). */
     fun donateMemo(gameId: String): String {

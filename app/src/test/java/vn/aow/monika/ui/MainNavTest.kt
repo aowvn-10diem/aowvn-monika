@@ -29,12 +29,11 @@ class MainNavTest {
         rule.shot("12-tab-tim-kiem")
     }
 
-    /** Nút cuối menu nổi = menu popup (Tải xuống, Cài đặt, Vote, Thông báo…). */
+    /** Nút cuối menu nổi = menu popup (Tải xuống, Cài đặt, Thông báo…). */
     @Test fun appMenu() {
         rule.mainClock.advanceTimeBy(1_000)
         rule.onNodeWithContentDescription("Menu").performClick()
         rule.mainClock.advanceTimeBy(1_000)
-        rule.onNodeWithText("Vote dịch").assertExists()
         rule.onNodeWithText("Cài đặt").assertExists()
         rule.shot("13-menu-app")
     }

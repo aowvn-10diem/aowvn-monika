@@ -167,7 +167,6 @@ private fun PostContent(post: Post, onGo: (String) -> Unit, onBack: () -> Unit) 
                     Toast.makeText(context, "Đã sao chép link bài", Toast.LENGTH_SHORT).show()
                 })
                 add(SheetAction("Mở trên web", R.drawable.ic_fluent_globe_24_regular) { openUrl(context, post.url) })
-                add(SheetAction("Vote dịch", R.drawable.ic_fluent_vote_24_regular) { onGo(vn.aow.monika.ui.Routes.VOTE) })
                 add(SheetAction("Thư viện", R.drawable.ic_fluent_library_24_regular) { onGo(vn.aow.monika.ui.Routes.EMULATOR) })
             },
         )

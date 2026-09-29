@@ -67,7 +67,7 @@ fun AccountCard(modifier: Modifier = Modifier) {
                 }
                 Column(Modifier.weight(1f).padding(start = 14.dp)) {
                     Text("Tài khoản AowVN", style = Monika.type.cardTitle, color = c.text)
-                    Text("Đăng nhập để điểm danh, đánh giá bản dịch và vote game", style = Monika.type.caption, color = c.textSecondary)
+                    Text("Đăng nhập để điểm danh và đánh giá bản dịch", style = Monika.type.caption, color = c.textSecondary)
                 }
             }
             GradientButton("Đăng nhập bằng Google", {
