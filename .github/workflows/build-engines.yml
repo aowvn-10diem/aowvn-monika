@@ -2,6 +2,7 @@ name: Build engines (visual novel)
 
 # Dựng engine ngoài từ mã nguồn mở, đưa lên Releases để Monika tải khi người chơi có game (không nhét vào APK).
 # Bước 1: ONScripter — OnscripterYuri bản web (wasm) chạy trong WebView như Ruffle chạy Flash.
+# Bước 2: 3DS — dựng Azahar và AzaharPlus (kế thừa Citra) thành LÕI LIBRETRO Android arm64 để đọc bằng LibretroDroid.
 # Chạy tay: Actions → "Build engines" → Run workflow. Xong sẽ có Release "engines-onsyuri-<số lần chạy>".
 on:
   workflow_dispatch:
@@ -87,3 +88,77 @@ jobs:
           gh release create "engines-onsyuri-${{ github.run_number }}" onsyuri-web.zip \
             --title "Engine ONScripter (web) #${{ github.run_number }}" \
             --notes "OnscripterYuri @ $ONS_COMMIT (GPLv2). Module tải khi người chơi có game ONScripter."
+
+  # ---- 3DS: Azahar / AzaharPlus → lõi libretro Android (arm64) ----
+  azahar-libretro:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: azahar,     repo: azahar-emu/azahar }
+          - { name: azaharplus, repo: AzaharPlus/AzaharPlus }
+    steps:
+      - name: Lấy mã nguồn ${{ matrix.repo }}
+        run: |
+          git clone --depth 1 --recurse-submodules --shallow-submodules -j8 https://github.com/${{ matrix.repo }}.git src
+          echo "SRC_COMMIT=$(git -C src rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r27c
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ matrix.name }}-${{ github.run_id }}
+          restore-keys: ccache-${{ matrix.name }}-
+
+      - name: Cấu hình CMake (lõi libretro, chỉ OpenGL ES — LibretroDroid chưa có Vulkan)
+        run: |
+          sudo apt-get update && sudo apt-get install -y ccache
+          cmake -S src -B build -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="${{ steps.ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-29 -DANDROID_STL=c++_static \
+            -DANDROID_ARM_NEON=true -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
+            -DCMAKE_BUILD_TYPE=Release -DENABLE_LTO=ON \
+            -DENABLE_LIBRETRO=ON -DENABLE_OPENGL=ON -DENABLE_VULKAN=OFF \
+            -DENABLE_TESTS=OFF -DENABLE_QT=OFF -DENABLE_SDL2=OFF -DENABLE_GDBSTUB=OFF -DENABLE_WEB_SERVICE=OFF \
+            -DCITRA_WARNINGS_AS_ERRORS=OFF -DENABLE_CCACHE=ON
+
+      - name: Biên dịch
+        run: cmake --build build --target citra_libretro -j"$(nproc)"
+
+      - name: Đóng gói
+        run: |
+          set -e
+          SO=$(find build -name 'azahar_libretro*.so' | head -1)
+          echo "Tìm thấy: $SO"; ls -la "$SO"
+          mkdir -p pack
+          cp "$SO" pack/${{ matrix.name }}_libretro_android.so
+          "${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded pack/${{ matrix.name }}_libretro_android.so
+          cat > pack/SOURCE.txt <<EOT
+          ${{ matrix.repo }} (GPLv2) — https://github.com/${{ matrix.repo }}
+          Commit: $SRC_COMMIT
+          Dựng thành lõi libretro Android arm64 bởi workflow build-engines của Aow Monika.
+          EOT
+          cd pack && zip ../${{ matrix.name }}_libretro_android.so.zip ${{ matrix.name }}_libretro_android.so SOURCE.txt && cd ..
+          ls -la ${{ matrix.name }}_libretro_android.so.zip
+          { echo "### ${{ matrix.name }}"; ls -la pack; } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}-libretro
+          path: ${{ matrix.name }}_libretro_android.so.zip
+
+      - name: Đưa lên Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "core-${{ matrix.name }}-${{ github.run_number }}" ${{ matrix.name }}_libretro_android.so.zip \
+            --title "Lõi 3DS ${{ matrix.name }} (arm64) #${{ github.run_number }}" \
+            --notes "${{ matrix.repo }} @ $SRC_COMMIT (GPLv2). Lõi libretro cho Aow Monika."

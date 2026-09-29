@@ -15,6 +15,11 @@ Sau bước này, sửa `config/monika-config.json` rồi push lên `main` là C
 3. Xong báo lại tôi, kèm nếu lỗi thì copy phần log đỏ (hoặc ảnh chụp). Tôi sẽ nối engine vào app (tải khi người chơi có game ONScripter).
    Lần đầu dễ lỗi do emscripten đổi phiên bản; đó là chuyện thường, chỉ cần gửi log.
 
+## 2b. Dựng lõi 3DS mới (Azahar / AzaharPlus) và so hiệu năng
+Cùng workflow "Build engines (visual novel)" ở trên có thêm job `azahar-libretro`: dựng **cả Azahar lẫn AzaharPlus** thành lõi libretro Android arm64
+(tự chạy song song, ~1–2 giờ, có thể lỗi ở lần đầu vì mã nguồn 3DS rất lớn — cứ gửi log).
+Thành công: 2 Release `core-azahar-<số>` và `core-azaharplus-<số>` (mỗi cái có file `…_libretro_android.so.zip`). Báo tôi link, tôi thêm vào config làm lõi 3DS để so với Citra ngay trên máy sếp.
+
 ## 3. Xem báo lỗi người chơi gửi về
 - Địa chỉ nhận: `https://aowvn-monika-crash.aowvn-system.workers.dev` (Cloudflare Worker, lưu 60 ngày, ẩn danh).
 - Cần **mã quản trị** (tôi đã đưa sếp trong chat; hãy lưu vào trình quản lý mật khẩu — mất thì tôi dựng lại mã mới).
