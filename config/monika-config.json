@@ -1,5 +1,5 @@
 {
-  "configVersion": 13,
+  "configVersion": 14,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -496,7 +496,30 @@
   "_community_ghi_chu": "Link cộng đồng AowVN hiện ở Trang chủ. Để trống = ẩn nút.",
   "community": {
     "facebookGroup": "https://www.facebook.com/groups/aowvn",
-    "discord": ""
+    "discord": "https://discord.gg/ynZAnpnXPk",
+    "channels": [
+      {
+        "id": "facebook",
+        "name": "Group Facebook",
+        "subtitle": "Hỏi đáp, xin game",
+        "url": "https://www.facebook.com/groups/aowvn",
+        "emoji": "fluent3d_busts_in_silhouette"
+      },
+      {
+        "id": "discord",
+        "name": "Diễn đàn Discord",
+        "subtitle": "Chat, nhóm dịch",
+        "url": "https://discord.gg/ynZAnpnXPk",
+        "emoji": "fluent3d_speech_balloon"
+      },
+      {
+        "id": "forum",
+        "name": "Forum AowVN",
+        "subtitle": "Bài viết, thảo luận",
+        "url": "https://forum.aowvn.org",
+        "emoji": "fluent3d_classical_building"
+      }
+    ]
   },
   "_coreOptionText_ghi_chu": "Dịch tên + giá trị tùy chọn lõi giả lập (lõi chỉ có tiếng Anh). Khóa = chữ tiếng Anh đúng như lõi hiện. Thiếu thì app hiện nguyên tiếng Anh.",
   "coreOptionText": {
@@ -913,5 +936,13 @@
         "arm64-v8a"
       ]
     }
+  },
+  "forum": {
+    "enabled": true,
+    "baseUrl": "https://forum.aowvn.org",
+    "limit": 6,
+    "hiddenTags": [
+      "Nhà Tù AowVN"
+    ]
   }
 }

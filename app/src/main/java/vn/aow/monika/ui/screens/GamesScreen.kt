@@ -74,7 +74,11 @@ class FeedViewModel : ViewModel() {
     var endReached by mutableStateOf(false); private set
 
     // Hiện ngay trang đầu đã lưu (nếu có), rồi tải bản mới.
-    init { AppGraph.feed.cachedList(key())?.let { posts.addAll(it) }; load(reset = true) }
+    init {
+        // Từ Trang chủ chạm 1 hệ máy → mở sẵn đúng bộ lọc.
+        GamesFilter.take()?.let { label = it }
+        AppGraph.feed.cachedList(key())?.let { posts.addAll(it) }; load(reset = true)
+    }
 
     private fun key() = "games:" + (label ?: "")
 
@@ -111,6 +115,8 @@ class FeedViewModel : ViewModel() {
 
 @Composable
 fun GamesScreen(onOpen: (Post) -> Unit, focusSearch: Boolean = false, vm: FeedViewModel = viewModel()) {
+    // Màn còn sống khi đổi tab: nhận bộ lọc hệ máy mà Trang chủ vừa chọn.
+    androidx.compose.runtime.LaunchedEffect(Unit) { GamesFilter.take()?.let(vm::selectLabel) }
     val c = Monika.colors
     val cfg by AppGraph.config.config.collectAsState()
     var text by remember { mutableStateOf(vm.query) }

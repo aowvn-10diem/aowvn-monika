@@ -128,8 +128,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                     }
                 }
             }
-            item { DonateBanner() }
-            communityItem()
+            item { SystemChips { label -> GamesFilter.pending = label; onGo(Routes.GAMES) } }
             if (!list.isNullOrEmpty() && list.size > 3) {
                 item { SectionHeader("Game nổi bật", "Xem tất cả", { onGo(Routes.GAMES) }) }
                 item {
@@ -138,6 +137,9 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                     }
                 }
             }
+            item { ForumSection() }
+            item { CommunitySection() }
+            item { DonateBanner() }
         }
     }
 }
@@ -180,38 +182,6 @@ private fun HeroCarousel(posts: List<Post>, onOpen: (Post) -> Unit) {
     }
 }
 
-/** Khối "Cộng đồng AowVN": group Facebook + Discord (link trong config `community`, trống = ẩn). */
-private fun androidx.compose.foundation.lazy.LazyListScope.communityItem() = item {
-    val cfg by AppGraph.config.config.collectAsState()
-    val context = LocalContext.current
-    val links = listOf(
-        Triple("Group Facebook", "Hỏi đáp, xin game", cfg.community.facebookGroup) to Brush.linearGradient(listOf(Color(0xFF4F8BFF), Color(0xFF6C63FF))),
-        Triple("Discord", "Chat, nhóm dịch", cfg.community.discord) to Brush.linearGradient(listOf(Color(0xFF7289FF), Color(0xFFA06CFF))),
-    ).filter { it.first.third.isNotBlank() }
-    if (links.isEmpty()) return@item
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Cộng đồng AowVN", style = Monika.type.sectionTitle, color = Monika.colors.text)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            links.forEach { (t, brush) ->
-                MonikaCard(Modifier.weight(1f), dark = true, shape = Radius.large, padding = PaddingValues(12.dp), onClick = { Community.open(context, t.third) }) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(40.dp).clip(Radius.thumb).background(brush), contentAlignment = Alignment.Center) {
-                            Icon(
-                                painterResource(if (t.first == "Discord") R.drawable.ic_fluent_chat_multiple_24_regular else R.drawable.ic_fluent_people_community_24_regular),
-                                null, Modifier.size(22.dp), tint = Color.White,
-                            )
-                        }
-                        Column(Modifier.padding(start = 10.dp)) {
-                            Text(t.first, style = Monika.type.bodyStrong, color = Color.White, maxLines = 1)
-                            Text(t.second, style = Monika.type.caption, color = Monika.colors.textOnDarkSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 internal const val HOME_KEY = "home"
 
 /** Tải trước ảnh (thẻ lớn + ảnh đầu bài) vào bộ đệm → vuốt thẻ / mở bài hiện ảnh ngay. */
@@ -245,7 +215,10 @@ private fun FeaturedCard(p: Post, onClick: () -> Unit) {
         Spacer(Modifier.height(8.dp))
         Text(p.title, style = Monika.type.bodyStrong, color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Spacer(Modifier.height(4.dp))
-        p.labels.firstOrNull()?.let { Tag(shortLabel(it)) }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            p.labels.firstOrNull()?.let { Tag(shortLabel(it)) }
+            Text(formatDate(p.published), style = Monika.type.caption, color = c.textSecondary, maxLines = 1)
+        }
     }
 }
 

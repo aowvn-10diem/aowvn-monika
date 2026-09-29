@@ -21,6 +21,7 @@ data class MonikaConfig(
     val archivePasswords: List<String> = emptyList(),
     /** Link cộng đồng AowVN (group Facebook, Discord). Để trống = ẩn nút. */
     val community: CommunityConfig = CommunityConfig(),
+    val forum: ForumConfig = ForumConfig(),
     /** Chặn quảng cáo trong trình duyệt nhúng. */
     val adblock: AdBlockConfig = AdBlockConfig(),
     /** Tài khoản AowVN (Firebase của web aow.vn): đăng nhập, điểm danh, đánh giá, vote/donate. */
@@ -108,6 +109,37 @@ data class AdBlockConfig(
 data class CommunityConfig(
     val facebookGroup: String = "",
     val discord: String = "",
+    /** Các kênh cộng đồng hiện ở Trang chủ (mỗi kênh 1 emoji 3D Fluent). Trống = tự dựng từ facebookGroup + discord. */
+    val channels: List<CommunityChannel> = emptyList(),
+) {
+    /** Danh sách kênh để hiển thị (bỏ kênh trống link). */
+    fun shown(): List<CommunityChannel> = channels.ifEmpty {
+        listOf(
+            CommunityChannel("facebook", "Group Facebook", "Hỏi đáp, xin game", facebookGroup, "fluent3d_busts_in_silhouette"),
+            CommunityChannel("discord", "Discord", "Chat, nhóm dịch", discord, "fluent3d_speech_balloon"),
+        )
+    }.filter { it.url.isNotBlank() }
+}
+
+/** 1 kênh cộng đồng: tên, mô tả ngắn, link và tên emoji 3D (tệp drawable `fluent3d_*`). */
+@Serializable
+data class CommunityChannel(
+    val id: String,
+    val name: String,
+    val subtitle: String = "",
+    val url: String,
+    val emoji: String = "fluent3d_speech_balloon",
+)
+
+/** Diễn đàn AowVN (Flarum): Trang chủ hiện chủ đề mới nhất + lối tắt chuyên mục. */
+@Serializable
+data class ForumConfig(
+    val enabled: Boolean = true,
+    val baseUrl: String = "https://forum.aowvn.org",
+    /** Số chủ đề hiện ở Trang chủ. */
+    val limit: Int = 6,
+    /** Tên chuyên mục (tag) không hiện ở app. */
+    val hiddenTags: List<String> = emptyList(),
 )
 
 @Serializable
