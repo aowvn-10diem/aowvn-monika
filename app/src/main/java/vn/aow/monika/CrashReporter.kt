@@ -29,15 +29,9 @@ object CrashReporter {
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, e ->
             runCatching {
-                val sw = StringWriter()
-                e.printStackTrace(PrintWriter(sw))
-                val text = buildString {
-                    appendLine("Aow Monika ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) ${if (BuildConfig.DEBUG) "debug" else "release"}")
-                    appendLine("Máy: ${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) · ${Build.SUPPORTED_ABIS.joinToString()}")
-                    appendLine("Luồng: ${thread.name}")
-                    append(sw.toString().take(12_000))
-                }
-                file(app).writeText(text)
+                // Lưu vào kho báo cáo (kèm lõi/game đang chạy nếu là lỗi ở tiến trình game) + file "lỗi gần nhất" cho màn báo lỗi.
+                val report = vn.aow.monika.diag.Diagnostics.recordJavaCrash(app, thread.name, e)
+                file(app).writeText(report.toText())
                 app.startActivity(Intent(app, CrashActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
             }
             if (previous != null && thread.name != "main") previous.uncaughtException(thread, e)

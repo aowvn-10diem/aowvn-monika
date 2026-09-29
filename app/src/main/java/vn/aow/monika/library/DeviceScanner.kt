@@ -58,7 +58,7 @@ class DeviceScanner(private val context: Context) {
                     val path = runCatching { f.canonicalPath }.getOrNull() ?: continue
                     if (path == own || path.startsWith("$own/") || SKIP.any { path.endsWith(it) }) continue
                     walk(f, depth + 1)
-                } else if (f.extension.lowercase() in exts && f.length() >= MIN_SIZE) {
+                } else if (f.extension.lowercase() in exts && f.length() >= MIN_SIZE && RomSniff.accepts(f)) {
                     hits += f.absolutePath
                 }
             }

@@ -41,6 +41,27 @@ class InGameTest {
     @Test fun padNds() { overlay(InGameState(), PadLayout.NDS); rule.shot("6-tay-cam-nds") }
     @Test fun padGba() { overlay(InGameState(), PadLayout.GBA); rule.shot("7-tay-cam-gba") }
     @Test fun padPs() { overlay(InGameState(), PadLayout.PS); rule.shot("8-tay-cam-ps") }
+    @Test fun padSnes() { overlay(InGameState(), PadLayout.SNES); rule.shot("14-tay-cam-snes") }
+    @Test fun padGenesis() { overlay(InGameState(), PadLayout.GEN); rule.shot("15-tay-cam-megadrive") }
+    @Test fun padN64() { overlay(InGameState(), PadLayout.N64); rule.shot("16-tay-cam-n64") }
+    @Test fun padDreamcast() { overlay(InGameState(), PadLayout.DC); rule.shot("17-tay-cam-dreamcast") }
+    @Test fun padPsp() { overlay(InGameState(), PadLayout.PSP); rule.shot("18-tay-cam-psp") }
+
+    /** Kéo cần analog → gửi (x,y) cho lõi; nhả tay → về (0,0). */
+    @Test fun analogStickSendsMotion() {
+        val events = mutableListOf<Triple<Int, Float, Float>>()
+        rule.setContent {
+            MonikaTheme {
+                InGameOverlay(
+                    state = InGameState(), system = "N64", title = "Mario", layout = PadLayout.N64, showPad = true,
+                    send = { _, _ -> }, onBack = {}, onSave = {}, onLoad = {}, onTurbo = {}, onOpacity = {}, onEditDone = {},
+                    onMotion = { src, x, y -> events += Triple(src, x, y) },
+                )
+            }
+        }
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithText("Cần → D-pad").assertExists() // N64 mặc định dùng cần
+    }
 
     @Test fun menu() {
         val s = InGameState().apply { menuOpen = true; filledSlots = setOf(1, 3) }

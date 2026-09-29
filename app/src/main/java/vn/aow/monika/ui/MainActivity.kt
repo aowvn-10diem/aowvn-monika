@@ -7,6 +7,8 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -74,8 +76,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Vừa chơi game Java / app ngoài xong → cộng thời gian chơi.
+        // Vừa chơi xong → nhặt giờ chơi do tiến trình game gửi về, rồi cộng phiên ước lượng (game Java / app ngoài).
+        AppGraph.prefs.mergeGameEvents()
         AppGraph.prefs.endSession()
+        // Phiên game trước chết bất thường? (lõi native sập, hết RAM, treo…) → tạo báo cáo + hỏi người chơi.
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { runCatching { vn.aow.monika.diag.Diagnostics.collect(applicationContext) } }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -200,6 +205,7 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
             onSelect = { i -> if (i == dockItems.lastIndex) menuOpen = !menuOpen else { menuOpen = false; nav.goTab(Routes.tabs[i]) } },
             modifier = Modifier.align(Alignment.BottomCenter).dockOffset(route in Routes.tabs && !menuOpen && vn.aow.monika.ui.theme.SheetsOpen.count.intValue == 0),
         )
+        CrashUi()
         AppMenuSheet(menuOpen, { menuOpen = false }, onGo = { menuOpen = false; go(it) }, onOpenPost = { menuOpen = false; nav.navigate("post/$it") })
     }
 }

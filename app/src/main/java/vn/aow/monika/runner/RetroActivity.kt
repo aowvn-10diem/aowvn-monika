@@ -29,6 +29,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import vn.aow.monika.AppGraph
+import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.ui.theme.MonikaTheme
 import java.io.File
 
@@ -64,6 +65,8 @@ class RetroActivity : ComponentActivity() {
         val coreId = intent.getStringExtra(EXTRA_CORE) ?: return finish()
         val gamePath = intent.getStringExtra(EXTRA_GAME) ?: return finish()
         val systemName = intent.getStringExtra(EXTRA_SYSTEM).orEmpty()
+        // Ghi "phiên chơi" để nếu lõi native sập thì lần mở Monika kế tiếp có đủ thông tin lập báo cáo (xem Diagnostics).
+        Diagnostics.begin(this, "libretro", coreId, AppGraph.cores.info(coreId), File(gamePath).name, systemName)
         val title = intent.getStringExtra(EXTRA_TITLE) ?: File(gamePath).nameWithoutExtension
         val layout = padFor(coreId, intent.getStringExtra(EXTRA_PAD))
         aspect = AppGraph.config.current.cores[coreId]?.aspectRatio ?: DEFAULT_ASPECT[coreId] ?: 4f / 3f
@@ -124,6 +127,9 @@ class RetroActivity : ComponentActivity() {
                         },
                         onOptions = { openOptions(coreId) },
                         onAsk = { askGroup(title, systemName) },
+                        onMotion = { src, x, y ->
+                            retroView?.sendMotionEvent(if (src == STICK_RIGHT) GLRetroView.MOTION_SOURCE_ANALOG_RIGHT else GLRetroView.MOTION_SOURCE_ANALOG_LEFT, x, y, 0)
+                        },
                         onOptionChange = { o, v ->
                             retroView?.updateVariables(Variable(o.key, v))
                             CoreOptions.save(this@RetroActivity, coreId, o.key, v)
@@ -149,8 +155,11 @@ class RetroActivity : ComponentActivity() {
         lifecycleScope.launch {
             val core = runCatching { AppGraph.cores.ensureCore(coreId) { status.text = it } }.getOrElse {
                 status.text = "Không tải được lõi giả lập.\n${it.message}\n\nKiểm tra mạng rồi mở lại game."
+                Diagnostics.stage(this@RetroActivity, "core-download-failed")
                 return@launch
             }
+            Diagnostics.coreInfo(this@RetroActivity, AppGraph.cores.info(coreId))
+            Diagnostics.stage(this@RetroActivity, "core-ready")
             val data = GLRetroViewData(this@RetroActivity).apply {
                 coreFilePath = core.absolutePath
                 gameFilePath = gamePath
@@ -161,13 +170,20 @@ class RetroActivity : ComponentActivity() {
                     .map { (k, v) -> Variable(k, v) }.toTypedArray()
             }
             status.text = "Đang khởi động game…"
+            Diagnostics.stage(this@RetroActivity, "loading-game") // lõi nạp file game ngay sau dòng này — chết ở đây = lõi hoặc file game hỏng
             val view = GLRetroView(this@RetroActivity, data)
             lifecycle.addObserver(view)
             root.addView(view, 0, gameLayoutParams()) // Dưới màn chờ; màn chờ bỏ đi khi có khung hình đầu.
             retroView = view
             ready = true
+            Diagnostics.stage(this@RetroActivity, "view-created")
+            launch { while (true) { delay(15_000); Diagnostics.heartbeat(this@RetroActivity) } }
             launch {
                 view.getGLRetroEvents().collect { e ->
+                    if (e is GLRetroView.GLRetroEvents.FrameRendered && !firstFrame) {
+                        firstFrame = true
+                        Diagnostics.stage(this@RetroActivity, "first-frame")
+                    }
                     if (e is GLRetroView.GLRetroEvents.FrameRendered && loading.parent != null) {
                         loading.animate().alpha(0f).setDuration(180).withEndAction { root.removeView(loading) }.start()
                     }
@@ -178,7 +194,7 @@ class RetroActivity : ComponentActivity() {
                 if (loading.parent != null) status.text = "Game nặng, đang nạp… (lần đầu có thể lâu hơn)"
             }
             launch {
-                view.getGLRetroErrors().collect { code -> showToast("Lỗi chạy game (mã $code). File game hỏng hoặc lõi không hợp.", 4000) }
+                view.getGLRetroErrors().collect { code -> Diagnostics.stage(this@RetroActivity, "core-error-$code"); showToast("Lỗi chạy game (mã $code). File game hỏng hoặc lõi không hợp.", 4000) }
             }
         }
     }
@@ -300,6 +316,18 @@ class RetroActivity : ComponentActivity() {
         clock?.pause()
         saveSram()
         super.onPause()
+    }
+
+    private var firstFrame = false
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isFinishing) {
+            // Thoát bình thường: xóa phiên (không báo lỗi) rồi TẮT tiến trình game → lõi native giải phóng sạch RAM,
+            // lần chơi sau chạy tiến trình mới (không dính trạng thái/leak của lõi lần trước).
+            Diagnostics.end(this)
+            android.os.Process.killProcess(android.os.Process.myPid())
+        }
     }
 
     private fun saveSram() {

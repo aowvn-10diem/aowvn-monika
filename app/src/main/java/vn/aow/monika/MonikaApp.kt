@@ -30,7 +30,8 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
         if (!isCrashProcess()) CrashReporter.install(this)
         // J2ME Loader nhúng sẵn cần context sớm, ở mọi tiến trình (kể cả ":midlet" chạy game Java).
         if (isCrashProcess()) return
-        initJ2me()
+        // Tiến trình ":game" chỉ chạy lõi libretro → không cần J2ME.
+        if (!isLibretroProcess()) initJ2me()
     }
 
     override fun onCreate() {
@@ -62,5 +63,8 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
         Build.VERSION.SDK_INT >= 28 && getProcessName().endsWith(":crash")
 
     private fun isGameProcess(): Boolean =
-        Build.VERSION.SDK_INT >= 28 && getProcessName().endsWith(":midlet")
+        Build.VERSION.SDK_INT >= 28 && (getProcessName().endsWith(":midlet") || getProcessName().endsWith(":game"))
+
+    private fun isLibretroProcess(): Boolean =
+        Build.VERSION.SDK_INT >= 28 && getProcessName().endsWith(":game")
 }

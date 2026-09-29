@@ -50,7 +50,7 @@ class GameLibrary(
     private fun externalGames(): List<Game> = runCatching {
         val cfg = configRepo.current
         scanner.found().mapNotNull { f ->
-            val system = cfg.systems.firstOrNull { s -> s.extensions.any { it.equals(f.extension, true) } } ?: return@mapNotNull null
+            val system = cfg.systems.firstOrNull { s -> s.extensions.any { it.equals(f.extension, true) } && RomSniff.accepts(f) } ?: return@mapNotNull null
             Game(f.parentFile ?: f, f.nameWithoutExtension.replace('_', ' '), system, f, external = true)
         }
     }.getOrDefault(emptyList())
@@ -111,7 +111,7 @@ object GameDetector {
         }
         for (system in cfg.systems) {
             for (ext in system.extensions) {
-                files.firstOrNull { it.extension.equals(ext, ignoreCase = true) }
+                files.firstOrNull { it.extension.equals(ext, ignoreCase = true) && RomSniff.accepts(it) }
                     ?.let { return Game(dir, dir.name, system, it) }
             }
         }

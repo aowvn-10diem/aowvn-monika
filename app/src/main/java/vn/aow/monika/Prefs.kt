@@ -3,8 +3,14 @@ package vn.aow.monika
 import android.content.Context
 
 /** Thiết lập nhỏ lưu trên máy (SharedPreferences). */
-class Prefs(context: Context) {
+class Prefs(private val context: Context) {
     private val sp = context.getSharedPreferences("monika", Context.MODE_PRIVATE)
+
+    /**
+     * Cài đặt do TIẾN TRÌNH GAME (":game") ghi (tay cầm ảo…) nằm file riêng: SharedPreferences không an toàn khi 2 tiến trình
+     * cùng ghi 1 file (tiến trình ghi sau đè mất dữ liệu của tiến trình kia). Game chỉ ĐỌC file "monika" chính.
+     */
+    private val gsp = context.getSharedPreferences("monika_game", Context.MODE_PRIVATE)
 
     /** Mã các bài đã thấy, để biết bài nào mới. Rỗng = chưa chạy lần nào. */
     var seenPostIds: Set<String>
@@ -121,13 +127,36 @@ class Prefs(context: Context) {
 
     /** Cỡ tay cầm ảo (0.8 / 1.0 / 1.2) và độ lệch vị trí (px) của cụm D-pad và cụm nút. */
     var padScale: Float
-        get() = sp.getFloat("pad_scale", 1f)
-        set(value) = sp.edit().putFloat("pad_scale", value).apply()
-    fun padOffset(group: String): Pair<Float, Float> = sp.getFloat("pad_${group}_x", 0f) to sp.getFloat("pad_${group}_y", 0f)
-    fun setPadOffset(group: String, x: Float, y: Float) = sp.edit().putFloat("pad_${group}_x", x).putFloat("pad_${group}_y", y).apply()
+        get() = gsp.getFloat("pad_scale", sp.getFloat("pad_scale", 1f))
+        set(value) = gsp.edit().putFloat("pad_scale", value).apply()
+    fun padOffset(group: String): Pair<Float, Float> =
+        gsp.getFloat("pad_${group}_x", sp.getFloat("pad_${group}_x", 0f)) to gsp.getFloat("pad_${group}_y", sp.getFloat("pad_${group}_y", 0f))
+    fun setPadOffset(group: String, x: Float, y: Float) = gsp.edit().putFloat("pad_${group}_x", x).putFloat("pad_${group}_y", y).apply()
 
     /** Độ mờ tay cầm ảo (0.2–1.0). */
     var padOpacity: Float
-        get() = sp.getFloat("pad_opacity", 0.65f)
-        set(value) = sp.edit().putFloat("pad_opacity", value).apply()
+        get() = gsp.getFloat("pad_opacity", sp.getFloat("pad_opacity", 0.65f))
+        set(value) = gsp.edit().putFloat("pad_opacity", value).apply()
+
+    // ---- Sự kiện từ tiến trình game gửi về (ghi vào file nối đuôi, tiến trình chính nhặt khi quay lại) ----
+
+    private fun eventsFile() = java.io.File(context.filesDir, "game-events.log")
+
+    /** Tiến trình game gọi: ghi 1 dòng sự kiện. */
+    fun postGameEvent(line: String) { runCatching { synchronized(GAME_EVENTS) { eventsFile().appendText(line + "\n") } } }
+
+    /** Tiến trình chính gọi lúc quay lại: cộng giờ chơi, hủy phiên ước lượng… */
+    fun mergeGameEvents() {
+        val f = eventsFile()
+        val lines = runCatching { synchronized(GAME_EVENTS) { f.takeIf { it.isFile }?.readLines().also { f.delete() } } }.getOrNull().orEmpty()
+        for (l in lines) {
+            val p = l.split('\t')
+            when (p.firstOrNull()) {
+                "play" -> p.getOrNull(2)?.toLongOrNull()?.let { addPlayTime(p[1], it) }
+                "cancel" -> cancelSession()
+            }
+        }
+    }
+
+    private companion object { val GAME_EVENTS = Any() }
 }

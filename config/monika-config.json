@@ -1,7 +1,6 @@
 {
-  "configVersion": 7,
+  "configVersion": 8,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
-
   "app": {
     "latestVersionCode": 2,
     "latestVersionName": "0.2.0",
@@ -9,49 +8,477 @@
     "apkUrl": "",
     "changelog": "Giao diện mới, menu nổi, lưu trạng thái game, ảnh bìa game, chỉnh vị trí phím."
   },
-
   "feed": {
     "url": "https://www.aow.vn/feeds/posts/default",
     "pageSize": 20,
     "pollMinutes": 60
   },
-
   "systems": [
-    { "id": "nds",   "name": "Nintendo DS",        "runner": "libretro", "core": "desmume",      "extensions": ["nds"],                     "labels": ["Game NDS Việt Hóa"], "altCores": ["desmume", "melonds"] },
-    { "id": "gba",   "name": "Game Boy Advance",   "runner": "libretro", "core": "mgba",         "extensions": ["gba"],                     "labels": ["Game GBA Việt Hóa"] },
-    { "id": "gbc",   "name": "Game Boy / Color",   "runner": "libretro", "core": "gambatte",     "extensions": ["gb", "gbc"],               "labels": [] },
-    { "id": "ps1",   "name": "PlayStation 1",      "runner": "libretro", "core": "pcsx_rearmed", "extensions": ["cue", "pbp", "chd", "m3u"], "labels": ["Game PS1"] },
-    { "id": "psp",   "name": "PSP",                "runner": "libretro", "core": "ppsspp",       "extensions": ["iso", "cso"],              "labels": ["Game PS & PSP Việt Hóa"] },
-    { "id": "rpg2k", "name": "RPG Maker 2000/2003", "runner": "libretro", "core": "easyrpg",     "extensions": ["ldb"],                     "labels": ["RPGmaker Việt Hoá"] },
-    { "id": "flash", "name": "Flash",              "runner": "web",      "webPlayer": "ruffle",  "extensions": ["swf"],                     "labels": [] },
-    { "id": "apk",   "name": "Android (APK)",      "runner": "apk",                              "extensions": ["apk"],                     "labels": ["Game Android Việt Hóa"] },
-    { "id": "java",  "name": "Java (J2ME)",        "runner": "j2me",                              "extensions": ["jar", "jad"],         "labels": ["Game Java Việt Hóa"] },
-    { "id": "rpgmv", "name": "RPG Maker MV/MZ",    "runner": "web",      "webPlayer": "html5",   "extensions": [],                          "labels": ["RPGmaker Việt Hoá"] },
-    { "id": "tyrano","name": "TyranoScript",       "runner": "web",      "webPlayer": "html5",   "extensions": [],                          "labels": ["Visual Novel Việt Hóa"] },
-    { "id": "kirikiri","name": "Kirikiri (KAG)",   "runner": "external", "externalApp": "kirikiroid2", "extensions": ["xp3"],               "labels": ["Visual Novel Việt Hóa"] },
-    { "id": "renpy", "name": "Ren'Py",             "runner": "external", "externalApp": "joiplay", "extensions": [],                        "labels": ["Visual Novel Việt Hóa"] },
-    { "id": "rgss",  "name": "RPG Maker XP/VX/Ace", "runner": "external", "externalApp": "joiplay", "extensions": [],                       "labels": ["RPGmaker Việt Hoá"] },
-    { "id": "onscripter", "name": "ONScripter",    "runner": "external", "externalApp": "onscripter", "extensions": [],                     "labels": ["Visual Novel Việt Hóa"] }
+    {
+      "id": "nds",
+      "name": "Nintendo DS",
+      "runner": "libretro",
+      "core": "desmume",
+      "extensions": [
+        "nds"
+      ],
+      "labels": [
+        "Game NDS Việt Hóa"
+      ],
+      "altCores": [
+        "desmume",
+        "melonds"
+      ]
+    },
+    {
+      "id": "gba",
+      "name": "Game Boy Advance",
+      "runner": "libretro",
+      "core": "mgba",
+      "extensions": [
+        "gba"
+      ],
+      "labels": [
+        "Game GBA Việt Hóa"
+      ]
+    },
+    {
+      "id": "gbc",
+      "name": "Game Boy / Color",
+      "runner": "libretro",
+      "core": "gambatte",
+      "extensions": [
+        "gb",
+        "gbc"
+      ],
+      "labels": []
+    },
+    {
+      "id": "snes",
+      "name": "Super Nintendo",
+      "runner": "libretro",
+      "core": "snes9x",
+      "extensions": [
+        "sfc",
+        "smc",
+        "swc",
+        "fig"
+      ],
+      "labels": [],
+      "pad": "snes",
+      "thumbnails": [
+        "Nintendo - Super Nintendo Entertainment System"
+      ]
+    },
+    {
+      "id": "nes",
+      "name": "NES / Famicom",
+      "runner": "libretro",
+      "core": "fceumm",
+      "extensions": [
+        "nes",
+        "fds",
+        "unf",
+        "unif"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Nintendo - Nintendo Entertainment System",
+        "Nintendo - Family Computer Disk System"
+      ],
+      "altCores": [
+        "fceumm",
+        "nestopia"
+      ]
+    },
+    {
+      "id": "genesis",
+      "name": "Sega Mega Drive",
+      "runner": "libretro",
+      "core": "genesis_plus_gx",
+      "extensions": [
+        "md",
+        "gen",
+        "smd"
+      ],
+      "labels": [],
+      "pad": "gen",
+      "thumbnails": [
+        "Sega - Mega Drive - Genesis"
+      ]
+    },
+    {
+      "id": "sms",
+      "name": "Sega Master System",
+      "runner": "libretro",
+      "core": "genesis_plus_gx",
+      "extensions": [
+        "sms"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Sega - Master System - Mark III"
+      ]
+    },
+    {
+      "id": "gg",
+      "name": "Sega Game Gear",
+      "runner": "libretro",
+      "core": "genesis_plus_gx",
+      "extensions": [
+        "gg"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Sega - Game Gear"
+      ]
+    },
+    {
+      "id": "pce",
+      "name": "PC Engine",
+      "runner": "libretro",
+      "core": "mednafen_pce_fast",
+      "extensions": [
+        "pce",
+        "sgx"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "NEC - PC Engine - TurboGrafx 16"
+      ]
+    },
+    {
+      "id": "n64",
+      "name": "Nintendo 64",
+      "runner": "libretro",
+      "core": "mupen64plus_next_gles3",
+      "extensions": [
+        "z64",
+        "n64",
+        "v64"
+      ],
+      "labels": [],
+      "pad": "n64",
+      "thumbnails": [
+        "Nintendo - Nintendo 64"
+      ],
+      "altCores": [
+        "mupen64plus_next_gles3",
+        "parallel_n64"
+      ]
+    },
+    {
+      "id": "dc",
+      "name": "Sega Dreamcast",
+      "runner": "libretro",
+      "core": "flycast",
+      "extensions": [
+        "gdi",
+        "cdi"
+      ],
+      "labels": [],
+      "pad": "dc",
+      "thumbnails": [
+        "Sega - Dreamcast"
+      ]
+    },
+    {
+      "id": "lynx",
+      "name": "Atari Lynx",
+      "runner": "libretro",
+      "core": "handy",
+      "extensions": [
+        "lnx"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Atari - Lynx"
+      ]
+    },
+    {
+      "id": "a2600",
+      "name": "Atari 2600",
+      "runner": "libretro",
+      "core": "stella2014",
+      "extensions": [
+        "a26"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Atari - 2600"
+      ]
+    },
+    {
+      "id": "a7800",
+      "name": "Atari 7800",
+      "runner": "libretro",
+      "core": "prosystem",
+      "extensions": [
+        "a78"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Atari - 7800"
+      ]
+    },
+    {
+      "id": "ws",
+      "name": "WonderSwan",
+      "runner": "libretro",
+      "core": "mednafen_wswan",
+      "extensions": [
+        "ws",
+        "wsc"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Bandai - WonderSwan",
+        "Bandai - WonderSwan Color"
+      ]
+    },
+    {
+      "id": "ngp",
+      "name": "Neo Geo Pocket",
+      "runner": "libretro",
+      "core": "mednafen_ngp",
+      "extensions": [
+        "ngp",
+        "ngc"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "SNK - Neo Geo Pocket",
+        "SNK - Neo Geo Pocket Color"
+      ]
+    },
+    {
+      "id": "ps1",
+      "name": "PlayStation 1",
+      "runner": "libretro",
+      "core": "pcsx_rearmed",
+      "extensions": [
+        "cue",
+        "pbp",
+        "chd",
+        "m3u"
+      ],
+      "labels": [
+        "Game PS1"
+      ]
+    },
+    {
+      "id": "psp",
+      "name": "PSP",
+      "runner": "libretro",
+      "core": "ppsspp",
+      "extensions": [
+        "iso",
+        "cso"
+      ],
+      "labels": [
+        "Game PS & PSP Việt Hóa"
+      ],
+      "pad": "psp"
+    },
+    {
+      "id": "rpg2k",
+      "name": "RPG Maker 2000/2003",
+      "runner": "libretro",
+      "core": "easyrpg",
+      "extensions": [
+        "ldb"
+      ],
+      "labels": [
+        "RPGmaker Việt Hoá"
+      ]
+    },
+    {
+      "id": "flash",
+      "name": "Flash",
+      "runner": "web",
+      "webPlayer": "ruffle",
+      "extensions": [
+        "swf"
+      ],
+      "labels": []
+    },
+    {
+      "id": "apk",
+      "name": "Android (APK)",
+      "runner": "apk",
+      "extensions": [
+        "apk"
+      ],
+      "labels": [
+        "Game Android Việt Hóa"
+      ]
+    },
+    {
+      "id": "java",
+      "name": "Java (J2ME)",
+      "runner": "j2me",
+      "extensions": [
+        "jar",
+        "jad"
+      ],
+      "labels": [
+        "Game Java Việt Hóa"
+      ]
+    },
+    {
+      "id": "rpgmv",
+      "name": "RPG Maker MV/MZ",
+      "runner": "web",
+      "webPlayer": "html5",
+      "extensions": [],
+      "labels": [
+        "RPGmaker Việt Hoá"
+      ]
+    },
+    {
+      "id": "tyrano",
+      "name": "TyranoScript",
+      "runner": "web",
+      "webPlayer": "html5",
+      "extensions": [],
+      "labels": [
+        "Visual Novel Việt Hóa"
+      ]
+    },
+    {
+      "id": "kirikiri",
+      "name": "Kirikiri (KAG)",
+      "runner": "external",
+      "externalApp": "kirikiroid2",
+      "extensions": [
+        "xp3"
+      ],
+      "labels": [
+        "Visual Novel Việt Hóa"
+      ]
+    },
+    {
+      "id": "renpy",
+      "name": "Ren'Py",
+      "runner": "external",
+      "externalApp": "joiplay",
+      "extensions": [],
+      "labels": [
+        "Visual Novel Việt Hóa"
+      ]
+    },
+    {
+      "id": "rgss",
+      "name": "RPG Maker XP/VX/Ace",
+      "runner": "external",
+      "externalApp": "joiplay",
+      "extensions": [],
+      "labels": [
+        "RPGmaker Việt Hoá"
+      ]
+    },
+    {
+      "id": "onscripter",
+      "name": "ONScripter",
+      "runner": "external",
+      "externalApp": "onscripter",
+      "extensions": [],
+      "labels": [
+        "Visual Novel Việt Hóa"
+      ]
+    }
   ],
-
   "_engines_ghi_chu": "Nhận diện game dạng thư mục (sau khi giải nén). Quy tắc nào khớp trước thắng. 'entry' = file sẽ mở để chạy.",
   "engines": [
-    { "system": "rpgmv",      "markers": ["www/js/rpg_core.js", "js/rpg_core.js", "js/rmmz_core.js", "www/js/rmmz_core.js"], "entry": ["www/index.html", "index.html"] },
-    { "system": "tyrano",     "markers": ["tyrano/tyrano.js", "tyrano/libs.js"],                                        "entry": ["index.html"] },
-    { "system": "rpg2k",      "markers": ["RPG_RT.ldb"],                                                                "entry": ["RPG_RT.ldb"] },
-    { "system": "kirikiri",   "markers": ["data.xp3"],                                                                  "entry": ["data.xp3"] },
-    { "system": "renpy",      "markers": ["renpy/__init__.py", "renpy/__init__.pyo", "game/script.rpyc", "game/archive.rpa"], "entry": [] },
-    { "system": "rgss",       "markers": ["Game.rgssad", "Game.rgss2a", "Game.rgss3a", "Data/Scripts.rxdata", "Data/Scripts.rvdata2", "Data/Scripts.rvdata"], "entry": [] },
-    { "system": "onscripter", "markers": ["0.txt", "00.txt", "nscript.dat", "arc.nsa"],                                 "entry": [] }
+    {
+      "system": "rpgmv",
+      "markers": [
+        "www/js/rpg_core.js",
+        "js/rpg_core.js",
+        "js/rmmz_core.js",
+        "www/js/rmmz_core.js"
+      ],
+      "entry": [
+        "www/index.html",
+        "index.html"
+      ]
+    },
+    {
+      "system": "tyrano",
+      "markers": [
+        "tyrano/tyrano.js",
+        "tyrano/libs.js"
+      ],
+      "entry": [
+        "index.html"
+      ]
+    },
+    {
+      "system": "rpg2k",
+      "markers": [
+        "RPG_RT.ldb"
+      ],
+      "entry": [
+        "RPG_RT.ldb"
+      ]
+    },
+    {
+      "system": "kirikiri",
+      "markers": [
+        "data.xp3"
+      ],
+      "entry": [
+        "data.xp3"
+      ]
+    },
+    {
+      "system": "renpy",
+      "markers": [
+        "renpy/__init__.py",
+        "renpy/__init__.pyo",
+        "game/script.rpyc",
+        "game/archive.rpa"
+      ],
+      "entry": []
+    },
+    {
+      "system": "rgss",
+      "markers": [
+        "Game.rgssad",
+        "Game.rgss2a",
+        "Game.rgss3a",
+        "Data/Scripts.rxdata",
+        "Data/Scripts.rvdata2",
+        "Data/Scripts.rvdata"
+      ],
+      "entry": []
+    },
+    {
+      "system": "onscripter",
+      "markers": [
+        "0.txt",
+        "00.txt",
+        "nscript.dat",
+        "arc.nsa"
+      ],
+      "entry": []
+    }
   ],
-
   "_cores_ghi_chu": "Lõi libretro tải khi cần. {abi} tự thay bằng kiến trúc máy. Đổi 'version' để ép app tải lại lõi mới.",
   "_community_ghi_chu": "Link cộng đồng AowVN hiện ở Trang chủ. Để trống = ẩn nút.",
   "community": {
     "facebookGroup": "https://www.facebook.com/groups/aowvn",
     "discord": ""
   },
-
   "_coreOptionText_ghi_chu": "Dịch tên + giá trị tùy chọn lõi giả lập (lõi chỉ có tiếng Anh). Khóa = chữ tiếng Anh đúng như lõi hiện. Thiếu thì app hiện nguyên tiếng Anh.",
   "coreOptionText": {
     "labels": {
@@ -182,7 +609,6 @@
       "linear": "Tuyến tính"
     }
   },
-
   "_account_ghi_chu": "Tài khoản AowVN = Firebase của web (lấy đúng như trang /p/vote-game.html). donate = thông tin VietQR, nội dung CK: '<memoPrefix> DONATE <8 ký tự đầu uid> <mã game>'.",
   "account": {
     "enabled": true,
@@ -196,10 +622,14 @@
       "accountName": "VU DOAN BINH MINH",
       "template": "compact2",
       "memoPrefix": "AowVN",
-      "amounts": [10000, 20000, 50000, 100000]
+      "amounts": [
+        10000,
+        20000,
+        50000,
+        100000
+      ]
     }
   },
-
   "_adblock_ghi_chu": "Chặn quảng cáo trong trình duyệt nhúng (Discord/Facebook...). Bộ lọc tải về lần đầu mở, cập nhật mỗi updateHours giờ. allow = tên miền không bao giờ chặn.",
   "adblock": {
     "enabled": true,
@@ -207,32 +637,134 @@
       "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro-onlydomains.txt",
       "https://abpvn.com/android/abpvn.txt"
     ],
-    "allow": ["aow.vn", "discord.com", "discord.gg", "discordapp.com", "discordapp.net", "discord.media", "facebook.com", "fbcdn.net", "messenger.com", "hcaptcha.com", "recaptcha.net", "gstatic.com", "googleapis.com", "pixeldrain.com"],
+    "allow": [
+      "aow.vn",
+      "discord.com",
+      "discord.gg",
+      "discordapp.com",
+      "discordapp.net",
+      "discord.media",
+      "facebook.com",
+      "fbcdn.net",
+      "messenger.com",
+      "hcaptcha.com",
+      "recaptcha.net",
+      "gstatic.com",
+      "googleapis.com",
+      "pixeldrain.com"
+    ],
     "updateHours": 72
   },
-
   "cores": {
-    "desmume":      { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip" },
-    "melonds":      { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/melonds_libretro_android.so.zip" },
-    "mgba":         { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mgba_libretro_android.so.zip" },
-    "gambatte":     { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/gambatte_libretro_android.so.zip" },
-    "pcsx_rearmed": { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/pcsx_rearmed_libretro_android.so.zip" },
-    "ppsspp":       { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/ppsspp_libretro_android.so.zip",
-                      "systemFiles": "https://buildbot.libretro.com/assets/system/PPSSPP.zip" },
-    "easyrpg":      { "version": "1", "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/easyrpg_libretro_android.so.zip" }
+    "desmume": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip"
+    },
+    "melonds": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/melonds_libretro_android.so.zip"
+    },
+    "mgba": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mgba_libretro_android.so.zip"
+    },
+    "gambatte": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/gambatte_libretro_android.so.zip"
+    },
+    "pcsx_rearmed": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/pcsx_rearmed_libretro_android.so.zip"
+    },
+    "ppsspp": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/ppsspp_libretro_android.so.zip",
+      "systemFiles": "https://buildbot.libretro.com/assets/system/PPSSPP.zip"
+    },
+    "easyrpg": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/easyrpg_libretro_android.so.zip"
+    },
+    "snes9x": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/snes9x_libretro_android.so.zip",
+      "aspectRatio": 1.3333
+    },
+    "fceumm": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/fceumm_libretro_android.so.zip",
+      "aspectRatio": 1.3333
+    },
+    "nestopia": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/nestopia_libretro_android.so.zip",
+      "aspectRatio": 1.3333
+    },
+    "genesis_plus_gx": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/genesis_plus_gx_libretro_android.so.zip",
+      "aspectRatio": 1.3333
+    },
+    "mednafen_pce_fast": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mednafen_pce_fast_libretro_android.so.zip",
+      "aspectRatio": 1.3333
+    },
+    "mupen64plus_next_gles3": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mupen64plus_next_gles3_libretro_android.so.zip",
+      "aspectRatio": 1.3333
+    },
+    "parallel_n64": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/parallel_n64_libretro_android.so.zip",
+      "aspectRatio": 1.3333
+    },
+    "flycast": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/flycast_libretro_android.so.zip",
+      "aspectRatio": 1.3333
+    },
+    "handy": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/handy_libretro_android.so.zip",
+      "aspectRatio": 1.5686
+    },
+    "stella2014": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/stella2014_libretro_android.so.zip",
+      "aspectRatio": 1.3333
+    },
+    "prosystem": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/prosystem_libretro_android.so.zip",
+      "aspectRatio": 1.3333
+    },
+    "mednafen_wswan": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mednafen_wswan_libretro_android.so.zip",
+      "aspectRatio": 1.5556
+    },
+    "mednafen_ngp": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mednafen_ngp_libretro_android.so.zip",
+      "aspectRatio": 1.0526
+    }
   },
-
   "webPlayers": {
-    "ruffle": { "script": "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle/ruffle.js" }
+    "ruffle": {
+      "script": "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle/ruffle.js"
+    }
   },
-
   "_externalApps_ghi_chu": "App ngoài. packageNames: tên gói để nhận biết đã cài (CẦN XÁC NHẬN). downloadUrl: link APK/host tải thẳng, HOẶC link trang aow.vn/p/... (app tự đọc trang, lấy link tải thẳng đầu tiên, tải + cài trong app). Để trống = 'đang cập nhật link'.",
   "externalApps": [
     {
       "id": "kirikiroid2",
       "name": "Kirikiroid2",
       "description": "Chạy visual novel engine Kirikiri (file .xp3).",
-      "packageNames": ["org.tvp.kirikiri2"],
+      "packageNames": [
+        "org.tvp.kirikiri2"
+      ],
       "downloadUrl": "https://www.aow.vn/p/tai-gia-lap-kirikiroid.html",
       "guide": [
         "Bấm nút Tải để tải file cài đặt Kirikiroid2.",
@@ -245,11 +777,19 @@
       "id": "joiplay",
       "name": "JoiPlay",
       "description": "Chạy Ren'Py và RPG Maker XP/VX/VX Ace. Cần cài thêm plugin tương ứng.",
-      "packageNames": ["cyou.joiplay.joiplay"],
+      "packageNames": [
+        "cyou.joiplay.joiplay"
+      ],
       "downloadUrl": "https://www.aow.vn/p/tai-gia-lap-joiplay.html",
       "plugins": [
-        { "name": "RPG Maker Plugin", "downloadUrl": "" },
-        { "name": "Ren'Py Plugin", "downloadUrl": "" }
+        {
+          "name": "RPG Maker Plugin",
+          "downloadUrl": ""
+        },
+        {
+          "name": "Ren'Py Plugin",
+          "downloadUrl": ""
+        }
       ],
       "guide": [
         "Tải và cài JoiPlay.",
@@ -264,24 +804,70 @@
       "description": "Chạy visual novel NScripter/ONScripter.",
       "packageNames": [],
       "downloadUrl": "",
-      "guide": ["Link đang được cập nhật."]
+      "guide": [
+        "Link đang được cập nhật."
+      ]
     }
   ],
-
   "_archivePasswords_ghi_chu": "Mật khẩu file nén app tự thử lần lượt khi giải nén. Sai hết thì app hỏi user.",
-  "archivePasswords": ["aowvn.org"],
-
+  "archivePasswords": [
+    "aowvn.org"
+  ],
   "_downloadHosts_ghi_chu": "mode 'direct' = tải thẳng trong app theo 'directUrl' ($1 = nhóm bắt được của 'pattern'). mode 'browser' = mở trình duyệt.",
   "downloadHosts": [
-    { "name": "Pixeldrain", "host": "pixeldrain.com", "mode": "direct", "pattern": "/u/([A-Za-z0-9]+)", "directUrl": "https://pixeldrain.com/api/file/$1?download" },
-    { "name": "Pixeldrain", "host": "pixeldrain.com", "mode": "direct", "pattern": "/d/([A-Za-z0-9]+)", "directUrl": "https://pixeldrain.com/api/filesystem/$1?attach" },
-    { "name": "Pixeldrain", "host": "pixeldrain.com", "mode": "browser" },
-    { "name": "Box",        "host": "box.com",        "mode": "browser" },
-    { "name": "Viettel MyBox", "host": "mybox.vietteltelecom.vn", "mode": "browser" },
-    { "name": "TeraBox",    "host": "terabox.com",    "mode": "browser" },
-    { "name": "Google Drive", "host": "drive.google.com", "mode": "browser" },
-    { "name": "MediaFire",  "host": "mediafire.com",  "mode": "browser" },
-    { "name": "MEGA",       "host": "mega.nz",        "mode": "browser" },
-    { "name": "AowVN US",   "host": "aowvn.us",       "mode": "browser" }
+    {
+      "name": "Pixeldrain",
+      "host": "pixeldrain.com",
+      "mode": "direct",
+      "pattern": "/u/([A-Za-z0-9]+)",
+      "directUrl": "https://pixeldrain.com/api/file/$1?download"
+    },
+    {
+      "name": "Pixeldrain",
+      "host": "pixeldrain.com",
+      "mode": "direct",
+      "pattern": "/d/([A-Za-z0-9]+)",
+      "directUrl": "https://pixeldrain.com/api/filesystem/$1?attach"
+    },
+    {
+      "name": "Pixeldrain",
+      "host": "pixeldrain.com",
+      "mode": "browser"
+    },
+    {
+      "name": "Box",
+      "host": "box.com",
+      "mode": "browser"
+    },
+    {
+      "name": "Viettel MyBox",
+      "host": "mybox.vietteltelecom.vn",
+      "mode": "browser"
+    },
+    {
+      "name": "TeraBox",
+      "host": "terabox.com",
+      "mode": "browser"
+    },
+    {
+      "name": "Google Drive",
+      "host": "drive.google.com",
+      "mode": "browser"
+    },
+    {
+      "name": "MediaFire",
+      "host": "mediafire.com",
+      "mode": "browser"
+    },
+    {
+      "name": "MEGA",
+      "host": "mega.nz",
+      "mode": "browser"
+    },
+    {
+      "name": "AowVN US",
+      "host": "aowvn.us",
+      "mode": "browser"
+    }
   ]
 }

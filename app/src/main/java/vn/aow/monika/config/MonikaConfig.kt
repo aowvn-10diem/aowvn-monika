@@ -27,6 +27,8 @@ data class MonikaConfig(
     val account: AccountConfig = AccountConfig(),
     /** Bản dịch tên/giá trị tùy chọn lõi giả lập (tiếng Anh → tiếng Việt). */
     val coreOptionText: CoreOptionText = CoreOptionText(),
+    /** Báo lỗi game / lõi giả lập. */
+    val crash: CrashConfig = CrashConfig(),
 ) {
     fun system(id: String): SystemDef? = systems.firstOrNull { it.id == id }
     fun externalApp(id: String): ExternalApp? = externalApps.firstOrNull { it.id == id }
@@ -34,6 +36,14 @@ data class MonikaConfig(
     /** Nhãn blog dùng làm bộ lọc, giữ thứ tự khai báo, bỏ trùng. */
     fun feedLabels(): List<String> = systems.flatMap { it.labels }.distinct()
 }
+
+@Serializable
+data class CrashConfig(
+    /** Địa chỉ nhận báo lỗi (POST JSON, ẩn danh). Trống = người chơi tự chép báo lỗi dán vào nhóm AowVN. */
+    val endpoint: String = "",
+    /** true = tự gửi báo lỗi game sập (nếu có endpoint) không cần hỏi. */
+    val autoSend: Boolean = false,
+)
 
 @Serializable
 data class CoreOptionText(

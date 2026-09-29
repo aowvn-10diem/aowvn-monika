@@ -223,6 +223,7 @@ fun SheetRow(
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    maxTitleLines: Int = 2,
     @DrawableRes icon: Int? = null,
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
@@ -237,8 +238,8 @@ fun SheetRow(
         leading?.invoke()
         icon?.let { Icon(painterResource(it), null, Modifier.size(20.dp), tint = SheetColors.text) }
         Column(Modifier.weight(1f).padding(start = if (icon != null || leading != null) 12.dp else 0.dp)) {
-            Text(title, style = Monika.type.bodyStrong, color = SheetColors.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            subtitle?.let { Text(it, style = Monika.type.caption, color = SheetColors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            Text(title, style = Monika.type.bodyStrong, color = SheetColors.text, maxLines = maxTitleLines, overflow = TextOverflow.Ellipsis)
+            subtitle?.let { Text(it, style = Monika.type.caption, color = SheetColors.textSecondary, maxLines = 3, overflow = TextOverflow.Ellipsis) }
         }
         trailing?.invoke()
     }

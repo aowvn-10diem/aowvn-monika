@@ -158,6 +158,15 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     "Dung lượng & bộ nhớ đệm", "Tự dọn khi đầy · giới hạn ${cacheLimitLabel()}",
                 ) { StorageSettingsContent() }
 
+                SettingGroup(
+                    "crashlog", open, { open = it }, R.drawable.ic_fluent_info_24_regular,
+                    Brush.linearGradient(listOf(Color(0xFFFF806E), Color(0xFFE95CC8))),
+                    "Nhật ký lỗi", "Game sập / lõi lỗi · gửi cho AowVN để sửa",
+                ) {
+                    Text("Khi game hoặc lõi giả lập sập, Monika tự lưu thông tin (lõi, giai đoạn, log) — không có đường dẫn hay tài khoản của bạn.", style = Monika.type.caption, color = c.textSecondary)
+                    SoftPillButton("Mở nhật ký lỗi", { vn.aow.monika.diag.Diagnostics.logOpen.value = true }, R.drawable.ic_fluent_document_24_regular)
+                }
+
                 SettingGroup("cores", open, { open = it }, R.drawable.ic_fluent_layer_24_regular, Brush.linearGradient(listOf(Color(0xFF63D68A), Color(0xFF66CFF3))), "Lõi giả lập", "${cfg.cores.size} lõi · tải khi chơi lần đầu") {
                     // Hệ có nhiều lõi (vd. NDS): user tự chọn; game chạy lỗi thì đổi lõi khác thử.
                     cfg.systems.filter { it.altCores.size > 1 }.forEach { sys ->

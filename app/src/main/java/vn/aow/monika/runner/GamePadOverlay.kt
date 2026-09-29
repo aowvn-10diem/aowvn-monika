@@ -86,13 +86,39 @@ import kotlin.math.abs
  * Nhờ vậy nút "A" của Nintendo (bên phải) và "×" của PlayStation (bên dưới) đều đúng.
  */
 
-enum class PadLayout { GB, GBA, NDS, PS, RPG }
+enum class PadLayout {
+    GB, GBA, NDS, PS, RPG,
+    /** SNES: L R + 4 nút vị trí X/Y/A/B (giống NDS nhưng không có màn cảm ứng). */
+    SNES,
+    /** Mega Drive: 3 nút A B C + hàng X Y Z (tay 6 nút). */
+    GEN,
+    /** N64: cần analog + A B + Z L R + 4 nút C (gửi qua cần phải). */
+    N64,
+    /** Dreamcast: cần analog + A B X Y + 2 cò LT RT. */
+    DC,
+    /** PSP: cần analog (nub) + d-pad + △□○× + L R. */
+    PSP;
+
+    /** Có cần analog (chuyển qua lại với D-pad bằng nút nhỏ dưới cụm trái). */
+    val hasStick get() = this == N64 || this == DC || this == PSP || this == PS
+    /** Mở game là dùng cần luôn (N64 / Dreamcast / PSP); PS1 mặc định D-pad, bật cần khi game cần. */
+    val stickDefault get() = this == N64 || this == DC || this == PSP
+}
+
+/** Mã nguồn cần analog gửi cho lõi. */
+const val STICK_LEFT = 0
+const val STICK_RIGHT = 1
 
 fun padFor(core: String, override: String?): PadLayout = override?.let { runCatching { PadLayout.valueOf(it.uppercase()) }.getOrNull() }
     ?: when (core) {
         "desmume", "melonds" -> PadLayout.NDS
-        "gambatte" -> PadLayout.GB
-        "pcsx_rearmed", "ppsspp" -> PadLayout.PS
+        "gambatte", "fceumm", "nestopia", "prosystem", "stella2014", "handy", "mednafen_pce_fast", "mednafen_wswan", "mednafen_ngp" -> PadLayout.GB
+        "snes9x", "bsnes" -> PadLayout.SNES
+        "genesis_plus_gx", "picodrive" -> PadLayout.GEN
+        "mupen64plus_next_gles3", "mupen64plus_next", "parallel_n64" -> PadLayout.N64
+        "flycast" -> PadLayout.DC
+        "ppsspp" -> PadLayout.PSP
+        "pcsx_rearmed" -> PadLayout.PS
         "easyrpg" -> PadLayout.RPG
         else -> PadLayout.GBA
     }
@@ -115,6 +141,9 @@ class InGameState {
 
     /** Khác null = đang mở bảng tùy chọn giả lập. */
     var options by mutableStateOf<List<CoreOption>?>(null)
+
+    /** Cụm trái đang là cần analog (null = theo mặc định của bố cục). */
+    var stickMode by mutableStateOf<Boolean?>(null)
 }
 
 /** Vùng an toàn phía trên: thanh trạng thái ∪ camera/cutout (cả khi thanh trạng thái bị ẩn), và 2 bên cạnh cutout khi máy ngang. */
@@ -141,6 +170,8 @@ fun InGameOverlay(
     onOptionsReset: () -> Unit = {},
     /** Chụp màn hình + tự lưu game + mở Group Facebook để hỏi. */
     onAsk: () -> Unit = {},
+    /** Cần analog / nút C: (STICK_LEFT | STICK_RIGHT, x, y) với x,y ∈ [-1,1], y dương = xuống. */
+    onMotion: (Int, Float, Float) -> Unit = { _, _, _ -> },
 ) {
     // Nút Back của máy: mở menu (thay vì thoát ngay, dễ bấm nhầm khi đang chơi); đang chỉnh phím → xong.
     androidx.activity.compose.BackHandler(enabled = !state.menuOpen && state.options == null) {
@@ -173,7 +204,7 @@ fun InGameOverlay(
             )
         }
 
-        if (showPad) VirtualPad(layout, state, send, Modifier.align(Alignment.BottomCenter))
+        if (showPad) VirtualPad(layout, state, send, onMotion, Modifier.align(Alignment.BottomCenter))
 
         // Thanh chỉnh tay cầm: chọn cỡ, về mặc định, xong (lưu lại). Giữa màn hình để vẫn thấy phím khi kéo.
         if (state.editing) {
@@ -298,27 +329,26 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.awa
 }
 
 @Composable
-private fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) -> Unit, modifier: Modifier) {
-    val shoulders = layout == PadLayout.GBA || layout == PadLayout.NDS || layout == PadLayout.PS
+private fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) -> Unit, motion: (Int, Float, Float) -> Unit, modifier: Modifier) {
+    val useStick = layout.hasStick && (state.stickMode ?: layout.stickDefault)
     Column(modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 16.dp).alpha(if (state.editing) 1f else state.opacity)) {
-        if (shoulders) {
-            Row(Modifier.fillMaxWidth()) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (layout == PadLayout.PS) PillKey("L2", KeyEvent.KEYCODE_BUTTON_L2, send)
-                    PillKey("L", KeyEvent.KEYCODE_BUTTON_L1, send)
-                }
-                Spacer(Modifier.weight(1f))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
-                    if (layout == PadLayout.PS) PillKey("R2", KeyEvent.KEYCODE_BUTTON_R2, send)
-                    PillKey("R", KeyEvent.KEYCODE_BUTTON_R1, send)
+        ShoulderRow(layout, send)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Movable(state, state.dpadOffset, { state.dpadOffset += it }) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (useStick) AnalogStick { x, y -> motion(STICK_LEFT, x, y) } else DPad(send)
+                    if (layout.hasStick) {
+                        Spacer(Modifier.height(6.dp))
+                        SwapPill(if (useStick) "Cần → D-pad" else "D-pad → Cần") {
+                            state.stickMode = !useStick
+                            // Đổi chế độ khi đang nghiêng cần → nhả cần để game không bị kẹt hướng.
+                            motion(STICK_LEFT, 0f, 0f)
+                        }
+                    }
                 }
             }
-            Spacer(Modifier.height(12.dp))
-        }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Movable(state, state.dpadOffset, { state.dpadOffset += it }) { DPad(send) }
             Spacer(Modifier.weight(1f))
-            Movable(state, state.faceOffset, { state.faceOffset += it }) { FaceButtons(layout, send) }
+            Movable(state, state.faceOffset, { state.faceOffset += it }) { FaceButtons(layout, send, motion) }
         }
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
@@ -326,6 +356,90 @@ private fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) -
             Spacer(Modifier.width(12.dp))
             PillKey("START", KeyEvent.KEYCODE_BUTTON_START, send)
         }
+    }
+}
+
+/** Hàng nút vai phía trên, theo từng hệ. */
+@Composable
+private fun ShoulderRow(layout: PadLayout, send: (Int, Int) -> Unit) {
+    when (layout) {
+        PadLayout.GB, PadLayout.RPG -> return
+        PadLayout.GEN -> Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+            // Tay 6 nút: X = L, Y = nút trên, Z = R (theo cách lõi genesis_plus_gx ánh xạ).
+            PillKey("X", KeyEvent.KEYCODE_BUTTON_L1, send)
+            PillKey("Y", KeyEvent.KEYCODE_BUTTON_Y, send)
+            PillKey("Z", KeyEvent.KEYCODE_BUTTON_R1, send)
+        }
+        else -> {
+            val twoLeft = when (layout) { PadLayout.PS -> "L2" to "L"; PadLayout.N64 -> "Z" to "L"; PadLayout.DC -> "LT" to null; else -> null to "L" }
+            val twoRight = when (layout) { PadLayout.PS -> "R2" to "R"; PadLayout.DC -> "RT" to null; else -> null to "R" }
+            Row(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    twoLeft.first?.let { PillKey(it, KeyEvent.KEYCODE_BUTTON_L2, send) }
+                    twoLeft.second?.let { PillKey(it, KeyEvent.KEYCODE_BUTTON_L1, send) }
+                }
+                Spacer(Modifier.weight(1f))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
+                    twoRight.first?.let { PillKey(it, KeyEvent.KEYCODE_BUTTON_R2, send) }
+                    twoRight.second?.let { PillKey(it, KeyEvent.KEYCODE_BUTTON_R1, send) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SwapPill(text: String, onClick: () -> Unit) {
+    Text(
+        text, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.clip(Radius.pill).background(Color(0x99181719)).border(1.dp, Color(0x33FFFFFF), Radius.pill)
+            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); if (awaitRelease()) onClick() } }
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+    )
+}
+
+/** Cần analog kính mờ: kéo núm trong vòng tròn, nhả tay về giữa. Gửi (x, y) ∈ [-1,1]; y dương = xuống. */
+@Composable
+private fun AnalogStick(size: Dp = 148.dp, onMove: (Float, Float) -> Unit) {
+    var knob by remember { mutableStateOf(Offset.Zero) }
+    val knobSize = 60.dp
+    Box(
+        Modifier.size(size).clip(Radius.pill).background(Color(0x99181719)).border(1.dp, Color(0x33FFFFFF), Radius.pill)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    val radius = this.size.width / 2f - knobSize.toPx() / 2f
+                    val center = androidx.compose.ui.geometry.Offset(this.size.width / 2f, this.size.height / 2f)
+                    fun update(pos: Offset) {
+                        var d = pos - center
+                        val len = d.getDistance()
+                        if (len > radius) d = d * (radius / len)
+                        knob = d
+                        val nx = (d.x / radius).coerceIn(-1f, 1f)
+                        val ny = (d.y / radius).coerceIn(-1f, 1f)
+                        // Vùng chết nhỏ để cần không trôi.
+                        onMove(if (abs(nx) < 0.08f) 0f else nx, if (abs(ny) < 0.08f) 0f else ny)
+                    }
+                    update(down.position)
+                    down.consume()
+                    while (true) {
+                        val e = awaitPointerEvent()
+                        val ch = e.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!ch.pressed) break
+                        update(ch.position)
+                        ch.consume()
+                    }
+                    knob = Offset.Zero
+                    onMove(0f, 0f)
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(Modifier.size(knobSize * 1.4f).clip(Radius.pill).background(Color(0x22FFFFFF)))
+        Box(
+            Modifier.offset { IntOffset(knob.x.roundToInt(), knob.y.roundToInt()) }.size(knobSize).clip(Radius.pill)
+                .background(Brush.linearGradient(listOf(Color(0xFFFFB052), Color(0xFFFF806E)))).border(1.dp, Color(0x55FFFFFF), Radius.pill),
+        )
     }
 }
 
@@ -379,7 +493,7 @@ private fun DPad(send: (Int, Int) -> Unit) {
 }
 
 @Composable
-private fun FaceButtons(layout: PadLayout, send: (Int, Int) -> Unit) {
+private fun FaceButtons(layout: PadLayout, send: (Int, Int) -> Unit, motion: (Int, Float, Float) -> Unit) {
     val bottom = KeyEvent.KEYCODE_BUTTON_A
     val right = KeyEvent.KEYCODE_BUTTON_B
     val left = KeyEvent.KEYCODE_BUTTON_X
@@ -392,8 +506,51 @@ private fun FaceButtons(layout: PadLayout, send: (Int, Int) -> Unit) {
             RoundKey("B", bottom, coral, send, Modifier.align(Alignment.BottomStart))
             RoundKey("A", right, orange, send, Modifier.align(Alignment.TopEnd))
         }
-        PadLayout.NDS -> Diamond(send, glass, listOf("X" to top, "Y" to left, "A" to right, "B" to bottom), highlight = right, accent = orange)
-        PadLayout.PS -> Diamond(send, glass, listOf("△" to top, "□" to left, "○" to right, "×" to bottom), highlight = -1, accent = orange)
+        PadLayout.NDS, PadLayout.SNES -> Diamond(send, glass, listOf("X" to top, "Y" to left, "A" to right, "B" to bottom), highlight = right, accent = orange)
+        PadLayout.PS, PadLayout.PSP -> Diamond(send, glass, listOf("△" to top, "□" to left, "○" to right, "×" to bottom), highlight = -1, accent = orange)
+        // Dreamcast: nút xếp theo VỊ TRÍ như tay Xbox — trên Y, trái X, phải B, dưới A.
+        PadLayout.DC -> Diamond(send, glass, listOf("Y" to top, "X" to left, "B" to right, "A" to bottom), highlight = bottom, accent = orange)
+        // Mega Drive: A B C nằm ngang (A = nút trái, B = nút dưới, C = nút phải theo cách lõi ánh xạ).
+        PadLayout.GEN -> Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
+            RoundKey("A", left, glass, send, Modifier.padding(bottom = 0.dp), 62.dp)
+            RoundKey("B", bottom, coral, send, Modifier.padding(bottom = 18.dp), 62.dp)
+            RoundKey("C", right, orange, send, Modifier.padding(bottom = 36.dp), 62.dp)
+        }
+        // N64: A (dưới) + B (trái, cao hơn) + 4 nút C (bên trên) gửi qua cần phải.
+        PadLayout.N64 -> Box(Modifier.size(width = 200.dp, height = 190.dp)) {
+            Box(Modifier.align(Alignment.TopEnd)) { CKeys(motion) }
+            RoundKey("B", left, glass, send, Modifier.align(Alignment.BottomStart).padding(bottom = 34.dp), 58.dp)
+            RoundKey("A", bottom, coral, send, Modifier.align(Alignment.BottomEnd), 68.dp)
+        }
+    }
+}
+
+/** 4 nút C của N64: nhấn = đẩy cần phải về hướng đó. */
+@Composable
+private fun CKeys(motion: (Int, Float, Float) -> Unit) {
+    val s = 40.dp
+    val glass = Brush.linearGradient(listOf(Color(0xCC3A3520), Color(0xCC3A3520)))
+    @Composable
+    fun c(label: String, dx: Float, dy: Float, mod: Modifier) {
+        var pressed by remember { mutableStateOf(false) }
+        Box(
+            mod.size(s).graphicsLayer { val sc = if (pressed) 0.9f else 1f; scaleX = sc; scaleY = sc }
+                .clip(Radius.pill).background(glass).border(1.dp, Color(0x66FFD54F), Radius.pill)
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        val d = awaitFirstDown(); d.consume(); pressed = true; motion(STICK_RIGHT, dx, dy)
+                        while (true) { val e = awaitPointerEvent(); val ch = e.changes.firstOrNull { it.id == d.id }; if (ch == null || !ch.pressed) break; ch.consume() }
+                        pressed = false; motion(STICK_RIGHT, 0f, 0f)
+                    }
+                },
+            contentAlignment = Alignment.Center,
+        ) { Text(label, color = Color(0xFFFFD54F), fontSize = 16.sp, fontWeight = FontWeight.Bold) }
+    }
+    Box(Modifier.size(s * 3)) {
+        c("▲", 0f, -1f, Modifier.align(Alignment.TopCenter))
+        c("◀", -1f, 0f, Modifier.align(Alignment.CenterStart))
+        c("▶", 1f, 0f, Modifier.align(Alignment.CenterEnd))
+        c("▼", 0f, 1f, Modifier.align(Alignment.BottomCenter))
     }
 }
 

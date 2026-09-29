@@ -18,3 +18,7 @@
 -keep class org.tukaani.xz.** { *; }
 # 7-Zip-JBinding: mã C gọi ngược lớp Java theo tên
 -keep class net.sf.sevenzipjbinding.** { *; }
+
+# Báo lỗi game (kotlinx.serialization) + thông tin game tự nhận diện
+-keep class vn.aow.monika.diag.** { *; }
+-keep class vn.aow.monika.library.GameInfoResolver* { *; }

@@ -29,6 +29,9 @@ class CoreManager(
     private fun versionFile(id: String) = File(coreDir(id), "version")
 
     fun installedVersion(id: String): String? = versionFile(id).takeIf { it.exists() }?.readText()
+
+    /** Ghi chú về bản lõi đang cài (ngày tải, kích thước, Last-Modified của máy chủ) — đính vào báo lỗi. */
+    fun info(id: String): String = runCatching { File(coreDir(id), "info.txt").readText() }.getOrDefault("")
     fun delete(id: String) = coreDir(id).deleteRecursively()
 
     /** Mỗi lõi 1 khóa: tải sẵn ngầm và bấm Chơi cùng lúc không tải 2 lần. */
@@ -56,7 +59,8 @@ class CoreManager(
             coreDir(id).mkdirs()
             val tmp = File(coreDir(id), "download.tmp")
             var lastPct = -1
-            download(def.url.replace("{abi}", abi), { pct ->
+            var serverDate = ""
+            download(def.url.replace("{abi}", abi), { serverDate = it }, { pct ->
                 if (pct != lastPct) { lastPct = pct; kotlinx.coroutines.runBlocking(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)… $pct%") } }
             }) { zip ->
                 while (true) {
@@ -69,6 +73,12 @@ class CoreManager(
             }
             if (!tmp.renameTo(so)) throw IOException("Không lưu được lõi $id")
             versionFile(id).writeText(def.version)
+            runCatching {
+                File(coreDir(id), "info.txt").writeText(
+                    "cfg v${def.version} · $abi · ${so.length() / 1024}KB · tải ${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.US).format(System.currentTimeMillis())}" +
+                        (if (serverDate.isNotBlank()) " · bản dựng $serverDate" else "")
+                )
+            }
         }
         def.systemFiles?.let { url ->
             // Một số lõi (PPSSPP...) cần thêm file hệ thống: font, dữ liệu...
@@ -84,9 +94,10 @@ class CoreManager(
         so
     }
 
-    private fun download(url: String, progress: ((Int) -> Unit)? = null, consume: (ZipInputStream) -> Unit) {
+    private fun download(url: String, onHeaders: ((String) -> Unit)? = null, progress: ((Int) -> Unit)? = null, consume: (ZipInputStream) -> Unit) {
         http.newCall(Request.Builder().url(url).build()).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Tải thất bại (HTTP ${response.code}): $url")
+            onHeaders?.invoke(response.header("Last-Modified").orEmpty())
             val body = response.body!!
             val total = body.contentLength()
             // Đếm byte đã tải để báo % (máy chậm mạng biết đang tải chứ không phải treo).

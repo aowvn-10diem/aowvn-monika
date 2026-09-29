@@ -66,6 +66,7 @@
 
         <activity
             android:name=".runner.RetroActivity"
+            android:process=":game"
             android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize"
             android:screenOrientation="fullUser"
             android:theme="@style/Theme.Monika.Fullscreen" />

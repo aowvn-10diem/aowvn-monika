@@ -118,3 +118,14 @@ class GameInfoTest {
         assertTrue(GameInfoResolver.isIcon(out.meta?.cover))
     }
 }
+
+class RomSniffTest {
+    @get:org.junit.Rule val tmp = org.junit.rules.TemporaryFolder()
+    @org.junit.Test fun markdownIsNotAMegaDriveGame() {
+        val md = java.io.File(tmp.root, "README.md").apply { writeText("# Xin chào\n".repeat(200)) }
+        org.junit.Assert.assertFalse(vn.aow.monika.library.RomSniff.accepts(md))
+        val rom = java.io.File(tmp.root, "sonic.md").apply { writeBytes(ByteArray(0x200).also { "SEGA MEGA DRIVE".toByteArray().copyInto(it, 0x100) }) }
+        org.junit.Assert.assertTrue(vn.aow.monika.library.RomSniff.accepts(rom))
+        org.junit.Assert.assertTrue(vn.aow.monika.library.RomSniff.accepts(java.io.File(tmp.root, "mario.sfc")))
+    }
+}
