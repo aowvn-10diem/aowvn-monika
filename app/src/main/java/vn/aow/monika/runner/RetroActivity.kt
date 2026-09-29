@@ -123,7 +123,7 @@ class RetroActivity : ComponentActivity() {
                         onBack = { finish() },
                         onSave = { saveState() },
                         onLoad = { loadState() },
-                        onTurbo = { ui.turbo = !ui.turbo; retroView?.frameSpeed = if (ui.turbo) 2 else 1 },
+                        onTurbo = { ui.speed = ui.speed % 4 + 1; retroView?.frameSpeed = ui.speed },
                         onOpacity = {
                             ui.opacity = when { ui.opacity < 0.4f -> 0.65f; ui.opacity < 0.9f -> 1f; else -> 0.3f }
                             AppGraph.prefs.padOpacity = ui.opacity

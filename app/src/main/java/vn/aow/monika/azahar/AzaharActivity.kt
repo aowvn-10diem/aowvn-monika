@@ -127,8 +127,8 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
                             onSave = { saveState() },
                             onLoad = { loadState() },
                             onTurbo = {
-                                ui.turbo = !ui.turbo
-                                if (ui.turbo) NativeLibrary.setTemporaryFrameLimit(2.0) else NativeLibrary.disableTemporaryFrameLimit()
+                                ui.speed = ui.speed % 4 + 1
+                                if (ui.speed > 1) NativeLibrary.setTemporaryFrameLimit(ui.speed.toDouble()) else NativeLibrary.disableTemporaryFrameLimit()
                             },
                             onOpacity = {
                                 ui.opacity = when { ui.opacity < 0.4f -> 0.65f; ui.opacity < 0.9f -> 1f; else -> 0.3f }

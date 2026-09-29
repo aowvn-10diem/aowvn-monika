@@ -128,7 +128,9 @@ fun padFor(core: String, override: String?): PadLayout = override?.let { runCatc
 
 class InGameState {
     var menuOpen by mutableStateOf(false)
-    var turbo by mutableStateOf(false)
+    /** Hệ số tốc độ game: 1x → 2x → 3x → 4x (bấm "Tốc độ" trong menu để xoay vòng). */
+    var speed by mutableStateOf(1)
+    val turbo get() = speed > 1
     var opacity by mutableStateOf(0.65f)
     var toast by mutableStateOf<String?>(null)
 
@@ -246,7 +248,7 @@ fun InGameOverlay(
             actions = listOf(
                 SheetAction(if (state.slot == 0) "Lưu bản tự lưu" else "Lưu ô ${state.slot}", R.drawable.ic_fluent_save_24_regular, highlight = true, onClick = onSave),
                 SheetAction(if (state.slot == 0) "Tải bản tự lưu" else "Tải ô ${state.slot}", R.drawable.ic_fluent_folder_open_24_regular, enabled = state.slot in state.filledSlots || state.filledSlots.isEmpty(), onClick = onLoad),
-                SheetAction(if (state.turbo) "Tốc độ 2x" else "Tốc độ 1x", R.drawable.ic_fluent_top_speed_24_regular, highlight = state.turbo, keepOpen = true, onClick = onTurbo),
+                SheetAction("Tốc độ ${state.speed}x", R.drawable.ic_fluent_top_speed_24_regular, highlight = state.turbo, keepOpen = true, onClick = onTurbo),
                 SheetAction("Độ mờ phím ${(state.opacity * 100).toInt()}%", R.drawable.ic_fluent_eye_24_regular, keepOpen = true, onClick = onOpacity),
                 SheetAction("Chỉnh phím", R.drawable.ic_fluent_xbox_controller_24_regular) { state.editing = true },
                 SheetAction("Tùy chọn giả lập", R.drawable.ic_fluent_settings_24_regular, onClick = onOptions),

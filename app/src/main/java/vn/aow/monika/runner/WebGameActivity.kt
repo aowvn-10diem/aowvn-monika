@@ -21,6 +21,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.webkit.WebViewAssetLoader
 import vn.aow.monika.AppGraph
+import vn.aow.monika.cheats.WebCheatSheet
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -55,6 +56,7 @@ class WebGameActivity : ComponentActivity() {
             .addPathHandler("/__monika/", PlayerPageHandler(entry.name))
             .build()
 
+        var cheatsRef: vn.aow.monika.cheats.WebCheatController? = null
         val web = WebView(this).apply {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
@@ -65,8 +67,14 @@ class WebGameActivity : ComponentActivity() {
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
                     loader.shouldInterceptRequest(request.url)
+
+                override fun onPageFinished(view: WebView, url: String?) {
+                    cheatsRef?.onPageFinished()
+                }
             }
         }
+        val cheats = vn.aow.monika.cheats.WebCheatController(this) { js, done -> web.post { web.evaluateJavascript(js) { done(it) } } }
+        cheatsRef = cheats
         val start = if (player == "ruffle") "https://$HOST/__monika/ruffle.html" else "https://$HOST/game/" + android.net.Uri.encode(entry.name)
         val title = intent.getStringExtra(EXTRA_TITLE) ?: entry.parentFile?.name ?: entry.nameWithoutExtension
         val system = if (player == "ruffle") "Flash" else "Game web"
@@ -74,7 +82,7 @@ class WebGameActivity : ComponentActivity() {
         val overlay = androidx.compose.ui.platform.ComposeView(this).apply {
             setContent {
                 vn.aow.monika.ui.theme.MonikaTheme {
-                    WebGameOverlay(title, system, onReload = { web.loadUrl(start) }, onExit = { finish() }, onAsk = {
+                    WebGameOverlay(title, system, cheats, onReload = { web.loadUrl(start) }, onExit = { finish() }, onAsk = {
                         // Game web tự lưu theo cách của game (localStorage) → chỉ cần chụp màn hình.
                         val bmp = runCatching {
                             android.graphics.Bitmap.createBitmap(web.width, web.height, android.graphics.Bitmap.Config.ARGB_8888)
@@ -168,7 +176,7 @@ class WebGameActivity : ComponentActivity() {
 
 /** Nút menu nhỏ góc phải trên (né camera) + menu popup chung: Chơi tiếp · Tải lại · Thoát. Nút Back của máy cũng mở menu. */
 @androidx.compose.runtime.Composable
-private fun WebGameOverlay(title: String, system: String, onReload: () -> Unit, onExit: () -> Unit, onAsk: () -> Unit) {
+private fun WebGameOverlay(title: String, system: String, cheats: vn.aow.monika.cheats.WebCheatController, onReload: () -> Unit, onExit: () -> Unit, onAsk: () -> Unit) {
     var open by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     androidx.activity.compose.BackHandler(enabled = !open) { open = true }
     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
@@ -177,10 +185,12 @@ private fun WebGameOverlay(title: String, system: String, onReload: () -> Unit, 
             open, { open = false }, title = title, subtitle = system,
             actions = listOf(
                 vn.aow.monika.ui.theme.SheetAction("Chơi tiếp", vn.aow.monika.R.drawable.ic_fluent_play_24_regular, highlight = true) {},
+                vn.aow.monika.ui.theme.SheetAction("Cheat & tốc độ", vn.aow.monika.R.drawable.ic_fluent_document_24_regular) { cheats.show() },
                 vn.aow.monika.ui.theme.SheetAction("Hỏi nhóm FB", vn.aow.monika.R.drawable.ic_fluent_people_community_24_regular, onClick = onAsk),
                 vn.aow.monika.ui.theme.SheetAction("Tải lại game", vn.aow.monika.R.drawable.ic_fluent_arrow_clockwise_24_regular, onClick = onReload),
                 vn.aow.monika.ui.theme.SheetAction("Thoát game", vn.aow.monika.R.drawable.ic_fluent_door_arrow_left_24_regular, onClick = onExit),
             ),
         )
+        WebCheatSheet(cheats)
     }
 }
