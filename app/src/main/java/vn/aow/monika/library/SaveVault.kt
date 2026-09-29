@@ -13,7 +13,7 @@ import java.util.zip.ZipOutputStream
  */
 object SaveVault {
     /** Thư mục (tương đối filesDir) thuộc về save của người chơi. */
-    private val roots = listOf("saves", "states", "azahar/sdmc", "azahar/states", "azahar/nand/data")
+    private val roots = listOf("saves", "states", "cheats", "azahar/sdmc", "azahar/states", "azahar/cheats", "azahar/nand/data")
 
     private fun files(c: Context) = roots.flatMap { r ->
         File(c.filesDir, r).walkTopDown().filter { it.isFile }.toList()

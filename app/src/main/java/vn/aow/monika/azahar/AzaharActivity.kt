@@ -213,7 +213,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         lifecycleScope.launch {
             delay(1500)
             Diagnostics.end(this@AzaharActivity)
-            RetroActivity.start(this@AzaharActivity, core, File(gamePath), systemName, title, "n3ds", intent.getStringExtra(PlayClock.EXTRA_KEY))
+            RetroActivity.start(this@AzaharActivity, core, File(gamePath), systemName, title, "n3ds", intent.getStringExtra(PlayClock.EXTRA_KEY), "3ds")
             finish()
         }
     }

@@ -46,7 +46,7 @@ class GameLauncher(private val configRepo: ConfigRepository) {
                 // Lõi user chọn trong Cài đặt (nếu còn trong config), không thì lõi mặc định.
                 val core = vn.aow.monika.AppGraph.prefs.coreOverride(system.id)?.takeIf { it in configRepo.current.cores }
                     ?: system.core ?: return LaunchResult.Failed("Cấu hình hệ ${system.name} thiếu 'core'.")
-                RetroActivity.start(activity, core, entry, system.name, game.name, system.pad, game.key)
+                RetroActivity.start(activity, core, entry, system.name, game.name, system.pad, game.key, system.id)
                 LaunchResult.Started
             }
             "web" -> {

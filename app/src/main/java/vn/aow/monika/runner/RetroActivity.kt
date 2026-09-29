@@ -29,6 +29,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import vn.aow.monika.AppGraph
+import androidx.compose.foundation.layout.fillMaxSize
+import vn.aow.monika.cheats.CheatController
+import vn.aow.monika.cheats.CheatSheet
+import vn.aow.monika.cheats.LibretroCheats
 import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.ui.theme.MonikaTheme
 import java.io.File
@@ -46,6 +50,8 @@ class RetroActivity : ComponentActivity() {
     private lateinit var root: FrameLayout
     private val ui = InGameState()
     private var ready by mutableStateOf(false)
+    private lateinit var cheats: CheatController
+    private val cheatPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { u -> if (u != null) cheats.importFile(u) }
     private var aspect = 4f / 3f
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +83,8 @@ class RetroActivity : ComponentActivity() {
         ui.faceOffset = prefs.padOffset("face").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
 
         val key = "${File(gamePath).nameWithoutExtension}-${gamePath.hashCode()}"
+        // Cheat chung của Monika: nhận diện game theo tên → tự thêm mã từ kho libretro-database (mặc định tắt).
+        cheats = CheatController(this, key, intent.getStringExtra(EXTRA_SYSTEM_ID).orEmpty(), listOf(title, File(gamePath).nameWithoutExtension), LibretroCheats { retroView })
         sramFile = File(File(filesDir, "saves").apply { mkdirs() }, "$key.srm")
         stateFile = File(File(filesDir, "states").apply { mkdirs() }, "$key.state")
         refreshSlots()
@@ -108,6 +116,7 @@ class RetroActivity : ComponentActivity() {
         val overlay = ComposeView(this).apply {
             setContent {
                 MonikaTheme {
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
                     InGameOverlay(
                         state = ui, system = systemName, title = title, layout = layout, showPad = ready,
                         send = { action, k -> retroView?.sendKeyEvent(action, k) },
@@ -140,7 +149,12 @@ class RetroActivity : ComponentActivity() {
                             ui.options = null
                             showToast("Đã về mặc định. Mở lại game để áp dụng hết.", 2600)
                         },
+                        extraActions = listOf(
+                            vn.aow.monika.ui.theme.SheetAction("Mã cheat", vn.aow.monika.R.drawable.ic_fluent_document_24_regular) { cheats.show() },
+                        ),
                     )
+                    CheatSheet(cheats) { cheatPicker.launch(arrayOf("text/plain", "application/octet-stream", "*/*")) }
+                    }
                 }
             }
         }
@@ -177,12 +191,14 @@ class RetroActivity : ComponentActivity() {
             retroView = view
             ready = true
             Diagnostics.stage(this@RetroActivity, "view-created")
+            launch { if (cheats.prepare()) showToast("Đã tìm thấy mã cheat cho game này (Menu → Mã cheat)", 2800) }
             launch { while (true) { delay(15_000); Diagnostics.heartbeat(this@RetroActivity) } }
             launch {
                 view.getGLRetroEvents().collect { e ->
                     if (e is GLRetroView.GLRetroEvents.FrameRendered && !firstFrame) {
                         firstFrame = true
                         Diagnostics.stage(this@RetroActivity, "first-frame")
+                        cheats.applyAll() // lõi đã nạp game → áp các mã đang bật
                     }
                     if (e is GLRetroView.GLRetroEvents.FrameRendered && loading.parent != null) {
                         loading.animate().alpha(0f).setDuration(180).withEndAction { root.removeView(loading) }.start()
@@ -344,6 +360,7 @@ class RetroActivity : ComponentActivity() {
         private const val EXTRA_SYSTEM = "system"
         private const val EXTRA_TITLE = "title"
         private const val EXTRA_PAD = "pad"
+        private const val EXTRA_SYSTEM_ID = "system_id"
 
         /** Tỉ lệ khung hình mặc định theo lõi (config `cores.<id>.aspectRatio` ghi đè được). NDS = 2 màn chồng dọc. */
         private val DEFAULT_ASPECT = mapOf(
@@ -352,7 +369,7 @@ class RetroActivity : ComponentActivity() {
             "pcsx_rearmed" to 4f / 3f, "ppsspp" to 480f / 272f, "easyrpg" to 4f / 3f,
         )
 
-        fun start(activity: Activity, coreId: String, game: File, system: String = "", title: String = "", pad: String? = null, key: String? = null) {
+        fun start(activity: Activity, coreId: String, game: File, system: String = "", title: String = "", pad: String? = null, key: String? = null, systemId: String = "") {
             activity.startActivity(
                 Intent(activity, RetroActivity::class.java)
                     .putExtra(PlayClock.EXTRA_KEY, key)
@@ -361,6 +378,7 @@ class RetroActivity : ComponentActivity() {
                     .putExtra(EXTRA_SYSTEM, system)
                     .putExtra(EXTRA_TITLE, title)
                     .putExtra(EXTRA_PAD, pad)
+                    .putExtra(EXTRA_SYSTEM_ID, systemId)
             )
         }
     }
