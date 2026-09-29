@@ -1,5 +1,5 @@
 {
-  "configVersion": 10,
+  "configVersion": 11,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -173,7 +173,7 @@
     },
     {
       "id": "3ds",
-      "name": "Nintendo 3DS (thử nghiệm)",
+      "name": "Nintendo 3DS",
       "runner": "libretro",
       "core": "citra",
       "extensions": [
@@ -186,7 +186,8 @@
       "pad": "n3ds",
       "thumbnails": [
         "Nintendo - Nintendo 3DS"
-      ]
+      ],
+      "engine": "azahar"
     },
     {
       "id": "dc",
@@ -898,5 +899,14 @@
   "crash": {
     "endpoint": "https://aowvn-monika-crash.aowvn-system.workers.dev/report",
     "autoSend": false
+  },
+  "modules": {
+    "azahar": {
+      "version": "662d412",
+      "url": "",
+      "abis": [
+        "arm64-v8a"
+      ]
+    }
   }
 }
