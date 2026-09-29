@@ -46,6 +46,7 @@ class InGameTest {
     @Test fun padN64() { overlay(InGameState(), PadLayout.N64); rule.shot("16-tay-cam-n64") }
     @Test fun padDreamcast() { overlay(InGameState(), PadLayout.DC); rule.shot("17-tay-cam-dreamcast") }
     @Test fun padPsp() { overlay(InGameState(), PadLayout.PSP); rule.shot("18-tay-cam-psp") }
+    @Test fun pad3ds() { overlay(InGameState(), PadLayout.N3DS); rule.shot("19-tay-cam-3ds") }
 
     /** Kéo cần analog → gửi (x,y) cho lõi; nhả tay → về (0,0). */
     @Test fun analogStickSendsMotion() {

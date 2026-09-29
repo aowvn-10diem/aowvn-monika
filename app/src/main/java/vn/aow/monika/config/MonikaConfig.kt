@@ -144,6 +144,8 @@ data class CoreDef(
     val aspectRatio: Float? = null,
     /** Tùy chọn lõi mặc định (key libretro → giá trị). User chỉnh trong game sẽ đè lên. */
     val options: Map<String, String> = emptyMap(),
+    /** Kiến trúc CPU lõi hỗ trợ (vd. ["arm64-v8a"] cho Citra). Trống = mọi kiến trúc. */
+    val abis: List<String> = emptyList(),
 )
 
 @Serializable

@@ -97,12 +97,14 @@ enum class PadLayout {
     /** Dreamcast: cần analog + A B X Y + 2 cò LT RT. */
     DC,
     /** PSP: cần analog (nub) + d-pad + △□○× + L R. */
-    PSP;
+    PSP,
+    /** 3DS: Circle Pad + X Y A B + L R (ZL ZR của New 3DS); màn cảm ứng dưới chạm thẳng vào game như NDS. */
+    N3DS;
 
     /** Có cần analog (chuyển qua lại với D-pad bằng nút nhỏ dưới cụm trái). */
-    val hasStick get() = this == N64 || this == DC || this == PSP || this == PS
+    val hasStick get() = this == N64 || this == DC || this == PSP || this == PS || this == N3DS
     /** Mở game là dùng cần luôn (N64 / Dreamcast / PSP); PS1 mặc định D-pad, bật cần khi game cần. */
-    val stickDefault get() = this == N64 || this == DC || this == PSP
+    val stickDefault get() = this == N64 || this == DC || this == PSP || this == N3DS
 }
 
 /** Mã nguồn cần analog gửi cho lõi. */
@@ -118,6 +120,7 @@ fun padFor(core: String, override: String?): PadLayout = override?.let { runCatc
         "mupen64plus_next_gles3", "mupen64plus_next", "parallel_n64" -> PadLayout.N64
         "flycast" -> PadLayout.DC
         "ppsspp" -> PadLayout.PSP
+        "citra" -> PadLayout.N3DS
         "pcsx_rearmed" -> PadLayout.PS
         "easyrpg" -> PadLayout.RPG
         else -> PadLayout.GBA
@@ -371,8 +374,8 @@ private fun ShoulderRow(layout: PadLayout, send: (Int, Int) -> Unit) {
             PillKey("Z", KeyEvent.KEYCODE_BUTTON_R1, send)
         }
         else -> {
-            val twoLeft = when (layout) { PadLayout.PS -> "L2" to "L"; PadLayout.N64 -> "Z" to "L"; PadLayout.DC -> "LT" to null; else -> null to "L" }
-            val twoRight = when (layout) { PadLayout.PS -> "R2" to "R"; PadLayout.DC -> "RT" to null; else -> null to "R" }
+            val twoLeft = when (layout) { PadLayout.PS -> "L2" to "L"; PadLayout.N64 -> "Z" to "L"; PadLayout.DC -> "LT" to null; PadLayout.N3DS -> "ZL" to "L"; else -> null to "L" }
+            val twoRight = when (layout) { PadLayout.PS -> "R2" to "R"; PadLayout.DC -> "RT" to null; PadLayout.N3DS -> "ZR" to "R"; else -> null to "R" }
             Row(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     twoLeft.first?.let { PillKey(it, KeyEvent.KEYCODE_BUTTON_L2, send) }
@@ -506,7 +509,7 @@ private fun FaceButtons(layout: PadLayout, send: (Int, Int) -> Unit, motion: (In
             RoundKey("B", bottom, coral, send, Modifier.align(Alignment.BottomStart))
             RoundKey("A", right, orange, send, Modifier.align(Alignment.TopEnd))
         }
-        PadLayout.NDS, PadLayout.SNES -> Diamond(send, glass, listOf("X" to top, "Y" to left, "A" to right, "B" to bottom), highlight = right, accent = orange)
+        PadLayout.NDS, PadLayout.SNES, PadLayout.N3DS -> Diamond(send, glass, listOf("X" to top, "Y" to left, "A" to right, "B" to bottom), highlight = right, accent = orange)
         PadLayout.PS, PadLayout.PSP -> Diamond(send, glass, listOf("△" to top, "□" to left, "○" to right, "×" to bottom), highlight = -1, accent = orange)
         // Dreamcast: nút xếp theo VỊ TRÍ như tay Xbox — trên Y, trái X, phải B, dưới A.
         PadLayout.DC -> Diamond(send, glass, listOf("Y" to top, "X" to left, "B" to right, "A" to bottom), highlight = bottom, accent = orange)

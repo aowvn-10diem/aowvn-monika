@@ -1,5 +1,5 @@
 {
-  "configVersion": 8,
+  "configVersion": 9,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -169,6 +169,23 @@
       "altCores": [
         "mupen64plus_next_gles3",
         "parallel_n64"
+      ]
+    },
+    {
+      "id": "3ds",
+      "name": "Nintendo 3DS (thử nghiệm)",
+      "runner": "libretro",
+      "core": "citra",
+      "extensions": [
+        "3ds",
+        "cci",
+        "cxi",
+        "3dsx"
+      ],
+      "labels": [],
+      "pad": "n3ds",
+      "thumbnails": [
+        "Nintendo - Nintendo 3DS"
       ]
     },
     {
@@ -749,6 +766,14 @@
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mednafen_ngp_libretro_android.so.zip",
       "aspectRatio": 1.0526
+    },
+    "citra": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/citra_libretro_android.so.zip",
+      "aspectRatio": 0.8333,
+      "abis": [
+        "arm64-v8a"
+      ]
     }
   },
   "webPlayers": {

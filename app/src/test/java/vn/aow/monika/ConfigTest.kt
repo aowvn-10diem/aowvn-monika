@@ -108,3 +108,14 @@ class ConfigTest {
         assertNotNull(GameDetector.detect(gameWith("a.jar"), cfg).entry)
     }
 }
+
+class ThreeDsConfigTest {
+    private val cfg = vn.aow.monika.config.ConfigRepository.parse(java.io.File("../config/monika-config.json").readText())
+    @org.junit.Test fun threeDsIsWiredAndArm64Only() {
+        val s = cfg.system("3ds")!!
+        org.junit.Assert.assertEquals("citra", s.core)
+        org.junit.Assert.assertEquals(listOf("arm64-v8a"), cfg.cores["citra"]!!.abis)
+        org.junit.Assert.assertEquals(vn.aow.monika.runner.PadLayout.N3DS, vn.aow.monika.runner.padFor("citra", s.pad))
+        org.junit.Assert.assertTrue("3ds" in s.extensions)
+    }
+}

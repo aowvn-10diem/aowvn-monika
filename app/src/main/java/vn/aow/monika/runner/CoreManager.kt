@@ -53,6 +53,9 @@ class CoreManager(
 
     private suspend fun ensureCoreLocked(id: String, onStatus: (String) -> Unit): File = withContext(Dispatchers.IO) {
         val def = configRepo.current.cores[id] ?: throw IOException("Cấu hình chưa có lõi '$id'")
+        if (def.abis.isNotEmpty() && abi !in def.abis) {
+            throw IOException("Lõi này chỉ chạy trên máy ${def.abis.joinToString(" / ")} (máy bạn: $abi).")
+        }
         val so = File(coreDir(id), "${id}_libretro_android.so")
         if (!so.exists() || installedVersion(id) != def.version) {
             withContext(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)…") }
