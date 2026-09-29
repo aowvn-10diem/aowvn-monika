@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.MonikaIcon
 import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -49,13 +50,15 @@ fun AccountCard(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     val c = Monika.colors
     val session by AppGraph.account.session.collectAsState()
-    var profile by remember { mutableStateOf<Profile?>(null) }
+    val cached by AppGraph.aow.profileState.collectAsState()
+    // Hiện ngay từ bản lưu (không chờ mạng); mạng về thì tự cập nhật.
+    val profile: Profile? = session?.uid?.let { uid -> cached?.takeIf { it.first == uid }?.second ?: AppGraph.aow.cachedProfile() }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(session?.uid) {
-        profile = null; error = null
-        if (session != null) runCatching { AppGraph.aow.profile() }.onSuccess { profile = it }.onFailure { error = it.message }
+        error = null
+        if (session != null) runCatching { AppGraph.aow.profile() }.onFailure { if (profile == null) error = it.message }
     }
 
     MonikaCard(modifier.fillMaxWidth(), shape = Radius.hero, padding = PaddingValues(18.dp)) {
@@ -63,7 +66,7 @@ fun AccountCard(modifier: Modifier = Modifier) {
         if (s == null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(52.dp).clip(Radius.pill).background(c.surfaceSoft), contentAlignment = Alignment.Center) {
-                    Icon(painterResource(R.drawable.ic_fluent_person_24_regular), null, Modifier.size(28.dp), tint = c.textSecondary)
+                    MonikaIcon(R.drawable.ic_fluent_person_24_regular, null, Modifier.size(28.dp), tint = c.textSecondary)
                 }
                 Column(Modifier.weight(1f).padding(start = 14.dp)) {
                     Text("Tài khoản AowVN", style = Monika.type.cardTitle, color = c.text)
@@ -97,9 +100,8 @@ fun AccountCard(modifier: Modifier = Modifier) {
                 if (done || busy) return@GradientButton
                 busy = true
                 scope.launch {
-                    runCatching { AppGraph.aow.checkin() }
+                    runCatching { AppGraph.aow.checkinFast() }
                         .onSuccess { r ->
-                            profile = r.profile
                             Toast.makeText(context, when {
                                 r.already -> "Hôm nay bạn đã điểm danh rồi"
                                 r.pointAwarded -> "Hoàn thành chuỗi 14 ngày! +1 điểm tích lũy"

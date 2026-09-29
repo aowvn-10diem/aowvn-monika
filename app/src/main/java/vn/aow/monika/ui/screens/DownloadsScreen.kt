@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.MonikaIcon
 import kotlinx.coroutines.launch
 import vn.aow.monika.ui.theme.Spinner
 import vn.aow.monika.AppGraph
@@ -83,9 +84,11 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> U
     val c = Monika.colors
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     // Bản lần trước → mở tab là có ngay; null = chưa đọc lần nào.
-    var loaded by remember { mutableStateOf(lastRows) }
+    // Lần mở đầu chưa có bản cũ: đọc đồng bộ ngay (truy vấn DownloadManager chỉ vài ms) → không bao giờ có khung trống/vòng xoay.
+    var loaded by remember { mutableStateOf(lastRows ?: runCatching { queryDownloads(context, emptyMap()) }.getOrNull()) }
     val rows = loaded.orEmpty()
-    var storage by remember { mutableStateOf(lastStorage) }
+    // Dung lượng máy đọc tức thì (StatFs); phần "Game" quét thư mục chậm hơn → cập nhật sau, thẻ vẫn hiện sẵn.
+    var storage by remember { mutableStateOf(lastStorage ?: runCatching { quickStorage(context) }.getOrNull()) }
     var tick by remember { mutableStateOf(0) }
 
     LaunchedEffect(tick) {
@@ -246,7 +249,7 @@ private fun DoneRow(r: DownloadRow, ok: Boolean, onOpen: (() -> Unit)? = null, o
                 }
                 Text(hint, style = Monika.type.caption, color = if (ok) c.textSecondary else c.danger)
             }
-            if (ok) Icon(painterResource(R.drawable.ic_fluent_checkmark_circle_24_filled), "Xong", Modifier.size(26.dp), tint = c.success)
+            if (ok) MonikaIcon(R.drawable.ic_fluent_checkmark_circle_24_filled, "Xong", Modifier.size(26.dp), tint = c.success)
             CircleButton(R.drawable.ic_fluent_dismiss_24_regular, "Xóa khỏi danh sách", onRemove, size = 40.dp)
         }
     }
@@ -292,6 +295,11 @@ private fun openDone(context: Context, r: DownloadRow, onOpenLibrary: () -> Unit
             onOpenLibrary()
         }
     }
+}
+
+private fun quickStorage(context: Context): StorageInfo {
+    val stat = StatFs(GameStorage.root(context).path)
+    return StorageInfo(stat.totalBytes, stat.availableBytes, 0L)
 }
 
 private fun readStorage(context: Context): StorageInfo {

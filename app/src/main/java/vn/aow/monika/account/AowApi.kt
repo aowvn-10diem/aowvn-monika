@@ -68,11 +68,35 @@ class AowApi(private val http: OkHttpClient, private val config: ConfigRepositor
 
     // ---------- Hồ sơ + điểm danh ----------
 
+    /** Hồ sơ hiện tại của tài khoản đang đăng nhập: có ngay từ bản lưu, được mạng làm mới sau → UI không phải chờ. */
+    private val _profileState = kotlinx.coroutines.flow.MutableStateFlow<Pair<String, Profile>?>(null)
+    val profileState: kotlinx.coroutines.flow.StateFlow<Pair<String, Profile>?> = _profileState
+
+    /** Hồ sơ đã lưu của tài khoản đang đăng nhập (đọc tức thì, không mạng). */
+    fun cachedProfile(): Profile? {
+        val uid = account.session.value?.uid ?: return null
+        _profileState.value?.takeIf { it.first == uid }?.let { return it.second }
+        return account.cachedProfile(uid)?.also { _profileState.value = uid to it }
+    }
+
+    private fun publish(uid: String, p: Profile) { _profileState.value = uid to p; account.cacheProfile(uid, p) }
+
     suspend fun profile(): Profile {
         val uid = account.session.value?.uid ?: throw NotSignedIn()
         val o = call("GET", "users/$uid", auth = true).obj() ?: JsonObject(emptyMap())
         val c = o["checkin"].obj() ?: JsonObject(emptyMap())
-        return Profile(o.long("points"), c.long("streak").toInt(), c.long("progress").toInt(), c.long("lastCheckinTime"))
+        return Profile(o.long("points"), c.long("streak").toInt(), c.long("progress").toInt(), c.long("lastCheckinTime")).also { publish(uid, it) }
+    }
+
+    /**
+     * Điểm danh KIỂU LẠC QUAN: nếu đã có hồ sơ (bản lưu) thì hiện kết quả ngay, gửi mạng ở nền;
+     * lỗi mạng → trả lại trạng thái cũ. Ném lỗi để nơi gọi báo cho người dùng.
+     */
+    suspend fun checkinFast(zone: ZoneId = ZoneId.systemDefault()): CheckinResult {
+        val uid = account.session.value?.uid ?: throw NotSignedIn()
+        val before = cachedProfile()
+        if (before != null && !before.checkedInToday(zone)) publish(uid, nextCheckin(before, System.currentTimeMillis(), zone).profile)
+        return try { checkin(zone).also { publish(uid, it.profile) } } catch (e: Exception) { before?.let { publish(uid, it) }; throw e }
     }
 
     /**
@@ -91,6 +115,7 @@ class AowApi(private val http: OkHttpClient, private val config: ConfigRepositor
             if (s.email.isNotBlank()) put("email", s.email)
             if (s.name.isNotBlank()) put("name", s.name)
         })
+        publish(s.uid, next.profile)
         return next
     }
 

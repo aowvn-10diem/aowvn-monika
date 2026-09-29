@@ -180,6 +180,14 @@ class RetroActivity : ComponentActivity() {
                 systemDirectory = AppGraph.cores.systemDir().absolutePath
                 savesDirectory = sramFile.parentFile!!.absolutePath
                 saveRAMState = sramFile.takeIf { it.exists() }?.readBytes()
+                // Bộ lọc hình + âm thanh độ trễ thấp theo config (hệ điểm ảnh dùng "sharp" cho nét, không nhòe).
+                shader = when (AppGraph.config.current.cores[coreId]?.shader?.lowercase()) {
+                    "sharp" -> com.swordfish.libretrodroid.ShaderConfig.Sharp
+                    "crt" -> com.swordfish.libretrodroid.ShaderConfig.CRT
+                    "lcd" -> com.swordfish.libretrodroid.ShaderConfig.LCD
+                    else -> com.swordfish.libretrodroid.ShaderConfig.Default
+                }
+                preferLowLatencyAudio = true
                 variables = CoreOptions.initial(this@RetroActivity, coreId, AppGraph.config.current.cores[coreId]?.options.orEmpty())
                     .map { (k, v) -> Variable(k, v) }.toTypedArray()
             }

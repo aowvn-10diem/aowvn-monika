@@ -43,12 +43,20 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
         // Quét sẵn thư viện ở nền → mở tab Thư viện / "Đang chơi dở" hiện ngay.
         scope.launch(Dispatchers.IO) { runCatching { AppGraph.library.list() } }
         Notifier.createChannels(this)
+        // Làm nóng hồ sơ tài khoản → điểm danh hiện tức thì.
+        scope.launch(Dispatchers.IO) { runCatching { AppGraph.aow.cachedProfile(); if (AppGraph.account.session.value != null) AppGraph.aow.profile() } }
         NewPostWorker.schedule(this, AppGraph.config.current.feed.pollMinutes)
         CacheCleanWorker.schedule(this)
         scope.launch(Dispatchers.IO) { runCatching { StorageCleaner.clean(this@MonikaApp) } }
+        // Lần đầu: tải sẵn các lõi phổ biến (GBA, NES...) kèm thông báo; đã đủ lõi thì worker thoát ngay.
+        runCatching { vn.aow.monika.library.CorePrefetchWorker.enqueue(this) }
         scope.launch {
             // Lấy cấu hình mới; nếu chu kỳ kiểm tra bài đổi thì đặt lịch lại.
-            AppGraph.config.refresh().onSuccess { NewPostWorker.schedule(this@MonikaApp, it.feed.pollMinutes) }
+            AppGraph.config.refresh().onSuccess {
+                NewPostWorker.schedule(this@MonikaApp, it.feed.pollMinutes)
+                // Config mới có thể thêm lõi tải sẵn / nâng version lõi.
+                runCatching { vn.aow.monika.library.CorePrefetchWorker.enqueue(this@MonikaApp) }
+            }
         }
     }
 

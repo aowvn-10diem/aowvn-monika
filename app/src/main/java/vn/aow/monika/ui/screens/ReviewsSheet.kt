@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.MonikaIcon
 import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -114,7 +115,7 @@ private fun ReviewRow(r: Review) {
                 Text(r.name, style = Monika.type.bodyStrong, color = c.text)
                 Text(SimpleDateFormat("dd/MM/yyyy", Locale("vi")).format(Date(r.updatedAt)), style = Monika.type.caption, color = c.textSecondary)
             }
-            Icon(painterResource(if (r.recommended) R.drawable.ic_fluent_thumb_like_24_filled else R.drawable.ic_fluent_thumb_dislike_24_filled), null,
+            MonikaIcon(if (r.recommended) R.drawable.ic_fluent_thumb_like_24_filled else R.drawable.ic_fluent_thumb_dislike_24_filled, null,
                 Modifier.size(22.dp), tint = if (r.recommended) Color(0xFF34A853) else Color(0xFFD93025))
         }
         if (r.content.isNotBlank()) Text(r.content, style = Monika.type.body, color = c.text, modifier = Modifier.padding(top = 8.dp))

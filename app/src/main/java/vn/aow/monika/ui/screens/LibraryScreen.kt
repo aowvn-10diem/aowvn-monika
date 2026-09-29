@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.MonikaIcon
 import vn.aow.monika.ui.theme.SoftPillButton
 import android.net.Uri
 import android.content.Intent
@@ -446,7 +447,7 @@ internal fun ContinueCard(g: Game, onPlay: () -> Unit) {
                 }
             }
             Box(Modifier.size(64.dp).clip(Radius.pill).background(primaryGradient()), contentAlignment = Alignment.Center) {
-                Icon(painterResource(R.drawable.ic_fluent_play_24_filled), "Chơi", Modifier.size(30.dp), tint = Color.White)
+                MonikaIcon(R.drawable.ic_fluent_play_24_filled, "Chơi", Modifier.size(30.dp), tint = Color.White)
             }
         }
       }

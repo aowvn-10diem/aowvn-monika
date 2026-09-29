@@ -94,7 +94,7 @@ fun CircleButton(
             .pressable(interaction, onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(painterResource(icon), contentDescription, Modifier.size(22.dp), tint = tint)
+        MonikaIcon(icon, contentDescription, Modifier.size(22.dp), tint = tint)
         if (badge) Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(8.dp).clip(Radius.pill).background(c.accentCoral))
     }
 }
@@ -123,7 +123,7 @@ fun GradientButton(
         horizontalArrangement = Arrangement.Center,
     ) {
         if (icon != null) {
-            Icon(painterResource(icon), null, Modifier.size(22.dp), tint = Color.White)
+            MonikaIcon(icon, null, Modifier.size(22.dp), tint = Color.White)
             Spacer(Modifier.width(10.dp))
         }
         Column {
@@ -145,7 +145,7 @@ fun DarkButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
         horizontalArrangement = Arrangement.Center,
     ) {
         if (icon != null) {
-            Icon(painterResource(icon), null, Modifier.size(20.dp), tint = Color.White)
+            MonikaIcon(icon, null, Modifier.size(20.dp), tint = Color.White)
             Spacer(Modifier.width(8.dp))
         }
         Column {
@@ -165,7 +165,7 @@ fun SoftPillButton(text: String, onClick: () -> Unit, @DrawableRes icon: Int? = 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            Icon(painterResource(icon), null, Modifier.size(18.dp), tint = c.text)
+            MonikaIcon(icon, null, Modifier.size(18.dp), tint = c.text)
             Spacer(Modifier.width(8.dp))
         }
         Text(text, style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight), color = c.text)

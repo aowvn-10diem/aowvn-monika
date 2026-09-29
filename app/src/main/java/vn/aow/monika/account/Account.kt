@@ -55,6 +55,12 @@ class Account(private val context: Context, private val http: OkHttpClient, priv
         _session.value = s
     }
 
+    /** Hồ sơ lần trước (điểm, chuỗi, điểm danh) lưu theo tài khoản → mở app là hiện ngay, mạng cập nhật sau. */
+    fun cachedProfile(uid: String): Profile? = sp.getString("profile_$uid", null)?.split('|')?.takeIf { it.size == 4 }?.let {
+        runCatching { Profile(it[0].toLong(), it[1].toInt(), it[2].toInt(), it[3].toLong()) }.getOrNull()
+    }
+    fun cacheProfile(uid: String, p: Profile) { sp.edit().putString("profile_$uid", "${p.points}|${p.streak}|${p.progress}|${p.lastCheckin}").apply() }
+
     /** Mở trang đăng nhập trên web. */
     fun startLogin(activity: Activity) {
         val state = ByteArray(24).also { SecureRandom().nextBytes(it) }

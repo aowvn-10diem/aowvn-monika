@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.MonikaIcon
 import vn.aow.monika.feed.Thumbs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -137,7 +138,7 @@ fun GamesScreen(onOpen: (Post) -> Unit, focusSearch: Boolean = false, vm: FeedVi
                         Modifier.padding(horizontal = 16.dp).fillMaxWidth().height(52.dp).clip(Radius.pill).background(c.surface).padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(painterResource(R.drawable.ic_fluent_search_24_regular), null, Modifier.size(22.dp), tint = c.text)
+                        MonikaIcon(R.drawable.ic_fluent_search_24_regular, null, Modifier.size(22.dp), tint = c.text)
                         Spacer(Modifier.width(10.dp))
                         Box(Modifier.weight(1f)) {
                             if (text.isEmpty()) Text("Tìm game, hướng dẫn, tin tức…", style = Monika.type.body, color = c.textTertiary)

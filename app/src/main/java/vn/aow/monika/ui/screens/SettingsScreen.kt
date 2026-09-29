@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.MonikaIcon
 import vn.aow.monika.ui.theme.DockClearance
 import android.content.Context
 import android.widget.Toast
@@ -258,13 +259,13 @@ private fun SettingGroup(
     MonikaCard(Modifier.fillMaxWidth(), shape = Radius.medium, padding = PaddingValues(14.dp), onClick = { onToggle(if (expanded) null else id) }) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(48.dp).clip(Radius.pill).background(iconBrush), contentAlignment = Alignment.Center) {
-                Icon(painterResource(icon), null, Modifier.size(24.dp), tint = Color.White)
+                MonikaIcon(icon, null, Modifier.size(24.dp), tint = Color.White)
             }
             Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
                 Text(title, style = Monika.type.cardTitle, color = c.text)
                 Text(subtitle, style = Monika.type.caption, color = c.textSecondary)
             }
-            Icon(painterResource(R.drawable.ic_fluent_chevron_right_24_regular), null, Modifier.size(22.dp), tint = c.textSecondary)
+            MonikaIcon(R.drawable.ic_fluent_chevron_right_24_regular, null, Modifier.size(22.dp), tint = c.textSecondary)
         }
         AnimatedVisibility(
             expanded,
@@ -314,7 +315,7 @@ fun ExternalAppDetails(app: ExternalApp, installed: Boolean) {
                 Text(app.name, style = Monika.type.cardTitle, color = c.text)
                 if (app.description.isNotBlank()) Text(app.description, style = Monika.type.caption, color = c.textSecondary)
             }
-            if (installed) Icon(painterResource(R.drawable.ic_fluent_checkmark_circle_24_filled), "Đã cài", Modifier.size(24.dp), tint = c.success)
+            if (installed) MonikaIcon(R.drawable.ic_fluent_checkmark_circle_24_filled, "Đã cài", Modifier.size(24.dp), tint = c.success)
             else Tag("Chưa cài")
         }
         when {

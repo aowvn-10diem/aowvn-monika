@@ -48,8 +48,37 @@ class CoreManager(
         for (id in ids.distinct()) if (!isReady(id)) runCatching { ensureCore(id) }
     }
 
+    /** Các lõi trong [ids] còn thiếu/lỗi thời (bỏ lõi không tồn tại trong config hoặc không hợp ABI máy này). */
+    fun missing(ids: Collection<String>): List<String> = ids.distinct().filter { id ->
+        val def = configRepo.current.cores[id] ?: return@filter false
+        (def.abis.isEmpty() || abi in def.abis) && !isReady(id)
+    }
+
+    /**
+     * Tải lần lượt các lõi còn thiếu; [onProgress](tên lõi, thứ tự, tổng, %) để báo thông báo. Trả về số lõi tải được.
+     * Lõi nào lỗi (mạng...) thì bỏ qua, bấm Chơi sẽ tự tải lại.
+     */
+    suspend fun prefetchWithProgress(ids: Collection<String>, onProgress: (String, Int, Int, Int) -> Unit): Int {
+        val todo = missing(ids)
+        var ok = 0
+        todo.forEachIndexed { i, id ->
+            onProgress(id, i + 1, todo.size, 0)
+            val done = runCatching { ensureCore(id) { st -> st.substringAfterLast(' ').removeSuffix("%").toIntOrNull()?.let { onProgress(id, i + 1, todo.size, it) } } }
+            if (done.isSuccess) ok++
+        }
+        return ok
+    }
+
+    /** Khóa theo tiến trình (Mutex) rồi khóa theo file (giữa tiến trình chính và tiến trình :game) → không ghi đè lõi của nhau. */
     suspend fun ensureCore(id: String, onStatus: (String) -> Unit = {}): File =
-        locks.getOrPut(id) { kotlinx.coroutines.sync.Mutex() }.withLock { ensureCoreLocked(id, onStatus) }
+        locks.getOrPut(id) { kotlinx.coroutines.sync.Mutex() }.withLock {
+            withContext(Dispatchers.IO) {
+                File(context.filesDir, "cores").mkdirs()
+                java.io.RandomAccessFile(File(context.filesDir, "cores/.$id.lock"), "rw").use { raf ->
+                    raf.channel.lock().use { ensureCoreLocked(id, onStatus) }
+                }
+            }
+        }
 
     private suspend fun ensureCoreLocked(id: String, onStatus: (String) -> Unit): File = withContext(Dispatchers.IO) {
         val def = configRepo.current.cores[id] ?: throw IOException("Cấu hình chưa có lõi '$id'")
@@ -60,7 +89,7 @@ class CoreManager(
         if (!so.exists() || installedVersion(id) != def.version) {
             withContext(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)…") }
             coreDir(id).mkdirs()
-            val tmp = File(coreDir(id), "download.tmp")
+            val tmp = File(coreDir(id), "download.tmp").apply { delete() }
             var lastPct = -1
             var serverDate = ""
             download(def.url.replace("{abi}", abi), { serverDate = it }, { pct ->

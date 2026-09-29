@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.MonikaIcon
 import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
@@ -181,7 +182,7 @@ private fun AutoDeleteRow(@DrawableRes icon: Int, brush: Brush, label: String, d
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(Modifier.size(40.dp).clip(Radius.thumb).background(brush), contentAlignment = Alignment.Center) {
-                Icon(painterResource(icon), null, Modifier.size(22.dp), tint = Color.White)
+                MonikaIcon(icon, null, Modifier.size(22.dp), tint = Color.White)
             }
             Text(label, style = Monika.type.body, color = c.text, modifier = Modifier.weight(1f).padding(start = 12.dp))
             Text(DAY_OPTIONS.firstOrNull { it.first == days }?.second ?: "$days ngày", style = Monika.type.bodyStrong, color = c.accentCoral)

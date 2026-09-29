@@ -1,5 +1,6 @@
 package vn.aow.monika.browser
 
+import vn.aow.monika.ui.theme.MonikaIcon
 import android.webkit.ValueCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Spacer
@@ -160,7 +161,7 @@ class InAppBrowserActivity : ComponentActivity() {
                                     Text("Tạo bài viết trong nhóm → bấm Ảnh: app tự đính kèm. Lời nhắn đã chép sẵn, dán vào là xong.",
                                         style = Monika.type.caption, color = c.textOnDarkSecondary)
                                 }
-                                Icon(painterResource(R.drawable.ic_fluent_dismiss_24_regular), "Bỏ ảnh",
+                                MonikaIcon(R.drawable.ic_fluent_dismiss_24_regular, "Bỏ ảnh",
                                     Modifier.size(32.dp).clip(Radius.pill).clickable { attachment = null }.padding(6.dp), tint = Color.White)
                             }
                         }
@@ -236,7 +237,7 @@ class InAppBrowserActivity : ComponentActivity() {
                 ) {
                     Text(pageTitle.ifBlank { host }, style = Monika.type.bodyStrong, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painterResource(R.drawable.ic_fluent_search_24_regular), null, Modifier.size(12.dp), tint = Color(0xB3FFFFFF))
+                        MonikaIcon(R.drawable.ic_fluent_search_24_regular, null, Modifier.size(12.dp), tint = Color(0xB3FFFFFF))
                         Text(" $host", style = Monika.type.caption, color = Color(0xB3FFFFFF), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
@@ -249,7 +250,7 @@ class InAppBrowserActivity : ComponentActivity() {
     @Composable
     private fun BarIcon(@androidx.annotation.DrawableRes icon: Int, desc: String, onClick: () -> Unit) {
         Box(Modifier.size(48.dp).clip(Radius.pill).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-            Icon(painterResource(icon), desc, Modifier.size(22.dp), tint = Color.White)
+            MonikaIcon(icon, desc, Modifier.size(22.dp), tint = Color.White)
         }
     }
 
@@ -426,7 +427,7 @@ class InAppBrowserActivity : ComponentActivity() {
     @Composable
     private fun ToolIcon(@androidx.annotation.DrawableRes icon: Int, desc: String, onClick: () -> Unit) {
         Box(Modifier.size(44.dp).clip(Radius.pill).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-            Icon(painterResource(icon), desc, Modifier.size(22.dp), tint = Monika.colors.text)
+            MonikaIcon(icon, desc, Modifier.size(22.dp), tint = Monika.colors.text)
         }
     }
 

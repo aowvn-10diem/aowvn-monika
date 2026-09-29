@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.MonikaIcon
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -126,7 +127,7 @@ fun SearchScreen(onOpenPost: (Post) -> Unit, onOpenLibrary: () -> Unit) {
                         Modifier.fillMaxWidth().height(56.dp).clip(Radius.pill).background(c.surface).padding(horizontal = 18.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(painterResource(R.drawable.ic_fluent_search_24_regular), null, Modifier.size(22.dp), tint = c.accentCoral)
+                        MonikaIcon(R.drawable.ic_fluent_search_24_regular, null, Modifier.size(22.dp), tint = c.accentCoral)
                         Spacer(Modifier.width(10.dp))
                         Box(Modifier.weight(1f)) {
                             if (text.isEmpty()) Text("Tên game, hệ máy, bài hướng dẫn…", style = Monika.type.body, color = c.textTertiary)
@@ -237,7 +238,7 @@ private fun Pill(text: String, icon: Int, onClick: () -> Unit) {
         Modifier.clip(Radius.pill).background(c.chip).clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(painterResource(icon), null, Modifier.size(16.dp), tint = c.textSecondary)
+        MonikaIcon(icon, null, Modifier.size(16.dp), tint = c.textSecondary)
         Spacer(Modifier.width(6.dp))
         Text(text, style = Monika.type.body, color = c.chipText, maxLines = 1)
     }
@@ -267,7 +268,7 @@ private fun PostRow(p: Post, onClick: () -> Unit) {
             Text(p.labels.firstOrNull { it.startsWith("Game ") && !it.contains("Android") && !it.contains("PC") }?.let(::shortLabel) ?: formatDate(p.published),
                 style = Monika.type.caption, color = c.textSecondary, maxLines = 1)
         }
-        Icon(painterResource(R.drawable.ic_fluent_chevron_right_24_regular), null, Modifier.size(20.dp), tint = c.textTertiary)
+        MonikaIcon(R.drawable.ic_fluent_chevron_right_24_regular, null, Modifier.size(20.dp), tint = c.textTertiary)
     }
 }
 
@@ -281,7 +282,7 @@ private fun GameRow(g: Game, onPlay: () -> Unit) {
         Box(Modifier.size(56.dp).clip(Radius.thumb).background(vn.aow.monika.ui.theme.primaryGradient()), contentAlignment = Alignment.Center) {
             val cover = g.meta?.cover
             if (cover != null) AsyncImage(cover, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-            else Icon(painterResource(R.drawable.ic_fluent_games_24_regular), null, Modifier.size(26.dp), tint = Color.White)
+            else MonikaIcon(R.drawable.ic_fluent_games_24_regular, null, Modifier.size(26.dp), tint = Color.White)
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
@@ -289,7 +290,7 @@ private fun GameRow(g: Game, onPlay: () -> Unit) {
             Text(g.system?.name ?: "Trong Thư viện", style = Monika.type.caption, color = c.textSecondary)
         }
         Box(Modifier.size(40.dp).clip(Radius.pill).background(vn.aow.monika.ui.theme.primaryGradient()), contentAlignment = Alignment.Center) {
-            Icon(painterResource(R.drawable.ic_fluent_play_24_filled), "Chơi", Modifier.size(20.dp), tint = Color.White)
+            MonikaIcon(R.drawable.ic_fluent_play_24_filled, "Chơi", Modifier.size(20.dp), tint = Color.White)
         }
     }
 }

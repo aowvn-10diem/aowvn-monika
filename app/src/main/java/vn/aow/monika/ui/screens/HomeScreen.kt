@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.MonikaIcon
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import vn.aow.monika.ui.theme.MonikaWordmark
@@ -128,6 +129,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                     }
                 }
             }
+            item { CheckinStrip() }
             item { SystemChips { label -> GamesFilter.pending = label; onGo(Routes.GAMES) } }
             if (!list.isNullOrEmpty() && list.size > 3) {
                 item { SectionHeader("Game nổi bật", "Xem tất cả", { onGo(Routes.GAMES) }) }
@@ -195,7 +197,7 @@ private fun prefetchImages(context: android.content.Context, posts: List<Post>) 
 private fun QuickActionCard(q: QuickAction, modifier: Modifier, onClick: () -> Unit) {
     MonikaCard(modifier, dark = true, shape = Radius.large, padding = PaddingValues(12.dp), onClick = onClick) {
         Box(Modifier.size(44.dp).clip(Radius.thumb).background(q.brush), contentAlignment = Alignment.Center) {
-            Icon(painterResource(q.icon), null, Modifier.size(24.dp), tint = Color.White)
+            MonikaIcon(q.icon, null, Modifier.size(24.dp), tint = Color.White)
         }
         Spacer(Modifier.height(10.dp))
         Text(q.title, style = Monika.type.bodyStrong, color = Color.White, maxLines = 1)

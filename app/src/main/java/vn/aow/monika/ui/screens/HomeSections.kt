@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import vn.aow.monika.ui.theme.MonikaIcon
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -178,7 +180,37 @@ private fun ForumRow(t: ForumTopic, onClick: () -> Unit) {
 private fun Stat(icon: Int, text: String) {
     val c = Monika.colors
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        Icon(painterResource(icon), null, Modifier.size(14.dp), tint = c.textSecondary)
+        MonikaIcon(icon, null, Modifier.size(14.dp), tint = c.textSecondary)
         Text(text, style = Monika.type.caption, color = c.textSecondary)
+    }
+}
+
+/** Điểm danh ngay ở Trang chủ (không phải vào Cài đặt/trang cá nhân): hiện tức thì từ bản lưu, bấm là xong. Đã điểm danh hoặc chưa đăng nhập → ẩn. */
+@Composable
+internal fun CheckinStrip() {
+    val session by AppGraph.account.session.collectAsState()
+    val cached by AppGraph.aow.profileState.collectAsState()
+    val uid = session?.uid ?: return
+    val profile = cached?.takeIf { it.first == uid }?.second ?: AppGraph.aow.cachedProfile()
+    androidx.compose.runtime.LaunchedEffect(uid) { runCatching { AppGraph.aow.profile() } }
+    if (profile == null || profile.checkedInToday()) return
+    val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val c = Monika.colors
+    MonikaCard(Modifier.padding(horizontal = 16.dp, vertical = 6.dp).fillMaxWidth(), shape = Radius.large, padding = PaddingValues(12.dp), onClick = {
+        scope.launch {
+            runCatching { AppGraph.aow.checkinFast() }
+                .onSuccess { r -> android.widget.Toast.makeText(context, if (r.pointAwarded) "Hoàn thành chuỗi 14 ngày! +1 điểm" else "Điểm danh thành công! Ngày ${r.profile.progress}/14", android.widget.Toast.LENGTH_SHORT).show() }
+                .onFailure { android.widget.Toast.makeText(context, "Không điểm danh được: ${it.message}", android.widget.Toast.LENGTH_LONG).show() }
+        }
+    }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Emoji("fluent3d_fire", 32.dp)
+            Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                Text("Điểm danh hôm nay", style = Monika.type.bodyStrong, color = c.text)
+                Text("Chuỗi ${profile.streak} ngày · ${profile.progress}/14 — chạm để nhận", style = Monika.type.caption, color = c.textSecondary)
+            }
+            Emoji("fluent3d_check_mark_button", 28.dp)
+        }
     }
 }

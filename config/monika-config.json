@@ -1,5 +1,5 @@
 {
-  "configVersion": 14,
+  "configVersion": 15,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -704,7 +704,10 @@
   "cores": {
     "desmume": {
       "version": "1",
-      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip"
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip",
+      "options": {
+        "desmume_internal_resolution": "512x384"
+      }
     },
     "melonds": {
       "version": "1",
@@ -712,11 +715,21 @@
     },
     "mgba": {
       "version": "1",
-      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mgba_libretro_android.so.zip"
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mgba_libretro_android.so.zip",
+      "options": {
+        "mgba_interframe_blending": "mix_smart",
+        "mgba_frameskip": "disabled"
+      },
+      "shader": "sharp"
     },
     "gambatte": {
       "version": "1",
-      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/gambatte_libretro_android.so.zip"
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/gambatte_libretro_android.so.zip",
+      "options": {
+        "gambatte_mix_frames": "mix",
+        "gambatte_audio_resampler": "sinc"
+      },
+      "shader": "sharp"
     },
     "pcsx_rearmed": {
       "version": "1",
@@ -734,27 +747,43 @@
     "snes9x": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/snes9x_libretro_android.so.zip",
-      "aspectRatio": 1.3333
+      "aspectRatio": 1.3333,
+      "options": {
+        "snes9x_reduce_sprite_flicker": "enabled"
+      },
+      "shader": "sharp"
     },
     "fceumm": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/fceumm_libretro_android.so.zip",
-      "aspectRatio": 1.3333
+      "aspectRatio": 1.3333,
+      "options": {
+        "fceumm_nospritelimit": "enabled",
+        "fceumm_sndquality": "Very High"
+      },
+      "shader": "sharp"
     },
     "nestopia": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/nestopia_libretro_android.so.zip",
-      "aspectRatio": 1.3333
+      "aspectRatio": 1.3333,
+      "shader": "sharp"
     },
     "genesis_plus_gx": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/genesis_plus_gx_libretro_android.so.zip",
-      "aspectRatio": 1.3333
+      "aspectRatio": 1.3333,
+      "options": {
+        "genesis_plus_gx_no_sprite_limit": "enabled",
+        "genesis_plus_gx_enhanced_vscroll": "enabled"
+      },
+      "shader": "sharp"
     },
     "mednafen_pce_fast": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mednafen_pce_fast_libretro_android.so.zip",
-      "aspectRatio": 1.3333
+      "aspectRatio": 1.3333,
+      "shader": "sharp"
     },
     "mupen64plus_next_gles3": {
       "version": "1",
@@ -774,27 +803,32 @@
     "handy": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/handy_libretro_android.so.zip",
-      "aspectRatio": 1.5686
+      "aspectRatio": 1.5686,
+      "shader": "sharp"
     },
     "stella2014": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/stella2014_libretro_android.so.zip",
-      "aspectRatio": 1.3333
+      "aspectRatio": 1.3333,
+      "shader": "sharp"
     },
     "prosystem": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/prosystem_libretro_android.so.zip",
-      "aspectRatio": 1.3333
+      "aspectRatio": 1.3333,
+      "shader": "sharp"
     },
     "mednafen_wswan": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mednafen_wswan_libretro_android.so.zip",
-      "aspectRatio": 1.5556
+      "aspectRatio": 1.5556,
+      "shader": "sharp"
     },
     "mednafen_ngp": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mednafen_ngp_libretro_android.so.zip",
-      "aspectRatio": 1.0526
+      "aspectRatio": 1.0526,
+      "shader": "sharp"
     },
     "citra": {
       "version": "1",
@@ -865,7 +899,8 @@
   ],
   "_archivePasswords_ghi_chu": "Mật khẩu file nén app tự thử lần lượt khi giải nén. Sai hết thì app hỏi user.",
   "archivePasswords": [
-    "aowvn.org"
+    "aowvn.org",
+    "1"
   ],
   "_downloadHosts_ghi_chu": "mode 'direct' = tải thẳng trong app theo 'directUrl' ($1 = nhóm bắt được của 'pattern'). mode 'browser' = mở trình duyệt.",
   "downloadHosts": [
@@ -944,5 +979,12 @@
     "hiddenTags": [
       "Nhà Tù AowVN"
     ]
-  }
+  },
+  "prefetchCores": [
+    "mgba",
+    "fceumm",
+    "gambatte",
+    "snes9x",
+    "genesis_plus_gx"
+  ]
 }

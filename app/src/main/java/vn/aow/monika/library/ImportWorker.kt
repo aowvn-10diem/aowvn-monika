@@ -51,8 +51,6 @@ class ImportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 .filter { it != result.dir && GameMeta.read(it)?.postId == m.postId && it.listFiles().orEmpty().all { f -> f.name == ".monika.json" } }
                 .forEach { it.deleteRecursively() }
         }
-        // Tải sẵn lõi giả lập cho game vừa nhận → lần đầu bấm Chơi không phải chờ.
-        runCatching { AppGraph.cores.prefetch(vn.aow.monika.ui.screens.coreIdsOf(AppGraph.library.list().filter { it.dir == result.dir })) }
         // Game mới tải có thể làm vượt giới hạn bộ đệm → dọn game cũ, không đụng game vừa tải.
         if (!result.pending) runCatching { StorageCleaner.clean(applicationContext, protect = result.dir) }
         val name = meta?.title?.ifBlank { null } ?: result.dir.name
@@ -65,6 +63,10 @@ class ImportWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             Notifier.downloadDone(applicationContext, "Đã tải xong: $name", "Bấm để mở thư viện và chơi", open)
         } else {
             Notifier.downloadDone(applicationContext, "Chưa giải nén được: $name", "${result.error}\nVào Thư viện → Giải nén để thử lại.", open)
+        }
+        // Báo xong RỒI mới tải sẵn lõi (worker riêng, có thông báo riêng) → giải nén không bao giờ bị kẹt vì mạng tải lõi.
+        if (!result.pending && result.error == null) runCatching {
+            CorePrefetchWorker.enqueue(applicationContext, vn.aow.monika.ui.screens.coreIdsOf(AppGraph.library.list().filter { it.dir == result.dir }))
         }
         return Result.success()
     }

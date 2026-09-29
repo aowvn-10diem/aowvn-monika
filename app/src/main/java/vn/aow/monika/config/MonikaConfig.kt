@@ -19,6 +19,8 @@ data class MonikaConfig(
     val downloadHosts: List<DownloadHost> = emptyList(),
     /** Mật khẩu file nén app tự thử khi giải nén (vd. mật khẩu quen dùng của aow.vn). */
     val archivePasswords: List<String> = emptyList(),
+    /** Lõi tải sẵn ngay lần đầu mở app (kèm thông báo tiến độ) → chơi được liền, không chờ tải khi bấm Chơi. */
+    val prefetchCores: List<String> = emptyList(),
     /** Link cộng đồng AowVN (group Facebook, Discord). Để trống = ẩn nút. */
     val community: CommunityConfig = CommunityConfig(),
     val forum: ForumConfig = ForumConfig(),
@@ -197,6 +199,8 @@ data class CoreDef(
     val options: Map<String, String> = emptyMap(),
     /** Kiến trúc CPU lõi hỗ trợ (vd. ["arm64-v8a"] cho Citra). Trống = mọi kiến trúc. */
     val abis: List<String> = emptyList(),
+    /** Bộ lọc hình: "sharp" (nét, hợp game điểm ảnh), "crt", "lcd" hoặc trống = mặc định. */
+    val shader: String = "",
 )
 
 @Serializable
