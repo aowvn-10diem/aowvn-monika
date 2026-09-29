@@ -175,6 +175,8 @@ fun InGameOverlay(
     onAsk: () -> Unit = {},
     /** Cần analog / nút C: (STICK_LEFT | STICK_RIGHT, x, y) với x,y ∈ [-1,1], y dương = xuống. */
     onMotion: (Int, Float, Float) -> Unit = { _, _, _ -> },
+    /** Nút riêng của từng giả lập (vd. "Mã cheat" của 3DS), đặt trước "Chơi tiếp". */
+    extraActions: List<SheetAction> = emptyList(),
 ) {
     // Nút Back của máy: mở menu (thay vì thoát ngay, dễ bấm nhầm khi đang chơi); đang chỉnh phím → xong.
     androidx.activity.compose.BackHandler(enabled = !state.menuOpen && state.options == null) {
@@ -249,6 +251,7 @@ fun InGameOverlay(
                 SheetAction("Chỉnh phím", R.drawable.ic_fluent_xbox_controller_24_regular) { state.editing = true },
                 SheetAction("Tùy chọn giả lập", R.drawable.ic_fluent_settings_24_regular, onClick = onOptions),
                 SheetAction("Hỏi nhóm FB", R.drawable.ic_fluent_people_community_24_regular, onClick = onAsk),
+            ) + extraActions + listOf(
                 SheetAction("Chơi tiếp", R.drawable.ic_fluent_play_24_regular) {},
                 SheetAction("Thoát game", R.drawable.ic_fluent_door_arrow_left_24_regular, onClick = onBack),
             ),

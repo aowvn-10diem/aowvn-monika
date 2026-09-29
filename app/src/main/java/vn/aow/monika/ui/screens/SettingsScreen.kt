@@ -158,6 +158,31 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     "Dung lượng & bộ nhớ đệm", "Tự dọn khi đầy · giới hạn ${cacheLimitLabel()}",
                 ) { StorageSettingsContent() }
 
+                if (AppGraph.azahar.available()) SettingGroup(
+                    "n3ds", open, { open = it }, R.drawable.ic_fluent_layer_24_regular,
+                    Brush.linearGradient(listOf(Color(0xFFE95CC8), Color(0xFFFF7A32))),
+                    "Nintendo 3DS", "Cài file .cia · cheat trong menu game",
+                ) {
+                    val ctx = androidx.compose.ui.platform.LocalContext.current
+                    val scope = androidx.compose.runtime.rememberCoroutineScope()
+                    var busy by remember { mutableStateOf(false) }
+                    val pick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+                        val act = generateSequence(ctx) { (it as? android.content.ContextWrapper)?.baseContext }.filterIsInstance<android.app.Activity>().firstOrNull()
+                        if (uris.isNotEmpty() && act != null) {
+                            busy = true
+                            scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                val paths = runCatching { vn.aow.monika.azahar.AzaharInstallActivity.stage(act, uris) }.getOrNull()
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                    busy = false
+                                    if (paths != null) vn.aow.monika.azahar.AzaharInstallActivity.launch(act, paths)
+                                }
+                            }
+                        }
+                    }
+                    Text("File .cia cài vào bộ nhớ máy 3DS do Monika quản lý (game, bản cập nhật, DLC). Cheat: mở game → Menu → Mã cheat.", style = Monika.type.caption, color = c.textSecondary)
+                    SoftPillButton(if (busy) "Đang chuẩn bị file…" else "Chọn file .cia để cài", { if (!busy) pick.launch(arrayOf("*/*")) }, R.drawable.ic_fluent_document_24_regular)
+                }
+
                 SettingGroup(
                     "vault", open, { open = it }, R.drawable.ic_fluent_storage_24_regular,
                     Brush.linearGradient(listOf(Color(0xFFFFB347), Color(0xFFFF7A32))),

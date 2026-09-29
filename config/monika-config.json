@@ -1,5 +1,5 @@
 {
-  "configVersion": 11,
+  "configVersion": 12,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -180,7 +180,8 @@
         "3ds",
         "cci",
         "cxi",
-        "3dsx"
+        "3dsx",
+        "cia"
       ],
       "labels": [],
       "pad": "n3ds",

@@ -54,6 +54,8 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
     private val ui = InGameState()
     private lateinit var root: FrameLayout
     private lateinit var surface: SurfaceView
+    private val cheats by lazy { AzaharCheats(this) }
+    private val cheatPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { u -> if (u != null) cheats.importFile(u) }
     private var ready by mutableStateOf(false)
     private var surfaceOk: Boolean = false
     private var started = false
@@ -140,6 +142,9 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
                             },
                             onOptions = { ui.options = AzaharConfig.options(this@AzaharActivity) },
                             onAsk = { askGroup() },
+                            extraActions = listOf(
+                                vn.aow.monika.ui.theme.SheetAction("Mã cheat", vn.aow.monika.R.drawable.ic_fluent_document_24_regular) { cheats.show() },
+                            ),
                             onMotion = { src, x, y -> stick(if (src == STICK_RIGHT) NativeLibrary.ButtonType.STICK_C else NativeLibrary.ButtonType.STICK_LEFT, x, y) },
                             onOptionChange = { o, v ->
                                 CoreOptions.save(this@AzaharActivity, AzaharConfig.CORE_ID, o.key, v)
@@ -155,6 +160,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
                                 showToast("Đã về mặc định. Mở lại game để áp dụng hết.", 2600)
                             },
                         )
+                        AzaharCheatsSheet(cheats) { cheatPicker.launch(arrayOf("text/plain", "application/octet-stream")) }
                         AzaharDialogs(AzaharBridge.dialog)
                     }
                 }

@@ -40,4 +40,15 @@ class AzaharContractTest {
         val e = cls("org.citra.citra_emu.NativeLibrary\$CoreError").enumConstants
         assertTrue(e.size == 18)
     }
+
+    @Test fun cheatAndCiaHooks() {
+        val engine = cls("org.citra.citra_emu.features.cheats.model.CheatEngine")
+        for (n in listOf("loadCheatFile", "saveCheatFile", "getCheats", "addCheat", "removeCheat", "updateCheat"))
+            assertTrue("thiếu CheatEngine.$n", engine.declaredMethods.any { it.name == n && java.lang.reflect.Modifier.isNative(it.modifiers) })
+        val cia = cls("org.citra.citra_emu.utils.CiaInstallWorker")
+        assertTrue(cia.declaredMethods.any { it.name == "installCIA" && java.lang.reflect.Modifier.isNative(it.modifiers) })
+        assertNotNull(cia.getDeclaredMethod("setProgressCallback", Int::class.java, Int::class.java))
+        val st = cls("org.citra.citra_emu.NativeLibrary\$InstallStatus").enumConstants.map { it.toString() }
+        for (n in listOf("Success", "ErrorFailedToOpenFile", "ErrorFileNotFound", "ErrorAborted", "ErrorInvalid", "ErrorEncrypted")) assertTrue(n in st)
+    }
 }

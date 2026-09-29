@@ -41,7 +41,13 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.MONIKA_KEYSTORE_BASE64 }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then echo "::error::Thiếu secret MONIKA_KEYSTORE_BASE64 (xem docs/CAP-NHAT.md)"; exit 1; fi
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              # Chạy tay để thử: chưa có khóa thì ký bằng khóa debug (APK chỉ để thử, cài đè bản chính thức sẽ phải gỡ trước).
+              echo "::warning::Thiếu secret MONIKA_KEYSTORE_BASE64 → ký bằng khóa debug (bản thử)."; exit 0
+            fi
+            echo "::error::Thiếu secret MONIKA_KEYSTORE_BASE64 (xem docs/CAP-NHAT.md)"; exit 1
+          fi
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/monika.jks"
           echo "MONIKA_KEYSTORE=$RUNNER_TEMP/monika.jks" >> "$GITHUB_ENV"
       - name: Build APK release

@@ -17,7 +17,7 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 - Bản release bật R8 + tách APK theo chip (arm64-v8a, armeabi-v7a, universal; bỏ x86). Thêm thư viện có JNI/reflection → thêm luật `-keep` vào `app/proguard-rules.pro`, rồi kiểm lớp còn trong dex bằng `build-tools/*/dexdump`.
 - Giải nén: libarchive → lỗi thì 7-Zip native (`library/SevenZipNative.kt`, RAR/RAR5 mật khẩu, nhiều phần) → 7z thuần Java. Test chạy `.so` Linux cùng bản 16.02 (Gradle tự giải nén vào build/sevenzip-natives); file mẫu RAR tạo bằng `rar` với `LC_ALL=C.UTF-8` (không thì tên tiếng Việt hỏng).
 - Config từ xa có `configVersion` thấp hơn bản trong APK bị bỏ qua. Nhớ tăng `configVersion` và đồng bộ Cloudflare khi sửa config.
-- Không bao giờ commit keystore/mật khẩu ký; chỉ dùng GitHub Secrets.
+- Không bao giờ commit keystore/mật khẩu ký, không in chúng ra log/chat. Cách ký hiện tại: xem mục "Phát hành APK".
 
 ## Sự thật đã xác minh
 
@@ -36,6 +36,23 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 - `./gradlew assembleDebug` — build APK.
 - Test giao diện (Robolectric, trong `testDebugUnitTest`): `app/src/test/.../ui/` mở từng màn + lớp phủ trong game, ảnh ra `app/build/screenshots/` (CI: artifact `anh-chup-giao-dien`). Đồng hồ Compose chỉnh tay (`autoAdvance = false`) để không flaky. Máy thật: `docs/TEST-MAY-THAT.md`; cloud: `docs/TEST-LAB.md`.
 - `PIXELDRAIN_API_KEY=... scripts/pixeldrain-upload.sh <apk>` — up APK lên Pixeldrain, in link `pixeldrain.com/u/{id}` (APK > 30 MB không gửi qua chat được). Key do chủ repo đưa, không ghi vào repo. Release CI tự up nếu có secret `PIXELDRAIN_API_KEY`.
+
+## Phát hành APK — đọc hết trước khi báo "thiếu" bất cứ thứ gì
+
+Repo **chưa có** GitHub Secrets ký app (`MONIKA_KEYSTORE_*`) và cũng không có `PIXELDRAIN_API_KEY`, nên workflow Release trên CI đỏ ở bước ký. Từ trước tới nay APK luôn được **build và ký ngay trên máy phiên**, không qua CI. Không có biến môi trường ký cũng là bình thường.
+
+1. **Khóa ký** nằm trong thư mục scratchpad của phiên: `<scratchpad>/keystore/` gồm `aowvn-release.jks`, `aowvn-release.jks.base64` và `THONG-TIN-KHOA.txt` (các dòng `ALIAS:`, `STORE PASSWORD:`, `KEY PASSWORD:`). Nạp vào biến môi trường **mà không in ra**:
+   ```bash
+   K=<scratchpad>/keystore; f=$K/THONG-TIN-KHOA.txt; v(){ grep -m1 "^$1:" "$f" | sed -E "s/^$1:[[:space:]]*//"; }
+   MONIKA_KEYSTORE=$K/aowvn-release.jks MONIKA_KEYSTORE_PASSWORD="$(v 'STORE PASSWORD')" \
+   MONIKA_KEY_ALIAS="$(v ALIAS)" MONIKA_KEY_PASSWORD="$(v 'KEY PASSWORD')" ./gradlew assembleRelease
+   ```
+   Scratchpad nằm trong `/tmp`, sẽ **mất khi container bị thu hồi**. Mất khóa thì mọi bản sau phải gỡ app cài lại, nên đừng tạo khóa mới. Hỏi chủ repo, và nhắc chủ repo đưa khóa vào GitHub Secrets (`docs/CAP-NHAT.md`).
+2. **Kiểm chữ ký** sau khi build: `$SDK/build-tools/*/apksigner verify --print-certs` (lấy SDK trong `local.properties`, vì `$ANDROID_HOME` trống). SHA-256 đúng là `c46902e9…d45ab20c`. Khác số này thì chủ repo phải gỡ app cũ, **không được gửi**.
+3. **Engine 3DS (Azahar)**: repo private nên app không tải được asset trong Releases. Phải chép `azahar-android-arm64.zip` của release `engine-azahar-*` mới nhất vào `app/src/main/assets/engines/azahar.zip` trước khi build (thư mục này đã gitignore). Tải asset bằng API kèm `$GH_TOKEN` (`Accept: application/octet-stream`). Link `browser_download_url` không kèm token sẽ trả "Not Found".
+4. **Pixeldrain**: key do chủ repo đưa trong chat và đồng ý dùng lại cho mọi lần upload. Key không nằm trong repo hay biến môi trường, và **mất sau khi hội thoại được tóm tắt**. Đừng lục lịch sử hội thoại để lấy lại vì bị chặn, và cũng không nên. Hỏi lại chủ repo, hoặc gửi APK bằng tệp đính kèm nếu nhỏ hơn 30 MB.
+5. **Đẩy tag bị proxy của phiên chặn** (`git push origin v…` báo "remote end hung up"). Push nhánh `main` vẫn bình thường. Release trên CI chạy tay bằng `workflow_dispatch` (tham số `tag`).
+6. Lỗi "auto mode classifier gave no verdict" là **sự cố máy chủ kiểm duyệt**, không phải lỗi lệnh. Đừng suy ra thiếu công cụ hay quyền. Chuyển sang Read/Edit/Grep, rồi thử lại Bash sau.
 
 ## Việc còn lại (theo thứ tự ưu tiên)
 

@@ -69,6 +69,10 @@ object AzaharBridge {
     fun miiSelect(config: MiiSelector.MiiSelectorConfig): MiiSelector.MiiSelectorData =
         ask({ AzDialog.Mii(config.title.orEmpty().ifBlank { "Chọn Mii" }, config, it) }, MiiSelector.MiiSelectorData(1, 0))
 
+    /** Tiến độ cài .cia (max, progress) cho màn cài đặt. */
+    @Volatile var onInstallProgress: (Int, Int) -> Unit = { _, _ -> }
+    fun installProgress(max: Int, progress: Int) = onInstallProgress(max, progress)
+
     private val lastStage = AtomicReference<DiskShaderCacheProgress.LoadCallbackStage?>(null)
 
     fun shaderProgress(stage: DiskShaderCacheProgress.LoadCallbackStage, progress: Int, max: Int, obj: String) {
