@@ -118,6 +118,8 @@ dependencies {
     implementation(libs.commons.compress) // 7z có mật khẩu (libarchive không hỗ trợ)
     implementation(libs.xz) // LZMA/LZMA2 cho 7z
     implementation(libs.sevenzip.android) // 7-Zip native: RAR/RAR5 có mật khẩu, RAR nhiều phần
+    implementation(libs.arsclib) // Đọc/sửa AndroidManifest nhị phân của APK game (trình cài APK)
+    implementation(libs.apksig) // Ký lại APK game đã chỉnh
     sevenZipTestNatives(libs.sevenzip.jvm.natives)
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
     testImplementation(libs.junit)

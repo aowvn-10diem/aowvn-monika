@@ -23,6 +23,9 @@ commonsCompress = "1.27.1" # chỉ dùng cho 7z có mật khẩu
 xz = "1.10"
 sevenZipAndroid = "Release-16.02-2.02" # 7-Zip native: RAR/RAR5 có mật khẩu
 sevenZipJvm = "16.02-2.01" # chỉ để chạy test trên máy tính
+arsclib = "1.3.5" # đọc/sửa AndroidManifest nhị phân của APK (Apache-2.0)
+apksig = "8.7.3" # ký APK v1/v2/v3 (Apache-2.0, cùng bản với AGP)
+r8 = "8.7.18" # D8: biên dịch bộ nạp data thành .dex lúc build
 
 [libraries]
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
@@ -47,6 +50,9 @@ commons-compress = { module = "org.apache.commons:commons-compress", version.ref
 xz = { module = "org.tukaani:xz", version.ref = "xz" }
 sevenzip-android = { module = "com.github.omicronapps:7-Zip-JBinding-4Android", version.ref = "sevenZipAndroid" }
 sevenzip-jvm-natives = { module = "net.sf.sevenzipjbinding:sevenzipjbinding-all-platforms", version.ref = "sevenZipJvm" }
+arsclib = { module = "io.github.reandroid:ARSCLib", version.ref = "arsclib" }
+apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
+r8 = { module = "com.android.tools:r8", version.ref = "r8" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
