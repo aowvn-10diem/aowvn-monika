@@ -109,7 +109,7 @@ class MainActivity : ComponentActivity() {
     private fun askPermissions() {
         val perms = buildList {
             if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)
-            if (Build.VERSION.SDK_INT <= 28) add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            if (Build.VERSION.SDK_INT <= 29) add(Manifest.permission.WRITE_EXTERNAL_STORAGE) // Android 9-10: cần để chép OBB/Data
         }
         if (perms.isNotEmpty()) {
             registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}.launch(perms.toTypedArray())

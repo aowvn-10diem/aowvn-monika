@@ -53,7 +53,11 @@ class GameLauncher(private val configRepo: ConfigRepository) {
                 WebGameActivity.start(activity, entry, system.webPlayer ?: "html5", game.name, game.key)
                 LaunchResult.Started
             }
-            "apk" -> Installer.install(activity, entry)
+            "apk" -> {
+                // Thư mục game (có thể kèm OBB/Data) → trình cài mới; file lẻ thì đưa cả thư mục chứa nó nếu là thư mục game.
+                vn.aow.monika.apkinstall.ApkInstallFlow.start(activity, if (game.dir.isDirectory && entry.isFile) game.dir else entry)
+                LaunchResult.Started
+            }
             "j2me" -> {
                 // J2ME Loader nhúng sẵn: lần đầu cài (chuyển .jar → .dex), các lần sau chạy luôn.
                 activity.startActivity(ru.playsoftware.j2meloader.J2meRuntime.openGameIntent(activity, Installer.uriFor(activity, entry)))

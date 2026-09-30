@@ -16,7 +16,7 @@
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
+        android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
 
@@ -119,6 +119,17 @@
             android:name=".browser.InAppBrowserActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
             android:windowSoftInputMode="adjustResize" />
+
+        <!-- Trình cài game Android (APK/APKS/XAPK + OBB): menu popup nổi trên màn đang mở. -->
+        <activity
+            android:name=".apkinstall.ApkInstallActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <receiver
+            android:name=".apkinstall.InstallResultReceiver"
+            android:exported="false" />
 
         <receiver
             android:name=".download.DownloadReceiver"

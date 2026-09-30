@@ -1,5 +1,5 @@
 {
-  "configVersion": 15,
+  "configVersion": 16,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -335,7 +335,10 @@
       "name": "Android (APK)",
       "runner": "apk",
       "extensions": [
-        "apk"
+        "apk",
+        "apks",
+        "xapk",
+        "apkm"
       ],
       "labels": [
         "Game Android Việt Hóa"

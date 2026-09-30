@@ -194,7 +194,7 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
                     if (!job.part.renameTo(target)) { job.part.inputStream().use { i -> target.outputStream().use { i.copyTo(it) } }; job.part.delete() }
                     job.savedName = target.name
                     place = "Thư viện game"
-                    if (target.extension.equals("apk", true)) openIntent = Installer.installIntent(context, target)
+                    if (target.extension.lowercase() in setOf("apk", "apks", "xapk", "apkm")) openIntent = vn.aow.monika.apkinstall.ApkInstallActivity.intent(context, target)
                     else ImportWorker.enqueue(context, target, job.meta?.toJson())
                 }
                 SaveDest.Downloads -> {

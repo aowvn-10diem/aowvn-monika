@@ -243,7 +243,7 @@ private fun DoneRow(r: DownloadRow, ok: Boolean, onOpen: (() -> Unit)? = null, o
                 Text(r.title, style = Monika.type.bodyStrong, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val hint = when {
                     !ok -> "Tải thất bại"
-                    r.file?.extension.equals("apk", true) -> "${mb(r.total)} • Bấm để cài đặt"
+                    r.file?.extension?.lowercase() in setOf("apk", "apks", "xapk", "apkm") -> "${mb(r.total)} • Bấm để cài đặt"
                     r.file != null -> "${mb(r.total)} • Bấm để giải nén & thêm vào Thư viện"
                     else -> "${mb(r.total)} • Đã vào Thư viện · bấm để mở"
                 }
@@ -288,7 +288,7 @@ private fun openDone(context: Context, r: DownloadRow, onOpenLibrary: () -> Unit
     val f = r.file
     when {
         f == null -> onOpenLibrary()
-        f.extension.equals("apk", true) -> runCatching { context.startActivity(vn.aow.monika.runner.Installer.installIntent(context, f)) }
+        f.extension.lowercase() in setOf("apk", "apks", "xapk", "apkm") -> runCatching { vn.aow.monika.apkinstall.ApkInstallFlow.start(context, f) }
         else -> {
             vn.aow.monika.library.ImportWorker.enqueue(context, f, AppGraph.prefs.downloadMeta(r.id))
             android.widget.Toast.makeText(context, "Đang giải nén vào Thư viện…", android.widget.Toast.LENGTH_SHORT).show()
