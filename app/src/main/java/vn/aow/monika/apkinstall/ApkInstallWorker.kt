@@ -60,8 +60,17 @@ class ApkInstallWorker(context: Context, params: WorkerParameters) : CoroutineWo
                     device = device, checklist = InstallChecklist.from(ctx), onState = onState,
                 )
             }
+            ApkInstallFlow.plan(result, device) == InstallPlan.CHECKLIST && ApkInstallFlow.chosenMethod == Method.SAF -> {
+                val cl = InstallChecklist.from(ctx)
+                if (inputData.getString(KEY_TASK) == TASK_SAF_COPY) {
+                    val tree = SafDataAccess.savedTree(ctx, result.packageName)
+                    val root = tree?.let { SafDataAccess.root(ctx, it) }
+                    if (root == null) UiState(UiState.Phase.CHOOSE_METHOD, result, message = "Chưa có quyền ghi vào thư mục dữ liệu của game.", checklist = cl.read(result.packageName, result.versionCode)).also(onState)
+                    else ApkInstallFlow.executeSafCopy(result, root, cl, onState)
+                } else ApkInstallFlow.executeSafInstall(result, installer, device, cl, alreadyInstalled = SessionInstaller.isInstalled(ctx, result.packageName) && inputData.getBoolean(KEY_SKIP_INSTALL, false), onState = onState)
+            }
             ApkInstallFlow.plan(result, device) == InstallPlan.CHECKLIST -> {
-                // Cách 2/3 sẽ có ở bước sau: hiện checklist để người chơi biết.
+                // Cách 3 sẽ có ở bước sau: hiện checklist để người chơi biết.
                 val cl = InstallChecklist.from(ctx)
                 UiState(UiState.Phase.CHOOSE_METHOD, result, message = "Cách này chưa hỗ trợ ở bản này.", checklist = cl.read(result.packageName, result.versionCode)).also(onState)
             }
@@ -70,6 +79,7 @@ class ApkInstallWorker(context: Context, params: WorkerParameters) : CoroutineWo
         runCatching { nm.cancel(NOTIFICATION_ID) }
         // Giữ thư mục tạm nếu còn phải mở thử/chọn cách khác; dọn khi đã xong hẳn hoặc lỗi.
         if (end.phase == UiState.Phase.DONE || end.phase == UiState.Phase.FAILED) ApkInstallFlow.cleanup(result)
+        if (end.phase == UiState.Phase.SAF_PREPARE) Notifier.downloadDone(ctx, "Đã cài: $name", "Mở game 1 lần rồi quay lại Monika để chọn thư mục dữ liệu.", Intent(ctx, ApkInstallActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         val toActivity = Intent(ctx, ApkInstallActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         when (end.phase) {
             UiState.Phase.DONE -> Notifier.downloadDone(ctx, "Đã cài xong: $name", "Bấm để chơi",
@@ -91,8 +101,24 @@ class ApkInstallWorker(context: Context, params: WorkerParameters) : CoroutineWo
 
     companion object {
         private const val NOTIFICATION_ID = 4203
+        private const val KEY_TASK = "task"
+        private const val KEY_SKIP_INSTALL = "skip_install"
+        private const val TASK_SAF_COPY = "saf_copy"
+
         fun enqueue(context: Context) {
             WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<ApkInstallWorker>().build())
+        }
+
+        /** Cách 2, bước 2: chép Data vào thư mục đã được cấp quyền. */
+        fun enqueueSafCopy(context: Context) {
+            WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<ApkInstallWorker>()
+                .setInputData(androidx.work.workDataOf(KEY_TASK to TASK_SAF_COPY)).build())
+        }
+
+        /** Cách 2, bước 1 khi game đã cài sẵn bản gốc (chỉ chuyển sang chờ chọn thư mục). */
+        fun enqueueSafInstall(context: Context, skipInstall: Boolean) {
+            WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<ApkInstallWorker>()
+                .setInputData(androidx.work.workDataOf(KEY_SKIP_INSTALL to skipInstall)).build())
         }
     }
 }

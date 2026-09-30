@@ -24,6 +24,8 @@ data class UiState(
         HEALTH_READY, HEALTH_RUNNING, HEALTH_ASK,
         /** Cách 1 không chạy được → chọn Cách 2/3. */
         CHOOSE_METHOD,
+        /** Cách 2: game đã cài, chờ người chơi mở game 1 lần rồi chọn thư mục dữ liệu. */
+        SAF_PREPARE,
         DONE, FAILED,
     }
 }
@@ -175,6 +177,49 @@ object ApkInstallFlow {
             }
         }
         return st(result, UiState.Phase.HEALTH_READY, checklist = list()).also(onState)
+    }
+
+    /** Cách 2, bước 1: cài APK gốc (+ OBB), chưa chép Data — chờ người chơi mở game 1 lần để Android tạo thư mục dữ liệu. */
+    suspend fun executeSafInstall(
+        result: InspectResult, installer: ApkInstaller, device: DeviceInfo, checklist: InstallChecklist,
+        obbDir: File? = null, alreadyInstalled: Boolean = false, onState: (UiState) -> Unit = { state.value = it },
+    ): UiState {
+        val pkg = result.packageName
+        checklist.set(pkg, result.versionCode, Method.SAF, State.RUNNING)
+        if (!alreadyInstalled) {
+            onState(st(result, UiState.Phase.INSTALLING, 0))
+            val parts = SplitSelector.select(result.parts, device)
+            when (val o = installer.install(pkg, parts) { onState(st(result, UiState.Phase.INSTALLING, it)) }) {
+                is InstallOutcome.Success -> Unit
+                is InstallOutcome.UserAborted -> { checklist.set(pkg, result.versionCode, Method.SAF, State.NOT_TRIED); return st(result, UiState.Phase.CHOOSE_METHOD, message = "Bạn đã hủy cài đặt.", checklist = checklist.read(pkg, result.versionCode)).also(onState) }
+                is InstallOutcome.Failure -> {
+                    val conflict = o.kind == InstallOutcome.Kind.SIGNATURE_CONFLICT || o.kind == InstallOutcome.Kind.DOWNGRADE
+                    checklist.set(pkg, result.versionCode, Method.SAF, if (conflict) State.NOT_TRIED else State.FAILED, if (conflict) null else o.text)
+                    return st(result, UiState.Phase.FAILED, failure = o, checklist = checklist.read(pkg, result.versionCode)).also(onState)
+                }
+            }
+            copyObb(result, obbDir ?: ObbInstaller.obbDir(pkg), onState)?.let {
+                checklist.set(pkg, result.versionCode, Method.SAF, State.FAILED, it.failure?.text)
+                return it.copy(checklist = checklist.read(pkg, result.versionCode))
+            }
+        }
+        return st(result, UiState.Phase.SAF_PREPARE, checklist = checklist.read(pkg, result.versionCode)).also(onState)
+    }
+
+    /** Cách 2, bước 2: chép Data vào thư mục người chơi đã cấp quyền. */
+    fun executeSafCopy(result: InspectResult, root: DocDir, checklist: InstallChecklist, onState: (UiState) -> Unit = { state.value = it }): UiState {
+        val pkg = result.packageName
+        onState(st(result, UiState.Phase.PUSHING_DATA, 0))
+        return when (val r = SafDataAccess.copy(root, result.dataFiles) { onState(st(result, UiState.Phase.PUSHING_DATA, it)) }) {
+            is SafDataAccess.Result.Ok -> {
+                checklist.set(pkg, result.versionCode, Method.SAF, State.OK)
+                st(result, UiState.Phase.DONE, checklist = checklist.read(pkg, result.versionCode))
+            }
+            is SafDataAccess.Result.Failed -> {
+                checklist.set(pkg, result.versionCode, Method.SAF, State.FAILED, r.text)
+                st(result, UiState.Phase.CHOOSE_METHOD, message = r.text, checklist = checklist.read(pkg, result.versionCode))
+            }
+        }.also(onState)
     }
 
     /** Ghi kết quả tự kiểm tra + xác nhận của người chơi vào checklist và trả trạng thái kế tiếp. */

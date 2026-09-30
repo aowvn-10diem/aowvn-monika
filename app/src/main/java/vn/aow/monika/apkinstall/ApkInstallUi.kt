@@ -30,6 +30,8 @@ fun BoxScope.ApkInstallSheet(
     onHealthSkip: () -> Unit,
     onHealthAnswer: (Boolean) -> Unit,
     onMethod: (Method) -> Unit,
+    onOpenGame: () -> Unit,
+    onPickFolder: () -> Unit,
     onClose: () -> Unit,
 ) {
     val r = st.result
@@ -47,6 +49,7 @@ fun BoxScope.ApkInstallSheet(
         UiState.Phase.HEALTH_RUNNING -> "Đang kiểm tra game…" to name
         UiState.Phase.HEALTH_ASK -> "Game có chạy được không?" to name
         UiState.Phase.CHOOSE_METHOD -> "Thử cách khác" to name
+        UiState.Phase.SAF_PREPARE -> "Cách 2 — cấp quyền thư mục" to name
         UiState.Phase.DONE -> "Đã cài xong" to name
         UiState.Phase.FAILED -> "Chưa cài được" to name
     }
@@ -69,9 +72,14 @@ fun BoxScope.ApkInstallSheet(
             Method.values().filter { it in applicable }.map { m ->
                 val a = st.checklist.firstOrNull { it.method == m }
                 SheetAction(if (m == Method.REPACK) "Thử Cách 1 lại" else "Cách ${m.ordinal + 1}", R.drawable.ic_fluent_arrow_clockwise_24_regular,
-                    enabled = a?.state != State.NOT_AVAILABLE && m == Method.REPACK) { onMethod(m) }
+                    enabled = a?.state != State.NOT_AVAILABLE && m != Method.ADB) { onMethod(m) }
             } + close
         }
+        UiState.Phase.SAF_PREPARE -> listOf(
+            SheetAction("Chọn thư mục", R.drawable.ic_fluent_folder_open_24_regular, highlight = true, onClick = onPickFolder),
+            SheetAction("Mở game", R.drawable.ic_fluent_play_24_filled, onClick = onOpenGame),
+            close,
+        )
         UiState.Phase.HEALTH_RUNNING -> listOf(close)
         UiState.Phase.DONE -> listOfNotNull(r?.let { SheetAction("Chơi", R.drawable.ic_fluent_play_24_filled, highlight = true) { onPlay(it.packageName) } }, close)
         UiState.Phase.FAILED -> {
@@ -125,6 +133,10 @@ fun BoxScope.ApkInstallSheet(
                     UiState.Phase.HEALTH_ASK -> {
                         SheetRow("Monika thấy game hiện màn hình và chạy ổn. Game có vào được màn hình chơi không?", maxTitleLines = 4, icon = R.drawable.ic_fluent_info_24_regular)
                         Checklist(st.checklist)
+                    }
+                    UiState.Phase.SAF_PREPARE -> {
+                        SheetRow("① Bấm Mở game, đợi vào tới màn hình chính rồi thoát (để Android tạo thư mục dữ liệu).", maxTitleLines = 4, icon = R.drawable.ic_fluent_play_24_regular)
+                        SheetRow("② Bấm Chọn thư mục → \"Dùng thư mục này\" → \"Cho phép\". Nếu nút bị mờ, máy của bạn chặn Cách 2 — hãy thử Cách 3.", maxTitleLines = 5, icon = R.drawable.ic_fluent_folder_open_24_regular)
                     }
                     UiState.Phase.CHOOSE_METHOD -> {
                         st.message?.let { SheetRow(it, maxTitleLines = 5, icon = R.drawable.ic_fluent_alert_24_regular) }

@@ -26,6 +26,9 @@ class ApkInstallActivity : ComponentActivity() {
     private var source: File? = null
     private var awaitingUninstall: String? = null
 
+    /** Bộ chọn thư mục của Android, mở sẵn đúng thư mục dữ liệu của game (Cách 2). */
+    private val pickFolder = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree()) { uri -> onFolderPicked(uri) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         source = intent.getStringExtra(EXTRA_SOURCE)?.let(::File)
@@ -49,7 +52,9 @@ class ApkInstallActivity : ComponentActivity() {
                             ApkInstallFlow.state.value = ApkInstallFlow.confirmWorks(r, true, InstallChecklist.from(this@ApkInstallActivity)) } },
                         onHealthAnswer = { ok -> ApkInstallFlow.inspected?.let { r ->
                             ApkInstallFlow.state.value = ApkInstallFlow.confirmWorks(r, ok, InstallChecklist.from(this@ApkInstallActivity)) } },
-                        onMethod = { m -> ApkInstallFlow.chosenMethod = m; install() },
+                        onMethod = { m -> ApkInstallFlow.chosenMethod = m; if (m == Method.SAF) safStart() else install() },
+                        onOpenGame = { ApkInstallFlow.inspected?.let { r -> packageManager.getLaunchIntentForPackage(r.packageName)?.let { startActivity(it) } } },
+                        onPickFolder = { ApkInstallFlow.inspected?.let { r -> pickFolder.launch(SafDataAccess.initialUri(r.packageName)) } },
                         onClose = ::finish,
                     )
                 }
@@ -100,6 +105,47 @@ class ApkInstallActivity : ComponentActivity() {
         info.sourceDir = apk.path; info.publicSourceDir = apk.path
         info.loadLabel(packageManager).toString()
     }.getOrNull()
+
+    /** Cách 2, bước 1: cài APK gốc (bỏ qua nếu game gốc đã cài sẵn) rồi chờ người chơi mở game 1 lần + chọn thư mục. */
+    private fun safStart() {
+        val r = ApkInstallFlow.inspected ?: return
+        val skip = SessionInstaller.isInstalled(this, r.packageName) && !RepackRegistry.isKnown(this, r.packageName)
+        if (!skip && !checkInstallPermission()) return
+        ApkInstallFlow.state.value = UiState(UiState.Phase.INSTALLING, r, percent = 0)
+        ApkInstallWorker.enqueueSafInstall(this, skip)
+    }
+
+    /** Cách 2, bước 2: nhận thư mục người chơi vừa cấp quyền. */
+    private fun onFolderPicked(uri: Uri?) {
+        val r = ApkInstallFlow.inspected ?: return
+        val checklist = InstallChecklist.from(this)
+        if (uri == null) {
+            Toast.makeText(this, "Chưa chọn thư mục. Nếu nút \"Dùng thư mục này\" bị mờ thì máy chặn Cách 2.", Toast.LENGTH_LONG).show()
+            return
+        }
+        if (!SafDataAccess.isExpectedTree(uri, r.packageName)) {
+            Toast.makeText(this, "Hãy chọn đúng thư mục Android/data/${r.packageName}.", Toast.LENGTH_LONG).show()
+            return
+        }
+        runCatching { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
+        SafDataAccess.saveTree(this, r.packageName, uri)
+        if (SafDataAccess.root(this, uri) == null) {
+            checklist.set(r.packageName, r.versionCode, Method.SAF, State.FAILED, "Máy không cho ghi vào thư mục này")
+            ApkInstallFlow.state.value = UiState(UiState.Phase.CHOOSE_METHOD, r, message = "Máy không cho ghi vào thư mục này (đã bị Android chặn). Hãy thử Cách 3.", checklist = checklist.read(r.packageName, r.versionCode))
+            return
+        }
+        ApkInstallFlow.state.value = UiState(UiState.Phase.PUSHING_DATA, r, percent = 0)
+        ApkInstallWorker.enqueueSafCopy(this)
+    }
+
+    private fun checkInstallPermission(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
+            startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
+            Toast.makeText(this, "Hãy bật 'Cho phép cài ứng dụng' cho AowVN Monika rồi bấm lại.", Toast.LENGTH_LONG).show()
+            return false
+        }
+        return true
+    }
 
     /** Mở thử game đã chỉnh, theo dõi tin bộ nạp gửi về, rồi ghi kết quả vào checklist. */
     private fun healthStart() {
