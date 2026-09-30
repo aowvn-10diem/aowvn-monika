@@ -54,6 +54,8 @@ class GameLauncher(private val configRepo: ConfigRepository) {
                 LaunchResult.Started
             }
             "apk" -> {
+                // Game đã cài sẵn (cùng hoặc mới hơn bản trong gói) → mở luôn, khỏi qua màn cài.
+                vn.aow.monika.apkinstall.ApkInstallFlow.installedLaunch(activity, entry)?.let { activity.startActivity(it); return LaunchResult.Started }
                 // Thư mục game (có thể kèm OBB/Data) → trình cài mới; file lẻ thì đưa cả thư mục chứa nó nếu là thư mục game.
                 vn.aow.monika.apkinstall.ApkInstallFlow.start(activity, if (game.dir.isDirectory && entry.isFile) game.dir else entry)
                 LaunchResult.Started

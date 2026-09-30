@@ -29,6 +29,9 @@ fun BoxScope.ApkInstallSheet(
     onHealthStart: () -> Unit,
     onHealthSkip: () -> Unit,
     onHealthAnswer: (Boolean) -> Unit,
+    installed: Boolean = false,
+    canDeleteSource: Boolean = false,
+    onDeleteSource: () -> Unit = {},
     onMethod: (Method) -> Unit,
     onOpenGame: () -> Unit,
     onPickFolder: () -> Unit,
@@ -55,7 +58,11 @@ fun BoxScope.ApkInstallSheet(
     }
     val actions = when (st.phase) {
         UiState.Phase.READY -> if (r != null && r.fatal == null)
-            listOf(SheetAction("Cài đặt", R.drawable.ic_fluent_arrow_download_24_regular, highlight = true, onClick = onInstall), close)
+            listOfNotNull(
+                SheetAction(if (installed) "Cài lại / cập nhật" else "Cài đặt", R.drawable.ic_fluent_arrow_download_24_regular, highlight = !installed, onClick = onInstall),
+                if (installed) SheetAction("Chơi", R.drawable.ic_fluent_play_24_filled, highlight = true) { onPlay(r.packageName) } else null,
+                close,
+            )
         else listOf(close)
         UiState.Phase.INSTALLING, UiState.Phase.COPYING_OBB, UiState.Phase.REPACKING, UiState.Phase.PUSHING_DATA ->
             listOf(SheetAction("Ẩn", R.drawable.ic_fluent_dismiss_24_regular, onClick = onClose))
@@ -81,7 +88,11 @@ fun BoxScope.ApkInstallSheet(
             close,
         )
         UiState.Phase.HEALTH_RUNNING -> listOf(close)
-        UiState.Phase.DONE -> listOfNotNull(r?.let { SheetAction("Chơi", R.drawable.ic_fluent_play_24_filled, highlight = true) { onPlay(it.packageName) } }, close)
+        UiState.Phase.DONE -> listOfNotNull(
+            r?.let { SheetAction("Chơi", R.drawable.ic_fluent_play_24_filled, highlight = true) { onPlay(it.packageName) } },
+            if (canDeleteSource) SheetAction("Xóa file cài", R.drawable.ic_fluent_delete_24_regular, onClick = onDeleteSource) else null,
+            close,
+        )
         UiState.Phase.FAILED -> {
             val kind = st.failure?.kind
             val pkg = r?.packageName
@@ -106,6 +117,7 @@ fun BoxScope.ApkInstallSheet(
                         st.message?.let { SheetRow(it, icon = R.drawable.ic_fluent_info_24_regular) }
                         r?.problems?.forEach { p -> SheetRow(p.text, maxTitleLines = 6, icon = R.drawable.ic_fluent_alert_24_regular) }
                         r?.let { info(it) }
+                        if (st.checklist.any { it.state != State.NOT_TRIED }) Checklist(st.checklist)
                     }
                     UiState.Phase.INSTALLING, UiState.Phase.COPYING_OBB, UiState.Phase.REPACKING, UiState.Phase.PUSHING_DATA -> {
                         Text(

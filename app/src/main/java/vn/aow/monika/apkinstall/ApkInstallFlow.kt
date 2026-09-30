@@ -58,6 +58,19 @@ object ApkInstallFlow {
         context.startActivity(ApkInstallActivity.intent(context, source))
     }
 
+    /**
+     * Nếu game trong [entry] (file .apk) đã cài trên máy với phiên bản bằng hoặc mới hơn → trả Intent mở game; ngược lại null (đi qua màn cài).
+     * .apks/.xapk không đọc nhanh được tên gói nên luôn đi qua màn cài (màn cài có nút Chơi khi đã cài).
+     */
+    fun installedLaunch(context: Context, entry: File): android.content.Intent? {
+        if (!entry.isFile || !entry.extension.equals("apk", true)) return null
+        val pm = context.packageManager
+        val archive = runCatching { pm.getPackageArchiveInfo(entry.path, 0) }.getOrNull() ?: return null
+        val installed = runCatching { pm.getPackageInfo(archive.packageName, 0) }.getOrNull() ?: return null
+        val newer = androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(archive) > androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(installed)
+        return if (newer) null else pm.getLaunchIntentForPackage(archive.packageName)
+    }
+
     fun plan(result: InspectResult, device: DeviceInfo): InstallPlan = when {
         device.sdkInt >= 30 && (result.needsData || result.lowTargetSdk) -> InstallPlan.CHECKLIST
         result.needsData -> InstallPlan.PLAIN_DIRECT_DATA

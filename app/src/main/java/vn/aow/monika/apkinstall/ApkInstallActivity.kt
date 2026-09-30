@@ -46,6 +46,9 @@ class ApkInstallActivity : ComponentActivity() {
                         onChoose = { f -> source?.let { inspect(it, f) } },
                         onRetry = { source?.let { inspect(it, null) } },
                         onUninstallOld = { pkg -> awaitingUninstall = pkg; SessionInstaller.uninstall(this@ApkInstallActivity, pkg) },
+                        installed = st.result?.let { SessionInstaller.isInstalled(this@ApkInstallActivity, it.packageName) } == true,
+                        canDeleteSource = source?.let { isInAppStorage(it) } == true,
+                        onDeleteSource = { deleteSource() },
                         onPlay = { pkg -> packageManager.getLaunchIntentForPackage(pkg)?.let { startActivity(it) }; finish() },
                         onHealthStart = ::healthStart,
                         onHealthSkip = { ApkInstallFlow.inspected?.let { r ->
@@ -95,7 +98,7 @@ class ApkInstallActivity : ComponentActivity() {
             ApkInstallFlow.inspected = r
             val f = r.fatal
             ApkInstallFlow.state.value = if (f is Problem.NeedChoice) UiState(UiState.Phase.NEED_CHOICE, candidates = f.candidates)
-            else UiState(UiState.Phase.READY, r)
+            else UiState(UiState.Phase.READY, r, checklist = if (r.packageName.isBlank()) emptyList() else InstallChecklist.from(this@ApkInstallActivity).read(r.packageName, r.versionCode))
             if (thenInstall && r.fatal == null) install()
         }
     }
@@ -105,6 +108,22 @@ class ApkInstallActivity : ComponentActivity() {
         info.sourceDir = apk.path; info.publicSourceDir = apk.path
         info.loadLabel(packageManager).toString()
     }.getOrNull()
+
+    /** File nằm trong kho game của Monika (được phép xóa để giải phóng dung lượng). */
+    private fun isInAppStorage(f: File): Boolean = runCatching {
+        val root = vn.aow.monika.library.GameStorage.root(this).canonicalPath + File.separator
+        f.canonicalPath.startsWith(root)
+    }.getOrDefault(false)
+
+    /** Xóa file cài (giữ lại .monika.json để Thư viện hiện "Đã dọn · Tải lại"). Game đã cài vẫn chơi bình thường. */
+    private fun deleteSource() {
+        val s = source ?: return
+        if (!isInAppStorage(s)) return
+        val freed = if (s.isDirectory) s.walkTopDown().filter { it.isFile }.sumOf { it.length() } else s.length()
+        if (s.isDirectory) s.listFiles()?.filter { it.name != ".monika.json" }?.forEach { it.deleteRecursively() } else s.delete()
+        Toast.makeText(this, "Đã xóa file cài, giải phóng ${size(freed)}.", Toast.LENGTH_LONG).show()
+        finish()
+    }
 
     /** Cách 2, bước 1: cài APK gốc (bỏ qua nếu game gốc đã cài sẵn) rồi chờ người chơi mở game 1 lần + chọn thư mục. */
     private fun safStart() {

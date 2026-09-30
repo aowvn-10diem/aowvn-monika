@@ -26,3 +26,12 @@
 # Engine 3DS nhúng (Azahar): thư viện native gọi ngược lớp Kotlin theo tên/chữ ký
 -keep class org.citra.citra_emu.** { *; }
 -keep class vn.aow.monika.azahar.AzaharBridge { *; }
+
+# Trình cài game Android: ARSCLib (sửa manifest nhị phân) và apksig (ký APK) dùng phản chiếu/nạp lớp theo tên → giữ nguyên.
+-keep class com.reandroid.** { *; }
+-dontwarn com.reandroid.**
+-keep class com.android.apksig.** { *; }
+-dontwarn com.android.apksig.**
+-dontwarn javax.annotation.**
+# Nhật ký Cách 1/2/3 lưu bằng kotlinx.serialization theo tên enum
+-keepclassmembers enum vn.aow.monika.apkinstall.** { *; }
