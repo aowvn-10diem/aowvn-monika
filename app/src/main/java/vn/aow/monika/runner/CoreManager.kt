@@ -22,7 +22,14 @@ class CoreManager(
     private val http: OkHttpClient,
     private val configRepo: ConfigRepository,
 ) {
-    private val abi: String = Build.SUPPORTED_ABIS.firstOrNull { it in SUPPORTED_ABIS } ?: "arm64-v8a"
+    // Theo thư viện native của CHÍNH app (không theo máy): máy x86 chạy app ARM qua lớp dịch vẫn cần lõi ARM, nếu không dlopen thất bại.
+    private val abi: String = when (context.applicationInfo.nativeLibraryDir.substringAfterLast('/')) {
+        "arm64" -> "arm64-v8a"
+        "arm" -> "armeabi-v7a"
+        "x86_64" -> "x86_64"
+        "x86" -> "x86"
+        else -> null
+    } ?: Build.SUPPORTED_ABIS.firstOrNull { it in SUPPORTED_ABIS } ?: "arm64-v8a"
 
     fun systemDir() = File(context.filesDir, "system").apply { mkdirs() }
     private fun coreDir(id: String) = File(context.filesDir, "cores/$id")
