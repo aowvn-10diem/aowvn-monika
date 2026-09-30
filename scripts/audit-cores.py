@@ -5,6 +5,44 @@ Cần mạng + readelf/strings (binutils). Thoát mã 1 nếu có lỗi chắc c
 import json, subprocess, sys, tempfile, urllib.request, zipfile, io, re, os
 
 ABIS = sys.argv[1:] or ["arm64-v8a", "armeabi-v7a", "x86_64"]
+HERE = os.path.dirname(os.path.abspath(__file__))
+OPTDUMP = None  # tệp chạy dò tùy chọn (dựng từ scripts/optdump.c nếu có gcc)
+
+def build_optdump():
+    """Khung libretro tí hon: nạp lõi Linux x86_64 (cùng mã nguồn với bản Android), cho nó khai tùy chọn rồi in ra. Cho kết quả CHÍNH XÁC."""
+    global OPTDUMP
+    out = os.path.join(tempfile.gettempdir(), "monika-optdump")
+    lib = os.path.join(HERE, "libretro.h")
+    try:
+        if not os.path.exists(lib):
+            urllib.request.urlretrieve("https://raw.githubusercontent.com/libretro/libretro-common/master/include/libretro.h", lib)
+        subprocess.run(["gcc", "-I", HERE, "-o", out, os.path.join(HERE, "optdump.c"), "-ldl"], check=True, capture_output=True)
+        OPTDUMP = out
+    except Exception as e:
+        print("Không dựng được optdump (bỏ kiểm chính xác, dùng kiểm chuỗi):", e)
+
+ROM = {"gba": "https://raw.githubusercontent.com/jsmolka/gba-tests/master/ppu/hello.gba"}
+def exact_defs(cid):
+    """{khóa: (mặc định, [giá trị])} do chính lõi khai, hoặc None nếu không chạy được trên Linux."""
+    if not OPTDUMP: return None
+    try:
+        data, _ = fetch(f"https://buildbot.libretro.com/nightly/linux/x86_64/latest/{cid}_libretro.so.zip")
+        z = zipfile.ZipFile(io.BytesIO(data)); n = [x for x in z.namelist() if x.endswith(".so")][0]
+        with tempfile.TemporaryDirectory() as td:
+            so = os.path.join(td, "core.so"); open(so, "wb").write(z.read(n))
+            rom = []
+            if cid == "mgba":  # mGBA chỉ khai tùy chọn sau khi nạp game
+                rp = os.path.join(td, "t.gba"); open(rp, "wb").write(fetch(ROM["gba"])[0]); rom = [rp]
+            r = subprocess.run([OPTDUMP, so] + rom, capture_output=True, text=True, timeout=60)
+    except Exception:
+        return None
+    defs = {}
+    for m in re.finditer(r"^OPT (\S+) default=(\S*) values=(.*)$", r.stdout, re.M):
+        defs[m.group(1)] = (m.group(2), m.group(3).split("|"))
+    for m in re.finditer(r"^VAR (\S+) = [^;]*; (.*)$", r.stdout, re.M):
+        vals = [x.strip() for x in m.group(2).split("|")]
+        defs[m.group(1)] = (vals[0], vals)
+    return defs or None
 cfg = json.load(open(os.path.join(os.path.dirname(__file__), "..", "config", "monika-config.json")))
 errors, warns = [], []
 
@@ -22,7 +60,9 @@ def so_from_zip(data):
 def run(cmd, path):
     return subprocess.run(cmd + [path], capture_output=True, text=True).stdout
 
+build_optdump()
 rows = []
+exact = {}
 for cid, d in cfg["cores"].items():
     abis = d.get("abis") or ABIS
     for abi in ABIS:
@@ -46,9 +86,17 @@ for cid, d in cfg["cores"].items():
         opts = list((d.get("options") or {}).items())
         for tier, tier_opts in (d.get("perf") or {}).items():
             opts += [(k, v) for k, v in tier_opts.items()]
+        for style in ((d.get("display") or {}).get("styles") or {}).values():
+            opts += [(k, v) for k, v in (style.get("options") or {}).items()]
+        if cid not in exact: exact[cid] = exact_defs(cid)
+        defs = exact[cid]
         for k, v in opts:
-            if k not in strs: bad.append(f"khóa {k} không có trong lõi")
-            elif not re.search(r"(^|[^A-Za-z0-9_])" + re.escape(v) + r"([^A-Za-z0-9_]|$)", strs, re.M): bad.append(f"giá trị '{v}' của {k} không thấy trong lõi")
+            if defs is not None:
+                # Đối chiếu với định nghĩa lõi tự khai (chính xác)
+                if k not in defs: bad.append(f"khóa {k} lõi không khai")
+                elif v not in defs[k][1]: bad.append(f"giá trị '{v}' của {k} không hợp lệ (lõi cho: {'|'.join(defs[k][1][:8])})")
+            elif k not in strs: bad.append(f"khóa {k} không có trong lõi")
+            elif v not in strs: warns.append(f"{cid}: giá trị '{v}' của {k} chưa xác nhận được (lõi không chạy được trên Linux)")
         ident = run(["readelf", "-n"], p)
         api = re.search(r"API level:\s*(\d+)", ident)
         note = []
@@ -62,7 +110,7 @@ w = max(len(r[0]) for r in rows) + 1
 for cid, abi, st, note in rows:
     print(f"{cid:<{w}} {abi:<12} {st:<5} {note}")
 print()
-print(f"{len(rows)} lõi/ABI đã kiểm, {len(errors)} lỗi, {len(warns)} cảnh báo")
+print(f"{len(rows)} lõi/ABI đã kiểm, {len(errors)} lỗi, {len(warns)} cảnh báo · kiểm chính xác bằng chính lõi: {sorted(c for c, v in exact.items() if v)}")
 for e in errors: print("LỖI:", e)
 for x in warns: print("CẢNH BÁO:", x)
 sys.exit(1 if errors else 0)

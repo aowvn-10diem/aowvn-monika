@@ -154,6 +154,10 @@ class Prefs(private val context: Context) {
         gsp.getFloat("pad_${group}_x", sp.getFloat("pad_${group}_x", 0f)) to gsp.getFloat("pad_${group}_y", sp.getFloat("pad_${group}_y", 0f))
     fun setPadOffset(group: String, x: Float, y: Float) = gsp.edit().putFloat("pad_${group}_x", x).putFloat("pad_${group}_y", y).apply()
 
+    /** Kiểu hiển thị đã chọn cho từng lõi ("lcd" | "sharp" | "smooth"…); ghi từ tiến trình game nên dùng file riêng của game. */
+    fun displayStyle(coreId: String): String? = gsp.getString("display_$coreId", null) ?: sp.getString("display_$coreId", null)
+    fun setDisplayStyle(coreId: String, key: String) = gsp.edit().putString("display_$coreId", key).apply()
+
     /** Độ mờ tay cầm ảo (0.2–1.0). */
     var padOpacity: Float
         get() = gsp.getFloat("pad_opacity", sp.getFloat("pad_opacity", 0.65f))

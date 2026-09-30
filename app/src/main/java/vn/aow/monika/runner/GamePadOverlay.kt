@@ -149,6 +149,9 @@ class InGameState {
 
     /** Cụm trái đang là cần analog (null = theo mặc định của bố cục). */
     var stickMode by mutableStateOf<Boolean?>(null)
+
+    /** Tên kiểu hiển thị đang dùng (vd. "LCD cổ điển"); null = lõi này không có nhiều kiểu → không hiện nút. */
+    var styleLabel by mutableStateOf<String?>(null)
 }
 
 /** Vùng an toàn phía trên: thanh trạng thái ∪ camera/cutout (cả khi thanh trạng thái bị ẩn), và 2 bên cạnh cutout khi máy ngang. */

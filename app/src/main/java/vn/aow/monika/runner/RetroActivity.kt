@@ -54,6 +54,15 @@ class RetroActivity : ComponentActivity() {
     private val cheatPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { u -> if (u != null) cheats.importFile(u) }
     private var aspect = 4f / 3f
 
+    /** Kiểu hiển thị (lõi có khai báo `display` trong config): bộ lọc + co giãn số nguyên + lưới LCD + tùy chọn lõi. */
+    private var core = ""
+    private var display: vn.aow.monika.config.CoreDisplay? = null
+    private var styleKey: String? = null
+    private var style: vn.aow.monika.config.DisplayStyle? = null
+    private var gridView: LcdGridView? = null
+    /** Bội số nguyên đang dùng cho khung game (0 = lấp đầy kiểu thường). */
+    private var intScale = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -80,6 +89,13 @@ class RetroActivity : ComponentActivity() {
         aspect = AppGraph.config.current.cores[coreId]?.aspectRatio ?: DEFAULT_ASPECT[coreId] ?: 4f / 3f
         val prefs = AppGraph.prefs
         val tier = EmuTier.detect(this, prefs.emuPerf)
+        core = coreId
+        display = AppGraph.config.current.cores[coreId]?.display
+        // EXTRA_DISPLAY chỉ để CI/gỡ lỗi ép kiểu khi chụp ảnh; bình thường dùng lựa chọn đã lưu của người chơi.
+        DisplayStyles.resolve(display, intent.getStringExtra(EXTRA_DISPLAY) ?: prefs.displayStyle(coreId))?.let { (k, st) ->
+            styleKey = k; style = st
+            ui.styleLabel = st.label.takeIf { (display?.styles?.size ?: 0) > 1 }
+        }
         ui.opacity = prefs.padOpacity
         ui.scale = prefs.padScale
         ui.dpadOffset = prefs.padOffset("dpad").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
@@ -152,7 +168,10 @@ class RetroActivity : ComponentActivity() {
                             ui.options = null
                             showToast("Đã về mặc định. Mở lại game để áp dụng hết.", 2600)
                         },
-                        extraActions = listOf(
+                        extraActions = listOfNotNull(
+                            ui.styleLabel?.let { label ->
+                                vn.aow.monika.ui.theme.SheetAction("Kiểu hình: $label", vn.aow.monika.R.drawable.ic_fluent_eye_24_regular) { cycleDisplayStyle() }
+                            },
                             vn.aow.monika.ui.theme.SheetAction("Mã cheat", vn.aow.monika.R.drawable.ic_fluent_document_24_regular) { cheats.show() },
                         ),
                     )
@@ -173,7 +192,7 @@ class RetroActivity : ComponentActivity() {
         setContentView(root)
         // Biết vùng camera/cutout rồi mới đặt lại vị trí khung game.
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
-            retroView?.layoutParams = gameLayoutParams()
+            applyLayout()
             androidx.core.view.ViewCompat.onApplyWindowInsets(v, insets)
         }
         root.addView(overlay, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
@@ -193,19 +212,15 @@ class RetroActivity : ComponentActivity() {
                 savesDirectory = sramFile.parentFile!!.absolutePath
                 saveRAMState = sramFile.takeIf { it.exists() }?.readBytes()
                 // Bộ lọc hình + âm thanh độ trễ thấp theo config (hệ điểm ảnh dùng "sharp" cho nét, không nhòe).
-                shader = when (AppGraph.config.current.cores[coreId]?.shader?.lowercase()) {
-                    "sharp" -> com.swordfish.libretrodroid.ShaderConfig.Sharp
-                    "crt" -> com.swordfish.libretrodroid.ShaderConfig.CRT
-                    "lcd" -> com.swordfish.libretrodroid.ShaderConfig.LCD
-                    else -> com.swordfish.libretrodroid.ShaderConfig.Default
-                }
+                shader = shaderFor(style?.shader ?: AppGraph.config.current.cores[coreId]?.shader)
                 val def = AppGraph.config.current.cores[coreId]
                 // Máy yếu luôn dùng bộ đệm âm thanh thường (đỡ rè khi CPU chưa kịp); máy khác theo config của lõi.
                 preferLowLatencyAudio = (def?.lowLatencyAudio ?: true) && tier != EmuTier.LITE
                 skipDuplicateFrames = true // Không vẽ lại khung giống hệt khung trước (tiết kiệm GPU/pin).
                 // Mặc định config → đè bằng bộ theo sức máy (lite/full) → đè bằng lựa chọn của người chơi (CoreOptions.initial).
                 val tierOptions = def?.perf?.get(tier.key).orEmpty()
-                variables = CoreOptions.initial(this@RetroActivity, coreId, def?.options.orEmpty() + tierOptions)
+                // Thứ tự đè: config → bộ theo sức máy → kiểu hiển thị → lựa chọn tay của người chơi (CoreOptions.initial).
+                variables = CoreOptions.initial(this@RetroActivity, coreId, def?.options.orEmpty() + tierOptions + style?.options.orEmpty())
                     .map { (k, v) -> Variable(k, v) }.toTypedArray()
             }
             status.text = "Đang khởi động game…"
@@ -214,6 +229,9 @@ class RetroActivity : ComponentActivity() {
             lifecycle.addObserver(view)
             root.addView(view, 0, gameLayoutParams()) // Dưới màn chờ; màn chờ bỏ đi khi có khung hình đầu.
             retroView = view
+            // Lưới LCD nằm ngay trên khung game, dưới màn chờ và lớp giao diện.
+            gridView = LcdGridView(this@RetroActivity).also { root.addView(it, 1, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)) }
+            applyLayout()
             ready = true
             Diagnostics.stage(this@RetroActivity, "view-created")
             launch { if (cheats.prepare()) showToast("Đã tìm thấy mã cheat cho game này (Menu → Mã cheat)", 2800) }
@@ -250,22 +268,72 @@ class RetroActivity : ComponentActivity() {
         }
     }
 
-    /** Dọc: game sát trên (dưới header), cao theo tỉ lệ hệ máy, tối đa 58% màn. Ngang: phủ màn (lõi tự giữ tỉ lệ). */
+    /**
+     * Dọc: game sát trên (dưới header), cao theo tỉ lệ hệ máy, tối đa 58% màn. Ngang: phủ màn (lõi tự giữ tỉ lệ).
+     * Kiểu hiển thị có `integer` + lõi khai báo `native`: khung game = đúng bội số nguyên n × (rộng×cao gốc), căn giữa ngang →
+     * điểm ảnh vuông đều, không nhòe/gợn; lưới LCD phủ lên khít từng điểm ảnh.
+     */
     private fun gameLayoutParams(): FrameLayout.LayoutParams {
         val dm = resources.displayMetrics
         val portrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-        if (!portrait) return FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+        val nat = display?.native?.takeIf { it.size == 2 && it[0] > 0 && it[1] > 0 }
+        val wantInt = style?.integer == true && nat != null
+        if (!portrait) {
+            intScale = if (wantInt) DisplayStyles.integerScale(dm.widthPixels, dm.heightPixels, nat!![0], nat[1]) else 0
+            return if (intScale > 0) FrameLayout.LayoutParams(intScale * nat!![0], intScale * nat[1], Gravity.CENTER)
+            else FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+        }
         // Khung game nằm dưới header; header đã bị đẩy xuống nếu máy có camera/cutout ở trên.
         val cutoutTop = androidx.core.view.ViewCompat.getRootWindowInsets(root)
             ?.getInsets(WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.statusBars())?.top ?: 0
         val top = (76 * dm.density).toInt() + cutoutTop
-        val h = (dm.widthPixels / aspect).toInt().coerceAtMost((dm.heightPixels * 0.58f).toInt())
+        val maxH = (dm.heightPixels * 0.58f).toInt()
+        intScale = if (wantInt) DisplayStyles.integerScale(dm.widthPixels, maxH, nat!![0], nat[1]) else 0
+        if (intScale > 0) return FrameLayout.LayoutParams(intScale * nat!![0], intScale * nat[1], Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = top }
+        val h = (dm.widthPixels / aspect).toInt().coerceAtMost(maxH)
         return FrameLayout.LayoutParams(MATCH_PARENT, h, Gravity.TOP).apply { topMargin = top }
+    }
+
+    /** Đặt lại vị trí khung game + lưới LCD (cùng LayoutParams để khít nhau từng điểm ảnh). */
+    private fun applyLayout() {
+        val lp = gameLayoutParams()
+        retroView?.layoutParams = lp
+        gridView?.let { g ->
+            g.layoutParams = FrameLayout.LayoutParams(lp)
+            g.set(intScale, style?.grid ?: 0f)
+        }
+    }
+
+    private fun shaderFor(name: String?): com.swordfish.libretrodroid.ShaderConfig = when (name?.lowercase()) {
+        "sharp" -> com.swordfish.libretrodroid.ShaderConfig.Sharp
+        "crt" -> com.swordfish.libretrodroid.ShaderConfig.CRT
+        "lcd" -> com.swordfish.libretrodroid.ShaderConfig.LCD
+        else -> com.swordfish.libretrodroid.ShaderConfig.Default
+    }
+
+    /** Menu → "Kiểu hiển thị": xoay vòng LCD cổ điển → Sắc nét → Mượt…, áp ngay (bộ lọc, tùy chọn lõi, co giãn, lưới), nhớ theo lõi. */
+    private fun cycleDisplayStyle() {
+        val d = display ?: return
+        val cur = styleKey ?: return
+        val key = DisplayStyles.next(d, cur)
+        val st = d.styles[key] ?: return
+        styleKey = key; style = st
+        ui.styleLabel = st.label
+        retroView?.let { view ->
+            view.shader = shaderFor(st.shader)
+            // Tùy chọn người chơi đã chỉnh tay trong "Tùy chọn giả lập" vẫn được giữ, không bị kiểu đè.
+            val saved = CoreOptions.saved(this, core)
+            val vars = st.options.filterKeys { it !in saved }.map { (k, v) -> Variable(k, v) }
+            if (vars.isNotEmpty()) runCatching { view.updateVariables(*vars.toTypedArray()) }
+        }
+        applyLayout()
+        AppGraph.prefs.setDisplayStyle(core, key)
+        showToast("Kiểu hiển thị: ${st.label}")
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        retroView?.layoutParams = gameLayoutParams()
+        applyLayout()
     }
 
     /** Đọc danh sách tùy chọn lõi đang chạy (lõi tự khai báo) rồi mở bảng chỉnh. */
@@ -398,6 +466,7 @@ class RetroActivity : ComponentActivity() {
         private const val EXTRA_TITLE = "title"
         private const val EXTRA_PAD = "pad"
         private const val EXTRA_SYSTEM_ID = "system_id"
+        private const val EXTRA_DISPLAY = "display"
 
         /** Tỉ lệ khung hình mặc định theo lõi (config `cores.<id>.aspectRatio` ghi đè được). NDS = 2 màn chồng dọc. */
         private val DEFAULT_ASPECT = mapOf(

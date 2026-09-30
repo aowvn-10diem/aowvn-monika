@@ -209,6 +209,32 @@ data class CoreDef(
     val perf: Map<String, Map<String, String>> = emptyMap(),
     /** Âm thanh độ trễ thấp (Oboe). Lõi nặng đặt false để bộ đệm âm thanh lớn hơn, đỡ rè khi máy chưa kịp. */
     val lowLatencyAudio: Boolean = true,
+    /** Các "kiểu hiển thị" người chơi đổi được trong game (vd. GBA: LCD cổ điển / Sắc nét / Mượt). Null = chỉ dùng [shader]. */
+    val display: CoreDisplay? = null,
+)
+
+/** Màn hình của máy gốc + các kiểu hiển thị của lõi. Hết kiểu cuối thì quay lại kiểu đầu tiên trong [styles]. */
+@Serializable
+data class CoreDisplay(
+    /** Độ phân giải gốc [rộng, cao] của màn máy gốc (GBA 240×160) — dùng để co giãn theo bội số nguyên và căn lưới LCD. */
+    val native: List<Int> = emptyList(),
+    /** Khóa kiểu mặc định; không khớp thì lấy kiểu đầu tiên. */
+    val default: String = "",
+    val styles: Map<String, DisplayStyle> = emptyMap(),
+)
+
+@Serializable
+data class DisplayStyle(
+    /** Tên hiện cho người chơi. */
+    val label: String,
+    /** Bộ lọc hình: "sharp" | "lcd" | "crt" | trống = nội suy mượt mặc định của LibretroDroid. */
+    val shader: String = "",
+    /** Co giãn theo bội số nguyên của độ phân giải gốc: điểm ảnh vuông đều, không nhòe/không gợn (hình nhỏ hơn khung vài %, viền đen). */
+    val integer: Boolean = false,
+    /** Độ đậm lưới điểm ảnh LCD phủ lên hình (0 = tắt, ~0,3 = vừa). Chỉ vẽ khi co giãn số nguyên ≥ 3×, vì lưới lệch nhịp sẽ gợn. */
+    val grid: Float = 0f,
+    /** Tùy chọn lõi đi kèm (vd. mgba_color_correction). Người chơi chỉnh tay trong "Tùy chọn giả lập" thì đè lên. */
+    val options: Map<String, String> = emptyMap(),
 )
 
 @Serializable

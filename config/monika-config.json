@@ -1,5 +1,5 @@
 {
-  "configVersion": 17,
+  "configVersion": 18,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -736,7 +736,39 @@
         "mgba_interframe_blending": "mix_smart",
         "mgba_frameskip": "disabled"
       },
-      "shader": "sharp"
+      "shader": "sharp",
+      "display": {
+        "native": [240, 160],
+        "default": "lcd",
+        "styles": {
+          "lcd": {
+            "label": "LCD cổ điển",
+            "shader": "sharp",
+            "integer": true,
+            "grid": 0.3,
+            "options": {
+              "mgba_color_correction": "GBA",
+              "mgba_interframe_blending": "lcd_ghosting_fast"
+            }
+          },
+          "sharp": {
+            "label": "Sắc nét",
+            "shader": "sharp",
+            "integer": true,
+            "options": {
+              "mgba_color_correction": "OFF",
+              "mgba_interframe_blending": "mix_smart"
+            }
+          },
+          "smooth": {
+            "label": "Mượt, lấp đầy",
+            "options": {
+              "mgba_color_correction": "OFF",
+              "mgba_interframe_blending": "mix_smart"
+            }
+          }
+        }
+      }
     },
     "gambatte": {
       "version": "1",
