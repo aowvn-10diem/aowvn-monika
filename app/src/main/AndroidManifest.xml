@@ -130,6 +130,9 @@
         <receiver
             android:name=".apkinstall.InstallResultReceiver"
             android:exported="false" />
+        <receiver
+            android:name=".apkinstall.adb.AdbPairing$AdbPairReceiver"
+            android:exported="false" />
         <!-- Cách 1: bộ nạp chèn trong game báo tin về Monika + đọc dữ liệu game từ Monika (chỉ gói game đã đăng ký mới vào được). -->
         <provider
             android:name=".apkinstall.LoaderBusProvider"

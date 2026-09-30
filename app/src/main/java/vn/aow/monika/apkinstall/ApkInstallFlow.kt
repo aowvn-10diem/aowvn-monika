@@ -26,6 +26,8 @@ data class UiState(
         CHOOSE_METHOD,
         /** Cách 2: game đã cài, chờ người chơi mở game 1 lần rồi chọn thư mục dữ liệu. */
         SAF_PREPARE,
+        /** Cách 3: hướng dẫn bật Gỡ lỗi không dây + ghép đôi. */
+        ADB_GUIDE,
         DONE, FAILED,
     }
 }
@@ -217,6 +219,56 @@ object ApkInstallFlow {
             }
         }
         return st(result, UiState.Phase.SAF_PREPARE, checklist = checklist.read(pkg, result.versionCode)).also(onState)
+    }
+
+    /**
+     * Cách 3: cài APK GỐC qua quyền shell (bỏ chặn targetSdk nếu cần), chép OBB và Data, rồi luôn trả công tắc gỡ lỗi về như ban đầu.
+     * [readNow] đọc lại công tắc sau khi tắt để báo nếu chưa trả được.
+     */
+    suspend fun executeAdb(
+        result: InspectResult, shell: vn.aow.monika.apkinstall.adb.AdbShell, device: DeviceInfo, checklist: InstallChecklist,
+        initial: vn.aow.monika.apkinstall.adb.DevState, readNow: () -> vn.aow.monika.apkinstall.adb.DevState,
+        obbDir: File? = null, onState: (UiState) -> Unit = { state.value = it },
+    ): UiState {
+        val pkg = result.packageName
+        fun list() = checklist.read(pkg, result.versionCode)
+        checklist.set(pkg, result.versionCode, Method.ADB, State.RUNNING)
+        var end: UiState
+        try {
+            val parts = SplitSelector.select(result.parts, device)
+            onState(st(result, UiState.Phase.INSTALLING, 0))
+            val o = vn.aow.monika.apkinstall.adb.AdbInstaller.install(shell, pkg, parts, bypassLowTargetSdk = device.sdkInt >= 34 && result.lowTargetSdk) { onState(st(result, UiState.Phase.INSTALLING, it)) }
+            end = when (o) {
+                is InstallOutcome.Success -> {
+                    val obbFail = copyObb(result, obbDir ?: ObbInstaller.obbDir(pkg), onState)
+                    if (obbFail != null) { checklist.set(pkg, result.versionCode, Method.ADB, State.FAILED, obbFail.failure?.text); obbFail.copy(checklist = list()) }
+                    else {
+                        var dataFail: String? = null
+                        if (result.dataFiles.isNotEmpty()) {
+                            onState(st(result, UiState.Phase.PUSHING_DATA, 0))
+                            val r = vn.aow.monika.apkinstall.adb.AdbInstaller.pushData(shell, pkg, result.dataFiles) { onState(st(result, UiState.Phase.PUSHING_DATA, it)) }
+                            if (r is vn.aow.monika.apkinstall.adb.AdbInstaller.DataResult.Failed) dataFail = r.text
+                        }
+                        if (dataFail != null) { checklist.set(pkg, result.versionCode, Method.ADB, State.FAILED, dataFail); st(result, UiState.Phase.CHOOSE_METHOD, message = dataFail, checklist = list()) }
+                        else { checklist.set(pkg, result.versionCode, Method.ADB, State.OK); st(result, UiState.Phase.DONE, checklist = list()) }
+                    }
+                }
+                is InstallOutcome.UserAborted -> { checklist.set(pkg, result.versionCode, Method.ADB, State.NOT_TRIED); st(result, UiState.Phase.CHOOSE_METHOD, message = "Đã hủy cài đặt.", checklist = list()) }
+                is InstallOutcome.Failure -> {
+                    val conflict = o.kind == InstallOutcome.Kind.SIGNATURE_CONFLICT || o.kind == InstallOutcome.Kind.DOWNGRADE
+                    checklist.set(pkg, result.versionCode, Method.ADB, if (conflict) State.NOT_TRIED else State.FAILED, if (conflict) null else o.text)
+                    st(result, UiState.Phase.FAILED, failure = o, checklist = list())
+                }
+            }
+        } catch (e: Exception) {
+            checklist.set(pkg, result.versionCode, Method.ADB, State.FAILED, e.message)
+            end = st(result, UiState.Phase.FAILED, failure = InstallOutcome.Failure(InstallOutcome.Kind.OTHER, "Cách 3 bị ngắt giữa chừng: ${e.message ?: e.javaClass.simpleName}", e.toString()), checklist = list())
+        } finally {
+            vn.aow.monika.apkinstall.adb.AdbInstaller.cleanup(shell, initial)
+        }
+        val restored = runCatching { vn.aow.monika.apkinstall.adb.AdbCleanup.restored(initial, readNow()) }.getOrDefault(true)
+        if (!restored) end = end.copy(message = "Monika chưa tắt lại được Gỡ lỗi. Nếu dùng app ngân hàng, hãy tắt Tùy chọn nhà phát triển trong Cài đặt.")
+        return end.also(onState)
     }
 
     /** Cách 2, bước 2: chép Data vào thư mục người chơi đã cấp quyền. */

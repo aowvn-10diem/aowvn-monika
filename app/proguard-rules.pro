@@ -35,3 +35,10 @@
 -dontwarn javax.annotation.**
 # Nhật ký Cách 1/2/3 lưu bằng kotlinx.serialization theo tên enum
 -keepclassmembers enum vn.aow.monika.apkinstall.** { *; }
+
+# Cách 3: gỡ lỗi không dây (libadb-android + BouncyCastle/spake2 dùng phản xạ/JCA)
+-keep class io.github.muntashirakon.adb.** { *; }
+-keep class org.bouncycastle.** { *; }
+-keep class io.github.muntashirakon.crypto.** { *; }
+-dontwarn org.bouncycastle.**
+-dontwarn io.github.muntashirakon.**

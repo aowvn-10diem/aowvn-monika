@@ -25,6 +25,7 @@ sevenZipAndroid = "Release-16.02-2.02" # 7-Zip native: RAR/RAR5 có mật khẩu
 sevenZipJvm = "16.02-2.01" # chỉ để chạy test trên máy tính
 arsclib = "1.3.5" # đọc/sửa AndroidManifest nhị phân của APK (Apache-2.0)
 apksig = "8.7.3" # ký APK v1/v2/v3 (Apache-2.0, cùng bản với AGP)
+libadb = "3.1.1" # gỡ lỗi không dây tự kết nối vào chính máy (Cách 3 của trình cài game); Apache-2.0
 r8 = "8.7.18" # D8: biên dịch bộ nạp data thành .dex lúc build
 
 [libraries]
@@ -52,6 +53,7 @@ sevenzip-android = { module = "com.github.omicronapps:7-Zip-JBinding-4Android", 
 sevenzip-jvm-natives = { module = "net.sf.sevenzipjbinding:sevenzipjbinding-all-platforms", version.ref = "sevenZipJvm" }
 arsclib = { module = "io.github.reandroid:ARSCLib", version.ref = "arsclib" }
 apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
+libadb = { module = "com.github.MuntashirAkon:libadb-android", version.ref = "libadb" }
 r8 = { module = "com.android.tools:r8", version.ref = "r8" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }

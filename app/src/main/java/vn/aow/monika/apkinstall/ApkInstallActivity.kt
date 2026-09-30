@@ -55,7 +55,10 @@ class ApkInstallActivity : ComponentActivity() {
                             ApkInstallFlow.state.value = ApkInstallFlow.confirmWorks(r, true, InstallChecklist.from(this@ApkInstallActivity)) } },
                         onHealthAnswer = { ok -> ApkInstallFlow.inspected?.let { r ->
                             ApkInstallFlow.state.value = ApkInstallFlow.confirmWorks(r, ok, InstallChecklist.from(this@ApkInstallActivity)) } },
-                        onMethod = { m -> ApkInstallFlow.chosenMethod = m; if (m == Method.SAF) safStart() else install() },
+                        onMethod = { m -> ApkInstallFlow.chosenMethod = m; when (m) { Method.SAF -> safStart(); Method.ADB -> adbGuide(); else -> install() } },
+                        onAdbSettings = ::adbOpenSettings,
+                        onAdbPair = { requestNotifPermission(); vn.aow.monika.apkinstall.adb.AdbPairing.start(this@ApkInstallActivity) },
+                        onAdbRun = { ApkInstallWorker.enqueueAdb(this@ApkInstallActivity) },
                         onOpenGame = { ApkInstallFlow.inspected?.let { r -> packageManager.getLaunchIntentForPackage(r.packageName)?.let { startActivity(it) } } },
                         onPickFolder = { ApkInstallFlow.inspected?.let { r -> pickFolder.launch(SafDataAccess.initialUri(r.packageName)) } },
                         onClose = ::finish,
@@ -126,6 +129,24 @@ class ApkInstallActivity : ComponentActivity() {
     }
 
     /** Cách 2, bước 1: cài APK gốc (bỏ qua nếu game gốc đã cài sẵn) rồi chờ người chơi mở game 1 lần + chọn thư mục. */
+    /** Cách 3: ghi nhớ công tắc gỡ lỗi hiện tại (để trả lại đúng) rồi hiện hướng dẫn. */
+    private fun adbGuide() {
+        val r = ApkInstallFlow.inspected ?: return
+        vn.aow.monika.apkinstall.adb.AdbInitialStore.captureOnce(this)
+        ApkInstallFlow.state.value = UiState(UiState.Phase.ADB_GUIDE, r, checklist = InstallChecklist.from(this).read(r.packageName, r.versionCode))
+    }
+
+    private fun adbOpenSettings() {
+        val i = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+        runCatching { startActivity(i) }.onFailure { runCatching { startActivity(Intent(Settings.ACTION_SETTINGS)) } }
+    }
+
+    /** Ô nhập mã ghép đôi nằm trong thông báo → Android 13+ cần quyền thông báo. */
+    private fun requestNotifPermission() {
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED)
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 77)
+    }
+
     private fun safStart() {
         val r = ApkInstallFlow.inspected ?: return
         val skip = SessionInstaller.isInstalled(this, r.packageName) && !RepackRegistry.isKnown(this, r.packageName)

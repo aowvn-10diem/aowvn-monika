@@ -18,8 +18,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 19
-        versionName = "0.4.6"
+        versionCode = 20
+        versionName = "0.4.7"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
         buildConfigField(
             "String", "REMOTE_CONFIG_URL",
@@ -160,6 +160,7 @@ dependencies {
     implementation(libs.xz) // LZMA/LZMA2 cho 7z
     implementation(libs.sevenzip.android) // 7-Zip native: RAR/RAR5 có mật khẩu, RAR nhiều phần
     implementation(files(arscStripped)) // ARSCLib (đã lọc lớp trùng hệ thống): đọc/sửa AndroidManifest nhị phân của APK game
+    implementation(libs.libadb) // Cách 3: gỡ lỗi không dây
     implementation(libs.apksig) // Ký lại APK game đã chỉnh
     sevenZipTestNatives(libs.sevenzip.jvm.natives)
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)

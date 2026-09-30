@@ -19,12 +19,14 @@ import vn.aow.monika.ui.MainActivity
 object Notifier {
     private const val CH_POSTS = "posts"
     private const val CH_DOWNLOADS = "downloads"
+    const val CH_ADB = "adb_pairing"
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(CH_POSTS, "Bài viết mới trên aow.vn", NotificationManager.IMPORTANCE_DEFAULT))
         nm.createNotificationChannel(NotificationChannel(CH_DOWNLOADS, "Tải game", NotificationManager.IMPORTANCE_LOW))
+        nm.createNotificationChannel(NotificationChannel(CH_ADB, "Ghép đôi gỡ lỗi không dây", NotificationManager.IMPORTANCE_HIGH))
     }
 
     fun newPost(context: Context, post: Post) {

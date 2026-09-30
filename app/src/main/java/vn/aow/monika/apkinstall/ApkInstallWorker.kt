@@ -60,6 +60,7 @@ class ApkInstallWorker(context: Context, params: WorkerParameters) : CoroutineWo
                     device = device, checklist = InstallChecklist.from(ctx), onState = onState,
                 )
             }
+            inputData.getString(KEY_TASK) == TASK_ADB -> runAdb(result, device, onState)
             ApkInstallFlow.plan(result, device) == InstallPlan.CHECKLIST && ApkInstallFlow.chosenMethod == Method.SAF -> {
                 val cl = InstallChecklist.from(ctx)
                 if (inputData.getString(KEY_TASK) == TASK_SAF_COPY) {
@@ -70,9 +71,8 @@ class ApkInstallWorker(context: Context, params: WorkerParameters) : CoroutineWo
                 } else ApkInstallFlow.executeSafInstall(result, installer, device, cl, alreadyInstalled = SessionInstaller.isInstalled(ctx, result.packageName) && inputData.getBoolean(KEY_SKIP_INSTALL, false), onState = onState)
             }
             ApkInstallFlow.plan(result, device) == InstallPlan.CHECKLIST -> {
-                // Cách 3 sẽ có ở bước sau: hiện checklist để người chơi biết.
                 val cl = InstallChecklist.from(ctx)
-                UiState(UiState.Phase.CHOOSE_METHOD, result, message = "Cách này chưa hỗ trợ ở bản này.", checklist = cl.read(result.packageName, result.versionCode)).also(onState)
+                UiState(UiState.Phase.CHOOSE_METHOD, result, message = "Hãy chọn một cách để cài.", checklist = cl.read(result.packageName, result.versionCode)).also(onState)
             }
             else -> ApkInstallFlow.execute(result, installer, device = device, onState = onState)
         }
@@ -91,6 +91,27 @@ class ApkInstallWorker(context: Context, params: WorkerParameters) : CoroutineWo
         return Result.success()
     }
 
+    /** Cách 3: kết nối gỡ lỗi không dây vào chính máy này rồi cài. Chưa ghép đôi/chưa bật → về màn hướng dẫn. */
+    private suspend fun runAdb(result: InspectResult, device: DeviceInfo, onState: (UiState) -> Unit): UiState {
+        val ctx = applicationContext
+        val cl = InstallChecklist.from(ctx)
+        val initial = vn.aow.monika.apkinstall.adb.AdbInitialStore.captureOnce(ctx)
+        val adb = vn.aow.monika.apkinstall.adb.LocalAdb(ctx)
+        try {
+            fun guide(msg: String) = UiState(UiState.Phase.ADB_GUIDE, result, message = msg, checklist = cl.read(result.packageName, result.versionCode))
+            when (val c = adb.connect()) {
+                is vn.aow.monika.apkinstall.adb.LocalAdb.Connect.NeedPairing -> return guide("Chưa ghép đôi. Bấm \"Bắt đầu ghép đôi\" rồi làm theo thông báo.").also(onState)
+                is vn.aow.monika.apkinstall.adb.LocalAdb.Connect.Failed -> return guide(c.text).also(onState)
+                vn.aow.monika.apkinstall.adb.LocalAdb.Connect.Ok -> Unit
+            }
+            val end = ApkInstallFlow.executeAdb(result, adb, device, cl, initial, readNow = { vn.aow.monika.apkinstall.adb.DevState.read(ctx) }, onState = onState)
+            vn.aow.monika.apkinstall.adb.AdbInitialStore.clear(ctx)
+            return end
+        } finally {
+            runCatching { adb.close() }
+        }
+    }
+
     override suspend fun getForegroundInfo(): ForegroundInfo = info("Đang cài game", null)
 
     private fun info(name: String, pct: Int?): ForegroundInfo {
@@ -104,6 +125,7 @@ class ApkInstallWorker(context: Context, params: WorkerParameters) : CoroutineWo
         private const val KEY_TASK = "task"
         private const val KEY_SKIP_INSTALL = "skip_install"
         private const val TASK_SAF_COPY = "saf_copy"
+        private const val TASK_ADB = "adb_run"
 
         fun enqueue(context: Context) {
             WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<ApkInstallWorker>().build())
@@ -113,6 +135,13 @@ class ApkInstallWorker(context: Context, params: WorkerParameters) : CoroutineWo
         fun enqueueSafCopy(context: Context) {
             WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<ApkInstallWorker>()
                 .setInputData(androidx.work.workDataOf(KEY_TASK to TASK_SAF_COPY)).build())
+        }
+
+        /** Cách 3: chạy việc cài qua gỡ lỗi không dây (đã ghép đôi). */
+        fun enqueueAdb(context: Context) {
+            ApkInstallFlow.state.value = UiState(UiState.Phase.INSTALLING, ApkInstallFlow.inspected, percent = 0)
+            WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<ApkInstallWorker>()
+                .setInputData(androidx.work.workDataOf(KEY_TASK to TASK_ADB)).build())
         }
 
         /** Cách 2, bước 1 khi game đã cài sẵn bản gốc (chỉ chuyển sang chờ chọn thư mục). */

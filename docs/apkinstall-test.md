@@ -11,7 +11,7 @@ Mọi dòng dưới đây **CHƯA KIỂM** trên máy thật cho tới khi có k
 | Cách 1 — game targetSdk thấp | — | — | | |
 | Tự kiểm tra bắt được game crash / thoát ngay | | | | |
 | Cách 2 — chọn thư mục dữ liệu | | | | |
-| Cách 3 — gỡ lỗi không dây | chưa làm | | | |
+| Cách 3 — gỡ lỗi không dây (ghép đôi bằng thông báo, cài, tự tắt lại) | | | | |
 | Game chỉ 32-bit trên máy 64-bit-only → báo đúng | | | | |
 
 Điểm cần chú ý khi thử:
@@ -19,3 +19,4 @@ Mọi dòng dưới đây **CHƯA KIỂM** trên máy thật cho tới khi có k
 - ARSCLib ghi lại manifest nhị phân: nếu game nào cài lỗi `INSTALL_PARSE_FAILED_*`, ghi tên game + lỗi vào đây.
 - `zipalign` do ARSCLib (`ZipAlign.alignApk`) — kiểm game có `.so` lưu không nén (extractNativeLibs=false).
 - Nhịp sống bộ nạp có bị Xiaomi/Oppo tiết kiệm pin cắt không (HealthCheck báo "thoát ngay" nhầm).
+- Cách 3: kiểm (a) mDNS thấy cổng ghép đôi và thông báo có ô nhập mã hiện đúng; (b) exec-stream `install-write`/`cat >` có trả EOF (nếu treo → ghi máy + Android); (c) sau khi xong, Tùy chọn nhà phát triển/Gỡ lỗi về đúng trạng thái lúc đầu; (d) game targetSdk thấp trên Android 14+ cài được nhờ `--bypass-low-target-sdk-block` (chỉ shell mới có tác dụng); (e) app ngân hàng mở bình thường sau khi Monika tắt.
