@@ -44,6 +44,11 @@ for c in "${CASES[@]}"; do
   adb exec-out screencap -p > "$OUT/games/$name.png" 2>/dev/null || true
   adb logcat -d > "$OUT/games/$name.logcat.txt" 2>/dev/null
   echo "$result $name ($core) sau $((i*4))s" | tee -a "$OUT/games/summary.txt"
+  if [ "$result" != OK ]; then
+    echo "--- logcat (lọc) của $name ---"
+    grep -E "MonikaGame|Monika|AndroidRuntime|libretro|Fatal signal|DEBUG|Diagnostics" "$OUT/games/$name.logcat.txt" | tail -40 | cut -c1-240
+    echo "--- hết ---"
+  fi
   [ "$result" = OK ] || fail=1
 done
 exit $fail
