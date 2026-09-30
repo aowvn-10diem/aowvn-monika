@@ -1,6 +1,7 @@
 /*
  * Copyright 2015-2016 Nickolay Savchenko
- * Copyright 2017-2018 Nikita Shakarun
+ * Copyright 2017-2019 Nikita Shakarun
+ * Copyright 2019-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,122 +19,129 @@
 package ru.playsoftware.j2meloader.applist;
 
 import android.graphics.drawable.Drawable;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.Filter;
-import android.widget.Filterable;
+import android.widget.ImageView;
+import android.widget.TextView;
 
-import java.util.ArrayList;
-import java.util.List;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
+import androidx.recyclerview.widget.RecyclerView;
 
 import ru.playsoftware.j2meloader.R;
+import ru.playsoftware.j2meloader.databinding.ListRowGridJarBinding;
 import ru.playsoftware.j2meloader.databinding.ListRowJarBinding;
 
-public class AppsListAdapter extends BaseAdapter implements Filterable {
+class AppsListAdapter extends ListAdapter<AppItem, AppsListAdapter.AppViewHolder> {
+	static final int LAYOUT_TYPE_LIST = 0;
+	static final int LAYOUT_TYPE_GRID = 1;
 
-	private List<AppItem> list = new ArrayList<>();
-	private List<AppItem> filteredList = new ArrayList<>();
-	private final AppFilter appFilter = new AppFilter();
-	private CharSequence filterConstraint;
+	private final OnItemClickListener itemClickListener;
+	private int layout = LAYOUT_TYPE_LIST;
 
-	@Override
-	public int getCount() {
-		return filteredList.size();
+	AppsListAdapter(OnItemClickListener onItemClickListener) {
+		super(new DiffUtil.ItemCallback<>() {
+			@Override
+			public boolean areItemsTheSame(@NonNull AppItem oldItem, @NonNull AppItem newItem) {
+				return oldItem.getId() == newItem.getId();
+			}
+
+			@Override
+			public boolean areContentsTheSame(@NonNull AppItem oldItem, @NonNull AppItem newItem) {
+				return oldItem.getTitle().equals(newItem.getTitle()) &&
+						oldItem.getVersion().equals(newItem.getVersion());
+			}
+		});
+		this.itemClickListener = onItemClickListener;
 	}
 
 	@Override
-	public AppItem getItem(int position) {
-		return filteredList.get(position);
+	public int getItemViewType(int position) {
+		return layout;
 	}
 
+	@NonNull
 	@Override
-	public long getItemId(int position) {
-		return position;
-	}
-
-	@Override
-	public View getView(int position, View view, ViewGroup parent) {
-		ViewHolder holder;
-		if (view == null) {
-			ListRowJarBinding binding = ListRowJarBinding.inflate(
-					LayoutInflater.from(parent.getContext()), parent, false);
-			view = binding.getRoot();
-			holder = new ViewHolder(binding);
-			view.setTag(holder);
+	public AppViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+		LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+		if (viewType == LAYOUT_TYPE_GRID) {
+			ListRowGridJarBinding binding = ListRowGridJarBinding.inflate(inflater, parent, false);
+			return new AppViewHolder(binding, itemClickListener);
 		} else {
-			holder = (ViewHolder) view.getTag();
+			ListRowJarBinding binding = ListRowJarBinding.inflate(inflater, parent, false);
+			return new AppListViewHolder(binding, itemClickListener);
 		}
-
-		AppItem item = filteredList.get(position);
-		Drawable icon = Drawable.createFromPath(item.getImagePathExt());
-		if (icon != null) {
-			icon.setFilterBitmap(false);
-			holder.binding.icon.setImageDrawable(icon);
-		} else {
-			holder.binding.icon.setImageResource(R.mipmap.ic_launcher);
-		}
-		holder.binding.name.setText(item.getTitle());
-		holder.binding.author.setText(item.getAuthor());
-		holder.binding.appVersion.setText(item.getVersion());
-
-		return view;
-	}
-
-	public void setItems(List<AppItem> items) {
-		list = items;
-		appFilter.filter(filterConstraint);
 	}
 
 	@Override
-	public Filter getFilter() {
-		return appFilter;
+	public void onBindViewHolder(@NonNull AppViewHolder holder, int position) {
+		holder.onBind(getItem(position));
 	}
 
-	private static class ViewHolder {
-		ListRowJarBinding binding;
+	void setLayout(int layout) {
+		this.layout = layout;
+	}
 
-		// todo неясно, может быть здесь стоит binding очищать на этапе
-		// ondestroy/ondestroyview где используется этот класс
-		private ViewHolder(ListRowJarBinding binding) {
-			this.binding = binding;
+	static class AppViewHolder extends RecyclerView.ViewHolder {
+		private final ImageView icon;
+		private final TextView name;
+
+		AppViewHolder(ListRowGridJarBinding binding, OnItemClickListener itemClickListener) {
+			this(binding.getRoot(), binding.listTitle, binding.listImage, itemClickListener);
 		}
-	}
 
-	private class AppFilter extends Filter {
+		AppViewHolder(View itemView,
+					  TextView listTitle,
+					  ImageView listImage,
+					  OnItemClickListener itemClickListener) {
+			super(itemView);
+			icon = listImage;
+			name = listTitle;
 
-		@Override
-		protected FilterResults performFiltering(CharSequence constraint) {
-			FilterResults results = new FilterResults();
-			if (TextUtils.isEmpty(constraint)) {
-				results.count = list.size();
-				results.values = list;
-			} else {
-				ArrayList<AppItem> resultList = new ArrayList<>();
-				for (AppItem item : list) {
-					if (item.getTitle().toLowerCase().contains(constraint)
-							|| item.getAuthor().toLowerCase().contains(constraint)) {
-						resultList.add(item);
-					}
+			itemView.setOnClickListener(v -> {
+				AppsListAdapter adapter = (AppsListAdapter) getBindingAdapter();
+				if (adapter != null) {
+					AppItem item = adapter.getItem(getLayoutPosition());
+					itemClickListener.onClick(item);
 				}
-				results.count = resultList.size();
-				results.values = resultList;
+			});
+			itemView.setOnCreateContextMenuListener(itemClickListener);
+		}
+
+		void onBind(AppItem item) {
+			Drawable icon = Drawable.createFromPath(item.getImagePathExt());
+			if (icon != null) {
+				icon.setFilterBitmap(false);
+				this.icon.setImageDrawable(icon);
+			} else {
+				this.icon.setImageResource(R.mipmap.ic_launcher);
 			}
-			return results;
+			name.setText(item.getTitle());
+			itemView.setTag(item);
+		}
+	}
+
+	static class AppListViewHolder extends AppViewHolder {
+		private final TextView author;
+		private final TextView version;
+
+		AppListViewHolder(ListRowJarBinding binding, OnItemClickListener itemClickListener) {
+			super(binding.getRoot(), binding.listTitle, binding.listImage, itemClickListener);
+			author = binding.listAuthor;
+			version = binding.listVersion;
 		}
 
 		@Override
-		protected void publishResults(CharSequence constraint, FilterResults results) {
-			filterConstraint = constraint;
-			if (results.values != null) {
-				//noinspection unchecked
-				filteredList = (List<AppItem>) results.values;
-				notifyDataSetChanged();
-			} else {
-				notifyDataSetInvalidated();
-			}
+		void onBind(AppItem item) {
+			super.onBind(item);
+			author.setText(item.getAuthor());
+			version.setText(item.getVersion());
 		}
+	}
+
+	interface OnItemClickListener extends View.OnCreateContextMenuListener {
+		void onClick(AppItem item);
 	}
 }

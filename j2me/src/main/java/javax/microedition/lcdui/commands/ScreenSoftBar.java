@@ -1,26 +1,29 @@
 /*
- *  Copyright 2019-2022 Yury Kharchenko
- *  Copyright 2023 Arman Jussupgaliyev
+ * Copyright 2019-2023 Yury Kharchenko
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package javax.microedition.lcdui.commands;
 
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.PopupWindow;
+
+import java.util.Collections;
+import java.util.List;
 
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.Screen;
@@ -31,71 +34,107 @@ import ru.playsoftware.j2meloader.databinding.SoftButtonBarBinding;
 public class ScreenSoftBar extends AbstractSoftKeysBar {
 	private final SoftButtonBarBinding binding;
 
-	public ScreenSoftBar(Screen target, SoftButtonBarBinding binding) {
-		super(target, true);
-		// todo высвобождать глобальный binding после использования
-		this.binding = binding;
-		this.binding.leftButton.setOnClickListener(this::onClick);
-		this.binding.middleButton.setOnClickListener(this::onClick);
-		this.binding.rightButton.setOnClickListener(this::onClick);
-		notifyChanged();
+	public ScreenSoftBar(Screen target, ViewGroup root, List<Command> commands) {
+		super(target);
+		binding = SoftButtonBarBinding.inflate(LayoutInflater.from(root.getContext()), root, true);
+		binding.softLeft.setOnClickListener(this::onClick);
+		binding.softMiddle.setOnClickListener(this::onClick);
+		binding.softRight.setOnClickListener(this::onClick);
+		Collections.sort(commands);
+		onCommandsChanged(commands);
 	}
 
 	private void onClick(View button) {
 		Object tag = button.getTag();
 		if (tag == null) {
-			PopupWindow popup = prepareMenu(menuStartIndex);
-			int y = binding.rightButton.getHeight();
-			View rootView = binding.rightButton.getRootView();
-			popup.setWidth(Math.min(rootView.getWidth(), rootView.getHeight()) / 2);
-			popup.setHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
-			popup.showAtLocation(rootView, Gravity.LEFT | Gravity.BOTTOM, 0, y);
+			showMenu();
 		} else {
 			target.fireCommandAction((Command) tag);
 		}
 	}
 
 	@Override
-	protected void onCommandsChanged() {
-		binding.leftButton.setTag(null);
-		binding.middleButton.setTag(null);
-		binding.rightButton.setTag(null);
-		binding.leftButton.setText("");
-		binding.middleButton.setText("");
-		binding.rightButton.setText("");
-		binding.leftButton.setVisibility(View.INVISIBLE);
-		binding.middleButton.setVisibility(View.INVISIBLE);
-		binding.rightButton.setVisibility(View.INVISIBLE);
-
-		super.onCommandsChanged();
+	protected void onCommandsChanged(List<Command> list) {
+		List<Command> commands = this.commands;
+		commands.clear();
+		commands.addAll(list);
 		int size = commands.size();
 		if (size == 0) {
-			binding.rootLayout.setVisibility(View.GONE);
+			binding.softLeft.setTag(null);
+			binding.softMiddle.setTag(null);
+			binding.softRight.setTag(null);
+			binding.softLeft.setText("");
+			binding.softMiddle.setText("");
+			binding.softRight.setText("");
+			binding.softBar.setVisibility(View.GONE);
 			return;
 		}
-		if (size - menuStartIndex > 1) {
-			binding.leftButton.setVisibility(View.VISIBLE);
-			binding.leftButton.setText(R.string.cmd_menu);
-		} else if (menuStartIndex < size) {
-			Command left = commands.get(menuStartIndex);
-			setCommand(binding.leftButton, left);
+		switch (size) {
+			case 1:
+				Command c = commands.get(0);
+				binding.softLeft.setText(c.getAndroidLabel());
+				binding.softLeft.setTag(c);
+
+				binding.softMiddle.setVisibility(View.INVISIBLE);
+				binding.softMiddle.setText("");
+				binding.softMiddle.setTag(null);
+
+				binding.softRight.setVisibility(View.INVISIBLE);
+				binding.softRight.setText("");
+				binding.softRight.setTag(null);
+				break;
+			case 2:
+				c = commands.get(0);
+				binding.softLeft.setText(c.getAndroidLabel());
+				binding.softLeft.setTag(c);
+
+				binding.softMiddle.setVisibility(View.INVISIBLE);
+				binding.softMiddle.setText("");
+				binding.softMiddle.setTag(null);
+
+				binding.softRight.setVisibility(View.VISIBLE);
+				c = commands.get(1);
+				binding.softRight.setText(c.getAndroidLabel());
+				binding.softRight.setTag(c);
+				break;
+			case 3:
+				c = commands.get(0);
+				binding.softLeft.setText(c.getAndroidLabel());
+				binding.softLeft.setTag(c);
+
+				binding.softMiddle.setVisibility(View.VISIBLE);
+				c = commands.get(1);
+				binding.softMiddle.setText(c.getAndroidLabel());
+				binding.softMiddle.setTag(c);
+
+				binding.softRight.setVisibility(View.VISIBLE);
+				c = commands.get(2);
+				binding.softRight.setText(c.getAndroidLabel());
+				binding.softRight.setTag(c);
+				break;
+			default:
+				c = commands.get(0);
+				binding.softLeft.setText(c.getAndroidLabel());
+				binding.softLeft.setTag(c);
+
+				binding.softMiddle.setVisibility(View.VISIBLE);
+				c = commands.get(1);
+				binding.softMiddle.setText(c.getAndroidLabel());
+				binding.softMiddle.setTag(c);
+
+				binding.softRight.setVisibility(View.VISIBLE);
+				binding.softRight.setText(R.string.cmd_menu);
+				binding.softRight.setTag(null);
 		}
-		if (right != null) {
-			setCommand(binding.rightButton, right);
-			if (middle != null) {
-				setCommand(binding.middleButton, middle);
-			}
-		} else {
-			if (middle != null) {
-				setCommand(binding.rightButton, middle);
-			}
-		}
-		binding.rootLayout.setVisibility(View.VISIBLE);
+		binding.softBar.setVisibility(View.VISIBLE);
 	}
 
-	private void setCommand(Button binding, Command c) {
-		binding.setVisibility(View.VISIBLE);
-		binding.setText(c.getAndroidLabel());
-		binding.setTag(c);
+	public void showMenu() {
+		PopupWindow popup = prepareMenu(2);
+		int y = binding.softRight.getHeight();
+		View rootView = binding.softRight.getRootView();
+		popup.setWidth(Math.min(rootView.getWidth(), rootView.getHeight()) / 2);
+		popup.setHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
+		popup.showAtLocation(rootView, Gravity.RIGHT | Gravity.BOTTOM, 0, y);
 	}
 }

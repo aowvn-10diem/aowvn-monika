@@ -1,18 +1,17 @@
 /*
- *  Copyright 2022 Yury Kharchenko
- *  Copyright 2023 Arman Jussupgaliyev
+ * Copyright 2022-2023 Yury Kharchenko
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package javax.microedition.lcdui.commands;
@@ -26,7 +25,7 @@ import android.widget.ListView;
 import android.widget.PopupWindow;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.microedition.lcdui.Command;
@@ -39,18 +38,14 @@ public abstract class AbstractSoftKeysBar {
 	protected final List<Command> commands = new ArrayList<>();
 	private PopupWindow popup;
 	private ArrayAdapter<Command> adapter;
-	protected boolean middleSoft;
-	protected Command middle;
-	protected Command right;
-	protected int menuStartIndex;
 
-	protected AbstractSoftKeysBar(Displayable target, boolean middleSoft) {
+	protected AbstractSoftKeysBar(Displayable target) {
 		this.target = target;
-		this.middleSoft = middleSoft;
 	}
 
-	public void notifyChanged() {
-		ViewHandler.postEvent(this::onCommandsChanged);
+	public void notifyChanged(List<Command> list) {
+		Collections.sort(list);
+		ViewHandler.postEvent(() -> onCommandsChanged(list));
 	}
 
 	protected PopupWindow prepareMenu(int skip) {
@@ -74,44 +69,7 @@ public abstract class AbstractSoftKeysBar {
 		return popup;
 	}
 
-	protected void onCommandsChanged() {
-		commands.clear();
-		Command[] arr = target.getCommands();
-		Arrays.sort(arr);
-		commands.addAll(Arrays.asList(arr));
-		middle = null;
-		right = null;
-		for (Command cmd: arr) {
-			int type = cmd.getCommandType();
-			switch(type) {
-				case Command.OK:
-					if (middle != null) continue;
-					middle = cmd;
-					commands.remove(cmd);
-					break;
-				case Command.BACK:
-				case Command.EXIT:
-					if (right != null) continue;
-					right = cmd;
-					commands.remove(cmd);
-					break;
-			}
-		}
-		int i = 0;
-		if (middle != null) {
-			commands.add(0, middle);
-			if (commands.size() == 1 || !middleSoft) {
-				middle = null;
-			} else {
-				i++;
-			}
-		}
-		if (right != null) {
-			commands.add(0, right);
-			i++;
-		}
-		menuStartIndex = i;
-	}
+	protected abstract void onCommandsChanged(List<Command> list);
 
 	public void closeMenu() {
 		if (popup != null && popup.isShowing()) {

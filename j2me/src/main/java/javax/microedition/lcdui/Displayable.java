@@ -2,8 +2,7 @@
  * Copyright 2012 Kulikov Dmitriy
  * Copyright 2015-2016 Nickolay Savchenko
  * Copyright 2017-2020 Nikita Shakarun
- * Copyright 2020-2022 Yriy Kharchenko
- * Copyright 2021 Arman Jussupgaliyev
+ * Copyright 2020-2026 Yriy Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +40,12 @@ public abstract class Displayable {
 	private static final int TICKER_SHOW = 1;
 	private static final int TICKER_HIDE = 2;
 
-	protected static int virtualWidth;
-	protected static int virtualHeight;
+	private static int virtualWidth;
+	private static int virtualHeight;
 
+	final ArrayList<Command> commands = new ArrayList<>();
 	CommandListener listener;
 	AbstractSoftKeysBar softBar;
-
-	private final ArrayList<Command> commands = new ArrayList<>();
 
 	private String title;
 	private int tickerMode;
@@ -74,6 +72,16 @@ public abstract class Displayable {
 	};
 
 	public static void setVirtualSize(int virtualWidth, int virtualHeight) {
+		if (virtualWidth <= 0) {
+			if (virtualHeight <= 0) {
+				virtualWidth = ContextHolder.getDisplayWidth();
+				virtualHeight = ContextHolder.getDisplayHeight();
+			} else {
+				virtualWidth = virtualHeight * ContextHolder.getDisplayWidth() / ContextHolder.getDisplayHeight();
+			}
+		} else if (virtualHeight <= 0) {
+			virtualHeight = virtualWidth * ContextHolder.getDisplayHeight() / ContextHolder.getDisplayWidth();
+		}
 		Displayable.virtualWidth = virtualWidth;
 		Displayable.virtualHeight = virtualHeight;
 	}
@@ -89,9 +97,8 @@ public abstract class Displayable {
 	public void setTitle(String title) {
 		this.title = title;
 
-		MicroActivity activity = ContextHolder.getActivity();
 		if (isShown()) {
-			ViewHandler.postEvent(() -> activity.setTitle(title));
+			ViewHandler.postEvent(() -> ContextHolder.getActivity().setTitle(title));
 		}
 	}
 
@@ -101,10 +108,7 @@ public abstract class Displayable {
 
 	public boolean isShown() {
 		MicroActivity activity = ContextHolder.getActivity();
-		if (activity != null) {
-			return activity.isVisible() && activity.getCurrent() == this;
-		}
-		return false;
+		return activity != null && activity.isVisible() && activity.getCurrent() == this;
 	}
 
 	public View getDisplayableView() {
@@ -145,23 +149,15 @@ public abstract class Displayable {
 		}
 		commands.add(cmd);
 		if (softBar != null) {
-			softBar.notifyChanged();
+			softBar.notifyChanged(new ArrayList<>(commands));
 		}
 	}
 
 	public void removeCommand(Command cmd) {
 		commands.remove(cmd);
 		if (softBar != null) {
-			softBar.notifyChanged();
+			softBar.notifyChanged(new ArrayList<>(commands));
 		}
-	}
-
-	public int countCommands() {
-		return commands.size();
-	}
-
-	public Command[] getCommands() {
-		return commands.toArray(new Command[0]);
 	}
 
 	public void setCommandListener(CommandListener listener) {
@@ -203,20 +199,6 @@ public abstract class Displayable {
 	}
 
 	protected void sizeChanged(int w, int h) {
-	}
-
-	public boolean menuItemSelected(int id) {
-		if (listener == null) {
-			return true;
-		}
-
-		Command[] array = commands.toArray(new Command[0]);
-		for (Command cmd : array) {
-			if (cmd.hashCode() == id) {
-				Display.postEvent(CommandActionEvent.getInstance(listener, cmd, this));
-			}
-		}
-		return true;
 	}
 
 	public void doSizeChanged(int width, int height) {

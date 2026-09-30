@@ -1,8 +1,7 @@
 /*
  * Copyright 2012 Kulikov Dmitriy
- * Copyright 2017-2022 Nikita Shakarun
- * Copyright 2018-2022 Yriy Kharchenko
- * Copyright 2023 Arman Jussupgaliyev
+ * Copyright 2017-2020 Nikita Shakarun
+ * Copyright 2019-2025 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +22,13 @@ import static android.opengl.GLES20.*;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
-import android.graphics.Matrix;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.RectF;
-import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.opengl.GLU;
 import android.opengl.GLUtils;
 import android.os.Handler;
 import android.os.Looper;
@@ -52,7 +52,7 @@ import androidx.core.content.ContextCompat;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
-import java.util.Arrays;
+import java.nio.IntBuffer;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -62,6 +62,7 @@ import javax.microedition.lcdui.commands.AbstractSoftKeysBar;
 import javax.microedition.lcdui.event.CanvasEvent;
 import javax.microedition.lcdui.event.Event;
 import javax.microedition.lcdui.event.EventFilter;
+import javax.microedition.lcdui.event.PointerEvent;
 import javax.microedition.lcdui.graphics.CanvasView;
 import javax.microedition.lcdui.graphics.CanvasWrapper;
 import javax.microedition.lcdui.graphics.GlesView;
@@ -72,13 +73,14 @@ import javax.microedition.lcdui.overlay.FpsCounter;
 import javax.microedition.lcdui.overlay.Layer;
 import javax.microedition.lcdui.overlay.Overlay;
 import javax.microedition.lcdui.overlay.OverlayView;
+import javax.microedition.lcdui.skin.SkinLayer;
 import javax.microedition.shell.MicroActivity;
 import javax.microedition.util.ContextHolder;
 
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 import ru.playsoftware.j2meloader.R;
-import ru.playsoftware.j2meloader.config.ShaderInfo;
+import ru.playsoftware.j2meloader.config.ProfileModel;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
 public abstract class Canvas extends Displayable {
@@ -118,27 +120,16 @@ public abstract class Canvas extends Displayable {
 	public static final int GAME_C = 11;
 	public static final int GAME_D = 12;
 
-	private static final float FULLSCREEN_HEIGHT_RATIO = 0.85f;
-
-	private static boolean filter;
-	private static boolean touchInput;
-	private static int graphicsMode;
-	private static ShaderInfo shaderFilter;
+	private static ProfileModel settings;
 	private static boolean parallelRedraw;
-	private static boolean forceFullscreen;
-	private static boolean showFps;
-	private static int backgroundColor;
-	private static int scaleRatio;
 	private static int fpsLimit;
 	private static boolean screenshotRawMode;
-	private static int scaleType;
-	private static int screenGravity;
 
 	private final Object bufferLock = new Object();
 	private final Object surfaceLock = new Object();
 	private final PaintEvent paintEvent = new PaintEvent();
 	private final SoftBar softBar = new SoftBar();
-	private final CanvasWrapper canvasWrapper = new CanvasWrapper(filter);
+	private final CanvasWrapper canvasWrapper = new CanvasWrapper(settings.screenFilter);
 	private final RectF virtualScreen = new RectF();
 
 	protected int width, height;
@@ -152,7 +143,7 @@ public abstract class Canvas extends Displayable {
 	private boolean fullscreen;
 	private boolean visible;
 	private boolean sizeChangedCalled;
-	private Image offscreen;
+	private static Image offscreen;
 	private Image offscreenCopy;
 	private int onX, onY, onWidth, onHeight;
 	private long lastFrameTime = System.currentTimeMillis();
@@ -161,16 +152,15 @@ public abstract class Canvas extends Displayable {
 	private FpsCounter fpsCounter;
 	private boolean skipLeftSoft;
 	private boolean skipRightSoft;
-	private int[][] lastPointerPos = new int[20][2];
 
 	protected Canvas() {
-		this(forceFullscreen);
+		this(settings.forceFullscreen);
 	}
 
 	protected Canvas(boolean fullscreen) {
 		this.fullscreen = fullscreen;
 		super.softBar = softBar;
-		if (graphicsMode == 1) {
+		if (settings.graphicsMode == 1) {
 			renderer = new GLRenderer();
 		}
 		if (parallelRedraw) {
@@ -181,51 +171,19 @@ public abstract class Canvas extends Displayable {
 		updateSize();
 	}
 
-	public static void setShaderFilter(ShaderInfo shader) {
-		Canvas.shaderFilter = shader;
-	}
-
-	public static void setScale(int screenGravity, int scaleType, int scaleRatio) {
-		Canvas.screenGravity = screenGravity;
-		Canvas.scaleType = scaleType;
-		Canvas.scaleRatio = scaleRatio;
-	}
-
-	public static void setBackgroundColor(int color) {
-		backgroundColor = color | 0xFF000000;
-	}
-
-	public static void setFilterBitmap(boolean filter) {
-		Canvas.filter = filter;
-	}
-
-	public static void setHasTouchInput(boolean touchInput) {
-		Canvas.touchInput = touchInput;
-	}
-
-	public static void setGraphicsMode(int mode, boolean parallel) {
-		Canvas.graphicsMode = mode;
-		Canvas.parallelRedraw = (mode == 0 || mode == 3) && parallel;
-	}
-
-	public static void setForceFullscreen(boolean forceFullscreen) {
-		Canvas.forceFullscreen = forceFullscreen;
-	}
-
-	public static void setShowFps(boolean showFps) {
-		Canvas.showFps = showFps;
-	}
-
 	public static void setLimitFps(int fpsLimit) {
-		if (fpsLimit == 0 && (graphicsMode == 1 || graphicsMode == 2)) {
-			// hack for async redraw
-			fpsLimit = 1000;
-		}
-		Canvas.fpsLimit = fpsLimit;
+		Canvas.fpsLimit = fpsLimit == -1 ? settings.fpsLimit : fpsLimit;
 	}
 
 	public static void setScreenshotRawMode(boolean enable) {
 		screenshotRawMode = enable;
+	}
+
+	public static void setSettings(ProfileModel settings) {
+		Canvas.settings = settings;
+		fpsLimit = settings.fpsLimit;
+		int mode = settings.graphicsMode;
+		parallelRedraw = (mode == 0 || mode == 3) && settings.parallelRedrawScreen;
 	}
 
 	public int getKeyCode(int gameAction) {
@@ -298,10 +256,13 @@ public abstract class Canvas extends Displayable {
 	}
 
 	public void onDraw(android.graphics.Canvas canvas) {
-		if (graphicsMode != 2) return; // Fix for Android Pie
+		if (settings.graphicsMode != 2) return; // Fix for Android Pie
 		CanvasWrapper g = canvasWrapper;
 		g.bind(canvas);
-		g.clear(backgroundColor);
+		g.clear(settings.screenBackgroundColor | Color.BLACK);
+		SkinLayer skinLayer = SkinLayer.getInstance();
+		int p = skinLayer != null && skinLayer.hasDisplayFrame() ? 0 : settings.screenPadding;
+		canvas.clipRect(p, p, displayWidth - p, displayHeight - p);
 		synchronized (bufferLock) {
 			offscreenCopy.getBitmap().prepareToDraw();
 			g.drawImage(offscreenCopy, virtualScreen);
@@ -311,7 +272,7 @@ public abstract class Canvas extends Displayable {
 		}
 	}
 
-	public Single<Bitmap> getScreenShot() {
+	public Single<Bitmap> getScreenshot() {
 		if (renderer != null && !screenshotRawMode) {
 			return renderer.takeScreenShot();
 		}
@@ -344,84 +305,83 @@ public abstract class Canvas extends Displayable {
 	 * Update the size and position of the virtual screen relative to the real one.
 	 */
 	public void updateSize() {
-		/*
-		 * We turn the sizes of the virtual screen into the sizes of the visible canvas.
-		 *
-		 * At the same time, we take into account that one or both virtual sizes can be less
-		 * than zero, which means auto-selection of this size so that the resulting canvas
-		 * has the same aspect ratio as the actual screen of the device.
-		 */
+		// We turn the sizes of the virtual screen into the sizes of the visible canvas.
+		// At the same time, we take into account that one or both virtual sizes can be less
+		// than zero, which means auto-selection of this size so that the resulting canvas
+		// has the same aspect ratio as the actual screen of the device.
+		int scaledDisplayWidth;
 		int scaledDisplayHeight;
-		VirtualKeyboard vk = ContextHolder.getVk();
-		boolean isPhoneSkin = vk != null && vk.isPhone();
 
-		// if phone keyboard layout is active, then scale down the virtual screen
-		if (isPhoneSkin) {
-			float vkHeight = vk.getPhoneKeyboardHeight(displayWidth, displayHeight);
-			scaledDisplayHeight = (int) (displayHeight - vkHeight - 1);
+		SkinLayer skinLayer = SkinLayer.getInstance();
+		if (skinLayer != null && skinLayer.hasDisplayFrame()) {
+			skinLayer.resize(virtualScreen, 0, 0, displayWidth, displayHeight);
+			scaledDisplayWidth = (int) virtualScreen.width();
+			scaledDisplayHeight = (int) virtualScreen.height();
 		} else {
-			scaledDisplayHeight = displayHeight;
+			scaledDisplayWidth = displayWidth - settings.screenPadding * 2;
+			VirtualKeyboard vk = ContextHolder.getVk();
+			boolean isPhoneSkin = vk != null && vk.isPhone();
+
+			// if phone keyboard layout is active, then scale down the virtual screen
+			if (isPhoneSkin) {
+				float vkHeight = vk.getPhoneKeyboardHeight(displayWidth, displayHeight);
+				scaledDisplayHeight = (int) (displayHeight - vkHeight - 1) - settings.screenPadding;
+			} else {
+				scaledDisplayHeight = displayHeight - settings.screenPadding * 2;
+			}
 		}
+
 		// Aow Monika: khung game là "màn hình máy" bo tròn, cách mép; máy ngang thì nằm giữa 2 cụm phím.
-		int areaW = displayWidth;
 		int offX = 0;
 		int offY = 0;
-		if (vk != null && vk.isMonika()) {
+		VirtualKeyboard monikaVk = ContextHolder.getVk();
+		if (monikaVk != null && monikaVk.isMonika() && !(skinLayer != null && skinLayer.hasDisplayFrame())) {
 			float density = ContextHolder.getAppContext().getResources().getDisplayMetrics().density;
-			float side = vk.getMonikaSideWidth(displayWidth, displayHeight);
+			float side = monikaVk.getMonikaSideWidth(displayWidth, displayHeight);
 			int edge = (int) (12 * density);
 			offX = side > 0 ? (int) side : edge;
 			offY = (int) ((side > 0 ? 12 : 28) * density);
-			areaW = displayWidth - 2 * offX;
+			scaledDisplayWidth = displayWidth - 2 * offX;
 			scaledDisplayHeight = scaledDisplayHeight - offY - (side > 0 ? edge : 0);
 		}
-		if (virtualWidth > 0) {
-			if (virtualHeight > 0) {
-				/*
-				 * the width and height of the canvas are strictly set
-				 */
-				width = virtualWidth;
-				height = virtualHeight;
+
+		if (settings.screenWidth > 0) {
+			if (settings.screenHeight > 0) {
+				// the width and height of the canvas are strictly set
+				width = settings.screenWidth;
+				height = settings.screenHeight;
 			} else {
-				/*
-				 * only the canvas width is set
-				 * height is selected by the ratio of the real screen
-				 */
-				width = virtualWidth;
-				height = scaledDisplayHeight * virtualWidth / areaW;
+				// only the canvas width is set
+				// height is selected by the ratio of the real screen
+				width = settings.screenWidth;
+				height = scaledDisplayHeight * settings.screenWidth / scaledDisplayWidth;
 			}
 		} else {
-			if (virtualHeight > 0) {
-				/*
-				 * only the canvas height is set
-				 * width is selected by the ratio of the real screen
-				 */
-				width = areaW * virtualHeight / scaledDisplayHeight;
-				height = virtualHeight;
+			if (settings.screenHeight > 0) {
+				// only the canvas height is set
+				// width is selected by the ratio of the real screen
+				width = scaledDisplayWidth * settings.screenHeight / scaledDisplayHeight;
+				height = settings.screenHeight;
 			} else {
-				/*
-				 * nothing is set - screen-sized canvas
-				 */
-				width = areaW;
+				// nothing is set - screen-sized canvas
+				width = scaledDisplayWidth;
 				height = scaledDisplayHeight;
 			}
 		}
 
-		/*
-		 * We turn the size of the canvas into the size of the image
-		 * that will be displayed on the screen of the device.
-		 */
-		int scaleRatio = Canvas.scaleRatio;
-		switch (scaleType) {
-			case 0:
+		// We turn the size of the canvas into the size of the image
+		// that will be displayed on the screen of the device.
+		int scaleRatio = settings.screenScaleRatio;
+		switch (settings.screenScaleType) {
+			case 0 -> {
 				// without scaling
 				onWidth = width;
 				onHeight = height;
-				break;
-			case 1:
+			}
+			case 1 -> {
 				// try to fit in width
-				onWidth = areaW;
-				onHeight = height * areaW / width;
+				onWidth = scaledDisplayWidth;
+				onHeight = height * scaledDisplayWidth / width;
 				if (onHeight > scaledDisplayHeight) {
 					// if height is too big, then fit in height
 					onHeight = scaledDisplayHeight;
@@ -430,55 +390,59 @@ public abstract class Canvas extends Displayable {
 				if (scaleRatio > 100) {
 					scaleRatio = 100;
 				}
-				break;
-			case 2:
+			}
+			case 2 -> {
 				// scaling without preserving the aspect ratio:
 				// just stretch the picture to full screen
-				onWidth = areaW;
+				onWidth = scaledDisplayWidth;
 				onHeight = scaledDisplayHeight;
 				if (scaleRatio > 100) {
 					scaleRatio = 100;
 				}
-				break;
+			}
 		}
 
 		onWidth = onWidth * scaleRatio / 100;
 		onHeight = onHeight * scaleRatio / 100;
 
-		switch (Canvas.screenGravity) {
-			case 0: // left
+		switch (settings.screenGravity) {
+			case 0 -> { // left
 				onX = 0;
 				onY = (scaledDisplayHeight - onHeight) / 2;
-				break;
-			case 1: // top
-				onX = (areaW - onWidth) / 2;
+			}
+			case 1 -> { // top
+				onX = (scaledDisplayWidth - onWidth) / 2;
 				onY = 0;
-				break;
-			case 2: // center
-				onX = (areaW - onWidth) / 2;
+			}
+			case 2 -> { // center
+				onX = (scaledDisplayWidth - onWidth) / 2;
 				onY = (scaledDisplayHeight - onHeight) / 2;
-				break;
-			case 3: // right
-				onX = areaW - onWidth;
+			}
+			case 3 -> { // right
+				onX = scaledDisplayWidth - onWidth;
 				onY = (scaledDisplayHeight - onHeight) / 2;
-				break;
-			case 4: // bottom
-				onX = (areaW - onWidth) / 2;
+			}
+			case 4 -> { // bottom
+				onX = (scaledDisplayWidth - onWidth) / 2;
 				onY = scaledDisplayHeight - onHeight;
-				break;
+			}
 		}
-		onX += offX;
+
+		if (skinLayer != null && skinLayer.hasDisplayFrame()) {
+			onX += virtualScreen.left;
+			onY += virtualScreen.top;
+		} else {
+			onX += settings.screenPadding;
+			onY += settings.screenPadding;
+		}
+		onX += offX; // Aow Monika
 		onY += offY;
 
-		/*
-		 * calculate the maximum height
-		 */
+		// calculate the maximum height
 		maxHeight = height;
 
+		// calculate the current height
 		softBar.resize();
-		/*
-		 * calculate the current height
-		 */
 		float softBarHeight = softBar.bounds.height();
 		if (softBarHeight > 0) {
 			float scaleY = (float) onHeight / height;
@@ -490,26 +454,27 @@ public abstract class Canvas extends Displayable {
 		virtualScreen.set(onX, onY, onX + onWidth, onY + onHeight);
 
 		synchronized (bufferLock) {
-			if (offscreen == null) {
-				offscreen = Image.createImage(width, maxHeight, 0);
-				offscreenCopy = Image.createImage(width, maxHeight, 0);
+			if (offscreenCopy == null) {
+				offscreenCopy = Image.createImage(width, maxHeight);
 			}
-			if (offscreen.getWidth() != width || offscreen.getHeight() != height) {
-				offscreen.setSize(width, height);
+			if (offscreenCopy.getWidth() != width || offscreenCopy.getHeight() != height) {
 				offscreenCopy.setSize(width, height);
 			}
 		}
 		if (overlay != null) {
 			overlay.resize(screen, onX, onY, onX + onWidth, onY + onHeight + softBarHeight);
 		}
+		if (skinLayer != null && !skinLayer.hasDisplayFrame()) {
+			skinLayer.resize(virtualScreen, 0, 0, displayWidth, displayHeight);
+		}
 
-		if (graphicsMode == 1) {
+		if (settings.graphicsMode == 1) {
 			float gl = 2.0f * virtualScreen.left / displayWidth - 1.0f;
 			float gt = 1.0f - 2.0f * virtualScreen.top / displayHeight;
 			float gr = 2.0f * virtualScreen.right / displayWidth - 1.0f;
 			float gb = 1.0f - 2.0f * virtualScreen.bottom / displayHeight;
-			float th = (float) height / offscreen.getBitmap().getHeight();
-			float tw = (float) width / offscreen.getBitmap().getWidth();
+			float th = (float) height / offscreenCopy.getBitmap().getHeight();
+			float tw = (float) width / offscreenCopy.getBitmap().getWidth();
 			renderer.updateSize(gl, gt, gr, gb, th, tw);
 		}
 		repaintInternal();
@@ -521,8 +486,8 @@ public abstract class Canvas extends Displayable {
 	 * @param x the pointer coordinate on the real screen
 	 * @return the corresponding pointer coordinate on the virtual screen
 	 */
-	private float convertPointerX(float x) {
-		return (x - onX) * width / onWidth;
+	private int convertPointerX(float x) {
+		return (int) ((x - onX) * width / onWidth);
 	}
 
 	/**
@@ -531,8 +496,8 @@ public abstract class Canvas extends Displayable {
 	 * @param y the pointer coordinate on the real screen
 	 * @return the corresponding pointer coordinate on the virtual screen
 	 */
-	private float convertPointerY(float y) {
-		return (y - onY) * height / onHeight;
+	private int convertPointerY(float y) {
+		return (int) ((y - onY) * height / onHeight);
 	}
 
 	@SuppressLint("ClickableViewAccessibility")
@@ -541,7 +506,7 @@ public abstract class Canvas extends Displayable {
 		if (layout == null) {
 			layout = (LinearLayout) super.getDisplayableView();
 			MicroActivity activity = ContextHolder.getActivity();
-			if (graphicsMode == 1) {
+			if (settings.graphicsMode == 1) {
 				GlesView glesView = new GlesView(activity);
 				glesView.setRenderer(renderer);
 				glesView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
@@ -549,7 +514,7 @@ public abstract class Canvas extends Displayable {
 				innerView = glesView;
 			} else {
 				CanvasView canvasView = new CanvasView(this, activity);
-				if (graphicsMode == 2) {
+				if (settings.graphicsMode == 2) {
 					canvasView.setWillNotDraw(false);
 				}
 				canvasView.getHolder().setFormat(PixelFormat.RGBA_8888);
@@ -579,7 +544,6 @@ public abstract class Canvas extends Displayable {
 		}
 		fullscreen = flag;
 		updateSize();
-		softBar.notifyChanged();
 		if (!visible) {
 			return;
 		}
@@ -588,11 +552,11 @@ public abstract class Canvas extends Displayable {
 	}
 
 	public boolean hasPointerEvents() {
-		return touchInput;
+		return settings.touchInput;
 	}
 
 	public boolean hasPointerMotionEvents() {
-		return touchInput;
+		return settings.touchInput;
 	}
 
 	public boolean hasRepeatEvents() {
@@ -622,7 +586,7 @@ public abstract class Canvas extends Displayable {
 	public final void repaint(int x, int y, int width, int height) {
 		limitFps();
 		boolean post;
-		synchronized (paintEvent) {
+		synchronized (paintEvent.clip) {
 			post = paintEvent.invalidateClip(this, x, y, x + width, y + height) && !paintEvent.isPending;
 			if (post) {
 				paintEvent.isPending = true;
@@ -634,14 +598,14 @@ public abstract class Canvas extends Displayable {
 	}
 
 	private void repaintInternal() {
-		synchronized (paintEvent) {
+		synchronized (paintEvent.clip) {
 			paintEvent.invalidateClip(this, 0, 0, width, height);
 		}
 		Display.postEvent(paintEvent);
 	}
 
 	// GameCanvas
-	public void flushBuffer(Image image, int x, int y, int width, int height) {
+	protected void flushBuffer(Image image, int x, int y, int width, int height) {
 		limitFps();
 		if (width <= 0 || height <= 0 ||
 				x + width < 0 || y + height < 0 ||
@@ -649,6 +613,10 @@ public abstract class Canvas extends Displayable {
 			return;
 		}
 		synchronized (bufferLock) {
+			if (Thread.holdsLock(paintEvent)) {
+				offscreen.getSingleGraphics().flush(image, x, y, width, height);
+				return;
+			}
 			offscreenCopy.getSingleGraphics().flush(image, x, y, width, height);
 		}
 		requestFlushToScreen();
@@ -682,14 +650,17 @@ public abstract class Canvas extends Displayable {
 		}
 		try {
 			synchronized (surfaceLock) {
-				android.graphics.Canvas canvas = graphicsMode == 3 ?
+				android.graphics.Canvas canvas = settings.graphicsMode == 3 ?
 						surface.lockHardwareCanvas() : surface.lockCanvas(null);
 				if (canvas == null) {
 					return true;
 				}
 				CanvasWrapper g = this.canvasWrapper;
 				g.bind(canvas);
-				g.clear(backgroundColor);
+				g.clear(settings.screenBackgroundColor | Color.BLACK);
+				SkinLayer skinLayer = SkinLayer.getInstance();
+				int p = skinLayer != null && skinLayer.hasDisplayFrame() ? 0 : settings.screenPadding;
+				canvas.clipRect(p, p, displayWidth - p, displayHeight - p);
 				synchronized (bufferLock) {
 					g.drawImage(offscreenCopy, virtualScreen);
 				}
@@ -713,6 +684,11 @@ public abstract class Canvas extends Displayable {
 		Display.getEventQueue().serviceRepaints(paintEvent);
 	}
 
+	@Override
+	public boolean isShown() {
+		return visible;
+	}
+
 	protected void showNotify() {
 	}
 
@@ -728,33 +704,21 @@ public abstract class Canvas extends Displayable {
 	protected void keyReleased(int keyCode) {
 	}
 
-	public void pointerPressed(int pointer, float x, float y) {
-		if (Display.isMultiTouchSupported()) {
-			Display.setPointerNumber(pointer);
-			pointerPressed(Math.round(x), Math.round(y));
-			Display.resetPointerNumber();
-		} else if (pointer == 0) {
-			pointerPressed(Math.round(x), Math.round(y));
+	public void pointerPressed(int pointer, int x, int y) {
+		if (pointer == 0) {
+			pointerPressed(x, y);
 		}
 	}
 
-	public void pointerDragged(int pointer, float x, float y) {
-		if (Display.isMultiTouchSupported()) {
-			Display.setPointerNumber(pointer);
-			pointerDragged(Math.round(x), Math.round(y));
-			Display.resetPointerNumber();
-		} else if (pointer == 0) {
-			pointerDragged(Math.round(x), Math.round(y));
+	public void pointerDragged(int pointer, int x, int y) {
+		if (pointer == 0) {
+			pointerDragged(x, y);
 		}
 	}
 
-	public void pointerReleased(int pointer, float x, float y) {
-		if (Display.isMultiTouchSupported()) {
-			Display.setPointerNumber(pointer);
-			pointerReleased(Math.round(x), Math.round(y));
-			Display.resetPointerNumber();
-		} else if (pointer == 0) {
-			pointerReleased(Math.round(x), Math.round(y));
+	public void pointerReleased(int pointer, int x, int y) {
+		if (pointer == 0) {
+			pointerReleased(x, y);
 		}
 	}
 
@@ -793,8 +757,8 @@ public abstract class Canvas extends Displayable {
 
 		@Override
 		public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-			program = new ShaderProgram(shaderFilter);
-			int c = Canvas.backgroundColor;
+			program = new ShaderProgram(settings.shader);
+			int c = settings.screenBackgroundColor;
 			glClearColor((c >> 16 & 0xff) / 255.0f, (c >> 8 & 0xff) / 255.0f, (c & 0xff) / 255.0f, 1.0f);
 			glDisable(GL_BLEND);
 			glDisable(GL_DEPTH_TEST);
@@ -802,8 +766,8 @@ public abstract class Canvas extends Displayable {
 			initTex();
 			Bitmap bitmap = offscreenCopy.getBitmap();
 			program.loadVbo(vbo, bitmap.getWidth(), bitmap.getHeight());
-			if (shaderFilter != null && shaderFilter.values != null) {
-				glUniform4fv(program.uSetting, 1, shaderFilter.values, 0);
+			if (settings.shader != null && settings.shader.values != null && program.uSetting >= 0) {
+				glUniform4fv(program.uSetting, 1, settings.shader.values, 0);
 			}
 			isStarted = true;
 		}
@@ -811,14 +775,21 @@ public abstract class Canvas extends Displayable {
 		@Override
 		public void onSurfaceChanged(GL10 gl, int width, int height) {
 			glViewport(0, 0, width, height);
-			glUniform2f(program.uPixelDelta, 1.0f / width, 1.0f / height);
+			SkinLayer skinLayer = SkinLayer.getInstance();
+			int p = skinLayer != null && skinLayer.hasDisplayFrame() ? 0 : settings.screenPadding;
+			glScissor(p, p, width - 2 * p, height - 2 * p);
+			if (program.uPixelDelta >= 0) {
+				glUniform2f(program.uPixelDelta, 1.0f / width, 1.0f / height);
+			}
 		}
 
 		@Override
 		public void onDrawFrame(GL10 gl) {
+			glDisable(GL_SCISSOR_TEST);
 			glClear(GL_COLOR_BUFFER_BIT);
+			glEnable(GL_SCISSOR_TEST);
 			synchronized (bufferLock) {
-				GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, offscreenCopy.getBitmap(), 0);
+				GLUtils.texImage2D(GL_TEXTURE_2D, 0, offscreenCopy.getBitmap(), 0);
 			}
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 			if (fpsCounter != null) {
@@ -830,12 +801,10 @@ public abstract class Canvas extends Displayable {
 			glGenTextures(1, bgTextureId, 0);
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, bgTextureId[0]);
-			glTexParameteri(GLES20.GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter ? GL_LINEAR : GL_NEAREST);
-			glTexParameteri(GLES20.GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR : GL_NEAREST);
-			glTexParameteri(GLES20.GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GLES20.GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-			// юнит текстуры
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, settings.screenFilter ? GL_LINEAR : GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, settings.screenFilter ? GL_LINEAR : GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glUniform1i(program.uTextureUnit, 0);
 		}
 
@@ -844,9 +813,9 @@ public abstract class Canvas extends Displayable {
 				FloatBuffer vertex_bg = vbo;
 				vertex_bg.rewind();
 				vertex_bg.put(gl).put(gt).put(0.0f).put(0.0f);// lt
-				vertex_bg.put(gl).put(gb).put(0.0f).put(  th);// lb
-				vertex_bg.put(gr).put(gt).put(  tw).put(0.0f);// rt
-				vertex_bg.put(gr).put(gb).put(  tw).put(  th);// rb
+				vertex_bg.put(gl).put(gb).put(0.0f).put(th);// lb
+				vertex_bg.put(gr).put(gt).put(tw).put(0.0f);// rt
+				vertex_bg.put(gr).put(gb).put(tw).put(th);// rb
 			}
 			if (isStarted) {
 				mView.queueEvent(() -> {
@@ -876,13 +845,18 @@ public abstract class Canvas extends Displayable {
 		}
 
 		private Single<Bitmap> takeScreenShot() {
-			return Single.<ByteBuffer>create(emitter -> {
-						ByteBuffer buf = ByteBuffer.allocateDirect(onWidth * onHeight * 4).order(ByteOrder.nativeOrder());
+			return Single.<int[]>create(emitter -> {
+						IntBuffer buf = IntBuffer.allocate(onWidth * onHeight);
 						mView.requestRender();
 						mView.queueEvent(() -> {
 							try {
 								glReadPixels(displayWidth - onWidth - onX, displayHeight - onHeight - onY, onWidth, onHeight, GL_RGBA, GL_UNSIGNED_BYTE, buf);
-								emitter.onSuccess(buf);
+								int error = glGetError();
+								if (error != GL_NO_ERROR) {
+									emitter.onError(new RuntimeException(GLU.gluErrorString(error)));
+								} else {
+									emitter.onSuccess(buf.array());
+								}
 							} catch (Throwable e) {
 								emitter.onError(e);
 							}
@@ -890,46 +864,45 @@ public abstract class Canvas extends Displayable {
 					}).timeout(3, TimeUnit.SECONDS)
 					.subscribeOn(Schedulers.computation())
 					.observeOn(Schedulers.computation())
-					.map(bb -> {
-						Bitmap rawBitmap = Bitmap.createBitmap(onWidth, onHeight, Bitmap.Config.ARGB_8888);
-						bb.rewind();
-						rawBitmap.copyPixelsFromBuffer(bb);
-						Matrix m = new Matrix();
-						m.setScale(1.0f, -1.0f);
-						return Bitmap.createBitmap(rawBitmap, 0, 0, onWidth, onHeight, m, false);
+					.map(pixels -> {
+						for (int i = 0, len = pixels.length; i < len; i++) {
+							int p = pixels[i];
+							pixels[i] = (p & 0xff00ff00) | ((p & 0xff0000) >> 16) | ((p & 0xff) << 16);
+						}
+						return Bitmap.createBitmap(pixels, onWidth * (onHeight - 1), -onWidth, onWidth, onHeight, Bitmap.Config.ARGB_8888);
 					});
 		}
 	}
 
 	private class PaintEvent extends Event implements EventFilter {
-		private int clipLeft;
-		private int clipTop;
-		private int clipRight;
-		private int clipBottom;
+		final Rect clip = new Rect();
 
-		private boolean isPending;
+		boolean isPending;
 
 		private int enqueued = 0;
 
 		@Override
-		public void process() {
+		public synchronized void process() {
 			if (!visible) {
 				return;
 			}
 			int l, t, r, b;
-			synchronized (this) {
+			synchronized (clip) {
 				isPending = false;
-				l = clipLeft;
-				t = clipTop;
-				r = clipRight;
-				b = clipBottom;
-				clipLeft = 0;
-				clipTop = 0;
-				clipRight = 0;
-				clipBottom = 0;
+				l = clip.left;
+				t = clip.top;
+				r = clip.right;
+				b = clip.bottom;
+				clip.setEmpty();
 			}
-			if (r - l <= 0 || b - t <= 0) {
+			if (l >= r || t >= b) {
 				return;
+			}
+			if (offscreen == null) {
+				offscreen = Image.createImage(width, maxHeight);
+			}
+			if (offscreen.getWidth() != width || offscreen.getHeight() != height) {
+				offscreen.setSize(width, height);
 			}
 			Graphics g = offscreen.getSingleGraphics();
 			g.reset(l, t, r, b);
@@ -978,26 +951,22 @@ public abstract class Canvas extends Displayable {
 		}
 
 		private boolean invalidateClip(Canvas canvas, int l, int t, int r, int b) {
-			boolean empty = clipRight - clipLeft <= 0 && clipBottom - clipTop <= 0;
+			boolean empty = clip.left >= clip.right || clip.top >= clip.bottom;
 			if (empty) {
-				clipLeft = l;
-				clipTop = t;
-				clipRight = r;
-				clipBottom = b;
+				clip.left = l;
+				clip.top = t;
+				clip.right = r;
+				clip.bottom = b;
 			} else {
-				if (clipLeft > l) clipLeft = l;
-				if (clipTop > t) clipTop = t;
-				if (clipRight < r) clipRight = r;
-				if (clipBottom < b) clipBottom = b;
+				if (clip.left > l) clip.left = l;
+				if (clip.top > t) clip.top = t;
+				if (clip.right < r) clip.right = r;
+				if (clip.bottom < b) clip.bottom = b;
 			}
-			int w = width;
-			int h = height;
-
-			if (clipLeft < 0) clipLeft = 0;
-			if (clipTop < 0) clipTop = 0;
-			if (clipRight > w) clipRight = w;
-			if (clipBottom > h) clipBottom = h;
-
+			if (clip.left < 0) clip.left = 0;
+			if (clip.top < 0) clip.top = 0;
+			if (clip.right > width) clip.right = width;
+			if (clip.bottom > height) clip.bottom = height;
 			return empty;
 		}
 	}
@@ -1008,28 +977,31 @@ public abstract class Canvas extends Displayable {
 
 		public ViewCallbacks(View view) {
 			mView = view;
-			overlayView = ContextHolder.getActivity().binding.overlayView;
+			overlayView = ContextHolder.getActivity().findViewById(R.id.overlay);
 		}
 
 		@Override
 		public boolean onKey(View v, int keyCode, KeyEvent event) {
 			switch (event.getAction()) {
-				case KeyEvent.ACTION_DOWN:
+				case KeyEvent.ACTION_DOWN -> {
 					return onKeyDown(keyCode, event);
-				case KeyEvent.ACTION_UP:
+				}
+				case KeyEvent.ACTION_UP -> {
 					return onKeyUp(keyCode, event);
-				case KeyEvent.ACTION_MULTIPLE:
-					if (keyCode == KeyEvent.KEYCODE_UNKNOWN) {
-						String characters = event.getCharacters();
-						for (int i = 0; i < characters.length(); i++) {
-							int cp = characters.codePointAt(i);
-							postKeyPressed(cp);
-							postKeyReleased(cp);
-						}
-						return true;
-					} else {
+				}
+				case KeyEvent.ACTION_MULTIPLE -> {
+					if (keyCode != KeyEvent.KEYCODE_UNKNOWN) {
 						return onKeyDown(keyCode, event);
 					}
+					String characters = event.getCharacters();
+					for (int i = 0, len = characters.length(); i < len; ) {
+						int cp = characters.codePointAt(i);
+						postKeyPressed(cp);
+						postKeyReleased(cp);
+						i += Character.charCount(cp);
+					}
+					return true;
+				}
 			}
 			return false;
 		}
@@ -1070,7 +1042,7 @@ public abstract class Canvas extends Displayable {
 					if (overlay != null) {
 						overlay.show();
 					}
-				case MotionEvent.ACTION_POINTER_DOWN:
+				case MotionEvent.ACTION_POINTER_DOWN: {
 					int index = event.getActionIndex();
 					int id = event.getPointerId(index);
 					float x = event.getX(index);
@@ -1078,102 +1050,69 @@ public abstract class Canvas extends Displayable {
 					if (overlay != null) {
 						overlay.pointerPressed(id, x, y);
 					}
-					if (touchInput && virtualScreen.contains(x, y)) {
-						int cX = Math.round(convertPointerX(x));
-						int cY = Math.round(convertPointerY(y));
-						if (id < 20) {
-							lastPointerPos[id][0] = cX;
-							lastPointerPos[id][1] = cY;
-						}
-						Display.postEvent(CanvasEvent.getInstance(Canvas.this,
-								CanvasEvent.POINTER_PRESSED,
+					if (settings.touchInput && virtualScreen.contains(x, y)) {
+						PointerEvent.sendPressed(Canvas.this,
 								id,
-								cX,
-								cY));
+								convertPointerX(x),
+								convertPointerY(y));
 					}
 					break;
-				case MotionEvent.ACTION_MOVE:
+				}
+				case MotionEvent.ACTION_MOVE: {
 					int pointerCount = event.getPointerCount();
 					int historySize = event.getHistorySize();
 					for (int h = 0; h < historySize; h++) {
 						for (int p = 0; p < pointerCount; p++) {
-							id = event.getPointerId(p);
-							x = event.getHistoricalX(p, h);
-							y = event.getHistoricalY(p, h);
+							int id = event.getPointerId(p);
+							float x = event.getHistoricalX(p, h);
+							float y = event.getHistoricalY(p, h);
 							if (overlay != null) {
 								overlay.pointerDragged(id, x, y);
 							}
-							if (touchInput && virtualScreen.contains(x, y)) {
-								int cX = Math.round(convertPointerX(x));
-								int cY = Math.round(convertPointerY(y));
-								if (id < 20) {
-									int oX = lastPointerPos[id][0];
-									int oY = lastPointerPos[id][1];
-									if (oX == cX && oY == cY) {
-										continue;
-									}
-									lastPointerPos[id][0] = cX;
-									lastPointerPos[id][1] = cY;
-								}
-								Display.postEvent(CanvasEvent.getInstance(Canvas.this,
-										CanvasEvent.POINTER_DRAGGED,
+							if (settings.touchInput) {
+								PointerEvent.sendDragged(Canvas.this,
 										id,
-										cX,
-										cY));
+										convertPointerX(x),
+										convertPointerY(y));
 							}
 						}
 					}
 					for (int p = 0; p < pointerCount; p++) {
-						id = event.getPointerId(p);
-						x = event.getX(p);
-						y = event.getY(p);
+						int id = event.getPointerId(p);
+						float x = event.getX(p);
+						float y = event.getY(p);
 						if (overlay != null) {
 							overlay.pointerDragged(id, x, y);
 						}
-						if (touchInput && virtualScreen.contains(x, y)) {
-							int cX = Math.round(convertPointerX(x));
-							int cY = Math.round(convertPointerY(y));
-							if (id < 20) {
-								int oX = lastPointerPos[id][0];
-								int oY = lastPointerPos[id][1];
-								if (oX == cX && oY == cY) {
-									continue;
-								}
-								lastPointerPos[id][0] = cX;
-								lastPointerPos[id][1] = cY;
-							}
-							Display.postEvent(CanvasEvent.getInstance(Canvas.this,
-									CanvasEvent.POINTER_DRAGGED,
+						if (settings.touchInput) {
+							PointerEvent.sendDragged(Canvas.this,
 									id,
-									cX,
-									cY));
+									convertPointerX(x),
+									convertPointerY(y));
 						}
 					}
 					break;
+				}
 				case MotionEvent.ACTION_UP:
 					if (overlay != null) {
 						overlay.hide();
 					}
-				case MotionEvent.ACTION_POINTER_UP:
-					index = event.getActionIndex();
-					id = event.getPointerId(index);
-					x = event.getX(index);
-					y = event.getY(index);
+				case MotionEvent.ACTION_POINTER_UP: {
+					int index = event.getActionIndex();
+					int id = event.getPointerId(index);
+					float x = event.getX(index);
+					float y = event.getY(index);
 					if (overlay != null) {
 						overlay.pointerReleased(id, x, y);
 					}
-					if (touchInput && virtualScreen.contains(x, y)) {
-						int cX = Math.round(convertPointerX(x));
-						int cY = Math.round(convertPointerY(y));
-						lastPointerPos[id][0] = cX;
-						lastPointerPos[id][1] = cY;
-						Display.postEvent(CanvasEvent.getInstance(Canvas.this,
-								CanvasEvent.POINTER_RELEASED,
+					if (settings.touchInput) {
+						PointerEvent.sendReleased(Canvas.this,
 								id,
-								cX,
-								cY));
+								convertPointerX(x),
+								convertPointerY(y));
 					}
 					break;
+				}
 				case MotionEvent.ACTION_CANCEL:
 					if (overlay != null) {
 						overlay.cancel();
@@ -1214,7 +1153,7 @@ public abstract class Canvas extends Displayable {
 			surface = holder.getSurface();
 			Display.postEvent(CanvasEvent.getInstance(Canvas.this, CanvasEvent.SHOW_NOTIFY));
 			repaintInternal();
-			if (showFps) {
+			if (settings.showFps) {
 				fpsCounter = new FpsCounter(overlayView);
 				overlayView.addLayer(fpsCounter);
 			}
@@ -1253,11 +1192,11 @@ public abstract class Canvas extends Displayable {
 	}
 
 	private void requestFlushToScreen() {
-		if (graphicsMode == 1) {
+		if (settings.graphicsMode == 1) {
 			if (innerView != null) {
 				renderer.requestRender();
 			}
-		} else if (graphicsMode == 2) {
+		} else if (settings.graphicsMode == 2) {
 			if (innerView != null) {
 				innerView.postInvalidate();
 			}
@@ -1280,14 +1219,13 @@ public abstract class Canvas extends Displayable {
 		private float textScale = 1.0f;
 
 		private SoftBar() {
-			super(Canvas.this, false);
+			super(Canvas.this);
 			MicroActivity activity = ContextHolder.getActivity();
-			this.overlayView = activity.binding.overlayView;
+			this.overlayView = activity.findViewById(R.id.overlay);
 			DisplayMetrics metrics = activity.getResources().getDisplayMetrics();
 			padding = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 5, metrics);
 			textColor = ContextCompat.getColor(activity, R.color.accent);
 			bgColor = ContextCompat.getColor(activity, R.color.background);
-			notifyChanged();
 		}
 
 		private void showPopup() {
@@ -1300,8 +1238,10 @@ public abstract class Canvas extends Displayable {
 		}
 
 		@Override
-		protected void onCommandsChanged() {
-			super.onCommandsChanged();
+		protected void onCommandsChanged(List<Command> list) {
+			List<Command> commands = this.commands;
+			commands.clear();
+			commands.addAll(list);
 			if (!fullscreen) {
 				int size = commands.size();
 				switch (size) {
@@ -1312,12 +1252,12 @@ public abstract class Canvas extends Displayable {
 						rightLabel = null;
 						break;
 					case 2:
-						leftLabel = commands.get(1).getAndroidLabel();
-						rightLabel = commands.get(0).getAndroidLabel();
+						leftLabel = commands.get(0).getAndroidLabel();
+						rightLabel = commands.get(1).getAndroidLabel();
 						break;
 					default:
-						leftLabel = overlayView.getResources().getString(R.string.cmd_menu);
-						rightLabel = commands.get(0).getAndroidLabel();
+						leftLabel = commands.get(0).getAndroidLabel();
+						rightLabel = overlayView.getResources().getString(R.string.cmd_menu);
 				}
 			}
 			overlayView.postInvalidate();
@@ -1329,19 +1269,15 @@ public abstract class Canvas extends Displayable {
 				return false;
 			}
 			if (fullscreen) {
+				if (size == 1) {
+					return false;
+				}
 				if (listener != null) {
 					showPopup();
-					return true;
 				}
-				return false;
-			}
-			if (size > 2) {
-				showPopup();
 				return true;
 			}
-			if (listener != null) {
-				fireCommandAction(commands.get(size > 1 ? 1 : 0));
-			}
+			fireCommandAction(commands.get(0));
 			return true;
 		}
 
@@ -1350,25 +1286,25 @@ public abstract class Canvas extends Displayable {
 			if (size == 0) {
 				return false;
 			}
-			if (fullscreen) {
-				if (size == 1) {
-					return false;
-				}
-				if (listener != null) {
-					showPopup();
-					return true;
-				}
+			if (fullscreen && listener == null) {
+				return false;
+			}
+			if (fullscreen || size > 2) {
+				showPopup();
+				return true;
+			}
+			if (size == 1) {
 				return false;
 			}
 			if (listener != null) {
-				fireCommandAction(commands.get(0));
+				fireCommandAction(commands.get(1));
 			}
 			return true;
 		}
 
 		@Override
 		public void paint(CanvasWrapper g) {
-			if (bounds.isEmpty() || commands.size() == 0) {
+			if (bounds.isEmpty() || commands.isEmpty()) {
 				return;
 			}
 			g.setFillColor(bgColor);
@@ -1436,6 +1372,7 @@ public abstract class Canvas extends Displayable {
 			float top = fullscreen ? bottom : bottom - canvasWrapper.getTextHeight();
 			bounds.set(left, top, right, bottom);
 			canvasWrapper.setTextScale(1.0f);
+			overlayView.postInvalidate();
 		}
 	}
 }

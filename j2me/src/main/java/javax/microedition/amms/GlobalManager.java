@@ -25,8 +25,8 @@ import javax.microedition.media.Manager;
 import javax.microedition.media.MediaException;
 
 public class GlobalManager {
-	private static Spectator spectator = new Spectator();
-	private static HashMap<String, Control> controls = new HashMap<>();
+	private static final Spectator spectator = new Spectator();
+	private static final HashMap<String, Control> controls = new HashMap<>();
 
 	static {
 		InternalEqualizer equalizer = new InternalEqualizer();

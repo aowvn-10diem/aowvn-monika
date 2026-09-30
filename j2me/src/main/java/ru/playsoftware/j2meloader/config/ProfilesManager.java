@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import javax.microedition.lcdui.keyboard.VirtualKeyboard;
 import javax.microedition.util.ContextHolder;
 
 import androidx.annotation.NonNull;
@@ -127,10 +126,6 @@ public class ProfilesManager {
 					JsonElement json = gson.toJsonTree(map);
 					params = gson.fromJson(json, ProfileModel.class);
 					params.dir = dir;
-					// Fix keyboard shape for old configs
-					if (params.vkType == 1 || params.vkType == 2) {
-						params.vkButtonShape = VirtualKeyboard.ROUND_RECT_SHAPE;
-					}
 					if (saveConfig(params) && oldFile.delete()) {
 						Log.d(TAG, "loadConfig: old config file deleted");
 					}
@@ -149,8 +144,17 @@ public class ProfilesManager {
 				}
 				updateSystemProperties(params);
 			case 1:
-				params.fontAA = true;
-
+				int w = params.screenWidth;
+				int h = params.screenHeight;
+				if (w > 0) {
+					if (h > 0) {
+						params.fontAA = Math.min(w, h) >= 240;
+					} else {
+						params.fontAA = w >= 240;
+					}
+				} else {
+					params.fontAA = (h <= 0) || (h >= 240);
+				}
 			case 2:
 				if (params.screenScaleToFit) {
 					if (params.screenKeepAspectRatio) {

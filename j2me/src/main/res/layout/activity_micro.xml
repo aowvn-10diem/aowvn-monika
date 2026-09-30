@@ -20,7 +20,7 @@
             android:background="?attr/colorPrimary"
             android:descendantFocusability="blocksDescendants"
             android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+            app:popupTheme="@style/AppTheme.NoActionBar"
             tools:title="MIDlet Title" />
 
         <FrameLayout
@@ -32,7 +32,7 @@
 
     <!-- MUST be transparent and math root container -->
     <javax.microedition.lcdui.overlay.OverlayView
-        android:id="@+id/overlay_view"
+        android:id="@+id/overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

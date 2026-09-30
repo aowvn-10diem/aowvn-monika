@@ -2,12 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
@@ -19,14 +17,13 @@
         tools:targetApi="s" />
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
 
-    <uses-sdk tools:overrideLibrary="com.arthenica.mobileffmpeg" />
+    <uses-sdk tools:overrideLibrary="com.arthenica.mobileffmpeg, com.google.oboe" />
 
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
     <uses-feature android:name="android.hardware.location" android:required="false" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
-    <!-- Aow Monika: thuộc tính <application> do app chính quyết định; J2ME Loader chỉ góp các activity. -->
+    <!-- Aow Monika: thuộc tính <application> do app chính quyết định; JL-Mod chỉ góp các activity. -->
     <application>
         <activity
             android:theme="@style/AppTheme"
@@ -70,6 +67,7 @@
             android:theme="@style/FilePickerTheme" />
         <activity
             android:theme="@style/AppTheme" android:name=".config.ProfilesActivity" android:exported="false" />
+        <activity android:name="com.nokia.mid.ui.NotificationActivity" android:exported="false" />
 
         <provider
             android:name=".util.J2meFileProvider"
@@ -80,20 +78,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/nnf_provider_paths" />
         </provider>
-        <provider
-            android:name=".storage.DocumentProvider"
-            android:authorities="${applicationId}.documentProvider"
-            android:enabled="@bool/isAtLeastQ"
-            android:exported="true"
-            android:grantUriPermissions="true"
-            android:permission="android.permission.MANAGE_DOCUMENTS">
-            <intent-filter>
-                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
-            </intent-filter>
-        </provider>
-        <receiver
-            android:name="com.nokia.mid.ui.NotificationBroadcastReceiver"
-            android:process=":midlet" />
     </application>
 
 </manifest>

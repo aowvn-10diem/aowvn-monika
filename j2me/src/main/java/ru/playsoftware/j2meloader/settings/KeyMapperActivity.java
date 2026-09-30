@@ -1,6 +1,6 @@
 /*
  * Copyright 2018-2019 Nikita Shakarun
- * Copyright 2020-2022 Yury Kharchenko
+ * Copyright 2020-2023 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,27 +30,27 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.gson.GsonBuilder;
 
 import java.io.File;
-import java.util.ArrayList;
 
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.keyboard.KeyMapper;
 
 import ru.playsoftware.j2meloader.R;
-import ru.playsoftware.j2meloader.base.BaseActivity;
 import ru.playsoftware.j2meloader.config.ProfileModel;
 import ru.playsoftware.j2meloader.config.ProfilesManager;
 import ru.playsoftware.j2meloader.databinding.ActivityKeymapperBinding;
 import ru.playsoftware.j2meloader.util.SparseIntArrayAdapter;
 
-public class KeyMapperActivity extends BaseActivity implements View.OnClickListener {
+public class KeyMapperActivity extends AppCompatActivity implements View.OnClickListener {
 	private static final String KEY_SAVE = "KEY_MAP_SAVE";
 	private final SparseIntArray defaultKeyMap = KeyMapper.getDefaultKeyMap();
 	private final SparseIntArray idToCanvasKey = new SparseIntArray();
@@ -58,10 +58,8 @@ public class KeyMapperActivity extends BaseActivity implements View.OnClickListe
 	private SparseIntArray androidToMIDP;
 	private ProfileModel params;
 	private int canvasKey;
+	private ActivityKeymapperBinding binding;
 
-	ActivityKeymapperBinding binding;
-	ArrayList<ButtonMapping> virtualKeyboardMappingsList;
-	
 	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -72,11 +70,8 @@ public class KeyMapperActivity extends BaseActivity implements View.OnClickListe
 			finish();
 			return;
 		}
-
 		binding = ActivityKeymapperBinding.inflate(getLayoutInflater());
-		View view = binding.getRoot();
-		setContentView(view);
-
+		setContentView(binding.getRoot());
 		ActionBar actionBar = getSupportActionBar();
 		if (actionBar != null) {
 			actionBar.setDisplayHomeAsUpEnabled(true);
@@ -84,36 +79,30 @@ public class KeyMapperActivity extends BaseActivity implements View.OnClickListe
 		}
 		params = ProfilesManager.loadConfig(new File(path));
 
-		virtualKeyboardMappingsList = new ArrayList<>();
-		addVirtualKeyboardMapping(binding.virtualKeyLeftSoft, Canvas.KEY_SOFT_LEFT);
-		addVirtualKeyboardMapping(binding.virtualKeyRightSoft, Canvas.KEY_SOFT_RIGHT);
-		addVirtualKeyboardMapping(binding.virtualKeyD, Canvas.KEY_SEND);
-		addVirtualKeyboardMapping(binding.virtualKeyC, Canvas.KEY_END);
-		addVirtualKeyboardMapping(binding.virtualKeyLeft, Canvas.KEY_LEFT);
-		addVirtualKeyboardMapping(binding.virtualKeyRight, Canvas.KEY_RIGHT);
-		addVirtualKeyboardMapping(binding.virtualKeyUp, Canvas.KEY_UP);
-		addVirtualKeyboardMapping(binding.virtualKeyDown, Canvas.KEY_DOWN);
-		addVirtualKeyboardMapping(binding.virtualKeyF, Canvas.KEY_FIRE);
-		addVirtualKeyboardMapping(binding.virtualKey1, Canvas.KEY_NUM1);
-		addVirtualKeyboardMapping(binding.virtualKey2, Canvas.KEY_NUM2);
-		addVirtualKeyboardMapping(binding.virtualKey3, Canvas.KEY_NUM3);
-		addVirtualKeyboardMapping(binding.virtualKey4, Canvas.KEY_NUM4);
-		addVirtualKeyboardMapping(binding.virtualKey5, Canvas.KEY_NUM5);
-		addVirtualKeyboardMapping(binding.virtualKey6, Canvas.KEY_NUM6);
-		addVirtualKeyboardMapping(binding.virtualKey7, Canvas.KEY_NUM7);
-		addVirtualKeyboardMapping(binding.virtualKey8, Canvas.KEY_NUM8);
-		addVirtualKeyboardMapping(binding.virtualKey9, Canvas.KEY_NUM9);
-		addVirtualKeyboardMapping(binding.virtualKey0,Canvas.KEY_NUM0);
-		addVirtualKeyboardMapping(binding.virtualKeyStar, Canvas.KEY_STAR);
-		addVirtualKeyboardMapping(binding.virtualKeyPound, Canvas.KEY_POUND);
-		addVirtualKeyboardMapping(binding.virtualKeyA, KeyMapper.SE_KEY_SPECIAL_GAMING_A);
-		addVirtualKeyboardMapping(binding.virtualKeyB, KeyMapper.SE_KEY_SPECIAL_GAMING_B);
-		addVirtualKeyboardMapping(binding.virtualKeyMenu, KeyMapper.KEY_OPTIONS_MENU);
-
-		for (ButtonMapping mapping : virtualKeyboardMappingsList) {
-			setupButton(mapping.button, mapping.keyId);
-		}
-
+		setupButton(binding.virtualKeyLeftSoft, Canvas.KEY_SOFT_LEFT);
+		setupButton(binding.virtualKeyRightSoft, Canvas.KEY_SOFT_RIGHT);
+		setupButton(binding.virtualKeyD, Canvas.KEY_SEND);
+		setupButton(binding.virtualKeyC, Canvas.KEY_END);
+		setupButton(binding.virtualKeyLeft, Canvas.KEY_LEFT);
+		setupButton(binding.virtualKeyRight, Canvas.KEY_RIGHT);
+		setupButton(binding.virtualKeyUp, Canvas.KEY_UP);
+		setupButton(binding.virtualKeyDown, Canvas.KEY_DOWN);
+		setupButton(binding.virtualKeyF, Canvas.KEY_FIRE);
+		setupButton(binding.virtualKey1, Canvas.KEY_NUM1);
+		setupButton(binding.virtualKey2, Canvas.KEY_NUM2);
+		setupButton(binding.virtualKey3, Canvas.KEY_NUM3);
+		setupButton(binding.virtualKey4, Canvas.KEY_NUM4);
+		setupButton(binding.virtualKey5, Canvas.KEY_NUM5);
+		setupButton(binding.virtualKey6, Canvas.KEY_NUM6);
+		setupButton(binding.virtualKey7, Canvas.KEY_NUM7);
+		setupButton(binding.virtualKey8, Canvas.KEY_NUM8);
+		setupButton(binding.virtualKey9, Canvas.KEY_NUM9);
+		setupButton(binding.virtualKey0, Canvas.KEY_NUM0);
+		setupButton(binding.virtualKeyStar, Canvas.KEY_STAR);
+		setupButton(binding.virtualKeyPound, Canvas.KEY_POUND);
+		setupButton(binding.virtualKeyA, KeyMapper.SE_KEY_SPECIAL_GAMING_A);
+		setupButton(binding.virtualKeyB, KeyMapper.SE_KEY_SPECIAL_GAMING_B);
+		setupButton(binding.virtualKeyMenu, KeyMapper.KEY_OPTIONS_MENU);
 		if (savedInstanceState == null) {
 			SparseIntArray keyMap = params.keyMappings;
 			androidToMIDP = keyMap == null ? defaultKeyMap.clone() : keyMap.clone();
@@ -131,24 +120,17 @@ public class KeyMapperActivity extends BaseActivity implements View.OnClickListe
 						.fromJson(save, SparseIntArray.class);
 			}
 		}
-	}
-
-	static class ButtonMapping {
-		Button button;
-		Integer keyId;
-
-		public ButtonMapping(Button button, Integer keyId) {
-			this.button = button;this.keyId = keyId;
-		}
-	}
-
-	void addVirtualKeyboardMapping(Button button, Integer keyId) {
-		virtualKeyboardMappingsList.add(new ButtonMapping(button, keyId));
-	}
-
-	private void setupButton(Button button, int index) {
-		idToCanvasKey.put(button.getId(), index);
-		button.setOnClickListener(this);
+		getOnBackPressedDispatcher().addCallback(new OnBackPressedCallback(true) {
+			@Override
+			public void handleOnBackPressed() {
+				if (androidToMIDP.indexOfValue(KeyMapper.KEY_OPTIONS_MENU) < 0) {
+					alertMenuKey();
+					return;
+				}
+				save();
+				finish();
+			}
+		});
 	}
 
 	@Override
@@ -166,6 +148,11 @@ public class KeyMapperActivity extends BaseActivity implements View.OnClickListe
 		}
 
 		super.onSaveInstanceState(outState);
+	}
+
+	private void setupButton(Button button, int index) {
+		idToCanvasKey.put(button.getId(), index);
+		button.setOnClickListener(this);
 	}
 
 	@Override
@@ -208,21 +195,11 @@ public class KeyMapperActivity extends BaseActivity implements View.OnClickListe
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int itemId = item.getItemId();
 		if (itemId == android.R.id.home) {
-			onBackPressed();
+			getOnBackPressedDispatcher().onBackPressed();
 		} else if (itemId == R.id.action_reset_mapping) {
 			androidToMIDP = defaultKeyMap.clone();
 		}
 		return super.onOptionsItemSelected(item);
-	}
-
-	@Override
-	public void onBackPressed() {
-		if (androidToMIDP.indexOfValue(KeyMapper.KEY_OPTIONS_MENU) < 0) {
-			alertMenuKey();
-			return;
-		}
-		save();
-		super.onBackPressed();
 	}
 
 	private void save() {
@@ -239,11 +216,11 @@ public class KeyMapperActivity extends BaseActivity implements View.OnClickListe
 
 	private void alertMenuKey() {
 		new AlertDialog.Builder(this)
-				.setMessage(R.string.alert_map_menu)
 				.setTitle(R.string.warning)
+				.setMessage(R.string.alert_map_menu)
 				.setNegativeButton(R.string.save, (d, w) -> {
 					save();
-					super.onBackPressed();
+					finish();
 				})
 				.setPositiveButton(R.string.CANCEL_CMD, null)
 				.show();
@@ -295,11 +272,5 @@ public class KeyMapperActivity extends BaseActivity implements View.OnClickListe
 			return true;
 		}
 		return super.dispatchTouchEvent(event);
-	}
-
-	@Override
-	protected void onDestroy() {
-		binding = null;
-		super.onDestroy();
 	}
 }

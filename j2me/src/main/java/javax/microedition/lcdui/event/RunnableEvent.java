@@ -1,6 +1,7 @@
 /*
  * Copyright 2012 Kulikov Dmitriy
- * Copyright 2017 Nikita Shakarun
+ * Copyright 2017-2018 Nikita Shakarun
+ * Copyright 2020-2024 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +18,10 @@
 
 package javax.microedition.lcdui.event;
 
-import android.widget.Toast;
-
-import javax.microedition.lcdui.ViewHandler;
 import javax.microedition.util.ArrayStack;
-import javax.microedition.util.ContextHolder;
 
 public class RunnableEvent extends Event {
 	private static final ArrayStack<RunnableEvent> recycled = new ArrayStack<>();
-	private static int queued;
 
 	private Runnable runnable;
 
@@ -54,18 +50,10 @@ public class RunnableEvent extends Event {
 
 	@Override
 	public void enterQueue() {
-		if (++queued > 50 && EventQueue.isImmediate()) {
-			EventQueue.setImmediate(false);
-			ViewHandler.postEvent(() ->
-					Toast.makeText(ContextHolder.getAppContext(),
-							"Immediate mode disabled due to stack overflow",
-							Toast.LENGTH_SHORT).show());
-		}
 	}
 
 	@Override
 	public void leaveQueue() {
-		queued--;
 	}
 
 	@Override

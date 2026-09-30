@@ -20,25 +20,25 @@ import javax.microedition.media.Control;
 import javax.microedition.media.MediaException;
 
 public interface EffectControl extends Control {
-	public static final int SCOPE_LIVE_ONLY = 1;
-	public static final int SCOPE_RECORD_ONLY = 2;
-	public static final int SCOPE_LIVE_AND_RECORD = 3;
+	int SCOPE_LIVE_ONLY = 1;
+	int SCOPE_RECORD_ONLY = 2;
+	int SCOPE_LIVE_AND_RECORD = 3;
 
-	public void setScope(int scope) throws MediaException;
+	void setScope(int scope) throws MediaException;
 
-	public int getScope();
+	int getScope();
 
-	public String[] getPresetNames();
+	String[] getPresetNames();
 
-	public void setPreset(String preset);
+	void setPreset(String preset);
 
-	public String getPreset();
+	String getPreset();
 
-	public void setEnabled(boolean enable);
+	void setEnabled(boolean enable);
 
-	public boolean isEnabled();
+	boolean isEnabled();
 
-	public void setEnforced(boolean enforced);
+	void setEnforced(boolean enforced);
 
-	public boolean isEnforced();
+	boolean isEnforced();
 }

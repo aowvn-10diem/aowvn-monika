@@ -1,5 +1,6 @@
 /*
- * Copyright 2017-2018 Nikita Shakarun
+ * Copyright 2017-2019 Nikita Shakarun
+ * Copyright 2019-2024 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +17,39 @@
 
 package ru.playsoftware.j2meloader.settings;
 
-import android.content.ActivityNotFoundException;
+import static ru.playsoftware.j2meloader.util.Constants.PREF_EMULATOR_DIR;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.content.res.XmlResourceParser;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.DocumentsContract;
-
-import com.nononsenseapps.filepicker.Utils;
-
-import java.io.File;
+import android.util.Log;
 
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.os.LocaleListCompat;
+import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
+
+import java.io.File;
+import java.util.Locale;
+import java.util.Objects;
+
 import ru.playsoftware.j2meloader.R;
 import ru.playsoftware.j2meloader.config.Config;
 import ru.playsoftware.j2meloader.config.ProfilesActivity;
 import ru.playsoftware.j2meloader.util.FileUtils;
 import ru.playsoftware.j2meloader.util.PickDirResultContract;
-
-import static ru.playsoftware.j2meloader.util.Constants.PREF_ADD_CUTOUT_AREA;
-import static ru.playsoftware.j2meloader.util.Constants.PREF_EMULATOR_DIR;
+import ru.playsoftware.j2meloader.util.XmlUtils;
 
 public class SettingsFragment extends PreferenceFragmentCompat {
+	private static final String TAG = "SettingsFragment";
+
 	private Preference prefFolder;
 	private final ActivityResultLauncher<String> openDirLauncher = registerForActivityResult(
 			new PickDirResultContract(),
@@ -50,71 +58,58 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 	@Override
 	public void onCreatePreferences(Bundle bundle, String s) {
 		addPreferencesFromResource(R.xml.preferences);
-		findPreference("pref_default_settings").setIntent(new Intent(requireActivity(), ProfilesActivity.class));
-		prefFolder = findPreference(PREF_EMULATOR_DIR);
+		Objects.<Preference>requireNonNull(findPreference("pref_default_settings"))
+				.setIntent(new Intent(requireActivity(), ProfilesActivity.class));
+		initLanguages();
+		prefFolder = Objects.requireNonNull(findPreference(PREF_EMULATOR_DIR));
 		prefFolder.setSummary(Config.getEmulatorDir());
 		prefFolder.setOnPreferenceClickListener(preference -> {
-			if (FileUtils.isExternalStorageLegacy()) {
-				openDirLauncher.launch(null);
-			} else {
-				openPicker();
-			}
+			openDirLauncher.launch(null);
 			return true;
 		});
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-			findPreference(PREF_ADD_CUTOUT_AREA).setVisible(true);
+	}
+
+	private void initLanguages() {
+		ListPreference prefLanguage = Objects.requireNonNull(findPreference("pref_language"));
+		StringBuilder sb = new StringBuilder();
+		Context context = javax.microedition.util.ContextHolder.getAppContext();
+		Resources resources = context.getResources();
+		@SuppressLint("DiscouragedApi")
+		int id = resources.getIdentifier("_generated_res_locale_config", "xml", context.getPackageName());
+		try (XmlResourceParser parser = resources.getXml(id)) {
+			while (XmlUtils.nextElement(parser, "locale")) {
+				sb.append(',').append(parser.getAttributeValue(0));
+			}
+		} catch (Exception e) {
+			Log.e(TAG, "loadLanguagesList: ", e);
 		}
-	}
-
-	@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-	private void openPicker() {
-		try {
-			startActivity(getFileManagerIntentOnDocumentProvider(Intent.ACTION_VIEW));
-			return;
-		} catch (ActivityNotFoundException ignored) {}
-
-		try {
-			startActivity(getFileManagerIntentOnDocumentProvider("android.provider.action.BROWSE"));
-			return;
-		} catch (ActivityNotFoundException ignored) {}
-
-		try {
-			// Just try to open the file manager, try the package name used on "normal" phones
-			startActivity(getFileManagerIntent("com.google.android.documentsui"));
-			return;
-		} catch (ActivityNotFoundException ignored) {}
-
-		try {
-			// Next, try the AOSP package name
-			startActivity(getFileManagerIntent("com.android.documentsui"));
-		} catch (ActivityNotFoundException ignored) {}
-	}
-
-	private Intent getFileManagerIntent(String packageName) {
-		// Fragile, but some phones don't expose the system file manager in any better way
-		Intent intent = new Intent(Intent.ACTION_MAIN);
-		intent.setClassName(packageName, "com.android.documentsui.files.FilesActivity");
-		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		return intent;
-	}
-
-	@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-	private Intent getFileManagerIntentOnDocumentProvider(String action) {
-		String authority = requireContext().getPackageName() + ".documentProvider";
-		String root = new File(Config.getEmulatorDir()).getAbsolutePath();
-		Intent intent = new Intent(action);
-		intent.addCategory(Intent.CATEGORY_DEFAULT);
-		intent.setData(DocumentsContract.buildRootUri(authority, root));
-		intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-				| Intent.FLAG_GRANT_PREFIX_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-		return intent;
+		String[] languageTags = sb.toString().split(",");
+		LocaleListCompat locales = LocaleListCompat.forLanguageTags(sb.toString());
+		int size = languageTags.length;
+		String[] languageNames = new String[size];
+		languageNames[0] = context.getString(R.string.pref_theme_system);
+		for (int i = 1; i < size; i++) {
+			Locale l = locales.get(i);
+			if (l != null) {
+				languageNames[i] = l.getDisplayName(l);
+			}
+		}
+		prefLanguage.setEntryValues(languageTags);
+		prefLanguage.setEntries(languageNames);
+		Locale locale = AppCompatDelegate.getApplicationLocales().get(0);
+		prefLanguage.setValue(locale != null ? locale.getLanguage() : "");
+		prefLanguage.setOnPreferenceChangeListener((preference, value) -> {
+			LocaleListCompat list = LocaleListCompat.forLanguageTags((String) value);
+			AppCompatDelegate.setApplicationLocales(list);
+			return true;
+		});
 	}
 
 	private void onPickDirResult(Uri uri) {
-		if (uri == null) {
+		if (uri == null || uri.getPath() == null) {
 			return;
 		}
-		File file = Utils.getFileForUri(uri);
+		File file = new File(uri.getPath());
 		String path = file.getAbsolutePath();
 		if (!FileUtils.initWorkDir(file)) {
 			new AlertDialog.Builder(requireActivity())
@@ -126,7 +121,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 					.show();
 			return;
 		}
-		getPreferenceManager().getSharedPreferences().edit()
+		Objects.requireNonNull(getPreferenceManager().getSharedPreferences()).edit()
 				.putString(PREF_EMULATOR_DIR, path)
 				.apply();
 		prefFolder.setSummary(path);

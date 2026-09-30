@@ -1,7 +1,7 @@
 /*
  * Copyright 2012 Kulikov Dmitriy
- * Copyright 2017-2018 Nikita Shakarun
- * Copyright 2021 Yury Kharchenko
+ * Copyright 2017-2021 Nikita Shakarun
+ * Copyright 2019-2023 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import android.graphics.RectF;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
-import android.util.SparseBooleanArray;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -51,14 +50,14 @@ import ru.playsoftware.j2meloader.config.ProfilesManager;
 public class VirtualKeyboard implements Overlay, Runnable {
 	private static final String TAG = VirtualKeyboard.class.getSimpleName();
 
-	private static final String ARROW_LEFT = "\u2190";
-	private static final String ARROW_UP = "\u2191";
-	private static final String ARROW_RIGHT = "\u2192";
-	private static final String ARROW_DOWN = "\u2193";
-	private static final String ARROW_UP_LEFT = "\u2196";
-	private static final String ARROW_UP_RIGHT = "\u2197";
-	private static final String ARROW_DOWN_LEFT = "\u2199";
-	private static final String ARROW_DOWN_RIGHT = "\u2198";
+	private static final String ARROW_LEFT = "←";
+	private static final String ARROW_UP = "↑";
+	private static final String ARROW_RIGHT = "→";
+	private static final String ARROW_DOWN = "↓";
+	private static final String ARROW_UP_LEFT = "↖";
+	private static final String ARROW_UP_RIGHT = "↗";
+	private static final String ARROW_DOWN_LEFT = "↙";
+	private static final String ARROW_DOWN_RIGHT = "↘";
 
 	private static final int LAYOUT_SIGNATURE = 0x564B4C00;
 	private static final int LAYOUT_VERSION = 3;
@@ -69,9 +68,9 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	public static final int LAYOUT_COLORS = 2;
 	public static final int LAYOUT_TYPE = 3;
 
-	private static final int OVAL_SHAPE = 0;
-	private static final int RECT_SHAPE = 1;
-	public static final int ROUND_RECT_SHAPE = 2;
+	private static final int SHAPE_OVAL = 0;
+	private static final int SHAPE_RECT = 1;
+	public static final int SHAPE_ROUND_RECT = 2;
 
 	public static final int TYPE_CUSTOM = 0;
 	private static final int TYPE_PHONE = 1;
@@ -284,7 +283,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	private void resetLayout(int variant) {
 		switch (variant) {
-			case TYPE_MONIKA:
+			case TYPE_MONIKA -> {
 				// Aow Monika: 6 cột đều nhau (mỗi phím rộng 1/6 màn), 4 hàng dưới khung game.
 				for (int j = 0, len = keyScales.length; j < len;) {
 					keyScales[j++] = 1.0f;
@@ -332,9 +331,9 @@ public class VirtualKeyboard implements Overlay, Runnable {
 				setSnap(KEY_B, SCREEN, RectSnap.INT_NORTHEAST, false);
 				setSnap(KEY_C, KEY_A, RectSnap.EXT_SOUTH, false);
 				setSnap(KEY_D, KEY_B, RectSnap.EXT_SOUTH, false);
-				break;
-			case TYPE_PHONE:
-				for (int j = 0, len = keyScales.length; j < len;) {
+			}
+			case TYPE_PHONE -> {
+				for (int j = 0, len = keyScales.length; j < len; ) {
 					keyScales[j++] = PHONE_KEY_SCALE_X;
 					keyScales[j++] = PHONE_KEY_SCALE_Y;
 				}
@@ -368,9 +367,9 @@ public class VirtualKeyboard implements Overlay, Runnable {
 				setSnap(KEY_DOWN_LEFT, KEY_LEFT, RectSnap.EXT_SOUTH, false);
 				setSnap(KEY_DOWN, KEY_MENU, RectSnap.EXT_SOUTH, false);
 				setSnap(KEY_DOWN_RIGHT, KEY_RIGHT, RectSnap.EXT_SOUTH, false);
-				break;
-			case TYPE_PHONE_ARROWS:
-				for (int j = 0, len = keyScales.length; j < len;) {
+			}
+			case TYPE_PHONE_ARROWS -> {
+				for (int j = 0, len = keyScales.length; j < len; ) {
 					keyScales[j++] = PHONE_KEY_SCALE_X;
 					keyScales[j++] = PHONE_KEY_SCALE_Y;
 				}
@@ -404,9 +403,9 @@ public class VirtualKeyboard implements Overlay, Runnable {
 				setSnap(KEY_DOWN_LEFT, KEY_NUM4, RectSnap.EXT_SOUTH, false);
 				setSnap(KEY_DOWN_RIGHT, KEY_NUM6, RectSnap.EXT_SOUTH, false);
 				setSnap(KEY_NUM8, KEY_NUM5, RectSnap.EXT_SOUTH, false);
-				break;
-			case TYPE_NUM_ARR:
-			default:
+			}
+			// case TYPE_NUM_ARR,
+			default -> {
 				Arrays.fill(keyScales, 1.0f);
 
 				setSnap(KEY_DOWN_RIGHT, SCREEN, RectSnap.INT_SOUTHEAST, true);
@@ -438,8 +437,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 				setSnap(KEY_A, SCREEN, RectSnap.INT_NORTHWEST, false);
 				setSnap(KEY_B, SCREEN, RectSnap.INT_NORTHEAST, false);
 				setSnap(KEY_MENU, KEY_UP, RectSnap.EXT_NORTH, false);
-				break;
-			case TYPE_ARR_NUM:
+			}
+			case TYPE_ARR_NUM -> {
 				Arrays.fill(keyScales, 1);
 
 				setSnap(KEY_DOWN_LEFT, SCREEN, RectSnap.INT_SOUTHWEST, true);
@@ -471,8 +470,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 				setSnap(KEY_A, SCREEN, RectSnap.INT_NORTHWEST, false);
 				setSnap(KEY_B, SCREEN, RectSnap.INT_NORTHEAST, false);
 				setSnap(KEY_MENU, KEY_UP, RectSnap.EXT_NORTH, false);
-				break;
-			case TYPE_NUMBERS:
+			}
+			case TYPE_NUMBERS -> {
 				Arrays.fill(keyScales, 1);
 
 				setSnap(KEY_NUM0, SCREEN, RectSnap.INT_SOUTH, true);
@@ -504,8 +503,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 				setSnap(KEY_C, KEY_NUM7, RectSnap.EXT_WEST, false);
 				setSnap(KEY_D, KEY_NUM9, RectSnap.EXT_EAST, false);
 				setSnap(KEY_MENU, SCREEN, RectSnap.INT_NORTHEAST, false);
-				break;
-			case TYPE_ARROWS:
+			}
+			case TYPE_ARROWS -> {
 				Arrays.fill(keyScales, 1);
 
 				setSnap(KEY_DOWN, SCREEN, RectSnap.INT_SOUTH, true);
@@ -537,7 +536,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 				setSnap(KEY_C, KEY_DOWN_LEFT, RectSnap.EXT_WEST, false);
 				setSnap(KEY_D, KEY_DOWN_RIGHT, RectSnap.EXT_EAST, false);
 				setSnap(KEY_MENU, SCREEN, RectSnap.INT_NORTHEAST, false);
-				break;
+			}
 		}
 	}
 
@@ -750,11 +749,13 @@ public class VirtualKeyboard implements Overlay, Runnable {
 				int block = dis.readInt();
 				int length = dis.readInt();
 				switch (block) {
-					case LAYOUT_EOF:
+					case LAYOUT_EOF -> {
 						return custom == 3 ? 0 : -1;
-					case LAYOUT_TYPE:
+					}
+					case LAYOUT_TYPE -> {
 						return dis.read();
-					case LAYOUT_KEYS:
+					}
+					case LAYOUT_KEYS -> {
 						if (version >= 2) {
 							int count = dis.readInt();
 							length = count * 21;
@@ -763,17 +764,18 @@ public class VirtualKeyboard implements Overlay, Runnable {
 							return -1;
 						}
 						custom |= 1;
-						break;
-					case LAYOUT_SCALES:
+					}
+					case LAYOUT_SCALES -> {
 						if (dis.skipBytes(length) != length) {
 							return -1;
 						}
 						custom |= 2;
-						break;
-					default:
+					}
+					default -> {
 						if (dis.skipBytes(length) != length) {
 							return -1;
 						}
+					}
 				}
 			}
 		} catch (FileNotFoundException e) {
@@ -798,9 +800,10 @@ public class VirtualKeyboard implements Overlay, Runnable {
 				int length = dis.readInt();
 				int count;
 				switch (block) {
-					case LAYOUT_EOF:
+					case LAYOUT_EOF -> {
 						return;
-					case LAYOUT_KEYS:
+					}
+					case LAYOUT_KEYS -> {
 						count = dis.readInt();
 						for (int i = 0; i < count; i++) {
 							int hash = dis.readInt();
@@ -822,15 +825,15 @@ public class VirtualKeyboard implements Overlay, Runnable {
 								dis.skipBytes(version >= 2 ? 17 : 16);
 							}
 						}
-						break;
-					case LAYOUT_SCALES:
+					}
+					case LAYOUT_SCALES -> {
 						count = dis.readInt();
 						if (version >= 3) {
 							for (int i = 0; i < count; i++) {
 								keyScales[i] = dis.readFloat();
 							}
 						} else if (count * 2 <= keyScales.length) {
-							for (int i = 0, len = count * 2; i < len;) {
+							for (int i = 0, len = count * 2; i < len; ) {
 								float v = dis.readFloat();
 								keyScales[i++] = v;
 								keyScales[i++] = v;
@@ -838,10 +841,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 						} else {
 							dis.skipBytes(count * 4);
 						}
-						break;
-					default:
-						dis.skipBytes(length);
-						break;
+					}
+					default -> dis.skipBytes(length);
 				}
 			}
 		}
@@ -928,23 +929,20 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	private void snapKeys() {
 		obscuresVirtualScreen = false;
-		boolean isPhone = isPhone();
 		for (int i = 0; i < keypad.length; i++) {
 			snapKey(i, 0);
 			VirtualKey key = keypad[i];
 			RectF rect = key.rect;
 			// Aow Monika: bo tròn hẳn (viên thuốc / tròn) thay vì góc 25%.
 			key.corners = (int) (Math.min(rect.width(), rect.height()) * (MONIKA_STYLE ? 0.5F : 0.25F));
-			if (!isPhone && RectF.intersects(rect, virtualScreen)) {
-				obscuresVirtualScreen = true;
+			if (RectF.intersects(rect, virtualScreen)) {
+				if (key.visible) {
+					obscuresVirtualScreen = true;
+				}
 				key.opaque = false;
 			} else {
-				key.opaque = true;
+				key.opaque = settings.vkForceOpacity;
 			}
-		}
-		boolean opaque = !obscuresVirtualScreen || settings.vkForceOpacity;
-		for (VirtualKey key : keypad) {
-			key.opaque &= opaque;
 		}
 	}
 
@@ -969,12 +967,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	public void setLayoutEditMode(int mode) {
 		layoutEditMode = mode;
-		int group = -1;
-		if (mode == LAYOUT_SCALES) {
-			editedIndex = 0;
-			group = 0;
-		}
-		highlightGroup(group);
+		editedIndex = -1;
+		highlightGroup(-1);
 		handler.removeCallbacks(this);
 		visible = true;
 		overlayView.postInvalidate();
@@ -1019,7 +1013,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 		RectF keyArea = layoutVariant == TYPE_MONIKA ? snapArea : screen;
 		float keySize = getKeySize(keyArea.width(), keyArea.height());
-		snapRadius = keySize * snapRadius / 4;
+		snapRadius = keySize * snapRadius / 8;
 		this.keySize = keySize;
 		for (int group = 0; group < keyScaleGroups.length; group++) {
 			resizeKeyGroup(group);
@@ -1038,31 +1032,19 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	}
 
 	private float getKeySize(float screenWidth, float screenHeight) {
-		float min = screenWidth;
-		float max = screenHeight;
-		boolean landscape = min > max;
-		if (min > max) {
-			float tmp = max;
-			max = min;
-			min = tmp;
-		}
-
-		boolean nonWide = max / min < 2;
-		float keySize;
 		if (isPhone()) {
-			keySize = min / 6.0F;
-		} else if (nonWide || landscape) {
-			keySize = max / 12F;
+			return screenWidth / 6.0f;
+		} else if (screenWidth > screenHeight) {
+			return Math.min(screenWidth / 12.0f, screenHeight / 6.0f);
 		} else {
-			keySize = min / 6.5F;
+			return Math.min(screenWidth / 6.0f, screenHeight / 12.0f);
 		}
-		return keySize;
 	}
 
 	@Override
 	public void paint(CanvasWrapper g) {
 		if (layoutVariant == TYPE_MONIKA && screen != null) paintMonikaSkin(g);
-		if (visible) {
+		if (visible && (layoutEditMode != LAYOUT_EOF || settings.vkAlpha > 0)) {
 			for (VirtualKey key : keypad) {
 				if (key.visible) {
 					key.paint(g);
@@ -1074,7 +1056,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	@Override
 	public boolean pointerPressed(int pointer, float x, float y) {
 		switch (layoutEditMode) {
-			case LAYOUT_EOF:
+			case LAYOUT_EOF -> {
 				if (pointer > associatedKeys.length) {
 					return false;
 				}
@@ -1087,8 +1069,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 						break;
 					}
 				}
-				break;
-			case LAYOUT_KEYS:
+			}
+			case LAYOUT_KEYS -> {
 				editedIndex = -1;
 				for (int i = 0; i < keypad.length; i++) {
 					if (keypad[i].contains(x, y)) {
@@ -1099,8 +1081,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 						break;
 					}
 				}
-				break;
-			case LAYOUT_SCALES:
+			}
+			case LAYOUT_SCALES -> {
 				int index = -1;
 				for (int group = 0; group < keyScaleGroups.length && index < 0; group++) {
 					for (int key = 0; key < keyScaleGroups[group].length && index < 0; key++) {
@@ -1109,16 +1091,22 @@ public class VirtualKeyboard implements Overlay, Runnable {
 						}
 					}
 				}
-				if (index >= 0) {
+				if (editedIndex == index) {
+					editedIndex = -1;
+					highlightGroup(-1);
+					overlayView.postInvalidate();
+				} else if (index >= 0) {
 					editedIndex = index;
 					highlightGroup(index);
 					overlayView.postInvalidate();
 				}
+				if (editedIndex >= 0) {
+					prevScaleX = keyScales[editedIndex * 2];
+					prevScaleY = keyScales[editedIndex * 2 + 1];
+				}
 				offsetX = x;
 				offsetY = y;
-				prevScaleX = keyScales[editedIndex * 2];
-				prevScaleY = keyScales[editedIndex * 2 + 1];
-				break;
+			}
 		}
 		return false;
 	}
@@ -1126,7 +1114,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	@Override
 	public boolean pointerDragged(int pointer, float x, float y) {
 		switch (layoutEditMode) {
-			case LAYOUT_EOF:
+			case LAYOUT_EOF -> {
 				if (pointer > associatedKeys.length) {
 					return false;
 				}
@@ -1139,8 +1127,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 					overlayView.postInvalidate();
 					pointerPressed(pointer, x, y);
 				}
-				break;
-			case LAYOUT_KEYS:
+			}
+			case LAYOUT_KEYS -> {
 				if (editedIndex >= 0) {
 					VirtualKey key = keypad[editedIndex];
 					RectF rect = key.rect;
@@ -1164,22 +1152,37 @@ public class VirtualKeyboard implements Overlay, Runnable {
 					snapKey(editedIndex, 0);
 					overlayView.postInvalidate();
 				}
-				break;
-			case LAYOUT_SCALES:
+			}
+			case LAYOUT_SCALES -> {
+				if (editedIndex == -1) {
+					break;
+				}
 				float dx = x - offsetX;
 				float dy = offsetY - y;
-				float scale;
-				int index = this.editedIndex * 2;
-				if (Math.abs(dx) > Math.abs(dy)) {
-					scale = prevScaleX + dx / Math.min(screen.centerX(), screen.centerY());
-				} else {
-					scale = prevScaleY + dy / Math.min(screen.centerX(), screen.centerY());
-					index++;
+				int index = editedIndex * 2;
+				float scale = prevScaleX + dx / Math.min(screen.centerX(), screen.centerY());
+				if (scale <= 0.0f) {
+					scale = Float.MIN_VALUE;
 				}
 				if (Math.abs(1 - scale) <= SCALE_SNAP_RADIUS) {
 					scale = 1;
 				} else {
-					for (int i = index % 2; i < keyScales.length; i += 2) {
+					for (int i = 0; i < keyScales.length; i += 2) {
+						if (i != index && Math.abs(keyScales[i] - scale) <= SCALE_SNAP_RADIUS) {
+							scale = keyScales[i];
+							break;
+						}
+					}
+				}
+				keyScales[index++] = scale;
+				scale = prevScaleY + dy / Math.min(screen.centerX(), screen.centerY());
+				if (scale <= 0.0f) {
+					scale = Float.MIN_VALUE;
+				}
+				if (Math.abs(1 - scale) <= SCALE_SNAP_RADIUS) {
+					scale = 1;
+				} else {
+					for (int i = 1; i < keyScales.length; i += 2) {
 						if (i != index && Math.abs(keyScales[i] - scale) <= SCALE_SNAP_RADIUS) {
 							scale = keyScales[i];
 							break;
@@ -1187,10 +1190,10 @@ public class VirtualKeyboard implements Overlay, Runnable {
 					}
 				}
 				keyScales[index] = scale;
-				resizeKeyGroup(this.editedIndex);
+				resizeKeyGroup(editedIndex);
 				snapKeys();
 				overlayView.postInvalidate();
-				break;
+			}
 		}
 		return false;
 	}
@@ -1320,41 +1323,40 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	}
 
 	private int getKeyBit(int vKey) {
-		switch (vKey) {
-			case KEY_NUM0      : return 1;       // 0 0 key         KEY_NUM0       = 9;
-			case KEY_NUM1      : return 1 <<  1; // 1 1 key         KEY_NUM1       = 0;
-			case KEY_NUM2      : return 1 <<  2; // 2 2 key         KEY_NUM2       = 1;
-			case KEY_NUM3      : return 1 <<  3; // 3 3 key         KEY_NUM3       = 2;
-			case KEY_NUM4      : return 1 <<  4; // 4 4 key         KEY_NUM4       = 3;
-			case KEY_NUM5      : return 1 <<  5; // 5 5 key         KEY_NUM5       = 4;
-			case KEY_NUM6      : return 1 <<  6; // 6 6 key         KEY_NUM6       = 5;
-			case KEY_NUM7      : return 1 <<  7; // 7 7 key         KEY_NUM7       = 6;
-			case KEY_NUM8      : return 1 <<  8; // 8 8 key         KEY_NUM8       = 7;
-			case KEY_NUM9      : return 1 <<  9; // 9 9 key         KEY_NUM9       = 8;
-			case KEY_STAR      : return 1 << 10; // 10 * key        KEY_STAR       = 10;
-			case KEY_POUND     : return 1 << 11; // 11 # key        KEY_POUND      = 11;
-			case KEY_UP        : return 1 << 12; // 12 Up key       KEY_UP         = 17;
-			case KEY_LEFT      : return 1 << 13; // 13 Left key     KEY_LEFT       = 19;
-			case KEY_RIGHT     : return 1 << 14; // 14 Right key    KEY_RIGHT      = 20;
-			case KEY_DOWN      : return 1 << 15; // 15 Down key     KEY_DOWN       = 22;
-			case KEY_FIRE      : return 1 << 16; // 16 Select key   KEY_FIRE       = 24;
-			case KEY_SOFT_LEFT : return 1 << 17; // 17 Softkey 1    KEY_SOFT_LEFT  = 12;
-			case KEY_SOFT_RIGHT: return 1 << 18; // 18 Softkey 2    KEY_SOFT_RIGHT = 13;
+		return switch (vKey) {
+			case KEY_NUM0       -> 1      ; //  0 0
+			case KEY_NUM1       -> 1 <<  1; //  1 1
+			case KEY_NUM2       -> 1 <<  2; //  2 2
+			case KEY_NUM3       -> 1 <<  3; //  3 3
+			case KEY_NUM4       -> 1 <<  4; //  4 4
+			case KEY_NUM5       -> 1 <<  5; //  5 5
+			case KEY_NUM6       -> 1 <<  6; //  6 6
+			case KEY_NUM7       -> 1 <<  7; //  7 7
+			case KEY_NUM8       -> 1 <<  8; //  8 8
+			case KEY_NUM9       -> 1 <<  9; //  9 9
+			case KEY_STAR       -> 1 << 10; // 10 *
+			case KEY_POUND      -> 1 << 11; // 11 #
+			case KEY_UP         -> 1 << 12; // 12 Up
+			case KEY_LEFT       -> 1 << 13; // 13 Left
+			case KEY_RIGHT      -> 1 << 14; // 14 Right
+			case KEY_DOWN       -> 1 << 15; // 15 Down
+			case KEY_FIRE       -> 1 << 16; // 16 Select
+			case KEY_SOFT_LEFT  -> 1 << 17; // 17 Softkey 1
+			case KEY_SOFT_RIGHT -> 1 << 18; // 18 Softkey 2
 			// TODO: 05.08.2020 Softkey3 mapped to KEY_C
-			case KEY_C         : return 1 << 19; // 19 Softkey 3    KEY_C          = 15;
-			case KEY_UP_RIGHT  : return 1 << 20; // 20 Upper Right  KEY_UP_RIGHT   = 18;
-			case KEY_UP_LEFT   : return 1 << 21; // 21 Upper Left   KEY_UP_LEFT    = 16;
-			case KEY_DOWN_RIGHT: return 1 << 22; // 22 Lower Right  KEY_DOWN_RIGHT = 23;
-			case KEY_DOWN_LEFT : return 1 << 23; // 23 Lower Left   KEY_DOWN_LEFT  = 21;
-		}
-		return 0;
+			case KEY_C          -> 1 << 19; // 19 Softkey 3
+			case KEY_UP_RIGHT   -> 1 << 20; // 20 Upper Right
+			case KEY_UP_LEFT    -> 1 << 21; // 21 Upper Left
+			case KEY_DOWN_RIGHT -> 1 << 22; // 22 Lower Right
+			case KEY_DOWN_LEFT  -> 1 << 23; // 23 Lower Left
+			default             -> 0      ;
+		};
 	}
 
 	public void saveScreenParams() {
 		float scale = virtualScreen.width() / screen.width();
 		settings.screenScaleRatio = Math.round(scale * 100);
 		settings.screenGravity = 1;
-		Canvas.setScale(settings.screenGravity, settings.screenScaleType, settings.screenScaleRatio);
 		ProfilesManager.saveConfig(settings);
 	}
 
@@ -1399,27 +1401,27 @@ public class VirtualKeyboard implements Overlay, Runnable {
 				fgColor = settings.vkFgColor;
 			}
 			int alpha = (opaque || layoutEditMode != LAYOUT_EOF ? 0xFF : settings.vkAlpha) << 24;
-			if (MONIKA_STYLE && settings.vkButtonShape != RECT_SHAPE) {
+			if (MONIKA_STYLE && settings.vkButtonShape != SHAPE_RECT) {
 				paintMonika(g, alpha, bgColor, fgColor);
 				return;
 			}
-			g.setFillColor(alpha | bgColor);
+			g.setFillColor((layoutEditMode != LAYOUT_EOF ? (0xFF / 3) << 24 : alpha) | bgColor);
 			g.setTextColor(alpha | fgColor);
 			g.setDrawColor(alpha | settings.vkOutlineColor);
 
 			switch (settings.vkButtonShape) {
-				case ROUND_RECT_SHAPE:
+				case SHAPE_ROUND_RECT -> {
 					g.fillRoundRect(rect, corners, corners);
 					g.drawRoundRect(rect, corners, corners);
-					break;
-				case RECT_SHAPE:
+				}
+				case SHAPE_RECT -> {
 					g.fillRect(rect);
 					g.drawRect(rect);
-					break;
-				case OVAL_SHAPE:
+				}
+				case SHAPE_OVAL -> {
 					g.fillArc(rect, 0, 360);
 					g.drawArc(rect, 0, 360);
-					break;
+				}
 			}
 			g.drawString(label, rect.centerX(), rect.centerY());
 		}
@@ -1437,7 +1439,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 			float min = Math.min(rect.width(), rect.height());
 			face.set(rect);
 			if (selected) face.inset(min * 0.03f, min * 0.03f);
-			float radius = settings.vkButtonShape == OVAL_SHAPE ? min / 2f : Math.min(corners, min / 2f);
+			float radius = settings.vkButtonShape == SHAPE_OVAL ? min / 2f : Math.min(corners, min / 2f);
 			int a = alpha >>> 24;
 
 			if (!selected) {

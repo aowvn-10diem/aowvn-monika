@@ -2,6 +2,7 @@
  * MicroEmulator
  * Copyright (C) 2006-2007 Bartek Teodorczyk <barteo@barteo.net>
  * Copyright (C) 2006-2007 Vlad Skarzhevskyy
+ * Copyright (C) 2020-2023 Yury Kharchenko
  * <p>
  * It is licensed under the following two licenses as alternatives:
  * 1. GNU Lesser General Public License (the "LGPL") version 2.1 or any newer version
@@ -28,7 +29,16 @@ package org.microemu.cldc.file;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Build;
+import android.os.storage.StorageManager;
+import android.os.storage.StorageVolume;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
+
+import com.siemens.mp.io.file.FileConnection;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -44,29 +54,28 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Vector;
 import java.util.regex.Pattern;
 
 import javax.microedition.io.file.ConnectionClosedException;
-import javax.microedition.io.file.FileConnection;
 import javax.microedition.util.ContextHolder;
-
-import androidx.core.content.FileProvider;
-
-import ru.playsoftware.j2meloader.config.Config;
 
 public class FileSystemFileConnection implements FileConnection {
 	private static final String TAG = FileSystemFileConnection.class.getSimpleName();
 
 	private static final char DIR_SEP = '/';
 	private static final String DIR_SEP_STR = "/";
-	private static final String[] FC_ROOTS = {
+	private static final List<String> FC_ROOTS = Arrays.asList(
 			"c:/",
 			"e:/",
 			"0:/",
 			"1:/",
-			"fs/MyStuff/",
-	};
+			"a:/",
+			"b:/",
+			"fs/MyStuff/"
+	);
+	private static final String[] FS_ROOTS = getFileSystemRoots();
 
 	private final String host;
 	private final String root;
@@ -115,15 +124,13 @@ public class FileSystemFileConnection implements FileConnection {
 	}
 
 	private String getFsRoot() {
-		if (root.equalsIgnoreCase(FC_ROOTS[1])) {
-			return Config.getFsExternalDir();
-		}
-		return Config.getFsInternalDir();
+		int idx = FC_ROOTS.indexOf(root);
+		return FS_ROOTS[idx == -1 ? 0 : idx % FS_ROOTS.length] + DIR_SEP_STR;
 	}
 
 	private static String getRoot(String path) {
 		for (String root : FC_ROOTS) {
-			if (path.toLowerCase().startsWith(root))
+			if (path.startsWith(root))
 				return root;
 		}
 		int separator = path.indexOf(DIR_SEP);
@@ -133,22 +140,20 @@ public class FileSystemFileConnection implements FileConnection {
 	}
 
 	static Enumeration<String> listRoots() {
-		Vector<String> list = new Vector<>();
-		list.add(FC_ROOTS[0]);
-		list.add(FC_ROOTS[1]);
+		Vector<String> list = new Vector<>(FC_ROOTS.subList(0, FS_ROOTS.length));
 		return list.elements();
 	}
 
 	@Override
 	public long availableSize() {
 		throwClosed();
-		return file.getFreeSpace();
+		return new File(getFsRoot()).getUsableSpace();
 	}
 
 	@Override
 	public long totalSize() {
 		throwClosed();
-		return file.getTotalSpace();
+		return new File(getFsRoot()).getTotalSpace();
 	}
 
 	@Override
@@ -544,5 +549,25 @@ public class FileSystemFileConnection implements FileConnection {
 			}
 			throw new ConnectionClosedException("Connection already closed");
 		}
+	}
+
+	@NonNull
+	private static String[] getFileSystemRoots() {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+			Context context = ContextHolder.getAppContext();
+			StorageManager sm = ContextCompat.getSystemService(context, StorageManager.class);
+			if (sm != null) {
+				List<StorageVolume> volumes = sm.getStorageVolumes();
+				int volumesSize = volumes.size();
+				String[] roots = new String[volumesSize];
+				for (int i = 0; i < volumesSize; i++) {
+					StorageVolume volume = volumes.get(i);
+					File dir = volume.getDirectory();
+					roots[i] = dir == null ? "dev/null" : dir.getPath();
+				}
+				return roots;
+			}
+		}
+		return new String[]{System.getProperty("user.home")};
 	}
 }

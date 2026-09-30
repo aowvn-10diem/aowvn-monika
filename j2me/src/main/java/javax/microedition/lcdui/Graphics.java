@@ -1,6 +1,7 @@
 /*
  * Copyright 2012 Kulikov Dmitriy
- * Copyright 2017-2018 Nikita Shakarun
+ * Copyright 2017-2020 Nikita Shakarun
+ * Copyright 2019-2023 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +29,12 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Region;
-import android.os.Build;
 import android.util.Log;
 
-import com.mascotcapsule.micro3d.v3.Graphics3D;
+import com.jblend.graphics.j3d.Effect3D;
+import com.jblend.graphics.j3d.Figure;
+import com.jblend.graphics.j3d.FigureLayout;
+import com.jblend.graphics.j3d.Texture;
 
 public class Graphics implements
 		com.vodafone.v10.graphics.j3d.Graphics3D,
@@ -67,12 +69,10 @@ public class Graphics implements
 	private int stroke = SOLID;
 
 	private Font font = Font.getDefaultFont();
-	private com.mascotcapsule.micro3d.v3.Graphics3D g3d;
 
 	Graphics(Image image) {
 		this.image = image;
 		canvas = new Canvas(image.getBitmap());
-		canvas.save();
 		canvas.clipRect(image.getBounds());
 		canvas.getClipBounds(clip);
 		drawPaint.setStyle(Paint.Style.STROKE);
@@ -85,8 +85,8 @@ public class Graphics implements
 		setColor(0);
 		setFont(Font.getDefaultFont());
 		setStrokeStyle(SOLID);
-		canvas.restoreToCount(1);
-		canvas.save();
+		canvas.setBitmap(null);
+		canvas.setBitmap(image.getBitmap());
 		canvas.clipRect(cl, ct, cr, cb);
 		canvas.getClipBounds(this.clip);
 		translateX = 0;
@@ -191,14 +191,10 @@ public class Graphics implements
 
 	public void setClip(int x, int y, int width, int height) {
 		clip.set(x, y, x + width, y + height);
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-			canvas.restore();
-			canvas.save();
-			canvas.translate(translateX, translateY);
-			canvas.clipRect(clip);
-		} else {
-			canvas.clipRect(clip, Region.Op.REPLACE);
-		}
+		canvas.setBitmap(null);
+		canvas.setBitmap(image.getBitmap());
+		canvas.translate(translateX, translateY);
+		canvas.clipRect(clip);
 		canvas.getClipBounds(clip);
 	}
 
@@ -571,10 +567,7 @@ public class Graphics implements
 										int x, int y,
 										com.vodafone.v10.graphics.j3d.FigureLayout layout,
 										com.vodafone.v10.graphics.j3d.Effect3D effect) {
-		if (g3d == null) g3d = new Graphics3D();
-		g3d.bind(this);
-		g3d.drawFigure(figure, x, y, layout, effect);
-		g3d.release(this);
+		com.vodafone.v10.graphics.j3d.RenderProxy.drawFigure(this, figure, x, y, layout, effect);
 	}
 
 	@Override
@@ -582,20 +575,39 @@ public class Graphics implements
 										int x, int y,
 										com.motorola.graphics.j3d.FigureLayout layout,
 										com.motorola.graphics.j3d.Effect3D effect) {
-		if (g3d == null) g3d = new Graphics3D();
-		g3d.bind(this);
-		g3d.drawFigure(figure, x, y, layout, effect);
-		g3d.release(this);
+		com.motorola.graphics.j3d.RenderProxy.drawFigure(this, figure, x, y, layout, effect);
 	}
 
 	@Override
-	public synchronized void drawFigure(com.jblend.graphics.j3d.Figure figure,
+	public void drawCommandList(Texture[] textures, int x, int y, FigureLayout layout, Effect3D effect, int[] commandlist) {
+		com.jblend.graphics.j3d.RenderProxy.drawCommandList(this, textures, x, y, layout, effect, commandlist);
+	}
+
+	@Override
+	public void drawCommandList(Texture texture, int x, int y, FigureLayout layout, Effect3D effect, int[] commandlist) {
+		com.jblend.graphics.j3d.RenderProxy.drawCommandList(this, texture, x, y, layout, effect, commandlist);
+	}
+
+	@Override
+	public void drawFigure(com.jblend.graphics.j3d.Figure figure,
 										int x, int y,
 										com.jblend.graphics.j3d.FigureLayout layout,
 										com.jblend.graphics.j3d.Effect3D effect) {
-		if (g3d == null) g3d = new Graphics3D();
-		g3d.bind(this);
-		g3d.drawFigure(figure, x, y, layout, effect);
-		g3d.release(this);
+		com.jblend.graphics.j3d.RenderProxy.drawFigure(this, figure, x, y, layout, effect);
+	}
+
+	@Override
+	public void flush() {
+		com.jblend.graphics.j3d.RenderProxy.flush(this);
+	}
+
+	@Override
+	public void renderFigure(Figure figure, int x, int y, FigureLayout layout, Effect3D effect) {
+		com.jblend.graphics.j3d.RenderProxy.renderFigure(this, figure, x, y, layout, effect);
+	}
+
+	@Override
+	public void renderPrimitives(Texture texture, int x, int y, FigureLayout layout, Effect3D effect, int command, int numPrimitives, int[] vertexCoords, int[] normals, int[] textureCoords, int[] colors) {
+		com.jblend.graphics.j3d.RenderProxy.renderPrimitives(this, texture, x, y, layout, effect, command, numPrimitives, vertexCoords, normals, textureCoords, colors);
 	}
 }

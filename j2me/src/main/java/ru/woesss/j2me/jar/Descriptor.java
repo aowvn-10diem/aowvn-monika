@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020 Yury Kharchenko
+ *  Copyright 2020-2024 Yury Kharchenko
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,27 +18,21 @@ package ru.woesss.j2me.jar;
 
 import android.content.Context;
 import android.text.SpannableStringBuilder;
-import android.util.Log;
 
-import java.io.EOFException;
+import androidx.annotation.Nullable;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-import androidx.annotation.Nullable;
 import ru.playsoftware.j2meloader.R;
+import ru.playsoftware.j2meloader.util.FileUtils;
 
 public class Descriptor {
-	private static final String TAG = Descriptor.class.getName();
-
-	private static final char UNICODE_BOM = '\uFEFF';
-	private static final String MANIFEST_VERSION = "Manifest-Version";
 	// required in JAD and Manifest
 	public static final String MIDLET_NAME = "MIDlet-Name";
 	public static final String MIDLET_VERSION = "MIDlet-Version";
@@ -46,36 +40,41 @@ public class Descriptor {
 
 	// required in JAD
 	public static final String MIDLET_JAR_URL = "MIDlet-Jar-URL";
-	private static final String MIDLET_JAR_SIZE = "MIDlet-Jar-Size";
+	public static final String MIDLET_JAR_SIZE = "MIDlet-Jar-Size";
 
 	// required in JAD and/or Manifest
-	private static final String MIDLET_N = "MIDlet-";
-	private static final String MICROEDITION_PROFILE = "MicroEdition-Profile";
-	private static final String MICROEDITION_CONFIGURATION = "MicroEdition-Configuration";
+	public static final String MIDLET_N = "MIDlet-";
+	public static final String MICROEDITION_PROFILE = "MicroEdition-Profile";
+	public static final String MICROEDITION_CONFIGURATION = "MicroEdition-Configuration";
 
 	// optional
 	public static final String MIDLET_CERTIFICATE_N_S = "MIDlet-Certificate-";
 	public static final String MIDLET_DATA_SIZE = "MIDlet-Data-Size";
 	public static final String MIDLET_DELETE_CONFIRM = "MIDlet-Delete-Confirm ";
 	public static final String MIDLET_DELETE_NOTIFY = "MIDlet-Delete-Notify";
-	private static final String MIDLET_DESCRIPTION = "MIDlet-Description";
-	private static final String MIDLET_ICON = "MIDlet-Icon";
+	public static final String MIDLET_DESCRIPTION = "MIDlet-Description";
+	public static final String MIDLET_ICON = "MIDlet-Icon";
 	public static final String MIDLET_INFO_URL = "MIDlet-Info-URL";
 	public static final String MIDLET_INSTALL_NOTIFY = "MIDlet-Install-Notify";
 	public static final String MIDLET_JAR_RSA_SHA1 = "MIDlet-Jar-RSA-SHA1";
 	public static final String MIDLET_PERMISSIONS = "MIDlet-Permissions";
 	public static final String MIDLET_PERMISSIONS_OPT = "MIDlet-Permissions-Opt";
 	public static final String MIDLET_PUSH_N = "MIDlet-Push-";
-	public static final String NOKIA_MIDLET_UID_N = "Nokia-MIDlet-UID-";
-	public static final String NOKIA_UI_ENHANCEMENT = "Nokia-UI-Enhancement";
 
+	private static final char UNICODE_BOM = '\uFEFF';
+	private static final char SEPARATOR = ':';
 	private static final String FAIL_ATTRIBUTE = "Fail attribute '%s: %s'";
+
 	private final boolean isJad;
 	private final Map<String, String> attributes = new HashMap<>();
 
 	public Descriptor(String source, boolean isJad) throws IOException {
 		this.isJad = isJad;
-		init(source);
+		try {
+			parse(source);
+		} catch (Exception e) {
+			throw new DescriptorException("Bad descriptor: \n" + source, e);
+		}
 		if (isJad) {
 			verifyJadAttrs();
 		}
@@ -84,30 +83,13 @@ public class Descriptor {
 	}
 
 	public Descriptor(File file, boolean isJad) throws IOException {
-		this.isJad = isJad;
-		byte[] buf;
-		try (InputStream inputStream = new FileInputStream(file)) {
-			int count = inputStream.available();
-			buf = new byte[count];
-			int n = 0;
-			while (n < buf.length) {
-				int read = inputStream.read(buf, n, buf.length - n);
-				if (read < 0) {
-					throw new EOFException();
-				}
-				n += read;
-			}
-		}
-		init(new String(buf));
-		if (isJad) {
-			verifyJadAttrs();
-		}
-		verify();
-
+		this(FileUtils.getText(file.getPath()), isJad);
 	}
 
 	public int compareVersion(String version) {
-		if (version == null) return 1;
+		if (version == null) {
+			return 1;
+		}
 		String[] mv = getVersion().split("\\.");
 		String[] ov = version.split("\\.");
 		int len = Math.max(mv.length, ov.length);
@@ -134,33 +116,37 @@ public class Descriptor {
 
 	private void verifyJadAttrs() throws DescriptorException {
 		String jarSize = getJarSize();
-		if (jarSize == null)
+		if (jarSize == null) {
 			throw new DescriptorException(String.format(FAIL_ATTRIBUTE, MIDLET_JAR_SIZE, "not found"));
-		String trim = jarSize.trim();
-		if (trim.isEmpty())
+		}
+		if (jarSize.isEmpty()) {
 			throw new DescriptorException(String.format(FAIL_ATTRIBUTE, MIDLET_JAR_SIZE, "empty value"));
+		}
 		try {
-			Integer.parseInt(trim);
+			Integer.parseInt(jarSize);
 		} catch (NumberFormatException e) {
 			throw new DescriptorException(String.format(FAIL_ATTRIBUTE, MIDLET_JAR_SIZE, jarSize), e);
 		}
-		attributes.put(MIDLET_JAR_SIZE, trim);
+		attributes.put(MIDLET_JAR_SIZE, jarSize);
 		String url = attributes.get(MIDLET_JAR_URL);
 		if (url == null) {
 			throw new DescriptorException(String.format(FAIL_ATTRIBUTE, MIDLET_JAR_URL, "not found"));
-		} else if (url.trim().isEmpty()) {
+		} else if (url.isEmpty()) {
 			throw new DescriptorException(String.format(FAIL_ATTRIBUTE, MIDLET_JAR_URL, "empty value"));
 		}
-		attributes.put(MIDLET_JAR_URL, url.trim());
+		attributes.put(MIDLET_JAR_URL, url);
 	}
 
 	private void verify() throws DescriptorException {
-		if (getName() == null)
+		if (getName() == null) {
 			throw new DescriptorException(String.format(FAIL_ATTRIBUTE, MIDLET_NAME, "not found"));
-		if (getVendor() == null)
+		}
+		if (getVendor() == null) {
 			throw new DescriptorException(String.format(FAIL_ATTRIBUTE, MIDLET_VENDOR, "not found"));
-		if (getVersion() == null)
+		}
+		if (getVersion() == null) {
 			throw new DescriptorException(String.format(FAIL_ATTRIBUTE, MIDLET_VERSION, "not found"));
+		}
 	}
 
 	public String getVersion() {
@@ -171,45 +157,51 @@ public class Descriptor {
 		return attributes;
 	}
 
-	private void init(String source) throws DescriptorException {
-		try {
-			parse(source);
-		} catch (Exception e) {
-			Log.e(TAG, source);
-			throw new DescriptorException("Bad descriptor", e);
+	private void parse(String source) {
+		String[] lines = source.split("[\\n\\r]+");
+		for (int i = lines.length - 1; i > 0; i--) {
+			String line = lines[i];
+			int separatorIdx = line.indexOf(SEPARATOR);
+			if (separatorIdx == -1) {
+				if (line.isEmpty()) {
+					continue;
+				}
+				if (line.charAt(0) == ' ') {
+					lines[i - 1] += line.substring(1);
+				} else {
+					lines[i - 1] += line;
+				}
+			} else {
+				String name = substringStripped(line, 0, separatorIdx);
+				String value = substringStripped(line, separatorIdx + 1, line.length());
+				attributes.put(name, value);
+			}
+		}
+		String line = lines[0];
+		int colon = line.indexOf(SEPARATOR);
+		if (colon != -1) {
+			String name = substringStripped(line, line.charAt(0) == UNICODE_BOM ? 1 : 0, colon);
+			String value = substringStripped(line, colon + 1, line.length());
+			attributes.put(name, value);
 		}
 	}
 
-	private void parse(String source) {
-		String[] lines = source.split("[\\n\\r]+");
-		int length = lines.length;
-		if (length == 0) {
-			throw new IllegalArgumentException("Descriptor source is empty");
-		}
-		String line0 = lines[0];
-		if (line0.charAt(0) == UNICODE_BOM)
-			lines[0] = line0.substring(1);
-		Map<String, String> attrs = attributes;
-		final StringBuilder sb = new StringBuilder("1.0");
-		String key = MANIFEST_VERSION;
-		for (String line : lines) {
-			if (line.trim().isEmpty()) {
-				continue;
+	private static String substringStripped(String string, int beginIndex, int endIndex) {
+		while (beginIndex < endIndex) {
+			int c = string.codePointAt(beginIndex);
+			if (c != ' ' && c != '\t') {
+				break;
 			}
-			int colon = line.indexOf(':');
-			if (colon == -1) {
-				if (line.charAt(0) == ' ') sb.append(line, 1, line.length());
-				else sb.append(line);
-			} else {
-				attrs.put(key, sb.toString().trim());
-				sb.setLength(0);
-				key = line.substring(0, colon++).trim();
-				if (line.charAt(colon) == ' ')
-					colon++;
-				sb.append(line, colon, line.length());
-			}
+			beginIndex += Character.charCount(c);
 		}
-		attrs.put(key, sb.toString().trim());
+		while (beginIndex < endIndex) {
+			int c = string.codePointBefore(endIndex);
+			if (c != ' ' && c != '\t') {
+				break;
+			}
+			endIndex -= Character.charCount(c);
+		}
+		return string.substring(beginIndex, endIndex);
 	}
 
 	public String getName() {
@@ -217,75 +209,66 @@ public class Descriptor {
 	}
 
 	private static String getSizePretty(String number) {
-		long size = Long.parseLong(number.trim());
-		DecimalFormat decimalformat = new DecimalFormat("########.00");
-		String formatted;
-		if (size >= 1024L) {
-			float kb = (float) size / 1024F;
-			if (kb >= 1024F) {
-				float mb = kb / 1024F;
-				if (mb >= 1024F) {
-					float gb = mb / 1024F;
-					formatted = decimalformat.format(gb) + " GB";
-				} else {
-					formatted = decimalformat.format(mb) + " MB";
-				}
-			} else {
-				formatted = decimalformat.format(kb) + " KB";
-			}
-		} else {
-			formatted = size + " B";
+		long size = Long.parseLong(number);
+		if (size < 1024L) {
+			return number + " B";
 		}
-		return formatted;
+		NumberFormat formatter = NumberFormat.getNumberInstance();
+		formatter.setMinimumFractionDigits(2);
+		formatter.setMaximumFractionDigits(2);
+		float kb = (float) size / 1024.0F;
+		if (kb < 1024.0F) {
+			return formatter.format(kb) + " KB";
+		}
+		float mb = kb / 1024F;
+		if (mb < 1024F) {
+			return formatter.format(mb) + " MB";
+		}
+		float gb = mb / 1024F;
+		return formatter.format(gb) + " GB";
 	}
 
 	public String getVendor() {
 		return attributes.get(MIDLET_VENDOR);
 	}
 
-	public String getIcon() throws DescriptorException {
+	public String getIcon() {
 		String icon = attributes.get(MIDLET_ICON);
-		if (icon == null || icon.trim().isEmpty()) {
-			String midlet = MIDLET_N + 1;
-			icon = attributes.get(midlet);
-			if (icon == null) {
-				throw new DescriptorException(String.format(FAIL_ATTRIBUTE, midlet, "not found"));
+		if (icon == null || icon.isEmpty()) {
+			String midlet = attributes.get(MIDLET_N + 1);
+			if (midlet == null) {
+				return null;
 			}
-			int start = icon.indexOf(',');
-			if (start != -1) {
-				int end = icon.indexOf(',', ++start);
-				if (end != -1)
-					icon = icon.substring(start, end);
+			int start = midlet.indexOf(',');
+			if (start == -1) {
+				return null;
+			}
+			int end = midlet.indexOf(',', ++start);
+			if (end == -1) {
+				return null;
+			}
+			icon = midlet.substring(start, end).trim();
+		}
+		for (int i = 0; i < icon.length(); i++) {
+			if (icon.charAt(i) != '/') {
+				return icon.substring(i);
 			}
 		}
-		icon = icon.trim();
-		if (icon.isEmpty()) return null;
-		while (icon.charAt(0) == '/') {
-			icon = icon.substring(1);
-		}
-		return icon;
+		return null;
 	}
 
 	public String getJarUrl() {
 		return attributes.get(MIDLET_JAR_URL);
 	}
 
-	public String getNokiaUID() {
-		return attributes.get(NOKIA_MIDLET_UID_N + "1");
-	}
-
-	public String getNokiaUiEnhancements() {
-		return attributes.get(NOKIA_UI_ENHANCEMENT);
-	}
-
 	@Override
 	public boolean equals(@Nullable Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (!(obj instanceof Descriptor))
-			return false;
-		Descriptor o = (Descriptor) obj;
-		return getName().equals(o.getName()) && getVendor().equals(o.getVendor());
+		} else if (obj instanceof Descriptor o) {
+			return getName().equals(o.getName()) && getVendor().equals(o.getVendor());
+		}
+		return false;
 	}
 
 	public SpannableStringBuilder getInfo(Context c) {
@@ -325,5 +308,14 @@ public class Descriptor {
 			sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
 		}
 		outputStream.write(sb.toString().getBytes());
+	}
+
+	public boolean containsAllAttributes(Descriptor o) {
+		for (Map.Entry<String, String> e : o.attributes.entrySet()) {
+			if (!e.getValue().equals(attributes.get(e.getKey()))) {
+				return false;
+			}
+		}
+		return true;
 	}
 }

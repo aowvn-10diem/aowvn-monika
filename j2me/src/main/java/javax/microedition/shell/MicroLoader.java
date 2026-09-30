@@ -1,6 +1,6 @@
 /*
  * Copyright 2018-2021 Nikita Shakarun
- * Copyright 2019-2023 Yury Kharchenko
+ * Copyright 2019-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ package javax.microedition.shell;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Environment;
 import android.os.StrictMode;
@@ -33,6 +32,7 @@ import androidx.core.content.ContextCompat;
 import org.acra.ACRA;
 import org.acra.ErrorReporter;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -56,6 +56,7 @@ import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.event.EventQueue;
 import javax.microedition.lcdui.keyboard.KeyMapper;
 import javax.microedition.lcdui.keyboard.VirtualKeyboard;
+import javax.microedition.lcdui.skin.SkinLayer;
 import javax.microedition.m3g.Graphics3D;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.util.ContextHolder;
@@ -70,6 +71,7 @@ import ru.playsoftware.j2meloader.config.Config;
 import ru.playsoftware.j2meloader.config.ProfileModel;
 import ru.playsoftware.j2meloader.config.ProfilesManager;
 import ru.playsoftware.j2meloader.config.ShaderInfo;
+import ru.playsoftware.j2meloader.util.AppUtils;
 import ru.playsoftware.j2meloader.util.Constants;
 import ru.playsoftware.j2meloader.util.FileUtils;
 import ru.playsoftware.j2meloader.util.IOUtils;
@@ -77,15 +79,15 @@ import ru.woesss.j2me.jar.Descriptor;
 
 public class MicroLoader {
 	private static final String TAG = MicroLoader.class.getName();
+	private static String soundBank;
+	private final Map<String, String> midlets = new LinkedHashMap<>();
 
+	ProfileModel params;
 	private final File appDir;
-	private final Context context;
 	private final String workDir;
 	private final String appDirName;
-	private ProfileModel params;
 
-	MicroLoader(Context context, String appPath) {
-		this.context = context;
+	MicroLoader(String appPath) {
 		this.appDir = new File(appPath);
 		File converted = appDir.getParentFile();
 		if (converted == null)
@@ -107,14 +109,6 @@ public class MicroLoader {
 		if (cacheDir != null && cacheDir.exists()) {
 			FileUtils.clearDirectory(cacheDir);
 		}
-		File internalDriveDir = new File(Config.getFsInternalDir());
-		if (!internalDriveDir.exists()) {
-			internalDriveDir.mkdirs();
-		}
-		File externalDriveDir = new File(Config.getFsExternalDir());
-		if (!externalDriveDir.exists()) {
-			externalDriveDir.mkdirs();
-		}
 		StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
 				.permitNetwork()
 				.penaltyLog()
@@ -123,16 +117,22 @@ public class MicroLoader {
 		return true;
 	}
 
-	LinkedHashMap<String, String> loadMIDletList() throws IOException {
-		LinkedHashMap<String, String> midlets = new LinkedHashMap<>();
+	Map<String, String> loadMIDletList() throws IOException {
+		if (!midlets.isEmpty()) {
+			return midlets;
+		}
 		String jarHash = null;
+		String jarSize = null;
 		Descriptor descriptor;
 		if (BuildConfig.FULL_EMULATOR) {
 			descriptor = new Descriptor(new File(appDir, Config.MIDLET_MANIFEST_FILE), false);
 			try {
-				byte[] bytes = FileUtils.getBytes(new File(appDir, Config.MIDLET_RES_FILE));
+				File jar = new File(appDir, Config.MIDLET_RES_FILE);
+				jarSize = Long.toString(jar.length());
+				byte[] bytes = FileUtils.getBytes(jar);
 				byte[] sum = MessageDigest.getInstance("md5").digest(bytes);
-				jarHash = String.format("%032x", new BigInteger(1, sum));
+				BigInteger bi = new BigInteger(1, sum);
+				jarHash = bi.toString(16);
 			} catch (Throwable ignored) {
 			}
 		} else {
@@ -156,12 +156,13 @@ public class MicroLoader {
 		sb.append(Descriptor.MIDLET_VENDOR).append(": ").append(descriptor.getVendor()).append("\n");
 		sb.append(Descriptor.MIDLET_VERSION).append(": ").append(descriptor.getVersion()).append("\n");
 		if (jarHash != null) {
+			sb.append(Descriptor.MIDLET_JAR_SIZE).append(": ").append(jarSize).append("\n");
 			sb.append("JAR_HASH_MD5").append(": ").append(jarHash);
 		}
 		errorReporter.putCustomData(Constants.KEY_APPCENTER_ATTACHMENT, sb.toString());
 		MIDlet.initProps(attr);
 		for (int i = 1; ; i++) {
-			String v = attr.get("MIDlet-" + i);
+			String v = attr.get(Descriptor.MIDLET_N + i);
 			if (v == null) {
 				break;
 			}
@@ -175,8 +176,11 @@ public class MicroLoader {
 	MIDlet loadMIDlet(String mainClass) throws ClassNotFoundException, InstantiationException,
 			IllegalAccessException, NoSuchMethodException, InvocationTargetException, IOException {
 		if (BuildConfig.FULL_EMULATOR) {
-			File dexSource = new File(appDir, Config.MIDLET_DEX_FILE);
-			File codeCacheDir = ContextCompat.getCodeCacheDir(context);
+			File dexSource = new File(appDir, Config.MIDLET_DEX_ARCH);
+			if (!dexSource.exists()) {
+				dexSource = new File(appDir, Config.MIDLET_DEX_FILE);
+			}
+			File codeCacheDir = ContextCompat.getCodeCacheDir(ContextHolder.getActivity());
 			File dexOptDir = new File(codeCacheDir, Config.DEX_OPT_CACHE_DIR);
 			if (dexOptDir.exists()) {
 				FileUtils.clearDirectory(dexOptDir);
@@ -192,7 +196,7 @@ public class MicroLoader {
 				dexSource = dexCache;
 			}
 			ClassLoader loader = new AppClassLoader(dexSource.getAbsolutePath(),
-					dexOptDir.getAbsolutePath(), context.getClassLoader(), appDir);
+					dexOptDir.getAbsolutePath(), ContextHolder.getActivity().getClassLoader(), appDir);
 			Log.i(TAG, "loadMIDletList main: " + mainClass + " from dex:" + dexSource.getPath());
 			//noinspection unchecked
 			Class<MIDlet> clazz = (Class<MIDlet>) loader.loadClass(mainClass);
@@ -222,16 +226,11 @@ public class MicroLoader {
 		System.setProperty("fileconn.dir.cache", dataUri + "/cache");
 		System.setProperty("fileconn.dir.private", dataUri + "/private");
 		System.setProperty("fileconn.dir.music", musicUri);
-		System.setProperty("user.home", Config.getFsInternalDir());
+		System.setProperty("user.home", primaryStoragePath);
 	}
 
 	public int getOrientation() {
 		return params.orientation;
-	}
-
-	void setLimitFps(int fps) {
-		if (fps == -1) Canvas.setLimitFps(params.fpsLimit);
-		else Canvas.setLimitFps(fps);
 	}
 
 	void applyConfiguration() {
@@ -246,7 +245,7 @@ public class MicroLoader {
 
 			final String[] propLines = params.systemProperties.split("\n");
 			for (String line : propLines) {
-				String[] prop = line.split(":[ ]*", 2);
+				String[] prop = line.split(": *", 2);
 				if (prop.length == 2) {
 					System.setProperty(prop[0], prop[1]);
 					MidletSystem.setProperty(prop[0], prop[1]);
@@ -259,34 +258,34 @@ public class MicroLoader {
 				MidletSystem.setProperty("microedition.encoding", "ISO-8859-1");
 			}
 
-			int screenWidth = params.screenWidth;
-			int screenHeight = params.screenHeight;
-			Displayable.setVirtualSize(screenWidth, screenHeight);
-			Canvas.setBackgroundColor(params.screenBackgroundColor);
-			Canvas.setScale(params.screenGravity, params.screenScaleType, params.screenScaleRatio);
-			Canvas.setFilterBitmap(params.screenFilter);
+			Displayable.setVirtualSize(params.screenWidth, params.screenHeight);
 			EventQueue.setImmediate(params.immediateMode);
-			Canvas.setGraphicsMode(params.graphicsMode, params.parallelRedrawScreen);
 			ShaderInfo shader = params.shader;
 			if (shader != null) {
 				shader.dir = workDir + Config.SHADERS_DIR;
 			}
-			Canvas.setShaderFilter(shader);
-			Canvas.setForceFullscreen(params.forceFullscreen);
-			Canvas.setShowFps(params.showFps);
-			Canvas.setLimitFps(params.fpsLimit);
+			Canvas.setSettings(params);
 
 			Font.applySettings(params);
 
 			KeyMapper.setKeyMapping(params);
-			Canvas.setHasTouchInput(params.touchInput);
+			File sb = new File(workDir + Config.SOUNDBANKS_DIR + params.soundBank);
+			if (sb.exists()) {
+				soundBank = sb.getPath();
+			}
+			if (params.screenBackgroundImage != null) {
+				SkinLayer.init(params);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	void takeScreenshot(Canvas canvas, SingleObserver<String> observer) {
-		canvas.getScreenShot()
+	void takeScreenshot(Object target, SingleObserver<String> observer) {
+		if (!(target instanceof Canvas canvas)) {
+			return;
+		}
+		canvas.getScreenshot()
 				.subscribeOn(Schedulers.computation())
 				.observeOn(Schedulers.io())
 				.map(bitmap -> {
@@ -300,8 +299,9 @@ public class MicroLoader {
 					if (!screenshotDir.exists() && !screenshotDir.mkdirs()) {
 						throw new IOException("Can't create directory: " + screenshotDir);
 					}
-					FileOutputStream out = new FileOutputStream(screenshotFile);
-					bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+					try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(screenshotFile))) {
+						bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+					}
 					return screenshotFile.getAbsolutePath();
 				})
 				.observeOn(AndroidSchedulers.mainThread())
@@ -318,5 +318,18 @@ public class MicroLoader {
 			return KeyEvent.KEYCODE_BACK;
 		}
 		return mappings.keyAt(i);
+	}
+
+	public static String getSoundBank() {
+		return soundBank;
+	}
+
+	void loadMidlet(String clazz, String appName) {
+		MidletThread midletThread = new MidletThread(this, clazz);
+		midletThread.start();
+		if (!BuildConfig.FULL_EMULATOR) {
+			return;
+		}
+		AppUtils.pushToRecentShortcuts(ContextHolder.getActivity(), appDir.getPath(), appName);
 	}
 }

@@ -1,8 +1,7 @@
 /*
  * Copyright 2015-2016 Nickolay Savchenko
- * Copyright 2017-2018 Nikita Shakarun
- * Copyright 2019-2022 Yury Kharchenko
- * Copyright 2022-2024 Arman Jussupgaliyev
+ * Copyright 2017-2021 Nikita Shakarun
+ * Copyright 2019-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +18,16 @@
 
 package javax.microedition.shell;
 
+import static android.content.pm.ActivityInfo.*;
 import static ru.playsoftware.j2meloader.util.Constants.*;
 
 import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.content.res.TypedArray;
+import android.media.AudioManager;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -41,22 +41,26 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.Surface;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.AppCompatCheckBox;
+import androidx.lifecycle.Lifecycle;
 import androidx.preference.PreferenceManager;
+
+import com.google.android.material.textfield.TextInputLayout;
 
 import org.acra.ACRA;
 import org.acra.ErrorReporter;
@@ -64,18 +68,16 @@ import org.acra.ErrorReporter;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 
-import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
-import javax.microedition.lcdui.List;
 import javax.microedition.lcdui.ViewHandler;
 import javax.microedition.lcdui.event.SimpleEvent;
 import javax.microedition.lcdui.keyboard.VirtualKeyboard;
-import javax.microedition.location.LocationProviderImpl;
+import javax.microedition.lcdui.skin.SkinLayer;
 import javax.microedition.util.ContextHolder;
 
 import io.reactivex.SingleObserver;
@@ -85,6 +87,7 @@ import ru.playsoftware.j2meloader.R;
 import ru.playsoftware.j2meloader.J2meRuntime;
 import ru.playsoftware.j2meloader.config.Config;
 import ru.playsoftware.j2meloader.databinding.ActivityMicroBinding;
+import ru.playsoftware.j2meloader.databinding.DialogInputBinding;
 import ru.playsoftware.j2meloader.util.Constants;
 import ru.playsoftware.j2meloader.util.LogUtils;
 
@@ -95,7 +98,6 @@ public class MicroActivity extends AppCompatActivity {
 	private static final int ORIENTATION_LANDSCAPE = 3;
 
 	private Displayable current;
-	private boolean visible;
 	private boolean actionBarEnabled;
 	private boolean statusBarEnabled;
 	private MicroLoader microLoader;
@@ -103,27 +105,20 @@ public class MicroActivity extends AppCompatActivity {
 	private InputMethodManager inputMethodManager;
 	private int menuKey;
 	private String appPath;
-
-	public ActivityMicroBinding binding;
+	private ActivityMicroBinding binding;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		lockNightMode();
 		super.onCreate(savedInstanceState);
 		ContextHolder.setCurrentActivity(this);
-
 		binding = ActivityMicroBinding.inflate(getLayoutInflater());
-		View view = binding.getRoot();
-		setContentView(view);
+		setContentView(binding.getRoot());
 		setSupportActionBar(binding.toolbar);
-
+		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		actionBarEnabled = sp.getBoolean(PREF_TOOLBAR, false);
 		statusBarEnabled = sp.getBoolean(PREF_STATUSBAR, false);
-		if (sp.getBoolean(PREF_ADD_CUTOUT_AREA, false) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-			getWindow().getAttributes().layoutInDisplayCutoutMode =
-					WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-		}
 		if (sp.getBoolean(PREF_KEEP_SCREEN, false)) {
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		}
@@ -146,37 +141,33 @@ public class MicroActivity extends AppCompatActivity {
 				throw new RuntimeException("Can't access file system");
 			}
 		}
-		String arguments = intent.getStringExtra(KEY_START_ARGUMENTS);
-		if (arguments != null) {
-			MidletSystem.setProperty("com.nokia.mid.cmdline", arguments);
-			String[] arr = arguments.split(";");
-			for (String s: arr) {
-				if (s.length() == 0) {
-					continue;
-				}
-				if (s.contains("=")) {
-					int i = s.indexOf('=');
-					String k = s.substring(0, i);
-					String v = s.substring(i + 1);
-					MidletSystem.setProperty(k, v);
-				} else {
-					MidletSystem.setProperty(s, "");
-				}
-			}
-		}
-		MidletSystem.setProperty("com.nokia.mid.cmdline.instance", "1");
-		microLoader = new MicroLoader(this, appPath);
+		microLoader = new MicroLoader(appPath);
 		if (!microLoader.init()) {
-			Config.startApp(this, appName, appPath, true, arguments);
+			Config.openSettings(this, appName, appPath);
 			finish();
 			return;
 		}
 		microLoader.applyConfiguration();
+		SkinLayer skinLayer = SkinLayer.getInstance();
+		if (skinLayer != null) {
+			binding.overlay.addLayer(skinLayer);
+			if (!statusBarEnabled && !actionBarEnabled) {
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+					WindowManager.LayoutParams attributes = getWindow().getAttributes();
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+						attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+					} else {
+						attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+					}
+					getWindow().setAttributes(attributes);
+				}
+			}
+		}
 		VirtualKeyboard vk = ContextHolder.getVk();
 		int orientation = microLoader.getOrientation();
 		if (vk != null) {
-			vk.setView(binding.overlayView);
-			binding.overlayView.addLayer(vk);
+			vk.setView(binding.overlay);
+			binding.overlay.addLayer(vk);
 			// Aow Monika: bàn phím Monika xoay ngang được (phím tách 2 bên), kiểu điện thoại khác vẫn khóa dọc.
 			if (vk.isPhone() && !vk.isMonika()) {
 				orientation = ORIENTATION_PORTRAIT;
@@ -186,12 +177,13 @@ public class MicroActivity extends AppCompatActivity {
 		menuKey = microLoader.getMenuKeyCode();
 		inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
 
-		try {
-			loadMIDlet();
-		} catch (Exception e) {
-			e.printStackTrace();
-			showErrorDialog(e.toString());
-		}
+		getOnBackPressedDispatcher().addCallback(new OnBackPressedCallback(true) {
+			@Override
+			public void handleOnBackPressed() {
+				// Intentionally overridden by empty due to support for back-key remapping.
+			}
+		});
+		loadMIDlet();
 	}
 
 	public void lockNightMode() {
@@ -204,17 +196,8 @@ public class MicroActivity extends AppCompatActivity {
 	}
 
 	@Override
-	public void onResume() {
-		super.onResume();
-		visible = true;
-		MidletThread.resumeApp();
-	}
-
-	@Override
 	public void onPause() {
-		visible = false;
 		hideSoftInput();
-		MidletThread.pauseApp();
 		super.onPause();
 	}
 
@@ -236,32 +219,30 @@ public class MicroActivity extends AppCompatActivity {
 
 	@SuppressLint("SourceLockedOrientationActivity")
 	private void setOrientation(int orientation) {
-		switch (orientation) {
-			case ORIENTATION_AUTO:
-				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
-				break;
-			case ORIENTATION_PORTRAIT:
-				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
-				break;
-			case ORIENTATION_LANDSCAPE:
-				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-				break;
-			case ORIENTATION_DEFAULT:
-			default:
-				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
-				break;
-		}
+		setRequestedOrientation(switch (orientation) {
+			case ORIENTATION_DEFAULT -> SCREEN_ORIENTATION_UNSPECIFIED;
+			case ORIENTATION_AUTO -> SCREEN_ORIENTATION_FULL_SENSOR;
+			case ORIENTATION_PORTRAIT -> SCREEN_ORIENTATION_SENSOR_PORTRAIT;
+			case ORIENTATION_LANDSCAPE -> SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
+			default -> SCREEN_ORIENTATION_UNSPECIFIED;
+		});
 	}
 
-	private void loadMIDlet() throws Exception {
-		LinkedHashMap<String, String> midlets = microLoader.loadMIDletList();
+	private void loadMIDlet() {
+		Map<String, String> midlets;
+		try {
+			midlets = microLoader.loadMIDletList();
+		} catch (IOException e) {
+			showErrorDialog(e.toString());
+			return;
+		}
 		int size = midlets.size();
 		String[] midletsNameArray = midlets.values().toArray(new String[0]);
 		String[] midletsClassArray = midlets.keySet().toArray(new String[0]);
 		if (size == 0) {
-			throw new Exception("No MIDlets found");
+			showErrorDialog("No MIDlets found");
 		} else if (size == 1) {
-			MidletThread.create(microLoader, midletsClassArray[0]);
+			microLoader.loadMidlet(midletsClassArray[0], appName);
 		} else {
 			showMidletDialog(midletsNameArray, midletsClassArray);
 		}
@@ -280,8 +261,7 @@ public class MicroActivity extends AppCompatActivity {
 					}
 					sb.append("Begin app: ").append(names[n]).append(", ").append(clazz);
 					errorReporter.putCustomData(Constants.KEY_APPCENTER_ATTACHMENT, sb.toString());
-					MidletThread.create(microLoader, clazz);
-					MidletThread.resumeApp();
+					microLoader.loadMidlet(clazz, appName);
 				})
 				.setOnCancelListener(d -> {
 					d.dismiss();
@@ -300,12 +280,12 @@ public class MicroActivity extends AppCompatActivity {
 		builder.show();
 	}
 
-	private int getToolBarHeight() {
-		int[] attrs = new int[]{androidx.appcompat.R.attr.actionBarSize};
-		TypedArray ta = obtainStyledAttributes(attrs);
-		int toolBarHeight = ta.getDimensionPixelSize(0, -1);
-		ta.recycle();
-		return toolBarHeight;
+	private float getToolBarHeight() {
+		TypedValue typedValue = new TypedValue();
+		if (getTheme().resolveAttribute(androidx.appcompat.R.attr.actionBarSize, typedValue, true)) {
+			return typedValue.getDimension(getResources().getDisplayMetrics());
+		}
+		return 0;
 	}
 
 	private void hideSystemUI() {
@@ -340,7 +320,7 @@ public class MicroActivity extends AppCompatActivity {
 	}
 
 	public boolean isVisible() {
-		return visible;
+		return getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED);
 	}
 
 	private static final int MONIKA_EXIT = -1;
@@ -374,7 +354,7 @@ public class MicroActivity extends AppCompatActivity {
 				// Game Java tự lưu theo cách của game → chỉ chụp màn hình rồi mở nhóm.
 				if (current instanceof Canvas) {
 					//noinspection ResultOfMethodCallIgnored
-					((Canvas) current).getScreenShot()
+					((Canvas) current).getScreenshot()
 							.subscribeOn(io.reactivex.schedulers.Schedulers.computation())
 							.observeOn(io.reactivex.android.schedulers.AndroidSchedulers.mainThread())
 							.subscribe(bmp -> presenter.askCommunity(this, bmp, appName),
@@ -386,7 +366,7 @@ public class MicroActivity extends AppCompatActivity {
 			}
 			if (id == MONIKA_SETTINGS) {
 				hideSoftInput();
-				Config.startApp(this, appName, appPath, true);
+				Config.openSettings(this, appName, appPath);
 				MidletThread.destroyApp();
 				return;
 			}
@@ -431,7 +411,7 @@ public class MicroActivity extends AppCompatActivity {
 				if (id == MONIKA_EXIT) exitToMonika();
 				else if (id == MONIKA_SETTINGS) {
 					hideSoftInput();
-					Config.startApp(this, appName, appPath, true);
+					Config.openSettings(this, appName, appPath);
 					MidletThread.destroyApp();
 				}
 			});
@@ -447,7 +427,7 @@ public class MicroActivity extends AppCompatActivity {
 				})
 				.setNeutralButton(R.string.monika_game_settings, (d, w) -> {
 					hideSoftInput();
-					Config.startApp(this, appName, appPath, true);
+					Config.openSettings(this, appName, appPath);
 					MidletThread.destroyApp();
 				})
 				.setNegativeButton(R.string.monika_keep_playing, null);
@@ -514,17 +494,9 @@ public class MicroActivity extends AppCompatActivity {
 	}
 
 	@Override
-	public void onBackPressed() {
-		// Intentionally overridden by empty due to support for back-key remapping.
-	}
-
-	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.midlet_displayable, menu);
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-			menu.findItem(R.id.action_lock_orientation).setVisible(true);
-		}
 		if (actionBarEnabled) {
 			menu.findItem(R.id.action_ime_keyboard).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
 			menu.findItem(R.id.action_take_screenshot).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
@@ -567,8 +539,8 @@ public class MicroActivity extends AppCompatActivity {
 				setOrientation(orientation);
 				item.setChecked(false);
 			} else {
+				lockOrientation();
 				item.setChecked(true);
-				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
 			}
 		} else if (id == R.id.action_ime_keyboard) {
 			inputMethodManager.toggleSoftInputFromWindow(binding.displayableContainer.getWindowToken(),
@@ -582,6 +554,39 @@ public class MicroActivity extends AppCompatActivity {
 			handleVkOptions(id);
 		}
 		return true;
+	}
+
+	private void lockOrientation() {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+			setRequestedOrientation(SCREEN_ORIENTATION_LOCKED);
+			return;
+		}
+		Configuration configuration = getResources().getConfiguration();
+		int rotation = getWindowManager().getDefaultDisplay().getRotation();
+
+		// Search for the natural position of the device
+		if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE &&
+				(rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) ||
+				configuration.orientation == Configuration.ORIENTATION_PORTRAIT &&
+						(rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270)) {
+			// Natural position is Landscape
+			setRequestedOrientation(switch (rotation) {
+				case Surface.ROTATION_0 -> SCREEN_ORIENTATION_LANDSCAPE;
+				case Surface.ROTATION_90 -> SCREEN_ORIENTATION_REVERSE_PORTRAIT;
+				case Surface.ROTATION_180 -> SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+				case Surface.ROTATION_270 -> SCREEN_ORIENTATION_PORTRAIT;
+				default -> SCREEN_ORIENTATION_UNSPECIFIED;
+			});
+		} else {
+			// Natural position is Portrait
+			setRequestedOrientation(switch (rotation) {
+				case Surface.ROTATION_0 -> SCREEN_ORIENTATION_PORTRAIT;
+				case Surface.ROTATION_90 -> SCREEN_ORIENTATION_LANDSCAPE;
+				case Surface.ROTATION_180 -> SCREEN_ORIENTATION_REVERSE_PORTRAIT;
+				case Surface.ROTATION_270 -> SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+				default -> SCREEN_ORIENTATION_UNSPECIFIED;
+			});
+		}
 	}
 
 	private void handleVkOptions(int id) {
@@ -605,7 +610,7 @@ public class MicroActivity extends AppCompatActivity {
 
 	@SuppressLint("CheckResult")
 	private void takeScreenshot() {
-		microLoader.takeScreenshot((Canvas) current, new SingleObserver<String>() {
+		microLoader.takeScreenshot(current, new SingleObserver<>() {
 			@Override
 			public void onSubscribe(@NonNull Disposable d) {
 			}
@@ -614,6 +619,7 @@ public class MicroActivity extends AppCompatActivity {
 			public void onSuccess(@NonNull String s) {
 				Toast.makeText(MicroActivity.this, getString(R.string.screenshot_saved)
 						+ " " + s, Toast.LENGTH_LONG).show();
+				MediaScannerConnection.scanFile(MicroActivity.this, new String[]{s}, null, null);
 			}
 
 			@Override
@@ -698,25 +704,16 @@ public class MicroActivity extends AppCompatActivity {
 	}
 
 	private void showLimitFpsDialog() {
-		EditText editText = new EditText(this);
+		TextInputLayout inputLayout = DialogInputBinding.inflate(getLayoutInflater()).getRoot();
+		EditText editText = Objects.requireNonNull(inputLayout.getEditText());
 		editText.setHint(R.string.unlimited);
 		editText.setInputType(InputType.TYPE_CLASS_NUMBER);
 		editText.setKeyListener(DigitsKeyListener.getInstance("0123456789"));
 		editText.setMaxLines(1);
 		editText.setSingleLine(true);
-		float density = getResources().getDisplayMetrics().density;
-		LinearLayout linearLayout = new LinearLayout(this);
-		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.WRAP_CONTENT);
-		int margin = (int) (density * 20);
-		params.setMargins(margin, 0, margin, 0);
-		linearLayout.addView(editText, params);
-		int paddingVertical = (int) (density * 16);
-		int paddingHorizontal = (int) (density * 8);
-		editText.setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical);
 		new AlertDialog.Builder(this)
 				.setTitle(R.string.PREF_LIMIT_FPS)
-				.setView(linearLayout)
+				.setView(inputLayout)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
 					Editable text = editText.getText();
 					int fps = 0;
@@ -724,10 +721,10 @@ public class MicroActivity extends AppCompatActivity {
 						fps = TextUtils.isEmpty(text) ? 0 : Integer.parseInt(text.toString().trim());
 					} catch (NumberFormatException ignored) {
 					}
-					microLoader.setLimitFps(fps);
+					Canvas.setLimitFps(fps);
 				})
 				.setNegativeButton(android.R.string.cancel, null)
-				.setNeutralButton(R.string.reset, ((d, which) -> microLoader.setLimitFps(-1)))
+				.setNeutralButton(R.string.reset, ((d, which) -> Canvas.setLimitFps(-1)))
 				.show();
 	}
 
@@ -735,9 +732,6 @@ public class MicroActivity extends AppCompatActivity {
 	public boolean onContextItemSelected(@NonNull MenuItem item) {
 		if (current instanceof Form) {
 			((Form) current).contextMenuItemSelected(item);
-		} else if (current instanceof List) {
-			AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-			((List) current).contextMenuItemSelected(item, info.position);
 		}
 
 		return super.onContextItemSelected(item);
@@ -750,6 +744,10 @@ public class MicroActivity extends AppCompatActivity {
 
 	public String getAppName() {
 		return appName;
+	}
+
+	public void toast(@StringRes int message) {
+		runOnUiThread(() -> Toast.makeText(this, message, Toast.LENGTH_LONG).show());
 	}
 
 	private class SetCurrentEvent extends SimpleEvent {
@@ -766,9 +764,6 @@ public class MicroActivity extends AppCompatActivity {
 			closeOptionsMenu();
 			if (current != null) {
 				current.clearDisplayableView();
-			}
-			if (next instanceof Alert) {
-				return;
 			}
 			binding.displayableContainer.removeAllViews();
 			ActionBar actionBar = Objects.requireNonNull(getSupportActionBar());
@@ -789,32 +784,14 @@ public class MicroActivity extends AppCompatActivity {
 				actionBar.show();
 				final String title = next != null ? next.getTitle() : null;
 				actionBar.setTitle(title == null ? appName : title);
-				toolbarHeight = getToolBarHeight();
+				toolbarHeight = (int) getToolBarHeight();
 				layoutParams.height = toolbarHeight;
 			}
-			binding.overlayView.setLocation(0, toolbarHeight);
+			binding.overlay.setLocation(0, toolbarHeight);
 			binding.toolbar.setLayoutParams(layoutParams);
-			invalidateOptionsMenu();
 			if (next != null) {
 				binding.displayableContainer.addView(next.getDisplayableView());
 			}
-		}
-	}
-
-	@Override
-	protected void onDestroy() {
-		binding = null;
-		super.onDestroy();
-	}
-
-	@Override
-	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-		if (requestCode == 1) {
-			synchronized (LocationProviderImpl.permissionLock) {
-				LocationProviderImpl.permissionLock.notify();
-			}
-			LocationProviderImpl.permissionResult = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
 		}
 	}
 }

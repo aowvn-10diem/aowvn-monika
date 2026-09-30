@@ -1,5 +1,6 @@
 /*
  * Copyright 2018 Nikita Shakarun
+ * Copyright 2020-2024 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,95 +18,159 @@
 package ru.playsoftware.j2meloader.crashes;
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.os.Build;
+import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.HurlStack;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
-
 import org.acra.ReportField;
+import org.acra.config.ConfigUtils;
+import org.acra.config.CoreConfiguration;
+import org.acra.config.HttpSenderConfiguration;
+import org.acra.config.HttpSenderConfigurationBuilder;
 import org.acra.data.CrashReportData;
+import org.acra.http.DefaultHttpRequest;
+import org.acra.security.TLS;
 import org.acra.sender.ReportSender;
+import org.acra.util.Installation;
 import org.json.JSONObject;
 
 import java.io.FileOutputStream;
-import java.io.IOException;
+import java.math.BigInteger;
+import java.net.URL;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
+import ru.playsoftware.j2meloader.R;
 import ru.playsoftware.j2meloader.config.Config;
 import ru.playsoftware.j2meloader.util.Constants;
 
 public class AppCenterSender implements ReportSender {
-	private static final String TAG = AppCenterSender.class.getName();
-	private static String BASE_URL = "https://in.appcenter.ms/logs?Api-Version=1.0.0";
-	private static String FORM_KEY = "a7a26221-df9a-4e50-87a0-f76856e6e71d";
+	private static final String TAG = AppCenterSender.class.getSimpleName();
+	private static final String BASE_URL = "https://in.appcenter.ms/logs?Api-Version=1.0.0";
+
+	private final CoreConfiguration coreConfiguration;
+	private final HttpSenderConfiguration httpConfig;
+
+	public AppCenterSender(CoreConfiguration coreConfiguration) {
+		this.coreConfiguration = coreConfiguration;
+		httpConfig = ConfigUtils.getPluginConfiguration(coreConfiguration, HttpSenderConfiguration.class);
+	}
+
+	@NonNull
+	public static HttpSenderConfiguration buildHttpSenderConfiguration(Context context) {
+		HttpSenderConfigurationBuilder builder = new HttpSenderConfigurationBuilder();
+		// Force TLSv1.2 for Android 4.1-4.4
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN
+				&& Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+			builder.withCertificatePath("asset://appcenter.cer");
+			builder.withTlsProtocols(TLS.V1_2);
+		}
+		Map<String, String> httpHeaders = new HashMap<>();
+		httpHeaders.put("App-Secret", context.getString(R.string.app_center));
+		httpHeaders.put("Install-ID", Installation.id(context));
+		return builder.withUri(BASE_URL)
+				.withHttpHeaders(httpHeaders)
+				.withCompress(true)
+				.withEnabled(false)
+				.build();
+	}
 
 	@Override
-	public void send(@NonNull Context context, @NonNull final CrashReportData report) {
+	public void send(@NonNull Context context, @NonNull CrashReportData report) {
 		final String log = (String) report.get(AppCenterCollector.APPCENTER_LOG);
-		if (log == null || log.isEmpty()) {
+		if (log == null || log.isBlank()) {
 			return;
 		}
-		// Force TLSv1.2 for Android 4.1-4.4
-		boolean forceTls12 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN
-				&& Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP;
+		if (sendForbidden(context)) {
+			saveToFile(context, report);
+			return;
+		}
+		try {
+			new DefaultHttpRequest(coreConfiguration,
+					context,
+					httpConfig.getHttpMethod(),
+					coreConfiguration.getReportFormat().getMatchingHttpContentType(),
+					null,
+					null,
+					httpConfig.getConnectionTimeout(),
+					httpConfig.getSocketTimeout(),
+					httpConfig.getHttpHeaders()
+			).send(new URL(httpConfig.getUri()), log);
+		} catch (Exception e) {
+			Log.e(TAG, "send: " + e, e);
+			saveToFile(context, report);
+		}
+	}
 
-		HurlStack hurlStack = new HurlStack(null, forceTls12 ? new TLSSocketFactory(context) : null);
-		RequestQueue queue = Volley.newRequestQueue(context, hurlStack);
-		StringRequest postRequest = new StringRequest(Request.Method.POST, BASE_URL,
-				response -> Log.d(TAG, "send success: " + response),
-				error -> {
-					Log.e(TAG, "Response error", error);
-					String logFile = Config.getEmulatorDir() + "/crash.txt";
-					try (FileOutputStream fos = new FileOutputStream(logFile)) {
-						String logcat = report.getString(ReportField.LOGCAT);
-						if (logcat != null) {
-							fos.write(logcat.getBytes());
-						}
-						String stack = report.getString(ReportField.STACK_TRACE);
-						if (stack != null) {
-							fos.write("\n====================Error==================\n".getBytes());
-							fos.write(stack.getBytes());
-						}
-						JSONObject o = (JSONObject) report.get(ReportField.CUSTOM_DATA.name());
-						if (o != null) {
-							Object od = o.opt(Constants.KEY_APPCENTER_ATTACHMENT);
-							if (od != null) {
-								String customData = (String) od;
-								fos.write("\n==========application=info=============\n".getBytes());
-								fos.write(customData.getBytes());
-							}
-						}
-						fos.close();
-						Toast.makeText(context, "Can't send report! Saved to file:\n" + logFile, Toast.LENGTH_LONG).show();
-					} catch (IOException e) {
-						e.printStackTrace();
-						Toast.makeText(context, "Can't send report!", Toast.LENGTH_LONG).show();
-					}
+	private static void saveToFile(@NonNull Context context, @NonNull CrashReportData report) {
+		String logFile = Config.getEmulatorDir() + "/crash.txt";
+		String msg = "Can't send report!";
+		try (FileOutputStream fos = new FileOutputStream(logFile)) {
+			JSONObject o = (JSONObject) report.get(ReportField.CUSTOM_DATA.name());
+			if (o != null) {
+				Object od = o.opt(Constants.KEY_APPCENTER_ATTACHMENT);
+				if (od != null) {
+					String midlet = (String) od;
+					fos.write(midlet.getBytes());
 				}
-		) {
-			@Override
-			public Map<String, String> getHeaders() {
-				Map<String, String> params = new HashMap<>();
-				params.put("Content-Type", "application/json");
-				params.put("App-Secret", FORM_KEY);
-				params.put("Install-ID", report.getString(ReportField.INSTALLATION_ID));
-				return params;
 			}
+			String stack = report.getString(ReportField.STACK_TRACE);
+			if (stack != null) {
+				fos.write("\n===================Error===================\n".getBytes());
+				fos.write(stack.getBytes());
+			}
+			String logcat = report.getString(ReportField.LOGCAT);
+			if (logcat != null) {
+				fos.write("\n==================More=Log=================\n".getBytes());
+				fos.write(logcat.getBytes());
+			}
+			msg += " Saved to file:\n" + logFile;
+		} catch (Exception e) {
+			Log.e(TAG, "saveToFile: failed save", e);
+		}
+		String finalMsg = msg;
+		new Handler(context.getMainLooper()).post(() ->
+				Toast.makeText(context, finalMsg, Toast.LENGTH_LONG).show());
+	}
 
-			@Override
-			public byte[] getBody() {
-				return log.getBytes();
+	private boolean sendForbidden(@NonNull Context context) {
+		if (context.getString(R.string.app_center).isBlank()) {
+			return true;
+		}
+		try {
+			BigInteger fp = new BigInteger(context.getString(R.string.fingerprint), 16);
+			Signature[] signatures;
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+				PackageInfo info = context.getPackageManager()
+						.getPackageInfo(context.getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
+				signatures = info.signingInfo.getApkContentsSigners();
+			} else {
+				PackageInfo info = context.getPackageManager()
+						.getPackageInfo(context.getPackageName(), PackageManager.GET_SIGNATURES);
+				signatures = info.signatures;
 			}
-		};
-		postRequest.setShouldCache(false);
-		queue.add(postRequest);
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
+			for (Signature signature : signatures) {
+				md.update(signature.toByteArray());
+				if (MessageDigest.isEqual(fp.toByteArray(), md.digest())) {
+					return false;
+				}
+			}
+		} catch (PackageManager.NameNotFoundException e) {
+			Log.e(TAG, "mustSaveLocally: get package info filed", e);
+		} catch (NoSuchAlgorithmException e) {
+			Log.e(TAG, "mustSaveLocally: not support sha1!?", e);
+		} catch (NumberFormatException e) {
+			Log.e(TAG, "mustSaveLocally: invalid fingerprint", e);
+		}
+		return true;
 	}
 }

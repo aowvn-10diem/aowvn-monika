@@ -1,17 +1,17 @@
 /*
- *  Copyright 2020 Yury Kharchenko
+ * Copyright 2020-2026 Yury Kharchenko
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package ru.playsoftware.j2meloader.config;
@@ -22,7 +22,9 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 
 import java.io.File;
+import java.util.List;
 
+import javax.microedition.lcdui.keyboard.KeyModel;
 import javax.microedition.lcdui.keyboard.VirtualKeyboard;
 import javax.microedition.util.ContextHolder;
 
@@ -47,6 +49,9 @@ public class ProfileModel {
 	@SerializedName("ScreenBackgroundColor")
 	public int screenBackgroundColor;
 
+	@SerializedName("ScreenBackgroundImage")
+	public String screenBackgroundImage;
+
 	@SerializedName("ScreenScaleRatio")
 	public int screenScaleRatio;
 
@@ -64,6 +69,9 @@ public class ProfileModel {
 
 	@SerializedName("ScreenGravity")
 	public int screenGravity;
+
+	@SerializedName("ScreenPadding")
+	public int screenPadding;
 
 	@SerializedName("ScreenFilter")
 	public boolean screenFilter;
@@ -149,16 +157,21 @@ public class ProfileModel {
 	@SerializedName("Layout")
 	public int keyCodesLayout;
 
-	@JsonAdapter(SparseIntArrayAdapter.class)
-	@SerializedName("KeyCodeMap")
-	public SparseIntArray keyCodeMap;
+	@SerializedName("CustomKeys")
+	public List<KeyModel> customKeys;
 
 	@JsonAdapter(SparseIntArrayAdapter.class)
 	@SerializedName("KeyMappings")
 	public SparseIntArray keyMappings;
 
+	@SerializedName("SoundBank")
+	public String soundBank;
+
 	@SerializedName("SystemProperties")
 	public String systemProperties;
+
+	@SerializedName("SkipResumeCall")
+	public boolean skipResumeCall;
 
 	@SuppressWarnings("unused") // Gson uses default constructor if present
 	public ProfileModel() {
@@ -188,16 +201,16 @@ public class ProfileModel {
 		touchInput = true;
 
 		// Aow Monika: phím mặc định theo hệ thiết kế Monika (than kính mờ, nhấn = cam hồng), bật rung.
-		vkButtonShape = VirtualKeyboard.ROUND_RECT_SHAPE;
+		vkButtonShape = VirtualKeyboard.SHAPE_ROUND_RECT;
 		vkType = VirtualKeyboard.TYPE_MONIKA; // bàn phím kiểu điện thoại Monika (dưới khung game)
 		vkAlpha = 140;
 		vkFeedback = true;
 
-		vkBgColor = 0x201F21;
-		vkFgColor = 0xFFFFFF;
-		vkBgColorSelected = 0xFF7F78;
+		vkBgColor = 0xD0D0D0;
+		vkFgColor = 0x000080;
+		vkBgColorSelected = 0x000080;
 		vkFgColorSelected = 0xFFFFFF;
-		vkOutlineColor = 0x5A575D;
+		vkOutlineColor = 0xFFFFFF;
 		systemProperties = ContextHolder.getAssetAsString("defaults/system.props");
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * Copyright 2012 Kulikov Dmitriy
- * Copyright 2021 Arman Jussupgaliyev
+ * Copyright 2021-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,6 @@
 
 package javax.microedition.lcdui;
 
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
-import android.text.style.URLSpan;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -93,7 +90,7 @@ public class ImageItem extends Item {
 	}
 
 	@Override
-	public View getItemContentView() {
+	View getItemContentView() {
 		if (imageView == null) {
 			imageView = new AppCompatImageView(ContextHolder.getActivity());
 			imageView.setScaleType(ImageView.ScaleType.FIT_XY);
@@ -105,7 +102,7 @@ public class ImageItem extends Item {
 	}
 
 	@Override
-	public void clearItemContentView() {
+	void clearItemContentView() {
 		imageView = null;
 	}
 }

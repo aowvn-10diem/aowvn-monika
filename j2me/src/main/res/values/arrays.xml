@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <string-array name="donation_google_catalog_values" translatable="false">
+        <item>1 USD</item>
+        <item>2 USD</item>
+        <item>5 USD</item>
+        <item>10 USD</item>
+    </string-array>
     <string-array name="pref_theme_entries" tools:ignore="InconsistentArrays">
         <item>@string/pref_theme_light</item>
         <item>@string/pref_theme_night</item>
@@ -16,9 +22,9 @@
         <item>@string/pref_app_sort_vendor</item>
     </string-array>
     <string-array name="pref_app_sort_values" translatable="false">
-        <item>title COLLATE LOCALIZED %1$s, author COLLATE LOCALIZED ASC</item>
-        <item>id %1$s</item>
-        <item>author COLLATE LOCALIZED %1$s, title COLLATE LOCALIZED ASC</item>
+        <item>title COLLATE LOCALIZED %s, author COLLATE LOCALIZED ASC</item>
+        <item>id %s</item>
+        <item>author COLLATE LOCALIZED %s, title COLLATE LOCALIZED ASC</item>
     </string-array>
     <string-array name="PREF_ORIENTATION_ENTRIES">
         <item>@string/pref_orientation_default</item>

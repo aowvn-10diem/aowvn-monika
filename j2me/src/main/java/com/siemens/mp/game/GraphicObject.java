@@ -24,12 +24,13 @@
 
 package com.siemens.mp.game;
 
+import android.graphics.Canvas;
+
 public class GraphicObject extends com.siemens.mp.misc.NativeMem {
-	private boolean visible;
+	private boolean visible = true;
 
 	protected GraphicObject() {
 		super();
-		this.visible = true;
 	}
 
 	public boolean getVisible() {
@@ -40,4 +41,5 @@ public class GraphicObject extends com.siemens.mp.misc.NativeMem {
 		this.visible = visible;
 	}
 
+	protected void paint(Canvas c, int x, int y) {}
 }

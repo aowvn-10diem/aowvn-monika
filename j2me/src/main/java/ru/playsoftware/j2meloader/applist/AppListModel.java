@@ -1,42 +1,95 @@
 /*
- *  Copyright 2021 Yury Kharchenko
+ * Copyright 2021-2024 Yury Kharchenko
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package ru.playsoftware.j2meloader.applist;
 
-import android.app.Application;
+import static ru.playsoftware.j2meloader.util.Constants.PREF_APP_SORT;
+import static ru.playsoftware.j2meloader.util.Constants.PREF_EMULATOR_DIR;
 
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
+import android.content.SharedPreferences;
+
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.ViewModel;
+import androidx.preference.PreferenceManager;
+
+import java.util.List;
 
 import ru.playsoftware.j2meloader.appsdb.AppRepository;
+import ru.playsoftware.j2meloader.config.Config;
 
-public class AppListModel extends AndroidViewModel {
-	private final AppRepository appRepository;
+public class AppListModel extends ViewModel implements SharedPreferences.OnSharedPreferenceChangeListener {
+	private final AppRepository appRepository = new AppRepository();
 
-	public AppListModel(@NonNull Application application) {
-		super(application);
-		appRepository = new AppRepository(this);
-	}
-
-	public AppRepository getAppRepository() {
-		return appRepository;
+	public AppListModel() {
+		PreferenceManager.getDefaultSharedPreferences(javax.microedition.util.ContextHolder.getAppContext())
+				.registerOnSharedPreferenceChangeListener(this);
 	}
 
 	@Override
 	protected void onCleared() {
+		PreferenceManager.getDefaultSharedPreferences(javax.microedition.util.ContextHolder.getAppContext())
+				.unregisterOnSharedPreferenceChangeListener(this);
 		appRepository.close();
+	}
+
+	public void setEmulatorDirectory(String emulatorDir) {
+		appRepository.setDatabaseFile(emulatorDir + Config.APPS_DB_NAME);
+	}
+
+	LiveData<List<AppItem>> getAppList() {
+		return appRepository.getAppList();
+	}
+
+	void updateApp(AppItem item) {
+		appRepository.update(item);
+	}
+
+	void deleteApp(AppItem item) {
+		appRepository.delete(item);
+	}
+
+	void setAppListFilter(String filter) {
+		appRepository.setFilter(filter);
+	}
+
+	public AppItem getApp(int id) {
+		return appRepository.get(id);
+	}
+
+	public void addApp(AppItem app) {
+		appRepository.insert(app);
+	}
+
+	public AppItem getApp(String name, String vendor) {
+		return appRepository.get(name, vendor);
+	}
+
+	public String getAppFilter() {
+		return appRepository.getFilter();
+	}
+
+	@Override
+	public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
+		if (PREF_APP_SORT.equals(key)) {
+			appRepository.setSort(sp.getInt(PREF_APP_SORT, 0));
+		} else if (PREF_EMULATOR_DIR.equals(key)) {
+			String path = sp.getString(key, null);
+			if (path != null) {
+				setEmulatorDirectory(path);
+			}
+		}
 	}
 }

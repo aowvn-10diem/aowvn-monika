@@ -1,8 +1,9 @@
-// J2ME Loader (Apache-2.0, https://github.com/nikita36078/J2ME-Loader, commit 9b0fa48)
-// nhúng vào Aow Monika dưới dạng thư viện. Chỉ sửa phần build + Manifest + khởi tạo;
+// JL-Mod (Apache-2.0, https://github.com/woesss/JL-Mod, commit f723a19 — 11/04/2026), bản fork của J2ME Loader,
+// nhúng vào Aow Monika dưới dạng thư viện. Chỉ sửa phần build + Manifest + khởi tạo + giao diện Monika;
 // mã giả lập giữ nguyên để dễ cập nhật từ bản gốc (xem docs/J2ME-LOADER.md).
 plugins {
     id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
@@ -16,9 +17,11 @@ android {
         // Các trường BuildConfig mà mã gốc dùng (bản gốc là app nên có sẵn).
         buildConfigField 'boolean', 'FULL_EMULATOR', 'true'
         buildConfigField 'String', 'FLAVOR', '"monika"'
-        buildConfigField 'String', 'VERSION_NAME', '"1.8.2-monika"'
+        buildConfigField 'String', 'VERSION_NAME', '"0.87.1-monika"'
         // Bản gốc sinh chuỗi này trong build.gradle của app.
         resValue 'string', 'app_name', 'Java (J2ME)'
+        resValue 'string', 'app_center', ''
+        resValue 'string', 'fingerprint', ''
         consumerProguardFiles 'proguard-rules.pro', 'proguard-common.pro'
         externalNativeBuild {
             ndkBuild {
@@ -30,6 +33,10 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
     }
 
     externalNativeBuild {
@@ -46,45 +53,45 @@ android {
     buildFeatures {
         viewBinding true
         buildConfig true
+        prefab true // Oboe (âm thanh độ trễ thấp cho mmapi_*) được nạp qua prefab
     }
 }
 
 dependencies {
-    def roomVersion = '2.5.2'
-    def cameraxVersion = "1.3.0-beta01"
-
     implementation project(':dexlib')
 
+    implementation 'androidx.activity:activity-ktx:1.8.2'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.arch.core:core-common:2.2.0'
+    implementation 'androidx.collection:collection-ktx:1.3.0'
+    implementation 'androidx.concurrent:concurrent-futures:1.1.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.documentfile:documentfile:1.0.1'
+    implementation 'androidx.fragment:fragment-ktx:1.6.2'
+    implementation 'androidx.lifecycle:lifecycle-common:2.6.2'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.6.2'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'androidx.preference:preference-ktx:1.2.1'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    def roomVersion = '2.5.2' // JL-Mod dùng 2.6.1; 2.5.2 đủ cho mã này và đã có sẵn trong bộ nhớ đệm build
     implementation "androidx.room:room-runtime:$roomVersion"
     implementation "androidx.room:room-rxjava2:$roomVersion"
     annotationProcessor "androidx.room:room-compiler:$roomVersion"
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.9.0'
-    implementation 'androidx.preference:preference:1.2.0'
-    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'androidx.transition:transition:1.4.1'
 
-    implementation 'com.android.volley:volley:1.2.1'
-    implementation 'com.google.code.gson:gson:2.9.0'
-    implementation 'com.google.guava:guava:31.0.1-android'
+    compileOnly 'com.google.auto.service:auto-service-annotations:1.1.1'
+    annotationProcessor 'com.google.auto.service:auto-service:1.1.1'
+    implementation 'com.google.code.gson:gson:2.9.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.google.oboe:oboe:1.7.0'
 
-    implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
-    implementation 'net.lingala.zip4j:zip4j:2.10.0'
-
-    implementation 'com.github.billthefarmer:mididriver:v1.21'
-    implementation 'com.github.nikita36078:pngj:2.2.3'
-    implementation 'com.github.nikita36078:mobile-ffmpeg:v4.3.2-compact'
-
-    implementation "androidx.camera:camera-core:${cameraxVersion}"
-    implementation "androidx.camera:camera-camera2:${cameraxVersion}"
-    implementation "androidx.camera:camera-lifecycle:${cameraxVersion}"
-    implementation "androidx.camera:camera-view:${cameraxVersion}"
-
-    implementation 'com.github.nikita36078:filepicker:4.3.0'
+    implementation 'ch.acra:acra-http:5.11.3'   // chỉ để mã báo lỗi của bản gốc biên dịch được; Monika không bật ACRA
     implementation 'com.github.yukuku:ambilwarna:2.0.1'
-
-    implementation 'ch.acra:acra-dialog:5.9.3'
-
-    compileOnly "com.google.auto.service:auto-service-annotations:1.0"
-    annotationProcessor "com.google.auto.service:auto-service:1.0"
+    implementation 'com.github.nikita36078:mobile-ffmpeg:v4.3.2-compact'
+    implementation 'com.github.woesss:filepicker:4.4.0'
+    implementation 'com.github.nikita36078:pngj:2.2.3'
+    implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
 }

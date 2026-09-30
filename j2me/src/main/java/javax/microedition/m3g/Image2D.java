@@ -97,7 +97,6 @@ public class Image2D extends Object3D {
 	private static int getBytesPerPixel(int format) {
 		switch (format) {
 			case ALPHA:
-				return 1;
 			case LUMINANCE:
 				return 1;
 			case LUMINANCE_ALPHA:

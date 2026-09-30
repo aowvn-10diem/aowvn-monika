@@ -1,182 +1,171 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <string name="navigation_drawer_open" translatable="false">Mở menu</string>
-    <string name="navigation_drawer_close" translatable="false">Đóng menu</string>
-
-    <string name="close">Đóng</string>
-    <string name="exit">Thoát về Monika</string>
+    <string name="_FONT_SEPARATOR" translatable="false">-</string>
+    <string name="_MINUS_ONE" translatable="false">-1</string>
     <string name="about">Giới thiệu</string>
-    <string name="help">Trợ giúp</string>
-    <string name="more">Thêm</string>
-    <string name="search">Tìm kiếm</string>
-    <string name="licenses">Giấy phép</string>
-    <string name="profiles">Cấu hình</string>
-    <string name="save_log">Lưu nhật ký lỗi</string>
-    <string name="about_message">Chạy game và ứng dụng Java (J2ME) trên Android. Hỗ trợ hầu hết game 2D và 3D (kể cả game dùng Mascot Capsule 3D).&lt;BR></string>
-    <string name="help_message">&#8226; Bật bộ lọc hình ảnh có thể làm game chậm đi nhiều. Game chạy giật thì tắt tùy chọn này.&lt;BR>&#8226; Hình bị nháy (chớp) thì bật tùy chọn "Vẽ ngay lập tức".</string>
+    <string name="about_4pda" translatable="false">&lt;BR>4PDA: &lt;a href="https://4pda.to/forum/index.php?showtopic=824201">4pda.to/forum/index.php?showtopic=824201&lt;/a></string>
+    <string name="about_copyright" translatable="false">&lt;BR>&lt;BR>Copyright 2017-2024 Nikita Shakarun</string>
+    <string name="about_crowdin" translatable="false">&lt;BR>Crowdin(translation): &lt;a href="https://crowdin.com/project/j2me-loader">crowdin.com/project/j2me-loader&lt;/a></string>
     <string name="about_email" translatable="false">&lt;BR>Email: &lt;a href="mailto:j2me.loader@mail.ru">j2me.loader@mail.ru&lt;/a></string>
     <string name="about_github" translatable="false">&lt;BR>GitHub: &lt;a href="https://github.com/nikita36078/J2ME-Loader">github.com/nikita36078/J2ME-Loader&lt;/a></string>
-    <string name="about_emugen_wiki" translatable="false">&lt;BR>EmuGen Wiki: &lt;a href="https://emulation.gametechwiki.com/index.php/J2ME_Loader">emulation.gametechwiki.com/index.php/J2ME_Loader&lt;/a></string>
-    <string name="about_4pda" translatable="false">&lt;BR>4PDA: &lt;a href="https://4pda.to/forum/index.php?showtopic=824201">4pda.to/forum/index.php?showtopic=824201&lt;/a></string>
+    <string name="about_message">Chạy game và ứng dụng Java (J2ME) trên Android. Hỗ trợ hầu hết game 2D và 3D (kể cả game dùng Mascot Capsule 3D).&lt;BR></string>
     <string name="about_xda" translatable="false">&lt;BR>XDA: &lt;a href="https://forum.xda-developers.com/android/apps-games/app-j2me-loader-t3777889">forum.xda-developers.com/android/apps-games/app-j2me-loader-t3777889&lt;/a></string>
-    <string name="about_crowdin" translatable="false">&lt;BR>Crowdin(translation): &lt;a href="https://crowdin.com/project/j2me-loader">crowdin.com/project/j2me-loader&lt;/a></string>
-    <string name="about_copyright" translatable="false">&lt;BR>&lt;BR>Copyright 2017-2024 Nikita Shakarun</string>
-    <string name="author">Tác giả: </string>
-    <string name="version">Phiên bản: </string>
-    <string name="no_data_for_display">Không có dữ liệu</string>
-    <string name="message_delete">Xóa game này khỏi danh sách?</string>
-    <string name="permission_request_failed">Ứng dụng này yêu cầu quyền ghi vào bộ nhớ</string>
-    <string name="external_storage_not_mounted">Ứng dụng này yêu cầu bộ nhớ ngoài</string>
-    <string name="create">Tạo</string>
-    <string name="alert_msg_workdir_not_exists">Thư mục làm việc không tồn tại:\n\'%1$s\'.\nTạo thư mục này hay chọn thư mục khác?</string>
-    <string name="action_context_shortcut">Tạo lối tắt ngoài màn hình chính</string>
-    <string name="action_reinstall">Cài lại</string>
-    <string name="action_settings">Cài đặt</string>
     <string name="action_context_delete">Xóa</string>
     <string name="action_context_rename">Đổi tên</string>
-    <string name="retry">Thử lại</string>
-    <string name="err_missing_app">Không tìm thấy game.\nKiểm tra bộ nhớ %scó sẵn sàng không, hoặc tạo lại lối tắt.</string>
-    <string name="error_disk_io">Lỗi bộ nhớ: kiểm tra dung lượng còn trống</string>
-    <string name="create_apps_dir_failed">Không thể tạo thư mục trong đường dẫn:\n\'%s\'\nchọn cái khác.</string>
+    <string name="action_context_shortcut">Tạo lối tắt ngoài màn hình chính</string>
+    <string name="action_keyboard_ime">Bàn phím gõ chữ</string>
+    <string name="action_lock_orientation">Khóa xoay màn hình</string>
+    <string name="action_reinstall">Cài lại</string>
+    <string name="action_settings">Cài đặt</string>
+    <string name="add">Thêm</string>
+    <string name="add_profile_description">Tạo cấu hình mới</string>
+    <string name="add_resolution_preset">Thêm độ phân giải này vào danh sách gợi ý</string>
+    <string name="alert_map_menu">Chưa gán phím Menu (M)!\nCó thể không vào được menu của game.</string>
+    <string name="alert_msg_workdir_not_exists">Thư mục làm việc không tồn tại:\n\'%1$s\'.\nTạo thư mục này hay chọn thư mục khác?</string>
+    <string name="alert_rewrite_profile">Đã có cấu hình tên \"%1$s\".\nGhi đè?</string>
+    <string name="author">Tác giả: </string>
+    <string name="CANCEL_CMD">Hủy</string>
     <string name="change">Thay đổi</string>
     <string name="choose">Chọn</string>
-    <string name="warning">Cảnh báo</string>
-    <string name="scoped_storage_warning">Dữ liệu của bạn đang lưu ở nơi <b>sẽ bị xóa</b> khi gỡ ứng dụng:\n</string>
-    <string name="error_no_picker">Hãy cài một ứng dụng chọn file</string>
-
+    <string name="CLEAR_DATA_CMD">Xóa dữ liệu</string>
+    <string name="close">Đóng</string>
+    <string name="cmd_menu">Menu</string>
+    <string name="config_virtual_screen_size">Kích thước màn hình ảo (độ phân giải gốc của game):</string>
+    <string name="CONFIRMATION_REQUIRED">Yêu cầu xác nhận</string>
+    <string name="converting_wait">Đang chuẩn bị game (chuyển đổi JAR)…</string>
+    <string name="crash_dialog_message">Game gặp lỗi. Lưu nhật ký lỗi để gửi cho AowVN?</string>
+    <string name="crash_dialog_title">Đã phát hiện lỗi</string>
+    <string name="create">Tạo</string>
+    <string name="create_apps_dir_failed">Không thể tạo thư mục trong đường dẫn:\n\'%s\'\nchọn cái khác.</string>
+    <string name="default_label">"%s (mặc định)"</string>
+    <string name="dismiss">Bỏ qua</string>
+    <string name="donate">Ủng hộ</string>
+    <string name="donation_paypal_item" translatable="false">J2ME Loader donation</string>
+    <string name="edit">Chỉnh sửa</string>
+    <string name="enter_name">Nhập tên</string>
+    <string name="enter_new_name">Nhập tên mới</string>
+    <string name="err_missing_app">Không tìm thấy game.\nKiểm tra bộ nhớ %scó sẵn sàng không, hoặc tạo lại lối tắt.</string>
+    <string name="error">Lỗi</string>
+    <string name="error_disk_io">Lỗi bộ nhớ: kiểm tra dung lượng còn trống</string>
+    <string name="error_name">Hãy nhập tên!</string>
+    <string name="error_name_exists">Tên đã tồn tại, hãy nhập tên khác</string>
+    <string name="exit">Thoát về Monika</string>
+    <string name="external_storage_not_mounted">Ứng dụng này yêu cầu bộ nhớ ngoài</string>
+    <string name="FORCE_CLOSE_CONFIRMATION">Buộc đóng game có thể làm mất dữ liệu lưu, thậm chí hỏng game!\nVẫn đóng?</string>
+    <string name="help">Trợ giúp</string>
+    <string name="help_message">&#8226; Bật bộ lọc hình ảnh có thể làm game chậm đi nhiều. Game chạy giật thì tắt tùy chọn này.&lt;BR>&#8226; Hình bị nháy (chớp) thì bật tùy chọn "Vẽ ngay lập tức".</string>
+    <string name="hide_buttons">Ẩn phím ảo</string>
+    <string name="identity_filter">Nhanh (không hiệu ứng)</string>
+    <string name="install">Cài đặt</string>
+    <string name="install_done">Đã cài game xong!</string>
+    <string name="install_jar_needed">Chọn file JAR</string>
+    <string name="install_jar_non_matched_jad">File JAR không khớp với mô tả trong file JAD.\nBỏ qua JAD và vẫn cài?</string>
+    <string name="invalid_resolution_not_saved">Độ phân giải không hợp lệ, chưa lưu!</string>
+    <string name="layout_edit_finish">Xong chỉnh phím</string>
+    <string name="layout_edit_finished">Đã lưu vị trí phím</string>
+    <string name="layout_edit_mode">Chỉnh vị trí phím</string>
+    <string name="layout_scale_mode">Chỉnh cỡ phím</string>
+    <string name="layout_switch">Đổi bố cục phím</string>
+    <string name="licenses">Giấy phép</string>
+    <string name="load_profile">Nạp cấu hình</string>
+    <string name="loading_info">Đang đọc thông tin…</string>
+    <string name="log_saved">Đã lưu nhật ký lỗi</string>
+    <string name="mapping_dialog_key_not_specified">không chỉ định</string>
+    <string name="mapping_dialog_message">Đang gán: %1$s</string>
+    <string name="mapping_dialog_title">Bấm phím muốn gán</string>
+    <string name="message_clear_data">Bạn thực sự muốn xoá dữ liệu ứng dụng?</string>
+    <string name="message_delete">Xóa game này khỏi danh sách?</string>
     <string name="midlet_name"><b>Tên: </b></string>
     <string name="midlet_size"><b>Dung lượng: </b></string>
     <string name="midlet_source"><b>Nguồn: </b></string>
     <string name="midlet_vendor"><b>Nhà phát hành: </b></string>
     <string name="midlet_version"><b>Phiên bản: </b></string>
-    <string name="converting_wait">Đang chuẩn bị game (chuyển đổi JAR)…</string>
-    <string name="install">Cài đặt</string>
-    <string name="install_done">Đã cài game xong!</string>
-    <string name="install_jar_non_matched_jad">File JAR không khớp với mô tả trong file JAD.\nBỏ qua JAD và vẫn cài?</string>
-    <string name="install_jar_needed">Chọn file JAR</string>
-    <string name="invalid_resolution_not_saved">Độ phân giải không hợp lệ, chưa lưu!</string>
-    <string name="warn_install_from_net">Tệp tin sẽ được tải xuống từ Internet</string>
-    <string name="reinstall">Game này đã được cài.\n\nCài lại? Dữ liệu lưu game vẫn được giữ.</string>
-    <string name="reinstall_newest">Cập nhật game lên phiên bản %1$s?\n\nĐang cài: %2$s\nDữ liệu lưu game vẫn được giữ.</string>
-    <string name="reinstall_older">Thay bằng phiên bản cũ hơn %1$s?\n\nĐang cài: %2$s\nBản cũ có thể không đọc được dữ liệu lưu của bản mới.</string>
-    <string name="loading_info">Đang đọc thông tin…</string>
-
-    <string name="START_CMD">Chơi</string>
-    <string name="CANCEL_CMD">Hủy</string>
-    <string name="CLEAR_DATA_CMD">Xóa dữ liệu</string>
-    <string name="RESET_SETTINGS_CMD">Đặt lại cài đặt</string>
-    <string name="RESET_LAYOUT_CMD">Đặt lại vị trí phím</string>
-    <string name="load_profile">Nạp cấu hình</string>
-    <string name="save_profile">Lưu cấu hình</string>
-    <string name="PREF_SCREEN_OPTIONS">Màn hình</string>
+    <string name="more">Thêm</string>
+    <string name="msg_error_loading_shader">Hiệu ứng hình này không được hỗ trợ, đang dùng hiệu ứng mặc định!</string>
+    <string name="msg_immediate_mode_disabled">Đã tắt chế độ vẽ ngay lập tức do tràn bộ nhớ ngăn xếp</string>
+    <string name="msg_mascot_capsule" translatable="false">Mascot Capsule 3D!</string>
+    <string name="msg_no_matches">Không có kết quả cho \"%1$s\"</string>
+    <string name="msg_press_again_to_close">Bấm lần nữa để đóng</string>
+    <string name="msg_text_copied_to_clipboard">Đã chép chữ vào bộ nhớ tạm</string>
+    <string name="msg_unsupported_soundbank">Bộ âm thanh này không được hỗ trợ, đang dùng bộ mặc định!</string>
+    <string name="no_data_for_display">Không có dữ liệu</string>
+    <string name="not_saved_exists">Đã tồn tại</string>
+    <string name="opt_save_screen_params">lưu thông số màn hình</string>
+    <string name="parallel_screen_redrawing">Vẽ lại màn hình song song (đa luồng)</string>
+    <string name="permission_request_failed">Ứng dụng này yêu cầu quyền ghi vào bộ nhớ</string>
+    <string name="pref_app_sort_date">Ngày tháng</string>
+    <string name="pref_app_sort_name">Tên</string>
+    <string name="pref_app_sort_title">Sắp xếp danh sách game</string>
+    <string name="pref_app_sort_vendor">Nhà phát hành</string>
+    <string name="pref_apps_view">kiểu xem</string>
+    <string name="pref_audio_title">Âm thanh</string>
+    <string name="PREF_BACKGROUND">Màu nền</string>
+    <string name="pref_button_shape_oval">Bầu dục</string>
+    <string name="pref_button_shape_rect">Hình chữ nhật</string>
+    <string name="pref_button_shape_round">Chữ nhật bo góc</string>
+    <string name="pref_button_shape_title">Hình dạng phím</string>
+    <string name="pref_category_experimental">Tùy chọn thử nghiệm</string>
+    <string name="PREF_COLOR_HINT" translatable="false">RGB</string>
+    <string name="pref_default_settings">Cài đặt mặc định</string>
+    <string name="pref_emulator_dir">Thư mục làm việc</string>
+    <string name="pref_enable_actionbar_summary">Khi chơi toàn màn hình</string>
+    <string name="pref_enable_actionbar_title">Hiện thanh công cụ</string>
+    <string name="pref_enable_statusbar_title">Hiện thanh trạng thái</string>
+    <string name="pref_encoding_title">Bảng mã chữ</string>
+    <string name="PREF_FILTER">Làm mịn hình (bộ lọc)</string>
+    <string name="PREF_FONT_ANTI_ALIASING">Làm mịn chữ</string>
+    <string name="PREF_FONT_LARGE">Lớn</string>
+    <string name="PREF_FONT_MEDIUM">Trung bình</string>
+    <string name="PREF_FONT_OPTIONS">Cỡ chữ trong game</string>
+    <string name="PREF_FONT_SIZE_IN_SP">Đơn vị: điểm ảnh co giãn (sp)</string>
+    <string name="PREF_FONT_SMALL">Nhỏ</string>
+    <string name="PREF_FORCE_FULLSCREEN">Luôn toàn màn hình</string>
+    <string name="pref_graphics_hw_gles">Tăng tốc phần cứng (OpenGL ES)</string>
+    <string name="pref_graphics_hw_surface">Tăng tốc phần cứng (surface)</string>
+    <string name="pref_graphics_hw_view">Tăng tốc phần cứng (cửa sổ)</string>
+    <string name="pref_graphics_mode_title">Chế độ vẽ hình:</string>
+    <string name="pref_graphics_software">Phần mềm (ổn định nhất)</string>
+    <string name="PREF_HEIGHT">Chiều cao</string>
+    <string name="PREF_HW_ACCELERATION">Tăng tốc phần cứng (chưa ổn định)</string>
+    <string name="PREF_IMMEDIATE">Vẽ ngay lập tức (sửa hình nháy)</string>
+    <string name="pref_input_devices_title">Thiết bị điều khiển</string>
+    <string name="PREF_KEEP_ASPECT_RATIO">Giữ tỷ lệ khung hình</string>
+    <string name="pref_language">Ngôn ngữ</string>
+    <string name="PREF_LAYOUT">Bố cục phím</string>
+    <string name="PREF_LIMIT_FPS">Giới hạn FPS</string>
+    <string name="pref_map_keys">Gán phím tay cầm / bàn phím</string>
+    <string name="pref_mascot_summary">Báo khi game dùng</string>
+    <string name="pref_mascot_title">Nhận biết game 3D Mascot Capsule</string>
+    <string name="PREF_ORIENTATION">Hướng màn hình</string>
+    <string name="pref_orientation_auto">Tự động</string>
+    <string name="pref_orientation_default">Mặc định</string>
+    <string name="pref_orientation_land">Ngang</string>
+    <string name="pref_orientation_port">Dọc</string>
+    <string name="pref_requires_restart_summary">Yêu cầu khởi động lại</string>
     <string name="PREF_SCALE_RATIO">Tỉ lệ phóng (%)</string>
     <string name="PREF_SCALE_TO_FIT">Phóng vừa màn hình</string>
-    <string name="PREF_KEEP_ASPECT_RATIO">Giữ tỷ lệ khung hình</string>
-    <string name="PREF_FILTER">Làm mịn hình (bộ lọc)</string>
-    <string name="PREF_IMMEDIATE">Vẽ ngay lập tức (sửa hình nháy)</string>
-    <string name="PREF_SHOW_FPS">Hiện số khung hình/giây (FPS)</string>
-    <string name="PREF_FORCE_FULLSCREEN">Luôn toàn màn hình</string>
-    <string name="PREF_LIMIT_FPS">Giới hạn FPS</string>
-    <string name="PREF_FONT_OPTIONS">Cỡ chữ trong game</string>
-    <string name="PREF_WIDTH">Chiều rộng</string>
-    <string name="PREF_HEIGHT">Chiều cao</string>
-    <string name="PREF_FONT_SMALL">Nhỏ</string>
-    <string name="PREF_FONT_MEDIUM">Trung bình</string>
-    <string name="PREF_FONT_LARGE">Lớn</string>
-    <string name="PREF_FONT_SIZE_IN_SP">Đơn vị: điểm ảnh co giãn (sp)</string>
-    <string name="PREF_BACKGROUND">Màu nền</string>
-    <string name="PREF_VIRTUAL_KEYBOARD_OPTIONS">Bàn phím ảo</string>
-    <string name="PREF_VK_SHOW">Hiện bàn phím ảo</string>
-    <string name="PREF_VK_FEEDBACK">Rung khi bấm phím</string>
-    <string name="PREF_VK_FORCE_OPACITY">Giữ độ mờ cho phím nằm ngoài khung game</string>
-    <string name="PREF_TOUCH_INPUT">Chạm trực tiếp lên màn hình game</string>
-    <string name="PREF_HW_ACCELERATION">Tăng tốc phần cứng (chưa ổn định)</string>
-    <string name="pref_graphics_software">Phần mềm (ổn định nhất)</string>
-    <string name="pref_graphics_hw_gles">Tăng tốc phần cứng (OpenGL ES)</string>
-    <string name="pref_graphics_hw_view">Tăng tốc phần cứng (cửa sổ)</string>
-    <string name="pref_graphics_hw_surface">Tăng tốc phần cứng (surface)</string>
-    <string name="PREF_VK_BACK">Màu phím</string>
-    <string name="PREF_VK_FORE">Màu chữ trên phím</string>
-    <string name="PREF_VK_OUTLINE">Màu viền phím</string>
-    <string name="PREF_COLOR_HINT" translatable="false">RGB</string>
-    <string name="PREF_VK_ALPHA">Độ trong suốt: </string>
-    <string name="PREF_VK_HIDE_DELAY">Tự ẩn sau: </string>
-    <string name="PREF_UNIT_MS">mili giây</string>
-    <string name="PREF_VK_SEL_FORE">Màu chữ khi nhấn</string>
-    <string name="PREF_VK_SEL_BACK">Màu phím khi nhấn</string>
-    <string name="PREF_VK_KEY_SIZES">Cỡ phím</string>
-    <string name="PREF_VK_NAV_KEYS">Phím di chuyển: </string>
-    <string name="PREF_VK_SOFT_KEYS">Phím chức năng (trái/phải): </string>
-    <string name="PREF_VK_NUM_KEYS">Phím số: </string>
-    <string name="PREF_VK_FIRE_KEY">Phím OK/bắn: </string>
-    <string name="PREF_VK_SIZE_HINT">Cỡ</string>
-    <string name="SIZE_PRESETS">Cỡ gợi ý</string>
-    <string name="SWAP_SIZES">Đổi chiều rộng/cao</string>
-    <string name="PREF_SYS_PROPS">Thông số máy giả lập</string>
-    <string name="PREF_SYS_PROPS_HINT" translatable="false">microedition.platform: Sony Ericsson C510i\nmicroedition.profiles: MIDP2.0</string>
-    <string name="PREF_ORIENTATION">Hướng màn hình</string>
-    <string name="pref_orientation_default">Mặc định</string>
-    <string name="pref_orientation_auto">Tự động</string>
-    <string name="pref_orientation_port">Dọc</string>
-    <string name="pref_orientation_land">Ngang</string>
-    <string name="error">Lỗi</string>
-    <string name="message_clear_data">Bạn thực sự muốn xoá dữ liệu ứng dụng?</string>
-    <string name="PREF_VK_TYPE">Kiểu bàn phím</string>
-    <string name="pref_vk_type_arrows">Mũi tên</string>
-    <string name="pref_vk_type_arrows_numbers">Mũi tên + số</string>
-    <string name="pref_vk_type_custom">Tùy chỉnh</string>
-    <string name="pref_vk_type_numbers">Số</string>
-    <string name="pref_vk_type_numbers_arrows">Số + mũi tên</string>
-    <string name="pref_vk_type_phone">Bàn phím điện thoại</string>
-    <string name="pref_vk_type_phone_arrows">Bàn phím điện thoại (có mũi tên)</string>
-    <string name="PREF_LAYOUT">Bố cục phím</string>
-    <string name="PREF_SHADER_FILTER">Hiệu ứng hình (shader):</string>
-    <string name="identity_filter">Nhanh (không hiệu ứng)</string>
-    <string name="shader_tuning">Tinh chỉnh hiệu ứng hình</string>
-    <string name="shader_setting" translatable="false">%s: %s</string>
-    <string name="reset">Đặt lại</string>
-    <string name="pref_input_devices_title">Thiết bị điều khiển</string>
-    <string name="pref_graphics_mode_title">Chế độ vẽ hình:</string>
-    <string name="PREF_FONT_ANTI_ALIASING">Làm mịn chữ</string>
     <string name="pref_screen_gravity">Vị trí khung game</string>
     <string name="pref_screen_gravity_bottom">Dưới</string>
     <string name="pref_screen_gravity_center">Giữa</string>
     <string name="pref_screen_gravity_left">Trái</string>
     <string name="pref_screen_gravity_right">Phải</string>
     <string name="pref_screen_gravity_top">Trên</string>
+    <string name="PREF_SCREEN_OPTIONS">Màn hình</string>
+    <string name="pref_screen_padding_title">Lề khung game</string>
     <string name="pref_screen_scale_type">Cách phóng hình</string>
     <string name="pref_screen_scale_type_fill">Kéo đầy màn hình (méo tỉ lệ)</string>
     <string name="pref_screen_scale_type_fit">Vừa màn hình (giữ tỉ lệ)</string>
     <string name="pref_screen_scale_type_none">Giữ nguyên cỡ gốc</string>
-    <string name="pref_vk_hide_hint">không tự ẩn</string>
-    <string name="unlimited">Không giới hạn</string>
-    <string name="parallel_screen_redrawing">Vẽ lại màn hình song song (đa luồng)</string>
-    <string name="saved">Đã lưu</string>
-
-    <string name="FORCE_CLOSE_CONFIRMATION">Buộc đóng game có thể làm mất dữ liệu lưu, thậm chí hỏng game!\nVẫn đóng?</string>
-    <string name="CONFIRMATION_REQUIRED">Yêu cầu xác nhận</string>
-    <string name="select_dialog_title">Chọn game trong gói</string>
-    <string name="crash_dialog_message">Game gặp lỗi. Lưu nhật ký lỗi để gửi cho AowVN?</string>
-    <string name="crash_dialog_title">Đã phát hiện lỗi</string>
-    <string name="report_crash">Lưu</string>
-    <string name="layout_edit_finished">Đã lưu vị trí phím</string>
-    <string name="layout_edit_finish">Xong chỉnh phím</string>
-    <string name="layout_edit_mode">Chỉnh vị trí phím</string>
-    <string name="layout_scale_mode">Chỉnh cỡ phím</string>
-    <string name="layout_switch">Đổi bố cục phím</string>
-    <string name="hide_buttons">Ẩn phím ảo</string>
-    <string name="take_screenshot">Chụp màn hình</string>
-    <string name="screenshot_saved">Đã lưu ảnh chụp vào</string>
-    <string name="log_saved">Đã lưu nhật ký lỗi</string>
-    <string name="action_keyboard_ime">Bàn phím gõ chữ</string>
-    <string name="action_lock_orientation">Khóa xoay màn hình</string>
-    <string name="pref_vk_save_alert">Bố cục tùy chỉnh sẽ được thay bằng bố cục hiện tại.\nLưu?</string>
-    <string name="opt_save_screen_params">lưu thông số màn hình</string>
-    <string name="cmd_menu">Menu</string>
-    <string name="dismiss">Bỏ qua</string>
-    <string name="show">Hiện</string>
-
+    <string name="pref_screenshot_summary">Chụp đúng ảnh gốc, không phóng và làm mịn</string>
+    <string name="pref_screenshot_title">Chụp ảnh gốc</string>
+    <string name="PREF_SHADER_FILTER">Hiệu ứng hình (shader):</string>
+    <string name="PREF_SHOW_FPS">Hiện số khung hình/giây (FPS)</string>
+    <string name="pref_skin_not_set">chưa chọn</string>
+    <string name="pref_skin_title">Giao diện nền (skin)</string>
+    <string name="pref_skip_resume_call">Bỏ qua lệnh tiếp tục (resume)</string>
+    <string name="pref_soundbank_title">Bộ âm thanh (soundbank)</string>
+    <string name="PREF_SYS_PROPS">Thông số máy giả lập</string>
+    <string name="PREF_SYS_PROPS_HINT" translatable="false">microedition.platform: Sony Ericsson C510i\nmicroedition.profiles: MIDP2.0</string>
     <string name="pref_theme_auto_battery">Tự động theo chế độ tiết kiệm pin</string>
     <string name="pref_theme_auto_time">Tự động theo giờ</string>
     <string name="pref_theme_default" translatable="false">light</string>
@@ -184,49 +173,71 @@
     <string name="pref_theme_night">Tối</string>
     <string name="pref_theme_system">Theo cài đặt máy</string>
     <string name="pref_theme_title">Giao diện</string>
-    <string name="pref_requires_restart_summary">Yêu cầu khởi động lại</string>
-    <string name="pref_enable_actionbar_title">Hiện thanh công cụ</string>
-    <string name="pref_enable_actionbar_summary">Khi chơi toàn màn hình</string>
-    <string name="pref_black_background_title">Nền đen tuyền</string>
-    <string name="pref_black_background_summary">Khi dùng giao diện tối</string>
-    <string name="pref_enable_statusbar_title">Hiện thanh trạng thái</string>
-    <string name="pref_add_cutout_area_title">Dùng cả vùng tai thỏ / camera</string>
-    <string name="pref_wakelock_title">Giữ màn hình luôn sáng</string>
+    <string name="pref_title_emulation">Giả lập</string>
+    <string name="PREF_TOUCH_INPUT">Chạm trực tiếp lên màn hình game</string>
+    <string name="PREF_UNIT_MS">mili giây</string>
     <string name="pref_vibration_title">Cho phép game rung máy</string>
-    <string name="pref_button_shape_title">Hình dạng phím</string>
-    <string name="pref_button_shape_oval">Bầu dục</string>
-    <string name="pref_button_shape_rect">Hình chữ nhật</string>
-    <string name="pref_button_shape_round">Chữ nhật bo góc</string>
-    <string name="pref_app_sort_title">Sắp xếp danh sách game</string>
-    <string name="pref_app_sort_name">Tên</string>
-    <string name="pref_app_sort_date">Ngày tháng</string>
-    <string name="pref_app_sort_vendor">Nhà phát hành</string>
-    <string name="pref_map_keys">Gán phím tay cầm / bàn phím</string>
-    <string name="pref_encoding_title">Bảng mã chữ</string>
-    <string name="pref_default_settings">Cài đặt mặc định</string>
-    <string name="pref_emulator_dir">Thư mục làm việc</string>
-    <string name="pref_screenshot_summary">Chụp đúng ảnh gốc, không phóng và làm mịn</string>
-    <string name="pref_screenshot_title">Chụp ảnh gốc</string>
-    <string name="pref_category_experimental">Tùy chọn thử nghiệm</string>
-    <string name="pref_mascot_summary">Báo khi game dùng</string>
-    <string name="pref_mascot_title">Nhận biết game 3D Mascot Capsule</string>
-
-    <string name="_RESOLUTION_SEPARATOR" translatable="false">x</string>
-    <string name="_FONT_SEPARATOR" translatable="false">-</string>
-    <string name="_MINUS_ONE" translatable="false">-1</string>
-
-    <string name="virtual_key_left_soft" translatable="false">L</string>
-    <string name="virtual_key_right_soft" translatable="false">R</string>
-    <string name="virtual_key_menu" translatable="false">M</string>
-    <string name="virtual_key_d" translatable="false">D</string>
-    <string name="virtual_key_c" translatable="false">C</string>
-    <string name="virtual_key_left" translatable="false">←</string>
-    <string name="virtual_key_right" translatable="false">→</string>
-    <string name="virtual_key_up" translatable="false">↑</string>
-    <string name="virtual_key_down" translatable="false">↓</string>
-    <string name="virtual_key_f" translatable="false">F</string>
-    <string name="virtual_key_a" translatable="false" >A</string>
-    <string name="virtual_key_b" translatable="false">B</string>
+    <string name="PREF_VIRTUAL_KEYBOARD_OPTIONS">Bàn phím ảo</string>
+    <string name="PREF_VK_ALPHA">Độ trong suốt: </string>
+    <string name="PREF_VK_BACK">Màu phím</string>
+    <string name="PREF_VK_FEEDBACK">Rung khi bấm phím</string>
+    <string name="PREF_VK_FIRE_KEY">Phím OK/bắn: </string>
+    <string name="PREF_VK_FORCE_OPACITY">Giữ độ mờ cho phím nằm ngoài khung game</string>
+    <string name="PREF_VK_FORE">Màu chữ trên phím</string>
+    <string name="PREF_VK_HIDE_DELAY">Tự ẩn sau: </string>
+    <string name="pref_vk_hide_hint">không tự ẩn</string>
+    <string name="PREF_VK_KEY_SIZES">Cỡ phím</string>
+    <string name="PREF_VK_NAV_KEYS">Phím di chuyển: </string>
+    <string name="PREF_VK_NUM_KEYS">Phím số: </string>
+    <string name="PREF_VK_OUTLINE">Màu viền phím</string>
+    <string name="pref_vk_save_alert">Bố cục tùy chỉnh sẽ được thay bằng bố cục hiện tại.\nLưu?</string>
+    <string name="PREF_VK_SEL_BACK">Màu phím khi nhấn</string>
+    <string name="PREF_VK_SEL_FORE">Màu chữ khi nhấn</string>
+    <string name="PREF_VK_SHOW">Hiện bàn phím ảo</string>
+    <string name="PREF_VK_SIZE_HINT">Cỡ</string>
+    <string name="PREF_VK_SOFT_KEYS">Phím chức năng (trái/phải): </string>
+    <string name="PREF_VK_TYPE">Kiểu bàn phím</string>
+    <string name="pref_vk_type_arrows">Mũi tên</string>
+    <string name="pref_vk_type_arrows_numbers">Mũi tên + số</string>
+    <string name="pref_vk_type_custom">Tùy chỉnh</string>
+    <string name="pref_vk_type_numbers">Số</string>
+    <string name="pref_vk_type_numbers_arrows">Số + mũi tên</string>
+    <string name="pref_vk_type_phone">Bàn phím điện thoại</string>
+    <string name="pref_vk_type_monika">Monika: bàn số + mũi tên (dưới màn hình)</string>
+    <string name="pref_vk_type_phone_arrows">Bàn phím điện thoại (có mũi tên)</string>
+    <string name="pref_wakelock_title">Giữ màn hình luôn sáng</string>
+    <string name="PREF_WIDTH">Chiều rộng</string>
+    <string name="profiles">Cấu hình</string>
+    <string name="reinstall">Game này đã được cài.\n\nCài lại? Dữ liệu lưu game vẫn được giữ.</string>
+    <string name="reinstall_newest">Cập nhật game lên phiên bản %1$s?\n\nĐang cài: %2$s\nDữ liệu lưu game vẫn được giữ.</string>
+    <string name="reinstall_older">Thay bằng phiên bản cũ hơn %1$s?\n\nĐang cài: %2$s\nBản cũ có thể không đọc được dữ liệu lưu của bản mới.</string>
+    <string name="report_crash">Lưu</string>
+    <string name="reset">Đặt lại</string>
+    <string name="RESET_LAYOUT_CMD">Đặt lại vị trí phím</string>
+    <string name="reset_mapping">Đặt lại</string>
+    <string name="RESET_SETTINGS_CMD">Đặt lại cài đặt</string>
+    <string name="retry">Thử lại</string>
+    <string name="save">Lưu</string>
+    <string name="save_log">Lưu nhật ký lỗi</string>
+    <string name="save_profile">Lưu cấu hình</string>
+    <string name="saved">Đã lưu</string>
+    <string name="scoped_storage_warning">Dữ liệu của bạn đang lưu ở nơi <b>sẽ bị xóa</b> khi gỡ ứng dụng:\n</string>
+    <string name="screenshot_saved">Đã lưu ảnh chụp vào</string>
+    <string name="search">Tìm kiếm</string>
+    <string name="select_dialog_title">Chọn game trong gói</string>
+    <string name="set_as_default">Đặt làm mặc định</string>
+    <string name="set_default_profile_description">Dùng cấu hình này làm mặc định cho mọi game cài sau</string>
+    <string name="shader_setting" translatable="false">%s: %s</string>
+    <string name="shader_tuning">Tinh chỉnh hiệu ứng hình</string>
+    <string name="show">Hiện</string>
+    <string name="SIZE_PRESETS">Cỡ gợi ý</string>
+    <string name="START_CMD">Chơi</string>
+    <string name="SWAP_SIZES">Đổi chiều rộng/cao</string>
+    <string name="take_screenshot">Chụp màn hình</string>
+    <string name="tooltip_skip_resume_call">Cách chữa lỗi game sập sau khi tạm dừng (thu nhỏ, khóa màn hình, đổi cửa sổ…)</string>
+    <string name="unlimited">Không giới hạn</string>
+    <string name="version">Phiên bản: </string>
+    <string name="virtual_key_0" translatable="false">0</string>
     <string name="virtual_key_1" translatable="false">1</string>
     <string name="virtual_key_2" translatable="false">2</string>
     <string name="virtual_key_3" translatable="false">3</string>
@@ -236,30 +247,24 @@
     <string name="virtual_key_7" translatable="false">7</string>
     <string name="virtual_key_8" translatable="false">8</string>
     <string name="virtual_key_9" translatable="false">9</string>
-    <string name="virtual_key_0" translatable="false">0</string>
-    <string name="virtual_key_star" translatable="false">*</string>
+    <string name="virtual_key_a" translatable="false">A</string>
+    <string name="virtual_key_b" translatable="false">B</string>
+    <string name="virtual_key_c" translatable="false">C</string>
+    <string name="virtual_key_d" translatable="false">D</string>
+    <string name="virtual_key_down" translatable="false">↓</string>
+    <string name="virtual_key_f" translatable="false">F</string>
+    <string name="virtual_key_left" translatable="false">←</string>
+    <string name="virtual_key_left_soft" translatable="false">L</string>
+    <string name="virtual_key_menu" translatable="false">M</string>
     <string name="virtual_key_pound" translatable="false">#</string>
-    <string name="mapping_dialog_message">Đang gán: %1$s</string>
-    <string name="mapping_dialog_key_not_specified">không chỉ định</string>
-    <string name="mapping_dialog_title">Bấm phím muốn gán</string>
-    <string name="reset_mapping">Đặt lại</string>
-    <string name="alert_map_menu">Chưa gán phím Menu (M)!\nCó thể không vào được menu của game.</string>
-    <string name="save">Lưu</string>
+    <string name="virtual_key_right" translatable="false">→</string>
+    <string name="virtual_key_right_soft" translatable="false">R</string>
+    <string name="virtual_key_star" translatable="false">*</string>
+    <string name="virtual_key_up" translatable="false">↑</string>
+    <string name="warn_install_from_net">Tệp tin sẽ được tải xuống từ Internet</string>
+    <string name="warning">Cảnh báo</string>
 
-    <string name="error_name">Hãy nhập tên!</string>
-    <string name="set_as_default">Đặt làm mặc định</string>
-    <string name="edit">Chỉnh sửa</string>
-    <string name="add">Thêm</string>
-    <string name="add_profile_description">Tạo cấu hình mới</string>
-    <string name="enter_name">Nhập tên</string>
-    <string name="enter_new_name">Nhập tên mới</string>
-    <string name="set_default_profile_description">Dùng cấu hình này làm mặc định cho mọi game cài sau</string>
-    <string name="error_name_exists">Tên đã tồn tại, hãy nhập tên khác</string>
-    <string name="default_label">"%s (mặc định)"</string>
-    <string name="not_saved_exists">Đã tồn tại</string>
-    <string name="alert_rewrite_profile">Đã có cấu hình tên \"%1$s\".\nGhi đè?</string>
     <!-- Aow Monika -->
-    <string name="pref_vk_type_monika">Monika: bàn số + mũi tên (dưới màn hình)</string>
     <string name="monika_exit_title">Thoát về Aow Monika?</string>
     <string name="monika_exit_message">Nhớ lưu game trong menu của game trước khi thoát để không mất tiến trình.</string>
     <string name="monika_exit_ok">Thoát</string>

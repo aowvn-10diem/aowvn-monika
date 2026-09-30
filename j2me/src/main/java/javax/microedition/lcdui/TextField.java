@@ -1,6 +1,7 @@
 /*
  * Copyright 2012 Kulikov Dmitriy
  * Copyright 2017-2018 Nikita Shakarun
+ * Copyright 2021-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +18,6 @@
 
 package javax.microedition.lcdui;
 
-import android.content.Context;
 import android.view.View;
 
 import javax.microedition.util.ContextHolder;
@@ -104,13 +104,12 @@ public class TextField extends Item {
 	}
 
 	@Override
-	public View getItemContentView() {
-		Context context = ContextHolder.getActivity();
-		return textField.getView(context, this);
+	View getItemContentView() {
+		return textField.getView(ContextHolder.getActivity(), this);
 	}
 
 	@Override
-	public void clearItemContentView() {
+	void clearItemContentView() {
 		textField.clearScreenView();
 	}
 }

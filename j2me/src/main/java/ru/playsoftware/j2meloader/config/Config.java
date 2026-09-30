@@ -1,6 +1,6 @@
 /*
- * Copyright 2018 Nikita Shakarun
- * Copyright 2022 Arman Jussupgaliyev
+ * Copyright 2018-2019 Nikita Shakarun
+ * Copyright 2020-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,32 +17,33 @@
 
 package ru.playsoftware.j2meloader.config;
 
+import static ru.playsoftware.j2meloader.util.Constants.ACTION_EDIT;
+import static ru.playsoftware.j2meloader.util.Constants.KEY_MIDLET_NAME;
+import static ru.playsoftware.j2meloader.util.Constants.PREF_EMULATOR_DIR;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Environment;
 
+import androidx.annotation.Keep;
+import androidx.preference.PreferenceManager;
+
 import java.io.File;
 
 import javax.microedition.shell.MicroActivity;
 import javax.microedition.util.ContextHolder;
 
-import androidx.preference.PreferenceManager;
-
-import ru.playsoftware.j2meloader.BuildConfig;
 import ru.playsoftware.j2meloader.R;
 
-import static ru.playsoftware.j2meloader.util.Constants.*;
-
-import ru.playsoftware.j2meloader.util.FileUtils;
-
 public class Config {
+	public static final String APPS_DB_NAME = "/J2ME-apps.db";
 	public static final String DEX_OPT_CACHE_DIR = "dex_opt";
-	public static final String FS_DIR = "/fs/";
-	public static final String MIDLET_CONFIG_FILE = "/config.json";
 	public static final String MIDLET_CONFIGS_DIR = "/configs/";
+	public static final String MIDLET_CONFIG_FILE = "/config.json";
 	public static final String MIDLET_DATA_DIR = "/data/";
+	public static final String MIDLET_DEX_ARCH = "/converted.zip";
 	public static final String MIDLET_DEX_FILE = "/converted.dex";
 	public static final String MIDLET_ICON_FILE = "/icon.png";
 	public static final String MIDLET_KEY_LAYOUT_FILE = "/VirtualKeyboardLayout";
@@ -51,6 +52,8 @@ public class Config {
 	public static final String MIDLET_RES_FILE = "/res.jar";
 	public static final String SCREENSHOTS_DIR;
 	public static final String SHADERS_DIR = "/shaders/";
+	public static final String SKINS_DIR = "/skins/";
+	public static final String SOUNDBANKS_DIR = "/soundbanks/";
 
 	private static String emulatorDir;
 	private static String dataDir;
@@ -58,28 +61,22 @@ public class Config {
 	private static String profilesDir;
 	private static String appDir;
 
+	@Keep
 	private static final SharedPreferences.OnSharedPreferenceChangeListener sPrefListener =
 			(sharedPreferences, key) -> {
-				if (key.equals(PREF_EMULATOR_DIR)) {
+				if (PREF_EMULATOR_DIR.equals(key)) {
 					initDirs(sharedPreferences.getString(key, emulatorDir));
 				}
 			};
 
 	static {
 		Context context = ContextHolder.getAppContext();
-		String appName = "J2ME-Loader";
-		if (!BuildConfig.FULL_EMULATOR) {
-			appName = context.getString(R.string.app_name);
-		}
+		String appName = context.getString(R.string.app_name);
 		SCREENSHOTS_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
 				+ "/" + appName;
 		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-		String path = FileUtils.isExternalStorageLegacy() ?
-				preferences.getString(PREF_EMULATOR_DIR, null) :
-				context.getExternalFilesDir(null).getPath();
-		if (path == null) {
-			path = Environment.getExternalStorageDirectory() + "/" + appName;
-		}
+		String path = preferences.getString(PREF_EMULATOR_DIR, null);
+		if (path == null) path = Environment.getExternalStorageDirectory() + "/" + appName;
 		initDirs(path);
 		preferences.registerOnSharedPreferenceChangeListener(sPrefListener);
 	}
@@ -104,45 +101,34 @@ public class Config {
 		return appDir;
 	}
 
-	public static String getShadersDir() {
-		return emulatorDir + SHADERS_DIR;
+	public static void openSettings(Context context, String name, String path) {
+		Intent intent = new Intent(ACTION_EDIT, Uri.parse(path), context, ConfigActivity.class);
+		intent.putExtra(KEY_MIDLET_NAME, name);
+		context.startActivity(intent);
 	}
 
-	public static String getFsInternalDir() {
-		return emulatorDir + FS_DIR + "c/";
-	}
-
-	public static String getFsExternalDir() {
-		if (FileUtils.isExternalStorageLegacy()) {
-			return Environment.getExternalStorageDirectory().getPath() + "/";
-		} else {
-			return emulatorDir + FS_DIR + "e/";
+	public static void startApp(Context context, String name, String path) {
+		int end = path.lastIndexOf(File.separatorChar);
+		int start = path.lastIndexOf(File.separatorChar, end - 1);
+		if (start > 0) {
+			String configPath = new StringBuilder(path)
+					.replace(start, end + 1, MIDLET_CONFIGS_DIR)
+					.append(MIDLET_CONFIG_FILE)
+					.toString();
+			File configFile = new File(configPath);
+			if (!configFile.exists()) {
+				// Aow Monika: game mới chưa có cấu hình → ConfigActivity tự tạo cấu hình mặc định rồi chạy luôn
+				// (không hiện màn cài đặt riêng của game). Chỉ hiện khi người dùng chủ động mở cài đặt (openSettings).
+				Intent intent = new Intent(Intent.ACTION_DEFAULT, Uri.parse(path), context, ConfigActivity.class);
+				intent.putExtra(KEY_MIDLET_NAME, name);
+				context.startActivity(intent);
+				return;
+			}
 		}
-	}
 
-	public static void startApp(Context context, String name, String path, boolean showSettings) {
-		startApp(context, name, path, showSettings, null);
-	}
-
-	public static void startApp(Context context, String name, String path, boolean showSettings, String arguments) {
-		File appDir = new File(path);
-		String workDir = appDir.getParentFile().getParent();
-		File file = new File(workDir + Config.MIDLET_CONFIGS_DIR + appDir.getName());
-		if (showSettings || !file.exists()) {
-			// Aow Monika: game mới chưa có cấu hình → ConfigActivity tự tạo cấu hình mặc định rồi chạy luôn
-			// (không hiện màn cài đặt riêng của game). Chỉ hiện khi người dùng chủ động mở cài đặt.
-			Intent intent = new Intent(showSettings ? ACTION_EDIT : Intent.ACTION_DEFAULT, Uri.parse(path),
-					context, ConfigActivity.class);
-			intent.putExtra(KEY_MIDLET_NAME, name);
-			intent.putExtra(KEY_START_ARGUMENTS, arguments);
-			context.startActivity(intent);
-		} else {
-			Intent intent = new Intent(Intent.ACTION_DEFAULT, Uri.parse(path),
-					context, MicroActivity.class);
-			intent.putExtra(KEY_MIDLET_NAME, name);
-			intent.putExtra(KEY_START_ARGUMENTS, arguments);
-			context.startActivity(intent);
-		}
+		Intent intent = new Intent(Intent.ACTION_DEFAULT, Uri.parse(path), context, MicroActivity.class);
+		intent.putExtra(KEY_MIDLET_NAME, name);
+		context.startActivity(intent);
 	}
 
 	private static void initDirs(String path) {

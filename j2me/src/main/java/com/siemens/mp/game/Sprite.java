@@ -1,68 +1,90 @@
 /*
- *  Siemens API for MicroEmulator
- *  Copyright (C) 2003 Markus Heberling <markus@heberling.net>
+ *  Copyright 2020 Yury Kharchenko
  *
- *  It is licensed under the following two licenses as alternatives:
- *    1. GNU Lesser General Public License (the "LGPL") version 2.1 or any newer version
- *    2. Apache License (the "AL") Version 2.0
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *  You may not use this file except in compliance with at least one of
- *  the above two licenses.
- *
- *  You may obtain a copy of the LGPL at
- *      http://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt
- *
- *  You may obtain a copy of the AL at
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the LGPL or the AL for the specific language governing permissions and
- *  limitations.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 package com.siemens.mp.game;
 
-import javax.microedition.lcdui.Graphics;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+
 import javax.microedition.lcdui.Image;
 
 public class Sprite extends GraphicObject {
-	private Image[] pixels;
-	private int x;
-	private int y;
+	private Bitmap sprite;
+	private int frameHeight;
+	private Rect dstBounds;
+	private Rect frameBounds;
+	private Rect collisionBounds;
 	private int frame;
-	private int collx, colly, collw, collh;
+	private int posX;
+	private int posY;
 
-	public Sprite(byte[] pixels, int pixel_offset, int width, int height, byte[] mask, int mask_offset, int numFrames) {
-		this(
-				com.siemens.mp.ui.Image.createImageFromBitmap(pixels, mask, width, height * numFrames),
-				com.siemens.mp.ui.Image.createImageFromBitmap(mask, width, height * numFrames),
-				numFrames
-		);
+	public Sprite(byte[] pixels, int pixel_offset, int width, int height,
+				  byte[] mask, int mask_offset, int numFrames) {
+		if (pixels == null
+				|| pixel_offset != 0
+				|| mask_offset != 0
+				|| width * height * numFrames / 8 != pixels.length
+				|| (mask != null && pixels.length != mask.length)
+				|| width % 8 != 0)
+			throw new IllegalArgumentException();
+		Image image = com.siemens.mp.ui.Image.createImageFromBitmap(pixels, mask, width, height * numFrames);
+		init(image, null, numFrames);
 	}
 
 	public Sprite(ExtendedImage pixels, ExtendedImage mask, int numFrames) {
-		this(pixels.getImage(), mask.getImage(), numFrames);
+		if (pixels == null) throw new NullPointerException();
+		init(pixels.getImage(), mask == null ? null : mask.getImage(), numFrames);
 	}
 
 	public Sprite(Image pixels, Image mask, int numFrames) {
-		this.pixels = new Image[numFrames];
+		init(pixels, mask, numFrames);
+	}
 
+	private void init(Image pixels, Image mask, int numFrames) {
+		if (pixels == null) {
+			throw new NullPointerException();
+		}
+		int width = pixels.getWidth();
+		int height = pixels.getHeight();
 		if (mask != null) {
-			pixels = com.siemens.mp.lcdui.Image.createTransparentImageFromMask(pixels, mask);
+			sprite = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+			Canvas canvas = new Canvas(sprite);
+			canvas.drawBitmap(pixels.getBitmap(), 0, 0, null);
+			Paint paint = new Paint();
+			float[] src = {
+					0, 0, 0, 0, 0,
+					0, 0, 0, 0, 0,
+					0, 0, 0, 0, 0,
+					1f/3f, 1f/3f, 1f/3f, 0, -255,
+			};
+			paint.setColorFilter(new ColorMatrixColorFilter(src));
+			paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+			canvas.drawBitmap(mask.getBitmap(), 0, 0, paint);
+		} else {
+			sprite = pixels.getBitmap().copy(Bitmap.Config.ARGB_8888, false);
 		}
-
-		for (int i = 0; i < numFrames; i++) {
-			Image img = Image.createImage(pixels.getWidth(), pixels.getHeight() / numFrames, 0);
-
-			img.getGraphics().drawImage(pixels, 0, -i * pixels.getHeight() / numFrames, 0);
-			this.pixels[i] = img;
-		}
-		collx = 0;
-		colly = 0;
-		collw = this.pixels[0].getWidth();
-		collh = this.pixels[0].getHeight();
+		frameHeight = height / numFrames;
+		frameBounds = new Rect(0, 0, width, frameHeight);
+		dstBounds = new Rect(frameBounds);
+		collisionBounds = new Rect(dstBounds);
 	}
 
 	public int getFrame() {
@@ -70,50 +92,40 @@ public class Sprite extends GraphicObject {
 	}
 
 	public int getXPosition() {
-		return x;
+		return posX;
 	}
 
 	public int getYPosition() {
-		return y;
+		return posY;
 	}
 
 	public boolean isCollidingWith(Sprite other) {
-		int left = x + collx;
-		int right = x + collx + collw;
-		int top = y + colly;
-		int bottom = y + colly + collh;
-		int otherLeft = other.x + other.collx;
-		int otherRight = other.x + other.collx + other.collw;
-		int otherTop = other.y + other.colly;
-		int otherBottom = other.y + other.colly + other.collh;
-		return left < otherRight && otherLeft < right && top < otherBottom && otherTop < bottom;
+		return Rect.intersects(collisionBounds, other.collisionBounds);
 	}
 
 	public boolean isCollidingWithPos(int xpos, int ypos) {
-		int left = x + collx;
-		int right = x + collx + collw;
-		int top = y + colly;
-		int bottom = y + colly + collh;
-		return (xpos >= left) && (xpos < right) && (ypos >= top) && (ypos < bottom);
+		return collisionBounds.contains(xpos, ypos);
 	}
 
 	public void setCollisionRectangle(int x, int y, int width, int height) {
-		collx = x;
-		colly = y;
-		collw = width;
-		collh = height;
+		int dx = posX;
+		int dy = posY;
+		collisionBounds.set(dx + x, dy + y, dx + x + width, dy + y + height);
 	}
 
-	public void setFrame(int framenumber) {
-		frame = framenumber;
+	public void setFrame(int frameNumber) {
+		frame = frameNumber;
+		frameBounds.offsetTo(0, frameHeight * frameNumber);
 	}
 
 	public void setPosition(int x, int y) {
-		this.x = x;
-		this.y = y;
+		collisionBounds.offset(x - posX, y - posY);
+		posX = x;
+		posY = y;
 	}
 
-	protected void paint(Graphics g) {
-		g.drawImage(pixels[frame], x, y, 0);
+	protected void paint(Canvas c, int x, int y) {
+		dstBounds.offsetTo(x + posX, y + posY);
+		c.drawBitmap(sprite, frameBounds, dstBounds, null);
 	}
 }

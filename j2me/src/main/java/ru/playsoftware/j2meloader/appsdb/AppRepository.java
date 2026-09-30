@@ -1,6 +1,6 @@
 /*
  * Copyright 2018 Nikita Shakarun
- * Copyright 2019-2022 Yury Kharchenko
+ * Copyright 2020-2024 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,135 +17,72 @@
 
 package ru.playsoftware.j2meloader.appsdb;
 
-import static ru.playsoftware.j2meloader.util.Constants.PREF_APP_SORT;
-import static ru.playsoftware.j2meloader.util.Constants.PREF_EMULATOR_DIR;
+import android.util.Log;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-
-import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.Observer;
-import androidx.preference.PreferenceManager;
-import androidx.sqlite.db.SupportSQLiteProgram;
-import androidx.sqlite.db.SupportSQLiteQuery;
 
+import org.acra.ACRA;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import io.reactivex.Completable;
 import io.reactivex.CompletableObserver;
-import io.reactivex.Flowable;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.flowables.ConnectableFlowable;
 import io.reactivex.schedulers.Schedulers;
-import ru.playsoftware.j2meloader.R;
 import ru.playsoftware.j2meloader.applist.AppItem;
-import ru.playsoftware.j2meloader.applist.AppListModel;
-import ru.playsoftware.j2meloader.config.Config;
 import ru.playsoftware.j2meloader.util.AppUtils;
 
-public class AppRepository implements SharedPreferences.OnSharedPreferenceChangeListener {
-
-	private final String[] orderTerms;
-	private final Context context;
-	private final MutableLiveData<List<AppItem>> listLiveData = new MutableLiveData<>();
-	private final MutableLiveData<Throwable> errorsLiveData = new MutableLiveData<>();
+public class AppRepository {
+	private final MutableLiveData<List<AppItem>> appList = new MutableLiveData<>();
 	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
-	private final ErrorObserver errorObserver = new ErrorObserver(errorsLiveData);
+	private final ErrorObserver errorObserver = new ErrorObserver();
+	private final AppListSQLiteQuery query = new AppListSQLiteQuery();
 
 	private AppDatabase db;
-	private AppItemDao appItemDao;
-	private int sortVariant;
 
-	public AppRepository(AppListModel model) {
-		if (model.getAppRepository() != null) {
-			throw new IllegalStateException("You must get instance from 'AppListModel'");
-		}
-		this.context = model.getApplication();
-		orderTerms = context.getResources().getStringArray(R.array.pref_app_sort_values);
-		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-		try {
-			sortVariant = preferences.getInt(PREF_APP_SORT, 0);
-		} catch (Exception e) {
-			sortVariant = preferences.getString(PREF_APP_SORT, "name").equals("name") ? 0 : 1;
-			preferences.edit().putInt(PREF_APP_SORT, sortVariant).apply();
-		}
-		preferences.registerOnSharedPreferenceChangeListener(this);
-		String emulatorDir = Config.getEmulatorDir();
-		File dir = new File(emulatorDir);
-		if (dir.isDirectory() && dir.canWrite()) {
-			initDb(emulatorDir);
-		}
-	}
-
-	public void initDb(String path) {
-		db = AppDatabase.open(context, path);
-		appItemDao = db.appItemDao();
-		ConnectableFlowable<List<AppItem>> listConnectableFlowable = getAll()
-				.subscribeOn(Schedulers.io())
+	private void initDb(String file) {
+		db = AppDatabase.open(file);
+		ConnectableFlowable<List<AppItem>> listConnectableFlowable = db.appItemDao().getAll(query)
 				.publish();
 		compositeDisposable.add(listConnectableFlowable
 				.firstElement()
-				.subscribe(list -> AppUtils.updateDb(this, new ArrayList<>(list)), errorsLiveData::postValue));
-		compositeDisposable.add(listConnectableFlowable.subscribe(listLiveData::postValue, errorsLiveData::postValue));
+				.observeOn(Schedulers.io())
+				.subscribe(this::syncWithFilesystem, errorObserver::onError));
+		compositeDisposable.add(listConnectableFlowable.subscribe(appList::postValue, errorObserver::onError));
 		compositeDisposable.add(listConnectableFlowable.connect());
 	}
 
-	public void observeApps(LifecycleOwner owner, Observer<List<AppItem>> observer) {
-		listLiveData.observe(owner, observer);
-	}
-
-	public Flowable<List<AppItem>> getAll() {
-		return appItemDao.getAll(new MutableSortSQLiteQuery(this, orderTerms));
+	private void execute(Completable completable) {
+		completable.subscribeOn(Schedulers.from(db.getQueryExecutor())).subscribe(errorObserver);
 	}
 
 	public void insert(AppItem item) {
-		Completable.fromAction(() -> appItemDao.insert(item))
-				.subscribeOn(Schedulers.io())
-				.subscribe(errorObserver);
-	}
-
-	public void insert(List<AppItem> items) {
-		Completable.fromAction(() -> appItemDao.insert(items))
-				.subscribeOn(Schedulers.io())
-				.subscribe();
+		execute(db.appItemDao().insert(item));
 	}
 
 	public void update(AppItem item) {
-		Completable.fromAction(() -> appItemDao.update(item))
-				.subscribeOn(Schedulers.io())
-				.subscribe(errorObserver);
+		execute(db.appItemDao().update(item));
 	}
 
 	public void delete(AppItem item) {
-		Completable.fromAction(() -> appItemDao.delete(item))
-				.subscribeOn(Schedulers.io())
-				.subscribe(errorObserver);
-	}
-
-	public void delete(List<AppItem> items) {
-		Completable.fromAction(() -> appItemDao.delete(items))
-				.subscribeOn(Schedulers.io())
-				.subscribe(errorObserver);
-	}
-
-	public void deleteAll() {
-		Completable.fromAction(appItemDao::deleteAll)
+		execute(db.appItemDao().delete(item));
+		Completable.fromAction(() -> AppUtils.deleteApp(item))
 				.subscribeOn(Schedulers.io())
 				.subscribe(errorObserver);
 	}
 
 	public AppItem get(String name, String vendor) {
-		return appItemDao.get(name, vendor);
+		return db.appItemDao().get(name, vendor);
 	}
 
 	public AppItem get(int id) {
-		return appItemDao.get(id);
+		return db.appItemDao().get(id);
 	}
 
 	public void close() {
@@ -155,60 +92,69 @@ public class AppRepository implements SharedPreferences.OnSharedPreferenceChange
 		compositeDisposable.clear();
 	}
 
-	public int getSort() {
-		return sortVariant;
-	}
-
-	private void setSort(int variant) {
-		if (this.sortVariant == variant) {
-			variant |= 0x80000000;
+	public void setFilter(String filter) {
+		if (query.setFilter(filter)) {
+			compositeDisposable.add(db.appItemDao().getAllSingle(query)
+					.subscribeOn(Schedulers.from(db.getQueryExecutor()))
+					.subscribe(appList::postValue, errorObserver::onError));
 		}
-		this.sortVariant = variant;
-		Disposable disposable = appItemDao.getAllSingle(new MutableSortSQLiteQuery(this, orderTerms))
-				.subscribeOn(Schedulers.io())
-				.subscribe(listLiveData::postValue, errorsLiveData::postValue);
-		compositeDisposable.add(disposable);
 	}
 
-	@Override
-	public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
-		if (PREF_APP_SORT.equals(key)) {
-			setSort(sp.getInt(PREF_APP_SORT, 0));
-		} else if (PREF_EMULATOR_DIR.equals(key)) {
-			String newPath = sp.getString(key, null);
-			if (db != null) {
-				String databaseName = db.getOpenHelper().getDatabaseName();
-				if (databaseName != null) {
-					String dbDir = new File(databaseName).getParent();
-					if (dbDir != null) {
-						if (dbDir.equals(newPath)) {
-							return;
-						}
-					}
-				}
-				db.close();
-				compositeDisposable.clear();
+	public String getFilter() {
+		return query.getFilter();
+	}
+
+	public void setSort(int sort) {
+		if (query.setSort(sort)) {
+			compositeDisposable.add(db.appItemDao().getAllSingle(query)
+					.subscribeOn(Schedulers.from(db.getQueryExecutor()))
+					.subscribe(appList::postValue, errorObserver::onError));
+		}
+	}
+
+	public LiveData<List<AppItem>> getAppList() {
+		return appList;
+	}
+
+	public void setDatabaseFile(String file) {
+		if (db != null) {
+			if (file.equals(db.getOpenHelper().getReadableDatabase().getPath())) {
+				return;
 			}
-			initDb(newPath);
+			close();
+		}
+		initDb(file);
+	}
+
+	private void syncWithFilesystem(List<AppItem> list) {
+		List<AppItem> items = new ArrayList<>(list);
+		List<String> paths = AppUtils.getAppDirectories();
+		// incomplete installation must not be added to DB
+		paths.remove(".tmp");
+		if (paths.isEmpty()) {
+			// If db isn't empty
+			if (!items.isEmpty()) {
+				execute(db.appItemDao().deleteAll());
+				AppUtils.removeFromRecentShortcuts(items);
+			}
+			return;
+		}
+		for (Iterator<AppItem> it = items.iterator(); it.hasNext() && !paths.isEmpty(); ) {
+			AppItem item = it.next();
+			if (paths.remove(item.getPath())) {
+				it.remove();
+			}
+		}
+		if (items.size() > 0) {
+			execute(db.appItemDao().delete(items));
+			AppUtils.removeFromRecentShortcuts(items);
+		}
+		if (paths.size() > 0) {
+			execute(db.appItemDao().insert(AppUtils.getApps(paths)));
 		}
 	}
 
-	public void observeErrors(LifecycleOwner owner, Observer<Throwable> observer) {
-		errorsLiveData.observe(owner, observer);
-	}
-
-	public void onWorkDirReady() {
-		if (db == null) {
-			initDb(Config.getEmulatorDir());
-		}
-	}
-
-	private static class ErrorObserver implements CompletableObserver {
-		private final MutableLiveData<Throwable> callback;
-
-		public ErrorObserver(MutableLiveData<Throwable> callback) {
-			this.callback = callback;
-		}
+	static class ErrorObserver implements CompletableObserver {
 
 		@Override
 		public void onSubscribe(@NotNull Disposable d) {
@@ -220,34 +166,8 @@ public class AppRepository implements SharedPreferences.OnSharedPreferenceChange
 
 		@Override
 		public void onError(@NotNull Throwable e) {
-			callback.postValue(e);
-		}
-	}
-
-	private static class MutableSortSQLiteQuery implements SupportSQLiteQuery {
-		private static final String SELECT = "SELECT * FROM apps ORDER BY ";
-		private final AppRepository repository;
-		private final String[] orderTerms;
-
-		private MutableSortSQLiteQuery(AppRepository repository, String[] orderTerms) {
-			this.repository = repository;
-			this.orderTerms = orderTerms;
-		}
-
-		@Override
-		public String getSql() {
-			int sortVariant = repository.getSort();
-			String order = sortVariant >= 0 ? " ASC" : " DESC";
-			return SELECT + String.format(orderTerms[sortVariant & 0x7FFFFFFF], order);
-		}
-
-		@Override
-		public void bindTo(SupportSQLiteProgram statement) {
-		}
-
-		@Override
-		public int getArgCount() {
-			return 0;
+			Log.e("AppRepository", e.toString(), e);
+			ACRA.getErrorReporter().handleException(e);
 		}
 	}
 }

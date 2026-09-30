@@ -57,8 +57,19 @@ public final class J2meRuntime {
 		ContextHolder.setApplication(app);
 		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(app);
 		sp.registerOnSharedPreferenceChangeListener(THEME_LISTENER);
+		// Như EmulatorApplication của JL-Mod: lần đầu chọn hiện thanh công cụ nếu máy không có phím menu cứng.
+		if (!sp.contains(Constants.PREF_TOOLBAR)) {
+			sp.edit().putBoolean(Constants.PREF_TOOLBAR, !android.view.ViewConfiguration.get(app).hasPermanentMenuKey()).apply();
+		}
 		applyNightMode(sp.getString(Constants.PREF_THEME, null));
 		AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
+	}
+
+	/** Tên tiến trình hiện tại (chính / ":midlet"). Dùng cho báo lỗi. */
+	public static String getProcessName() {
+		return android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P
+				? Application.getProcessName()
+				: ru.playsoftware.j2meloader.util.FileUtils.getText("/proc/self/cmdline").trim();
 	}
 
 	/**

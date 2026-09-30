@@ -1,14 +1,19 @@
-// dexlib (dx của AOSP, đi kèm J2ME Loader): chuyển file .jar của game Java thành .dex để chạy trên Android.
+// dexlib (dx của AOSP + bộ vá của JL-Mod): chuyển file .jar của game Java thành .dex để chạy trên Android.
 plugins {
     id 'com.android.library'
 }
 
 android {
     compileSdk 35
-    namespace 'com.android.dx'
+    namespace 'ru.playsoftware.j2meloader.dexlib'
 
     defaultConfig {
         minSdk 26
+        buildConfigField 'int', 'VERSION_CODE', '1'
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     compileOptions {
@@ -23,6 +28,6 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'net.lingala.zip4j:zip4j:2.10.0'
-    implementation 'org.ow2.asm:asm:9.8'
+    api 'net.lingala.zip4j:zip4j:2.11.5'
+    implementation 'org.ow2.asm:asm:9.6'
 }

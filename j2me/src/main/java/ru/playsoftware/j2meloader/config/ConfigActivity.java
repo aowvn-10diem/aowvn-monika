@@ -1,6 +1,8 @@
 /*
- * Copyright 2018 Nikita Shakarun
- * Copyright 2020 Yury Kharchenko
+ * Copyright 2012 Kulikov Dmitriy
+ * Copyright 2015-2016 Nickolay Savchenko
+ * Copyright 2018-2019 Nikita Shakarun
+ * Copyright 2019-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +19,16 @@
 
 package ru.playsoftware.j2meloader.config;
 
+import static ru.playsoftware.j2meloader.util.Constants.ACTION_EDIT;
+import static ru.playsoftware.j2meloader.util.Constants.ACTION_EDIT_PROFILE;
+import static ru.playsoftware.j2meloader.util.Constants.KEY_MIDLET_NAME;
+import static ru.playsoftware.j2meloader.util.Constants.PREF_DEFAULT_PROFILE;
+
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
@@ -30,7 +38,6 @@ import android.os.storage.StorageVolume;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.Spanned;
-import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.util.TypedValue;
@@ -43,12 +50,23 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.ListPopupWindow;
+import androidx.appcompat.widget.TooltipCompat;
+import androidx.core.widget.TextViewCompat;
+import androidx.preference.PreferenceManager;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -57,48 +75,37 @@ import java.util.Set;
 import javax.microedition.shell.MicroActivity;
 import javax.microedition.util.ContextHolder;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.PopupMenu;
-import androidx.fragment.app.FragmentManager;
-import androidx.preference.PreferenceManager;
-import androidx.core.widget.TextViewCompat;
-
+import kotlin.io.FilesKt;
 import ru.playsoftware.j2meloader.R;
-import ru.playsoftware.j2meloader.base.BaseActivity;
+import ru.playsoftware.j2meloader.config.model.Size;
 import ru.playsoftware.j2meloader.databinding.ActivityConfigBinding;
 import ru.playsoftware.j2meloader.settings.KeyMapperActivity;
 import ru.playsoftware.j2meloader.util.FileUtils;
+import ru.playsoftware.j2meloader.util.ViewUtils;
+import ru.woesss.util.TextUtils;
 import yuku.ambilwarna.AmbilWarnaDialog;
 
-import static ru.playsoftware.j2meloader.util.Constants.*;
-
-public class ConfigActivity extends BaseActivity implements View.OnClickListener, ShaderTuneDialog.Callback {
-
+public class ConfigActivity extends AppCompatActivity implements View.OnClickListener, ShaderTuneAlert.Callback {
 	private static final String TAG = ConfigActivity.class.getSimpleName();
 
-	protected ArrayList<String> screenPresets = new ArrayList<>();
-
-	protected ArrayList<int[]> fontPresetValues = new ArrayList<>();
-	protected ArrayList<String> fontPresetTitles = new ArrayList<>();
+	private final ArrayList<Size> screenPresets = new ArrayList<>();
+	private final ArrayList<int[]> fontPresetValues = new ArrayList<>();
+	private final ArrayList<String> fontPresetTitles = new ArrayList<>();
 
 	private File keylayoutFile;
 	private File dataDir;
 	private ProfileModel params;
-	private FragmentManager fragmentManager;
 	private boolean isProfile;
 	private Display display;
 	private File configDir;
 	private String defProfile;
-	private ArrayAdapter<ShaderInfo> spShaderAdapter;
+	private ArrayList<ShaderInfo> shaders;
 	private String workDir;
 	private boolean needShow;
-
 	private ActivityConfigBinding binding;
 
-	@SuppressLint({"StringFormatMatches", "StringFormatInvalid"})
 	@Override
-	public void onCreate(Bundle savedInstanceState) {
+	public void onCreate(@Nullable Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Intent intent = getIntent();
 		String action = intent.getAction();
@@ -160,11 +167,9 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 		}
 		loadKeyLayout();
 		binding = ActivityConfigBinding.inflate(getLayoutInflater());
-		View view = binding.getRoot();
-		setContentView(view);
+		setContentView(binding.getRoot());
 		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 		display = getWindowManager().getDefaultDisplay();
-		fragmentManager = getSupportFragmentManager();
 
 		fillScreenSizePresets(display.getWidth(), display.getHeight());
 
@@ -172,23 +177,22 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 		addFontSizePreset("128 x 160", 13, 15, 20);
 		addFontSizePreset("176 x 220", 15, 18, 22);
 		addFontSizePreset("240 x 320", 18, 22, 26);
-		addFontSizePreset("360 x 640", 22, 26, 30);
 
-		binding.keepAspectRatioToggle.setOnCheckedChangeListener(this::onLockAspectChanged);
-		binding.showScreenSizePresets.setOnClickListener(this::showScreenPresets);
-		binding.swapScreenSides.setOnClickListener(this);
-		binding.addScreenSizeToPresets.setOnClickListener(v -> addResolutionToPresets());
-		binding.showFontSizePresets.setOnClickListener(this);
-		binding.selectScreenBackgroundColor.setOnClickListener(this);
-		binding.showKeyMappings.setOnClickListener(this);
-		binding.updateKeyboardNotPressedButtonBackgroundColor.setOnClickListener(this);
-		binding.updateKeyboardNotPressedButtonLabelColor.setOnClickListener(this);
-		binding.updateKeyboardPressedButtonBackgroundColor.setOnClickListener(this);
-		binding.updateKeyboardPressedButtonLabelColor.setOnClickListener(this);
-		binding.updateKeyboardOutlineColor.setOnClickListener(this);
-		binding.updateEncoding.setOnClickListener(this::showCharsetPicker);
-		binding.tuneSelectedShader.setOnClickListener(this::showShaderSettings);
-		binding.scaleRatio.addTextChangedListener(new TextWatcher() {
+		binding.cbLockAspect.setOnCheckedChangeListener(this::onLockAspectChanged);
+		binding.cmdScreenSizePresets.setOnClickListener(this::showScreenPresets);
+		binding.cmdSwapSizes.setOnClickListener(this);
+		binding.cmdAddToPreset.setOnClickListener(v -> addResolutionToPresets());
+		binding.cmdFontSizePresets.setOnClickListener(this);
+		binding.cmdScreenBack.setOnClickListener(this);
+		binding.cmdKeyMappings.setOnClickListener(this);
+		binding.cmdVKBack.setOnClickListener(this);
+		binding.cmdVKFore.setOnClickListener(this);
+		binding.cmdVKSelBack.setOnClickListener(this);
+		binding.cmdVKSelFore.setOnClickListener(this);
+		binding.cmdVKOutline.setOnClickListener(this);
+		binding.btEncoding.setOnClickListener(this::showCharsetPicker);
+		binding.btShaderTune.setOnClickListener(this::showShaderSettings);
+		binding.tfScaleRatioValue.addTextChangedListener(new TextWatcher() {
 			@Override
 			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 			}
@@ -197,13 +201,9 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 			public void onTextChanged(CharSequence s, int start, int before, int count) {
 				int length = s.length();
 				if (length > 4) {
-					if (start >= 4) {
-						binding.scaleRatio.getText().delete(4, length);
-					} else {
-						int st = start + count;
-						int end = st + (before == 0 ? count : before);
-						binding.scaleRatio.getText().delete(st, Math.min(end, length));
-					}
+					int st = Math.min(start + count, 4);
+					int end = st + length - 4;
+					binding.tfScaleRatioValue.getText().delete(st, end);
 				}
 			}
 
@@ -220,22 +220,23 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 				}
 			}
 		});
-		binding.graphicalModeSelector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+		binding.spGraphicsMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
 			public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 				switch (position) {
-					case 0:
-					case 3:
-						binding.parallelScreenRedrawingToggle.setVisibility(View.VISIBLE);
-						binding.shaderRoot.setVisibility(View.GONE);
-						break;
-					case 1:
-						binding.parallelScreenRedrawingToggle.setVisibility(View.GONE);
+					case 0, 3 -> {
+						binding.cxParallel.setVisibility(View.VISIBLE);
+						binding.shaderContainer.setVisibility(View.GONE);
+					}
+					case 1 -> {
+						binding.cxParallel.setVisibility(View.GONE);
+						binding.shaderContainer.setVisibility(View.VISIBLE);
 						initShaderSpinner();
-						break;
-					case 2:
-						binding.parallelScreenRedrawingToggle.setVisibility(View.GONE);
-						binding.shaderRoot.setVisibility(View.GONE);
+					}
+					case 2 -> {
+						binding.cxParallel.setVisibility(View.GONE);
+						binding.shaderContainer.setVisibility(View.GONE);
+					}
 				}
 			}
 
@@ -243,145 +244,7 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 			public void onNothingSelected(AdapterView<?> parent) {
 			}
 		});
-		binding.showVirtualKeyboardToggle.setOnClickListener((b) -> {
-			View.OnLayoutChangeListener onLayoutChangeListener = new View.OnLayoutChangeListener() {
-				@Override
-				public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
-					View focus = binding.wholeConfigRoot.findFocus();
-					if (focus != null) focus.clearFocus();
-					v.scrollTo(0, binding.inputConfigRoot.getTop());
-					v.removeOnLayoutChangeListener(this);
-				}
-			};
-			binding.wholeConfigRoot.addOnLayoutChangeListener(onLayoutChangeListener);
-			binding.virtualKeyboardConfigGroup.setVisibility(binding.showVirtualKeyboardToggle.isChecked() ? View.VISIBLE : View.GONE);
-		});
-		binding.screenBackgroundHexColor.addTextChangedListener(
-				new ColorTextWatcher(binding.screenBackgroundHexColor));
-		binding.keyboardNotPressedButtonLabelColorHex.addTextChangedListener(
-				new ColorTextWatcher(binding.keyboardNotPressedButtonLabelColorHex));
-		binding.keyboardNotPressedButtonBackgroundColorHex.addTextChangedListener(
-				new ColorTextWatcher(binding.keyboardNotPressedButtonBackgroundColorHex));
-		binding.keyboardPressedButtonLabelColorHex.addTextChangedListener(
-				new ColorTextWatcher(binding.keyboardPressedButtonLabelColorHex));
-		binding.keyboardPressedButtonBackgroundColorHex.addTextChangedListener(
-				new ColorTextWatcher(binding.keyboardPressedButtonBackgroundColorHex));
-		binding.keyboardOutlineColorHex.addTextChangedListener(
-				new ColorTextWatcher(binding.keyboardOutlineColorHex));
-	}
-
-	private void onLockAspectChanged(CompoundButton cb, boolean isChecked) {
-		if (isChecked) {
-			float w;
-			try {
-				w = Integer.parseInt(binding.screenWidth.getText().toString());
-			} catch (Exception ignored) {
-				w = 0;
-			}
-			if (w <= 0) {
-				cb.setChecked(false);
-				return;
-			}
-			float h;
-			try {
-				h = Integer.parseInt(binding.screenHeight.getText().toString());
-			} catch (Exception ignored) {
-				h = 0;
-			}
-			if (h <= 0) {
-				cb.setChecked(false);
-				return;
-			}
-			float finalW = w;
-			float finalH = h;
-			binding.screenWidth.setOnFocusChangeListener(new ResolutionAutoFill(
-					binding.screenWidth, binding.screenHeight, finalH / finalW));
-			binding.screenHeight.setOnFocusChangeListener(new ResolutionAutoFill(
-					binding.screenHeight, binding.screenWidth, finalW / finalH));
-
-		} else {
-			View.OnFocusChangeListener listener = binding.screenWidth.getOnFocusChangeListener();
-			if (listener != null) {
-				listener.onFocusChange(binding.screenWidth, false);
-				binding.screenWidth.setOnFocusChangeListener(null);
-			}
-			listener = binding.screenHeight.getOnFocusChangeListener();
-			if (listener != null) {
-				listener.onFocusChange(binding.screenHeight, false);
-				binding.screenHeight.setOnFocusChangeListener(null);
-			}
-		}
-	}
-
-	void loadConfig() {
-		params = ProfilesManager.loadConfig(configDir);
-		if (params == null && defProfile != null) {
-			FileUtils.copyFiles(new File(Config.getProfilesDir(), defProfile), configDir, null);
-			params = ProfilesManager.loadConfig(configDir);
-		}
-		if (params == null) {
-			params = new ProfileModel(configDir);
-		}
-	}
-
-	private void showShaderSettings(View v) {
-		ShaderInfo shader = (ShaderInfo) binding.shaderSelector.getSelectedItem();
-		params.shader = shader;
-		ShaderTuneDialog.newInstance(shader).show(getSupportFragmentManager(), "ShaderTuning");
-	}
-
-	private void initShaderSpinner() {
-		if (spShaderAdapter != null) {
-			binding.shaderRoot.setVisibility(View.VISIBLE);
-			return;
-		}
-		File dir = new File(workDir + Config.SHADERS_DIR);
-		if (!dir.exists()) {
-			//noinspection ResultOfMethodCallIgnored
-			dir.mkdirs();
-		}
-		ArrayList<ShaderInfo> infos = new ArrayList<>();
-		spShaderAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, infos);
-		spShaderAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		binding.shaderSelector.setAdapter(spShaderAdapter);
-		File[] files = dir.listFiles((f) -> f.isFile() && f.getName().toLowerCase().endsWith(".ini"));
-		if (files != null) {
-			for (File file : files) {
-				String text = FileUtils.getText(file.getAbsolutePath());
-				String[] split = text.split("[\\n\\r]+");
-				ShaderInfo info = null;
-				for (String line : split) {
-					if (line.startsWith("[")) {
-						if (info != null && info.fragment != null && info.vertex != null) {
-							infos.add(info);
-						}
-						info = new ShaderInfo(line.replaceAll("[\\[\\]]", ""), "unknown");
-					} else if (info != null) {
-						try {
-							info.set(line);
-						} catch (Exception e) {
-							Log.e(TAG, "initShaderSpinner: ", e);
-						}
-					}
-				}
-				if (info != null && info.fragment != null && info.vertex != null) {
-					infos.add(info);
-				}
-			}
-			Collections.sort(infos);
-		}
-		infos.add(0, new ShaderInfo(getString(R.string.identity_filter), "woesss"));
-		spShaderAdapter.notifyDataSetChanged();
-		ShaderInfo selected = params.shader;
-		if (selected != null) {
-			int position = infos.indexOf(selected);
-			if (position > 0) {
-				infos.get(position).values = selected.values;
-				binding.shaderSelector.setSelection(position);
-			}
-		}
-		binding.shaderRoot.setVisibility(View.VISIBLE);
-		binding.shaderSelector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+		binding.spShader.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
 			public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 				ShaderInfo item = (ShaderInfo) parent.getItemAtPosition(position);
@@ -398,44 +261,230 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 					}
 				}
 				if (values == null) {
-					binding.tuneSelectedShader.setVisibility(View.GONE);
+					binding.btShaderTune.setVisibility(View.GONE);
 				} else {
 					item.values = values;
-					binding.tuneSelectedShader.setVisibility(View.VISIBLE);
+					binding.btShaderTune.setVisibility(View.VISIBLE);
 				}
 			}
 
 			@Override
 			public void onNothingSelected(AdapterView<?> parent) {
-
 			}
 		});
+		binding.cxIsShowKeyboard.setOnClickListener((b) -> {
+			View.OnLayoutChangeListener onLayoutChangeListener = new View.OnLayoutChangeListener() {
+				@Override
+				public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+					View focus = binding.getRoot().findFocus();
+					if (focus != null) focus.clearFocus();
+					v.scrollTo(0, binding.rootConfigInput.getTop());
+					v.removeOnLayoutChangeListener(this);
+				}
+			};
+			binding.getRoot().addOnLayoutChangeListener(onLayoutChangeListener);
+			binding.groupVkConfig.setVisibility(binding.cxIsShowKeyboard.isChecked() ? View.VISIBLE : View.GONE);
+		});
+		binding.tfScreenBack.addTextChangedListener(new ColorTextWatcher(binding.tfScreenBack));
+		binding.tfVKFore.addTextChangedListener(new ColorTextWatcher(binding.tfVKFore));
+		binding.tfVKBack.addTextChangedListener(new ColorTextWatcher(binding.tfVKBack));
+		binding.tfVKSelFore.addTextChangedListener(new ColorTextWatcher(binding.tfVKSelFore));
+		binding.tfVKSelBack.addTextChangedListener(new ColorTextWatcher(binding.tfVKSelBack));
+		binding.tfVKOutline.addTextChangedListener(new ColorTextWatcher(binding.tfVKOutline));
+		TooltipCompat.setTooltipText(binding.cxSkipResumeCall, getString(R.string.tooltip_skip_resume_call));
+		initSoundBankSpinner();
+		initSkinSpinner();
+	}
 
+	private void initSkinSpinner() {
+		File dir = new File(workDir + Config.SKINS_DIR);
+		if (!dir.exists()) {
+			//noinspection ResultOfMethodCallIgnored
+			dir.mkdirs();
+		}
+		ArrayAdapter<String> skinAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
+		skinAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		binding.spSkin.setAdapter(skinAdapter);
+		skinAdapter.add(getString(R.string.pref_skin_not_set));
+		String[] files = dir.list((d, n) -> new File(d, n).isFile());
+		if (files != null) {
+			Arrays.sort(files, (o1, o2) -> {
+				int res = o1.compareToIgnoreCase(o2);
+				return res != 0 ? res : o1.compareTo(o2);
+			});
+			skinAdapter.addAll(files);
+		}
+		skinAdapter.notifyDataSetChanged();
+	}
+
+	private void initSoundBankSpinner() {
+		File dir = new File(workDir + Config.SOUNDBANKS_DIR);
+		if (!dir.exists()) {
+			//noinspection ResultOfMethodCallIgnored
+			dir.mkdirs();
+		}
+		ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		binding.spSoundBank.setAdapter(adapter);
+		adapter.add(getString(R.string.default_label, "Android"));
+		String[] files = dir.list((d, n) -> new File(d, n).isFile());
+		if (files != null) {
+			Arrays.sort(files, (o1, o2) -> {
+				int res = o1.compareToIgnoreCase(o2);
+				return res != 0 ? res : o1.compareTo(o2);
+			});
+			adapter.addAll(files);
+		}
+		adapter.notifyDataSetChanged();
+	}
+
+	private void setSpinnerSelection(Spinner spinner, String item) {
+		//noinspection unchecked
+		ArrayAdapter<String> adapter = (ArrayAdapter<String>) spinner.getAdapter();
+		spinner.setSelection(Math.max(adapter.getPosition(item), 0));
+	}
+
+	private void onLockAspectChanged(CompoundButton cb, boolean isChecked) {
+		if (isChecked) {
+			float w;
+			try {
+				w = Integer.parseInt(binding.tfScreenWidth.getText().toString());
+			} catch (Exception ignored) {
+				w = 0;
+			}
+			if (w <= 0) {
+				cb.setChecked(false);
+				return;
+			}
+			float h;
+			try {
+				h = Integer.parseInt(binding.tfScreenHeight.getText().toString());
+			} catch (Exception ignored) {
+				h = 0;
+			}
+			if (h <= 0) {
+				cb.setChecked(false);
+				return;
+			}
+			float finalW = w;
+			float finalH = h;
+			binding.tfScreenWidth.setOnFocusChangeListener(new ResolutionAutoFill(binding.tfScreenWidth, binding.tfScreenHeight, finalH / finalW));
+			binding.tfScreenHeight.setOnFocusChangeListener(new ResolutionAutoFill(binding.tfScreenHeight, binding.tfScreenWidth, finalW / finalH));
+
+		} else {
+			View.OnFocusChangeListener listener = binding.tfScreenWidth.getOnFocusChangeListener();
+			if (listener != null) {
+				listener.onFocusChange(binding.tfScreenWidth, false);
+				binding.tfScreenWidth.setOnFocusChangeListener(null);
+			}
+			listener = binding.tfScreenHeight.getOnFocusChangeListener();
+			if (listener != null) {
+				listener.onFocusChange(binding.tfScreenHeight, false);
+				binding.tfScreenHeight.setOnFocusChangeListener(null);
+			}
+		}
+	}
+
+	void loadConfig() {
+		params = ProfilesManager.loadConfig(configDir);
+		if (params == null && defProfile != null) {
+			FileUtils.copyFiles(new File(Config.getProfilesDir(), defProfile), configDir, null);
+			params = ProfilesManager.loadConfig(configDir);
+		}
+		if (params == null) {
+			params = new ProfileModel(configDir);
+		}
+	}
+
+	private void showShaderSettings(View v) {
+		ShaderInfo shader = (ShaderInfo) binding.spShader.getSelectedItem();
+		params.shader = shader;
+		ShaderTuneAlert.newInstance(shader).show(getSupportFragmentManager(), "ShaderTuning");
+	}
+
+	private void initShaderSpinner() {
+		if (shaders != null) {
+			return;
+		}
+		File dir = new File(workDir + Config.SHADERS_DIR);
+		if (!dir.exists()) {
+			//noinspection ResultOfMethodCallIgnored
+			dir.mkdirs();
+		}
+		shaders = new ArrayList<>();
+		ArrayAdapter<ShaderInfo> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, shaders);
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		binding.spShader.setAdapter(adapter);
+		String[] files = dir.list();
+		if (files != null) {
+			for (String fileName : files) {
+				if (!TextUtils.endsWithIgnoreCase(fileName, ".ini")) {
+					continue;
+				}
+				File file = new File(dir, fileName);
+				String text;
+				try {
+					//noinspection CharsetObjectCanBeUsed
+					text = FilesKt.readText(file, Charset.forName("UTF-8"));
+				} catch (Exception e) {
+					Log.e(TAG, "getText: " + file, e);
+					continue;
+				}
+
+				String[] split = text.split("[\\n\\r]+");
+				ShaderInfo info = null;
+				for (String line : split) {
+					if (line.startsWith("[")) {
+						if (info != null && info.fragment != null && info.vertex != null) {
+							shaders.add(info);
+						}
+						info = new ShaderInfo(line.replaceAll("[\\[\\]]", ""), "unknown");
+					} else if (info != null) {
+						try {
+							info.set(line);
+						} catch (Exception e) {
+							Log.e(TAG, "initShaderSpinner: ", e);
+						}
+					}
+				}
+				if (info != null && info.fragment != null && info.vertex != null) {
+					shaders.add(info);
+				}
+			}
+			Collections.sort(shaders);
+		}
+		shaders.add(0, new ShaderInfo(getString(R.string.identity_filter), "woesss"));
+		adapter.notifyDataSetChanged();
+		ShaderInfo selected = params.shader;
+		if (selected != null) {
+			int position = shaders.indexOf(selected);
+			if (position > 0) {
+				shaders.get(position).values = selected.values;
+				binding.spShader.setSelection(position);
+			}
+		}
 	}
 
 	private void showCharsetPicker(View v) {
 		String[] charsets = Charset.availableCharsets().keySet().toArray(new String[0]);
 		new AlertDialog.Builder(this).setItems(charsets, (d, w) -> {
-			String enc = "microedition.encoding: " + charsets[w];
-			String[] props = binding.systemProperties.getText().toString().split("[\\n\\r]+");
-			int propsLength = props.length;
-			if (propsLength == 0) {
-				binding.systemProperties.setText(enc);
+			String text = binding.tfSystemProperties.getText().toString();
+			String key = "microedition.encoding:";
+			int idx = text.lastIndexOf(key);
+			if (idx != -1) {
+				int nl = text.indexOf('\n', idx);
+				text = text.substring(0, idx + key.length()) + " " + charsets[w] + (nl == -1 ? "\n" : text.substring(nl));
+				binding.tfSystemProperties.setText(text);
 				return;
 			}
-			int i = propsLength - 1;
-			while (i >= 0) {
-				if (props[i].startsWith("microedition.encoding")) {
-					props[i] = enc;
-					break;
-				}
-				i--;
+
+			if (!text.endsWith("\n")) {
+				binding.tfSystemProperties.append("\n");
 			}
-			if (i < 0) {
-				binding.systemProperties.append(enc);
-				return;
-			}
-			binding.systemProperties.setText(TextUtils.join("\n", props));
+			binding.tfSystemProperties.append(key);
+			binding.tfSystemProperties.append(" ");
+			binding.tfSystemProperties.append(charsets[w]);
+			binding.tfSystemProperties.append("\n");
 		}).setTitle(R.string.pref_encoding_title).show();
 	}
 
@@ -482,46 +531,41 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 	}
 
 	private void fillScreenSizePresets(int w, int h) {
-		ArrayList<String> screenPresets = this.screenPresets;
+		ArrayList<Size> screenPresets = this.screenPresets;
 		screenPresets.clear();
 
-		screenPresets.add("128 x 128");
-		screenPresets.add("128 x 160");
-		screenPresets.add("132 x 176");
-		screenPresets.add("176 x 220");
-		screenPresets.add("240 x 320");
-		screenPresets.add("352 x 416");
-		screenPresets.add("640 x 360");
-		screenPresets.add("800 x 480");
+		screenPresets.add(new Size(128, 128));
+		screenPresets.add(new Size(128, 160));
+		screenPresets.add(new Size(132, 176));
+		screenPresets.add(new Size(176, 220));
+		screenPresets.add(new Size(240, 320));
+		screenPresets.add(new Size(352, 416));
+		screenPresets.add(new Size(640, 360));
+		screenPresets.add(new Size(800, 480));
 
 		if (w > h) {
-			screenPresets.add(h * 3 / 4 + " x " + h);
-			screenPresets.add(h * 4 / 3 + " x " + h);
+			screenPresets.add(new Size(h * 3 / 4, h));
+			screenPresets.add(new Size(h * 4 / 3, h));
 		} else {
-			screenPresets.add(w + " x " + w * 4 / 3);
-			screenPresets.add(w + " x " + w * 3 / 4);
+			screenPresets.add(new Size(w, w * 4 / 3));
+			screenPresets.add(new Size(w, w * 3 / 4));
 		}
 
-		screenPresets.add(w + " x " + h);
+		screenPresets.add(new Size(w, h));
 		Set<String> preset = PreferenceManager.getDefaultSharedPreferences(this)
 				.getStringSet("ResolutionsPreset", null);
 		if (preset != null) {
-			screenPresets.addAll(preset);
+			for (String s : preset) {
+				Size size = Size.parse(s);
+				if (size != null) {
+					screenPresets.add(size);
+				}
+			}
 		}
-		Collections.sort(screenPresets, (o1, o2) -> {
-			int sep1 = o1.indexOf(" x ");
-			int sep2 = o2.indexOf(" x ");
-			if (sep1 == -1) {
-				if (sep2 != -1) return -1;
-				else return 0;
-			} else if (sep2 == -1) return 1;
-			int r = Integer.decode(o1.substring(0, sep1)).compareTo(Integer.decode(o2.substring(0, sep2)));
-			if (r != 0) return r;
-			return Integer.decode(o1.substring(sep1 + 3)).compareTo(Integer.decode(o2.substring(sep2 + 3)));
-		});
-		String prev = null;
-		for (Iterator<String> iterator = screenPresets.iterator(); iterator.hasNext(); ) {
-			String next = iterator.next();
+		Collections.sort(screenPresets);
+		Size prev = null;
+		for (Iterator<Size> iterator = screenPresets.iterator(); iterator.hasNext(); ) {
+			Size next = iterator.next();
 			if (next.equals(prev)) iterator.remove();
 			else prev = next;
 		}
@@ -532,20 +576,6 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 		fontPresetTitles.add(title);
 	}
 
-	private int parseInt(String s) {
-		return parseInt(s, 10);
-	}
-
-	private int parseInt(String s, int radix) {
-		int result;
-		try {
-			result = Integer.parseInt(s, radix);
-		} catch (NumberFormatException e) {
-			result = 0;
-		}
-		return result;
-	}
-
 	@SuppressLint("SetTextI18n")
 	public void loadParams(boolean reloadFromFile) {
 		if (reloadFromFile) {
@@ -553,152 +583,177 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 		}
 		int screenWidth = params.screenWidth;
 		if (screenWidth != 0) {
-			binding.screenWidth.setText(Integer.toString(screenWidth));
+			binding.tfScreenWidth.setText(Integer.toString(screenWidth));
 		}
 		int screenHeight = params.screenHeight;
 		if (screenHeight != 0) {
-			binding.screenHeight.setText(Integer.toString(screenHeight));
+			binding.tfScreenHeight.setText(Integer.toString(screenHeight));
 		}
-		binding.screenBackgroundHexColor.setText(String.format("%06X", params.screenBackgroundColor));
-		binding.scaleRatio.setText(Integer.toString(params.screenScaleRatio));
-		binding.screenOrientationSelector.setSelection(params.orientation);
-		binding.scaleTypeSelector.setSelection(params.screenScaleType);
-		binding.screenGravitySelector.setSelection(params.screenGravity);
-		binding.filteringToggle.setChecked(params.screenFilter);
-		binding.immediateProcessingToggle.setChecked(params.immediateMode);
-		binding.parallelScreenRedrawingToggle.setChecked(params.parallelRedrawScreen);
-		binding.forceFullscreenToggle.setChecked(params.forceFullscreen);
-		binding.graphicalModeSelector.setSelection(params.graphicsMode);
-		binding.showFpsToggle.setChecked(params.showFps);
-		binding.shaderSelector.setSelection(0);
-		if (spShaderAdapter != null) {
-			ShaderInfo shader = params.shader;
-			int position = shader == null ? -1 : spShaderAdapter.getPosition(shader);
+		binding.tfScreenBack.setText(String.format("%06X", params.screenBackgroundColor));
+		setSpinnerSelection(binding.spSkin, params.screenBackgroundImage);
+		binding.tfScaleRatioValue.setText(Integer.toString(params.screenScaleRatio));
+		binding.spOrientation.setSelection(params.orientation);
+		binding.spScaleType.setSelection(params.screenScaleType);
+		binding.spScreenGravity.setSelection(params.screenGravity);
+		binding.etScreenPadding.setText(Integer.toString(params.screenPadding));
+		binding.cxFilter.setChecked(params.screenFilter);
+		binding.cxImmediate.setChecked(params.immediateMode);
+		binding.cxParallel.setChecked(params.parallelRedrawScreen);
+		binding.cxForceFullscreen.setChecked(params.forceFullscreen);
+		binding.spGraphicsMode.setSelection(params.graphicsMode);
+		if (shaders != null) {
+			int position = shaders.indexOf(params.shader);
 			if (position > 0) {
-				spShaderAdapter.getItem(position).values = shader.values;
-				binding.shaderSelector.setSelection(position);
+				shaders.get(position).values =  params.shader.values;
+				binding.spShader.setSelection(position);
+			} else {
+				binding.spShader.setSelection(0);
 			}
 		}
+		binding.cxShowFps.setChecked(params.showFps);
 
-		binding.fontSizeSmall.setText(Integer.toString(params.fontSizeSmall));
-		binding.fontSizeMedium.setText(Integer.toString(params.fontSizeMedium));
-		binding.fontSizeLarge.setText(Integer.toString(params.fontSizeLarge));
-		binding.showFontSizesInScaledPixelsToggle.setChecked(params.fontApplyDimensions);
-		binding.enableAntiAliasingToggle.setChecked(params.fontAA);
+		binding.tfFontSizeSmall.setText(Integer.toString(params.fontSizeSmall));
+		binding.tfFontSizeMedium.setText(Integer.toString(params.fontSizeMedium));
+		binding.tfFontSizeLarge.setText(Integer.toString(params.fontSizeLarge));
+		binding.cxFontSizeInSP.setChecked(params.fontApplyDimensions);
+		binding.cxFontAA.setChecked(params.fontAA);
 		boolean showVk = params.showKeyboard;
-		binding.showVirtualKeyboardToggle.setChecked(showVk);
-		binding.virtualKeyboardConfigGroup.setVisibility(showVk ? View.VISIBLE : View.GONE);
-		binding.enableHapticFeedbackToggle.setChecked(params.vkFeedback);
-		binding.forceOpacityForOffscreenKeysToggle.setChecked(params.vkForceOpacity);
-		binding.enableTouchInputToggle.setChecked(params.touchInput);
+		binding.cxIsShowKeyboard.setChecked(showVk);
+		binding.groupVkConfig.setVisibility(showVk ? View.VISIBLE : View.GONE);
+		binding.cxVKFeedback.setChecked(params.vkFeedback);
+		binding.cxVKForceOpacity.setChecked(params.vkForceOpacity);
+		binding.cxTouchInput.setChecked(params.touchInput);
 		int fpsLimit = params.fpsLimit;
-		binding.fpsLimit.setText(fpsLimit > 0 ? Integer.toString(fpsLimit) : "");
+		binding.etFpsLimit.setText(fpsLimit > 0 ? Integer.toString(fpsLimit) : "");
 
-		binding.buttonsLayoutSelector.setSelection(params.keyCodesLayout);
-		binding.buttonShapeSelector.setSelection(params.vkButtonShape);
-		binding.changeOpacitySeekbar.setProgress(params.vkAlpha);
+		binding.spLayout.setSelection(params.keyCodesLayout);
+		binding.spButtonsShape.setSelection(params.vkButtonShape);
+		binding.sbVKAlpha.setProgress(params.vkAlpha);
 		int vkHideDelay = params.vkHideDelay;
-		binding.virtualKeyboardHideDelay.setText(vkHideDelay > 0 ? Integer.toString(vkHideDelay) : "");
+		binding.tfVKHideDelay.setText(vkHideDelay > 0 ? Integer.toString(vkHideDelay) : "");
 
-		binding.keyboardNotPressedButtonBackgroundColorHex.setText(String.format("%06X", params.vkBgColor));
-		binding.keyboardNotPressedButtonLabelColorHex.setText(String.format("%06X", params.vkFgColor));
-		binding.keyboardPressedButtonBackgroundColorHex.setText(String.format("%06X", params.vkBgColorSelected));
-		binding.keyboardPressedButtonLabelColorHex.setText(String.format("%06X", params.vkFgColorSelected));
-		binding.keyboardOutlineColorHex.setText(String.format("%06X", params.vkOutlineColor));
+		binding.tfVKBack.setText(String.format("%06X", params.vkBgColor));
+		binding.tfVKFore.setText(String.format("%06X", params.vkFgColor));
+		binding.tfVKSelBack.setText(String.format("%06X", params.vkBgColorSelected));
+		binding.tfVKSelFore.setText(String.format("%06X", params.vkFgColorSelected));
+		binding.tfVKOutline.setText(String.format("%06X", params.vkOutlineColor));
+
+		binding.cxSkipResumeCall.setChecked(params.skipResumeCall);
+		setSpinnerSelection(binding.spSoundBank, params.soundBank);
 
 		String systemProperties = params.systemProperties;
 		if (systemProperties == null) {
 			systemProperties = ContextHolder.getAssetAsString("defaults/system.props");
 		}
-		binding.systemProperties.setText(systemProperties);
+		binding.tfSystemProperties.setText(getSystemProperties(systemProperties));
 	}
 
 	private void saveParams() {
 		try {
-			int width = parseInt(binding.screenWidth.getText().toString());
+			int width;
+			try {
+				width = Integer.parseInt(binding.tfScreenWidth.getText().toString());
+			} catch (NumberFormatException e) {
+				width = 0;
+			}
 			params.screenWidth = width;
-			int height = parseInt(binding.screenHeight.getText().toString());
+			int height;
+			try {
+				height = Integer.parseInt(binding.tfScreenHeight.getText().toString());
+			} catch (NumberFormatException e) {
+				height = 0;
+			}
 			params.screenHeight = height;
 			try {
-				params.screenBackgroundColor = Integer.parseInt(
-						binding.screenBackgroundHexColor.getText().toString(), 16);
+				params.screenBackgroundColor = Integer.parseInt(binding.tfScreenBack.getText().toString(), 16);
 			} catch (NumberFormatException ignored) {
 			}
+			params.screenBackgroundImage = binding.spSkin.getSelectedItemPosition() > 0 ? (String) binding.spSkin.getSelectedItem() : null;
 			try {
-				params.screenScaleRatio = Integer.parseInt(binding.scaleRatio.getText().toString());
+				params.screenScaleRatio = Integer.parseInt(binding.tfScaleRatioValue.getText().toString());
 			} catch (NumberFormatException e) {
 				params.screenScaleRatio = 100;
 			}
-			params.orientation = binding.screenOrientationSelector.getSelectedItemPosition();
-			params.screenGravity = binding.screenGravitySelector.getSelectedItemPosition();
-			params.screenScaleType = binding.scaleTypeSelector.getSelectedItemPosition();
-			params.screenFilter = binding.filteringToggle.isChecked();
-			params.immediateMode = binding.immediateProcessingToggle.isChecked();
-			int mode = binding.graphicalModeSelector.getSelectedItemPosition();
+			params.orientation = binding.spOrientation.getSelectedItemPosition();
+			params.screenGravity = binding.spScreenGravity.getSelectedItemPosition();
+			try {
+				params.screenPadding = Integer.parseInt(binding.etScreenPadding.getText().toString());
+			} catch (NumberFormatException e) {
+				params.screenPadding = 0;
+			}
+			params.screenScaleType = binding.spScaleType.getSelectedItemPosition();
+			params.screenFilter = binding.cxFilter.isChecked();
+			params.immediateMode = binding.cxImmediate.isChecked();
+			int mode = binding.spGraphicsMode.getSelectedItemPosition();
 			params.graphicsMode = mode;
 			if (mode == 1) {
-				if (binding.shaderSelector.getSelectedItemPosition() == 0)
+				if (binding.spShader.getSelectedItemPosition() == 0)
 					params.shader = null;
 				else
-					params.shader = (ShaderInfo) binding.shaderSelector.getSelectedItem();
+					params.shader = (ShaderInfo) binding.spShader.getSelectedItem();
 			}
-			params.parallelRedrawScreen = binding.parallelScreenRedrawingToggle.isChecked();
-			params.forceFullscreen = binding.forceFullscreenToggle.isChecked();
-			params.showFps = binding.showFpsToggle.isChecked();
-			params.fpsLimit = parseInt(binding.fpsLimit.getText().toString());
+			params.parallelRedrawScreen = binding.cxParallel.isChecked();
+			params.forceFullscreen = binding.cxForceFullscreen.isChecked();
+			params.showFps = binding.cxShowFps.isChecked();
+			try {
+				params.fpsLimit = Integer.parseInt(binding.etFpsLimit.getText().toString());
+			} catch (NumberFormatException e) {
+				params.fpsLimit = 0;
+			}
 
 			try {
-				params.fontSizeSmall = Integer.parseInt(binding.fontSizeSmall.getText().toString());
+				params.fontSizeSmall = Integer.parseInt(binding.tfFontSizeSmall.getText().toString());
 			} catch (NumberFormatException e) {
 				params.fontSizeSmall = 0;
 			}
 			try {
-				params.fontSizeMedium = Integer.parseInt(binding.fontSizeMedium.getText().toString());
+				params.fontSizeMedium = Integer.parseInt(binding.tfFontSizeMedium.getText().toString());
 			} catch (NumberFormatException e) {
 				params.fontSizeMedium = 0;
 			}
 			try {
-				params.fontSizeLarge = Integer.parseInt(binding.fontSizeLarge.getText().toString());
+				params.fontSizeLarge = Integer.parseInt(binding.tfFontSizeLarge.getText().toString());
 			} catch (NumberFormatException e) {
 				params.fontSizeLarge = 0;
 			}
-			params.fontApplyDimensions = binding.showFontSizesInScaledPixelsToggle.isChecked();
-			params.fontAA = binding.enableAntiAliasingToggle.isChecked();
-			params.showKeyboard = binding.showVirtualKeyboardToggle.isChecked();
-			params.vkFeedback = binding.enableHapticFeedbackToggle.isChecked();
-			params.vkForceOpacity = binding.forceOpacityForOffscreenKeysToggle.isChecked();
-			params.touchInput = binding.enableTouchInputToggle.isChecked();
+			params.fontApplyDimensions = binding.cxFontSizeInSP.isChecked();
+			params.fontAA = binding.cxFontAA.isChecked();
+			params.showKeyboard = binding.cxIsShowKeyboard.isChecked();
+			params.vkFeedback = binding.cxVKFeedback.isChecked();
+			params.vkForceOpacity = binding.cxVKForceOpacity.isChecked();
+			params.touchInput = binding.cxTouchInput.isChecked();
 
-			params.keyCodesLayout = binding.buttonsLayoutSelector.getSelectedItemPosition();
-			params.vkButtonShape = binding.buttonShapeSelector.getSelectedItemPosition();
-			params.vkAlpha = binding.changeOpacitySeekbar.getProgress();
-			params.vkHideDelay = parseInt(binding.virtualKeyboardHideDelay.getText().toString());
+			params.keyCodesLayout = binding.spLayout.getSelectedItemPosition();
+			params.vkButtonShape = binding.spButtonsShape.getSelectedItemPosition();
+			params.vkAlpha = binding.sbVKAlpha.getProgress();
 			try {
-				params.vkBgColor = Integer.parseInt(
-						binding.keyboardNotPressedButtonBackgroundColorHex.getText().toString(), 16);
+				params.vkHideDelay = Integer.parseInt(binding.tfVKHideDelay.getText().toString());
+			} catch (NumberFormatException e) {
+				params.vkHideDelay = 0;
+			}
+			try {
+				params.vkBgColor = Integer.parseInt(binding.tfVKBack.getText().toString(), 16);
 			} catch (Exception ignored) {
 			}
 			try {
-				params.vkFgColor = Integer.parseInt(
-						binding.keyboardNotPressedButtonLabelColorHex.getText().toString(), 16);
+				params.vkFgColor = Integer.parseInt(binding.tfVKFore.getText().toString(), 16);
 			} catch (Exception ignored) {
 			}
 			try {
-				params.vkBgColorSelected = Integer.parseInt(
-						binding.keyboardPressedButtonBackgroundColorHex.getText().toString(), 16);
+				params.vkBgColorSelected = Integer.parseInt(binding.tfVKSelBack.getText().toString(), 16);
 			} catch (Exception ignored) {
 			}
 			try {
-				params.vkFgColorSelected = Integer.parseInt(
-						binding.keyboardPressedButtonLabelColorHex.getText().toString(), 16);
+				params.vkFgColorSelected = Integer.parseInt(binding.tfVKSelFore.getText().toString(), 16);
 			} catch (Exception ignored) {
 			}
 			try {
-				params.vkOutlineColor = Integer.parseInt(
-						binding.keyboardOutlineColorHex.getText().toString(), 16);
+				params.vkOutlineColor = Integer.parseInt(binding.tfVKOutline.getText().toString(), 16);
 			} catch (Exception ignored) {
 			}
-			params.systemProperties = getSystemProperties();
+			params.skipResumeCall = binding.cxSkipResumeCall.isChecked();
+			params.soundBank = binding.spSoundBank.getSelectedItemPosition() > 0 ? (String) binding.spSoundBank.getSelectedItem() : null;
+			params.systemProperties = getSystemProperties(binding.tfSystemProperties.getText().toString());
 
 			ProfilesManager.saveConfig(params);
 		} catch (Throwable t) {
@@ -707,24 +762,22 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 	}
 
 	@NonNull
-	private String getSystemProperties() {
-		String s = binding.systemProperties.getText().toString();
-		String[] lines = s.split("\\n");
-		StringBuilder sb = new StringBuilder(s.length());
-		boolean validCharset = false;
+	private String getSystemProperties(String text) {
+		String[] lines = text.split("[\\r\\n]+");
+		ArrayList<String> list = new ArrayList<>();
+		Set<String> keys = new HashSet<>();
 		for (int i = lines.length - 1; i >= 0; i--) {
 			String line = lines[i];
-			if (line.trim().isEmpty()) continue;
-			if (line.startsWith("microedition.encoding:")) {
-				if (validCharset) continue;
-				try {
-					Charset.forName(line.substring(22).trim());
-					validCharset = true;
-				} catch (Exception ignored) {
-					continue;
-				}
+			int colon = line.indexOf(':');
+			if (colon != -1 && keys.add(line.substring(0, colon).trim())) {
+				list.add(line);
 			}
-			sb.append(line).append('\n');
+		}
+		Collections.sort(list);
+		StringBuilder sb = new StringBuilder();
+		for (String string : list) {
+			sb.append(string);
+			sb.append("\n");
 		}
 		return sb.toString();
 	}
@@ -737,7 +790,7 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 			menu.findItem(R.id.action_start).setVisible(false);
 			menu.findItem(R.id.action_clear_data).setVisible(false);
 		}
-		return super.onCreateOptionsMenu(menu);
+		return true;
 	}
 
 	@Override
@@ -750,20 +803,23 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 		} else if (itemId == R.id.action_reset_settings) {
 			params = new ProfileModel(configDir);
 			loadParams(false);
-		} else if (itemId == R.id.action_reset_layout) {//noinspection ResultOfMethodCallIgnored
+		} else if (itemId == R.id.action_reset_layout) {
+			//noinspection ResultOfMethodCallIgnored
 			keylayoutFile.delete();
 			loadKeyLayout();
 		} else if (itemId == R.id.action_load_profile) {
-			LoadProfileDialog.newInstance(keylayoutFile.getParent())
-					.show(fragmentManager, "load_profile");
+			LoadProfileAlert.newInstance(keylayoutFile.getParent())
+					.show(getSupportFragmentManager(), "load_profile");
 		} else if (itemId == R.id.action_save_profile) {
 			saveParams();
-			SaveProfileDialog.getInstance(keylayoutFile.getParent())
-					.show(fragmentManager, "save_profile");
+			SaveProfileAlert.getInstance(keylayoutFile.getParent())
+					.show(getSupportFragmentManager(), "save_profile");
 		} else if (itemId == android.R.id.home) {
 			finish();
+		} else {
+			return false;
 		}
-		return super.onOptionsItemSelected(item);
+		return true;
 	}
 
 	private void showClearDataDialog() {
@@ -776,6 +832,9 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 	}
 
 	private void startMIDlet() {
+		if (needShow && configDir != null) {
+			saveParams();
+		}
 		Intent i = new Intent(this, MicroActivity.class);
 		i.setData(getIntent().getData());
 		i.putExtra(KEY_MIDLET_NAME, getIntent().getStringExtra(KEY_MIDLET_NAME));
@@ -787,58 +846,62 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 	@Override
 	public void onClick(View v) {
 		int id = v.getId();
-		if (id == R.id.swap_screen_sides) {
-			String tmp = binding.screenWidth.getText().toString();
-			binding.screenWidth.setText(binding.screenHeight.getText().toString());
-			binding.screenHeight.setText(tmp);
-		} else if (id == R.id.show_font_size_presets) {
+		if (id == R.id.cmdSwapSizes) {
+			String tmp = binding.tfScreenWidth.getText().toString();
+			binding.tfScreenWidth.setText(binding.tfScreenHeight.getText().toString());
+			binding.tfScreenHeight.setText(tmp);
+		} else if (id == R.id.cmdFontSizePresets) {
 			new AlertDialog.Builder(this)
 					.setTitle(getString(R.string.SIZE_PRESETS))
 					.setItems(fontPresetTitles.toArray(new String[0]),
 							(dialog, which) -> {
 								int[] values = fontPresetValues.get(which);
-								binding.fontSizeSmall.setText(Integer.toString(values[0]));
-								binding.fontSizeMedium.setText(Integer.toString(values[1]));
-								binding.fontSizeLarge.setText(Integer.toString(values[2]));
+								binding.tfFontSizeSmall.setText(Integer.toString(values[0]));
+								binding.tfFontSizeMedium.setText(Integer.toString(values[1]));
+								binding.tfFontSizeLarge.setText(Integer.toString(values[2]));
 							})
 					.show();
-		} else if (id == R.id.select_screen_background_color) {
-			showColorPicker(binding.screenBackgroundHexColor);
-		} else if (id == R.id.update_keyboard_not_pressed_button_background_color) {
-			showColorPicker(binding.keyboardNotPressedButtonBackgroundColorHex);
-		} else if (id == R.id.update_keyboard_not_pressed_button_label_color) {
-			showColorPicker(binding.keyboardNotPressedButtonLabelColorHex);
-		} else if (id == R.id.update_keyboard_pressed_button_label_color) {
-			showColorPicker(binding.keyboardPressedButtonLabelColorHex);
-		} else if (id == R.id.update_keyboard_pressed_button_background_color) {
-			showColorPicker(binding.keyboardPressedButtonBackgroundColorHex);
-		} else if (id == R.id.update_keyboard_outline_color) {
-			showColorPicker(binding.keyboardOutlineColorHex);
-		} else if (id == R.id.show_key_mappings) {
+		} else if (id == R.id.cmdScreenBack) {
+			showColorPicker(binding.tfScreenBack);
+		} else if (id == R.id.cmdVKBack) {
+			showColorPicker(binding.tfVKBack);
+		} else if (id == R.id.cmdVKFore) {
+			showColorPicker(binding.tfVKFore);
+		} else if (id == R.id.cmdVKSelFore) {
+			showColorPicker(binding.tfVKSelFore);
+		} else if (id == R.id.cmdVKSelBack) {
+			showColorPicker(binding.tfVKSelBack);
+		} else if (id == R.id.cmdVKOutline) {
+			showColorPicker(binding.tfVKOutline);
+		} else if (id == R.id.cmdKeyMappings) {
 			Intent i = new Intent(getIntent().getAction(), Uri.parse(configDir.getPath()),
 					this, KeyMapperActivity.class);
 			startActivity(i);
 		}
 	}
 
+	@SuppressLint("SetTextI18n")
 	private void showScreenPresets(View v) {
-		PopupMenu popup = new PopupMenu(this, v);
-		Menu menu = popup.getMenu();
-		for (String preset : screenPresets) {
-			menu.add(preset);
-		}
-		popup.setOnMenuItemClickListener(item -> {
-			String string = item.getTitle().toString();
-			int separator = string.indexOf(" x ");
-			binding.screenWidth.setText(string.substring(0, separator));
-			binding.screenHeight.setText(string.substring(separator + 3));
-			return true;
+		ListPopupWindow popup = new ListPopupWindow(this);
+		popup.setAnchorView(v);
+		popup.setModal(true);
+		ArrayAdapter<Size> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, screenPresets);
+		popup.setAdapter(adapter);
+		final Resources res = getResources();
+		int maxWidth = res.getDisplayMetrics().widthPixels;
+		popup.setWidth(ViewUtils.measureListViewWidth(adapter, null, this, maxWidth));
+		popup.setOnItemClickListener((parent, view, position, id) -> {
+			Size size = ((Size) parent.getItemAtPosition(position));
+			binding.tfScreenWidth.setText(Integer.toString(size.width));
+			binding.tfScreenHeight.setText(Integer.toString(size.height));
+			popup.dismiss();
 		});
 		popup.show();
 	}
 
 	private void showColorPicker(EditText et) {
 		AmbilWarnaDialog.OnAmbilWarnaListener colorListener = new AmbilWarnaDialog.OnAmbilWarnaListener() {
+			@SuppressLint("NewApi")
 			@Override
 			public void onOk(AmbilWarnaDialog dialog, int color) {
 				et.setText(String.format("%06X", color & 0xFFFFFF));
@@ -850,39 +913,43 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 			public void onCancel(AmbilWarnaDialog dialog) {
 			}
 		};
-		int color = parseInt(et.getText().toString().trim(), 16);
+
+		int color;
+		try {
+			color = Integer.parseInt(et.getText().toString().trim(), 16);
+		} catch (NumberFormatException ignored) {
+			color = 0;
+		}
 		new AmbilWarnaDialog(this, color | 0xFF000000, colorListener).show();
 	}
 
 	private void addResolutionToPresets() {
-		String width = binding.screenWidth.getText().toString();
-		String height = binding.screenHeight.getText().toString();
-		if (width.isEmpty()) width = "-1";
-		if (height.isEmpty()) height = "-1";
-		int w = parseInt(width);
-		int h = parseInt(height);
-		if (w <= 0 || h <= 0) {
-			Toast.makeText(this, R.string.error, Toast.LENGTH_SHORT).show();
+		int w;
+		int h;
+		try {
+			w = Integer.parseInt(binding.tfScreenWidth.getText().toString());
+			h = Integer.parseInt(binding.tfScreenHeight.getText().toString());
+		} catch (NumberFormatException e) {
+			Toast.makeText(this, R.string.invalid_resolution_not_saved, Toast.LENGTH_SHORT).show();
 			return;
 		}
-		String preset = width + " x " + height;
-		if (screenPresets.contains(preset)) {
+		if (w <= 0 || h <= 0) {
+			Toast.makeText(this, R.string.invalid_resolution_not_saved, Toast.LENGTH_SHORT).show();
+			return;
+		}
+		Size size = new Size(w, h);
+		int index = Collections.binarySearch(screenPresets, size);
+		if (index >= 0) {
 			Toast.makeText(this, R.string.not_saved_exists, Toast.LENGTH_SHORT).show();
 			return;
 		}
-
+		screenPresets.add(~index, size);
 		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 		Set<String> set = preferences.getStringSet("ResolutionsPreset", null);
-		if (set == null) {
-			set = new HashSet<>(1);
-		}
-		if (set.add(preset)) {
-			preferences.edit().putStringSet("ResolutionsPreset", set).apply();
-			screenPresets.add(preset);
-			Toast.makeText(this, R.string.saved, Toast.LENGTH_SHORT).show();
-		} else {
-			Toast.makeText(this, R.string.not_saved_exists, Toast.LENGTH_SHORT).show();
-		}
+		Set<String> presets = set == null ? new HashSet<>(1) : new HashSet<>(set);
+		presets.add(size.toString());
+		preferences.edit().putStringSet("ResolutionsPreset", presets).apply();
+		Toast.makeText(this, getString(R.string.saved, size.toString()), Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
@@ -894,26 +961,34 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 		private final EditText editText;
 		private final ColorDrawable drawable;
 
+		@SuppressLint("NewApi")
 		ColorTextWatcher(EditText editText) {
 			this.editText = editText;
 			int size = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 32,
 					editText.getResources().getDisplayMetrics());
 			ColorDrawable colorDrawable = new ColorDrawable();
 			colorDrawable.setBounds(0, 0, size, size);
-			TextViewCompat.setCompoundDrawablesRelative(editText,null, null, colorDrawable, null);
+			TextViewCompat.setCompoundDrawablesRelative(editText, null, null, colorDrawable, null);
 			drawable = colorDrawable;
 			editText.setFilters(new InputFilter[]{this::filter});
 		}
 
 		private CharSequence filter(CharSequence src, int ss, int se, Spanned dst, int ds, int de) {
 			StringBuilder sb = new StringBuilder(se - ss);
+			boolean changed = false;
 			for (int i = ss; i < se; i++) {
 				char c = src.charAt(i);
 				if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')) {
 					sb.append(c);
 				} else if (c >= 'a' && c <= 'f') {
 					sb.append((char) (c - 32));
+					changed = true;
+				} else {
+					changed = true;
 				}
+			}
+			if (!changed) {
+				return null;
 			}
 			return sb;
 		}
@@ -924,13 +999,11 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 
 		@Override
 		public void onTextChanged(CharSequence s, int start, int before, int count) {
-			if (s.length() > 6) {
-				if (start >= 6) editText.getText().delete(6, s.length());
-				else {
-					int st = start + count;
-					int end = st + (before == 0 ? count : before);
-					editText.getText().delete(st, Math.min(end, s.length()));
-				}
+			int length = s.length();
+			if (length > 6) {
+				int st = Math.min(start + count, 6);
+				int end = st + (length - 6);
+				editText.getText().delete(st, end);
 			}
 		}
 
@@ -977,7 +1050,7 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 				if (size <= 0) return;
 				int value = Math.round(size * aspect);
 				dst.setText(String.valueOf(value));
-			} catch (NumberFormatException ignored) { }
+			} catch (NumberFormatException ignored) {}
 		}
 
 		public void onFocusChange(View v, boolean hasFocus) {
@@ -987,11 +1060,5 @@ public class ConfigActivity extends BaseActivity implements View.OnClickListener
 				src.removeTextChangedListener(this);
 			}
 		}
-	}
-
-	@Override
-	protected void onDestroy() {
-		binding = null;
-		super.onDestroy();
 	}
 }

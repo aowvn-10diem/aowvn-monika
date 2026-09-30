@@ -2,7 +2,7 @@
  * Copyright 2012 Kulikov Dmitriy
  * Copyright 2015-2016 Nickolay Savchenko
  * Copyright 2017-2018 Nikita Shakarun
- * Copyright 2022-2023 Arman Jussupgaliyev
+ * Copyright 2020-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import android.util.Log;
 import org.microemu.cldc.file.FileSystemFileConnection;
 
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.util.Map;
 
 import javax.microedition.io.ConnectionNotFoundException;
@@ -35,11 +34,9 @@ import javax.microedition.lcdui.Display;
 import javax.microedition.shell.MidletThread;
 import javax.microedition.util.ContextHolder;
 
-import ru.playsoftware.j2meloader.applist.AppItem;
-import ru.playsoftware.j2meloader.util.AppUtils;
-
 public abstract class MIDlet {
-	private static final String TAG = MIDlet.class.getName();
+	private static final String TAG = "MIDlet";
+
 	private static Map<String, String> properties;
 
 	protected MIDlet() {
@@ -52,7 +49,7 @@ public abstract class MIDlet {
 
 	public String getAppProperty(String key) {
 		String value = properties.get(key);
-		Log.d(TAG, "MIDlet.getAppProperty: " + key + "=" + value);
+		Log.d(TAG, "getAppProperty: " + key + "=" + value);
 		return value;
 	}
 
@@ -95,104 +92,21 @@ public abstract class MIDlet {
 
 	public boolean platformRequest(String url) throws ConnectionNotFoundException {
 		try {
-			if (url.startsWith("localapp:")) {
-				if (!url.contains("jam/launch?")) {
-					throw new ConnectionNotFoundException("Protocol not supported");
-				}
-				parseJavaAppProtocol(url);
-				return true;
-			} else if (url.startsWith("javaapp:")) {
-				parseJavaAppProtocol(url);
-				return true;
+			Intent intent = new Intent(Intent.ACTION_VIEW);
+			if (url.startsWith("file://")) {
+				FileSystemFileConnection fileConnection = (FileSystemFileConnection) Connector.open(url);
+				intent.setData(fileConnection.getURI());
+				intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+				fileConnection.close();
 			} else {
-				Intent intent = new Intent(Intent.ACTION_VIEW);
-				if (url.startsWith("file://")) {
-					FileSystemFileConnection fileConnection = (FileSystemFileConnection) Connector.open(url);
-					intent.setData(fileConnection.getURI());
-					intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-					fileConnection.close();
-				} else {
-					intent.setData(Uri.parse(url));
-				}
-				ContextHolder.getActivity().startActivity(intent);
+				intent.setData(Uri.parse(url));
 			}
-		} catch (ConnectionNotFoundException e) {
-			throw e;
+			ContextHolder.getActivity().startActivity(intent);
 		} catch (ActivityNotFoundException | IOException e) {
-			throw new ConnectionNotFoundException(e);
-		}
-		return false;
-	}
-
-	private void parseJavaAppProtocol(String url) throws ConnectionNotFoundException {
-		if (!url.contains("midlet-name") && !url.contains("midlet-uid")) {
-			throw new ConnectionNotFoundException("No midlet-name value");
-		}
-		if (url.startsWith("localapp:")) {
-			url = url.substring("localapp:".length());
-		} else if(url.startsWith("javaapp:")) {
-			url = url.substring("javaapp:".length());
-		}
-		if (url.startsWith("//")) {
-			url = url.substring(2);
-		}
-		if (url.startsWith("jam/launch?")) {
-			url = url.substring("jam/launch?".length());
-		}
-		url = URLDecoder.decode(url);
-		String name = null;
-		String vendor = null;
-		String uid = null;
-		String[] arr = url.split(";");
-
-		StringBuilder argumentsBuilder = new StringBuilder();
-		for (String s: arr) {
-			if (s.length() == 0) {
-				continue;
-			}
-			if (s.contains("=")) {
-				int i = s.indexOf('=');
-				String k = s.substring(0, i);
-				String v = s.substring(i + 1);
-				if (k.equals("midlet-name")) {
-					name = v;
-					continue;
-				}
-				if (k.equals("midlet-vendor")) {
-					vendor = v;
-					continue;
-				}
-				if (k.equals("midlet-uid")) {
-					uid = v;
-					continue;
-				}
-				if (k.equals("midlet-n")) {
-					continue;
-				}
-				if (System.getProperty(k) == null) {
-					argumentsBuilder.append(s).append(";");
-				}
-			} else {
-				if (System.getProperty(s) == null) {
-					argumentsBuilder.append(s).append(";");
-				}
-			}
-		}
-		if (name == null && uid == null) {
 			throw new ConnectionNotFoundException();
 		}
-		argumentsBuilder.deleteCharAt(argumentsBuilder.length() - 1);
-		final String arguments = argumentsBuilder.toString();
-		try {
-			final AppItem item = AppUtils.findApp(name, vendor, uid);
-			if (item == null) {
-				throw new ConnectionNotFoundException("App (" + name + ", " + vendor + ", " + uid + ") was not found!");
-			}
-			MidletThread.startAfterDestroy = new String[] { item.getTitle(), item.getPathExt(), arguments };
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new ConnectionNotFoundException(e);
-		}
+
+		return true;
 	}
 
 	public final int checkPermission(String permission) {
@@ -200,6 +114,6 @@ public abstract class MIDlet {
 	}
 
 	public final void resumeRequest() {
-		MidletThread.resumeApp();
+		MidletThread.resumeRequest();
 	}
 }

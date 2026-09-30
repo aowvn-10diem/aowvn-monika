@@ -1,6 +1,5 @@
 /*
- *  Copyright 2020 Yury Kharchenko
- *  Copyright 2022-2023 Arman Jussupgaliyev
+ *  Copyright 2020-2026 Yury Kharchenko
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,8 +29,9 @@ import javax.microedition.midlet.MIDletStateChangeException;
 import javax.microedition.util.ContextHolder;
 
 import androidx.annotation.NonNull;
-
-import ru.playsoftware.j2meloader.config.Config;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleEventObserver;
+import androidx.lifecycle.LifecycleOwner;
 
 public class MidletThread extends HandlerThread implements Handler.Callback {
 	private static final String TAG = MidletThread.class.getName();
@@ -43,28 +43,23 @@ public class MidletThread extends HandlerThread implements Handler.Callback {
 	private static final int PAUSE = 2;
 	private static final int DESTROY = 3;
 	private static final int UNINITIALIZED = 0;
-	private static final int STARTED = 1;
-	private static final int PAUSED = 2;
-	private static final int DESTROYED = 3;
-	public static String[] startAfterDestroy;
+	private static final int INITIALIZED = 1;
+	private static final int STARTED = 2;
+	private static final int PAUSED = 3;
+	private static final int DESTROYED = 4;
 	private static MidletThread instance;
 	private final MicroLoader microLoader;
 	private final String mainClass;
+	private final LifecycleEventObserver activityLifecycleObserver = this::onActivityStateChanged;
 	private MIDlet midlet;
-	private final Handler handler;
+	private Handler handler;
 	private int state;
 
-	private MidletThread(MicroLoader microLoader, String mainClass) {
+	MidletThread(MicroLoader microLoader, String mainClass) {
 		super("MidletMain");
 		this.microLoader = microLoader;
 		this.mainClass = mainClass;
-		start();
-		handler = new Handler(getLooper(), this);
-		handler.obtainMessage(INIT).sendToTarget();
-	}
-
-	static void create(MicroLoader microLoader, String mainClass) {
-		instance = new MidletThread(microLoader, mainClass);
+		instance = this;
 	}
 
 	public static void notifyDestroyed() {
@@ -76,9 +71,6 @@ public class MidletThread extends HandlerThread implements Handler.Callback {
 		if (activity != null) {
 			activity.finish();
 		}
-		if (startAfterDestroy != null) {
-			Config.startApp(ContextHolder.getActivity(), startAfterDestroy[0], startAfterDestroy[1], false, startAfterDestroy[2]);
-		}
 		Process.killProcess(Process.myPid());
 	}
 
@@ -86,12 +78,7 @@ public class MidletThread extends HandlerThread implements Handler.Callback {
 		instance.state = PAUSED;
 	}
 
-	static void pauseApp() {
-		if (instance != null)
-			instance.handler.obtainMessage(PAUSE).sendToTarget();
-	}
-
-	public static void resumeApp() {
+	public static void resumeRequest() {
 		MicroActivity activity = ContextHolder.getActivity();
 		if (instance != null && activity != null && activity.isVisible())
 			instance.handler.obtainMessage(START).sendToTarget();
@@ -102,16 +89,13 @@ public class MidletThread extends HandlerThread implements Handler.Callback {
 		new Thread(() -> {
 			try {
 				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			} catch (InterruptedException ignored) {}
 			Process.killProcess(Process.myPid());
 		}, "ForceDestroyTimer").start();
 		MicroActivity activity = ContextHolder.getActivity();
 		if (activity != null) {
 			Displayable current = activity.getCurrent();
-			if (current instanceof Canvas) {
-				Canvas canvas = (Canvas) current;
+			if (current instanceof Canvas canvas) {
 				canvas.postKeyPressed(Canvas.KEY_END);
 				canvas.postKeyReleased(Canvas.KEY_END);
 			}
@@ -119,6 +103,13 @@ public class MidletThread extends HandlerThread implements Handler.Callback {
 		if (instance != null) {
 			instance.handler.obtainMessage(DESTROY).sendToTarget();
 		}
+	}
+
+	@Override
+	public void start() {
+		super.start();
+		handler = new Handler(getLooper(), this);
+		ContextHolder.getActivity().getLifecycle().addObserver(activityLifecycleObserver);
 	}
 
 	@Override
@@ -130,14 +121,19 @@ public class MidletThread extends HandlerThread implements Handler.Callback {
 				}
 				try {
 					midlet = microLoader.loadMIDlet(this.mainClass);
-					state = PAUSED;
+					state = INITIALIZED;
 				} catch (Throwable t) {
 					throw new RuntimeException("Init midlet failed", t);
 				}
 				break;
 			case START:
-				if (state != PAUSED) {
-					break;
+				if (state != INITIALIZED) {
+					if (state != PAUSED) {
+						break;
+					} else if (microLoader.params.skipResumeCall) {
+						state = STARTED;
+						break;
+					}
 				}
 				try {
 					state = STARTED;
@@ -182,5 +178,14 @@ public class MidletThread extends HandlerThread implements Handler.Callback {
 				break;
 		}
 		return true;
+	}
+
+	private void onActivityStateChanged(LifecycleOwner lifecycleOwner, Lifecycle.Event event) {
+		switch (event) {
+			case ON_CREATE -> handler.obtainMessage(INIT).sendToTarget();
+			case ON_START -> handler.obtainMessage(START).sendToTarget();
+			case ON_STOP -> handler.obtainMessage(PAUSE).sendToTarget();
+			case ON_DESTROY -> handler.obtainMessage(DESTROY).sendToTarget();
+		}
 	}
 }

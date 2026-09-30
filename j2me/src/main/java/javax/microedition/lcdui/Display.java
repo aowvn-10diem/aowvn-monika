@@ -1,7 +1,7 @@
 /*
  * Copyright 2012 Kulikov Dmitriy
  * Copyright 2017-2018 Nikita Shakarun
- * Copyright 2023-2024 Arman Jussupgaliyev
+ * Copyright 2020-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ import javax.microedition.lcdui.event.EventQueue;
 import javax.microedition.lcdui.event.RunnableEvent;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.util.ContextHolder;
-
-import ru.woesss.j2me.jar.Descriptor;
 
 @SuppressWarnings("unused")
 public class Display {
@@ -53,8 +51,7 @@ public class Display {
 
 	private static Display instance;
 	static EventQueue queue = new EventQueue();
-	private static boolean multiTouchSupported;
-	private static String pointerNumber;
+
 
 	static {
 		queue.startProcessing();
@@ -64,10 +61,6 @@ public class Display {
 
 	public static Display getDisplay(MIDlet midlet) {
 		if (instance == null && midlet != null) {
-			String nokiaUiEnhancement = midlet.getAppProperty(Descriptor.NOKIA_UI_ENHANCEMENT);
-			if (nokiaUiEnhancement != null) {
-				multiTouchSupported = nokiaUiEnhancement.contains("EnableMultiPointTouchEvents");
-			}
 			instance = new Display();
 		}
 		return instance;
@@ -88,61 +81,46 @@ public class Display {
 		return queue;
 	}
 
-	public static boolean isMultiTouchSupported() {
-		return multiTouchSupported;
-	}
-
-	static void setPointerNumber(int pointerNumber) {
-		Display.pointerNumber = String.valueOf(pointerNumber);
-	}
-
-	static void resetPointerNumber() {
-		pointerNumber = null;
-	}
-
-	public static String getPointerNumber() {
-		return pointerNumber;
-	}
-
-	public void setCurrent(Displayable disp) {
-		if (disp == current) {
+	public void setCurrent(Displayable displayable) {
+		Displayable current = this.current;
+		if (displayable == current) {
 			return;
 		}
-		if (current instanceof Canvas) {
-			Canvas c = (Canvas) current;
-			c.setInvisible();
+		this.current = displayable;
+		if (current instanceof Canvas canvas) {
+			canvas.setInvisible();
+		} else if (current instanceof Alert alert) {
+			if (displayable instanceof Alert) {
+				throw new IllegalArgumentException();
+			}
+			alert.close();
 		}
-		if (disp instanceof Alert) {
-			Alert alert = (Alert) disp;
-			alert.setReturnScreen(current);
-			showAlert(alert);
+		if (displayable instanceof Alert alert) {
+			alert.setNextDisplayable(current);
+			ViewHandler.postEvent(this::showAlert);
+		} else {
+			ContextHolder.getActivity().setCurrent(displayable);
 		}
-		current = disp;
-		showCurrent();
 	}
 
-	public void setCurrent(final Alert alert, Displayable disp) {
-		if (disp == null) {
+	public void setCurrent(Alert alert, Displayable displayable) {
+		if (displayable == null) {
 			throw new NullPointerException();
+		} else if (displayable instanceof Alert) {
+			throw new IllegalArgumentException();
 		}
-		alert.setReturnScreen(disp);
-		showAlert(alert);
 		current = alert;
-		showCurrent();
+		ViewHandler.postEvent(this::showAlert);
 	}
 
-	private void showAlert(Alert alert) {
-		ViewHandler.postEvent(() -> {
+	private void showAlert() {
+		if (current instanceof Alert alert) {
 			AlertDialog alertDialog = alert.prepareDialog();
 			alertDialog.show();
 			if (alert.finiteTimeout()) {
-				ViewHandler.postDelayed(alert::dismiss, alert.getTimeout());
+				ViewHandler.postDelayed(alertDialog::dismiss, alert.getTimeout());
 			}
-		});
-	}
-
-	private void showCurrent() {
-		ContextHolder.getActivity().setCurrent(current);
+		}
 	}
 
 	public Displayable getCurrent() {
@@ -157,16 +135,17 @@ public class Display {
 		return false;
 	}
 
-	/**
-	 * @since MIDP 2.0
-	 */
+	/** @since MIDP 2.0 */
 	public boolean vibrate(int duration) {
 		return ContextHolder.vibrate(duration);
 	}
 
 	public void setCurrentItem(Item item) {
-		if (item.hasOwnerForm()) {
-			setCurrent(item.getOwnerForm());
+		Screen owner = item.getOwner();
+		if (owner instanceof Form) {
+			setCurrent(owner);
+		} else {
+			throw new IllegalStateException("Item is not owned by a Form");
 		}
 	}
 

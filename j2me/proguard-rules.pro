@@ -37,3 +37,10 @@
 -keep class com.arthenica.mobileffmpeg.** { *; }
 -keep class org.acra.attachment.DefaultAttachmentProvider { *; }
 -keep class ru.playsoftware.j2meloader.crashes.models.* { *; }
+
+# JL-Mod: API mở rộng thêm + lớp có hàm native / gọi ngược từ C++ (micro3d, gles, mmapi EAS/TSF)
+-keep class com.j_phone.** { *; }
+-keep class com.jblend.** { *; }
+-keep class com.mexa.** { *; }
+-keep class com.mot.iden.** { *; }
+-keep class ru.woesss.** { *; }

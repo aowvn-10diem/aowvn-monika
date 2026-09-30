@@ -1,5 +1,6 @@
 /*
  * Copyright 2012 Kulikov Dmitriy
+ * Copyright 2019-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +34,7 @@ import javax.microedition.lcdui.event.CommandActionEvent;
 import javax.microedition.lcdui.event.SimpleEvent;
 import javax.microedition.util.ContextHolder;
 
-public abstract class Item implements View.OnCreateContextMenuListener {
+public abstract class Item {
 	public static final int PLAIN = 0;
 	public static final int HYPERLINK = 1;
 	public static final int BUTTON = 2;
@@ -56,34 +57,33 @@ public abstract class Item implements View.OnCreateContextMenuListener {
 	private static final int HORIZONTAL_GRAVITY_MASK = 3;
 	private static final int VERTICAL_GRAVITY_MASK = 48;
 
-	private static final int LABEL_NO_ACTION = 0;
-	private static final int LABEL_SHOW = 1;
-	private static final int LABEL_HIDE = 2;
+	final ArrayList<Command> commands = new ArrayList<>();
+	ItemCommandListener listener = null;
+	int preferredWidth = -1;
+	int preferredHeight = -1;
+	int width;
+	int height;
 
-	private LinearLayout layout;
-	private View contentview;
-
+	private int layoutMode = LAYOUT_DEFAULT;
 	private String label;
-	private TextView labelview;
-	private int labelmode;
-	private int preferredWidth, preferredHeight;
-	private int layoutmode;
-
-	private Form owner;
-
-	private final ArrayList<Command> commands = new ArrayList<>();
-	private ItemCommandListener listener = null;
+	private Screen owner;
+	private LinearLayout layout;
+	private View contentView;
+	private TextView labelView;
 	private Command defaultCommand;
 
 	private final SimpleEvent msgSetContextMenuListener = new SimpleEvent() {
 		@Override
 		public void process() {
+			if (layout == null) {
+				return;
+			}
 			if (listener != null) {
-				labelview.setOnCreateContextMenuListener(Item.this);
-				contentview.setOnCreateContextMenuListener(Item.this);
+				labelView.setOnCreateContextMenuListener(Item.this::onCreateContextMenu);
+				contentView.setOnCreateContextMenuListener(Item.this::onCreateContextMenu);
 			} else {
-				labelview.setLongClickable(false);
-				contentview.setLongClickable(false);
+				labelView.setLongClickable(false);
+				contentView.setLongClickable(false);
 			}
 		}
 	};
@@ -91,39 +91,23 @@ public abstract class Item implements View.OnCreateContextMenuListener {
 	private final SimpleEvent msgSetLabel = new SimpleEvent() {
 		@Override
 		public void process() {
-			labelview.setText(label);
-
-			switch (labelmode) {
-				case LABEL_SHOW:
-					layout.addView(labelview, 0);
-					break;
-
-				case LABEL_HIDE:
-					layout.removeView(labelview);
-					break;
+			if (labelView == null) {
+				return;
 			}
-
-			labelmode = LABEL_NO_ACTION;
+			String text = label;
+			labelView.setText(text);
+			labelView.setVisibility(text == null ? View.GONE : View.VISIBLE);
 		}
 	};
 
-	public Item() {
-		setLayout(LAYOUT_DEFAULT);
-	}
-
-	public void setLabel(String value) {
-		if (layout != null) {
-			if (label == null && value != null) {
-				labelmode = LABEL_SHOW;
-			} else if (label != null && value == null) {
-				labelmode = LABEL_HIDE;
-			}
-
-			label = value;
-
-			ViewHandler.postEvent(msgSetLabel);
-		} else {
-			label = value;
+	public void addCommand(Command cmd) {
+		if (cmd == null) {
+			throw new NullPointerException();
+		} else if (owner instanceof Alert) {
+			throw new IllegalStateException("Item is owned by Alert");
+		}
+		if (!commands.contains(cmd)) {
+			commands.add(cmd);
 		}
 	}
 
@@ -131,35 +115,117 @@ public abstract class Item implements View.OnCreateContextMenuListener {
 		return label;
 	}
 
-	public void setOwnerForm(Form form) {
-		owner = form;
-		clearItemView();
+	public int getLayout() {
+		return layoutMode;
 	}
 
-	public Form getOwnerForm() {
-		if (owner == null) {
-			throw new IllegalStateException("call setOwnerForm() before calling getOwnerForm()");
-		}
-
-		return owner;
+	public int getMinimumHeight() {
+		return 0;
 	}
 
-	public boolean hasOwnerForm() {
-		return owner != null;
+	public int getMinimumWidth() {
+		return 0;
+	}
+
+	public int getPreferredHeight() {
+		return height;
+	}
+
+	public int getPreferredWidth() {
+		return width;
 	}
 
 	public void notifyStateChanged() {
-		if (owner != null) {
-			owner.notifyItemStateChanged(this);
+		if (owner instanceof Form form) {
+			form.notifyItemStateChanged(this);
+		} else {
+			throw new IllegalStateException("Item is not owned by a Form");
+		}
+	}
+
+	public void removeCommand(Command cmd) {
+		commands.remove(cmd);
+		if (defaultCommand == cmd) {
+			defaultCommand = null;
+		}
+	}
+
+	public void setDefaultCommand(Command cmd) {
+		if (owner instanceof Alert) {
+			throw new IllegalStateException("Item is owned by Alert");
+		}
+		defaultCommand = cmd;
+		if (cmd == null) {
+			return;
+		}
+		commands.remove(cmd);
+		commands.add(0, cmd);
+	}
+
+	public void setItemCommandListener(ItemCommandListener listener) {
+		if (owner instanceof Alert) {
+			throw new IllegalStateException("Item is owned by Alert");
+		}
+		this.listener = listener;
+
+		if (layout != null) {
+			ViewHandler.postEvent(msgSetContextMenuListener);
+		}
+	}
+
+	public void setLabel(String value) {
+		if (owner instanceof Alert) {
+			throw new IllegalStateException("Item is owned by Alert");
+		}
+		label = value;
+		if (layout != null) {
+			ViewHandler.postEvent(msgSetLabel);
 		}
 	}
 
 	public void setLayout(int value) {
-		layoutmode = value;
+		if (owner instanceof Alert) {
+			throw new IllegalStateException("Item is owned by Alert");
+		}
+		layoutMode = value;
 	}
 
-	public int getLayout() {
-		return layoutmode;
+	public void setPreferredSize(int width, int height) {
+		if (width < -1 || height < -1) {
+			throw new IllegalArgumentException();
+		} else if (owner instanceof Alert) {
+			throw new IllegalStateException("Item is owned by Alert");
+		}
+		preferredWidth = width;
+		preferredHeight = height;
+		// FIXME: 18.11.2023 width and height MUST be computed from content
+		// now we are reproducing the previous logic
+		this.width = width == -1 ? 0 : width;
+		this.height = height == -1 ? 0 : height;
+	}
+
+	void postStateChanged() {
+		if (owner instanceof Form form) {
+			form.notifyItemStateChanged(this);
+		}
+	}
+
+	void setOwner(Screen owner) {
+		this.owner = owner;
+		ViewHandler.postEvent(new SimpleEvent() {
+			@Override
+			public void process() {
+				clearItemView();
+			}
+		});
+	}
+
+	Screen getOwner() {
+		return owner;
+	}
+
+	boolean hasOwner() {
+		return owner != null;
 	}
 
 	/**
@@ -167,25 +233,26 @@ public abstract class Item implements View.OnCreateContextMenuListener {
 	 *
 	 * @return LinearLayout with a label in the first row and some content in the second row
 	 */
-	public View getItemView() {
+	View getItemView() {
 		if (layout == null) {
 			Context context = ContextHolder.getActivity();
 
 			layout = new LinearLayout(context);
 			layout.setOrientation(LinearLayout.VERTICAL);
 
-			labelview = new AppCompatTextView(context);
-			labelview.setTextAppearance(context, android.R.style.TextAppearance_Medium);
-			labelview.setText(label);
+			labelView = new AppCompatTextView(context);
+			labelView.setTextAppearance(context, android.R.style.TextAppearance_Medium);
+			labelView.setText(label);
 
-			if (label != null) {
-				layout.addView(labelview, getLayoutParams());
+			layout.addView(labelView, getLayoutParams());
+			if (label == null) {
+				labelView.setVisibility(View.GONE);
 			}
 
-			contentview = getItemContentView();
-			layout.addView(contentview, getLayoutParams());
+			contentView = getItemContentView();
+			layout.addView(contentView, getLayoutParams());
 
-			ViewHandler.postEvent(msgSetContextMenuListener);
+			msgSetContextMenuListener.run();
 		}
 
 		return layout;
@@ -200,19 +267,19 @@ public abstract class Item implements View.OnCreateContextMenuListener {
 			hwrap = LayoutParams.WRAP_CONTENT;
 		}
 
-		if ((layoutmode & LAYOUT_SHRINK) != 0) {
+		if ((layoutMode & LAYOUT_SHRINK) != 0) {
 			hwrap = LayoutParams.WRAP_CONTENT;
-		} else if ((layoutmode & LAYOUT_EXPAND) != 0) {
+		} else if ((layoutMode & LAYOUT_EXPAND) != 0) {
 			hwrap = LayoutParams.MATCH_PARENT;
 		}
 
-		if ((layoutmode & LAYOUT_VSHRINK) != 0) {
+		if ((layoutMode & LAYOUT_VSHRINK) != 0) {
 			vwrap = LayoutParams.WRAP_CONTENT;
-		} else if ((layoutmode & LAYOUT_VEXPAND) != 0) {
+		} else if ((layoutMode & LAYOUT_VEXPAND) != 0) {
 			vwrap = LayoutParams.MATCH_PARENT;
 		}
 
-		int horizontal = layoutmode & HORIZONTAL_GRAVITY_MASK;
+		int horizontal = layoutMode & HORIZONTAL_GRAVITY_MASK;
 		if (horizontal == LAYOUT_CENTER) {
 			gravity = Gravity.CENTER_HORIZONTAL;
 		} else if (horizontal == LAYOUT_RIGHT) {
@@ -223,7 +290,7 @@ public abstract class Item implements View.OnCreateContextMenuListener {
 			hwrap = LayoutParams.WRAP_CONTENT;
 		}
 
-		int vertical = layoutmode & VERTICAL_GRAVITY_MASK;
+		int vertical = layoutMode & VERTICAL_GRAVITY_MASK;
 		if (vertical == LAYOUT_VCENTER) {
 			gravity |= Gravity.CENTER_VERTICAL;
 		} else if (vertical == LAYOUT_BOTTOM) {
@@ -239,10 +306,10 @@ public abstract class Item implements View.OnCreateContextMenuListener {
 		return layoutParams;
 	}
 
-	public void clearItemView() {
+	void clearItemView() {
 		layout = null;
-		labelview = null;
-		contentview = null;
+		labelView = null;
+		contentView = null;
 
 		clearItemContentView();
 	}
@@ -250,66 +317,11 @@ public abstract class Item implements View.OnCreateContextMenuListener {
 	/**
 	 * Get the item content
 	 */
-	protected abstract View getItemContentView();
+	abstract View getItemContentView();
 
-	protected abstract void clearItemContentView();
+	abstract void clearItemContentView();
 
-	public void addCommand(Command cmd) {
-		if (cmd == null) {
-			throw new NullPointerException();
-		}
-		if (!commands.contains(cmd)) {
-			commands.add(cmd);
-		}
-	}
-
-	public void removeCommand(Command cmd) {
-		commands.remove(cmd);
-		if (defaultCommand == cmd) {
-			defaultCommand = null;
-		}
-	}
-
-	public void setDefaultCommand(Command cmd) {
-		defaultCommand = cmd;
-		if (cmd == null) {
-			return;
-		}
-		commands.remove(cmd);
-		commands.add(0, cmd);
-	}
-
-	public void setItemCommandListener(ItemCommandListener listener) {
-		this.listener = listener;
-
-		if (layout != null) {
-			ViewHandler.postEvent(msgSetContextMenuListener);
-		}
-	}
-
-	public void setPreferredSize(int width, int height) {
-		preferredWidth = width;
-		preferredHeight = height;
-	}
-
-	public int getPreferredWidth() {
-		return preferredWidth;
-	}
-
-	public int getPreferredHeight() {
-		return preferredHeight;
-	}
-
-	public int getMinimumHeight() {
-		return 0;
-	}
-
-	public int getMinimumWidth() {
-		return 0;
-	}
-
-	@Override
-	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+	void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
 		menu.clear();
 
 		for (Command cmd : commands) {
@@ -317,7 +329,7 @@ public abstract class Item implements View.OnCreateContextMenuListener {
 		}
 	}
 
-	public boolean contextMenuItemSelected(MenuItem item) {
+	boolean contextMenuItemSelected(MenuItem item) {
 		if (listener == null) {
 			return false;
 		}
@@ -335,7 +347,7 @@ public abstract class Item implements View.OnCreateContextMenuListener {
 		return false;
 	}
 
-	public void fireDefaultCommandAction() {
+	void fireDefaultCommandAction() {
 		if (defaultCommand != null) {
 			Display.postEvent(CommandActionEvent.getInstance(listener, defaultCommand, this));
 		}

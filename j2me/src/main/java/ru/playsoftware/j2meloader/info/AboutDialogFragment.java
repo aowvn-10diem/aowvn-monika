@@ -18,9 +18,8 @@ package ru.playsoftware.j2meloader.info;
 
 import android.app.Dialog;
 import android.os.Bundle;
-import android.text.Html;
-import android.text.method.ScrollingMovementMethod;
-import android.text.util.Linkify;
+import android.text.SpannableStringBuilder;
+import android.text.method.LinkMovementMethod;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -33,20 +32,16 @@ public class AboutDialogFragment extends DialogFragment {
 	@NonNull
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		StringBuilder message = new StringBuilder().append(getText(R.string.version))
+		SpannableStringBuilder message = new SpannableStringBuilder()
+				.append(getText(R.string.version))
 				.append(BuildConfig.VERSION_NAME)
 				.append(getText(R.string.about_email))
 				.append(getText(R.string.about_github))
-				.append(getText(R.string.about_4pda))
-				.append(getText(R.string.about_xda))
-				.append(getText(R.string.about_emugen_wiki))
-				.append(getText(R.string.about_crowdin))
 				.append(getText(R.string.about_copyright));
-		TextView tv = new TextView(getActivity());
-		tv.setText(Html.fromHtml(message.toString()));
+		TextView tv = new TextView(requireActivity());
+		tv.setMovementMethod(LinkMovementMethod.getInstance());
+		tv.setText(message);
 		tv.setTextSize(16);
-		tv.setMovementMethod(new ScrollingMovementMethod());
-		Linkify.addLinks(tv, Linkify.ALL);
 		float density = getResources().getDisplayMetrics().density;
 		int paddingHorizontal = (int) (density * 20);
 		int paddingVertical = (int) (density * 14);

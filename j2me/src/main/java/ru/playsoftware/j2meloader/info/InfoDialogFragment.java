@@ -1,5 +1,6 @@
 /*
  * Copyright 2018 Nikita Shakarun
+ * Copyright 2020-2023 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +21,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
-import android.text.Html;
+import android.text.SpannableStringBuilder;
 import android.text.method.LinkMovementMethod;
 import android.widget.TextView;
 
@@ -33,19 +34,11 @@ public class InfoDialogFragment extends DialogFragment {
 	@NonNull
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		Activity activity = requireActivity();
-		TextView tv = new TextView(activity);
-		tv.setMovementMethod(LinkMovementMethod.getInstance());
-		tv.setText(Html.fromHtml(getString(R.string.about_message)));
-		tv.setTextSize(16);
-		float density = getResources().getDisplayMetrics().density;
-		int paddingHorizontal = (int) (density * 20);
-		int paddingVertical = (int) (density * 14);
-		tv.setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, 0);
-		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		builder.setTitle(R.string.app_name)
+		return new AlertDialog.Builder(requireActivity())
+				.setTitle(R.string.app_name)
 				.setIcon(R.mipmap.ic_launcher)
-				.setView(tv);
-		return builder.create();
+				.setMessage(R.string.about_message)
+				.setPositiveButton(android.R.string.ok, null)
+				.create();
 	}
 }

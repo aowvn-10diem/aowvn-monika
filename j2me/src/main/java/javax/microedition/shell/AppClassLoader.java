@@ -1,6 +1,7 @@
 /*
  * Copyright 2015-2016 Nickolay Savchenko
- * Copyright 2017-2018 Nikita Shakarun
+ * Copyright 2017-2021 Nikita Shakarun
+ * Copyright 2020-2023 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +20,6 @@ package javax.microedition.shell;
 
 import android.util.Log;
 
-import net.lingala.zip4j.ZipFile;
-import net.lingala.zip4j.exception.ZipException;
 import net.lingala.zip4j.model.FileHeader;
 
 import java.io.ByteArrayInputStream;
@@ -34,20 +33,21 @@ import ru.playsoftware.j2meloader.BuildConfig;
 import ru.playsoftware.j2meloader.config.Config;
 import ru.playsoftware.j2meloader.util.FileUtils;
 import ru.playsoftware.j2meloader.util.IOUtils;
+import ru.woesss.util.zip.ZipFile;
 
 public class AppClassLoader extends DexClassLoader {
 	private static final String TAG = AppClassLoader.class.getName();
 
 	private static AppClassLoader instance;
 	private static ZipFile zipFile;
-	private static String dataDir;
-	private static File oldResDir;
+	private static String sDataDir;
+	private static File sOldResDir;
 
 	AppClassLoader(String paths, String tmpDir, ClassLoader parent, File appDir) {
-		super(paths, tmpDir, null, parent);
+		super(paths, tmpDir, null, new CoreClassLoader(parent));
 		if (appDir == null)
 			throw new NullPointerException("App path is null");
-		oldResDir = new File(appDir, Config.MIDLET_RES_DIR);
+		sOldResDir = new File(appDir, Config.MIDLET_RES_DIR);
 		instance = this;
 		setDataDir(appDir);
 		File jar = new File(appDir, Config.MIDLET_RES_FILE);
@@ -55,7 +55,7 @@ public class AppClassLoader extends DexClassLoader {
 	}
 
 	public static void setDataDir(File appDir) {
-		dataDir = appDir.getParentFile().getParent() + Config.MIDLET_DATA_DIR + appDir.getName();
+		sDataDir = appDir.getParentFile().getParent() + Config.MIDLET_DATA_DIR + appDir.getName();
 	}
 
 	public static InputStream getResourceAsStream(Class<?> resClass, String resName) {
@@ -85,7 +85,7 @@ public class AppClassLoader extends DexClassLoader {
 	}
 
 	public static String getDataDir() {
-		return dataDir;
+		return sDataDir;
 	}
 
 	public static byte[] getResourceAsBytes(String resName) {
@@ -128,7 +128,7 @@ public class AppClassLoader extends DexClassLoader {
 			}
 		}
 		if (zipFile == null) {
-			final File file = new File(oldResDir, name);
+			final File file = new File(sOldResDir, name);
 			try {
 				return FileUtils.getBytes(file);
 			} catch (Exception e) {
@@ -162,26 +162,5 @@ public class AppClassLoader extends DexClassLoader {
 
 	public static AppClassLoader getInstance() {
 		return instance;
-	}
-
-	@Override
-	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-		// First, check if the class is already loaded
-		Class<?> loadedClass = findLoadedClass(name);
-		if (loadedClass != null) {
-			return loadedClass;
-		}
-
-		try {
-			// Try to load the class from the URLs of this classloader
-			Class<?> localClass = findClass(name);
-			if (resolve) {
-				resolveClass(localClass);
-			}
-			return localClass;
-		} catch (ClassNotFoundException e) {
-			// Class not found in this classloader, delegate to parent classloader
-			return super.loadClass(name, resolve);
-		}
 	}
 }

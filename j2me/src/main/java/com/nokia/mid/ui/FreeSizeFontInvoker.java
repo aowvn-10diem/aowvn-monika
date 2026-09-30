@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Arman Jussupgaliyev
+ * Copyright 2021 Arman Jussupgaliyev
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ public class FreeSizeFontInvoker {
     }
 
     public static Font getFont(int face, int style, int height) {
-        return new Font(face, style, -1, height);
+        // On Symbian^3, the actual font height is less than given
+        return new Font(face, style, -1, (int) ((float)height * 0.78F));
     }
 }

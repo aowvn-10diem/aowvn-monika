@@ -1,5 +1,6 @@
 /*
  * Copyright 2012 Kulikov Dmitriy
+ * Copyright 2021-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +24,7 @@ import android.widget.SeekBar;
 
 import androidx.appcompat.widget.AppCompatSeekBar;
 
+import javax.microedition.lcdui.event.SimpleEvent;
 import javax.microedition.util.ContextHolder;
 
 public class Gauge extends Item {
@@ -30,41 +32,21 @@ public class Gauge extends Item {
 	public static final int INCREMENTAL_IDLE = 1;
 	public static final int CONTINUOUS_RUNNING = 2;
 	public static final int INCREMENTAL_UPDATING = 3;
-
 	public static final int INDEFINITE = -1;
 
-	private ProgressBar pbar;
-
 	private final boolean interactive;
-	private int value, maxValue;
-	private Alert alert;
+	private final SeekBarListener seekBarListener = new SeekBarListener();
 
-	private class SeekBarListener implements SeekBar.OnSeekBarChangeListener {
-		@Override
-		public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-			if (fromUser) {
-				value = progress;
-				notifyStateChanged();
-			}
-		}
-
-		@Override
-		public void onStartTrackingTouch(SeekBar seekBar) {
-		}
-
-		@Override
-		public void onStopTrackingTouch(SeekBar seekBar) {
-		}
-	}
-
-	private final SeekBarListener listener = new SeekBarListener();
+	ProgressBar progressBar;
+	private int value;
+	private int maxValue;
 
 	public Gauge(String label, boolean interactive, int maxValue, int initialValue) {
 		setLabel(label);
 
 		this.interactive = interactive;
 		setMaxValue(maxValue);
-		setValue(value);
+		setValue(initialValue);
 	}
 
 	public int getValue() {
@@ -76,9 +58,15 @@ public class Gauge extends Item {
 		if (this.maxValue == INDEFINITE && !interactive) {
 			return;
 		}
-		if (pbar != null) {
-			pbar.setProgress(value);
-		}
+		ViewHandler.postEvent(new SimpleEvent() {
+			@Override
+			public void process() {
+				ProgressBar progressBar = Gauge.this.progressBar;
+				if (progressBar != null) {
+					progressBar.setProgress(value);
+				}
+			}
+		});
 	}
 
 	public int getMaxValue() {
@@ -87,16 +75,21 @@ public class Gauge extends Item {
 
 	public void setMaxValue(int maxValue) {
 		this.maxValue = maxValue;
-		if (maxValue == INDEFINITE && !interactive) {
-			if (pbar != null) {
-				pbar.setIndeterminate(true);
+		ViewHandler.postEvent(new SimpleEvent() {
+			@Override
+			public void process() {
+				ProgressBar progressBar = Gauge.this.progressBar;
+				if (progressBar == null) {
+					return;
+				}
+				if (maxValue != INDEFINITE || interactive) {
+					progressBar.setIndeterminate(false);
+					progressBar.setMax(maxValue);
+				} else {
+					progressBar.setIndeterminate(true);
+				}
 			}
-			return;
-		}
-		if (pbar != null) {
-			pbar.setIndeterminate(false);
-			pbar.setMax(maxValue);
-		}
+		});
 	}
 
 	public boolean isInteractive() {
@@ -104,34 +97,44 @@ public class Gauge extends Item {
 	}
 
 	@Override
-	protected View getItemContentView() {
-		if (pbar == null) {
+	View getItemContentView() {
+		if (progressBar == null) {
 			Context activity = ContextHolder.getActivity();
 			if (interactive) {
-				pbar = new AppCompatSeekBar(activity);
-				((SeekBar) pbar).setOnSeekBarChangeListener(listener);
+				progressBar = new AppCompatSeekBar(activity);
+				((SeekBar) progressBar).setOnSeekBarChangeListener(seekBarListener);
 			} else {
-				pbar = new ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal);
-				pbar.setIndeterminate(maxValue == INDEFINITE);
+				progressBar = new ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal);
+				progressBar.setIndeterminate(maxValue == INDEFINITE);
 			}
 
-			pbar.setMax(maxValue);
-			pbar.setProgress(value);
-
-			if (alert != null) {
-				pbar.setPadding(60, 0, 60, 0);
-			}
+			progressBar.setMax(maxValue);
+			progressBar.setProgress(value);
 		}
 
-		return pbar;
+		return progressBar;
 	}
 
 	@Override
-	protected void clearItemContentView() {
-		pbar = null;
+	void clearItemContentView() {
+		progressBar = null;
 	}
 
-	void setAlert(Alert alert) {
-		this.alert = alert;
+	private class SeekBarListener implements SeekBar.OnSeekBarChangeListener {
+		@Override
+		public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+			if (fromUser) {
+				value = progress;
+				postStateChanged();
+			}
+		}
+
+		@Override
+		public void onStartTrackingTouch(SeekBar seekBar) {
+		}
+
+		@Override
+		public void onStopTrackingTouch(SeekBar seekBar) {
+		}
 	}
 }

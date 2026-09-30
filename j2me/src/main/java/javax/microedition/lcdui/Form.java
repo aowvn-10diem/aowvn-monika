@@ -2,7 +2,7 @@
  * Copyright 2012 Kulikov Dmitriy
  * Copyright 2015-2016 Nickolay Savchenko
  * Copyright 2017-2018 Nikita Shakarun
- * Copyright 2020-2023 Yury Kharchenko
+ * Copyright 2020-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import android.widget.ScrollView;
 
 import java.util.ArrayList;
 
+import javax.microedition.lcdui.event.SimpleEvent;
 import javax.microedition.util.ContextHolder;
 
 public class Form extends Screen {
@@ -54,13 +55,13 @@ public class Form extends Screen {
 			if (item == null) {
 				throw new NullPointerException("Item at index " + i + " is null");
 			}
-			if (item.hasOwnerForm()) {
+			if (item.hasOwner()) {
 				throw new IllegalStateException("Item at index " + i + " is already owned by another container");
 			}
 		}
 		for (Item item : elements) {
 			items.add(item);
-			item.setOwnerForm(this);
+			item.setOwner(this);
 		}
 	}
 
@@ -81,12 +82,12 @@ public class Form extends Screen {
 	}
 
 	public int append(Item item) {
-		if (item.hasOwnerForm()) {
+		if (item.hasOwner()) {
 			throw new IllegalStateException();
 		}
 
 		items.add(item);
-		item.setOwnerForm(this);
+		item.setOwner(this);
 		ViewHandler.postEvent(() -> {
 			LinearLayout layout = this.layout;
 			if (layout != null) {
@@ -97,12 +98,12 @@ public class Form extends Screen {
 	}
 
 	public void insert(int index, Item item) {
-		if (item.hasOwnerForm()) {
+		if (item.hasOwner()) {
 			throw new IllegalStateException();
 		}
 
 		items.add(index, item);
-		item.setOwnerForm(this);
+		item.setOwner(this);
 		ViewHandler.postEvent(() -> {
 			LinearLayout layout = this.layout;
 			if (layout != null) {
@@ -112,12 +113,12 @@ public class Form extends Screen {
 	}
 
 	public void set(int index, Item item) {
-		if (item.hasOwnerForm()) {
+		if (item.hasOwner()) {
 			throw new IllegalStateException();
 		}
 
-		items.set(index, item).setOwnerForm(null);
-		item.setOwnerForm(this);
+		items.set(index, item).setOwner(null);
+		item.setOwner(this);
 		ViewHandler.postEvent(() -> {
 			LinearLayout layout = this.layout;
 			if (layout != null) {
@@ -129,7 +130,7 @@ public class Form extends Screen {
 	}
 
 	public void delete(int index) {
-		items.remove(index).setOwnerForm(null);
+		items.remove(index).setOwner(null);
 
 		ViewHandler.postEvent(() -> {
 			LinearLayout layout = this.layout;
@@ -141,7 +142,7 @@ public class Form extends Screen {
 
 	public void deleteAll() {
 		for (Item item : items) {
-			item.setOwnerForm(null);
+			item.setOwner(null);
 		}
 
 		items.clear();
@@ -158,14 +159,20 @@ public class Form extends Screen {
 		this.listener = listener;
 	}
 
-	public void notifyItemStateChanged(Item item) {
-		if (listener != null) {
-			listener.itemStateChanged(item);
-		}
+	void notifyItemStateChanged(Item item) {
+		Display.postEvent(new SimpleEvent() {
+			@Override
+			public void process() {
+				ItemStateListener l = listener;
+				if (l != null) {
+					l.itemStateChanged(item);
+				}
+			}
+		});
 	}
 
 	@Override
-	public View getScreenView() {
+	View getScreenView() {
 		if (scrollview == null) {
 			Context context = ContextHolder.getActivity();
 
@@ -187,7 +194,7 @@ public class Form extends Screen {
 	}
 
 	@Override
-	public void clearScreenView() {
+	void clearScreenView() {
 		scrollview = null;
 		layout = null;
 

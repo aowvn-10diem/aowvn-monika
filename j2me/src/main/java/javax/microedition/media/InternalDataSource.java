@@ -1,6 +1,7 @@
 /*
  * Copyright 2012 Kulikov Dmitriy
- * Copyright 2017-2018 Nikita Shakarun
+ * Copyright 2017-2020 Nikita Shakarun
+ * Copyright 2023 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +19,6 @@
 package javax.microedition.media;
 
 import android.util.Log;
-import android.webkit.MimeTypeMap;
 
 import com.arthenica.mobileffmpeg.Config;
 import com.arthenica.mobileffmpeg.FFmpeg;
@@ -31,123 +31,60 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 
-import javax.microedition.media.protocol.DataSource;
-import javax.microedition.media.protocol.SourceStream;
-import javax.microedition.util.ContextHolder;
+import ru.woesss.j2me.mmapi.FileCacheDataSource;
 
-public class InternalDataSource extends DataSource {
-	private static final String TAG = InternalDataSource.class.getName();
+class InternalDataSource extends FileCacheDataSource {
+	private static final String TAG = InternalDataSource.class.getSimpleName();
 
-	private File mediaFile;
-	private String type;
-
-	public InternalDataSource(InputStream stream, String type) throws IllegalArgumentException, IOException {
-		super(null);
-
-		String extension = "." + MimeTypeMap.getSingleton().getExtensionFromMimeType(type);
-		this.mediaFile = File.createTempFile("media", extension, ContextHolder.getCacheDir());
-		this.type = type;
-
-		final RandomAccessFile raf = new RandomAccessFile(mediaFile, "rw");
+	InternalDataSource(InputStream stream, String type) throws IllegalArgumentException, IOException {
+		super(type);
 
 		final String name = mediaFile.getName();
 		Log.d(TAG, "Starting media pipe: " + name);
 
-		int length = stream.available();
-		if (length >= 0) {
-			raf.setLength(length);
-			Log.d(TAG, "Changing file size to " + length + " bytes: " + name);
-		}
-
-		byte[] buf = new byte[0x10000];
-		int read;
-		try {
-			while (true) {
-				read = stream.read(buf);
-				if (read > 0) {
-					raf.write(buf, 0, read);
-				} else if (read < 0) {
-					break;
-				}
+		try (RandomAccessFile raf = new RandomAccessFile(mediaFile, "rw")) {
+			int length = stream.available();
+			if (length >= 0) {
+				raf.setLength(length);
+				Log.d(TAG, "Changing file size to " + length + " bytes: " + name);
 			}
-			raf.close();
-			Log.d(TAG, "Media pipe closed: " + name);
+			byte[] buf = new byte[4096];
+			int read;
+			while ((read = stream.read(buf)) != -1) {
+				raf.write(buf, 0, read);
+			}
 		} catch (IOException e) {
-			Log.d(TAG, "Media pipe failure: " + e.toString());
-		} finally {
-			stream.close();
+			Log.d(TAG, "Media pipe failure: " + e);
+			throw e;
 		}
+		Log.d(TAG, "Media pipe closed: " + name);
 
-		try {
-			convert();
-		} catch (Throwable e) {
-			// Thrown on fake Oppo devices
-			e.printStackTrace();
-		}
+		convert();
 	}
 
 	private void convert() {
-		MediaInformation mediaInformation = FFprobe.getMediaInformation(mediaFile.getPath());
-		if (mediaInformation != null) {
-			StreamInformation streamInformation = mediaInformation.getStreams().get(0);
-			if (streamInformation.getCodec().contains("adpcm")) {
-				String newName = mediaFile.getPath() + ".wav";
-				String cmd = "-i " + mediaFile.getPath() + " -acodec pcm_u8 -ar 16000 " + newName;
-				int rc = FFmpeg.execute(cmd);
-				if (rc == Config.RETURN_CODE_SUCCESS) {
-					Log.i(TAG, "Command execution completed successfully.");
-					mediaFile.delete();
-					mediaFile = new File(newName);
-				} else {
-					Log.i(TAG, String.format(
-							"Command execution failed with rc=%d and the output below.", rc));
+		try {
+			String path = mediaFile.getPath();
+			MediaInformation mediaInformation = FFprobe.getMediaInformation(path);
+			if (mediaInformation != null) {
+				StreamInformation streamInformation = mediaInformation.getStreams().get(0);
+				if (streamInformation.getCodec().contains("adpcm")) {
+					File pcmU8 = createCacheFile(null, ".wav");
+					String cmd = "-i " + path + " -acodec pcm_u8 -ar 16000 -y " + pcmU8.getPath();
+					int rc = FFmpeg.execute(cmd);
+					if (rc == Config.RETURN_CODE_SUCCESS) {
+						Log.i(TAG, "FFmpeg command execution completed successfully.");
+						if (!mediaFile.delete()) {
+							Log.w(TAG, "convert: error delete file=" + mediaFile);
+						}
+						mediaFile = pcmU8;
+					} else {
+						Log.w(TAG, "FFmpeg command execution failed with RETURN_CODE=" + rc);
+					}
 				}
 			}
+		} catch (Throwable t) {
+			Log.e(TAG, "FFmpeg error", t);
 		}
 	}
-
-	@Override
-	public String getLocator() {
-		return mediaFile.getAbsolutePath();
-	}
-
-	@Override
-	public String getContentType() {
-		return type;
-	}
-
-	@Override
-	public void connect() throws IOException {
-	}
-
-	@Override
-	public void disconnect() {
-		if (mediaFile.delete()) {
-			Log.d(TAG, "Temp file deleted: " + mediaFile.getAbsolutePath());
-		}
-	}
-
-	@Override
-	public void start() throws IOException {
-	}
-
-	@Override
-	public void stop() throws IOException {
-	}
-
-	@Override
-	public SourceStream[] getStreams() {
-		return new SourceStream[0];
-	}
-
-	@Override
-	public Control[] getControls() {
-		return new Control[0];
-	}
-
-	@Override
-	public Control getControl(String control) {
-		return null;
-	}
-
 }

@@ -31,14 +31,13 @@ import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
 import ru.playsoftware.j2meloader.applist.AppItem;
 import ru.playsoftware.j2meloader.applist.AppListModel;
-import ru.playsoftware.j2meloader.appsdb.AppRepository;
 import ru.playsoftware.j2meloader.config.Config;
 import ru.playsoftware.j2meloader.util.FileUtils;
 
 public class MonikaLaunchActivity extends AppCompatActivity {
 	private final CompositeDisposable disposables = new CompositeDisposable();
 	private AppInstaller installer;
-	private AppRepository repository;
+	private AppListModel appListModel;
 	private TextView title;
 	private TextView status;
 	private ProgressBar progress;
@@ -55,13 +54,13 @@ public class MonikaLaunchActivity extends AppCompatActivity {
 			fail("Không tạo được thư mục dữ liệu game Java:\n" + workDir);
 			return;
 		}
-		repository = new ViewModelProvider(this).get(AppListModel.class).getAppRepository();
-		repository.onWorkDirReady();
+		appListModel = new ViewModelProvider(this).get(AppListModel.class);
+		appListModel.setEmulatorDirectory(workDir.getAbsolutePath());
 		if (savedInstanceState == null) install(null, uri);
 	}
 
-	private void install(String path, Uri uri) {
-		installer = new AppInstaller(path, uri, getApplication(), repository);
+	private void install(File jar, Uri uri) {
+		installer = new AppInstaller(jar, uri, appListModel);
 		disposables.add(Single.create(installer::loadInfo)
 				.subscribeOn(Schedulers.computation())
 				.observeOn(AndroidSchedulers.mainThread())
@@ -85,20 +84,20 @@ public class MonikaLaunchActivity extends AppCompatActivity {
 				run(installer.getExistsApp());
 				break;
 			case AppInstaller.STATUS_NEW:
-			case AppInstaller.STATUS_NEWEST: // Bản mới hơn bản đã cài → cập nhật (dữ liệu lưu vẫn giữ).
+			case AppInstaller.STATUS_NEWER: // Bản mới hơn bản đã cài → cập nhật (dữ liệu lưu vẫn giữ).
 				if (installer.getJar() != null) convert();
 				else fail("File .jad cần kèm file .jar của game. Hãy tải bản .jar.");
 				break;
 			case AppInstaller.STATUS_EQUAL:
-			case AppInstaller.STATUS_OLDEST: // Trùng / cũ hơn bản đã cài → chạy bản đã cài.
+			case AppInstaller.STATUS_SAME:
+			case AppInstaller.STATUS_OLDER: // Trùng / cũ hơn bản đã cài → chạy bản đã cài.
 				installer.clearCache();
 				installer.deleteTemp();
 				run(installer.getExistsApp());
 				break;
 			case AppInstaller.STATUS_UNMATCHED:
-				install(installer.getJar(), null); // .jad không khớp .jar → cài theo .jar.
+				install(installer.getJar(), android.net.Uri.fromFile(installer.getJar())); // .jad không khớp .jar → cài theo .jar.
 				break;
-			case AppInstaller.STATUS_NEED_JAD:
 			default:
 				fail("Không nhận ra file game Java này.");
 		}
@@ -106,7 +105,7 @@ public class MonikaLaunchActivity extends AppCompatActivity {
 
 	private void run(AppItem app) {
 		if (app == null) { fail("Cài game xong nhưng không tìm thấy game."); return; }
-		Config.startApp(this, app.getTitle(), app.getPathExt(), false);
+		Config.startApp(this, app.getTitle(), app.getPathExt());
 		finish();
 		overridePendingTransition(0, 0);
 	}

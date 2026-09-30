@@ -5,8 +5,14 @@ Game Java (.jar/.jad) chạy bằng **J2ME Loader** (Nikita Shakarun & cộng s�
 
 | Module | Nguồn gốc |
 |---|---|
-| `j2me/` | `app/` của https://github.com/nikita36078/J2ME-Loader, commit `9b0fa48` (06/02/2026) |
-| `dexlib/` | `dexlib/` của cùng repo (dx của AOSP, chuyển .jar → .dex) |
+| `j2me/` | `app/` của **JL-Mod** https://github.com/woesss/JL-Mod (fork của J2ME Loader), commit `f723a19`, bản `0.87.1-monika` |
+| `dexlib/` | `dexlib/` của JL-Mod (dx của AOSP, chuyển .jar → .dex) |
+
+Từ 0.5.1 lõi là **JL-Mod** thay cho J2ME Loader gốc (`9b0fa48`): thêm skin/màn hình ảo cho Canvas, `screenPadding`,
+cú pháp bàn phím ảo mới, MMAPI native (Oboe + EAS + TinySoundFont), cài đặt game viết lại (`AppInstaller`/`AppListModel`).
+Đã bỏ khỏi bản nhúng: Location API, màn quyên góp, ACRA, DocumentProvider. `TinySoundFont` (`tsf.h`, `tml.h`, MIT) nằm ở
+`j2me/src/main/cpp/mmapi_tsf/TinySoundFont/` (JL-Mod dùng submodule, ở đây chép thẳng vào repo).
+Dữ liệu game đã cài từ lõi cũ: [CHƯA KIỂM] khả năng tương thích Room DB/thư mục làm việc — kiểm trên máy thật khi nâng cấp.
 
 Giấy phép gốc: `j2me/LICENSE-J2ME-Loader`. Bản sao đi kèm APK: `app/src/main/assets/licenses/j2me-loader.txt`.
 

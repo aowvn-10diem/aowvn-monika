@@ -1,22 +1,21 @@
 /*
- *  Copyright 2020-2022 Yury Kharchenko
+ * Copyright 2020-2026 Yury Kharchenko
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package ru.woesss.j2me.installer;
 
-import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -24,17 +23,24 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
-import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
+
+import org.acra.ACRA;
+import org.acra.ErrorReporter;
+
+import java.io.File;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -44,9 +50,9 @@ import io.reactivex.schedulers.Schedulers;
 import ru.playsoftware.j2meloader.R;
 import ru.playsoftware.j2meloader.applist.AppItem;
 import ru.playsoftware.j2meloader.applist.AppListModel;
-import ru.playsoftware.j2meloader.appsdb.AppRepository;
 import ru.playsoftware.j2meloader.config.Config;
-import ru.playsoftware.j2meloader.databinding.DialogInstallerBinding;
+import ru.playsoftware.j2meloader.databinding.FragmentInstallerBinding;
+import ru.playsoftware.j2meloader.util.Constants;
 import ru.playsoftware.j2meloader.util.FileUtils;
 import ru.woesss.j2me.jar.Descriptor;
 
@@ -55,18 +61,13 @@ public class InstallerDialog extends DialogFragment {
 	private static final String ARG_ID = "InstallerDialog.id";
 	private final CompositeDisposable compositeDisposable = new CompositeDisposable();
 
-	private AppRepository appRepository;
+	private FragmentInstallerBinding binding;
 	private Button btnOk;
 	private Button btnClose;
 	private Button btnRun;
+	private AppListModel appListModel;
 	private AppInstaller installer;
-	private AlertDialog mDialog;
-
-	private DialogInstallerBinding binding;
-
-	private final ActivityResultLauncher<String> openFileLauncher = registerForActivityResult(
-			FileUtils.getFilePicker(),
-			this::onPickFileResult);
+	private AlertDialog dialog;
 
 	/**
 	 * @param uri original uri from intent.
@@ -93,8 +94,7 @@ public class InstallerDialog extends DialogFragment {
 	@Override
 	public void onAttach(@NonNull Context context) {
 		super.onAttach(context);
-		AppListModel appListModel = new ViewModelProvider(requireActivity()).get(AppListModel.class);
-		appRepository = appListModel.getAppRepository();
+		appListModel = new ViewModelProvider(requireActivity()).get(AppListModel.class);
 	}
 
 	@Override
@@ -108,8 +108,8 @@ public class InstallerDialog extends DialogFragment {
 	@NonNull
 	@Override
 	public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-		binding = DialogInstallerBinding.inflate(LayoutInflater.from(getContext()));
-		mDialog = new AlertDialog.Builder(requireActivity(), getTheme())
+		binding = FragmentInstallerBinding.inflate(getLayoutInflater());
+		dialog = new AlertDialog.Builder(requireActivity(), getTheme())
 				.setIcon(R.mipmap.ic_launcher)
 				.setView(binding.getRoot())
 				.setTitle("MIDlet installer")
@@ -119,12 +119,12 @@ public class InstallerDialog extends DialogFragment {
 				.setNegativeButton(android.R.string.cancel, null)
 				.setNeutralButton(R.string.START_CMD, null)
 				.create();
-		return mDialog;
+		return dialog;
 	}
 
 	@Override
-	public void onDestroyView() {
-		super.onDestroyView();
+	public void onDismiss(@NonNull DialogInterface dialog) {
+		super.onDismiss(dialog);
 		binding = null;
 	}
 
@@ -140,9 +140,9 @@ public class InstallerDialog extends DialogFragment {
 		if (installer != null) {
 			return;
 		}
-		btnOk = mDialog.getButton(DialogInterface.BUTTON_POSITIVE);
-		btnClose = mDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
-		btnRun = mDialog.getButton(DialogInterface.BUTTON_NEUTRAL);
+		btnOk = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+		btnClose = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+		btnRun = dialog.getButton(DialogInterface.BUTTON_NEUTRAL);
 		hideButtons();
 		Bundle args = requireArguments();
 		Uri uri = args.getParcelable(ARG_URI);
@@ -154,8 +154,8 @@ public class InstallerDialog extends DialogFragment {
 		reinstallApp(id);
 	}
 
-	private void installApp(String path, Uri uri) {
-		installer = new AppInstaller(path, uri, requireActivity().getApplication(), appRepository);
+	private void installApp(File jar, Uri uri) {
+		installer = new AppInstaller(jar, uri, appListModel);
 		btnClose.setOnClickListener(v -> {
 			installer.deleteTemp();
 			installer.clearCache();
@@ -169,7 +169,7 @@ public class InstallerDialog extends DialogFragment {
 	}
 
 	private void reinstallApp(int id) {
-		installer = new AppInstaller(id, requireActivity().getApplication(), appRepository);
+		installer = new AppInstaller(id, appListModel);
 		btnClose.setOnClickListener(v -> {
 			installer.deleteTemp();
 			installer.clearCache();
@@ -182,26 +182,14 @@ public class InstallerDialog extends DialogFragment {
 		compositeDisposable.add(disposable);
 	}
 
-	@SuppressLint("CheckResult")
-	private void onPickFileResult(Uri uri) {
-		if (uri == null) {
-			return;
-		}
-		Disposable disposable = installer.updateInfo(uri)
-				.subscribeOn(Schedulers.computation())
-				.observeOn(AndroidSchedulers.mainThread())
-				.subscribe(this::onProgress, this::onError);
-		compositeDisposable.add(disposable);
-	}
-
 	private void hideProgress() {
-		binding.installationProgress.setVisibility(View.GONE);
-		binding.installationStatus.setVisibility(View.GONE);
+		binding.progress.setVisibility(View.GONE);
+		binding.tvStatus.setVisibility(View.GONE);
 	}
 
 	private void showProgress() {
-		binding.installationProgress.setVisibility(View.VISIBLE);
-		binding.installationStatus.setVisibility(View.VISIBLE);
+		binding.progress.setVisibility(View.VISIBLE);
+		binding.tvStatus.setVisibility(View.VISIBLE);
 	}
 
 	private void hideButtons() {
@@ -218,8 +206,8 @@ public class InstallerDialog extends DialogFragment {
 	private void convert() {
 		Descriptor nd = installer.getNewDescriptor();
 		SpannableStringBuilder info = nd.getInfo(requireActivity());
-		mDialog.setMessage(info);
-		binding.installationStatus.setText(R.string.converting_wait);
+		dialog.setMessage(info);
+		binding.tvStatus.setText(R.string.converting_wait);
 		showProgress();
 		hideButtons();
 		Disposable disposable = Single.create(installer::install)
@@ -232,18 +220,9 @@ public class InstallerDialog extends DialogFragment {
 	private void alertConfirm(SpannableStringBuilder message,
 							  View.OnClickListener positive) {
 		hideProgress();
-		mDialog.setCancelable(false);
-		mDialog.setCanceledOnTouchOutside(false);
-		mDialog.setMessage(message);
-		btnOk.setOnClickListener(positive);
-		showButtons();
-	}
-
-	private void alertSelectJar(View.OnClickListener positive) {
-		hideProgress();
-		mDialog.setCancelable(false);
-		mDialog.setCanceledOnTouchOutside(false);
-		mDialog.setMessage(getString(R.string.install_jar_needed));
+		dialog.setCancelable(false);
+		dialog.setCanceledOnTouchOutside(false);
+		dialog.setMessage(message);
 		btnOk.setOnClickListener(positive);
 		showButtons();
 	}
@@ -253,14 +232,16 @@ public class InstallerDialog extends DialogFragment {
 			return;
 		}
 		if (status == AppInstaller.STATUS_SUCCESS) {
-			binding.installationProgress.setVisibility(View.GONE);
-			binding.installationStatus.setText(getString(R.string.install_done));
+			binding.progress.setVisibility(View.GONE);
+			binding.tvStatus.setText(getString(R.string.install_done));
 			AppItem app = installer.getExistsApp();
 			Drawable drawable = Drawable.createFromPath(app.getImagePathExt());
-			if (drawable != null) mDialog.setIcon(drawable);
+			if (drawable != null) {
+				dialog.setIcon(drawable);
+			}
 			btnOk.setText(R.string.START_CMD);
 			btnOk.setOnClickListener(v -> {
-				Config.startApp(v.getContext(), app.getTitle(), app.getPathExt(), false);
+				Config.startApp(v.getContext(), app.getTitle(), app.getPathExt());
 				dismiss();
 			});
 			btnClose.setText(R.string.close);
@@ -270,68 +251,109 @@ public class InstallerDialog extends DialogFragment {
 		Descriptor nd = installer.getNewDescriptor();
 		SpannableStringBuilder message;
 		switch (status) {
-			case AppInstaller.STATUS_NEW:
+			case AppInstaller.STATUS_NEW -> {
 				if (installer.getJar() != null) {
 					convert();
 					return;
 				}
 				message = nd.getInfo(requireActivity());
-				break;
-			case AppInstaller.STATUS_OLDEST:
-				message = new SpannableStringBuilder(getString(
-						R.string.reinstall_older,
-						nd.getVersion(),
-						installer.getCurrentVersion()));
-				break;
-			case AppInstaller.STATUS_EQUAL:
+			}
+			case AppInstaller.STATUS_OLDER -> message = new SpannableStringBuilder(getString(
+					R.string.reinstall_older,
+					nd.getVersion(),
+					installer.getCurrentVersion()));
+			case AppInstaller.STATUS_EQUAL -> {
 				message = new SpannableStringBuilder(getString(R.string.reinstall));
 				AppItem app = installer.getExistsApp();
 				btnRun.setVisibility(View.VISIBLE);
 				btnRun.setOnClickListener(v -> {
 					installer.clearCache();
 					installer.deleteTemp();
-					Config.startApp(v.getContext(), app.getTitle(), app.getPathExt(), false);
+					Config.startApp(v.getContext(), app.getTitle(), app.getPathExt());
 					dismiss();
 				});
-				break;
-			case AppInstaller.STATUS_NEWEST:
-				message = new SpannableStringBuilder(getString(
-						R.string.reinstall_newest,
-						nd.getVersion(),
-						installer.getCurrentVersion()));
-				break;
-			case AppInstaller.STATUS_UNMATCHED:
+			}
+			case AppInstaller.STATUS_NEWER -> message = new SpannableStringBuilder(getString(
+					R.string.reinstall_newest,
+					nd.getVersion(),
+					installer.getCurrentVersion()));
+			case AppInstaller.STATUS_UNMATCHED -> {
 				SpannableStringBuilder info = installer.getManifest().getInfo(requireActivity());
 				info.append(getString(R.string.install_jar_non_matched_jad));
 				alertConfirm(info, v -> installApp(installer.getJar(), null));
 				return;
-			case AppInstaller.STATUS_NEED_JAD:
-				alertSelectJar(v -> openFileLauncher.launch(null));
+			}
+			case AppInstaller.STATUS_SAME -> {
+				installer.clearCache();
+				installer.deleteTemp();
+				AppItem app = installer.getExistsApp();
+				Config.startApp(getContext(), app.getTitle(), app.getPathExt());
+				dismiss();
 				return;
-			default:
-				throw new IllegalStateException("Unexpected value: " + status);
+			}
+			default -> throw new IllegalStateException("Unexpected value: " + status);
 		}
 		if (installer.getJar() == null) {
 			message.append('\n').append(getString(R.string.warn_install_from_net));
 		}
 		Drawable drawable = Drawable.createFromPath(installer.getIconPath());
-		if (drawable != null) mDialog.setIcon(drawable);
-		mDialog.setTitle(nd.getName());
-		mDialog.setCancelable(false);
-		mDialog.setCanceledOnTouchOutside(false);
-		mDialog.setMessage(message);
+		if (drawable != null) {
+			dialog.setIcon(drawable);
+		}
+		dialog.setTitle(nd.getName());
+		dialog.setCancelable(false);
+		dialog.setCanceledOnTouchOutside(false);
+		dialog.setMessage(message);
 		btnOk.setOnClickListener(v -> convert());
 		hideProgress();
 		showButtons();
 	}
 
 	private void onError(Throwable e) {
-		e.printStackTrace();
+		Log.e("Installer", e.toString(), e);
+		ErrorReporter errorReporter = ACRA.getErrorReporter();
+		Bundle args = getArguments();
+		if (args != null) {
+			String report = errorReporter.getCustomData(Constants.KEY_APPCENTER_ATTACHMENT);
+			StringBuilder sb = new StringBuilder();
+			if (report != null) {
+				sb.append(report);
+			}
+			sb.append("\n====================Installer==================\n");
+			Uri uri = args.getParcelable(ARG_URI);
+			if (uri != null) {
+				sb.append("from uri: ").append(uri).append('\n');
+			}
+			Descriptor descriptor = installer.getNewDescriptor();
+			if (descriptor != null) {
+				sb.append(Descriptor.MIDLET_NAME).append(": ").append(descriptor.getName()).append("\n");
+				sb.append(Descriptor.MIDLET_VENDOR).append(": ").append(descriptor.getVendor()).append("\n");
+				sb.append(Descriptor.MIDLET_VERSION).append(": ").append(descriptor.getVersion()).append("\n");
+			}
+			File jar = installer.getJar();
+			if (jar != null) {
+				String jarSize = Long.toString(jar.length());
+				sb.append(Descriptor.MIDLET_JAR_SIZE).append(": ").append(jarSize).append("\n");
+				try {
+					byte[] bytes = FileUtils.getBytes(jar);
+					byte[] sum = MessageDigest.getInstance("md5").digest(bytes);
+					BigInteger bi = new BigInteger(1, sum);
+					String jarHash = bi.toString(16);
+					sb.append("JAR_HASH_MD5").append(": ").append(jarHash);
+				} catch (IOException ignored) {
+				} catch (NoSuchAlgorithmException ignored) {
+				}
+			}
+			errorReporter.putCustomData(Constants.KEY_APPCENTER_ATTACHMENT, sb.toString());
+		}
+
+		errorReporter.handleException(e);
 		installer.clearCache();
 		installer.deleteTemp();
-		if (!isAdded()) return;
+		if (!isAdded()) {
+			return;
+		}
 		hideProgress();
-		Toast.makeText(requireActivity(), getString(R.string.error) + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
 		dismissAllowingStateLoss();
 	}
 }

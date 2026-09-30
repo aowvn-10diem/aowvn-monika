@@ -1,7 +1,7 @@
 /*
  * Copyright 2012 Kulikov Dmitriy
  * Copyright 2018 Nikita Shakarun
- * Copyright 2022 Yury Kharchenko
+ * Copyright 2022-2026 Yury Kharchenko
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,13 @@
 
 package javax.microedition.lcdui;
 
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
-import javax.microedition.lcdui.commands.ScreenSoftBar;
+import java.util.ArrayList;
 
-import ru.playsoftware.j2meloader.databinding.SoftButtonBarBinding;
+import javax.microedition.lcdui.commands.ScreenSoftBar;
 
 public abstract class Screen extends Displayable {
 
@@ -39,10 +38,7 @@ public abstract class Screen extends Displayable {
 			View screenView = getScreenView();
 			screenView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
 			layout.addView(screenView);
-
-			SoftButtonBarBinding binding = SoftButtonBarBinding.inflate(
-					LayoutInflater.from(layout.getContext()), layout, true);
-			softBar = new ScreenSoftBar(this, binding);
+			softBar = new ScreenSoftBar(this, layout, new ArrayList<>(commands));
 		}
 
 		return layout;
@@ -52,12 +48,14 @@ public abstract class Screen extends Displayable {
 	public void clearDisplayableView() {
 		super.clearDisplayableView();
 		layout = null;
-		softBar.closeMenu();
-		softBar = null;
+		if (softBar != null) {
+			softBar.closeMenu();
+			softBar = null;
+		}
 		clearScreenView();
 	}
 
-	public abstract View getScreenView();
+	abstract View getScreenView();
 
-	public abstract void clearScreenView();
+	abstract void clearScreenView();
 }
