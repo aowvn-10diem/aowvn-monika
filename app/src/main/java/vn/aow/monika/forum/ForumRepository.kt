@@ -143,6 +143,52 @@ class ForumRepository(private val http: OkHttpClient, private val config: Config
             else -> n.toString()
         }
 
+        private fun fold(s: String) = java.text.Normalizer.normalize(s.lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").replace('đ', 'd')
+
+        /** Thể loại game → emoji 3D riêng cho từng loại (từ khóa không dấu). Không khớp → null để nơi gọi chia emoji còn trống. */
+        private val GENRES = listOf(
+            listOf("visual novel", "vn ", "novel") to "fluent3d_books",
+            listOf("rpg", "nhap vai", "role") to "fluent3d_crown",
+            listOf("pokemon", "monster") to "fluent3d_star",
+            listOf("dua xe", "racing", "toc do") to "fluent3d_stopwatch",
+            listOf("hanh dong", "action", "chien dau", "fight", "danh nhau") to "fluent3d_high_voltage",
+            listOf("phieu luu", "adventure") to "fluent3d_rocket",
+            listOf("chien thuat", "strategy", "tactic") to "fluent3d_shield",
+            listOf("giai do", "puzzle", "tri tue") to "fluent3d_puzzle_piece",
+            listOf("mo phong", "simulation", "nuoi", "quan ly") to "fluent3d_hammer_and_wrench",
+            listOf("the thao", "sport", "bong da", "football") to "fluent3d_trophy",
+            listOf("bai", "casino", "co ", "board", "cotuong") to "fluent3d_game_die",
+            listOf("kinh di", "horror", "ma ") to "fluent3d_eyes",
+            listOf("tinh cam", "dating", "romance", "love") to "fluent3d_red_heart",
+            listOf("java", "j2me", "mobile", "dien thoai") to "fluent3d_mobile_phone",
+            listOf("nds", "gba", "psp", "ps1", "ps2", "snes", "nes", "arcade", "may choi game", "console") to "fluent3d_joystick",
+            listOf("viet hoa", "dich", "translate") to "fluent3d_sparkles",
+            listOf("mod", "hack", "cheat") to "fluent3d_key",
+            listOf("ve", "anime", "manga", "art") to "fluent3d_artist_palette",
+            listOf("robot", "mecha") to "fluent3d_robot",
+        )
+        /** Nơi gọi không thấy khớp thì lấy lần lượt trong nhóm này (mỗi thẻ 1 icon khác nhau). */
+        val GENRE_POOL = listOf(
+            "fluent3d_video_game", "fluent3d_joystick", "fluent3d_game_die", "fluent3d_puzzle_piece", "fluent3d_trophy", "fluent3d_crown",
+            "fluent3d_rocket", "fluent3d_star", "fluent3d_high_voltage", "fluent3d_shield", "fluent3d_artist_palette", "fluent3d_robot",
+            "fluent3d_wrapped_gift", "fluent3d_party_popper", "fluent3d_television", "fluent3d_stopwatch",
+        )
+
+        fun genreEmoji(name: String): String? {
+            val t = fold(name)
+            return GENRES.firstOrNull { (keys, _) -> keys.any { k -> Regex("\\b" + Regex.escape(k.trim())).containsMatchIn(t) } }?.second
+        }
+
+        /** Gán emoji cho danh sách tên thể loại: khớp từ khóa trước, còn lại chia từ [GENRE_POOL]; không có 2 thẻ trùng nhau (khi còn emoji trống). */
+        fun assignGenreEmojis(names: List<String>): List<String> {
+            val used = HashSet<String>()
+            val out = arrayOfNulls<String>(names.size)
+            names.forEachIndexed { i, n -> genreEmoji(n)?.takeIf { used.add(it) }?.let { out[i] = it } }
+            val free = GENRE_POOL.filter { it !in used }.iterator()
+            names.indices.forEach { i -> if (out[i] == null) out[i] = if (free.hasNext()) free.next().also { used.add(it) } else GENRE_POOL[i % GENRE_POOL.size] }
+            return out.map { it!! }
+        }
+
         /** Emoji 3D (tên drawable) hợp với chuyên mục / chủ đề. */
         fun emojiFor(tags: List<String>, sticky: Boolean = false): String {
             val t = java.text.Normalizer.normalize(tags.joinToString(" ").lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").replace('đ', 'd')

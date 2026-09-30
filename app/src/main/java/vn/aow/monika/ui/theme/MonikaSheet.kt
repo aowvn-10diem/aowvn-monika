@@ -181,7 +181,7 @@ private fun SheetClose(onDismiss: () -> Unit) {
         Modifier.size(36.dp).clip(Radius.pill).background(SheetColors.tile)
             .clickable(role = Role.Button, onClickLabel = "Đóng", onClick = onDismiss),
         contentAlignment = Alignment.Center,
-    ) { MonikaIcon(vn.aow.monika.R.drawable.ic_fluent_dismiss_24_regular, "Đóng", Modifier.size(18.dp), tint = SheetColors.text) }
+    ) { Icon(painterResource(vn.aow.monika.R.drawable.ic_fluent_dismiss_24_regular), "Đóng", Modifier.size(18.dp), tint = SheetColors.text) }
 }
 
 /** Nút tròn + chữ bên dưới. Nút nổi bật (highlight) = gradient cam→hồng. */
@@ -200,7 +200,7 @@ fun SheetTile(a: SheetAction, onDismiss: () -> Unit, modifier: Modifier = Modifi
                     .background(if (a.highlight) primaryGradient() else Brush.linearGradient(listOf(SheetColors.tile, SheetColors.tile)))
                     .border(1.dp, Color(0x1FFFFFFF), Radius.pill),
                 contentAlignment = Alignment.Center,
-            ) { MonikaIcon(a.icon, null, Modifier.size(24.dp), tint = Color.White) }
+            ) { Icon(painterResource(a.icon), null, Modifier.size(24.dp), tint = Color.White) }
             a.badge?.let { b ->
                 Box(
                     Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-2).dp).heightIn(min = 18.dp).widthIn(min = 18.dp)
@@ -236,7 +236,7 @@ fun SheetRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         leading?.invoke()
-        icon?.let { MonikaIcon(it, null, Modifier.size(20.dp), tint = SheetColors.text) }
+        icon?.let { Icon(painterResource(it), null, Modifier.size(20.dp), tint = SheetColors.text) }
         Column(Modifier.weight(1f).padding(start = if (icon != null || leading != null) 12.dp else 0.dp)) {
             Text(title, style = Monika.type.bodyStrong, color = SheetColors.text, maxLines = maxTitleLines, overflow = TextOverflow.Ellipsis)
             subtitle?.let { Text(it, style = Monika.type.caption, color = SheetColors.textSecondary, maxLines = 3, overflow = TextOverflow.Ellipsis) }

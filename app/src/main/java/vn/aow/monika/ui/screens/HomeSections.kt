@@ -131,12 +131,15 @@ internal fun ForumSection() {
         SectionHeader("Diễn đàn AowVN", "Mở diễn đàn", { Community.open(context, cfg.forum.baseUrl) })
         if (tags.isNotEmpty()) {
             LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(tags.take(10), key = { it.slug }) { t ->
+                val shown = tags.take(10)
+                val emojis = ForumRepository.assignGenreEmojis(shown.map { it.name })
+                items(shown.size, key = { shown[it].slug }) { idx ->
+                    val t = shown[idx]
                     Row(
                         Modifier.clip(Radius.pill).background(c.chip).clickable { Community.open(context, t.url) }.padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        Emoji(ForumRepository.emojiFor(listOf(t.name)), 20.dp)
+                        Emoji(emojis[idx], 20.dp)
                         Text(t.name, style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight), color = c.text, maxLines = 1)
                         Text("${t.topics}", style = Monika.type.caption, color = c.textSecondary)
                     }

@@ -104,10 +104,9 @@ fun FloatingDock(items: List<DockItem>, selected: Int, onSelect: (Int) -> Unit, 
                         .semantics { contentDescription = item.label },
                     contentAlignment = Alignment.Center,
                 ) {
-                    MonikaIcon(
-                        if (on) item.iconSelected else item.icon, null,
-                        // Emoji 3D không đổi màu được → tab chưa chọn mờ bớt, tab đang chọn rõ.
-                        Modifier.size(26.dp).graphicsLayer { val k = scale * (0.6f + 0.4f * pop); scaleX = k; scaleY = k; alpha = pop * (if (on) 1f else 0.72f) },
+                    Icon(
+                        painterResource(if (on) item.iconSelected else item.icon), null,
+                        Modifier.size(26.dp).graphicsLayer { val k = scale * (0.6f + 0.4f * pop); scaleX = k; scaleY = k; alpha = pop },
                         tint = if (on) Color.White else Color(0xFFEDE9F0),
                     )
                     item.badge?.let { b ->
