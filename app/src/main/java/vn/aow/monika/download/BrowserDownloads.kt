@@ -134,8 +134,9 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
                 main.post { job.done = got; if (job.total < 0) job.total = got; job.speed = 0 }
             }
             if (job.state == DlState.CANCELED) { runCatching { job.part.delete() }; return }
-            main.post { job.state = DlState.READY }
-            if (job.confirmed) finish(job)
+            // Hủy có thể xen vào giữa lúc kiểm tra ở trên và lúc chạy trên luồng chính → không được ghi đè trạng thái "đã hủy".
+            main.post { if (job.state != DlState.CANCELED) job.state = DlState.READY }
+            if (job.confirmed && job.state != DlState.CANCELED) finish(job)
         } catch (e: Exception) {
             runCatching { job.part.delete() }
             if (job.state == DlState.CANCELED) return
