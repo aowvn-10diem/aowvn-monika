@@ -1,0 +1,11 @@
+# Kịch bản khói: mở app, đợi giao diện, chụp ảnh. Chưa gắn chữ trên màn hình vì chưa xác nhận nhãn thật — thêm assertVisible sau khi sếp xem ảnh chụp đầu tiên.
+appId: com.aow.monika
+---
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- takeScreenshot: 01-mo-app
+- pressKey: home
+- launchApp
+- waitForAnimationToEnd
+- takeScreenshot: 02-mo-lai
