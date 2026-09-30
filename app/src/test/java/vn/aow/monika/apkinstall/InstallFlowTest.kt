@@ -62,13 +62,6 @@ class InstallFlowTest {
         assertEquals(UiState.Phase.READY, end.phase)
     }
 
-    @Test fun dataIsFlaggedNotLost() = runBlocking {
-        val r = result(data = listOf(DataFile("a.txt", payload(ByteArray(3)))))
-        val end = ApkInstallFlow.execute(r, { _, _, _ -> InstallOutcome.Success }, File(tmp.root, "o4"), device) {}
-        assertEquals(UiState.Phase.DONE, end.phase)
-        assertTrue(end.skippedData)
-    }
-
     @Test fun obbSkipsExistingCompleteFile() {
         val dir = tmp.newFolder("o5")
         File(dir, "main.1.p.obb").writeBytes(ByteArray(5))

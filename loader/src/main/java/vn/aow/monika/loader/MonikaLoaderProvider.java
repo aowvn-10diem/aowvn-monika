@@ -19,6 +19,11 @@ import java.io.StringWriter;
 public class MonikaLoaderProvider extends ContentProvider {
     private static boolean screenSent;
 
+    /** Monika yêu cầu theo dõi lại (mở thử game lần nữa) → cho phép báo "đã hiện màn hình" thêm 1 lần. */
+    static void resetScreen() {
+        synchronized (MonikaLoaderProvider.class) { screenSent = false; }
+    }
+
     @Override public boolean onCreate() {
         final Context ctx = getContext();
         if (ctx == null) return false;

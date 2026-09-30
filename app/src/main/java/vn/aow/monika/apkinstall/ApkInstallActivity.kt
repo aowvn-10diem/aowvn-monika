@@ -30,7 +30,7 @@ class ApkInstallActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         source = intent.getStringExtra(EXTRA_SOURCE)?.let(::File)
         val phase = ApkInstallFlow.state.value.phase
-        val busy = phase == UiState.Phase.INSTALLING || phase == UiState.Phase.COPYING_OBB
+        val busy = phase == UiState.Phase.INSTALLING || phase == UiState.Phase.COPYING_OBB || phase == UiState.Phase.REPACKING || phase == UiState.Phase.PUSHING_DATA
         // Mở từ thông báo (không kèm file) hoặc đang cài → chỉ hiện trạng thái hiện có, không đọc lại gói.
         source?.takeIf { !busy }?.let { inspect(it, null) }
         setContent {
@@ -44,6 +44,12 @@ class ApkInstallActivity : ComponentActivity() {
                         onRetry = { source?.let { inspect(it, null) } },
                         onUninstallOld = { pkg -> awaitingUninstall = pkg; SessionInstaller.uninstall(this@ApkInstallActivity, pkg) },
                         onPlay = { pkg -> packageManager.getLaunchIntentForPackage(pkg)?.let { startActivity(it) }; finish() },
+                        onHealthStart = ::healthStart,
+                        onHealthSkip = { ApkInstallFlow.inspected?.let { r ->
+                            ApkInstallFlow.state.value = ApkInstallFlow.confirmWorks(r, true, InstallChecklist.from(this@ApkInstallActivity)) } },
+                        onHealthAnswer = { ok -> ApkInstallFlow.inspected?.let { r ->
+                            ApkInstallFlow.state.value = ApkInstallFlow.confirmWorks(r, ok, InstallChecklist.from(this@ApkInstallActivity)) } },
+                        onMethod = { m -> ApkInstallFlow.chosenMethod = m; install() },
                         onClose = ::finish,
                     )
                 }
@@ -64,7 +70,8 @@ class ApkInstallActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         val phase = ApkInstallFlow.state.value.phase
-        if (isFinishing && phase != UiState.Phase.INSTALLING && phase != UiState.Phase.COPYING_OBB) {
+        val busy = phase == UiState.Phase.INSTALLING || phase == UiState.Phase.COPYING_OBB || phase == UiState.Phase.REPACKING || phase == UiState.Phase.PUSHING_DATA
+        if (isFinishing && !busy) {
             ApkInstallFlow.cleanup(ApkInstallFlow.inspected)
             ApkInstallFlow.inspected = null
             ApkInstallFlow.state.value = UiState()
@@ -93,6 +100,30 @@ class ApkInstallActivity : ComponentActivity() {
         info.sourceDir = apk.path; info.publicSourceDir = apk.path
         info.loadLabel(packageManager).toString()
     }.getOrNull()
+
+    /** Mở thử game đã chỉnh, theo dõi tin bộ nạp gửi về, rồi ghi kết quả vào checklist. */
+    private fun healthStart() {
+        val r = ApkInstallFlow.inspected ?: return
+        val pkg = r.packageName
+        val launch = packageManager.getLaunchIntentForPackage(pkg) ?: run {
+            Toast.makeText(this, "Không mở được game vừa cài.", Toast.LENGTH_LONG).show(); return
+        }
+        ApkInstallFlow.state.value = UiState(UiState.Phase.HEALTH_RUNNING, r)
+        val checklist = InstallChecklist.from(this)
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) { DataPusher.watch(this@ApkInstallActivity, pkg, 45) }
+            val h = HealthCheck.run(pkg, launch = { startActivity(launch) })
+            val next = ApkInstallFlow.applyHealth(r, h, checklist)
+            ApkInstallFlow.state.value = next
+            // Game chạy ổn: không kéo người chơi ra khỏi game; nhắc bằng thông báo để quay lại xác nhận.
+            vn.aow.monika.notify.Notifier.downloadDone(
+                this@ApkInstallActivity,
+                if (h is Health.LikelyOk) "Game chạy ổn?" else "Game chưa chạy được",
+                if (h is Health.LikelyOk) "Bấm để xác nhận game đã vào được màn hình chơi." else "Bấm để thử cách khác.",
+                Intent(this@ApkInstallActivity, ApkInstallActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            )
+        }
+    }
 
     private fun install() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {

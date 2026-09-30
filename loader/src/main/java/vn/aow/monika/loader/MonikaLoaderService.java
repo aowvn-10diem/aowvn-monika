@@ -38,6 +38,7 @@ public class MonikaLoaderService extends Service {
                 final String job = data.readString();
                 new Thread(new Runnable() { @Override public void run() { copyJob(job); } }, "monika-copy").start();
             } else {
+                MonikaLoaderProvider.resetScreen();
                 Watch.arm(MonikaLoaderService.this, Math.max(1, data.readInt()) * 1000L);
             }
             if (reply != null) reply.writeInt(1);

@@ -130,6 +130,15 @@
         <receiver
             android:name=".apkinstall.InstallResultReceiver"
             android:exported="false" />
+        <!-- Cách 1: bộ nạp chèn trong game báo tin về Monika + đọc dữ liệu game từ Monika (chỉ gói game đã đăng ký mới vào được). -->
+        <provider
+            android:name=".apkinstall.LoaderBusProvider"
+            android:authorities="${applicationId}.loaderbus"
+            android:exported="true" />
+        <provider
+            android:name=".apkinstall.GameDataProvider"
+            android:authorities="${applicationId}.gamedata"
+            android:exported="true" />
 
         <receiver
             android:name=".download.DownloadReceiver"

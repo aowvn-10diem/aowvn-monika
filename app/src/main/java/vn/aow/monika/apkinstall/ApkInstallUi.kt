@@ -26,6 +26,10 @@ fun BoxScope.ApkInstallSheet(
     onRetry: () -> Unit,
     onUninstallOld: (String) -> Unit,
     onPlay: (String) -> Unit,
+    onHealthStart: () -> Unit,
+    onHealthSkip: () -> Unit,
+    onHealthAnswer: (Boolean) -> Unit,
+    onMethod: (Method) -> Unit,
     onClose: () -> Unit,
 ) {
     val r = st.result
@@ -37,6 +41,12 @@ fun BoxScope.ApkInstallSheet(
         UiState.Phase.READY -> (name ?: "Cài game Android") to r?.let { "v${it.versionName ?: it.versionCode} · ${size(it.totalBytes)}" }
         UiState.Phase.INSTALLING -> "Đang cài game" to name
         UiState.Phase.COPYING_OBB -> "Đang chép dữ liệu game" to name
+        UiState.Phase.REPACKING -> "Đang chuẩn bị game" to name
+        UiState.Phase.PUSHING_DATA -> "Đang chép dữ liệu (Data)" to name
+        UiState.Phase.HEALTH_READY -> "Đã cài — kiểm tra thử" to name
+        UiState.Phase.HEALTH_RUNNING -> "Đang kiểm tra game…" to name
+        UiState.Phase.HEALTH_ASK -> "Game có chạy được không?" to name
+        UiState.Phase.CHOOSE_METHOD -> "Thử cách khác" to name
         UiState.Phase.DONE -> "Đã cài xong" to name
         UiState.Phase.FAILED -> "Chưa cài được" to name
     }
@@ -44,7 +54,25 @@ fun BoxScope.ApkInstallSheet(
         UiState.Phase.READY -> if (r != null && r.fatal == null)
             listOf(SheetAction("Cài đặt", R.drawable.ic_fluent_arrow_download_24_regular, highlight = true, onClick = onInstall), close)
         else listOf(close)
-        UiState.Phase.INSTALLING, UiState.Phase.COPYING_OBB -> listOf(SheetAction("Ẩn", R.drawable.ic_fluent_dismiss_24_regular, onClick = onClose))
+        UiState.Phase.INSTALLING, UiState.Phase.COPYING_OBB, UiState.Phase.REPACKING, UiState.Phase.PUSHING_DATA ->
+            listOf(SheetAction("Ẩn", R.drawable.ic_fluent_dismiss_24_regular, onClick = onClose))
+        UiState.Phase.HEALTH_READY -> listOf(
+            SheetAction("Mở thử", R.drawable.ic_fluent_play_24_filled, highlight = true, onClick = onHealthStart),
+            SheetAction("Bỏ qua", R.drawable.ic_fluent_dismiss_24_regular, onClick = onHealthSkip),
+        )
+        UiState.Phase.HEALTH_ASK -> listOf(
+            SheetAction("Được", R.drawable.ic_fluent_checkmark_circle_24_filled, highlight = true) { onHealthAnswer(true) },
+            SheetAction("Không được", R.drawable.ic_fluent_dismiss_24_regular) { onHealthAnswer(false) },
+        )
+        UiState.Phase.CHOOSE_METHOD -> {
+            val applicable = r?.let { ApkInstallFlow.applicable(it) }.orEmpty()
+            Method.values().filter { it in applicable }.map { m ->
+                val a = st.checklist.firstOrNull { it.method == m }
+                SheetAction(if (m == Method.REPACK) "Thử Cách 1 lại" else "Cách ${m.ordinal + 1}", R.drawable.ic_fluent_arrow_clockwise_24_regular,
+                    enabled = a?.state != State.NOT_AVAILABLE && m == Method.REPACK) { onMethod(m) }
+            } + close
+        }
+        UiState.Phase.HEALTH_RUNNING -> listOf(close)
         UiState.Phase.DONE -> listOfNotNull(r?.let { SheetAction("Chơi", R.drawable.ic_fluent_play_24_filled, highlight = true) { onPlay(it.packageName) } }, close)
         UiState.Phase.FAILED -> {
             val kind = st.failure?.kind
@@ -71,9 +99,14 @@ fun BoxScope.ApkInstallSheet(
                         r?.problems?.forEach { p -> SheetRow(p.text, maxTitleLines = 6, icon = R.drawable.ic_fluent_alert_24_regular) }
                         r?.let { info(it) }
                     }
-                    UiState.Phase.INSTALLING, UiState.Phase.COPYING_OBB -> {
+                    UiState.Phase.INSTALLING, UiState.Phase.COPYING_OBB, UiState.Phase.REPACKING, UiState.Phase.PUSHING_DATA -> {
                         Text(
-                            (if (st.phase == UiState.Phase.INSTALLING) "Đang cài đặt" else "Đang chép dữ liệu") + (st.percent?.let { " $it%" } ?: "…") +
+                            when (st.phase) {
+                                UiState.Phase.INSTALLING -> "Đang cài đặt"
+                                UiState.Phase.REPACKING -> "Đang chuẩn bị game"
+                                UiState.Phase.PUSHING_DATA -> "Game đang tự chép dữ liệu"
+                                else -> "Đang chép dữ liệu"
+                            } + (st.percent?.let { " $it%" } ?: "…") +
                                 "\nBạn có thể bấm Ẩn — Monika vẫn tiếp tục và báo khi xong.",
                             style = Monika.type.caption, color = SheetColors.textSecondary,
                         )
@@ -83,12 +116,34 @@ fun BoxScope.ApkInstallSheet(
                         SheetRow("Game đã sẵn sàng. Bấm Chơi để mở.", icon = R.drawable.ic_fluent_checkmark_circle_24_filled)
                         if (st.skippedData) SheetRow("Game này còn dữ liệu (Data) cần chép thêm — sẽ hỗ trợ ở bản sau.", maxTitleLines = 4, icon = R.drawable.ic_fluent_alert_24_regular)
                     }
-                    UiState.Phase.FAILED -> SheetRow(st.failure?.text.orEmpty(), maxTitleLines = 6, icon = R.drawable.ic_fluent_alert_24_regular)
+                    UiState.Phase.FAILED -> {
+                        SheetRow(st.failure?.text.orEmpty(), maxTitleLines = 6, icon = R.drawable.ic_fluent_alert_24_regular)
+                        if (st.checklist.isNotEmpty()) Checklist(st.checklist)
+                    }
+                    UiState.Phase.HEALTH_READY -> SheetRow("Monika sẽ mở game khoảng 15 giây để xem có chạy được không, rồi quay lại đây để bạn xác nhận.", maxTitleLines = 5, icon = R.drawable.ic_fluent_info_24_regular)
+                    UiState.Phase.HEALTH_RUNNING -> SheetRow("Đang theo dõi game… Bạn cứ chơi thử; đợi khoảng 20 giây rồi quay lại Monika.", maxTitleLines = 4, icon = R.drawable.ic_fluent_info_24_regular)
+                    UiState.Phase.HEALTH_ASK -> {
+                        SheetRow("Monika thấy game hiện màn hình và chạy ổn. Game có vào được màn hình chơi không?", maxTitleLines = 4, icon = R.drawable.ic_fluent_info_24_regular)
+                        Checklist(st.checklist)
+                    }
+                    UiState.Phase.CHOOSE_METHOD -> {
+                        st.message?.let { SheetRow(it, maxTitleLines = 5, icon = R.drawable.ic_fluent_alert_24_regular) }
+                        Checklist(st.checklist)
+                    }
                     else -> Box(Modifier.padding(4.dp)) { vn.aow.monika.ui.theme.Spinner() }
                 }
             }
         },
     )
+}
+
+/** Checklist Cách 1/2/3 của game: đã thử cách nào, kết quả ra sao. */
+@Composable
+private fun Checklist(list: List<Attempt>) {
+    list.forEach { a ->
+        val icon = when (a.state) { State.OK -> "✅"; State.FAILED -> "❌"; State.RUNNING -> "⏳"; State.NOT_TRIED -> "⚪"; State.NOT_AVAILABLE -> "🚫" }
+        SheetRow("$icon ${a.method.title}", maxTitleLines = 3, subtitle = a.reason ?: if (a.method != Method.REPACK && a.state == State.NOT_TRIED) "Sắp có ở bản sau." else a.method.note)
+    }
 }
 
 @Composable
