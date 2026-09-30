@@ -1,11 +1,15 @@
-# Kịch bản khói: mở app, đợi giao diện, chụp ảnh. Chưa gắn chữ trên màn hình vì chưa xác nhận nhãn thật — thêm assertVisible sau khi sếp xem ảnh chụp đầu tiên.
+# Kịch bản khói: mở app, đợi giao diện, chụp ảnh. Đợi thấy chữ "Duyệt theo hệ máy" (Trang chủ, đã thấy trên ảnh API 30) — màn tối trống thì test đỏ.
 appId: com.aow.monika
 ---
 - launchApp:
     clearState: true
-- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Duyệt theo hệ máy"
+    timeout: 45000
 - takeScreenshot: 01-mo-app
 - pressKey: home
 - launchApp
-- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: "Duyệt theo hệ máy"
+    timeout: 45000
 - takeScreenshot: 02-mo-lai
