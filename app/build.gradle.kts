@@ -1,3 +1,4 @@
+import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -95,7 +96,34 @@ tasks.withType<Test>().configureEach {
     jvmArgs("-Dsun.jnu.encoding=UTF-8", "-Dfile.encoding=UTF-8")
 }
 
+// Bộ nạp data (module :loader) → D8 → assets/monika-loader.dex. Trình cài game chèn file này vào APK game (Cách 1).
+val d8Tool: Configuration by configurations.creating
+val loaderDex by tasks.registering(JavaExec::class) {
+    val out = layout.buildDirectory.dir("generated/loader-dex")
+    val jar = project(":loader").tasks.named<Jar>("jar")
+    dependsOn(jar)
+    classpath = d8Tool
+    mainClass.set("com.android.tools.r8.D8")
+    val sdk = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
+        ?: Properties().also { p -> rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(p::load) }.getProperty("sdk.dir")
+    doFirst {
+        out.get().asFile.deleteRecursively(); out.get().asFile.mkdirs()
+        args("--release", "--min-api", "21", "--lib", "$sdk/platforms/android-35/android.jar", "--output", out.get().asFile.absolutePath, jar.get().archiveFile.get().asFile.absolutePath)
+    }
+    inputs.files(jar.map { it.archiveFile })
+    outputs.dir(out)
+}
+val loaderAsset by tasks.registering(Sync::class) {
+    dependsOn(loaderDex)
+    from(layout.buildDirectory.dir("generated/loader-dex")) { include("classes.dex"); rename { "monika-loader.dex" } }
+    into(layout.buildDirectory.dir("generated/loader-assets"))
+}
+android.sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/loader-assets"))
+tasks.matching { it.name.matches(Regex("merge.*Assets")) }.configureEach { dependsOn(loaderAsset) }
+tasks.withType<Test>().configureEach { dependsOn(loaderAsset) }
+
 dependencies {
+    d8Tool(libs.r8)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.splashscreen) // Màn chờ khi mở app
     implementation(libs.androidx.browser) // Custom Tab: đăng nhập Google trên web
