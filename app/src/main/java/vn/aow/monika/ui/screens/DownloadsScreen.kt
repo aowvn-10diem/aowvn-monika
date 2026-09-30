@@ -113,6 +113,7 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> U
     Screen {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item { if (header != null) header() else MonikaHeader("Tải xuống") }
+            item { SupportStrip() }
             storage?.let { s -> item { StorageCard(s) } }
             item { SectionRow("Đang tải xuống", active.size) }
             if (loaded == null) item { Box(Modifier.fillMaxWidth().height(120.dp), Alignment.Center) { Spinner() } }

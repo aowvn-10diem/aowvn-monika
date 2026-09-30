@@ -87,6 +87,7 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
             if (header != null) header()
             else MonikaHeader("Cài đặt", subtitle = "Aow Monika", left = onBack?.let { back -> { CircleButton(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại", back) } })
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SupportStrip()
                 if (cfg.account.enabled) AccountCard()
                 // Thẻ tối: app + phiên bản + cập nhật.
                 MonikaCard(Modifier.fillMaxWidth(), dark = true, shape = Radius.hero, padding = PaddingValues(18.dp)) {

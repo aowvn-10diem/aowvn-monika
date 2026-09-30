@@ -32,6 +32,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -107,6 +108,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var filter by remember { mutableStateOf(FILTER_ALL) }
     var systemFilter by remember { mutableStateOf<String?>(null) }
+    var query by remember { mutableStateOf("") }
     var systemSheet by remember { mutableStateOf(false) }
     var libMenu by remember { mutableStateOf(false) }
     var gameMenu by remember { mutableStateOf<Game?>(null) }
@@ -224,13 +226,14 @@ fun LibraryScreen(onSettings: () -> Unit) {
     // Bộ lọc: Tất cả · Chơi gần đây · Chơi thường xuyên · Theo hệ máy (bấm → menu chọn hệ).
     val prefs = AppGraph.prefs
     val systems = games.mapNotNull { it.system?.name }.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }
-    val shown = when (filter) {
+    val byFilter = when (filter) {
         FILTER_RECENT -> games.filter { prefs.lastPlayed(it.key) > 0 }.sortedByDescending { prefs.lastPlayed(it.key) }
         FILTER_FREQUENT -> games.filter { prefs.playCount(it.key) >= 2 || prefs.playTime(it.key) > 10 * 60_000 }
             .sortedWith(compareByDescending<Game> { prefs.playTime(it.key) }.thenByDescending { prefs.playCount(it.key) })
         FILTER_SYSTEM -> games.filter { it.system?.name == systemFilter }
         else -> games
     }
+    val shown = vn.aow.monika.library.GameSearch.filter(byFilter, query)
     val lastPlayed = AppGraph.library.lastPlayed(AppGraph.prefs, games)
 
     Screen {
@@ -245,6 +248,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
             },
             right = { CircleButton(R.drawable.ic_fluent_grid_24_regular, "Menu thư viện", { libMenu = true }) },
         )
+        SupportStrip(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp))
         LazyVerticalGrid(
             GridCells.Fixed(2), Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance),
@@ -261,6 +265,16 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 }
             }
             if (games.isNotEmpty()) item(span = { GridItemSpan(2) }) {
+                OutlinedTextField(
+                    query, { query = it }, Modifier.fillMaxWidth(), singleLine = true, shape = Radius.pill,
+                    placeholder = { Text("Tìm game trong máy", style = Monika.type.body, color = c.textSecondary) },
+                    leadingIcon = { Icon(painterResource(R.drawable.ic_fluent_search_24_regular), null, Modifier.size(20.dp), tint = c.textSecondary) },
+                    trailingIcon = if (query.isNotEmpty()) ({
+                        Icon(painterResource(R.drawable.ic_fluent_dismiss_24_regular), "Xóa", Modifier.size(20.dp).clickable { query = "" }, tint = c.textSecondary)
+                    }) else null,
+                )
+            }
+            if (games.isNotEmpty()) item(span = { GridItemSpan(2) }) {
                 ChipBar(
                     listOf(FILTER_ALL, FILTER_RECENT, FILTER_FREQUENT, FILTER_SYSTEM), filter,
                     { if (it == FILTER_SYSTEM) (if (filter == FILTER_SYSTEM) systemFilter else null)?.let { s -> "$s ▾" } ?: "Theo hệ máy ▾" else it },
@@ -270,7 +284,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
             }
             // Game đang tải / giải nén — tiến độ ngay trên ô của game đó.
             if (tasks.isNotEmpty()) items(tasks, key = { it.id }) { t -> TaskTile(t) }
-            lastPlayed?.let { g ->
+            lastPlayed?.takeIf { query.isBlank() }?.let { g ->
                 item(span = { GridItemSpan(2) }) { Text("Tiếp tục chơi", style = Monika.type.sectionTitle, color = c.text) }
                 item(span = { GridItemSpan(2) }) { ContinueCard(g) { play(g) } }
             }
@@ -286,7 +300,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
             }
             if (shown.isEmpty() && games.isNotEmpty()) item(span = { GridItemSpan(2) }) {
                 Text(
-                    when (filter) { FILTER_RECENT -> "Chưa chơi game nào."; FILTER_FREQUENT -> "Chơi một game vài lần là nó hiện ở đây."; else -> "Không có game." },
+                    when { query.isNotBlank() -> "Không có game nào khớp \"$query\"."; filter == FILTER_RECENT -> "Chưa chơi game nào."; filter == FILTER_FREQUENT -> "Chơi một game vài lần là nó hiện ở đây."; else -> "Không có game." },
                     style = Monika.type.body, color = c.textSecondary, modifier = Modifier.padding(vertical = 24.dp),
                 )
             }

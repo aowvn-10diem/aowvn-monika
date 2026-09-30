@@ -160,6 +160,7 @@ fun GamesScreen(onOpen: (Post) -> Unit, focusSearch: Boolean = false, vm: FeedVi
                     }
                 }
             }
+            item { SupportStrip(Modifier.padding(horizontal = 16.dp)) }
             item {
                 ChipBar(listOf<String?>(null) + cfg.feedLabels(), vm.label, { it?.let(::shortLabel) ?: "Tất cả" }, vm::selectLabel, accent = true)
             }

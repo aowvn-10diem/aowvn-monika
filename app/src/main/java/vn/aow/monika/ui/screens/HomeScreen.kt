@@ -129,6 +129,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                     }
                 }
             }
+            item { SupportStrip(Modifier.padding(horizontal = 16.dp)) }
             item { CheckinStrip() }
             item { SystemChips { label -> GamesFilter.pending = label; onGo(Routes.GAMES) } }
             if (!list.isNullOrEmpty() && list.size > 3) {
