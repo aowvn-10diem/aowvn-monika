@@ -119,7 +119,8 @@ val loaderAsset by tasks.registering(Sync::class) {
     into(layout.buildDirectory.dir("generated/loader-assets"))
 }
 android.sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/loader-assets"))
-tasks.matching { it.name.matches(Regex("merge.*Assets")) }.configureEach { dependsOn(loaderAsset) }
+// Mọi tác vụ đọc thư mục assets (gộp assets, lint...) phải đợi bộ nạp được dựng xong.
+tasks.matching { it.name.matches(Regex("merge.*Assets")) || it.name.contains("lint", ignoreCase = true) }.configureEach { dependsOn(loaderAsset) }
 tasks.withType<Test>().configureEach { dependsOn(loaderAsset) }
 
 dependencies {
