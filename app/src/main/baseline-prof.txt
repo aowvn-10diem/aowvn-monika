@@ -1,0 +1,16 @@
+# Baseline Profile viết tay (dạng quy tắc có ký tự đại diện): ART biên dịch sẵn các lớp này LÚC CÀI → mở app, chuyển tab, cuộn
+# danh sách và vào game ít khựng hơn (không phải đợi JIT lần đầu). Thư viện androidx đã tự mang hồ sơ riêng, được gộp khi build.
+# Chỉ gồm phần dùng thường xuyên; trình cài game Android, cheat, tải xuống… ít dùng nên để JIT.
+# HSP = Hot + Startup + Post-startup.
+HSPLvn/aow/monika/MonikaApp;->**(**)**
+HSPLvn/aow/monika/AppGraph;->**(**)**
+HSPLvn/aow/monika/Prefs;->**(**)**
+HSPLvn/aow/monika/config/**;->**(**)**
+HSPLvn/aow/monika/ui/**;->**(**)**
+HSPLvn/aow/monika/library/**;->**(**)**
+HSPLvn/aow/monika/feed/**;->**(**)**
+HSPLvn/aow/monika/runner/**;->**(**)**
+HSPLvn/aow/monika/diag/**;->**(**)**
+Lvn/aow/monika/ui/**;
+Lvn/aow/monika/library/**;
+Lvn/aow/monika/runner/**;

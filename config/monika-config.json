@@ -1,5 +1,5 @@
 {
-  "configVersion": 16,
+  "configVersion": 17,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -710,11 +710,24 @@
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip",
       "options": {
         "desmume_internal_resolution": "512x384"
+      },
+      "perf": {
+        "lite": {
+          "desmume_internal_resolution": "256x192"
+        }
       }
     },
     "melonds": {
       "version": "1",
-      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/melonds_libretro_android.so.zip"
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/melonds_libretro_android.so.zip",
+      "options": {
+        "melonds_threaded_renderer": "enabled"
+      },
+      "perf": {
+        "lite": {
+          "melonds_threaded_renderer": "disabled"
+        }
+      }
     },
     "mgba": {
       "version": "1",
@@ -736,12 +749,26 @@
     },
     "pcsx_rearmed": {
       "version": "1",
-      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/pcsx_rearmed_libretro_android.so.zip"
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/pcsx_rearmed_libretro_android.so.zip",
+      "perf": {
+        "lite": {
+          "pcsx_rearmed_frameskip_type": "auto"
+        }
+      }
     },
     "ppsspp": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/ppsspp_libretro_android.so.zip",
-      "systemFiles": "https://buildbot.libretro.com/assets/system/PPSSPP.zip"
+      "systemFiles": "https://buildbot.libretro.com/assets/system/PPSSPP.zip",
+      "lowLatencyAudio": false,
+      "perf": {
+        "lite": {
+          "ppsspp_auto_frameskip": "enabled"
+        },
+        "full": {
+          "ppsspp_internal_resolution": "960x544"
+        }
+      }
     },
     "easyrpg": {
       "version": "1",
@@ -791,17 +818,33 @@
     "mupen64plus_next_gles3": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mupen64plus_next_gles3_libretro_android.so.zip",
-      "aspectRatio": 1.3333
+      "aspectRatio": 1.3333,
+      "lowLatencyAudio": false,
+      "perf": {
+        "full": {
+          "mupen64plus-43screensize": "640x480"
+        }
+      }
     },
     "parallel_n64": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/parallel_n64_libretro_android.so.zip",
-      "aspectRatio": 1.3333
+      "aspectRatio": 1.3333,
+      "lowLatencyAudio": false
     },
     "flycast": {
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/flycast_libretro_android.so.zip",
-      "aspectRatio": 1.3333
+      "aspectRatio": 1.3333,
+      "lowLatencyAudio": false,
+      "perf": {
+        "lite": {
+          "reicast_threaded_rendering": "enabled"
+        },
+        "full": {
+          "reicast_internal_resolution": "1280x960"
+        }
+      }
     },
     "handy": {
       "version": "1",
@@ -839,7 +882,8 @@
       "aspectRatio": 0.8333,
       "abis": [
         "arm64-v8a"
-      ]
+      ],
+      "lowLatencyAudio": false
     }
   },
   "webPlayers": {

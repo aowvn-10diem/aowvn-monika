@@ -2,7 +2,7 @@ name: Emulator Test (máy ảo Android)
 
 # Chạy tay: Actions → "Emulator Test" → Run workflow. Không tốn quota Claude.
 # Build APK release (R8), cài lên máy ảo Android 11 và 14, chạy kịch bản Maestro (.maestro/*.yaml),
-# bắt crash trong logcat, đính kèm ảnh chụp + log. Repo private nên mỗi lượt tốn phút Actions (~10–15 phút/máy).
+# rồi chơi thử GBA/GB/NES bằng ROM kiểm thử nhỏ (scripts/ci-emulator-games.sh), bắt crash trong logcat, đính kèm ảnh chụp + log. Repo private nên mỗi lượt tốn phút Actions (~10–15 phút/máy).
 # Chưa phủ: Cách 3 (gỡ lỗi không dây) và HealthCheck trên máy tiết kiệm pin — cần máy thật.
 on:
   workflow_dispatch:
@@ -64,6 +64,9 @@ jobs:
             adb logcat -c
             maestro test .maestro --format junit --output out/maestro.xml --test-output-dir out/shots || echo FAILED > out/maestro.failed
             adb logcat -d > out/logcat.txt
+            # Chơi thử từng hệ máy bằng ROM kiểm thử nhỏ (GBA, GB, NES): màn chờ phải gỡ, không crash.
+            bash scripts/ci-emulator-games.sh out || echo FAILED > out/games.failed
+            adb logcat -d > out/logcat-after-games.txt
             # Crash của app = lỗi, dù Maestro có báo xanh.
             if grep -E "FATAL EXCEPTION|AndroidRuntime.*com\.aow\.monika|IncompatibleClassChangeError" out/logcat.txt | head -20 > out/crash.txt && [ -s out/crash.txt ]; then echo CRASH > out/crash.flag; fi
       - uses: actions/upload-artifact@v4
@@ -74,5 +77,6 @@ jobs:
           retention-days: 7
       - name: Kết luận
         run: |
+          if [ -f out/games.failed ]; then echo "::error::Có hệ máy không lên hình — xem games/summary.txt, games/*.png, games/*.logcat.txt"; cat out/games/summary.txt 2>/dev/null; exit 1; fi
           if [ -f out/maestro.failed ] || [ -f out/crash.flag ]; then echo "::error::Đỏ — xem crash.txt/logcat.txt trong Artifacts"; cat out/crash.txt 2>/dev/null; exit 1; fi
           echo "Xanh: mở app hai lần không crash trên API ${{ matrix.api }}."

@@ -129,6 +129,16 @@ class Prefs(private val context: Context) {
 
     /** Lõi user chọn cho 1 hệ máy (null = dùng mặc định trong config). */
     fun coreOverride(systemId: String): String? = sp.getString("core_$systemId", null)
+
+    /** "auto" | "lite" | "mid" | "full" — ép mức hiệu năng giả lập thay vì tự đoán theo RAM/nhân (xem [vn.aow.monika.runner.EmuTier]). */
+    var emuPerf: String
+        get() = sp.getString("emu_perf", "auto") ?: "auto"
+        set(v) = sp.edit().putString("emu_perf", v).apply()
+
+    /** Tải trước game: đọc sẵn file game vào bộ nhớ đệm + dựng sẵn tiến trình chạy giả lập khi sắp chơi. Mặc định bật. */
+    var preloadGame: Boolean
+        get() = sp.getBoolean("preload_game", true)
+        set(v) = sp.edit().putBoolean("preload_game", v).apply()
     fun setCoreOverride(systemId: String, core: String?) = sp.edit().putString("core_$systemId", core).apply()
 
     /** Game được "Giữ lại": không bao giờ bị dọn bộ đệm. */

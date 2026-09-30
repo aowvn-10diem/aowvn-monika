@@ -201,6 +201,14 @@ data class CoreDef(
     val abis: List<String> = emptyList(),
     /** Bộ lọc hình: "sharp" (nét, hợp game điểm ảnh), "crt", "lcd" hoặc trống = mặc định. */
     val shader: String = "",
+    /**
+     * Tùy chọn riêng theo sức máy, đè lên [options] (user chỉnh trong game vẫn đè lên cuối cùng):
+     * "lite" = máy yếu (RAM < 3,5 GB, ít nhân hoặc đang bật tiết kiệm pin) · "full" = máy mạnh (RAM ≥ 7 GB, ≥ 8 nhân).
+     * Máy trung bình dùng [options] như cũ. Khóa/giá trị phải có thật trong lõi — `scripts/audit-cores.py` kiểm.
+     */
+    val perf: Map<String, Map<String, String>> = emptyMap(),
+    /** Âm thanh độ trễ thấp (Oboe). Lõi nặng đặt false để bộ đệm âm thanh lớn hơn, đỡ rè khi máy chưa kịp. */
+    val lowLatencyAudio: Boolean = true,
 )
 
 @Serializable

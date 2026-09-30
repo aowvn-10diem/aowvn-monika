@@ -57,6 +57,8 @@ class RetroActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // Máy có hỗ trợ: giữ xung CPU/GPU ổn định khi chơi lâu (đỡ nóng rồi tụt xung đột ngột). Máy không hỗ trợ thì bỏ qua.
+        runCatching { if (android.os.Build.VERSION.SDK_INT >= 24) window.setSustainedPerformanceMode(true) }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         // Cho game vẽ tràn cả vùng camera (máy ngang đỡ viền đen); phần giao diện tự né bằng insets.
         if (android.os.Build.VERSION.SDK_INT >= 28) window.attributes = window.attributes.apply {
@@ -77,6 +79,7 @@ class RetroActivity : ComponentActivity() {
         val layout = padFor(coreId, intent.getStringExtra(EXTRA_PAD))
         aspect = AppGraph.config.current.cores[coreId]?.aspectRatio ?: DEFAULT_ASPECT[coreId] ?: 4f / 3f
         val prefs = AppGraph.prefs
+        val tier = EmuTier.detect(this, prefs.emuPerf)
         ui.opacity = prefs.padOpacity
         ui.scale = prefs.padScale
         ui.dpadOffset = prefs.padOffset("dpad").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
@@ -158,6 +161,15 @@ class RetroActivity : ComponentActivity() {
                 }
             }
         }
+        // Gỡ màn chờ ĐÚNG 1 LẦN. (Lỗi cũ: mỗi khung hình lại gọi animate() làm hoạt ảnh mờ dần bị hủy liên tục → màn chờ không bao giờ gỡ,
+        // game chạy phía sau nhưng vẫn thấy "đang khởi động".) Có thêm bước gỡ cứng phòng khi hệ thống bỏ hoạt ảnh.
+        fun dismissLoading() {
+            if (loadingGone) return
+            loadingGone = true
+            android.util.Log.i(LOG_TAG, "loading-dismissed core=$coreId") // CI (scripts/ci-emulator-games.sh) đọc dòng này để biết game đã lên hình
+            loading.animate().alpha(0f).setDuration(160).withEndAction { if (loading.parent != null) root.removeView(loading) }.start()
+            loading.postDelayed({ if (loading.parent != null) root.removeView(loading) }, 500)
+        }
         setContentView(root)
         // Biết vùng camera/cutout rồi mới đặt lại vị trí khung game.
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
@@ -187,8 +199,13 @@ class RetroActivity : ComponentActivity() {
                     "lcd" -> com.swordfish.libretrodroid.ShaderConfig.LCD
                     else -> com.swordfish.libretrodroid.ShaderConfig.Default
                 }
-                preferLowLatencyAudio = true
-                variables = CoreOptions.initial(this@RetroActivity, coreId, AppGraph.config.current.cores[coreId]?.options.orEmpty())
+                val def = AppGraph.config.current.cores[coreId]
+                // Máy yếu luôn dùng bộ đệm âm thanh thường (đỡ rè khi CPU chưa kịp); máy khác theo config của lõi.
+                preferLowLatencyAudio = (def?.lowLatencyAudio ?: true) && tier != EmuTier.LITE
+                skipDuplicateFrames = true // Không vẽ lại khung giống hệt khung trước (tiết kiệm GPU/pin).
+                // Mặc định config → đè bằng bộ theo sức máy (lite/full) → đè bằng lựa chọn của người chơi (CoreOptions.initial).
+                val tierOptions = def?.perf?.get(tier.key).orEmpty()
+                variables = CoreOptions.initial(this@RetroActivity, coreId, def?.options.orEmpty() + tierOptions)
                     .map { (k, v) -> Variable(k, v) }.toTypedArray()
             }
             status.text = "Đang khởi động game…"
@@ -208,17 +225,27 @@ class RetroActivity : ComponentActivity() {
                         Diagnostics.stage(this@RetroActivity, "first-frame")
                         cheats.applyAll() // lõi đã nạp game → áp các mã đang bật
                     }
-                    if (e is GLRetroView.GLRetroEvents.FrameRendered && loading.parent != null) {
-                        loading.animate().alpha(0f).setDuration(180).withEndAction { root.removeView(loading) }.start()
-                    }
+                    if (e is GLRetroView.GLRetroEvents.FrameRendered) dismissLoading()
                 }
             }
             launch {
                 delay(15_000)
-                if (loading.parent != null) status.text = "Game nặng, đang nạp… (lần đầu có thể lâu hơn)"
+                if (!loadingGone) status.text = "Game nặng, đang nạp… (lần đầu có thể lâu hơn)"
+                delay(15_000)
+                if (!loadingGone) {
+                    Diagnostics.stage(this@RetroActivity, "no-first-frame-30s")
+                    android.util.Log.w(LOG_TAG, "no-first-frame-30s core=$coreId")
+                    status.text = "Game chưa lên hình sau 30 giây.\nBấm Quay lại rồi mở lại; nếu vẫn vậy hãy đổi lõi ở Cài đặt, hoặc gửi báo lỗi."
+                }
             }
             launch {
-                view.getGLRetroErrors().collect { code -> Diagnostics.stage(this@RetroActivity, "core-error-$code"); showToast("Lỗi chạy game (mã $code). File game hỏng hoặc lõi không hợp.", 4000) }
+                view.getGLRetroErrors().collect { code ->
+                    Diagnostics.stage(this@RetroActivity, "core-error-$code")
+                    android.util.Log.w(LOG_TAG, "error code=$code core=$coreId")
+                    // Lỗi khi nạp game: ghi thẳng lên màn chờ (không chỉ thông báo nhanh) để người chơi biết vì sao không vào được.
+                    if (!loadingGone) status.text = "Không vào được game (mã lỗi $code).\nFile game hỏng hoặc lõi không hợp. Bấm Quay lại để thoát."
+                    showToast("Lỗi chạy game (mã $code). File game hỏng hoặc lõi không hợp.", 4000)
+                }
             }
         }
     }
@@ -343,6 +370,7 @@ class RetroActivity : ComponentActivity() {
     }
 
     private var firstFrame = false
+    private var loadingGone = false
 
     override fun onDestroy() {
         super.onDestroy()
@@ -363,6 +391,7 @@ class RetroActivity : ComponentActivity() {
     }
 
     companion object {
+        private const val LOG_TAG = "MonikaGame"
         private const val EXTRA_CORE = "core"
         private const val EXTRA_GAME = "game"
         private const val EXTRA_SYSTEM = "system"

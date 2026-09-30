@@ -156,6 +156,12 @@
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
 
+        <!-- Dựng sẵn tiến trình :game (tải trước game) — xem runner/GamePreload.kt -->
+        <service
+            android:name=".runner.GameWarmService"
+            android:process=":game"
+            android:exported="false" />
+
         <service
             android:name=".download.BrowserDownloadService"
             android:foregroundServiceType="dataSync"

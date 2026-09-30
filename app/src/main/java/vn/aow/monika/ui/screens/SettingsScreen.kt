@@ -127,6 +127,23 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     )
                 }
 
+                SettingGroup("emu", open, { open = it }, R.drawable.ic_fluent_top_speed_24_regular, primaryGradient(), "Hiệu năng giả lập", "Mức chất lượng theo sức máy · tải trước game") {
+                    val tiers = listOf("auto", "lite", "mid", "full")
+                    val tierLabel = mapOf("auto" to "Tự động", "lite" to "Tiết kiệm", "mid" to "Cân bằng", "full" to "Mạnh")
+                    var emuPerf by remember { mutableStateOf(AppGraph.prefs.emuPerf) }
+                    ChipBar(tiers, emuPerf, { tierLabel[it] ?: it }, { emuPerf = it; AppGraph.prefs.emuPerf = it }, accent = true, contentPadding = PaddingValues(0.dp))
+                    Text(
+                        "Tự động: máy mạnh (RAM ≥ 7 GB) dùng độ phân giải cao hơn cho PSP/Dreamcast/N64, máy yếu (RAM < 3,5 GB, ít nhân hoặc đang tiết kiệm pin) giảm độ phân giải NDS, bật bỏ khung tự động và âm thanh bộ đệm lớn để đỡ giật. Áp dụng từ lần mở game tiếp theo.",
+                        style = Monika.type.caption, color = c.textSecondary,
+                    )
+                    var preload by remember { mutableStateOf(AppGraph.prefs.preloadGame) }
+                    ChipBar(listOf(true, false), preload, { if (it) "Tải trước game: Bật" else "Tải trước game: Tắt" }, { preload = it; AppGraph.prefs.preloadGame = it }, accent = true, contentPadding = PaddingValues(0.dp))
+                    Text(
+                        "Bật: khi sắp chơi (vd. mở Thư viện có game \"Tiếp tục chơi\"), Monika đọc sẵn file game và dựng sẵn trình chạy ở nền để vào game nhanh hơn.",
+                        style = Monika.type.caption, color = c.textSecondary,
+                    )
+                }
+
                 SettingGroup("apps", open, { open = it }, R.drawable.ic_fluent_games_24_regular, secondaryGradient(), "App chạy game bổ sung", cfg.externalApps.joinToString(", ") { it.name }) {
                     cfg.externalApps.forEach { app ->
                         val installed = remember(app, refreshTick) { ExternalApps.installedPackage(context, app) != null }

@@ -235,6 +235,8 @@ fun LibraryScreen(onSettings: () -> Unit) {
     }
     val shown = vn.aow.monika.library.GameSearch.filter(byFilter, query)
     val lastPlayed = AppGraph.library.lastPlayed(AppGraph.prefs, games)
+    // Tải trước: game "Tiếp tục chơi" là game có khả năng được bấm nhất.
+    LaunchedEffect(lastPlayed?.key) { lastPlayed?.let { vn.aow.monika.runner.GamePreload.warm(context, it) } }
 
     Screen {
       Column(Modifier.fillMaxSize()) {
@@ -306,7 +308,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
             }
             items(shown, key = { it.key }) { g ->
                 GameTile(
-                    g, onPlay = { play(g) }, onExtract = { password = ""; toExtract = g }, onMenu = { gameMenu = g },
+                    g, onPlay = { play(g) }, onExtract = { password = ""; toExtract = g }, onMenu = { vn.aow.monika.runner.GamePreload.warm(context, g); gameMenu = g },
                     onRedownload = { redownload(context, g) },
                 )
             }

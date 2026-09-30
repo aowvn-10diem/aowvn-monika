@@ -18,8 +18,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 22
-        versionName = "0.4.9"
+        versionCode = 23
+        versionName = "0.5.0"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
         buildConfigField(
             "String", "REMOTE_CONFIG_URL",
@@ -75,7 +75,8 @@ android {
             // Chỉ hỗ trợ máy ARM (điện thoại thật); bỏ bản x86 của thư viện cho APK chung nhẹ đi.
             excludes += listOf("lib/x86/**", "lib/x86_64/**")
         }
-        resources { excludes += listOf("META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.kotlin_module") }
+        // org/bouncycastle/pqc/**: bảng số của thuật toán hậu lượng tử (Picnic) ~1,2 MB mà libadb không dùng (chỉ RSA/EC/SPAKE2).
+        resources { excludes += listOf("META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.kotlin_module", "org/bouncycastle/pqc/**") }
     }
     // Bản cấu hình dự phòng đóng gói trong APK = đúng file config/ ở gốc repo (1 nguồn duy nhất).
     sourceSets["main"].assets.srcDirs("src/main/assets", "../config")
@@ -132,6 +133,11 @@ val arscStripped by tasks.registering(Jar::class) {
     destinationDirectory.set(layout.buildDirectory.dir("stripped-libs"))
     from({ arscRaw.map { zipTree(it) } })
     exclude("org/xmlpull/**", "android/**")
+    // Bộ khung tài nguyên Android 25–35 mà ARSCLib đóng kèm (~2 MB) chỉ để in tên thuộc tính ra chữ; ta sửa manifest theo mã số nên không cần.
+    // Bỏ khỏi cả test lẫn APK cùng lúc → test Cách 1 (ApkRepackerTest…) chạy đúng bản như trong APK.
+    exclude("frameworks/**")
+    // Đổi danh sách loại bỏ phải làm tác vụ chạy lại (Gradle không luôn nhận ra thay đổi exclude khi nguồn là zipTree).
+    inputs.property("stripped", "org/xmlpull,android,frameworks")
 }
 
 dependencies {
