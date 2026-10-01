@@ -1,5 +1,5 @@
 {
-  "configVersion": 18,
+  "configVersion": 19,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -27,7 +27,8 @@
       ],
       "altCores": [
         "desmume",
-        "melonds"
+        "melonds",
+        "melondsds"
       ]
     },
     {
@@ -709,11 +710,16 @@
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip",
       "options": {
-        "desmume_internal_resolution": "512x384"
+        "desmume_internal_resolution": "512x384",
+        "desmume_num_cores": "2"
       },
       "perf": {
         "lite": {
-          "desmume_internal_resolution": "256x192"
+          "desmume_internal_resolution": "256x192",
+          "desmume_num_cores": "1"
+        },
+        "full": {
+          "desmume_num_cores": "4"
         }
       }
     },
@@ -738,7 +744,10 @@
       },
       "shader": "sharp",
       "display": {
-        "native": [240, 160],
+        "native": [
+          240,
+          160
+        ],
         "default": "lcd",
         "styles": {
           "lcd": {
@@ -915,6 +924,25 @@
       "abis": [
         "arm64-v8a"
       ],
+      "lowLatencyAudio": false
+    },
+    "melondsds": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/melondsds_libretro_android.so.zip",
+      "abis": [
+        "arm64-v8a"
+      ],
+      "options": {
+        "melonds_jit_enable": "enabled",
+        "melonds_sysfile_mode": "builtin",
+        "melonds_render_mode": "software",
+        "melonds_threaded_renderer": "enabled"
+      },
+      "perf": {
+        "lite": {
+          "melonds_threaded_renderer": "disabled"
+        }
+      },
       "lowLatencyAudio": false
     }
   },
