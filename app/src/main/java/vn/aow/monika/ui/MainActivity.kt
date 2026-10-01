@@ -134,6 +134,7 @@ object Routes {
     const val EMULATOR = "emulator"
     const val DOWNLOADS = "downloads"
     const val SETTINGS = "settings"
+    const val ACHIEVEMENTS = "achievements"
     const val POST = "post/{id}"
     val tabs = listOf(HOME, GAMES, SEARCH, EMULATOR, DOWNLOADS)
 }
@@ -198,6 +199,7 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
             composable(Routes.EMULATOR) { LibraryScreen(onSettings = { hubSegment.intValue = 1; nav.goTab(Routes.DOWNLOADS) }) }
             composable(Routes.DOWNLOADS) { HubScreen(hubSegment, onOpenLibrary = { nav.goTab(Routes.EMULATOR) }) }
             composable(Routes.SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
+            composable(Routes.ACHIEVEMENTS) { vn.aow.monika.achievements.AchievementsScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.POST) { entry -> PostScreen(entry.arguments?.getString("id").orEmpty(), onGo = go) { nav.popBackStack() } }
         }
         // Menu nổi: chỉ hiện ở 5 tab chính; đọc bài / cài đặt thì trượt xuống ẩn đi.

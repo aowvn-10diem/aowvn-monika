@@ -92,6 +92,8 @@ Phần native giai đoạn 2 nằm trong module mới `:libretrodroid`.
 
 ## GIAI ĐOẠN 1 — Thành phần "Thành tựu" (không native)
 
+> **ĐÃ LÀM (bản 0.6.0, 01/10/2026).** Khác kế hoạch: lối vào màn Thành tựu là **menu ⋯ của app** (mục "Thành tựu (RetroAchievements)") và **menu từng game trong Thư viện**; chưa có thẻ ở Trang chủ/Cài đặt. Bản dịch (1.5) tải từ `<thư mục config.json>/ra-vi/<GameID>.json` — Cloudflare Worker hiện chỉ phục vụ `config.json` nên **[CHƯA KIỂM]** Worker có trả đường dẫn này không; không có thì app giữ bản gốc, không lỗi.
+
 ### 1.1 Mô hình + API (`achievements/RaApi.kt`, `achievements/RaModels.kt`)
 - `RaModels.kt`: data class `@Serializable` cho 5 endpoint ở bảng trên (chỉ khai trường dùng tới; `@SerialName("GameID")`…). `Achievements` của game là `Map<String, RaAchievement>`.
 - `RaApi(http: OkHttpClient)`: `suspend fun profile(user)`, `recentGames(user, count=20)`, `recentUnlocks(user, minutes=7*24*60)`, `gameProgress(gameId, user)`, `gameList(consoleId)` — tất cả `withContext(Dispatchers.IO)`, thêm `y=<key>`.

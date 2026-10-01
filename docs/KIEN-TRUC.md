@@ -15,15 +15,16 @@
 
 | Package | File | Dòng | Phụ thuộc vào (số tham chiếu) | Được dùng bởi |
 |---|---:|---:|---|---|
-| `ui` | 22 | 4791 | library(20), (gốc)(15), feed(10), runner(6), download(6), diag(5) | runner(21), azahar(19), browser(14), cheats(12), apkinstall(8), library(3) |
-| `apkinstall` | 27 | 2615 | ui(8), notify(4), library(1) | runner(2), ui(1), download(1) |
+| `ui` | 22 | 4802 | library(20), (gốc)(15), feed(10), runner(6), download(6), diag(5) | runner(21), azahar(19), achievements(17), browser(14), cheats(12), apkinstall(8) |
+| `apkinstall` | 27 | 2615 | ui(8), notify(4), library(1) | runner(2), achievements(2), ui(1), download(1) |
 | `runner` | 11 | 2048 | ui(21), config(9), cheats(7), (gốc)(4), community(3), library(3) | azahar(9), ui(6), (gốc)(4), download(2) |
-| `library` | 18 | 1761 | feed(7), (gốc)(6), config(5), ui(3), notify(2) | ui(20), (gốc)(7), download(7), runner(3), cheats(2), apkinstall(1) |
+| `library` | 18 | 1761 | feed(7), (gốc)(6), config(5), ui(3), notify(2) | ui(20), (gốc)(7), download(7), runner(3), cheats(2), achievements(1) |
 | `azahar` | 7 | 1125 | ui(19), runner(9), diag(2), (gốc)(2), community(1), config(1) | ui(2), runner(2), (gốc)(1) |
-| `browser` | 5 | 1061 | ui(14), download(5), (gốc)(1) | ui(5), community(2), (gốc)(1), account(1) |
+| `browser` | 5 | 1061 | ui(14), download(5), (gốc)(1) | ui(5), community(2), (gốc)(1), account(1), achievements(1) |
+| `achievements` | 8 | 632 | ui(17), apkinstall(2), (gốc)(2), browser(1), library(1) | (gốc)(4), ui(2) |
 | `cheats` | 7 | 615 | ui(12), library(2), (gốc)(1) | runner(7) |
 | `download` | 5 | 559 | library(7), (gốc)(5), notify(3), runner(2), config(1), ui(1) | ui(6), browser(5), (gốc)(2) |
-| `(gốc)` | 4 | 401 | library(7), runner(4), feed(4), notify(2), download(2), account(2) | ui(15), library(6), download(5), runner(4), azahar(2), community(1) |
+| `(gốc)` | 4 | 405 | library(7), runner(4), feed(4), achievements(4), notify(2), download(2) | ui(15), library(6), download(5), runner(4), azahar(2), achievements(2) |
 | `diag` | 1 | 359 | (gốc)(1) | ui(5), azahar(2), (gốc)(1), runner(1) |
 | `config` | 2 | 337 | — | runner(9), library(5), ui(2), account(2), (gốc)(1), forum(1) |
 | `account` | 3 | 334 | config(2), browser(1), ui(1), (gốc)(1) | (gốc)(2), ui(2) |
@@ -36,8 +37,9 @@
 
 ```mermaid
 flowchart LR
-  root["(gốc)\n401 dòng"]
+  root["(gốc)\n405 dòng"]
   account["account\n334 dòng"]
+  achievements["achievements\n632 dòng"]
   apkinstall["apkinstall\n2615 dòng"]
   azahar["azahar\n1125 dòng"]
   browser["browser\n1061 dòng"]
@@ -51,10 +53,11 @@ flowchart LR
   library["library\n1761 dòng"]
   notify["notify\n124 dòng"]
   runner["runner\n2048 dòng"]
-  ui["ui\n4791 dòng"]
+  ui["ui\n4802 dòng"]
   runner -->|21| ui
   ui -->|20| library
   azahar -->|19| ui
+  achievements -->|17| ui
   ui -->|15| root
   browser -->|14| ui
   cheats -->|12| ui
@@ -77,6 +80,7 @@ flowchart LR
   download -->|5| root
   root -->|4| runner
   root -->|4| feed
+  root -->|4| achievements
   runner -->|4| root
   apkinstall -->|4| notify
   runner -->|3| community
@@ -88,6 +92,7 @@ flowchart LR
 ## 4. Phụ thuộc hai chiều (ứng viên phải gỡ trước khi tách module)
 
 - `(gốc)` ⇄ `account` (2 / 1)
+- `(gốc)` ⇄ `achievements` (4 / 2)
 - `(gốc)` ⇄ `azahar` (1 / 2)
 - `(gốc)` ⇄ `browser` (1 / 1)
 - `(gốc)` ⇄ `diag` (1 / 1)
@@ -96,6 +101,7 @@ flowchart LR
 - `(gốc)` ⇄ `notify` (2 / 1)
 - `(gốc)` ⇄ `runner` (4 / 4)
 - `account` ⇄ `ui` (1 / 2)
+- `achievements` ⇄ `ui` (17 / 2)
 - `apkinstall` ⇄ `ui` (8 / 1)
 - `azahar` ⇄ `runner` (9 / 2)
 - `azahar` ⇄ `ui` (19 / 2)
@@ -108,7 +114,7 @@ flowchart LR
 
 | File | Dòng |
 |---|---:|
-| `app/src/main/java/vn/aow/monika/ui/screens/LibraryScreen.kt` | 646 |
+| `app/src/main/java/vn/aow/monika/ui/screens/LibraryScreen.kt` | 654 |
 | `app/src/main/java/vn/aow/monika/runner/GamePadOverlay.kt` | 634 |
 | `app/src/main/java/vn/aow/monika/runner/RetroActivity.kt` | 526 |
 | `app/src/main/java/vn/aow/monika/azahar/AzaharActivity.kt` | 448 |

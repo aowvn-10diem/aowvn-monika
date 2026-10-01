@@ -60,6 +60,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import vn.aow.monika.AppGraph
+import vn.aow.monika.achievements.GameAchievementsSheet
 import vn.aow.monika.R
 import vn.aow.monika.config.ExternalApp
 import vn.aow.monika.library.Game
@@ -581,6 +582,11 @@ private fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
     if (game != null) last = game
     val g = last
     val prefs = AppGraph.prefs
+    // Thành tựu RetroAchievements: chỉ khi đã đăng nhập và băm được game này (xem achievements/RaGameIndex).
+    val raCreds by AppGraph.ra.creds.collectAsState()
+    var raGameId by remember(g?.key, raCreds) { mutableStateOf<Int?>(null) }
+    LaunchedEffect(g?.key, raCreds) { raGameId = if (g == null || raCreds == null) null else runCatching { AppGraph.raIndex.gameIdFor(g) }.getOrNull() }
+    var raOpen by remember { mutableStateOf<Int?>(null) }
     MonikaMenuSheet(
         game != null, onDismiss,
         title = g?.name,
@@ -599,6 +605,7 @@ private fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
             if (g.meta != null && !g.external && !g.evicted) add(
                 SheetAction(if (g.key in pinned) "Bỏ giữ lại" else "Giữ lại", if (g.key in pinned) R.drawable.ic_fluent_heart_24_filled else R.drawable.ic_fluent_heart_24_regular) { onTogglePin(g) }
             )
+            raGameId?.let { id -> add(SheetAction("Thành tựu RetroAchievements", R.drawable.ic_fluent_star_24_regular) { raOpen = id }) }
             if (g.locked) add(SheetAction("Cấp quyền", R.drawable.ic_fluent_lock_closed_24_regular) { openAllFilesAccess(context) })
             add(SheetAction(if (g.external) "Ẩn khỏi Thư viện" else "Xóa game", R.drawable.ic_fluent_delete_24_regular) { onDelete(g) })
         },
@@ -609,6 +616,7 @@ private fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
             )
         }),
     )
+    GameAchievementsSheet(raOpen) { raOpen = null }
 }
 
 /** Ô game đang tải / giải nén: ảnh bìa (nếu có) + vòng tiến độ + %. */

@@ -81,6 +81,7 @@ fun BoxScope.AppMenuSheet(visible: Boolean, onDismiss: () -> Unit, onGo: (String
 
     val actions = buildList {
         add(SheetAction("Tải xuống", R.drawable.ic_fluent_arrow_download_24_regular) { onGo(Routes.DOWNLOADS) })
+        add(SheetAction("Thành tựu (RetroAchievements)", R.drawable.ic_fluent_star_24_regular) { onGo(Routes.ACHIEVEMENTS) })
         add(SheetAction("Cài đặt", R.drawable.ic_fluent_settings_24_regular) { onGo(Routes.SETTINGS) })
         add(SheetAction("Nhận thông báo", R.drawable.ic_fluent_alert_24_regular) { onGo(Routes.SETTINGS) })
         if (cfg.community.facebookGroup.isNotBlank()) add(SheetAction("Group Facebook", R.drawable.ic_fluent_people_community_24_regular) { Community.open(context, cfg.community.facebookGroup) })

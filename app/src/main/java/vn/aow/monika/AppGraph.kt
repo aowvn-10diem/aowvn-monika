@@ -53,5 +53,9 @@ object AppGraph {
     val pendingImports = kotlinx.coroutines.flow.MutableStateFlow<List<android.net.Uri>>(emptyList())
     val account by lazy { vn.aow.monika.account.Account(app, http, config) }
     val aow by lazy { vn.aow.monika.account.AowApi(http, config, account) }
+    val ra by lazy { vn.aow.monika.achievements.RaAccount(app, raApi) }
+    val raApi by lazy { vn.aow.monika.achievements.RaApi(http) }
+    val raIndex by lazy { vn.aow.monika.achievements.RaGameIndex(app, raApi, ra) }
+    val raVi by lazy { vn.aow.monika.achievements.RaTranslations(app, http) }
     val adblock by lazy { vn.aow.monika.browser.AdBlock(app, http) }
 }
