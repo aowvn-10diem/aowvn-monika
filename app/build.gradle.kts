@@ -18,8 +18,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 27
-        versionName = "0.6.0"
+        versionCode = 28
+        versionName = "0.6.1"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
         buildConfigField(
             "String", "REMOTE_CONFIG_URL",
@@ -159,6 +159,10 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.compose)
+    // Dịch màn hình: OCR + dịch trên máy của Google ML Kit (không phải mã nguồn mở; miễn phí). Dịch bằng API riêng của người dùng thì không cần ML Kit dịch.
+    implementation(libs.mlkit.ocr)
+    implementation(libs.mlkit.ocr.ja)
+    implementation(libs.mlkit.translate)
     implementation(libs.androidx.webkit)
     implementation(libs.libretrodroid)
     implementation(libs.libarchive) // Giải nén zip/rar/rar5/7z

@@ -1,5 +1,6 @@
 package vn.aow.monika.runner
 
+import vn.aow.monika.translate.TranslateResultSheet
 import android.app.Activity
 import android.content.Intent
 import android.content.res.Configuration
@@ -204,9 +205,11 @@ class RetroActivity : ComponentActivity() {
                             ui.styleLabel?.let { label ->
                                 vn.aow.monika.ui.theme.SheetAction("Kiểu hình: $label", vn.aow.monika.R.drawable.ic_fluent_eye_24_regular) { cycleDisplayStyle() }
                             },
+                            vn.aow.monika.ui.theme.SheetAction("Dịch khung này", vn.aow.monika.R.drawable.ic_fluent_globe_24_regular) { translateFrame() },
                             vn.aow.monika.ui.theme.SheetAction("Mã cheat", vn.aow.monika.R.drawable.ic_fluent_document_24_regular) { cheats.show() },
                         ),
                     )
+                    TranslateResultSheet(translateResult, translateBusy) { translateResult = null }
                     CheatSheet(cheats) { cheatPicker.launch(arrayOf("text/plain", "application/octet-stream", "*/*")) }
                     }
                 }
@@ -401,6 +404,25 @@ class RetroActivity : ComponentActivity() {
             if (saved) showToast("Đã tự lưu game")
             val shot = captureSurface(view)
             vn.aow.monika.community.AskGroup.ask(this@RetroActivity, shot, title, system)
+        }
+    }
+
+    private var translateResult by androidx.compose.runtime.mutableStateOf<vn.aow.monika.translate.TranslateResult?>(null)
+    private var translateBusy by androidx.compose.runtime.mutableStateOf(false)
+
+    /** Dịch chữ trên khung hình hiện tại (cách dịch theo Cài đặt → Dịch màn hình game). */
+    private fun translateFrame() {
+        val view = retroView ?: run { showToast("Game chưa chạy xong"); return }
+        ui.menuOpen = false
+        translateBusy = true
+        lifecycleScope.launch {
+            val shot = captureSurface(view)
+            translateResult = if (shot == null) vn.aow.monika.translate.TranslateResult(emptyList(), "Không chụp được màn hình game")
+            else runCatching { AppGraph.screenTranslator.translateFrame(shot) }.fold(
+                { vn.aow.monika.translate.TranslateResult(it, if (it.isEmpty()) "Không thấy chữ nào để dịch trong khung này" else null) },
+                { vn.aow.monika.translate.TranslateResult(emptyList(), it.message ?: "Dịch không được") },
+            )
+            translateBusy = false
         }
     }
 

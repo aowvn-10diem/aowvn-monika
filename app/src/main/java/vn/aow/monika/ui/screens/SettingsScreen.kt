@@ -127,6 +127,54 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     )
                 }
 
+                SettingGroup("translate", open, { open = it }, R.drawable.ic_fluent_globe_24_regular, primaryGradient(), "Dịch màn hình game", "Dịch trên máy (miễn phí) hoặc dùng khóa API của bạn") {
+                    val ts = AppGraph.translateSettings
+                    var provider by remember { mutableStateOf(ts.provider) }
+                    var lang by remember { mutableStateOf(ts.sourceLang) }
+                    var key by remember { mutableStateOf(ts.apiKey) }
+                    var base by remember { mutableStateOf(ts.baseUrl) }
+                    var model by remember { mutableStateOf(ts.model) }
+                    var vision by remember { mutableStateOf(ts.vision) }
+                    var testing by remember { mutableStateOf(false) }
+                    val names = mapOf("mlkit" to "Trên máy (miễn phí)", "google" to "Google Dịch API", "ai" to "API AI (OpenAI/Gemini…)")
+                    ChipBar(listOf("mlkit", "google", "ai"), provider, { names[it] ?: it }, { provider = it; ts.provider = it }, accent = true, contentPadding = PaddingValues(0.dp))
+                    ChipBar(listOf("en", "ja"), lang, { if (it == "ja") "Chữ trong game: Nhật" else "Chữ trong game: Anh" }, { lang = it; ts.sourceLang = it }, accent = true, contentPadding = PaddingValues(0.dp))
+                    Text(
+                        when (provider) {
+                            "google" -> "Dùng khóa Google Cloud Translation của bạn. Chữ được đọc trên máy rồi chỉ gửi phần chữ (không gửi ảnh) tới Google; chi phí tính theo tài khoản của bạn."
+                            "ai" -> "Dùng API kiểu OpenAI của bạn (OpenAI, Gemini qua đường dẫn tương thích OpenAI, OpenRouter…). Hiểu ngữ cảnh game tốt hơn nhưng tính phí theo lượng chữ; bật \"AI nhìn ảnh\" thì ảnh chụp game cũng được gửi đi."
+                            else -> "Đọc chữ và dịch hoàn toàn trên máy bằng Google ML Kit, không tốn phí, không gửi dữ liệu đi đâu. Lần đầu cần mạng để tải mô hình (~30 MB). Chất lượng ở mức dịch thông thường, hộp thoại game dài/nhiều tiếng lóng có thể chưa mượt."
+                        },
+                        style = Monika.type.caption, color = c.textSecondary,
+                    )
+                    if (provider != "mlkit") {
+                        androidx.compose.material3.OutlinedTextField(
+                            key, { key = it; ts.apiKey = it }, Modifier.fillMaxWidth(), singleLine = true, shape = Radius.small, label = { Text("Khóa API") },
+                            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        )
+                        Text("Khóa được mã hóa và chỉ lưu trên máy này.", style = Monika.type.caption, color = c.textSecondary)
+                    }
+                    if (provider == "ai") {
+                        androidx.compose.material3.OutlinedTextField(base, { base = it; ts.baseUrl = it }, Modifier.fillMaxWidth(), singleLine = true, shape = Radius.small, label = { Text("Địa chỉ API (kết thúc /v1)") })
+                        androidx.compose.material3.OutlinedTextField(model, { model = it; ts.model = it }, Modifier.fillMaxWidth(), singleLine = true, shape = Radius.small, label = { Text("Tên mô hình") })
+                        ChipBar(listOf(false, true), vision, { if (it) "AI nhìn ảnh: Bật" else "AI nhìn ảnh: Tắt" }, { vision = it; ts.vision = it }, accent = true, contentPadding = PaddingValues(0.dp))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SoftPillButton(if (testing) "Đang thử…" else "Dịch thử", {
+                            if (testing) return@SoftPillButton
+                            testing = true
+                            scope.launch {
+                                val r = runCatching { AppGraph.screenTranslator.translateTexts(listOf(if (lang == "ja") "こんにちは、勇者よ。" else "Welcome, hero. Your journey begins here.")).first() }
+                                Toast.makeText(context, r.getOrElse { "Lỗi: ${it.message}" }, Toast.LENGTH_LONG).show()
+                                testing = false
+                            }
+                        }, R.drawable.ic_fluent_globe_24_regular)
+                        SoftPillButton("Xóa bộ nhớ dịch", {
+                            AppGraph.translateMemory.clear(); Toast.makeText(context, "Đã xóa bộ nhớ dịch", Toast.LENGTH_SHORT).show()
+                        }, R.drawable.ic_fluent_delete_24_regular)
+                    }
+                }
+
                 SettingGroup("emu", open, { open = it }, R.drawable.ic_fluent_top_speed_24_regular, primaryGradient(), "Hiệu năng giả lập", "Mức chất lượng theo sức máy · tải trước game") {
                     val tiers = listOf("auto", "lite", "mid", "full")
                     val tierLabel = mapOf("auto" to "Tự động", "lite" to "Tiết kiệm", "mid" to "Cân bằng", "full" to "Mạnh")

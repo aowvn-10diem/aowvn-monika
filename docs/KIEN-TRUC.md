@@ -15,17 +15,18 @@
 
 | Package | File | Dòng | Phụ thuộc vào (số tham chiếu) | Được dùng bởi |
 |---|---:|---:|---|---|
-| `ui` | 22 | 4802 | library(20), (gốc)(15), feed(10), runner(6), download(6), diag(5) | runner(21), azahar(19), achievements(17), browser(14), cheats(12), apkinstall(8) |
-| `apkinstall` | 27 | 2615 | ui(8), notify(4), library(1) | runner(2), achievements(2), ui(1), download(1) |
-| `runner` | 11 | 2048 | ui(21), config(9), cheats(7), (gốc)(4), community(3), library(3) | azahar(9), ui(6), (gốc)(4), download(2) |
+| `ui` | 22 | 4850 | library(20), (gốc)(15), feed(10), runner(6), download(6), diag(5) | runner(22), azahar(19), achievements(17), browser(14), cheats(12), apkinstall(8) |
+| `apkinstall` | 27 | 2615 | ui(8), notify(4), library(1) | runner(2), translate(2), achievements(2), ui(1), download(1) |
+| `runner` | 11 | 2070 | ui(22), config(9), cheats(7), translate(5), (gốc)(4), community(3) | azahar(9), ui(6), (gốc)(4), download(2) |
 | `library` | 18 | 1761 | feed(7), (gốc)(6), config(5), ui(3), notify(2) | ui(20), (gốc)(7), download(7), runner(3), cheats(2), achievements(1) |
 | `azahar` | 7 | 1125 | ui(19), runner(9), diag(2), (gốc)(2), community(1), config(1) | ui(2), runner(2), (gốc)(1) |
 | `browser` | 5 | 1061 | ui(14), download(5), (gốc)(1) | ui(5), community(2), (gốc)(1), account(1), achievements(1) |
 | `achievements` | 8 | 632 | ui(17), apkinstall(2), (gốc)(2), browser(1), library(1) | (gốc)(4), ui(2) |
 | `cheats` | 7 | 615 | ui(12), library(2), (gốc)(1) | runner(7) |
 | `download` | 5 | 559 | library(7), (gốc)(5), notify(3), runner(2), config(1), ui(1) | ui(6), browser(5), (gốc)(2) |
-| `(gốc)` | 4 | 405 | library(7), runner(4), feed(4), achievements(4), notify(2), download(2) | ui(15), library(6), download(5), runner(4), azahar(2), achievements(2) |
+| `(gốc)` | 4 | 408 | library(7), runner(4), feed(4), achievements(4), translate(3), notify(2) | ui(15), library(6), download(5), runner(4), azahar(2), achievements(2) |
 | `diag` | 1 | 359 | (gốc)(1) | ui(5), azahar(2), (gốc)(1), runner(1) |
+| `translate` | 6 | 356 | ui(5), apkinstall(2) | runner(5), (gốc)(3) |
 | `config` | 2 | 337 | — | runner(9), library(5), ui(2), account(2), (gốc)(1), forum(1) |
 | `account` | 3 | 334 | config(2), browser(1), ui(1), (gốc)(1) | (gốc)(2), ui(2) |
 | `forum` | 1 | 212 | config(1) | ui(2), (gốc)(1) |
@@ -37,7 +38,7 @@
 
 ```mermaid
 flowchart LR
-  root["(gốc)\n405 dòng"]
+  root["(gốc)\n408 dòng"]
   account["account\n334 dòng"]
   achievements["achievements\n632 dòng"]
   apkinstall["apkinstall\n2615 dòng"]
@@ -52,9 +53,10 @@ flowchart LR
   forum["forum\n212 dòng"]
   library["library\n1761 dòng"]
   notify["notify\n124 dòng"]
-  runner["runner\n2048 dòng"]
-  ui["ui\n4802 dòng"]
-  runner -->|21| ui
+  runner["runner\n2070 dòng"]
+  translate["translate\n356 dòng"]
+  ui["ui\n4850 dòng"]
+  runner -->|22| ui
   ui -->|20| library
   azahar -->|19| ui
   achievements -->|17| ui
@@ -75,14 +77,17 @@ flowchart LR
   ui -->|5| diag
   ui -->|5| browser
   ui -->|5| community
+  runner -->|5| translate
   library -->|5| config
   browser -->|5| download
+  translate -->|5| ui
   download -->|5| root
   root -->|4| runner
   root -->|4| feed
   root -->|4| achievements
   runner -->|4| root
   apkinstall -->|4| notify
+  root -->|3| translate
   runner -->|3| community
   runner -->|3| library
   library -->|3| ui
@@ -108,7 +113,7 @@ flowchart LR
 - `browser` ⇄ `ui` (14 / 5)
 - `download` ⇄ `ui` (1 / 6)
 - `library` ⇄ `ui` (3 / 20)
-- `runner` ⇄ `ui` (21 / 6)
+- `runner` ⇄ `ui` (22 / 6)
 
 ## 5. File lớn nhất (ứng viên tách nhỏ)
 
@@ -116,10 +121,10 @@ flowchart LR
 |---|---:|
 | `app/src/main/java/vn/aow/monika/ui/screens/LibraryScreen.kt` | 654 |
 | `app/src/main/java/vn/aow/monika/runner/GamePadOverlay.kt` | 634 |
-| `app/src/main/java/vn/aow/monika/runner/RetroActivity.kt` | 526 |
+| `app/src/main/java/vn/aow/monika/runner/RetroActivity.kt` | 548 |
 | `app/src/main/java/vn/aow/monika/azahar/AzaharActivity.kt` | 448 |
 | `app/src/main/java/vn/aow/monika/browser/InAppBrowserActivity.kt` | 447 |
-| `app/src/main/java/vn/aow/monika/ui/screens/SettingsScreen.kt` | 391 |
+| `app/src/main/java/vn/aow/monika/ui/screens/SettingsScreen.kt` | 439 |
 | `app/src/main/java/vn/aow/monika/diag/Diagnostics.kt` | 359 |
 | `app/src/main/java/vn/aow/monika/ui/theme/Components.kt` | 340 |
 | `app/src/main/java/vn/aow/monika/library/GameInfoResolver.kt` | 329 |

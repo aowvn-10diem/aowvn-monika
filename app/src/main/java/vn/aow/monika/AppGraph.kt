@@ -57,5 +57,8 @@ object AppGraph {
     val raApi by lazy { vn.aow.monika.achievements.RaApi(http) }
     val raIndex by lazy { vn.aow.monika.achievements.RaGameIndex(app, raApi, ra) }
     val raVi by lazy { vn.aow.monika.achievements.RaTranslations(app, http) }
+    val translateSettings by lazy { vn.aow.monika.translate.TranslateSettings(app) }
+    val translateMemory by lazy { vn.aow.monika.translate.TranslationMemory(app) }
+    val screenTranslator by lazy { vn.aow.monika.translate.ScreenTranslator(http, translateSettings, translateMemory) }
     val adblock by lazy { vn.aow.monika.browser.AdBlock(app, http) }
 }
