@@ -60,6 +60,7 @@ class DlJob(val id: Int, val url: String, val userAgent: String?, val referer: S
     @Volatile var dest: SaveDest? = null
     @Volatile var call: Call? = null
     @Volatile var savedName: String = ""
+    val finishing = java.util.concurrent.atomic.AtomicBoolean(false)
     lateinit var part: File
 
     val progress: Float get() = if (total > 0) (done.toFloat() / total).coerceIn(0f, 1f) else -1f
@@ -135,8 +136,9 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
             }
             if (job.state == DlState.CANCELED) { runCatching { job.part.delete() }; return }
             // Hủy có thể xen vào giữa lúc kiểm tra ở trên và lúc chạy trên luồng chính → không được ghi đè trạng thái "đã hủy".
-            main.post { if (job.state != DlState.CANCELED) job.state = DlState.READY }
-            if (job.confirmed && job.state != DlState.CANCELED) finish(job)
+            // Đặt READY và quyết định chuyển file CÙNG MỘT chỗ trên luồng chính: nếu người dùng xác nhận đúng lúc tải vừa xong
+            // (trước khi READY được gắn) thì confirm() không thấy READY → file kẹt ở thư mục tạm. Giờ cả hai nhánh đều gọi startFinish (chỉ chạy 1 lần).
+            main.post { if (job.state != DlState.CANCELED) { job.state = DlState.READY; if (job.confirmed) startFinish(job) } }
         } catch (e: Exception) {
             runCatching { job.part.delete() }
             if (job.state == DlState.CANCELED) return
@@ -156,7 +158,11 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
             is SaveDest.Folder -> { prefs.dlDest = "folder"; prefs.dlFolder = dest.treeUri; prefs.dlFolderLabel = dest.label }
         }
         if (sheetFor === job) sheetFor = null
-        if (job.state == DlState.READY) scope.launch { finish(job) }
+        if (job.state == DlState.READY) startFinish(job)
+    }
+
+    private fun startFinish(job: DlJob) {
+        if (job.finishing.compareAndSet(false, true)) scope.launch { finish(job) }
     }
 
     /** Lượt tải bị bỏ dở chưa chọn nơi lưu (đóng trình duyệt) → lưu theo lựa chọn lần trước, không để mất. */
