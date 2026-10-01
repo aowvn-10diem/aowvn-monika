@@ -44,6 +44,12 @@ class CoreManager(
     /** Mỗi lõi 1 khóa: tải sẵn ngầm và bấm Chơi cùng lúc không tải 2 lần. */
     private val locks = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.sync.Mutex>()
 
+    /** Lõi có chạy được trên kiến trúc CPU của app này không (vd. melondsds chỉ có bản arm64). */
+    fun supports(id: String): Boolean {
+        val def = configRepo.current.cores[id] ?: return false
+        return def.abis.isEmpty() || abi in def.abis
+    }
+
     fun isReady(id: String): Boolean {
         val def = configRepo.current.cores[id] ?: return false
         return File(coreDir(id), "${id}_libretro_android.so").exists() && installedVersion(id) == def.version &&

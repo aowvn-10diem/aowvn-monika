@@ -142,6 +142,12 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                         "Bật: khi sắp chơi (vd. mở Thư viện có game \"Tiếp tục chơi\"), Monika đọc sẵn file game và dựng sẵn trình chạy ở nền để vào game nhanh hơn.",
                         style = Monika.type.caption, color = c.textSecondary,
                     )
+                    var autoCrash by remember { mutableStateOf(AppGraph.prefs.autoSendCrash) }
+                    ChipBar(listOf(true, false), autoCrash, { if (it) "Tự gửi báo lỗi game: Bật" else "Tự gửi báo lỗi game: Tắt" }, { autoCrash = it; AppGraph.prefs.autoSendCrash = it }, accent = true, contentPadding = PaddingValues(0.dp))
+                    Text(
+                        "Khi lõi giả lập sập hoặc không chạy được game, Monika tự gửi báo lỗi ẩn danh (tên game, hệ máy, lõi, kiểu máy, log của lõi; không có tên bạn, email hay đường dẫn file) để AowVN sửa nhanh.",
+                        style = Monika.type.caption, color = c.textSecondary,
+                    )
                 }
 
                 SettingGroup("apps", open, { open = it }, R.drawable.ic_fluent_games_24_regular, secondaryGradient(), "App chạy game bổ sung", cfg.externalApps.joinToString(", ") { it.name }) {

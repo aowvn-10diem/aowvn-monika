@@ -104,8 +104,11 @@ class RetroActivity : ComponentActivity() {
         val key = "${File(gamePath).nameWithoutExtension}-${gamePath.hashCode()}"
         // Cheat chung của Monika: nhận diện game theo tên → tự thêm mã từ kho libretro-database (mặc định tắt).
         cheats = CheatController(this, key, intent.getStringExtra(EXTRA_SYSTEM_ID).orEmpty(), listOf(title, File(gamePath).nameWithoutExtension), LibretroCheats { retroView })
-        sramFile = File(File(filesDir, "saves").apply { mkdirs() }, "$key.srm")
-        stateFile = File(File(filesDir, "states").apply { mkdirs() }, "$key.state")
+        // Lõi melondsds lưu riêng (không dùng lẫn file save/state của lõi cũ như desmume): định dạng không đảm bảo giống nhau,
+        // ghi đè nhầm có thể làm mất tiến trình. Đổi lại lõi cũ thì save cũ vẫn còn nguyên.
+        val saveKey = if (coreId == "melondsds") "$key-melondsds" else key
+        sramFile = File(File(filesDir, "saves").apply { mkdirs() }, "$saveKey.srm")
+        stateFile = File(File(filesDir, "states").apply { mkdirs() }, "$saveKey.state")
         refreshSlots()
 
         // Màn chờ: tên game + vòng quay + trạng thái, giữ tới khi game vẽ khung hình đầu tiên (không còn màn đen).
@@ -127,6 +130,35 @@ class RetroActivity : ComponentActivity() {
                 indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#FF7A32"))
             })
             addView(status.apply { setPadding(48, 24, 48, 0) })
+        }
+        // Lõi lỗi (báo lỗi nạp game / không lên hình sau 30 giây): lập báo cáo + tự gửi về AowVN, đồng thời HỎI người chơi có đổi sang lõi khác không.
+        val fallbackBtn = android.widget.Button(this).apply {
+            visibility = android.view.View.GONE; isAllCaps = false; setTextColor(Color.WHITE)
+            background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(0xFFFFB052.toInt(), 0xFFFF7F78.toInt(), 0xFFE95CC8.toInt())).apply { cornerRadius = 999f }
+        }
+        loading.addView(fallbackBtn, android.widget.LinearLayout.LayoutParams(MATCH_PARENT, 132).apply { setMargins(64, 36, 64, 0) })
+        var failureHandled = false
+        fun onCoreFailure(what: String, detail: String) {
+            if (failureHandled || loadingGone) return
+            failureHandled = true
+            val cr = AppGraph.config.current.crash
+            val rep = Diagnostics.recordCoreFailure(this@RetroActivity, what, detail)
+            Diagnostics.autoSend(this@RetroActivity, AppGraph.http, rep, cr.endpoint, cr.autoSend, AppGraph.prefs.autoSendCrash)
+            val sid = intent.getStringExtra(EXTRA_SYSTEM_ID).orEmpty()
+            val alt = AppGraph.config.current.systems.firstOrNull { it.id == sid }?.altCores
+                ?.firstOrNull { it != coreId && it in AppGraph.config.current.cores && AppGraph.cores.supports(it) }
+            if (alt != null) {
+                status.text = status.text.toString() + "\n\nLõi $coreId chưa chạy được game này. Bạn có muốn thử lõi $alt không?" +
+                    if (cr.autoSend && AppGraph.prefs.autoSendCrash) "\n(Đã tự gửi báo lỗi về AowVN, có thể tắt trong Cài đặt.)" else ""
+                fallbackBtn.text = "Đổi sang lõi $alt và mở lại"
+                fallbackBtn.visibility = android.view.View.VISIBLE
+                fallbackBtn.setOnClickListener {
+                    AppGraph.prefs.setCoreOverride(sid, alt)
+                    start(this@RetroActivity, alt, File(gamePath), systemName, title, intent.getStringExtra(EXTRA_PAD), intent.getStringExtra(PlayClock.EXTRA_KEY), sid)
+                    finish()
+                }
+            }
         }
         root = FrameLayout(this).apply {
             setBackgroundColor(Color.parseColor("#141315"))
@@ -254,6 +286,7 @@ class RetroActivity : ComponentActivity() {
                     Diagnostics.stage(this@RetroActivity, "no-first-frame-30s")
                     android.util.Log.w(LOG_TAG, "no-first-frame-30s core=$coreId")
                     status.text = "Game chưa lên hình sau 30 giây.\nBấm Quay lại rồi mở lại; nếu vẫn vậy hãy đổi lõi ở Cài đặt, hoặc gửi báo lỗi."
+                    onCoreFailure("không lên hình sau 30 giây", "no-first-frame-30s core=$coreId")
                 }
             }
             launch {
@@ -263,6 +296,7 @@ class RetroActivity : ComponentActivity() {
                     // Lỗi khi nạp game: ghi thẳng lên màn chờ (không chỉ thông báo nhanh) để người chơi biết vì sao không vào được.
                     if (!loadingGone) status.text = "Không vào được game (mã lỗi $code).\nFile game hỏng hoặc lõi không hợp. Bấm Quay lại để thoát."
                     showToast("Lỗi chạy game (mã $code). File game hỏng hoặc lõi không hợp.", 4000)
+                    onCoreFailure("lõi báo lỗi mã $code", "error code=$code core=$coreId")
                 }
             }
         }

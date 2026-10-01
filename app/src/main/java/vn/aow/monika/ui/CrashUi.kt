@@ -79,7 +79,8 @@ fun BoxScope.CrashUi() {
                     icon = R.drawable.ic_fluent_info_24_regular,
                 )
                 Text(
-                    "Monika đã lưu lại thông tin (lõi, giai đoạn, log) để AowVN sửa lỗi này. Bấm Gửi báo lỗi giúp mình nhé!",
+                    if (shown?.sent == true) "Monika đã tự gửi báo lỗi này cho AowVN (tắt trong Cài đặt). Bạn có thể thử lõi khác bên dưới."
+                    else "Monika đã lưu lại thông tin (lõi, giai đoạn, log) để AowVN sửa lỗi này. Bấm Gửi báo lỗi giúp mình nhé!",
                     style = Monika.type.caption, color = SheetColors.textSecondary,
                 )
             }

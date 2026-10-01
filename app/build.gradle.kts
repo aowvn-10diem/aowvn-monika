@@ -18,8 +18,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 25
-        versionName = "0.5.2"
+        versionCode = 26
+        versionName = "0.5.3"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
         buildConfigField(
             "String", "REMOTE_CONFIG_URL",

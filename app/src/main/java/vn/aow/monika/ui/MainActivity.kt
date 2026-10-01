@@ -79,7 +79,12 @@ class MainActivity : ComponentActivity() {
         AppGraph.prefs.mergeGameEvents()
         AppGraph.prefs.endSession()
         // Phiên game trước chết bất thường? (lõi native sập, hết RAM, treo…) → tạo báo cáo + hỏi người chơi.
-        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { runCatching { vn.aow.monika.diag.Diagnostics.collect(applicationContext) } }
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { runCatching {
+            vn.aow.monika.diag.Diagnostics.collect(applicationContext)?.let { r ->
+                val cr = AppGraph.config.current.crash
+                vn.aow.monika.diag.Diagnostics.autoSend(applicationContext, AppGraph.http, r, cr.endpoint, cr.autoSend, AppGraph.prefs.autoSendCrash)
+            }
+        } }
     }
 
     override fun onNewIntent(intent: Intent) {

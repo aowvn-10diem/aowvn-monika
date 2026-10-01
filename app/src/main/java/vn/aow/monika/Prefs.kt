@@ -139,6 +139,10 @@ class Prefs(private val context: Context) {
     var preloadGame: Boolean
         get() = sp.getBoolean("preload_game", true)
         set(v) = sp.edit().putBoolean("preload_game", v).apply()
+    /** Tự gửi báo lỗi game (lõi sập/không lên hình) về AowVN, ẩn danh. Mặc định bật; cũng cần config `crash.autoSend` = true. */
+    var autoSendCrash: Boolean
+        get() = sp.getBoolean("auto_send_crash", true)
+        set(v) = sp.edit().putBoolean("auto_send_crash", v).apply()
     fun setCoreOverride(systemId: String, core: String?) = sp.edit().putString("core_$systemId", core).apply()
 
     /** Game được "Giữ lại": không bao giờ bị dọn bộ đệm. */

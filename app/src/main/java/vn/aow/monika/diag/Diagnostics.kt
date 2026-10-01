@@ -280,6 +280,35 @@ object Diagnostics {
         return r
     }
 
+    /**
+     * Lõi báo lỗi khi nạp game / không lên hình (tiến trình KHÔNG chết nên [collect] không thấy) → lập báo cáo từ phiên đang chạy.
+     * Trả về báo cáo đã lưu.
+     */
+    fun recordCoreFailure(c: Context, what: String, detail: String): Report {
+        val now = System.currentTimeMillis()
+        val s = read(c)?.takeIf { it.pid == Process.myPid() }?.copy(lastAlive = now)
+        val r = Report(
+            id = now, time = now, kind = "core-error",
+            title = "Lõi không chạy được game: $what — ${s?.game.orEmpty().ifBlank { "game" }} (${s?.system.orEmpty()}, lõi ${s?.core.orEmpty().ifBlank { "?" }})",
+            app = appLine(), device = deviceLine(), session = s, reason = what, detail = detail,
+            log = logcat(Process.myPid(), 120), fromGame = true,
+        )
+        save(c, r)
+        return r
+    }
+
+    /** Gửi ngầm (không clipboard) nếu người chơi không tắt và config `crash.autoSend` bật. Chạy ở luồng nền. */
+    fun autoSend(c: Context, http: OkHttpClient, r: Report, endpoint: String, enabledByConfig: Boolean, enabledByUser: Boolean) {
+        if (!enabledByConfig || !enabledByUser || endpoint.isBlank() || r.sent) return
+        Thread {
+            val ok = runCatching {
+                http.newCall(Request.Builder().url(endpoint).post(json.encodeToString(Report.serializer(), r).toRequestBody("application/json".toMediaType())).build())
+                    .execute().use { it.isSuccessful }
+            }.getOrDefault(false)
+            if (ok) save(c, r.copy(sent = true))
+        }.start()
+    }
+
     // ---------- Kho báo cáo ----------
 
     fun save(c: Context, r: Report) {
