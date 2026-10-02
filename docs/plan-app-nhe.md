@@ -100,3 +100,5 @@ Hiện có: `CoreManager` (lõi libretro), `AzaharModule` (engine 3DS). Tổng q
 | Gói "Game Java" | ❌ **bỏ**: sau khi cắt ký hiệu, toàn bộ native của J2ME chỉ còn ~1,3 MB (javam3g 0,38 · eas 0,60 · oboe 0,27 · tsf 0,05 · còn lại nhỏ) — không đáng độ phức tạp |
 
 **Phát hiện:** các con số 7–9 MB của "Game Java" trong bảng mục 3 là số **chưa cắt ký hiệu**. Đo thử trên APK 0.6.2 arm64 bằng `llvm-strip --strip-unneeded`: tổng thư viện 22,8 MB → ~8,9 MB (**−13,9 MB**), riêng `libc++_shared` 7,8 → 1,0 MB, `liboboe` 3,0 → 0,27 MB, `libjavam3g` 2,3 → 0,38 MB. Đây là cách giảm lớn nhất và không đổi hành vi.
+
+**Quyết định 02/10/2026 (sếp):** Release **chỉ phát hành bản chung (universal)** — người dùng không phải chọn bản. Bước 1 "APK arm64 riêng làm mặc định" ở mục 3 **bị hủy**; `release.yml` đã quay về 1 APK (`AowVN-Monika-<tag>.apk`). Bản chung 0.6.5 = 22,4 MB (số đo từ Release). Muốn nhẹ hơn nữa thì giảm nội dung, không chia bản.
