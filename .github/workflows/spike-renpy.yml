@@ -34,7 +34,7 @@ jobs:
         working-directory: renpy-${{ inputs.version }}-sdk/rapt
         run: |
           set -o pipefail
-          yes | python3 android.py installsdk 2>&1 | tail -25
+          yes | PYTHONPATH="$PWD/.." python3 android.py installsdk 2>&1 | tail -25
 
       - name: Tạo khóa tạm + cấu hình dự án the_question
         working-directory: renpy-${{ inputs.version }}-sdk

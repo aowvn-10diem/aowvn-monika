@@ -63,6 +63,7 @@ jobs:
         working-directory: src
         run: |
           set -o pipefail
+          (cd app/jni/mkxp-z && sh make_xxd.sh | tail -3)   # nhúng icon/phông/shader thành *.xxd (bước README bỏ sót)
           sed -i 's/APP_OPTIM := debug/APP_OPTIM := release/; s/^APP_ABI := .*/APP_ABI := ${{ inputs.abi }}/' app/jni/Application.mk
           sed -i "s/include 'arm64-v8a', 'armeabi-v7a'/include '${{ inputs.abi }}'/" app/build.gradle
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/23.2.8568313"
