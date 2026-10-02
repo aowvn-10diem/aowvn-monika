@@ -46,12 +46,15 @@ jobs:
 
       - name: Thư viện dựng sẵn (thirdparty) + assets từ APK 1.3.9
         working-directory: src
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -eo pipefail
-          B=https://github.com/YuriSizuku/Kirikiroid2Yuri/releases/download
-          wget -q $B/deps/thirdparty_build.tar.gz && tar xzf thirdparty_build.tar.gz
-          wget -q $B/deps/thirdparty_port.tar.gz && tar xzf thirdparty_port.tar.gz || wget -q $B/deps/thirdparty_ports.tar.gz && tar xzf thirdparty_ports.tar.gz
-          wget -q $B/1.3.9_yuri/Kirikiroid2_yuri_1.3.9.apk
+          R=YuriSizuku/Kirikiroid2Yuri
+          echo "== Asset của release deps =="; gh release view deps --repo $R --json assets --jq '.assets[] | "\(.name)  \(.size)"'
+          gh release download deps --repo $R --pattern 'thirdparty_*.tar.gz'
+          for f in thirdparty_*.tar.gz; do echo "giải nén $f"; tar xzf "$f" 2>/dev/null; done
+          gh release download 1.3.9_yuri --repo $R --pattern 'Kirikiroid2_yuri_1.3.9.apk'
           7z x -y Kirikiroid2_yuri_1.3.9.apk assets >/dev/null
           ls thirdparty thirdparty/build thirdparty/port 2>&1 | head -30
           du -sh thirdparty assets
