@@ -71,7 +71,7 @@ class BrowserDownloadTest {
         mgr.confirm(job, "chon-truoc.bin", SaveDest.Library) // chọn trước khi tải xong
         val target = File(GameStorage.downloads(app), "chon-truoc.bin")
         repeat(800) { if (target.exists()) return@repeat; shadowOf(android.os.Looper.getMainLooper()).idle(); Thread.sleep(25) } // chờ tối đa ~20 giây: toàn bộ bộ test chạy song song nên có lúc chậm
-        assertTrue(target.exists())
+        assertTrue("state=${job.state} confirmed=${job.confirmed} err=${job.error} part=${job.part.exists()} dir=${target.parentFile?.list()?.toList()}", target.exists())
     }
 
     @Test fun cancelDeletesPartial() {
