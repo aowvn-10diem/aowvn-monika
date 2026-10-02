@@ -1,7 +1,9 @@
 name: Spike Ren'Py (đóng gói lại RAPT 8.5.3)
 
-# P0 của docs/opus/2026-10-03-nhung-renpy-rgss.md: dựng APK `the_question` bằng SDK + RAPT chính thức để
-# (1) biết bố cục thật của private/ + assets/ + jniLibs, (2) có nguồn lấy gói `renpy8`. Chỉ khảo sát, KHÔNG phát hành.
+# P0 của docs/opus/2026-10-03-nhung-renpy-rgss.md (việc V03): biết bố cục thật của private/ + assets/ + jniLibs để ráp gói `renpy8`.
+# Cách làm (không cần Android SDK): chạy `launcher distribute --package android --no-archive` của SDK chính thức (cùng bước mà
+# android_build làm trước khi gọi RAPT), rồi tách private/assets theo đúng `split_renpy()` của rapt/buildlib/rapt/build.py.
+# Chỉ khảo sát, KHÔNG phát hành.
 on:
   workflow_dispatch:
     inputs:
@@ -15,7 +17,7 @@ permissions:
 jobs:
   spike:
     runs-on: ubuntu-22.04
-    timeout-minutes: 90
+    timeout-minutes: 60
     steps:
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 21 }
@@ -25,27 +27,14 @@ jobs:
           set -eo pipefail
           V=${{ inputs.version }}
           for f in sdk rapt; do curl -sSfL -O "https://www.renpy.org/dl/$V/renpy-$V-$f.zip"; done
-          ls -l *.zip; sha256sum *.zip
+          sha256sum *.zip
           unzip -q renpy-$V-sdk.zip
           unzip -q renpy-$V-rapt.zip -d renpy-$V-sdk
-          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb python3 >/dev/null
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb >/dev/null
 
-      - name: Cài Android SDK qua RAPT
-        working-directory: renpy-${{ inputs.version }}-sdk/rapt
-        run: |
-          set -o pipefail
-          ROOT="$PWD/.."
-          ls "$ROOT/lib/py3-linux-x86_64" | head -20
-          chmod +x "$ROOT"/lib/py3-linux-x86_64/* 2>/dev/null || true
-          # Python riêng của SDK (có phần mở rộng renpy.pygame); chạy từ thư mục rapt vì android.py chèn 'buildlib' theo đường dẫn tương đối
-          yes | PYTHONPATH="$ROOT:$ROOT/lib/py3-linux-x86_64" "$ROOT/lib/py3-linux-x86_64/python" android.py installsdk 2>&1 | tail -25
-
-      - name: Tạo khóa tạm + cấu hình dự án the_question
+      - name: Cấu hình dự án the_question (android.json)
         working-directory: renpy-${{ inputs.version }}-sdk
         run: |
-          set -e
-          keytool -genkey -keystore the_question/android.keystore -alias android -keyalg RSA -keysize 2048 -keypass android -storepass android -dname "CN=Spike" -validity 100
-          cp the_question/android.keystore the_question/bundle.keystore
           cat > the_question/.android.json <<'EOT'
           {"package":"vn.aow.spike.question","name":"The Question","icon_name":"Question","version":"1.0","numeric_version":1,
            "orientation":"sensorLandscape","permissions":["VIBRATE","INTERNET"],"include_pil":false,"include_sqlite":false,
@@ -53,30 +42,29 @@ jobs:
            "update_icons":true,"update_always":true,"heap_size":"3","update_keystores":true}
           EOT
 
-      - name: Dựng APK bằng launcher (android_build)
+      - name: Phân phối gói android (không nén)
         working-directory: renpy-${{ inputs.version }}-sdk
         run: |
           set -o pipefail
-          chmod +x renpy.sh lib/*/renpy lib/*/python* 2>/dev/null || true
-          xvfb-run -a ./renpy.sh launcher android_build the_question --destination "$PWD/../out" 2>&1 | tee ../build.log | tail -60
+          chmod +x renpy.sh lib/*/* 2>/dev/null || true
+          xvfb-run -a ./renpy.sh launcher distribute the_question --package android --no-archive --packagedest "$PWD/../dist-out/question" 2>&1 | tee ../distribute.log | tail -30
+          ls -la ../dist-out
 
-      - name: Bố cục APK
+      - name: Bố cục
         if: always()
         run: |
           {
-            echo "## Bố cục APK Ren'Py ${{ inputs.version }}"
+            echo "## Bố cục phân phối Ren'Py ${{ inputs.version }} (android, không nén)"
             echo '```'
-            ls -l out 2>/dev/null
-            APK=$(ls out/*.apk 2>/dev/null | head -1)
-            if [ -n "$APK" ]; then
-              mkdir x && cd x && unzip -q "../$APK"
-              echo "--- gốc APK"; ls -l
-              echo "--- lib"; find lib -type f -exec ls -l {} \; 2>/dev/null
-              echo "--- assets (cấp 1-2)"; find assets -maxdepth 2 | head -60
-              echo "--- private.mp3 là tar?"; file assets/private.mp3; mkdir ../priv && tar -xf assets/private.mp3 -C ../priv 2>&1 | head -3 || true
-              echo "--- private/ cấp 1-2"; cd ../priv && find . -maxdepth 2 | head -80; du -sh .
-              echo "--- main.py / environment"; ls -l main.py 2>/dev/null; find . -maxdepth 1 -type l -exec ls -l {} \;
-            fi
+            ls -la dist-out 2>/dev/null
+            D=$(find dist-out -maxdepth 2 -type d -name 'question*' | head -1); [ -z "$D" ] && D=dist-out
+            echo "--- gốc ($D)"; ls -la "$D" | head -40
+            echo "--- cấp 1 trong renpy/, lib/"; ls "$D/renpy" | head -40; ls "$D/lib" 2>/dev/null | head
+            echo "--- lib/ tìm python"; find "$D/lib" -maxdepth 2 | head -20
+            echo "--- kích thước"; du -sh "$D"/* 2>/dev/null | sort -h | tail -15
+            echo "--- kích thước renpy/ + lib/ + common"; du -sh "$D/renpy" "$D/lib" "$D/renpy/common" 2>/dev/null
+            echo "--- ngoài ra: jniLibs của RAPT"; ls -l renpy-${{ inputs.version }}-sdk/rapt/prototype/renpyandroid/src/main/jniLibs/*/librenpython.so
+            echo "--- blocklist/keeplist của RAPT"; cat renpy-${{ inputs.version }}-sdk/rapt/blocklist.txt; cat renpy-${{ inputs.version }}-sdk/rapt/keeplist.txt
             echo '```'
           } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
 
@@ -85,6 +73,5 @@ jobs:
         with:
           name: spike-renpy
           path: |
-            build.log
-            out/*.apk
+            distribute.log
           if-no-files-found: ignore
