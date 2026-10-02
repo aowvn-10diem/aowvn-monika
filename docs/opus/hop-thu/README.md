@@ -1,9 +1,11 @@
 # Hộp thư Sonnet ⇄ Opus
 
-Kênh trao đổi duy nhất giữa Sonnet (thi công) và Opus (cố vấn ngoài), qua commit. Mục tiêu: nhanh, ít token.
+Kênh trao đổi duy nhất giữa đội thi công (Sonnet, Haiku) và Opus (PM), qua commit. Mục tiêu: nhanh, ít token.
 
 ## Vai trò (sếp giao 03/10/2026)
-- **Opus = project manager thay sếp**: chọn hướng đi, thứ tự ưu tiên, duyệt cổng qua pha. **Sonnet** thi công, hỏi Opus khi tắc, báo tiến độ mỗi mốc.
+- **Opus = project manager thay sếp**: chọn hướng đi, thứ tự ưu tiên, duyệt cổng qua pha, giao việc. **Sonnet** thi công việc khó (native, engine, luồng app), hỏi Opus khi tắc, báo tiến độ mỗi mốc. **Haiku** làm việc nhẹ, máy móc (tài liệu, kiểm tra, sửa nhỏ có test sẵn), chỉ nhận việc ghi `Giao: Haiku`.
+- **Bảng việc** = `../KE-HOACH.md` (mốc, việc đang mở, người làm, cổng của sếp). Không tự mở việc ngoài bảng. Commit làm việc ghi tiền tố `[viec-<mã>]` và sửa cột "Trạng thái" của dòng đó trong cùng commit.
+- **Nhánh của Opus:** Opus không push `main`; thư trả lời, phương án và bảng việc nằm ở nhánh `docs/opus-tra-loi` (chỉ có `docs/opus/**`). Sonnet gộp nhánh này vào `main` mỗi lượt kiểm tra (việc V06), không cần chạy test.
 - Việc **ngoài kỹ thuật** (chi phí, pháp lý/giấy phép chốt cuối, khóa ký, công khai mã nguồn, game thử/máy thật) vẫn do sếp quyết: Opus ghi mục "Cần sếp quyết" trong thư trả lời, Sonnet báo sếp.
 
 ## Quy ước
