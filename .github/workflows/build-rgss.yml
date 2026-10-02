@@ -67,7 +67,7 @@ jobs:
           [ "$(echo "$LEFT" | grep -c . || true)" -le 1 ] || { echo "::error::Còn tham chiếu gói SDL cũ ngoài dòng chú thích"; exit 1; }
           grep -rn "SDL_JAVA_PREFIX" src/core/android/SDL_android.c src/hidapi/android/hid.cpp | head
 
-      - name: Bỏ OpenSSL (tra-loi-003 bước 1; Aow Monika: mkxp-z chỉ dùng cho HTTPS của HTTPLite, vốn tắt kiểm chứng chỉ)
+      - name: "Bỏ OpenSSL (tra-loi-003 bước 1; Aow Monika - mkxp-z chỉ dùng cho HTTPS của HTTPLite, vốn tắt kiểm chứng chỉ)"
         working-directory: src/app/jni
         run: |
           set -e
