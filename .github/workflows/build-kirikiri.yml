@@ -81,9 +81,10 @@ jobs:
       - name: Kết quả
         if: always()
         run: |
-          find /build_android -name '*.apk' -exec ls -la {} \; 2>/dev/null || true
           mkdir -p out && cp /tmp/gradle.log out/ 2>/dev/null || true
-          find /build_android -name '*.apk' -exec cp {} out/ \; 2>/dev/null || true
+          # buildDir của dự án = ../../../build_android tính từ project/android → gốc workspace
+          find "$GITHUB_WORKSPACE/build_android" /build_android -name '*.apk' 2>/dev/null | while read -r f; do cp "$f" out/; done
+          for a in out/*.apk; do [ -f "$a" ] && { echo "== $a"; unzip -l "$a" | grep -E '\.so|classes.*dex|AndroidManifest' ; } ; done || true
           {
             echo "### Kirikiroid2Yuri @ $SRC_COMMIT"
             echo '```'; ls -la out; echo '```'
