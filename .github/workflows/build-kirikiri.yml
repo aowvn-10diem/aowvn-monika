@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Nhánh/tag/commit của Kirikiroid2Yuri"
-        default: "master"
+        description: "Nhánh/tag/commit của Kirikiroid2Yuri (HEAD = nhánh mặc định)"
+        default: "HEAD"
       variant:
         description: "Kiểu dựng"
         type: choice
@@ -26,7 +26,9 @@ jobs:
       - name: Lấy mã nguồn Kirikiroid2Yuri
         run: |
           git clone --depth 1 https://github.com/YuriSizuku/Kirikiroid2Yuri.git src
-          cd src && git fetch --depth 1 origin "${{ inputs.ref }}" && git checkout FETCH_HEAD
+          cd src
+          if [ "${{ inputs.ref }}" != HEAD ]; then git fetch --depth 1 origin "${{ inputs.ref }}" && git checkout FETCH_HEAD; fi
+          git log -1 --format='%h %ad %s' 
           echo "SRC_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
