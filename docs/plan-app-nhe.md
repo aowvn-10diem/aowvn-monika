@@ -85,3 +85,18 @@ Hiện có: `CoreManager` (lõi libretro), `AzaharModule` (engine 3DS). Tổng q
 1. **Làm ngay được (không cần gói mới):** đưa việc tải lõi libretro lên **lúc bắt đầu tải/mở bài** thay vì sau khi giải nén; thêm hàm thuần `PrefetchPlanner.plan` + test. (Hiệu quả thấy ngay vì lõi nặng 2–20 MB.)
 2. **Cùng `PackManager`:** móc cho Azahar (khi có game 3DS), "Giải nén", "Game Java" (các bước 2–3 mục 3).
 3. Kiểm: unit test bảng ánh xạ (nhãn/đuôi → gói), test không tải trùng, Emulator Test không tải khi chưa có tín hiệu.
+
+---
+## 8. Tiến độ & phát hiện mới (02/10/2026, giờ GMT+7)
+
+| Việc | Trạng thái |
+|---|---|
+| Bỏ Azahar khỏi APK, tải từ repo phụ + kiểm SHA-256 | ✅ 0.6.3 |
+| `PackManager` + quy tắc mạng (≤15 MB tự tải kể cả 4G; lớn hơn hỏi Đợi Wi-Fi / Tải luôn; chờ Wi-Fi bằng WorkManager UNMETERED) | ✅ 0.6.4 |
+| `PrefetchPlanner` + tải lõi/Azahar/7-Zip ngay lúc bấm tải | ✅ 0.6.4 |
+| Gói "Giải nén" phần 7-Zip-JBinding (−2,6 MB/ABI) | ✅ 0.6.4 (`modules.sevenzip`, workflow **Publish pack**) |
+| **Cắt ký hiệu debug thư viện native** (log build báo "Unable to strip"): app khai báo cùng NDK 22.1 với `:j2me` | ✅ commit 7e2a08e, chờ bản phát hành để đo |
+| libarchive-jni (2,0 MB) | ⛔ không tách được bằng gói: lớp `Archive` tự `System.loadLibrary` lúc khởi tạo. Cần thay bằng bộ giải zip thuần Java hoặc vá thư viện |
+| Gói "Game Java" | ❌ **bỏ**: sau khi cắt ký hiệu, toàn bộ native của J2ME chỉ còn ~1,3 MB (javam3g 0,38 · eas 0,60 · oboe 0,27 · tsf 0,05 · còn lại nhỏ) — không đáng độ phức tạp |
+
+**Phát hiện:** các con số 7–9 MB của "Game Java" trong bảng mục 3 là số **chưa cắt ký hiệu**. Đo thử trên APK 0.6.2 arm64 bằng `llvm-strip --strip-unneeded`: tổng thư viện 22,8 MB → ~8,9 MB (**−13,9 MB**), riêng `libc++_shared` 7,8 → 1,0 MB, `liboboe` 3,0 → 0,27 MB, `libjavam3g` 2,3 → 0,38 MB. Đây là cách giảm lớn nhất và không đổi hành vi.
