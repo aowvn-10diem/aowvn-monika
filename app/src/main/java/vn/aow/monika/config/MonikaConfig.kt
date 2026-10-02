@@ -57,6 +57,9 @@ data class ModuleDef(
     val sha256: String = "",
     /** Dung lượng gói (byte) để hỏi người dùng trước khi tải; 0 = chưa biết. */
     val size: Long = 0,
+    /** Gói theo kiến trúc: [url] chứa "{abi}"; SHA-256 / dung lượng riêng từng ABI (khóa = arm64-v8a, armeabi-v7a…). */
+    val sha256ByAbi: Map<String, String> = emptyMap(),
+    val sizeByAbi: Map<String, Long> = emptyMap(),
 )
 
 @Serializable

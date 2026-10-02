@@ -74,6 +74,8 @@ android {
             pickFirsts += listOf("**/libc++_shared.so")
             // Chỉ hỗ trợ máy ARM (điện thoại thật); bỏ bản x86 của thư viện cho APK chung nhẹ đi.
             excludes += listOf("lib/x86/**", "lib/x86_64/**")
+            // 7-Zip native (~2,6 MB/ABI) không đóng trong APK: tải khi cần giải nén RAR/7z (config.modules.sevenzip).
+            excludes += listOf("**/lib7-Zip-JBinding.so")
         }
         // org/bouncycastle/pqc/**: bảng số của thuật toán hậu lượng tử (Picnic) ~1,2 MB mà libadb không dùng (chỉ RSA/EC/SPAKE2).
         resources { excludes += listOf("META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.kotlin_module", "org/bouncycastle/pqc/**") }

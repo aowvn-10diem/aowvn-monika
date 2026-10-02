@@ -1,5 +1,5 @@
 {
-  "configVersion": 23,
+  "configVersion": 24,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -1079,6 +1079,22 @@
       "abis": [
         "arm64-v8a"
       ]
+    },
+    "sevenzip": {
+      "version": "16.02-2.02",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/pack-sevenzip-1/sevenzip-{abi}.zip",
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a"
+      ],
+      "sha256ByAbi": {
+        "arm64-v8a": "0e1059f1b5d3426a17158e989ae51e140d65be10b1de6431856118d5fe03df3f",
+        "armeabi-v7a": "a9f651ea5db6b4cd4b81c78296080a2e70c2fc096314fbbbdf99e196d1f46082"
+      },
+      "sizeByAbi": {
+        "arm64-v8a": 966227,
+        "armeabi-v7a": 879046
+      }
     }
   },
   "forum": {
@@ -1095,5 +1111,16 @@
     "gambatte",
     "snes9x",
     "genesis_plus_gx"
-  ]
+  ],
+  "prefetchByExtension": {
+    "rar": [
+      "sevenzip"
+    ],
+    "7z": [
+      "sevenzip"
+    ],
+    "001": [
+      "sevenzip"
+    ]
+  }
 }

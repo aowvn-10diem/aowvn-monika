@@ -31,7 +31,19 @@ object SevenZipNative {
             if (inited) return
             // Nạp thẳng lib7-Zip-JBinding.so rồi khởi tạo; không dùng initSevenZipFromPlatformJAR
             // (cách đó tìm file .properties trong classpath, không chắc có trong APK).
-            System.loadLibrary("7-Zip-JBinding")
+            try {
+                System.loadLibrary("7-Zip-JBinding") // bản cũ/bản đóng sẵn trong APK
+            } catch (_: UnsatisfiedLinkError) {
+                // Bản nhẹ: thư viện nằm trong gói tải khi cần (config.modules.sevenzip), tải ngay nếu chưa có.
+                val packs = vn.aow.monika.AppGraph.packs
+                try {
+                    if (!packs.ready(vn.aow.monika.pack.PackManager.SEVENZIP, vn.aow.monika.pack.PackManager.SEVENZIP_LIB))
+                        kotlinx.coroutines.runBlocking { vn.aow.monika.pack.PackManager.install(vn.aow.monika.pack.PackManager.SEVENZIP) {} }
+                    System.load(java.io.File(packs.dir(vn.aow.monika.pack.PackManager.SEVENZIP), vn.aow.monika.pack.PackManager.SEVENZIP_LIB).absolutePath)
+                } catch (e: java.io.IOException) {
+                    throw UnsatisfiedLinkError("Gói 7-Zip chưa tải được: ${e.message}") // ArchiveExtractor rơi về bộ giải thuần Java
+                }
+            }
             SevenZip.initLoadedLibraries()
             inited = true
         }

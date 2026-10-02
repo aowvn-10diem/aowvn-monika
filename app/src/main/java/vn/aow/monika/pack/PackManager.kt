@@ -33,7 +33,15 @@ object PackManager {
             supported = { AppGraph.azahar.available() },
             ensure = { st -> AppGraph.azahar.ensure(st) },
         ),
+        SEVENZIP to Installer(
+            ready = { AppGraph.packs.ready(SEVENZIP, SEVENZIP_LIB) },
+            supported = { AppGraph.packs.supported(SEVENZIP) },
+            ensure = { st -> AppGraph.packs.ensure(SEVENZIP, SEVENZIP_LIB, st) },
+        ),
     )
+
+    const val SEVENZIP = "sevenzip"
+    const val SEVENZIP_LIB = "lib7-Zip-JBinding.so"
 
     private class Installer(val ready: () -> Boolean, val supported: () -> Boolean, val ensure: suspend (onStatus: (String) -> Unit) -> Unit)
 
@@ -53,7 +61,7 @@ object PackManager {
     }
 
     fun request(context: Context, id: String) {
-        val size = AppGraph.config.current.modules[id]?.size ?: 0L
+        val size = AppGraph.config.current.modules[id]?.let { it.sizeByAbi[AppGraph.packs.abi] ?: it.size } ?: 0L
         val cm = cm(context)
         val unmetered = !cm.isActiveNetworkMetered
         val saver = cm.restrictBackgroundStatus == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED

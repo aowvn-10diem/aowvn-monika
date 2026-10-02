@@ -1,0 +1,54 @@
+name: Publish pack (đưa gói trong packs/<tên>/ sang repo phụ công khai)
+
+# Gói nhỏ (thư viện native tách khỏi APK) nằm sẵn trong repo này ở packs/<tên>/*.zip. Workflow chép chúng sang Release của repo phụ
+# CÔNG KHAI aowvn-monika-packs (cần secret PACKS_TOKEN: Contents read+write), kiểm link tải thẳng không cần đăng nhập và in SHA-256
+# để dán vào config.modules.<tên>. Chạy tay: Actions → "Publish pack".
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Tên thư mục trong packs/ (vd. sevenzip)"
+        default: "sevenzip"
+      tag:
+        description: "Tag Release ở repo phụ (vd. pack-sevenzip-1)"
+        default: "pack-sevenzip-1"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    env:
+      PACKS_REPO: aowvn-10diem/aowvn-monika-packs
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kiểm secret
+        env:
+          T: ${{ secrets.PACKS_TOKEN }}
+        run: |
+          if [ -z "$T" ]; then echo "::error::Thiếu secret PACKS_TOKEN"; exit 1; fi
+          ls -la "packs/${{ inputs.name }}"
+      - name: Đưa sang repo phụ
+        env:
+          GH_TOKEN: ${{ secrets.PACKS_TOKEN }}
+        run: |
+          files=$(ls packs/${{ inputs.name }}/*.zip)
+          if gh release view "${{ inputs.tag }}" --repo "$PACKS_REPO" >/dev/null 2>&1; then
+            gh release upload "${{ inputs.tag }}" $files --repo "$PACKS_REPO" --clobber
+          else
+            gh release create "${{ inputs.tag }}" $files --repo "$PACKS_REPO" --title "${{ inputs.tag }}" \
+              --notes "Gói thư viện native cho Aow Monika (${{ inputs.name }}). Nguồn: 7-Zip-JBinding-4Android (LGPL-2.1 + license 7-Zip), lấy nguyên bản từ AAR gốc."
+          fi
+      - name: Kiểm tải thẳng không cần đăng nhập + SHA-256
+        run: |
+          for f in packs/${{ inputs.name }}/*.zip; do
+            n=$(basename "$f")
+            url="https://github.com/$PACKS_REPO/releases/download/${{ inputs.tag }}/$n"
+            code=$(curl -sSL -o dl.bin -w '%{http_code}' "$url")
+            echo "HTTP $code — $url"
+            [ "$code" = 200 ] || { echo "::error::Không tải được $url"; exit 1; }
+            a=$(sha256sum dl.bin | cut -d' ' -f1); b=$(sha256sum "$f" | cut -d' ' -f1)
+            echo "$n sha256=$a size=$(stat -c%s dl.bin)"
+            [ "$a" = "$b" ] || { echo "::error::SHA lệch giữa repo và bản công khai"; exit 1; }
+          done
