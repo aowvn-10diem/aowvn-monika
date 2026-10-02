@@ -93,9 +93,10 @@ jobs:
           name: onsyuri-web
           path: onsyuri-web.zip
 
-      - name: Đưa lên Releases
+      - name: Đưa lên Releases (repo phụ công khai nếu có PACKS_TOKEN, không thì repo này)
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PACKS_TOKEN != '' && secrets.PACKS_TOKEN || github.token }}
+          GH_REPO: ${{ secrets.PACKS_TOKEN != '' && 'aowvn-10diem/aowvn-monika-packs' || github.repository }}
         run: |
           gh release create "engines-onsyuri-${{ github.run_number }}" onsyuri-web.zip \
             --title "Engine ONScripter (web) #${{ github.run_number }}" \
@@ -180,10 +181,10 @@ jobs:
           name: azahar-android-arm64
           path: azahar-android-arm64.zip
 
-      - name: Đưa lên Releases
+      - name: Đưa lên Releases (repo phụ công khai nếu có PACKS_TOKEN, không thì repo này)
         env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.PACKS_TOKEN != '' && secrets.PACKS_TOKEN || github.token }}
+          GH_REPO: ${{ secrets.PACKS_TOKEN != '' && 'aowvn-10diem/aowvn-monika-packs' || github.repository }}
         run: |
           gh release create "engine-azahar-${{ github.run_number }}" azahar-android-arm64.zip \
             --title "Engine 3DS (Azahar) arm64 #${{ github.run_number }}" \

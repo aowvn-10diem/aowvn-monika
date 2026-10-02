@@ -1,0 +1,64 @@
+name: Mirror pack (chép gói engine sang repo phụ công khai)
+
+# Repo Monika là private nên app không tải được asset của Releases ở đây. Workflow này chép 1 asset từ Release của repo này
+# sang repo phụ CÔNG KHAI aowvn-monika-packs (cần secret PACKS_TOKEN: Contents read+write vào repo phụ), rồi kiểm link tải thẳng
+# không cần đăng nhập và in SHA-256. Chạy tay: Actions → "Mirror pack".
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag Release ở repo này (vd. engine-azahar-12); để trống = engine-azahar-* mới nhất"
+        default: ""
+      asset:
+        description: "Tên file asset"
+        default: "azahar-android-arm64.zip"
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-24.04
+    env:
+      PACKS_REPO: aowvn-10diem/aowvn-monika-packs
+    steps:
+      - name: Kiểm secret
+        env:
+          T: ${{ secrets.PACKS_TOKEN }}
+        run: |
+          if [ -z "$T" ]; then echo "::error::Thiếu secret PACKS_TOKEN (Contents: read+write vào $PACKS_REPO)."; exit 1; fi
+
+      - name: Lấy asset từ repo này
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ inputs.tag }}"
+          if [ -z "$tag" ]; then tag=$(gh release list --repo "${{ github.repository }}" --limit 50 --json tagName --jq '[.[]|select(.tagName|startswith("engine-azahar-"))][0].tagName'); fi
+          [ -n "$tag" ] || { echo "::error::Không tìm thấy Release engine-azahar-*"; exit 1; }
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          gh release download "$tag" --repo "${{ github.repository }}" --pattern "${{ inputs.asset }}" --output asset.bin
+          ls -la asset.bin
+          sha256sum asset.bin | tee asset.sha256
+
+      - name: Đưa sang repo phụ
+        env:
+          GH_TOKEN: ${{ secrets.PACKS_TOKEN }}
+        run: |
+          sha=$(cut -d' ' -f1 asset.sha256)
+          cp asset.bin "${{ inputs.asset }}"
+          if gh release view "$TAG" --repo "$PACKS_REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${{ inputs.asset }}" --repo "$PACKS_REPO" --clobber
+          else
+            gh release create "$TAG" "${{ inputs.asset }}" --repo "$PACKS_REPO" --title "$TAG" \
+              --notes "Gói engine cho Aow Monika. SHA-256: $sha. Mã nguồn: xem manifest.json trong gói (repo + commit)."
+          fi
+
+      - name: Kiểm tải thẳng không cần đăng nhập
+        run: |
+          url="https://github.com/$PACKS_REPO/releases/download/$TAG/${{ inputs.asset }}"
+          code=$(curl -sSL -o dl.bin -w '%{http_code}' "$url")
+          echo "HTTP $code — $url"
+          [ "$code" = 200 ] || { echo "::error::Link không tải được công khai (repo phụ có Public không?)"; exit 1; }
+          a=$(sha256sum dl.bin | cut -d' ' -f1); b=$(cut -d' ' -f1 asset.sha256)
+          [ "$a" = "$b" ] || { echo "::error::SHA-256 không khớp"; exit 1; }
+          { echo "### Link công khai"; echo "$url"; echo; echo "SHA-256: $b"; echo "TAG: $TAG"; } | tee -a "$GITHUB_STEP_SUMMARY"
