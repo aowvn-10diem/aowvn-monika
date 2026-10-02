@@ -18,3 +18,5 @@ Các bước (mỗi bước có cách kiểm):
 - 10 file vá Android trên mã mkxp-z có phải là sửa đổi trên mã GPL (nên tự động theo GPL) hay không: cần đối chiếu với mkxp-z gốc khi viết `patches/`.
 
 Cần sếp quyết: G8. Sếp (hoặc người sếp giao) liên hệ tác giả bản port để xin giấy phép cho `Makefile`, `*.mk`, `get_deps.sh` (và vỏ Java nếu tiện), trước R7.
+
+**PM nhắc:** có thư PM hỏi `pm-hoi-001-kiem-tra-it-token.md` (cách kiểm hộp thư 15 phút/lần ít token). Trả lời `pm-tra-loi-001.md` trong lượt kiểm tra này.

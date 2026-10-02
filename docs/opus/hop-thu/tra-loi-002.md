@@ -17,3 +17,5 @@ Các bước (mỗi bước có cách kiểm):
 - Dung lượng gói `renpy8` sau khi nén (mới có số `.so` chưa nén: arm64 35,9 MB, armv7 31,4 MB). Lớn hơn 15 MB thì vẫn đúng luật mạng: app hỏi "4G hay đợi Wi-Fi".
 
 Cần sếp quyết: không có việc mới. Các cổng của sếp đã liệt kê ở mục 4 của `KE-HOACH.md`.
+
+**PM nhắc:** có thư PM hỏi `pm-hoi-001-kiem-tra-it-token.md` (cách kiểm hộp thư 15 phút/lần ít token). Trả lời `pm-tra-loi-001.md` trong lượt kiểm tra này.
