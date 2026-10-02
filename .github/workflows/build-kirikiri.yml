@@ -108,6 +108,34 @@ jobs:
           name: kirikiroid2-yuri
           path: out/
 
+      - name: Xuất đầu vào để nhúng sâu vào Monika (nguồn Java, thư viện native, assets)
+        run: |
+          set -e
+          mkdir -p embed/java embed/lib
+          C=src/thirdparty/port/cocos2d-x/cocos/platform/android
+          ls "$C" | head -20
+          cp -r "$C/java" embed/java/cocos2dx-java || true
+          cp -r "$C/libcocos2dx" embed/java/cocos2dx-lib || true
+          cp -r src/project/android/app/java embed/java/kr2-java
+          cp -r src/project/android/app/res embed/java/kr2-res
+          cp src/project/android/app/AndroidManifest.xml embed/java/kr2-AndroidManifest.xml
+          SO=$(find "$GITHUB_WORKSPACE/build_android" -name 'libkrkr2yuri.so' -path '*stripped*' | head -1)
+          [ -z "$SO" ] && SO=$(find "$GITHUB_WORKSPACE/build_android" -name 'libkrkr2yuri.so' | head -1)
+          echo "SO=$SO"; ls -la "$SO"
+          cp "$SO" embed/lib/libkrkr2yuri.so
+          "$ANDROID_HOME/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded embed/lib/libkrkr2yuri.so || true
+          ls -la embed/lib
+          "$ANDROID_HOME/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -d embed/lib/libkrkr2yuri.so | grep -E 'NEEDED|SONAME' | tee embed/lib/needed.txt
+          cp -r src/assets embed/assets
+          du -sh embed/*
+          (cd embed && tar czf ../kirikiri-embed-inputs.tgz .)
+          ls -la kirikiri-embed-inputs.tgz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kirikiri-embed-inputs
+          path: kirikiri-embed-inputs.tgz
+
       - name: Ký lại bằng khóa Monika (sau khi build xong — khóa không bao giờ đưa vào bước build của mã bên ngoài)
         env:
           KEYSTORE_BASE64: ${{ secrets.MONIKA_KEYSTORE_BASE64 }}
