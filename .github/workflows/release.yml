@@ -51,6 +51,10 @@ jobs:
           python3 scripts/check-r8-mapping.py app/build/outputs/mapping/release/mapping.txt
           # Chỉ phát hành 1 APK chung cho mọi máy: app-universal-release.apk → AowVN-Monika-v0.4.5.apk
           cp app/build/outputs/apk/release/app-universal-release.apk "AowVN-Monika-${TAG}.apk"
+          # Bản arm64 riêng (hầu hết máy hiện nay, nhẹ hơn bản chung) và bản 32-bit cho máy cũ.
+          cp app/build/outputs/apk/release/app-arm64-v8a-release.apk "AowVN-Monika-${TAG}-arm64.apk"
+          cp app/build/outputs/apk/release/app-armeabi-v7a-release.apk "AowVN-Monika-${TAG}-armv7.apk"
+          ls -l AowVN-Monika-*.apk
       - uses: softprops/action-gh-release@v2
         with:
           files: AowVN-Monika-*.apk
@@ -61,4 +65,4 @@ jobs:
           PIXELDRAIN_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
         run: |
           if [ -z "$PIXELDRAIN_API_KEY" ]; then echo "Bỏ qua: chưa có secret PIXELDRAIN_API_KEY"; exit 0; fi
-          for f in AowVN-Monika-*.apk; do scripts/pixeldrain-upload.sh "$f"; done
+          for f in AowVN-Monika-*.apk; do echo "== $f ($(stat -c%s "$f") byte)"; scripts/pixeldrain-upload.sh "$f"; done
