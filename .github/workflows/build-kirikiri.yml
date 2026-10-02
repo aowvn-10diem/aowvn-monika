@@ -142,6 +142,7 @@ jobs:
           rm -rf pack && mkdir -p pack
           cp embed/lib/libkrkr2yuri.so pack/
           cp -r embed/assets pack/assets
+          cp -r self/kirikiri/overlay/assets/. pack/assets/   # bản dịch tiếng Việt (locale/vi_vn.xml)
           cp src/LICENSE pack/LICENSE-Kirikiroid2Yuri.txt
           cat > pack/SOURCE.txt <<EOT
           Kirikiroid2Yuri — https://github.com/YuriSizuku/Kirikiroid2Yuri (giấy phép kiểu BSD sửa đổi, xem LICENSE đi kèm)

@@ -263,6 +263,8 @@ public class KR2Activity extends Cocos2dxActivity implements ActivityCompat.OnRe
     }
 
     private static void requestExternalWrite() {
+        // Aow Monika: quyền đọc/ghi do Monika xin trước khi mở game (cùng quyền "Truy cập mọi tệp" của app) → không hiện hộp thoại xin quyền của Kirikiri.
+        if (true) return;
         // Permission has not been granted and must be requested.
         if (ActivityCompat.shouldShowRequestPermissionRationale(sInstance,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
@@ -338,6 +340,7 @@ public class KR2Activity extends Cocos2dxActivity implements ActivityCompat.OnRe
 	
 	// Aow Monika: Android 11+ cần "Truy cập mọi tệp" thì mới đọc game ở Download/ và ghi savedata cạnh game (lỗi gốc: "thư mục trống").
 	private void requestAllFilesAccessIfNeeded() {
+		if (true) return; // Monika đã xin quyền này trước khi mở game
 		if (Build.VERSION.SDK_INT < 30) return;
 		try {
 			boolean ok = (Boolean) Class.forName("android.os.Environment").getMethod("isExternalStorageManager").invoke(null);
@@ -1236,15 +1239,9 @@ public class KR2Activity extends Cocos2dxActivity implements ActivityCompat.OnRe
     	}
     }
     
+    // Aow Monika: luôn dùng bản dịch tiếng Việt (assets/locale/vi_vn.xml nằm trong gói Kirikiri).
     static public String getLocaleName() {
-    	Locale defloc = Locale.getDefault();
-    	String lang = defloc.getLanguage();
-    	String country = defloc.getCountry();
-    	if(!country.isEmpty()) {
-    		lang += "_";
-    		lang += country.toLowerCase();
-    	}
-    	return lang;
+    	return "vi_vn";
     }
     
     static public void exit() {

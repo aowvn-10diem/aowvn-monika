@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Locale lang="vi_vn">
+    <Item id="preference_title" text="Cài đặt chung"/>
+    <Item id="preference_title_individual" text="Cài đặt riêng cho game"/>
+    <Item id="preference_output_log" text="Xuất nhật ký (log)"/>
+    <Item id="preference_select_renderer" text="Chọn bộ vẽ hình"/>
+    <Item id="preference_opengl" text="OpenGL (thử nghiệm)"/>
+    <Item id="preference_software" text="Phần mềm (CPU)"/>
+    <Item id="preference_renderer_opt" text="Tùy chọn bộ vẽ nâng cao"/>
+    <Item id="preference_soft_renderer_opt" text="Tùy chọn vẽ bằng CPU"/>
+    <Item id="preference_opengl_renderer_opt" text="Tùy chọn vẽ bằng OpenGL"/>
+    <Item id="preference_multi_draw_thread" text="Luồng vẽ hình"/>
+    <Item id="preference_draw_thread_auto" text="Tự động"/>
+    <Item id="preference_draw_thread_1" text="1"/>
+    <Item id="preference_draw_thread_2" text="2"/>
+    <Item id="preference_draw_thread_3" text="3"/>
+    <Item id="preference_draw_thread_4" text="4"/>
+    <Item id="preference_draw_thread_5" text="5"/>
+    <Item id="preference_draw_thread_6" text="6"/>
+    <Item id="preference_draw_thread_7" text="7"/>
+    <Item id="preference_draw_thread_8" text="8"/>
+    <Item id="preference_software_compress_tex" text="Nén kết cấu (texture)"/>
+    <Item id="preference_soft_compress_tex_none" text="Không nén"/>
+    <Item id="preference_soft_compress_tex_halfline" text="Nửa dòng"/>
+    <Item id="preference_ogl_compress_tex" text="Nén kết cấu (texture)"/>
+    <Item id="preference_ogl_compress_tex_none" text="Không nén"/>
+    <Item id="preference_ogl_compress_tex_half" text="Một phần tư điểm ảnh"/>
+    <Item id="preference_remember_last_path" text="Nhớ đường dẫn lần trước"/>
+    <Item id="preference_keep_screen_alive" text="Giữ màn hình luôn sáng"/>
+    <Item id="preference_custom_option" text="Tùy chọn riêng"/>
+    <Item id="preference_opengl_dup_target" text="Sao chép kết cấu đích khi vẽ"/>
+    <Item id="preference_ogl_accurate_render" text="Vẽ chính xác"/>
+    <Item id="preference_ogl_max_texsize" text="Kích thước kết cấu tối đa"/>
+    <Item id="preference_ogl_texsize_auto" text="Tự động"/>
+    <Item id="preference_ogl_texsize_1024" text="1024"/>
+    <Item id="preference_ogl_texsize_2048" text="2048"/>
+    <Item id="preference_ogl_texsize_4096" text="4096"/>
+    <Item id="preference_ogl_texsize_8192" text="8192"/>
+    <Item id="preference_ogl_texsize_16384" text="16384"/>
+    <Item id="preference_mem_limit" text="Cố gắng giới hạn bộ nhớ sử dụng"/>
+    <Item id="preference_mem_unlimited" text="Không giới hạn"/>
+    <Item id="preference_mem_high" text="Bộ nhớ cao (&lt;300MB)"/>
+    <Item id="preference_mem_medium" text="Bộ nhớ vừa (&lt;200MB)"/>
+    <Item id="preference_mem_low" text="Bộ nhớ thấp (&lt;100MB)"/>
+    <Item id="preference_show_fps" text="Hiện FPS"/>
+    <Item id="preference_fps_limit" text="Giới hạn FPS"/>
+    <Item id="preference_hide_loading_ad" text="Ẩn quảng cáo khi đang tải"/>
+    <Item id="preference_rotate_screen_180" text="Xoay màn hình game"/>
+    <Item id="preference_virtual_cursor_scale" text="Cỡ con trỏ ảo"/>
+    <Item id="preference_menu_handler_opacity" text="Độ mờ nút menu"/>
+    <Item id="preference_reset" text="Đặt lại"/>
+    <Item id="preference_hide_android_sys_btn" text="Ẩn thanh hệ thống"/>
+    <Item id="preference_default_font" text="Phông chữ mặc định (để trống = phông có sẵn)"/>
+    <Item id="preference_force_def_font" text="Ép dùng phông mặc định"/>
+    <Item id="ok" text="Đồng ý"/>
+    <Item id="cancel" text="Hủy"/>
+    <Item id="retry" text="Thử lại"/>
+    <Item id="start" text="Bắt đầu"/>
+    <Item id="stop" text="Dừng"/>
+    <Item id="reactive" text="Kích hoạt lại"/>
+    <Item id="ensure_to_override_file" text="Hãy chắc chắn ghi đè:"/>
+    <Item id="readonly_storage" text="Phát hiện bộ nhớ ngoài chỉ đọc"/>
+    <Item id="cannot_create_preference" text="Không tạo được tệp cài đặt riêng."/>
+    <Item id="use_internal_path" text="Không có quyền ghi vào bộ nhớ ngoài. Hãy chép/di chuyển dữ liệu vào các thư mục của ứng dụng bên dưới rồi thử lại:"/>
+    <Item id="continue_run" text="Tiếp tục"/>
+    <Item id="get_sdcard_permission" text="Xin quyền thẻ nhớ (có thể chậm)"/>
+    <Item id="crash_report" text="Báo cáo lỗi"/>
+    <Item id="crash_report_msg" text="Phát hiện lỗi sập, gửi dữ liệu (%d tệp) để giúp cải thiện ứng dụng?"/>
+    <Item id="menu_rotate" text="Xoay màn hình"/>
+    <Item id="menu_global_preference" text="Cài đặt chung"/>
+    <Item id="menu_new_local_pref" text="Tạo cài đặt riêng"/>
+    <Item id="menu_local_pref" text="Cài đặt riêng"/>
+    <Item id="menu_new_folder" text="Thư mục mới"/>
+    <Item id="menu_about" text="Giới thiệu"/>
+    <Item id="menu_exit" text="Thoát"/>
+    <Item id="menu_help" text="Xem trợ giúp"/>
+    <Item id="menu_archive_repack" text="Chuyển/giải mã XP3"/>
+    <Item id="about_content" text="Kirikiroid2 chạy trong Aow Monika.&#10;Gói vá game: https://zeas2.github.io/Kirikiroid2_patch/patch&#10;Mã nguồn gốc: https://github.com/zeas2/Kirikiroid2 và https://github.com/YuriSizuku/Kirikiroid2Yuri"/>
+    <Item id="about_content_i" text=""/>
+    <Item id="sure_to_exit" text="Bạn chắc chắn muốn thoát?"/>
+    <Item id="msgbox_yes" text="Có"/>
+    <Item id="msgbox_no" text="Không"/>
+    <Item id="msgbox_ok" text="Đồng ý"/>
+    <Item id="msgbox_nerver_notice" text="Không nhắc lại"/>
+    <Item id="use_last_path" text="Dùng đường dẫn lần trước:"/>
+
+    <Item id="notice" text="Thông báo"/>
+    <Item id="err_narrow_to_wide" text="Không chuyển được chuỗi byte sang chuỗi Unicode.&#10;Dữ liệu có thể bị hỏng, bị mã hóa hoặc sai bảng mã chữ.&#10;Có thể cần xp3filter.tjs nếu dữ liệu bị mã hóa,&#10;hoặc dùng patch.tjs chỉ định đúng bảng mã nếu chữ không phải SHIFT-JIS"/>
+    <Item id="err_no_memory" text="Không đủ bộ nhớ&#10;Nếu lỗi này xảy ra thường xuyên, hãy thử giới hạn bộ nhớ trong cài đặt."/>
+    <Item id="err_occured" text="Đã xảy ra lỗi"/>
+    <Item id="err_read_error" text="Lỗi đọc dữ liệu"/>
+    <Item id="err_not_xp3_archive" text="%1 không phải tệp XP3 hợp lệ. Dữ liệu có thể bị hỏng."/>
+    <Item id="err_cannot_suggest_graph_ext" text="%1 Không đoán được đuôi tệp của ảnh này. Dữ liệu có thể bị mất hoặc script có lỗi."/>
+    <Item id="delete" text="Xóa"/>
+    <Item id="file_operate_menu_title" text="Thao tác với tệp"/>
+    <Item id="file_operate_menu_text" text="Hãy chọn thao tác:"/>
+    <Item id="ensure_to_delete_file" text="Hãy chắc chắn xóa:"/>
+    <Item id="ensure_item_count" text="%d mục"/>
+    <Item id="device_info" text="Thông tin máy"/>
+    <Item id="supported_opengl_extension" text="Tiện ích OpenGL (chỉ liệt kê loại dùng được):"/>
+    <Item id="preference_opengl_extension_opt" text="Tiện ích OpenGL"/>
+    <Item id="startup_patch_fail" text="Vá lỗi thất bại, hãy cập nhật patch.tjs"/>
+    <Item id="browse_patch_lib" text="Kho bản vá"/>
+    <Item id="preference_opengl_extension_desc" text="Danh sách tiện ích OpenGL có thể dùng.&#10;Một số tính năng có thể làm hình sai trên vài máy."/>
+    <Item id="preference_android_fetch_sdcard_permission" text="Xin quyền ghi thẻ nhớ ngoài"/>
+
+    <Item id="filemgr_unselect" text="Bỏ chọn"/>
+    <Item id="filemgr_browse" text="Xem"/>
+    <Item id="filemgr_delete" text="Xóa"/>
+    <Item id="filemgr_copy" text="Sao chép"/>
+    <Item id="filemgr_cut" text="Cắt"/>
+    <Item id="filemgr_paste" text="Dán vào đây"/>
+    <Item id="filemgr_sendto" text="Gửi tới..."/>
+    <Item id="filemgr_unpack" text="Giải nén"/>
+    <Item id="filemgr_rename" text="Đổi tên"/>
+    <Item id="file_operate_failed" text="Thao tác tệp thất bại:"/>
+    <Item id="fail_to_open_archive" text="Không mở được kho nén:"/>
+
+    <Item id="archive_repack_desc" text="Chuyển và giải mã kho nén giúp chạy nhanh hơn và đỡ nóng máy. Hãy đảm bảo dung lượng trống lớn hơn kho nén lớn nhất, nếu không thao tác có thể thất bại."/>
+    <Item id="archive_repack_merge_img" text="Gộp ảnh mặt nạ"/>
+    <Item id="archive_repack_conv_etc2" text="Chuyển ảnh sang ETC2"/>
+    <Item id="archive_repack_proc_title" text="Đang chuyển đổi..."/>
+    <Item id="archive_repack_no_xp3filter" text="Không thấy xp3filter trong thư mục hiện tại. Tiếp tục?"/>
+    <Item id="archive_repack_no_xp3" text="Không thấy kho XP3 nào, dừng lại."/>
+</Locale>

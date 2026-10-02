@@ -79,13 +79,9 @@ class GameLauncher(private val configRepo: ConfigRepository) {
     }
 
     /** Engine Kirikiri nhúng: chưa có gói → đưa vào hàng tải theo luật mạng (≤15 MB tự tải, lớn hơn hỏi Wi-Fi/4G); có rồi → chạy luôn. */
+    /** Một chạm là chơi: màn chuẩn bị tự tải lõi (quy tắc mạng chung), xin quyền nếu cần, rồi tự mở game. */
     private fun launchKirikiri(activity: Activity, game: Game, entry: File): LaunchResult {
-        val pm = vn.aow.monika.pack.PackManager
-        if (pm.needed(pm.KIRIKIRI)) {
-            pm.request(activity.applicationContext, pm.KIRIKIRI)
-            return LaunchResult.Failed("Đang tải thành phần Kirikiri (chỉ lần đầu). Tải xong sẽ có thông báo, rồi bấm Chơi lại.")
-        }
-        vn.aow.monika.runner.KirikiriGameActivity.start(activity, entry.takeIf { it.isFile }, game.name, game.key)
+        vn.aow.monika.runner.KirikiriPrepActivity.start(activity, entry.takeIf { it.isFile }, game.name, game.key)
         return LaunchResult.Started
     }
 
