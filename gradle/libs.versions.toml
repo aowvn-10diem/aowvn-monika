@@ -16,7 +16,6 @@ serialization = "1.7.3"
 coil = "2.7.0"
 mlkit-ocr-gms = "19.0.1"
 mlkit-ocr-gms-ja = "16.0.1"
-libretrodroid = "0.14.0"
 webkit = "1.12.1"
 junit = "4.13.2"
 robolectric = "4.16.1"
@@ -63,7 +62,6 @@ junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
-libretrodroid = { module = "com.github.Swordfish90:LibretroDroid", version.ref = "libretrodroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

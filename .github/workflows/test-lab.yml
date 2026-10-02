@@ -28,7 +28,7 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
       - name: Cài NDK cho J2ME Loader
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" > /dev/null
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
       - name: Build APK release (R8, ký bằng khóa debug)
         run: ./gradlew assembleRelease --console=plain
       - uses: google-github-actions/auth@v2
