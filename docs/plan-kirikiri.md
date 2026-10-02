@@ -22,3 +22,10 @@ Nguồn nghiên cứu: https://github.com/enaix/Kirikiroid2-debloated (commit a2
 3. Nhận diện `.xp3` / thư mục có `startup.tjs`, `data.xp3` → hệ "Kirikiri" ở Thư viện; bấm chơi → kiểm tra đã cài → cài nếu thiếu → mở Kirikiroid2.
 4. Mẹo cho người chơi: hiển thị hướng dẫn 1 dòng "chọn thư mục game trong Kirikiroid2" + nút mở sẵn.
 5. Nhật ký lỗi: nhãn `engine:kirikiri`; lỗi tải/cài ghi `pack:kirikiri`.
+
+
+## Cập nhật 03/10/2026 — ĐÃ NHÚNG SÂU (phương án B, bản nhẹ)
+- Dựng lại được từ mã nguồn bằng CI (`.github/workflows/build-kirikiri.yml`, Kirikiroid2Yuri @ 6e61ce3 + bản vá ở `kirikiri/patches/`). Gói `engines-kirikiri-13` (arm64, 17,1 MB) ở kho `aowvn-monika-packs`.
+- Mã Java ở module `:kirikiri`; `KirikiriGameActivity` chạy ở tiến trình `:game`; `libkrkr2yuri.so` + tài nguyên (ui, font) là gói tải thêm theo luật mạng (PackManager). Không còn APK riêng; máy 32-bit/chưa có gói → quay về app ngoài.
+- Emulator Test (Android 11 và 14, giả lập x86 chạy ARM qua lớp dịch): nạp được lib ngoài APK, màn chọn thư mục của Kirikiri vẽ ra đủ chữ và tài nguyên, không sập. **Chưa thử với game .xp3 thật trên máy thật.**
+- Muốn cập nhật engine: chạy workflow "Build Kirikiri" (publish=true) → lấy sha256/size từ release `.sha256` → sửa `modules.kirikiri` trong config; đổi mã Java thì chép lại từ artifact `kirikiri-embed-inputs` (đã vá).
