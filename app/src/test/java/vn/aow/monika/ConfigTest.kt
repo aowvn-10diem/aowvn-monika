@@ -41,6 +41,17 @@ class ConfigTest {
     }
 
     @Test
+    fun `goi kirikiri nam dung trong modules co url sha va chi arm64`() {
+        val m = cfg.modules["kirikiri"] ?: error("modules.kirikiri thiếu (có thể bị chèn nhầm sang mục khác)")
+        assertTrue(m.url.startsWith("https://") && m.url.endsWith("kirikiri-arm64.zip"))
+        assertEquals(64, m.sha256.length)
+        assertTrue(m.size > 10_000_000)
+        assertEquals(listOf("arm64-v8a"), m.abis)
+        // Hệ Kirikiri trỏ đúng engine để tải trước + chạy nhúng.
+        assertEquals("kirikiri", cfg.system("kirikiri")?.engine)
+    }
+
+    @Test
     fun `tach link tai tu bai viet`() {
         val html = """<a href="https://pixeldrain.com/u/abc123">x</a> <a href="https://www.mediafire.com/file/q">y</a>
             <a href="https://www.aowvn.org/p/tai-trinh-gia-lap-gba.html">z</a>"""

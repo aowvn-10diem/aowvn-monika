@@ -966,15 +966,6 @@
     "ruffle": {
       "script": "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle/ruffle.js"
     },
-    "kirikiri": {
-      "version": "6e61ce3-aow1",
-      "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/engines-kirikiri-13/kirikiri-arm64.zip",
-      "sha256": "11f3f67d0144a2a940e7fb67565bbc57e2c33d3db119bb11568efb5340584fe8",
-      "size": 17163785,
-      "abis": [
-        "arm64-v8a"
-      ]
-    },
     "onsyuri": {
       "script": "",
       "module": "onsyuri"
@@ -1142,6 +1133,15 @@
         "arm64-v8a": 966227,
         "armeabi-v7a": 879046
       }
+    },
+    "kirikiri": {
+      "version": "6e61ce3-aow1",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/engines-kirikiri-13/kirikiri-arm64.zip",
+      "sha256": "11f3f67d0144a2a940e7fb67565bbc57e2c33d3db119bb11568efb5340584fe8",
+      "size": 17163785,
+      "abis": [
+        "arm64-v8a"
+      ]
     },
     "onsyuri": {
       "version": "08f744b",

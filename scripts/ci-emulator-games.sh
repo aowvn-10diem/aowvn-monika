@@ -55,7 +55,8 @@ done
 # ---- Kirikiri (nhúng sâu): tải GÓI THẬT từ Releases theo config, đặt vào files/packs/kirikiri như PackManager làm,
 # mở KirikiriGameActivity không kèm game (→ màn chọn thư mục của Kirikiri). Kiểm: nạp được libkrkr2yuri.so ngoài APK, tìm thấy tài nguyên, không sập.
 echo "=== kirikiri (nhúng)"
-KURL=$(python3 -c "import json;print(json.load(open('config/monika-config.json'))['modules']['kirikiri']['url'])" 2>/dev/null)
+KURL=$(python3 -c "import json;print(json.load(open('config/monika-config.json'))['modules']['kirikiri']['url'])")
+echo "KURL=$KURL"
 if [ -z "$KURL" ] || ! curl -fsSL --retry 3 "$KURL" -o "$OUT/kirikiri-pack.zip"; then
   echo "SKIP kirikiri (không tải được gói)" | tee -a "$OUT/games/summary.txt"
 else
