@@ -6,7 +6,7 @@ Module `:libretrodroid` là **bản chép nguyên của LibretroDroid 0.14.0** (
 | Phần | Nguồn | Commit |
 |---|---|---|
 | `libretrodroid/` (gốc) | Swordfish90/LibretroDroid | tag 0.14.0 |
-| `src/main/cpp/oboe/` | google/oboe (nhánh 1.5-stable), bỏ `samples/ tests/ docs/ apks/` | `b15f5e39c01a7ada306d959e5129620b145fb8b4` |
+| `src/main/cpp/oboe/` | google/oboe (nhánh 1.5-stable), bỏ `samples/ tests/ docs/ apks/ apps/` (`apps/` chứa gradle-wrapper.jar lạ làm hỏng bước kiểm wrapper của CI) | `b15f5e39c01a7ada306d959e5129620b145fb8b4` |
 | `src/main/cpp/libretro/libretro-common/` | libretro/libretro-common | `b0c348ea5543c4d7fb0bc479258aa6988b20c0c9` |
 
 ## Sửa so với bản gốc
