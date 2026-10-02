@@ -2,15 +2,15 @@
 
 > Chủ: Opus (PM, sếp giao 03/10/2026). Đội thi công: **Sonnet** (việc khó: native, engine, luồng app) và **Haiku** (việc nhẹ, máy móc: tài liệu, kiểm tra, sửa nhỏ có test sẵn). Sếp quyết việc ngoài kỹ thuật (mục 4).
 > Đây là **nguồn sự thật duy nhất về tiến độ**. Mỗi phương án chi tiết nằm trong `docs/opus/<ngày>-<chủ đề>.md`; bảng này chỉ trỏ tới.
-> Cập nhật: 03/10/2026 05:50 (GMT+7), `main` @ `48707de`, app 0.7.3 (versionCode 38), `configVersion` 31.
+> Cập nhật: 03/10/2026 06:10 (GMT+7), `main` @ `abf636b`, app 0.7.3 (versionCode 38), `configVersion` 31.
 
 ## 1. Mốc
 
 | Mốc | Nội dung | Phương án | Trạng thái |
 |---|---|---|---|
-| M0 | Kirikiri 0.7.3 (menu tiếng Việt) phát hành | — | đang phát hành; máy thật **[CHƯA KIỂM]** |
-| M1 | RPG Maker XP/VX/Ace nhúng (khối R), tắt app ngoài cho `rgss` và `kirikiri` | `2026-10-03-nhung-renpy-rgss.md` | R0 xong (`ket-qua/R0.md`) · R1 đang chạy CI · R4 xong |
-| M2 | Ren'Py 8 nhúng (khối P) | như trên | P0 đang làm (song song, chỉ CI) |
+| M0 | Kirikiri 0.7.3 (menu tiếng Việt) phát hành | — | **xong** (đã gửi sếp APK); máy thật **[CHƯA KIỂM]** (G7) |
+| M1 | RPG Maker XP/VX/Ace nhúng (khối R), tắt app ngoài cho `rgss` và `kirikiri` | `2026-10-03-nhung-renpy-rgss.md` | R0, R1 (gói 7,6 MiB), R4 xong · tiếp R2 → R3 |
+| M2 | Ren'Py 8 nhúng (khối P) | như trên | P0, P1 xong (gói `renpy8` arm64 22,6 MB) · P2+ chờ R3 |
 | M3 | Ren'Py 7 (khối P7) | như trên | chờ M2 |
 | M4 | Symbian/N-Gage nhúng (khối S) | `2026-10-03-nhung-symbian-eka2l1.md` | chờ sếp chốt A1, A2 · làm sau M2 |
 | Q | Phương án cho câu 6 và 7 của mục 7 (kiểm thử khi không có máy thật; chất lượng crash log) | Opus viết | Opus làm, cần xong **trước R6** |
@@ -35,6 +35,8 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | V09 | Trả lời `hop-thu/pm-hoi-001-kiem-tra-it-token.md` | Sonnet | — | Có `pm-tra-loi-001.md` | chờ |
 | V10 | Tìm **gốc** lỗi test `BrowserDownloadTest.confirmBeforeFinishStillMovesWhenDone` (dòng 74; đỏ ở run 37071652777, đã đỏ nhiều lần trước đó). "Chập chờn" không phải nguyên nhân: đọc thông điệp `state=… confirmed=…` trong báo cáo test, sửa ở `BrowserDownloads` hoặc ở test. Gợi ý: `return@repeat` trong `repeat {}` chỉ bỏ qua một vòng, **không thoát vòng lặp** (dòng 61 và 72) | Sonnet | — | Chạy riêng test này 20 lần liền (`--tests …` trong vòng lặp shell) đều xanh | chờ |
 | V11 | `build.yml`: thêm `paths-ignore: ['docs/**', '**/*.md']` cho `push` và `pull_request`, để commit chỉ sửa tài liệu không chạy Gradle (mỗi lượt khoảng 3 phút runner) | Sonnet | — | Push thử một commit chỉ sửa `docs/` thì không có run `Build` mới | chờ |
+| V12 | R3: `RgssGameActivity` (`:game`, hợp đồng JNI, nạp `.so` theo `manifest.json`) + Emulator Test với "game" XP tối thiểu tự sinh (`hop-thu/tra-loi-005.md` bước 3) | Sonnet | V08 | API 30 và 34: có `MonikaGame: rgss-lib-loaded` + file `monika-ok.txt`; không có `Failed to register methods` | chờ |
+| V13 | `.gitignore` thêm `.kotlin/`; gỡ `.kotlin/sessions/*.salive` khỏi repo | Sonnet | — | `git ls-files .kotlin` rỗng | chờ |
 | H01 | Sửa đầu `docs/GIAO-TIEP-VOI-OPUS.md` thành 0.7.3 / versionCode 38 / `configVersion` 31. Mục 4: thêm dòng "E0 xong", "R4 xong" | Haiku | — | Diff chỉ đụng file đó | chờ |
 | H02 | Chạy lại `python3 scripts/gen-architecture.py`, commit `docs/KIEN-TRUC.md`. Nếu bảng module vẫn thiếu `:libretrodroid`/`:kirikiri` thì **không sửa script**: ghi `kẹt` và gửi thư | Haiku | — | `git diff` chỉ đụng `docs/KIEN-TRUC.md` | chờ |
 | H03 | `docs/TEST-MAY-THAT.md`: thêm mục "Kirikiri (0.7.3)" cho sếp thử: mở game `.xp3` → màn chuẩn bị tự tải gói → vào game → chạm, âm thanh, lưu/tải, tua nhanh, menu tiếng Việt, thoát. Máy 32-bit phải thấy thông báo chưa hỗ trợ. Nguồn: `docs/plan-kirikiri.md` + mục 4 của tài liệu bàn giao | Haiku | — | Chỉ đụng tài liệu; mỗi dòng là một thao tác sếp làm được | chờ |
