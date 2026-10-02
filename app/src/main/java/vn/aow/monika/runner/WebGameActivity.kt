@@ -16,6 +16,8 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -53,7 +55,8 @@ class WebGameActivity : ComponentActivity() {
         val loader = WebViewAssetLoader.Builder()
             .setDomain(HOST)
             .addPathHandler("/game/", DirectoryHandler(root))
-            .addPathHandler("/__monika/", PlayerPageHandler(entry.name))
+            .addPathHandler("/__monika/", PlayerPageHandler(entry.name, resources))
+            .addPathHandler("/__onsyuri/", OnsyuriHandler(AppGraph.packs.dir(vn.aow.monika.pack.PackManager.ONSYURI), root, intent.getStringExtra(EXTRA_TITLE)))
             .build()
 
         var cheatsRef: vn.aow.monika.cheats.WebCheatController? = null
@@ -75,9 +78,13 @@ class WebGameActivity : ComponentActivity() {
         }
         val cheats = vn.aow.monika.cheats.WebCheatController(this) { js, done -> web.post { web.evaluateJavascript(js) { done(it) } } }
         cheatsRef = cheats
-        val start = if (player == "ruffle") "https://$HOST/__monika/ruffle.html" else "https://$HOST/game/" + android.net.Uri.encode(entry.name)
+        val start = when (player) {
+            "ruffle" -> "https://$HOST/__monika/ruffle.html"
+            "onsyuri" -> "https://$HOST/__onsyuri/onsyuri.html"
+            else -> "https://$HOST/game/" + android.net.Uri.encode(entry.name)
+        }
         val title = intent.getStringExtra(EXTRA_TITLE) ?: entry.parentFile?.name ?: entry.nameWithoutExtension
-        val system = if (player == "ruffle") "Flash" else "Game web"
+        val system = when (player) { "ruffle" -> "Flash"; "onsyuri" -> "ONScripter"; else -> "Game web" }
         // Lớp giao diện Monika nổi trên game: nút menu tròn + menu popup dưới đáy (giống giả lập khác).
         val overlay = androidx.compose.ui.platform.ComposeView(this).apply {
             setContent {
@@ -97,7 +104,20 @@ class WebGameActivity : ComponentActivity() {
             addView(web)
             addView(overlay)
         })
-        web.loadUrl(start)
+        if (player == "onsyuri") {
+            // Engine ONScripter nằm trong gói tải khi cần (thường đã được tải trước lúc bấm tải game).
+            val pm = vn.aow.monika.pack.PackManager
+            if (pm.needed(pm.ONSYURI)) {
+                android.widget.Toast.makeText(this, "Đang tải engine ONScripter (chỉ lần đầu)…", android.widget.Toast.LENGTH_LONG).show()
+                lifecycleScope.launch {
+                    val ok = runCatching { pm.install(pm.ONSYURI) {} }.isSuccess
+                    if (ok) web.loadUrl(start) else {
+                        android.widget.Toast.makeText(this@WebGameActivity, "Không tải được engine ONScripter. Kiểm tra mạng rồi thử lại.", android.widget.Toast.LENGTH_LONG).show()
+                        finish()
+                    }
+                }
+            } else web.loadUrl(start)
+        } else web.loadUrl(start)
     }
 
     private var clock: PlayClock? = null
@@ -134,9 +154,35 @@ class WebGameActivity : ComponentActivity() {
         }
     }
 
-    /** Trang HTML nhúng Ruffle để chạy file .swf. */
-    private class PlayerPageHandler(private val swfName: String) : WebViewAssetLoader.PathHandler {
+    /**
+     * ONScripter (OnscripterYuri bản web): phục vụ trang + wasm từ gói đã tải, và tự sinh onsyuri_index.json liệt kê file game
+     * (tải lười theo nhu cầu từ /game/…) — thay cho bước chạy onsyuri_index.py trên máy tính.
+     */
+    private class OnsyuriHandler(private val moduleDir: File, private val gameRoot: File, private val title: String?) : WebViewAssetLoader.PathHandler {
+        private val files = DirectoryHandler(moduleDir)
         override fun handle(path: String): WebResourceResponse? {
+            if (path != "onsyuri_index.json") return files.handle(path)
+            val base = gameRoot.canonicalFile
+            val list = base.walkTopDown().filter { it.isFile && !it.name.startsWith(".monika") }.map { f ->
+                f.relativeTo(base).path.replace(File.separatorChar, '/')
+            }.toList()
+            val saveId = java.lang.Integer.toHexString(base.path.hashCode())
+            val arr = org.json.JSONArray()
+            for (rel in list) arr.put(org.json.JSONObject().put("path", rel).put("url", "https://$HOST/game/" + android.net.Uri.encode(rel, "/")))
+            if (list.none { it.equals("default.ttf", ignoreCase = true) })
+                arr.put(org.json.JSONObject().put("path", "default.ttf").put("url", "https://$HOST/__monika/default.ttf").put("lazyload", false))
+            val json = org.json.JSONObject()
+                .put("title", title ?: base.name).put("gamedir", "/onsyuri/game").put("savedir", "/onsyuri_save/$saveId")
+                .put("lazyload", true).put("args", org.json.JSONArray()).put("files", arr)
+            return WebResourceResponse("application/json", "utf-8", ByteArrayInputStream(json.toString().toByteArray()))
+        }
+    }
+
+    /** Trang HTML nhúng Ruffle để chạy file .swf. */
+    private class PlayerPageHandler(private val swfName: String, private val res: android.content.res.Resources) : WebViewAssetLoader.PathHandler {
+        override fun handle(path: String): WebResourceResponse? {
+            // Phông dự phòng cho ONScripter khi game không có default.ttf (Manrope, OFL, có đủ chữ Việt).
+            if (path == "default.ttf") return WebResourceResponse("font/ttf", null, res.openRawResource(vn.aow.monika.R.font.manrope))
             if (path != "ruffle.html") return null
             val script = AppGraph.config.current.webPlayers["ruffle"]?.script ?: return null
             val swf = "/game/" + android.net.Uri.encode(swfName)

@@ -247,7 +247,11 @@ data class DisplayStyle(
 )
 
 @Serializable
-data class WebPlayerDef(val script: String)
+data class WebPlayerDef(
+    val script: String = "",
+    /** Trình chạy nằm trong gói tải khi cần (id trong [MonikaConfig.modules]), vd. "onsyuri" cho ONScripter. */
+    val module: String? = null,
+)
 
 @Serializable
 data class ExternalApp(

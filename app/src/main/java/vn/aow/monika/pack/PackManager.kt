@@ -33,6 +33,11 @@ object PackManager {
             supported = { AppGraph.azahar.available() },
             ensure = { st -> AppGraph.azahar.ensure(st) },
         ),
+        ONSYURI to Installer(
+            ready = { AppGraph.packs.ready(ONSYURI, ONSYURI_MAIN) },
+            supported = { AppGraph.packs.supported(ONSYURI) },
+            ensure = { st -> AppGraph.packs.ensure(ONSYURI, ONSYURI_MAIN, st) },
+        ),
         SEVENZIP to Installer(
             ready = { AppGraph.packs.ready(SEVENZIP, SEVENZIP_LIB) },
             supported = { AppGraph.packs.supported(SEVENZIP) },
@@ -40,6 +45,8 @@ object PackManager {
         ),
     )
 
+    const val ONSYURI = "onsyuri"
+    const val ONSYURI_MAIN = "onsyuri.wasm"
     const val SEVENZIP = "sevenzip"
     const val SEVENZIP_LIB = "lib7-Zip-JBinding.so"
 

@@ -74,3 +74,9 @@
 ---
 ## ✅ Chỗ chứa gói đã chốt (02/10/2026)
 Repo công khai **`aowvn-10diem/aowvn-monika-packs`**. Gói đưa lên bằng workflow **Build engines** (tự đẩy sang repo phụ khi có secret `PACKS_TOKEN`) hoặc **Mirror pack** (chép gói có sẵn rồi kiểm link tải công khai + SHA-256). Link dạng `https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/<tag>/<file>` đặt vào `config.modules.<tên>.url`. Azahar đã chuyển sang dùng link này (APK không còn đóng sẵn). Bản nhị phân GPL phát hành ở đó phải ghi cách lấy mã nguồn (repo + commit) trong mô tả Release / `manifest.json`.
+
+---
+## ✅ Tiến độ (02/10/2026, GMT+7)
+- **Bước A (chuẩn bị chung):** xong theo hướng `SimpleModule` (tải → kiểm SHA-256 → giải nén phẳng vào `filesDir/packs/<id>`) + `PackManager` (quy tắc mạng, tải trước). Azahar giữ `AzaharModule` riêng (không đổi hành vi).
+- **Bước B (ONScripter):** engine **OnscripterYuri bản web (wasm)** dựng xong trên CI (commit 08f744b, gói 1,79 MB, GPLv2, đăng ở `aowvn-monika-packs` Release `engines-onsyuri-2`, SHA-256 `e46e7b53…cff`). Monika nhúng như Ruffle: `WebGameActivity` phục vụ trang/wasm từ gói, tự sinh `onsyuri_index.json` từ thư mục game (tải lười), phông dự phòng Manrope khi game không có `default.ttf`, lưu game qua IndexedDB của WebView. Hệ `onscripter` đổi từ `external` sang `web` + `webPlayer: onsyuri`, `engine: onsyuri` (để tải trước theo nhãn bài). **[CHƯA KIỂM trên máy thật]** — cần 1 game ONScripter mẫu để thử: âm thanh/video, phông, cảm ứng, lưu game.
+- **Bước C/D/E (Kirikiri, EKA2L1, RGSS, Ren'Py):** chưa làm; mỗi cái là một spike dựng native/giấy phép riêng (xem các mục ở trên).
