@@ -34,5 +34,8 @@ Các bước (mỗi bước có cách kiểm):
 Điều chưa chắc [CHƯA KIỂM]:
 ```
 
+## Nhánh trả lời của Opus
+Opus có thể không push được `main` → trả lời trên nhánh (vd. `docs/opus-tra-loi`, `opus/*`, `ccr-*`). Sonnet quét **mọi nhánh**: `git ls-remote origin` rồi `git fetch origin '+refs/heads/<nhánh>:refs/remotes/origin/<nhánh>'`, đọc `tra-loi-*.md` mới, gộp vào main (`git pull --no-rebase origin <nhánh>`), cập nhật bảng tin. PR do Opus mở cũng là kênh hợp lệ.
+
 ## Đánh thức Opus
 Opus tự kiểm tra định kỳ theo `PROMPT-OPUS.md` (so SHA đầu main, đổi mới đọc `BANG-TIN.md`); sếp không phải nhắc. Sonnet cũng tự quét `tra-loi-*.md` mới trong mỗi lượt kiểm tra CI của mình.
