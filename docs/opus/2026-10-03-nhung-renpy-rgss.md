@@ -5,7 +5,15 @@
 > **Chưa có dòng nào trong tài liệu này được chạy trên máy thật.** Mọi dữ kiện "đã đọc" là đọc mã nguồn, có ghi file và dòng. Chỗ **[CHƯA KIỂM]** phải kiểm trước khi dựa vào.
 > Tài liệu này **thay thế** hai file `PLAN-rpgmaker-monika.md` và `PLAN-A-rgss-android.md` Opus gửi trước khi được đọc repo (hai file đó giả định sai về kiến trúc Monika).
 
-Quyết định của sếp đã chốt: nhúng sâu, native, **không mở app ngoài**; với RPG Maker XP/VX/Ace ưu tiên native để đạt hiệu suất, core libretro chỉ là dự phòng; viết lại vỏ Android của bản port.
+Quyết định của sếp đã chốt:
+
+| # | Quyết định |
+|---|---|
+| Q1 | Nhúng sâu, native, **không mở app ngoài** |
+| Q2 | RPG Maker XP/VX/Ace ưu tiên native để đạt hiệu suất; core libretro chỉ là dự phòng; viết lại vỏ Android của bản port |
+| Q3 | **Làm RPG Maker trước, Ren'Py sau** (03/10/2026) |
+| Q4 | Luật "không mở app ngoài" **áp cho mọi hệ**, gồm cả Kirikiri trên máy 32-bit và Symbian (03/10/2026) |
+| Q5 | Game thử: Sonnet **hỏi sếp khi tới bước cần**, không tự tải game (03/10/2026) |
 
 ---
 
@@ -81,11 +89,13 @@ Nếu gói > 15 MB thì `PackPolicy` tự hỏi "Tải luôn bằng 4G / Đợi 
 | Khối | Công | Rủi ro |
 |---|---|---|
 | E0 Hạ tầng chung | Nhỏ | Thấp |
-| P Ren'Py 8 | Vừa | Trung bình |
 | R RGSS | Lớn | Cao |
+| P Ren'Py 8 | Vừa | Trung bình |
 | P7 Ren'Py 7 | Nhỏ (sau khi có P) | Trung bình |
 
-**Thứ tự đề xuất: E0 → P (Ren'Py 8) → R (RGSS) → P7.** Ren'Py đi trước vì không phải dựng native, và nó kiểm chứng sớm toàn bộ đường "SDL + nạp `.so` từ gói + tiến trình `:game`" mà RGSS cũng dùng. Sếp muốn RPG Maker trước thì đổi chỗ P và R, không ảnh hưởng E0.
+**Thứ tự đã chốt (Q3): E0 → R (RGSS) → P (Ren'Py 8) → P7 (Ren'Py 7).**
+
+Hệ quả của việc RGSS đi trước: bước R3 là nơi đầu tiên kiểm đường "SDL + nạp `.so` từ gói + tiến trình `:game`" (U4), nên R3 phải qua Emulator Test trước khi làm R4 trở đi. Việc đổi gói lớp SDL của RGSS (X1) vẫn phải làm **ngay từ R1** dù Ren'Py chưa có, vì Ren'Py dùng nhị phân dựng sẵn nên không đổi tên lớp được.
 
 Không cần tách `:theme` / `:core` (câu 1) trước: Activity của engine nằm trong `app/runner/` như `KirikiriGameActivity`, module mới chỉ chứa Java của upstream.
 
@@ -154,8 +164,21 @@ Quy ước: mỗi bước một PR vào nhánh riêng, `./gradlew testDebugUnitT
 |---|---|---|---|
 | E0.1 | Tổng quát `KirikiriPrepActivity` thành `EnginePrepActivity`: tham số gồm id gói, file chính, tên hiển thị, lớp Activity đích, và hàm kiểm quyền đọc. `KirikiriPrepActivity` thành lớp mỏng gọi sang, **không đổi hành vi** | `runner/EnginePrepActivity.kt` (mới), `runner/KirikiriPrepActivity.kt`, `AndroidManifest.xml` | Test giao diện hiện có của màn chuẩn bị Kirikiri vẫn xanh; ảnh chụp trong `app/build/screenshots/` không đổi |
 | E0.2 | Bảng định tuyến engine: thay điều kiện viết cứng cho Kirikiri bằng tra theo `system.engine` trong một `Map<String, EngineRoute>` (id gói, file chính, hàm mở). Đăng ký `kirikiri` vào bảng | `runner/GameLauncher.kt`, `AppGraph.kt` (tạo bảng ở đây, đúng luật DI thủ công) | `ConfigTest` + test mới: hệ có `engine` đã đăng ký và gói `supported` → đi đường nhúng |
-| E0.3 | Luật "không mở app ngoài" cho engine đã nhúng: hệ có `engine` đã đăng ký mà gói không hỗ trợ ABI máy → trả `LaunchResult.Failed("…chưa hỗ trợ máy này")`, **không** rơi về `externalApp`. Áp cho `rgss`, `renpy`. Kirikiri và Symbian giữ hành vi cũ cho tới khi sếp quyết (ngoài phạm vi câu 5) | `runner/GameLauncher.kt`; cờ `noExternalFallback` trong `EngineRoute` | Unit test hai nhánh |
-| E0.4 | Giữ tương thích app cũ: trong config **không đổi** `runner: "external"` và `externalApp: "joiplay"` của `renpy`/`rgss`; chỉ **thêm** `engine`. App 0.7.2 trở về trước không biết engine mới nên vẫn chạy như cũ | `config/monika-config.json` (làm ở P4, R5) | `ConfigTest`: config mới vẫn đọc được bằng mô hình cũ (trường mới có mặc định) |
+| E0.3 | Luật "không mở app ngoài" (Q4), làm theo config-first: thêm trường `externalAppsEnabled: Boolean = true` vào `MonikaConfig` (mặc định `true` để đọc được config cũ), config mới đặt `false`. Khi `false`: nhánh `"external"` của `GameLauncher` **không bao giờ** gọi `launchExternal`. Hệ có `engine` đã đăng ký và gói hỗ trợ ABI máy → chạy nhúng. Còn lại → `LaunchResult.Failed` với câu tiếng Việt nói rõ lý do ("Máy 32-bit chưa chạy được Kirikiri trong Monika", "Symbian chưa hỗ trợ trong Monika"). Màn hình Thư viện và Cài đặt ẩn mọi lời mời cài JoiPlay / Kirikiroid2 / EKA2L1 khi cờ là `false`. **Hệ quả phải ghi vào ghi chú phát hành:** từ bản này Symbian và Kirikiri trên máy 32-bit không còn chơi được cho tới khi có engine nhúng; RGSS và Ren'Py cũng không còn JoiPlay, nên **chỉ đặt cờ `false` trong config khi gói `rgss` đã phát hành** (bước R5) | `config/MonikaConfig.kt`, `runner/GameLauncher.kt`, `ui/screens/` (chỗ hiện `NeedApp` / `OpenedApp`), `config/monika-config.json` | Unit test: cờ `true` → hành vi cũ; cờ `false` → không có Intent mở app ngoài ở mọi hệ; `ConfigTest` đọc được config thiếu trường này |
+| E0.4 | Giữ tương thích app cũ: trong config **không đổi** `runner: "external"` và `externalApp: "joiplay"` của `renpy`/`rgss`; chỉ **thêm** `engine`. App 0.7.2 trở về trước không biết engine mới và không biết cờ `externalAppsEnabled` nên vẫn chạy như cũ | `config/monika-config.json` (làm ở P4, R5) | `ConfigTest`: config mới vẫn đọc được bằng mô hình cũ (trường mới có mặc định) |
+
+### Khối R — RPG Maker XP/VX/Ace (mkxp-z native)
+
+| Bước | Việc | File / package | Cách kiểm |
+|---|---|---|---|
+| R0 | **Spike ngoài repo:** dựng nguyên trạng `BookerRues9/mkxp-z-android-reworked` cho arm64 theo README của nó. Sửa đúng hai chỗ: `CFLAGS -O0` → `-O2`; `APP_OPTIM debug` → `release`. Ghi kích thước từng `.so` | máy CI hoặc máy phiên; kết quả ghi `docs/opus/ket-qua/R0.md` | Có APK thử; có bảng kích thước `.so`. Dừng nếu 5 lần dựng hỏng với 5 nguyên nhân khác nhau → sang mục 6 |
+| R1 | Workflow `build-rgss.yml` + thư mục `engines/rgss/`: script dựng **do Monika viết lại** (không chép `Makefile`/`*.mk` của bản port, vì không có giấy phép). Ghim tag/commit + checksum từng phụ thuộc. Mặc định `-O2`, release, cắt ký hiệu. Dựng `arm64-v8a` và `armeabi-v7a`. **Đổi gói lớp SDL**: vá chuỗi `org/libsdl/app` (và macro tiền tố JNI) trong `SDL_android.c` thành `vn/aow/monika/rgss/sdl` **[CHƯA KIỂM]**. Ưu tiên liên kết tĩnh để còn ít `.so` nhất; nếu vẫn nhiều file thì ghi thứ tự nạp trong `manifest.json`. Kiểm game có cần mạng không: không cần thì bỏ `-DMKXPZ_SSL` và bỏ OpenSSL (bản 1.1.1t đã hết hỗ trợ). Lõi mkxp-z 2.4 + 10 file vá Android lấy từ bản port (là sửa đổi trên mã GPL), ghi `engines/rgss/UPSTREAM.md` | `.github/workflows/build-rgss.yml`, `engines/rgss/` | Máy sạch chạy một lệnh ra `rgss-{abi}.zip` + `.sha256`; không có file build nào chép từ bản port trong repo |
+| R2 | Module `:rgss`: chỉ chứa lớp SDL 2.26.3 **lấy từ bản phát hành SDL** (`android-project/app/src/main/java/org/libsdl/app/`), đã đổi gói sang `vn.aow.monika.rgss.sdl` bằng script (ghi trong `UPSTREAM.md`). So với lớp SDL trong bản port; nếu bản port có sửa thì ghi từng chỗ và tự áp lại | `rgss/` (module mới), `settings.gradle.kts`, `app/build.gradle.kts` | `assembleRelease` xanh; `dexdump` thấy cả `org.libsdl.app.SDLActivity` (Ren'Py) và `vn.aow.monika.rgss.sdl.SDLActivity`; đo APK tăng |
+| R3 | `RgssGameActivity : vn.aow.monika.rgss.sdl.SDLActivity`, tiến trình `:game`. **Viết mới hoàn toàn**, không chép `com.hatkid.mkxpz`. Phải có đủ hợp đồng JNI ở mục 3.3: `@JvmField` tĩnh `GAME_PATH`, các hàm `@JvmStatic` `getSystemLanguage`, `hasVibrator`, `vibrate`, `vibrateStop`, `inMultiWindow`. Ghi đè nạp thư viện từ gói. Gán `GAME_PATH` từ Intent trước `super.onCreate`. Kết thúc tiến trình khi thoát. Manifest: `sensorLandscape`, `configChanges` như `KirikiriGameActivity` | `runner/RgssGameActivity.kt`, `AndroidManifest.xml`, `app/proguard-rules.pro` | Emulator Test (R6); `dexdump` thấy các thành viên JNI còn nguyên tên sau R8 |
+| R4 | `MkxpConfigWriter`: sinh `mkxp.json` trong thư mục game. `rgssVersion` theo dấu hiệu nhận diện (`.rgssad`/`.rxdata` → 1, `.rgss2a`/`.rvdata` → 2, `.rgss3a`/`.rvdata2` → 3), `RTP` trỏ thư mục người chơi đã thêm, `fontSub`/phông có dấu tiếng Việt (đóng trong gói, không trong APK), các khóa hiệu năng chốt ở R0. Gộp với `mkxp.json` có sẵn của game, giữ khóa lạ. Tên khóa và kiểu giá trị đọc từ `mkxp.json` mẫu, không tự đoán | `runner/MkxpConfigWriter.kt` + test | Unit test: đúng theo từng engine; gộp không làm mất khóa lạ |
+| R5 | Lớp phủ và phím: dùng lại bố cục `GamePadOverlay` (`pad: "rpg"` đã có trong `SystemDef`), nối phím sang `SDLActivity.onNativeKeyDown/Up`; menu Monika qua `ComposeHost`. Đăng ký `PackManager.installers` (`rgss`), `EngineRoute`, config `modules.rgss` + `systems[rgss].engine = "rgss"` + `entry` cho luật nhận diện; tăng `configVersion` | `runner/RgssOverlay.kt`, `runner/GamePadOverlay.kt` (chỉ nếu cần mở API), `pack/PackManager.kt`, `AppGraph.kt`, `config/…` | Test giao diện (Robolectric) cho lớp phủ; `ConfigTest` |
+| R6 | **Cổng quyết định bằng game thật.** Sếp cấp 5 game: G1 XP, G2 VX, G3 VX Ace có `.rgss3a`, G4 dựng trên Pokémon Essentials, G5 việt hóa có dấu. Đo trên máy thật (sếp) hoặc ghi rõ "chỉ máy ảo": khởi động, chơi được, save/load sau khi tắt hẳn app, FPS so với tốc độ gốc, âm thanh, lỗi Win32API, chữ có dấu | `docs/TEST-MAY-THAT.md` thêm mục RGSS; Emulator Test thêm ca nạp gói + đợi `MonikaGame: rgss-lib-loaded` | G1, G2, G3, G5 đạt → đi tiếp R7. Chỉ G1 đạt → báo sếp: dùng dự phòng mục 6 cho VX/Ace. Từ 2 game trở lên không khởi động → chuyển hẳn dự phòng |
+| R7 | RTP, save, chẩn đoán: màn hướng dẫn tự thêm RTP (đọc `Game.ini` để biết game cần RTP nào); save nối `SaveVault` (kiểm save nằm trong thư mục game hay nơi khác **[CHƯA KIỂM]**); khi `:game` chết, đính log cuối với nhãn `engine:rgss`, dịch các lỗi thường gặp sang tiếng Việt | `runner/`, `library/`, `diag/`, `ui/screens/` | Mỗi lỗi có một tình huống tái hiện |
 
 ### Khối P — Ren'Py 8
 
@@ -209,19 +232,6 @@ del _os, _sys, _base, _save
 
 Nếu P0 hoặc P5 cho thấy cách này không chạy (thứ tự thực thi khác ở bản 7.8.7, hoặc tham số không nhận): thay `private/main.py` bằng một file bọc đặt `sys.argv` rồi chạy `renpy.py` gốc (đổi tên thành `renpy_main.py`). Không vá mã Ren'Py.
 
-### Khối R — RPG Maker XP/VX/Ace (mkxp-z native)
-
-| Bước | Việc | File / package | Cách kiểm |
-|---|---|---|---|
-| R0 | **Spike ngoài repo:** dựng nguyên trạng `BookerRues9/mkxp-z-android-reworked` cho arm64 theo README của nó. Sửa đúng hai chỗ: `CFLAGS -O0` → `-O2`; `APP_OPTIM debug` → `release`. Ghi kích thước từng `.so` | máy CI hoặc máy phiên; kết quả ghi `docs/opus/ket-qua/R0.md` | Có APK thử; có bảng kích thước `.so`. Dừng nếu 5 lần dựng hỏng với 5 nguyên nhân khác nhau → sang mục 6 |
-| R1 | Workflow `build-rgss.yml` + thư mục `engines/rgss/`: script dựng **do Monika viết lại** (không chép `Makefile`/`*.mk` của bản port, vì không có giấy phép). Ghim tag/commit + checksum từng phụ thuộc. Mặc định `-O2`, release, cắt ký hiệu. Dựng `arm64-v8a` và `armeabi-v7a`. **Đổi gói lớp SDL**: vá chuỗi `org/libsdl/app` (và macro tiền tố JNI) trong `SDL_android.c` thành `vn/aow/monika/rgss/sdl` **[CHƯA KIỂM]**. Ưu tiên liên kết tĩnh để còn ít `.so` nhất; nếu vẫn nhiều file thì ghi thứ tự nạp trong `manifest.json`. Kiểm game có cần mạng không: không cần thì bỏ `-DMKXPZ_SSL` và bỏ OpenSSL (bản 1.1.1t đã hết hỗ trợ). Lõi mkxp-z 2.4 + 10 file vá Android lấy từ bản port (là sửa đổi trên mã GPL), ghi `engines/rgss/UPSTREAM.md` | `.github/workflows/build-rgss.yml`, `engines/rgss/` | Máy sạch chạy một lệnh ra `rgss-{abi}.zip` + `.sha256`; không có file build nào chép từ bản port trong repo |
-| R2 | Module `:rgss`: chỉ chứa lớp SDL 2.26.3 **lấy từ bản phát hành SDL** (`android-project/app/src/main/java/org/libsdl/app/`), đã đổi gói sang `vn.aow.monika.rgss.sdl` bằng script (ghi trong `UPSTREAM.md`). So với lớp SDL trong bản port; nếu bản port có sửa thì ghi từng chỗ và tự áp lại | `rgss/` (module mới), `settings.gradle.kts`, `app/build.gradle.kts` | `assembleRelease` xanh; `dexdump` thấy cả `org.libsdl.app.SDLActivity` (Ren'Py) và `vn.aow.monika.rgss.sdl.SDLActivity`; đo APK tăng |
-| R3 | `RgssGameActivity : vn.aow.monika.rgss.sdl.SDLActivity`, tiến trình `:game`. **Viết mới hoàn toàn**, không chép `com.hatkid.mkxpz`. Phải có đủ hợp đồng JNI ở mục 3.3: `@JvmField` tĩnh `GAME_PATH`, các hàm `@JvmStatic` `getSystemLanguage`, `hasVibrator`, `vibrate`, `vibrateStop`, `inMultiWindow`. Ghi đè nạp thư viện từ gói. Gán `GAME_PATH` từ Intent trước `super.onCreate`. Kết thúc tiến trình khi thoát. Manifest: `sensorLandscape`, `configChanges` như `KirikiriGameActivity` | `runner/RgssGameActivity.kt`, `AndroidManifest.xml`, `app/proguard-rules.pro` | Emulator Test (R6); `dexdump` thấy các thành viên JNI còn nguyên tên sau R8 |
-| R4 | `MkxpConfigWriter`: sinh `mkxp.json` trong thư mục game. `rgssVersion` theo dấu hiệu nhận diện (`.rgssad`/`.rxdata` → 1, `.rgss2a`/`.rvdata` → 2, `.rgss3a`/`.rvdata2` → 3), `RTP` trỏ thư mục người chơi đã thêm, `fontSub`/phông có dấu tiếng Việt (đóng trong gói, không trong APK), các khóa hiệu năng chốt ở R0. Gộp với `mkxp.json` có sẵn của game, giữ khóa lạ. Tên khóa và kiểu giá trị đọc từ `mkxp.json` mẫu, không tự đoán | `runner/MkxpConfigWriter.kt` + test | Unit test: đúng theo từng engine; gộp không làm mất khóa lạ |
-| R5 | Lớp phủ và phím: dùng lại bố cục `GamePadOverlay` (`pad: "rpg"` đã có trong `SystemDef`), nối phím sang `SDLActivity.onNativeKeyDown/Up`; menu Monika qua `ComposeHost`. Đăng ký `PackManager.installers` (`rgss`), `EngineRoute`, config `modules.rgss` + `systems[rgss].engine = "rgss"` + `entry` cho luật nhận diện; tăng `configVersion` | `runner/RgssOverlay.kt`, `runner/GamePadOverlay.kt` (chỉ nếu cần mở API), `pack/PackManager.kt`, `AppGraph.kt`, `config/…` | Test giao diện (Robolectric) cho lớp phủ; `ConfigTest` |
-| R6 | **Cổng quyết định bằng game thật.** Sếp cấp 5 game: G1 XP, G2 VX, G3 VX Ace có `.rgss3a`, G4 dựng trên Pokémon Essentials, G5 việt hóa có dấu. Đo trên máy thật (sếp) hoặc ghi rõ "chỉ máy ảo": khởi động, chơi được, save/load sau khi tắt hẳn app, FPS so với tốc độ gốc, âm thanh, lỗi Win32API, chữ có dấu | `docs/TEST-MAY-THAT.md` thêm mục RGSS; Emulator Test thêm ca nạp gói + đợi `MonikaGame: rgss-lib-loaded` | G1, G2, G3, G5 đạt → đi tiếp R7. Chỉ G1 đạt → báo sếp: dùng dự phòng mục 6 cho VX/Ace. Từ 2 game trở lên không khởi động → chuyển hẳn dự phòng |
-| R7 | RTP, save, chẩn đoán: màn hướng dẫn tự thêm RTP (đọc `Game.ini` để biết game cần RTP nào); save nối `SaveVault` (kiểm save nằm trong thư mục game hay nơi khác **[CHƯA KIỂM]**); khi `:game` chết, đính log cuối với nhãn `engine:rgss`, dịch các lỗi thường gặp sang tiếng Việt | `runner/`, `library/`, `diag/`, `ui/screens/` | Mỗi lỗi có một tình huống tái hiện |
-
 ### Khối P7 — Ren'Py 7
 
 | Bước | Việc | Cách kiểm |
@@ -251,11 +261,18 @@ Nếu P0 hoặc P5 cho thấy cách này không chạy (thứ tự thực thi kh
 | U13 | Giấy phép `the_question` cho phép dùng trong CI | P5 | Tạo project mẫu bằng SDK (file sinh ra theo CC0, `license.rst`) |
 | U14 | Hai Activity engine khác nhau lần lượt dùng chung tiến trình `:game` có xung đột thư viện không | P5, R6 | Đặt tiến trình riêng `:renpy`, `:rgss`; kiểm `Diagnostics` có phụ thuộc tên tiến trình không |
 
-**Cần sếp cung cấp (fact, Opus không đoán):**
+**Sonnet phải hỏi sếp (Q5), không tự tải game và không tự đoán:**
 
-1. Năm game thử RGSS (G1–G5) và hai game thử Ren'Py (một bản 7, một bản 8), ưu tiên game AowVN đã việt hóa.
-2. Xác nhận luật "không mở app ngoài" có áp luôn cho Kirikiri trên máy 32-bit và Symbian không (hai hệ này ngoài phạm vi câu 5; E0.3 đang giữ hành vi cũ cho chúng).
-3. Thứ tự ưu tiên: Ren'Py trước (đề xuất, ít rủi ro) hay RPG Maker trước.
+| Khi tới bước | Hỏi sếp | Dùng cho |
+|---|---|---|
+| R0 (ngay khi bắt đầu spike) | 1 game RPG Maker XP bất kỳ để dựng thử | Mốc tốc độ, kiểm khởi động |
+| R6 | 5 game: G1 XP, G2 VX, G3 VX Ace có `.rgss3a`, G4 dựng trên Pokémon Essentials, G5 việt hóa có dấu. Ưu tiên game AowVN đã việt hóa | Cổng quyết định |
+| R6 | Sếp chạy bảng thử trên máy thật, hoặc xác nhận chấp nhận kết quả "chỉ máy ảo" | Cổng quyết định |
+| P6 | 2 game Ren'Py: một bản làm bằng Ren'Py 7, một bản bằng Ren'Py 8 | Kiểm dấu hiệu chọn runtime |
+| P7.3 | 1 game Ren'Py 7 (dùng lại game ở P6 nếu được) | Kiểm gói `renpy7` |
+| Bất kỳ lúc nào chạm ngưỡng "Dừng" hoặc thực tế khác plan | Báo sếp, chờ quyết | — |
+
+Mỗi lần hỏi: một câu, nói rõ cần gì và để làm bước nào. Trong lúc chờ, làm tiếp các bước không phụ thuộc game (viết test, workflow, tài liệu).
 
 ---
 
@@ -274,4 +291,4 @@ Không có dự phòng nào mở app ngoài.
 
 | Câu hỏi | Kết luận | Việc Sonnet cần làm tiếp |
 |---|---|---|
-| 5. Nhúng sâu Ren'Py và RPG Maker XP/VX/Ace: theo mô hình Kirikiri hay hướng khác? | Theo mô hình Kirikiri cho cả hai. RGSS: tự dựng mkxp-z native trên CI, viết lại vỏ và hệ build, đổi gói lớp SDL. Ren'Py: đóng gói lại nhị phân RAPT chính thức, hai gói `renpy8` / `renpy7`. Không mở app ngoài | 1) E0.1–E0.4. 2) P0 (spike, dừng báo kết quả). 3) Sau khi sếp duyệt P0: P1–P7. 4) R0 (spike, dừng báo kết quả), rồi R1–R7 với cổng R6. 5) P7.1–P7.3. Sau mỗi khối cập nhật mục 4 của `docs/GIAO-TIEP-VOI-OPUS.md` |
+| 5. Nhúng sâu Ren'Py và RPG Maker XP/VX/Ace: theo mô hình Kirikiri hay hướng khác? | Theo mô hình Kirikiri cho cả hai. RGSS: tự dựng mkxp-z native trên CI, viết lại vỏ và hệ build, đổi gói lớp SDL. Ren'Py: đóng gói lại nhị phân RAPT chính thức, hai gói `renpy8` / `renpy7`. Không mở app ngoài ở mọi hệ (cờ `externalAppsEnabled` trong config). **RPG Maker làm trước** | 1) E0.1–E0.4. 2) R0: hỏi sếp 1 game XP, dựng thử, dừng báo kết quả. 3) R1–R5, rồi R6: hỏi sếp 5 game thử, dừng chờ quyết. 4) R7; đặt `externalAppsEnabled: false` khi gói `rgss` đã phát hành. 5) P0 (spike, dừng báo kết quả), rồi P1–P7. 6) P7.1–P7.3. Sau mỗi khối cập nhật mục 4 của `docs/GIAO-TIEP-VOI-OPUS.md` |
