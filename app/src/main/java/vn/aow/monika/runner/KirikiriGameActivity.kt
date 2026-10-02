@@ -25,7 +25,9 @@ class KirikiriGameActivity : KR2Activity() {
         try {
             System.load(lib.absolutePath)
             Diagnostics.stage(this, "lib-loaded")
+            android.util.Log.i("MonikaGame", "kirikiri-lib-loaded") // CI (scripts/ci-emulator-games.sh) đợi dòng này
         } catch (t: Throwable) {
+            android.util.Log.e("MonikaGame", "error kirikiri-lib: $t")
             Diagnostics.recordHandled(this, "engine:kirikiri", "không nạp được ${lib.name}", t)
             finish()
         }

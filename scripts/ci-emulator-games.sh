@@ -51,4 +51,45 @@ for c in "${CASES[@]}"; do
   fi
   [ "$result" = OK ] || fail=1
 done
+
+# ---- Kirikiri (nhúng sâu): tải GÓI THẬT từ Releases theo config, đặt vào files/packs/kirikiri như PackManager làm,
+# mở KirikiriGameActivity không kèm game (→ màn chọn thư mục của Kirikiri). Kiểm: nạp được libkrkr2yuri.so ngoài APK, tìm thấy tài nguyên, không sập.
+echo "=== kirikiri (nhúng)"
+KURL=$(python3 -c "import json;print(json.load(open('config/monika-config.json'))['modules']['kirikiri']['url'])" 2>/dev/null)
+if [ -z "$KURL" ] || ! curl -fsSL --retry 3 "$KURL" -o "$OUT/kirikiri-pack.zip"; then
+  echo "SKIP kirikiri (không tải được gói)" | tee -a "$OUT/games/summary.txt"
+else
+  rm -rf "$OUT/kpack" && mkdir -p "$OUT/kpack" && unzip -q "$OUT/kirikiri-pack.zip" -d "$OUT/kpack"
+  adb shell rm -rf /data/local/tmp/kpack
+  adb push "$OUT/kpack" /data/local/tmp/kpack >/dev/null
+  P="/data/data/$PKG/files/packs"
+  adb shell "mkdir -p $P && rm -rf $P/kirikiri && cp -r /data/local/tmp/kpack $P/kirikiri && chown -R $APP_UID:$APP_UID $P && chmod -R 755 $P && restorecon -R $P"
+  adb shell am force-stop "$PKG"
+  adb logcat -c
+  adb shell am start -W -n "$PKG/vn.aow.monika.runner.KirikiriGameActivity" --es title "CI kirikiri" >/dev/null
+  result=TIMEOUT
+  for i in $(seq 1 30); do
+    sleep 4
+    adb logcat -d > "$OUT/games/kirikiri.logcat.txt" 2>/dev/null
+    if grep -q "MonikaGame: kirikiri-lib-loaded" "$OUT/games/kirikiri.logcat.txt"; then result=LOADED; break; fi
+    if grep -qE "MonikaGame: error" "$OUT/games/kirikiri.logcat.txt"; then result=ERROR; break; fi
+    if grep -qE "FATAL EXCEPTION|Fatal signal" "$OUT/games/kirikiri.logcat.txt"; then result=CRASH; break; fi
+  done
+  if [ "$result" = LOADED ]; then
+    sleep 20   # cho engine dựng cảnh đầu tiên; sập trong lúc này vẫn bị bắt
+    adb logcat -d > "$OUT/games/kirikiri.logcat.txt" 2>/dev/null
+    if grep -qE "FATAL EXCEPTION|Fatal signal" "$OUT/games/kirikiri.logcat.txt"; then result=CRASH
+    elif adb shell pidof "$PKG:game" >/dev/null 2>&1 || adb shell ps -A | grep -q "$PKG:game"; then result=OK
+    else result=DIED; fi
+  fi
+  adb exec-out screencap -p > "$OUT/games/kirikiri.png" 2>/dev/null || true
+  adb logcat -d > "$OUT/games/kirikiri.logcat.txt" 2>/dev/null
+  echo "$result kirikiri (nhúng)" | tee -a "$OUT/games/summary.txt"
+  if [ "$result" != OK ]; then
+    echo "--- logcat (lọc) của kirikiri ---"
+    grep -E "MonikaGame|Monika|AndroidRuntime|krkr|Cocos|cocos|Fatal signal|DEBUG|Diagnostics|UnsatisfiedLink" "$OUT/games/kirikiri.logcat.txt" | tail -60 | cut -c1-260
+    echo "--- hết ---"
+  fi
+  [ "$result" = OK ] || fail=1
+fi
 exit $fail
