@@ -1,0 +1,23 @@
+name: Native check (biên dịch nhanh :libretrodroid)
+
+# Kiểm nhanh phần C++ của :libretrodroid (không dựng cả app): dùng khi sửa native (RetroAchievements, docs/plan-retroachievements.md).
+on:
+  workflow_dispatch:
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Cài NDK + CMake
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+      - name: Biên dịch native (arm64 + armv7)
+        run: ./gradlew :libretrodroid:assembleDebug --console=plain 2>&1 | tee build.log | tail -150
+      - name: Lọc lỗi
+        if: failure()
+        run: grep -n "error:\|Error\|undefined reference\|FAILED" build.log | head -60
