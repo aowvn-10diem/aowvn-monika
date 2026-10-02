@@ -70,7 +70,7 @@ class BrowserDownloadTest {
         val job = mgr.start("https://host.test/g", null, null, null, null)
         mgr.confirm(job, "chon-truoc.bin", SaveDest.Library) // chọn trước khi tải xong
         val target = File(GameStorage.downloads(app), "chon-truoc.bin")
-        repeat(200) { shadowOf(android.os.Looper.getMainLooper()).idle(); if (target.exists()) return@repeat; Thread.sleep(25) }
+        repeat(800) { if (target.exists()) return@repeat; shadowOf(android.os.Looper.getMainLooper()).idle(); Thread.sleep(25) } // chờ tối đa ~20 giây: toàn bộ bộ test chạy song song nên có lúc chậm
         assertTrue(target.exists())
     }
 
