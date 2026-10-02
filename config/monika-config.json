@@ -1,5 +1,5 @@
 {
-  "configVersion": 22,
+  "configVersion": 23,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -1074,6 +1074,8 @@
     "azahar": {
       "version": "662d412",
       "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/engine-azahar-1/azahar-android-arm64.zip",
+      "sha256": "efbd71b1e5b85b1bfd922dc57a624a75bb45a4d3ba19aa429ac8b3bff94aa525",
+      "size": 13116908,
       "abis": [
         "arm64-v8a"
       ]

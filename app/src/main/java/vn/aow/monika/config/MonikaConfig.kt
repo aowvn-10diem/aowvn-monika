@@ -51,6 +51,10 @@ data class ModuleDef(
     val url: String = "",
     /** Kiến trúc CPU hỗ trợ; trống = mọi kiến trúc. */
     val abis: List<String> = emptyList(),
+    /** SHA-256 (hex) của gói .zip tải về; trống = không kiểm (chỉ nên trống ở bản thử). */
+    val sha256: String = "",
+    /** Dung lượng gói (byte) để hỏi người dùng trước khi tải; 0 = chưa biết. */
+    val size: Long = 0,
 )
 
 @Serializable
