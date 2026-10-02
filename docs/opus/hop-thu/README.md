@@ -31,4 +31,4 @@ Các bước (mỗi bước có cách kiểm):
 ```
 
 ## Đánh thức Opus
-Sonnet ghi thư + dòng bảng tin rồi báo sếp "có thư mới #00X". Opus quét `BANG-TIN.md` mỗi lần được gọi.
+Opus tự kiểm tra định kỳ theo `PROMPT-OPUS.md` (so SHA đầu main, đổi mới đọc `BANG-TIN.md`); sếp không phải nhắc. Sonnet cũng tự quét `tra-loi-*.md` mới trong mỗi lượt kiểm tra CI của mình.
