@@ -2,6 +2,7 @@ package vn.aow.monika
 
 import androidx.test.core.app.ApplicationProvider
 import okhttp3.MediaType.Companion.toMediaType
+import okio.buffer
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Response
@@ -72,6 +73,35 @@ class BrowserDownloadTest {
         val target = File(GameStorage.downloads(app), "chon-truoc.bin")
         repeat(800) { if (target.exists()) return@repeat; shadowOf(android.os.Looper.getMainLooper()).idle(); Thread.sleep(25) } // chờ tối đa ~20 giây: toàn bộ bộ test chạy song song nên có lúc chậm
         assertTrue("state=${job.state} confirmed=${job.confirmed} err=${job.error} part=${job.part.exists()} dir=${target.parentFile?.list()?.toList()}", target.exists())
+    }
+
+    /**
+     * V10 — tái hiện đúng race: tiêu đề Content-Disposition đã được xử lý (việc đặt tên đã xếp hàng lên luồng chính) rồi người dùng
+     * mới đặt tên, trước khi luồng chính kịp chạy việc đã xếp hàng. Bản cũ kiểm `confirmed` ở luồng tải nên tên máy chủ đè tên người dùng.
+     */
+    @Test fun userNameIsNotOverwrittenByServerNameWhenHeaderRaces() {
+        val headersDone = java.util.concurrent.CountDownLatch(1)
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val src = object : okio.ForwardingSource(okio.Buffer().write(payload)) {
+                override fun read(sink: okio.Buffer, byteCount: Long): Long { headersDone.countDown(); return super.read(sink, byteCount) }
+            }
+            val body = object : okhttp3.ResponseBody() {
+                override fun contentType() = "application/zip".toMediaType()
+                override fun contentLength() = payload.size.toLong()
+                override fun source() = src.buffer()
+            }
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .header("Content-Disposition", "attachment; filename*=UTF-8''Game%20Vi%E1%BB%87t%20H%C3%B3a.zip").body(body).build()
+        }.build()
+        val mgr = BrowserDownloads(app, client, vn.aow.monika.Prefs(app))
+        val job = mgr.start("https://host.test/race", null, null, null, null)
+        // Đợi luồng tải qua bước tiêu đề (đã xếp việc đặt tên) — luồng chính CHƯA chạy vì test chưa idle().
+        assertTrue("luồng tải không tới được bước đọc thân", headersDone.await(20, java.util.concurrent.TimeUnit.SECONDS))
+        mgr.confirm(job, "ten-nguoi-dung.bin", SaveDest.Library)
+        val target = File(GameStorage.downloads(app), "ten-nguoi-dung.bin")
+        repeat(800) { if (target.exists()) return@repeat; shadowOf(android.os.Looper.getMainLooper()).idle(); Thread.sleep(25) }
+        assertEquals("tên người dùng bị đè bởi tên máy chủ", "ten-nguoi-dung.bin", job.name)
+        assertTrue("file phải mang tên người dùng; thư mục: ${target.parentFile?.list()?.toList()}", target.exists())
     }
 
     @Test fun cancelDeletesPartial() {

@@ -10,3 +10,6 @@ local.properties
 .claude/settings.local.json
 app/src/main/assets/engines/
 scripts/libretro.h
+
+# Kotlin compiler session (V13)
+.kotlin/
