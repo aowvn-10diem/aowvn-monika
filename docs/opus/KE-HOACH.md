@@ -12,7 +12,7 @@
 | M1 | RPG Maker XP/VX/Ace nhúng (khối R), tắt app ngoài cho `rgss` và `kirikiri` | `2026-10-03-nhung-renpy-rgss.md` | R4 xong · R0 đang làm |
 | M2 | Ren'Py 8 nhúng (khối P) | như trên | P0 đang làm (song song, chỉ CI) |
 | M3 | Ren'Py 7 (khối P7) | như trên | chờ M2 |
-| M4 | Symbian/N-Gage nhúng (khối S) | `2026-10-03-nhung-symbian-eka2l1.md` (PR #1) | chờ sếp chốt A1, A2 · làm sau M2 |
+| M4 | Symbian/N-Gage nhúng (khối S) | `2026-10-03-nhung-symbian-eka2l1.md` | chờ sếp chốt A1, A2 · làm sau M2 |
 | Q | Phương án cho câu 6 và 7 của mục 7 (kiểm thử khi không có máy thật; chất lượng crash log) | Opus viết | Opus làm, cần xong **trước R6** |
 | — | Câu 1, 2, 3, 4 của mục 7 (tách module, dịch offline, Kirikiri 32-bit, RA cho NDS/N64/PS1) | chưa có | tồn đọng, xếp sau M2 |
 
@@ -57,7 +57,7 @@ Sonnet hỏi sếp khi tới bước cần; mỗi lần một câu.
 | G1 | 1 game RPG Maker XP để chạy thử R0 | Khi V01 ra `libmkxp-z.so` | chờ |
 | G2 | 5 game cho R6 (XP, VX, VX Ace `.rgss3a`, Pokémon Essentials, game Việt hóa có dấu) + thử máy thật, hoặc chấp nhận kết quả "chỉ máy ảo" | R6 | chờ |
 | G3 | 2 game Ren'Py (một bản 7, một bản 8) | P6 | chờ |
-| G4 | Symbian: A1 (chạy S0 sớm?), A2 (đủ 3 đường nhập firmware?); merge PR #1 | Bất kỳ lúc nào | chờ sếp |
+| G4 | Symbian: A1 (chạy S0 sớm?), A2 (đủ 3 đường nhập firmware?) — mục 8 của phương án Symbian | Bất kỳ lúc nào | chờ sếp |
 | G5 | Công khai mã nguồn Monika trước khi phát hành gói GPL mới (`rgss`, `renpy`, `symbian`) | Trước R7/P4/S7 | chờ sếp |
 | G6 | Nhắn RAdmin duyệt client "AowMonika" (hardcore) | Bất kỳ lúc nào | chờ sếp |
 | G7 | Thử Kirikiri 0.7.3 trên máy thật theo `TEST-MAY-THAT.md` (H03) | Sau V05 + H03 | chờ |

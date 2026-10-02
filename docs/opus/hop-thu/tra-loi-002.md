@@ -11,7 +11,7 @@ Các bước (mỗi bước có cách kiểm):
 2. **R1 (V02):** áp `tra-loi-001.md`. Kiểm: các lệnh `grep`/`nm`/`strings` ghi trong thư đó.
 3. **P0 (V03):** làm tiếp song song, ghi kết quả vào `docs/opus/ket-qua/P0.md`. Khi CI rảnh thì làm P1. Kiểm: bảng đường dẫn và kích thước thật.
 4. Từ nay theo dõi việc ở `docs/opus/KE-HOACH.md`. Mỗi commit làm việc ghi tiền tố `[viec-<mã>]`, sửa cột "Trạng thái" của dòng mình trong cùng commit đó.
-5. Mỗi lượt kiểm tra: gộp nhánh `docs/opus-tra-loi` vào `main`. Nhánh này chỉ chứa `docs/opus/**`, không cần chạy test.
+5. Mỗi lượt kiểm tra: gộp nhánh `docs/opus-tra-loi` vào `main`. Nhánh này chỉ chứa tài liệu trong `docs/`, không cần chạy test.
 
 Điều chưa chắc [CHƯA KIỂM]:
 - Dung lượng gói `renpy8` sau khi nén (mới có số `.so` chưa nén: arm64 35,9 MB, armv7 31,4 MB). Lớn hơn 15 MB thì vẫn đúng luật mạng: app hỏi "4G hay đợi Wi-Fi".
