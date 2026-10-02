@@ -40,7 +40,8 @@ object Prefetch {
             val coreIds = PrefetchPlanner.plan(cfg, labels, fileName).filter { it.kind == PackRef.Kind.CORE }.map { it.id }
             if (coreIds.isNotEmpty() && vn.aow.monika.AppGraph.cores.missing(coreIds).isNotEmpty())
                 CorePrefetchWorker.enqueue(context, coreIds)
-            // Gói PACK (Azahar, giải nén, Game Java) làm cùng PackManager: xem docs/plan-app-nhe.md mục 7.4 bước 2.
+            val packIds = PrefetchPlanner.plan(cfg, labels, fileName).filter { it.kind == PackRef.Kind.PACK }.map { it.id }
+            if (packIds.isNotEmpty()) vn.aow.monika.pack.PackManager.prefetch(context, packIds)
         }
     }
 }

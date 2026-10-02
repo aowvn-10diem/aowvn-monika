@@ -148,6 +148,10 @@
             android:exported="true" />
 
         <receiver
+            android:name=".pack.PackChoiceReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".download.DownloadReceiver"
             android:exported="true">
             <intent-filter>
