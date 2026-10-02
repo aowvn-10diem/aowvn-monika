@@ -12,7 +12,8 @@ Quyết định của sếp đã chốt:
 | Q1 | Nhúng sâu, native, **không mở app ngoài** |
 | Q2 | RPG Maker XP/VX/Ace ưu tiên native để đạt hiệu suất; core libretro chỉ là dự phòng; viết lại vỏ Android của bản port |
 | Q3 | **Làm RPG Maker trước, Ren'Py sau** (03/10/2026) |
-| Q4 | Luật "không mở app ngoài" **áp cho mọi hệ**, gồm cả Kirikiri trên máy 32-bit và Symbian (03/10/2026) |
+| Q4 | Luật "không mở app ngoài" **áp cho mọi hệ**, gồm cả Kirikiri trên máy 32-bit và Symbian (03/10/2026). Tắt app ngoài **theo từng hệ**, khi hệ đó đã có engine nhúng |
+| Q6 | **Symbian vẫn phải nhúng, nhưng làm sau.** Sonnet nhắc sếp theo mục 8 (03/10/2026) |
 | Q5 | Game thử: Sonnet **hỏi sếp khi tới bước cần**, không tự tải game (03/10/2026) |
 
 ---
@@ -164,8 +165,8 @@ Quy ước: mỗi bước một PR vào nhánh riêng, `./gradlew testDebugUnitT
 |---|---|---|---|
 | E0.1 | Tổng quát `KirikiriPrepActivity` thành `EnginePrepActivity`: tham số gồm id gói, file chính, tên hiển thị, lớp Activity đích, và hàm kiểm quyền đọc. `KirikiriPrepActivity` thành lớp mỏng gọi sang, **không đổi hành vi** | `runner/EnginePrepActivity.kt` (mới), `runner/KirikiriPrepActivity.kt`, `AndroidManifest.xml` | Test giao diện hiện có của màn chuẩn bị Kirikiri vẫn xanh; ảnh chụp trong `app/build/screenshots/` không đổi |
 | E0.2 | Bảng định tuyến engine: thay điều kiện viết cứng cho Kirikiri bằng tra theo `system.engine` trong một `Map<String, EngineRoute>` (id gói, file chính, hàm mở). Đăng ký `kirikiri` vào bảng | `runner/GameLauncher.kt`, `AppGraph.kt` (tạo bảng ở đây, đúng luật DI thủ công) | `ConfigTest` + test mới: hệ có `engine` đã đăng ký và gói `supported` → đi đường nhúng |
-| E0.3 | Luật "không mở app ngoài" (Q4), làm theo config-first: thêm trường `externalAppsEnabled: Boolean = true` vào `MonikaConfig` (mặc định `true` để đọc được config cũ), config mới đặt `false`. Khi `false`: nhánh `"external"` của `GameLauncher` **không bao giờ** gọi `launchExternal`. Hệ có `engine` đã đăng ký và gói hỗ trợ ABI máy → chạy nhúng. Còn lại → `LaunchResult.Failed` với câu tiếng Việt nói rõ lý do ("Máy 32-bit chưa chạy được Kirikiri trong Monika", "Symbian chưa hỗ trợ trong Monika"). Màn hình Thư viện và Cài đặt ẩn mọi lời mời cài JoiPlay / Kirikiroid2 / EKA2L1 khi cờ là `false`. **Hệ quả phải ghi vào ghi chú phát hành:** từ bản này Symbian và Kirikiri trên máy 32-bit không còn chơi được cho tới khi có engine nhúng; RGSS và Ren'Py cũng không còn JoiPlay, nên **chỉ đặt cờ `false` trong config khi gói `rgss` đã phát hành** (bước R5) | `config/MonikaConfig.kt`, `runner/GameLauncher.kt`, `ui/screens/` (chỗ hiện `NeedApp` / `OpenedApp`), `config/monika-config.json` | Unit test: cờ `true` → hành vi cũ; cờ `false` → không có Intent mở app ngoài ở mọi hệ; `ConfigTest` đọc được config thiếu trường này |
-| E0.4 | Giữ tương thích app cũ: trong config **không đổi** `runner: "external"` và `externalApp: "joiplay"` của `renpy`/`rgss`; chỉ **thêm** `engine`. App 0.7.2 trở về trước không biết engine mới và không biết cờ `externalAppsEnabled` nên vẫn chạy như cũ | `config/monika-config.json` (làm ở P4, R5) | `ConfigTest`: config mới vẫn đọc được bằng mô hình cũ (trường mới có mặc định) |
+| E0.3 | Luật "không mở app ngoài" (Q4), làm theo config-first và **theo từng hệ**: thêm trường `allowExternalApp: Boolean = true` vào `SystemDef` (mặc định `true` để đọc được config cũ). Khi một hệ có `allowExternalApp: false`: `GameLauncher` **không bao giờ** gọi `launchExternal` cho hệ đó. Có `engine` đã đăng ký và gói hỗ trợ ABI máy → chạy nhúng. Còn lại → `LaunchResult.Failed` với câu tiếng Việt nói rõ lý do (vd. "Máy 32-bit chưa chạy được Kirikiri trong Monika"). Thư viện và Cài đặt ẩn lời mời cài app ngoài của hệ đó. **Lịch tắt:** `rgss` tắt khi gói `rgss` phát hành (R5); `renpy` tắt khi gói `renpy8` phát hành (P4); `kirikiri` tắt cùng lúc với `rgss` (sếp đã chốt, máy 32-bit sẽ nhận thông báo chưa hỗ trợ); **`symbian` giữ `true`** cho tới khi làm xong việc ở mục 8 | `config/MonikaConfig.kt`, `runner/GameLauncher.kt`, `ui/screens/` (chỗ hiện `NeedApp` / `OpenedApp`), `config/monika-config.json` | Unit test: `true` → hành vi cũ; `false` → không có Intent mở app ngoài cho hệ đó; `ConfigTest` đọc được config thiếu trường này |
+| E0.4 | Giữ tương thích app cũ: trong config **không đổi** `runner: "external"` và `externalApp: "joiplay"` của `renpy`/`rgss`; chỉ **thêm** `engine`. App 0.7.2 trở về trước không biết engine mới và không biết trường `allowExternalApp` nên vẫn chạy như cũ | `config/monika-config.json` (làm ở P4, R5) | `ConfigTest`: config mới vẫn đọc được bằng mô hình cũ (trường mới có mặc định) |
 
 ### Khối R — RPG Maker XP/VX/Ace (mkxp-z native)
 
@@ -291,4 +292,14 @@ Không có dự phòng nào mở app ngoài.
 
 | Câu hỏi | Kết luận | Việc Sonnet cần làm tiếp |
 |---|---|---|
-| 5. Nhúng sâu Ren'Py và RPG Maker XP/VX/Ace: theo mô hình Kirikiri hay hướng khác? | Theo mô hình Kirikiri cho cả hai. RGSS: tự dựng mkxp-z native trên CI, viết lại vỏ và hệ build, đổi gói lớp SDL. Ren'Py: đóng gói lại nhị phân RAPT chính thức, hai gói `renpy8` / `renpy7`. Không mở app ngoài ở mọi hệ (cờ `externalAppsEnabled` trong config). **RPG Maker làm trước** | 1) E0.1–E0.4. 2) R0: hỏi sếp 1 game XP, dựng thử, dừng báo kết quả. 3) R1–R5, rồi R6: hỏi sếp 5 game thử, dừng chờ quyết. 4) R7; đặt `externalAppsEnabled: false` khi gói `rgss` đã phát hành. 5) P0 (spike, dừng báo kết quả), rồi P1–P7. 6) P7.1–P7.3. Sau mỗi khối cập nhật mục 4 của `docs/GIAO-TIEP-VOI-OPUS.md` |
+| 5. Nhúng sâu Ren'Py và RPG Maker XP/VX/Ace: theo mô hình Kirikiri hay hướng khác? | Theo mô hình Kirikiri cho cả hai. RGSS: tự dựng mkxp-z native trên CI, viết lại vỏ và hệ build, đổi gói lớp SDL. Ren'Py: đóng gói lại nhị phân RAPT chính thức, hai gói `renpy8` / `renpy7`. Không mở app ngoài, tắt theo từng hệ (trường `allowExternalApp` trong config). **RPG Maker làm trước**. Symbian nhúng sau (mục 8) | 1) E0.1–E0.4. 2) R0: hỏi sếp 1 game XP, dựng thử, dừng báo kết quả. 3) R1–R5, rồi R6: hỏi sếp 5 game thử, dừng chờ quyết. 4) R7; đặt `allowExternalApp: false` cho `rgss` và `kirikiri` khi gói `rgss` đã phát hành. 5) P0 (spike, dừng báo kết quả), rồi P1–P7. 6) P7.1–P7.3. 7) **Nhắc sếp về Symbian** theo mục 8. Sau mỗi khối cập nhật mục 4 của `docs/GIAO-TIEP-VOI-OPUS.md` |
+
+---
+
+## 8. Việc để sau — Sonnet phải nhắc sếp
+
+| Việc | Vì sao để sau | Khi nào nhắc | Nhắc thế nào |
+|---|---|---|---|
+| **Nhúng Symbian (EKA2L1) vào Monika** | Sếp chốt: vẫn phải nhúng, nhưng làm sau RPG Maker và Ren'Py (Q6). Chưa có phương án thi công; `docs/plan-engine-moi.md` bước D mới ghi là cần spike CI riêng (dựng `libeka2l1-android.so` từ `src/emu/android/`, GPLv3, NDK 25.1, nhiều submodule; firmware do người chơi tự cung cấp) | (1) Ngay khi cổng R6 có kết quả. (2) Lần nữa khi khối P (Ren'Py 8) xong. (3) Mỗi lần cập nhật mục 4 của `docs/GIAO-TIEP-VOI-OPUS.md` mà việc này còn mở | Một dòng trong báo cáo: "Symbian vẫn mở app ngoài EKA2L1, chưa có phương án nhúng. Sếp có muốn giao Opus viết phương án bây giờ không?" |
+
+Việc Sonnet làm ngay khi gộp tài liệu này: thêm dòng trên vào mục 5 ("Chưa làm / việc đang chờ") của `docs/GIAO-TIEP-VOI-OPUS.md`, và thêm câu hỏi thứ 8 vào mục 7 của file đó: "Nhúng Symbian (EKA2L1): đóng gói thế nào, nhập firmware ra sao?". Cho tới khi việc này xong, hệ `symbian` giữ `allowExternalApp: true` (bước E0.3).
