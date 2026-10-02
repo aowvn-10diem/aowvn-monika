@@ -168,8 +168,8 @@ dependencies {
     implementation(libs.mlkit.ocr.ja)
     implementation(libs.androidx.webkit)
     implementation(libs.libretrodroid)
-    implementation(libs.libarchive) // Giải nén zip/rar/rar5/7z
-    implementation(libs.commons.compress) // 7z có mật khẩu (libarchive không hỗ trợ)
+    implementation(libs.zip4j) // Giải nén .zip (kể cả mật khẩu)
+    implementation(libs.commons.compress) // 7z thuần Java (dự phòng khi 7-Zip native chưa tải được)
     implementation(libs.xz) // LZMA/LZMA2 cho 7z
     implementation(libs.sevenzip.android) // 7-Zip native: RAR/RAR5 có mật khẩu, RAR nhiều phần
     implementation(files(arscStripped)) // ARSCLib (đã lọc lớp trùng hệ thống): đọc/sửa AndroidManifest nhị phân của APK game

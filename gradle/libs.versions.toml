@@ -20,7 +20,7 @@ libretrodroid = "0.14.0"
 webkit = "1.12.1"
 junit = "4.13.2"
 robolectric = "4.16.1"
-libarchive = "1.1.6" # 1.1.7 đòi compileSdk 37
+zip4j = "2.11.5" # giải nén .zip (mật khẩu ZipCrypto/AES), Java thuần
 commonsCompress = "1.27.1" # chỉ dùng cho 7z có mật khẩu
 xz = "1.10"
 sevenZipAndroid = "Release-16.02-2.02" # 7-Zip native: RAR/RAR5 có mật khẩu
@@ -50,7 +50,7 @@ mlkit-ocr = { module = "com.google.android.gms:play-services-mlkit-text-recognit
 mlkit-ocr-ja = { module = "com.google.android.gms:play-services-mlkit-text-recognition-japanese", version.ref = "mlkit-ocr-gms-ja" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
-libarchive = { module = "me.zhanghai.android.libarchive:library", version.ref = "libarchive" }
+zip4j = { module = "net.lingala.zip4j:zip4j", version.ref = "zip4j" }
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 xz = { module = "org.tukaani:xz", version.ref = "xz" }
 sevenzip-android = { module = "com.github.omicronapps:7-Zip-JBinding-4Android", version.ref = "sevenZipAndroid" }
