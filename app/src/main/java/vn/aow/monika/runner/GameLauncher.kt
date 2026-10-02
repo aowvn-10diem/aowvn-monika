@@ -69,19 +69,27 @@ class GameLauncher(private val configRepo: ConfigRepository) {
                 activity.startActivity(ru.playsoftware.j2meloader.J2meRuntime.openGameIntent(activity, Installer.uriFor(activity, entry)))
                 LaunchResult.Started
             }
-            "external" ->
-                // Kirikiri chạy ngay trong Monika khi gói engine có cho máy này (arm64); không thì app ngoài như cũ.
-                if (system.engine == vn.aow.monika.pack.PackManager.KIRIKIRI && AppGraph.packs.supported(vn.aow.monika.pack.PackManager.KIRIKIRI))
-                    launchKirikiri(activity, game, entry)
-                else launchExternal(activity, system.externalApp, entry)
+            "external" -> {
+                // Engine nhúng trước (E0.2). Hệ đã tắt app ngoài mà máy không chạy được engine → báo rõ, không mở app ngoài (E0.3).
+                val route = EngineRoutes.usable(system.engine)
+                when {
+                    route != null -> launchEmbedded(activity, route, system.engine!!, game, entry)
+                    !system.allowExternalApp -> LaunchResult.Failed(
+                        if (system.engine != null && EngineRoutes.all.containsKey(system.engine))
+                            "Máy này (${android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "?"}) chưa chạy được ${system.name} trong Monika."
+                        else "Chưa có engine ${system.name} nhúng trong bản app này. Hãy cập nhật app."
+                    )
+                    else -> launchExternal(activity, system.externalApp, entry)
+                }
+            }
             else -> LaunchResult.Failed("Kiểu trình chạy '${system.runner}' chưa được hỗ trợ ở bản app này. Hãy cập nhật app.")
         }
     }
 
     /** Engine Kirikiri nhúng: chưa có gói → đưa vào hàng tải theo luật mạng (≤15 MB tự tải, lớn hơn hỏi Wi-Fi/4G); có rồi → chạy luôn. */
-    /** Một chạm là chơi: màn chuẩn bị tự tải lõi (quy tắc mạng chung), xin quyền nếu cần, rồi tự mở game. */
-    private fun launchKirikiri(activity: Activity, game: Game, entry: File): LaunchResult {
-        vn.aow.monika.runner.KirikiriPrepActivity.start(activity, entry.takeIf { it.isFile }, game.name, game.key)
+    /** Một chạm là chơi: màn chuẩn bị tự tải gói (quy tắc mạng chung), xin quyền nếu cần, rồi tự mở game. */
+    private fun launchEmbedded(activity: Activity, route: EngineRoute, engine: String, game: Game, entry: File): LaunchResult {
+        EnginePrepActivity.start(activity, engine, entry.takeIf { it.isFile }, game.name, game.key)
         return LaunchResult.Started
     }
 

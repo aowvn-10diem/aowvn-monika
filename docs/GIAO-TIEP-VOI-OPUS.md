@@ -136,7 +136,8 @@ flowchart LR
 5. RetroAchievements cho NDS/N64/PS1 (cần cách băm riêng).
 6. xdelta/PPF cho vá Việt hóa; ISO > 256 MB.
 7. Nhúng sâu Ren'Py, RPG Maker XP/VX/Ace (`docs/plan-engine-moi.md`), Symbian.
-8. Kirikiri chỉ có **arm64-v8a** (nguồn Yuri chỉ dựng cho chip này).
+8. **Nhúng Symbian (EKA2L1)**: sếp chốt vẫn phải nhúng, làm sau RPG Maker và Ren'Py; chưa có phương án (xem `docs/opus/2026-10-03-nhung-renpy-rgss.md` mục 8). Hiện vẫn mở app ngoài EKA2L1.
+9. Kirikiri chỉ có **arm64-v8a** (nguồn Yuri chỉ dựng cho chip này).
 
 ## 6. Cách làm việc và cách đưa phương án (giao thức cho Opus)
 
@@ -156,6 +157,7 @@ flowchart LR
 2. **Dịch offline**: mô hình nào cân bằng chất lượng/dung lượng, và tải theo nhu cầu thế nào để APK không chứa gì (`docs/plan-dich-offline.md`)?
 3. **Kirikiri trên máy ARM 32-bit** (armeabi-v7a): có đường nào ngoài tự dựng từ nguồn Yuri không?
 4. **RetroAchievements** cho NDS/N64/PS1: băm ROM và nhận diện đúng mà không phình APK?
-5. **Nhúng sâu Ren'Py và RPG Maker XP/VX/Ace**: nên theo mô hình Kirikiri (module Java + gói native tải thêm) hay hướng khác?
+5. **Nhúng sâu Ren'Py và RPG Maker XP/VX/Ace**: ĐÃ CÓ phương án (`docs/opus/2026-10-03-nhung-renpy-rgss.md`), đang thi công: E0 xong, R0 spike đang chạy.
 6. **Kiểm thử không có máy thật**: bổ sung gì ở Emulator Test để bắt được lỗi chạm/âm thanh/lưu của Kirikiri?
 7. **Chất lượng crash log**: còn thiếu tín hiệu nào để chẩn đoán từ xa mà không cần máy thật?
+8. **Nhúng Symbian (EKA2L1)**: đóng gói thế nào, nhập firmware ra sao?

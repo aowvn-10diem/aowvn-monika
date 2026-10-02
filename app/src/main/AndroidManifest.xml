@@ -76,7 +76,7 @@
             android:theme="@style/Theme.Monika.Fullscreen" />
 
         <activity
-            android:name=".runner.KirikiriPrepActivity"
+            android:name=".runner.EnginePrepActivity"
             android:exported="false"
             android:theme="@style/Theme.Monika.Fullscreen" />
 

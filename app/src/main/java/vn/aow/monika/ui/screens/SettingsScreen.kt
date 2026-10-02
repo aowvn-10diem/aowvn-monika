@@ -199,8 +199,10 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     )
                 }
 
-                SettingGroup("apps", open, { open = it }, R.drawable.ic_fluent_games_24_regular, secondaryGradient(), "App chạy game bổ sung", cfg.externalApps.joinToString(", ") { it.name }) {
-                    cfg.externalApps.forEach { app ->
+                // Ẩn app ngoài mà mọi hệ dùng nó đều đã tắt "allowExternalApp" (engine nhúng thay thế).
+                val extApps = cfg.externalApps.filter { app -> cfg.systems.none { it.externalApp == app.id && !it.allowExternalApp } || cfg.systems.any { it.externalApp == app.id && it.allowExternalApp } }
+                SettingGroup("apps", open, { open = it }, R.drawable.ic_fluent_games_24_regular, secondaryGradient(), "App chạy game bổ sung", extApps.joinToString(", ") { it.name }) {
+                    extApps.forEach { app ->
                         val installed = remember(app, refreshTick) { ExternalApps.installedPackage(context, app) != null }
                         MonikaCard(Modifier.fillMaxWidth(), shape = Radius.medium) { ExternalAppDetails(app, installed) }
                     }

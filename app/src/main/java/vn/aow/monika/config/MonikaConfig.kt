@@ -188,6 +188,11 @@ data class SystemDef(
     val pad: String? = null,
     /** Lõi thay thế user được chọn trong Cài đặt (vd. NDS: desmume, melonds). */
     val altCores: List<String> = emptyList(),
+    /**
+     * false = hệ này KHÔNG bao giờ mở app ngoài: có engine nhúng (và gói hỗ trợ máy) thì chạy nhúng, không thì báo lỗi rõ.
+     * Mặc định true để đọc được config cũ; bật tắt theo từng hệ khi engine nhúng của hệ đó đã phát hành.
+     */
+    val allowExternalApp: Boolean = true,
 )
 
 @Serializable

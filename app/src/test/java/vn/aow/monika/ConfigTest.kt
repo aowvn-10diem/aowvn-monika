@@ -52,6 +52,14 @@ class ConfigTest {
     }
 
     @Test
+    fun `allowExternalApp mac dinh true va doc duoc false`() {
+        assertTrue(cfg.systems.all { it.allowExternalApp }) // config hiện tại chưa tắt hệ nào
+        val c = ConfigRepository.parse("""{"configVersion":1,"systems":[{"id":"x","name":"X","runner":"external","allowExternalApp":false},{"id":"y","name":"Y","runner":"external"}]}""")
+        assertEquals(false, c.systems.first { it.id == "x" }.allowExternalApp)
+        assertEquals(true, c.systems.first { it.id == "y" }.allowExternalApp)
+    }
+
+    @Test
     fun `tach link tai tu bai viet`() {
         val html = """<a href="https://pixeldrain.com/u/abc123">x</a> <a href="https://www.mediafire.com/file/q">y</a>
             <a href="https://www.aowvn.org/p/tai-trinh-gia-lap-gba.html">z</a>"""

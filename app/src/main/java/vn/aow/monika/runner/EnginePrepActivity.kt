@@ -37,14 +37,20 @@ import vn.aow.monika.ui.theme.SheetColors
 import java.io.File
 
 /**
- * "Bấm game là chơi": màn chuẩn bị cho Kirikiri. Tự tải lõi (lần đầu), xin quyền đọc thư mục game nếu thật sự cần,
- * rồi tự mở game. Không có bước "bấm Chơi lại". Mạng di động + gói > 15 MB → hỏi ngay tại đây (Tải luôn / Đợi Wi-Fi).
+ * "Bấm game là chơi": màn chuẩn bị chung cho mọi engine nhúng ([EngineRoutes]). Tự tải gói (lần đầu), xin quyền đọc
+ * thư mục game nếu thật sự cần, rồi tự mở game. Không có bước "bấm Chơi lại". Mạng di động + gói > 15 MB → hỏi ngay
+ * tại đây (Tải luôn / Đợi Wi-Fi).
  */
-class KirikiriPrepActivity : ComponentActivity() {
-    private var status by mutableStateOf("Đang chuẩn bị Kirikiri…")
+class EnginePrepActivity : ComponentActivity() {
+    private var status by mutableStateOf("Đang chuẩn bị…")
     private var ask by mutableStateOf(false)
     private var needAccess by mutableStateOf(false)
     private var started = false
+
+    private val engine: String get() = intent.getStringExtra(EXTRA_ENGINE).orEmpty()
+    private val route: EngineRoute? get() = EngineRoutes.all[engine]
+    private val packId: String get() = route?.packId.orEmpty()
+    private val label: String get() = route?.label ?: "game"
 
     private val entry: File? get() = intent.getStringExtra(EXTRA_ENTRY)?.let(::File)
     private val title: String get() = intent.getStringExtra(EXTRA_TITLE).orEmpty()
@@ -56,15 +62,15 @@ class KirikiriPrepActivity : ComponentActivity() {
                 Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF141315))) {
                     MonikaMenuSheet(
                         true, { finish() }, actions = emptyList(),
-                        title = title.ifBlank { "Kirikiri" }, subtitle = status,
+                        title = title.ifBlank { label }, subtitle = status,
                         header = {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (ask) {
-                                    Text("Bạn đang dùng mạng di động. Lõi Kirikiri chỉ tải một lần.", color = SheetColors.textSecondary)
+                                    Text("Bạn đang dùng mạng di động. Thành phần $label chỉ tải một lần.", color = SheetColors.textSecondary)
                                     SheetChip("Tải luôn bằng 4G", true) { ask = false; download() }
                                     SheetChip("Đợi Wi-Fi", false) {
-                                        PackManager.choose(applicationContext, PackManager.KIRIKIRI, PackChoice.WAIT_WIFI)
-                                        Toast.makeText(this@KirikiriPrepActivity, "Sẽ tự tải khi có Wi-Fi. Mở lại game sau nhé.", Toast.LENGTH_LONG).show()
+                                        PackManager.choose(applicationContext, packId, PackChoice.WAIT_WIFI)
+                                        Toast.makeText(this@EnginePrepActivity, "Sẽ tự tải khi có Wi-Fi. Mở lại game sau nhé.", Toast.LENGTH_LONG).show()
                                         finish()
                                     }
                                 } else if (needAccess) {
@@ -77,7 +83,8 @@ class KirikiriPrepActivity : ComponentActivity() {
                 }
             }
         }
-        Diagnostics.crumb(this, "kirikiri", "prep ${entry?.name}")
+        if (route == null) return finish()
+        Diagnostics.crumb(this, "engine", "prep $engine ${entry?.name}")
         proceed()
     }
 
@@ -104,21 +111,21 @@ class KirikiriPrepActivity : ComponentActivity() {
 
     private fun proceed() {
         if (!accessOk()) { needAccess = true; status = "Cần quyền đọc tệp game"; return }
-        if (!PackManager.needed(PackManager.KIRIKIRI)) return play()
+        if (!PackManager.needed(packId)) return play()
         val cm = getSystemService(ConnectivityManager::class.java)
-        val size = AppGraph.config.current.modules[PackManager.KIRIKIRI]?.let { it.sizeByAbi[AppGraph.packs.abi] ?: it.size } ?: 0L
+        val size = AppGraph.config.current.modules[packId]?.let { it.sizeByAbi[AppGraph.packs.abi] ?: it.size } ?: 0L
         val action = PackPolicy.decide(size, !cm.isActiveNetworkMetered,
             cm.restrictBackgroundStatus == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED, null)
-        if (action == PackAction.ASK) { status = "Cần tải lõi Kirikiri (~${size / (1024 * 1024)} MB)"; ask = true } else download()
+        if (action == PackAction.ASK) { status = "Cần tải thành phần $label (~${size / (1024 * 1024)} MB)"; ask = true } else download()
     }
 
     private fun download() {
-        status = "Đang tải lõi Kirikiri (chỉ lần đầu)…"
+        status = "Đang tải thành phần $label (chỉ lần đầu)…"
         lifecycleScope.launch {
-            runCatching { PackManager.install(PackManager.KIRIKIRI) { status = it } }
+            runCatching { PackManager.install(packId) { status = it } }
                 .onSuccess { play() }
                 .onFailure {
-                    Diagnostics.recordHandled(this@KirikiriPrepActivity, "engine:kirikiri", "tải lõi Kirikiri thất bại", it)
+                    Diagnostics.recordHandled(this@EnginePrepActivity, "pack:$packId", "tải gói $packId thất bại", it)
                     status = "Không tải được: ${it.message ?: "lỗi mạng"}. Kiểm tra mạng rồi bấm lại."
                 }
         }
@@ -127,19 +134,20 @@ class KirikiriPrepActivity : ComponentActivity() {
     private fun play() {
         if (started) return
         started = true
-        KirikiriGameActivity.start(this, entry?.takeIf { it.isFile }, title, intent.getStringExtra(EXTRA_KEY))
+        route?.open?.invoke(this, entry?.takeIf { it.isFile }, title, intent.getStringExtra(EXTRA_KEY))
         finish()
     }
 
     companion object {
+        private const val EXTRA_ENGINE = "engine"
         private const val EXTRA_ENTRY = "entry"
         private const val EXTRA_TITLE = "title"
         private const val EXTRA_KEY = "key"
 
-        fun start(activity: Activity, entry: File?, title: String, key: String?) {
+        fun start(activity: Activity, engine: String, entry: File?, title: String, key: String?) {
             activity.startActivity(
-                Intent(activity, KirikiriPrepActivity::class.java)
-                    .putExtra(EXTRA_ENTRY, entry?.absolutePath).putExtra(EXTRA_TITLE, title).putExtra(EXTRA_KEY, key),
+                Intent(activity, EnginePrepActivity::class.java)
+                    .putExtra(EXTRA_ENGINE, engine).putExtra(EXTRA_ENTRY, entry?.absolutePath).putExtra(EXTRA_TITLE, title).putExtra(EXTRA_KEY, key),
             )
         }
     }
