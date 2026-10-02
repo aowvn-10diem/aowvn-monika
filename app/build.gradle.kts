@@ -9,6 +9,8 @@ plugins {
 android {
     namespace = "vn.aow.monika"
     compileSdk = 35
+    // Cùng NDK với :j2me: để AGP có llvm-strip và cắt ký hiệu debug khỏi libc++_shared/oboe/javam3g/mmapi... (≈ −14 MB APK; trước đó log báo "Unable to strip").
+    ndkVersion = "22.1.7171670"
 
     defaultConfig {
         applicationId = "com.aow.monika"
