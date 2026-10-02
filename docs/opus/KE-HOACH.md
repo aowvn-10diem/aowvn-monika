@@ -2,14 +2,14 @@
 
 > Chủ: Opus (PM, sếp giao 03/10/2026). Đội thi công: **Sonnet** (việc khó: native, engine, luồng app) và **Haiku** (việc nhẹ, máy móc: tài liệu, kiểm tra, sửa nhỏ có test sẵn). Sếp quyết việc ngoài kỹ thuật (mục 4).
 > Đây là **nguồn sự thật duy nhất về tiến độ**. Mỗi phương án chi tiết nằm trong `docs/opus/<ngày>-<chủ đề>.md`; bảng này chỉ trỏ tới.
-> Cập nhật: 03/10/2026 05:40 (GMT+7), `main` @ `929d92e`, app 0.7.3 (versionCode 38), `configVersion` 31.
+> Cập nhật: 03/10/2026 05:50 (GMT+7), `main` @ `48707de`, app 0.7.3 (versionCode 38), `configVersion` 31.
 
 ## 1. Mốc
 
 | Mốc | Nội dung | Phương án | Trạng thái |
 |---|---|---|---|
 | M0 | Kirikiri 0.7.3 (menu tiếng Việt) phát hành | — | đang phát hành; máy thật **[CHƯA KIỂM]** |
-| M1 | RPG Maker XP/VX/Ace nhúng (khối R), tắt app ngoài cho `rgss` và `kirikiri` | `2026-10-03-nhung-renpy-rgss.md` | R4 xong · R0 đang làm |
+| M1 | RPG Maker XP/VX/Ace nhúng (khối R), tắt app ngoài cho `rgss` và `kirikiri` | `2026-10-03-nhung-renpy-rgss.md` | R0 xong (`ket-qua/R0.md`) · R1 đang chạy CI · R4 xong |
 | M2 | Ren'Py 8 nhúng (khối P) | như trên | P0 đang làm (song song, chỉ CI) |
 | M3 | Ren'Py 7 (khối P7) | như trên | chờ M2 |
 | M4 | Symbian/N-Gage nhúng (khối S) | `2026-10-03-nhung-symbian-eka2l1.md` | chờ sếp chốt A1, A2 · làm sau M2 |
@@ -24,12 +24,15 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 
 | Mã | Việc | Giao | Phụ thuộc | Cách kiểm | Trạng thái |
 |---|---|---|---|---|---|
-| V01 | R0: spike mkxp-z ra `libmkxp-z.so` arm64, ghi `docs/opus/ket-qua/R0.md`. Ngưỡng dừng: 5 nguyên nhân hỏng khác nhau (đã dùng 2) | Sonnet | — | Artifact `.so` + bảng kích thước | đang làm |
-| V02 | R1: `build-rgss.yml` + `engines/rgss/`, áp `hop-thu/tra-loi-001.md` | Sonnet | V01 | `grep`/`nm`/`strings` theo thư 001; máy sạch dựng ra `rgss-{abi}.zip` | chờ |
+| V01 | R0: spike mkxp-z ra `libmkxp-z.so` arm64, ghi `docs/opus/ket-qua/R0.md` | Sonnet | — | Artifact `.so` + bảng kích thước | xong (`7ec1c47`) |
+| V02 | R1: `build-rgss.yml` + `engines/rgss/`, áp `hop-thu/tra-loi-001.md` | Sonnet | V01 | `grep`/`nm`/`strings` theo thư 001; máy sạch dựng ra `rgss-{abi}.zip` | đang làm (`f55a72e`, CI run 1) |
+| V07 | R1.1 theo `tra-loi-003.md`: bỏ OpenSSL (`-DMKXPZ_SSL`, `openssl` của Ruby), cắt ký hiệu rồi đo lại `libSDL2_ttf.so`; theo `tra-loi-004.md`: ghim commit bản port, ghi trạng thái giấy phép vào `UPSTREAM.md` | Sonnet | V02 | `readelf`/`strings` không còn OpenSSL; bảng kích thước trước/sau; gói `rgss` arm64 ≤ 15 MB | chờ |
+| V08 | R2: module `:rgss` (9 file Java SDL 2.26.3 đổi gói `vn.aow.monika.rgss.sdl`, bước 3 của thư 001) | Sonnet | V02 | `assembleRelease` xanh; `dexdump` thấy cả hai `SDLActivity`; đo APK tăng | chờ |
 | V03 | P0: spike Ren'Py, ghi `docs/opus/ket-qua/P0.md` | Sonnet | — | Bảng đường dẫn + kích thước thật | đang làm |
 | V04 | P1: `build-renpy-pack.yml` (song song, chỉ CI) | Sonnet | V03 | Artifact `renpy8-{abi}.zip` + `.sha256` | chờ |
 | V05 | Phát hành Kirikiri 0.7.3 | Sonnet | — | Release có APK universal, SHA-256 chữ ký đúng (`CLAUDE.md`) | đang làm |
-| V06 | Mỗi lượt kiểm tra: gộp nhánh `docs/opus-tra-loi` vào `main` | Sonnet | — | `main` có các commit `[opus]` mới | lặp lại |
+| V06 | Mỗi lượt kiểm tra: gộp nhánh `docs/opus-tra-loi` vào `main` (quét mọi nhánh, theo README hộp thư) | Sonnet | — | `main` có các commit `[opus]` mới | lặp lại |
+| V09 | Trả lời `hop-thu/pm-hoi-001-kiem-tra-it-token.md` | Sonnet | — | Có `pm-tra-loi-001.md` | chờ |
 | H01 | Sửa đầu `docs/GIAO-TIEP-VOI-OPUS.md` thành 0.7.3 / versionCode 38 / `configVersion` 31. Mục 4: thêm dòng "E0 xong", "R4 xong" | Haiku | — | Diff chỉ đụng file đó | chờ |
 | H02 | Chạy lại `python3 scripts/gen-architecture.py`, commit `docs/KIEN-TRUC.md`. Nếu bảng module vẫn thiếu `:libretrodroid`/`:kirikiri` thì **không sửa script**: ghi `kẹt` và gửi thư | Haiku | — | `git diff` chỉ đụng `docs/KIEN-TRUC.md` | chờ |
 | H03 | `docs/TEST-MAY-THAT.md`: thêm mục "Kirikiri (0.7.3)" cho sếp thử: mở game `.xp3` → màn chuẩn bị tự tải gói → vào game → chạm, âm thanh, lưu/tải, tua nhanh, menu tiếng Việt, thoát. Máy 32-bit phải thấy thông báo chưa hỗ trợ. Nguồn: `docs/plan-kirikiri.md` + mục 4 của tài liệu bàn giao | Haiku | — | Chỉ đụng tài liệu; mỗi dòng là một thao tác sếp làm được | chờ |
@@ -54,15 +57,17 @@ Sonnet hỏi sếp khi tới bước cần; mỗi lần một câu.
 
 | Mã | Cổng | Khi nào | Trạng thái |
 |---|---|---|---|
-| G1 | 1 game RPG Maker XP để chạy thử R0 | Khi V01 ra `libmkxp-z.so` | chờ |
+| G1 | 1 game RPG Maker XP để chạy thử (R3) | Ngay (V01 đã xong) | Sonnet hỏi sếp |
 | G2 | 5 game cho R6 (XP, VX, VX Ace `.rgss3a`, Pokémon Essentials, game Việt hóa có dấu) + thử máy thật, hoặc chấp nhận kết quả "chỉ máy ảo" | R6 | chờ |
 | G3 | 2 game Ren'Py (một bản 7, một bản 8) | P6 | chờ |
 | G4 | Symbian: A1 (chạy S0 sớm?), A2 (đủ 3 đường nhập firmware?) — mục 8 của phương án Symbian | Bất kỳ lúc nào | chờ sếp |
 | G5 | Công khai mã nguồn Monika trước khi phát hành gói GPL mới (`rgss`, `renpy`, `symbian`) | Trước R7/P4/S7 | chờ sếp |
 | G6 | Nhắn RAdmin duyệt client "AowMonika" (hardcore) | Bất kỳ lúc nào | chờ sếp |
 | G7 | Thử Kirikiri 0.7.3 trên máy thật theo `TEST-MAY-THAT.md` (H03) | Sau V05 + H03 | chờ |
+| G8 | Xin tác giả bản port mkxp-z (`BookerRues9`/`thehatkid`) giấy phép cho `Makefile`, `*.mk`, `get_deps.sh`. Không có thì phải viết lại script dựng (`tra-loi-004.md`) | Trước R7 | chờ sếp |
 
 ## 5. Nhịp theo dõi
 
-- Opus kiểm `main` mỗi 30 phút (rảnh 4 lượt liền → 60 phút; 23:00–06:00 → 120 phút). Commit mới → đọc `BANG-TIN.md`, bảng này, `git log` từ lần trước và trạng thái CI.
+- Opus kiểm mỗi **15 phút** (sếp chốt 03/10): `git ls-remote origin`, SHA không đổi thì dừng. Rảnh 4 lượt liền → 30 phút; 23:00–06:00 → 60 phút; có việc mới thì quay về 15 phút. Có commit mới → đọc `BANG-TIN.md`, bảng này, `git log` từ lần trước và trạng thái CI.
+- Sonnet kiểm cùng nhịp, theo cách ít token chốt ở `pm-tra-loi-001.md`.
 - Opus báo sếp chỉ khi qua mốc, có việc kẹt, hoặc có cổng cần quyết.

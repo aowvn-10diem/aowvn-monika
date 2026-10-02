@@ -1,0 +1,148 @@
+name: Build RGSS (mkxp-z Android native → gói rgss)
+
+# R1 của docs/opus/2026-10-03-nhung-renpy-rgss.md. Dựng mkxp-z cho Android từ nguồn ghim commit, ĐỔI GÓI JNI của SDL sang
+# vn.aow.monika.rgss.sdl (docs/opus/hop-thu/tra-loi-001.md) để sống chung với lớp org.libsdl.app của Ren'Py trong một APK.
+# Không chép Makefile/*.mk của bản port vào repo: CI clone đúng commit rồi dựng (xem engines/rgss/UPSTREAM.md).
+on:
+  workflow_dispatch:
+    inputs:
+      abi:
+        description: "ABI"
+        type: choice
+        default: arm64-v8a
+        options: [arm64-v8a, armeabi-v7a]
+      port_ref:
+        description: "Commit của mkxp-z-android-reworked"
+        default: "b668e08"
+      publish:
+        description: "Đưa gói lên Releases (repo packs nếu có PACKS_TOKEN, không thì repo này)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: self }
+
+      - name: Lấy mã nguồn bản port (ghim commit)
+        run: |
+          git clone https://github.com/BookerRues9/mkxp-z-android-reworked.git src
+          cd src && git checkout "${{ inputs.port_ref }}"
+          echo "SRC_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          git log -1 --format='%h %ad %s'
+
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 11 }
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: "3.1" }
+
+      - name: Cài NDK 23.2.8568313 + công cụ
+        run: |
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;23.2.8568313" "platforms;android-33" "build-tools;33.0.2" | tail -2
+          sudo apt-get update -qq && sudo apt-get install -y -qq autoconf automake libtool pkg-config bison gperf xxd cmake ninja-build binutils >/dev/null
+
+      - name: Tải phụ thuộc
+        working-directory: src/app/jni
+        run: |
+          set -o pipefail
+          bash ./get_deps.sh 2>&1 | tail -20
+
+      - name: Đổi gói JNI của SDL (tra-loi-001 bước 1)
+        working-directory: src/app/jni/SDL2
+        run: |
+          set -e
+          sed -i 's/^#define SDL_JAVA_PREFIX .*/#define SDL_JAVA_PREFIX vn_aow_monika_rgss_sdl/' src/core/android/SDL_android.c src/hidapi/android/hid.cpp
+          sed -i 's#"org/libsdl/app/#"vn/aow/monika/rgss/sdl/#g' src/core/android/SDL_android.c
+          # Kiểm: chỉ còn đúng dòng chú thích SDL_androidevents.c; còn thêm thì dừng.
+          LEFT=$(grep -rnE 'org_libsdl_app|"org/libsdl/app' src || true)
+          echo "$LEFT"
+          [ "$(echo "$LEFT" | grep -c . || true)" -le 1 ] || { echo "::error::Còn tham chiếu gói SDL cũ ngoài dòng chú thích"; exit 1; }
+          grep -rn "SDL_JAVA_PREFIX" src/core/android/SDL_android.c src/hidapi/android/hid.cpp | head
+
+      - name: Dựng thư viện native (make, -O2)
+        working-directory: src/app/jni
+        run: |
+          set -o pipefail
+          sed -i 's/-O0/-O2/g' Makefile
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/23.2.8568313" ARCH=linux-x86_64
+          export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$ARCH/bin:$PATH"
+          if [ "${{ inputs.abi }}" = arm64-v8a ]; then H=aarch64-linux-android; T=aarch64-linux-android; else H=armv7a-linux-androideabi; T=arm-linux-androideabi; fi
+          HOST=$H TARGET=$T ABI=${{ inputs.abi }} make -j"$(nproc)" 2>&1 | tail -15
+
+      - name: ndk-build (Gradle assembleRelease)
+        working-directory: src
+        run: |
+          set -o pipefail
+          (cd app/jni/mkxp-z && sh make_xxd.sh | tail -2)
+          sed -i 's/APP_OPTIM := debug/APP_OPTIM := release/; s/^APP_ABI := .*/APP_ABI := ${{ inputs.abi }}/' app/jni/Application.mk
+          sed -i "s/include 'arm64-v8a', 'armeabi-v7a'/include '${{ inputs.abi }}'/" app/build.gradle
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/23.2.8568313"
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease 2>&1 | tail -15
+
+      - name: Kiểm tên JNI của SDL (tra-loi-001 bước 2)
+        run: |
+          set -e
+          NM=$ANDROID_HOME/ndk/23.2.8568313/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm
+          L=$(find src/app/build/intermediates/stripped_native_libs -path "*${{ inputs.abi }}*" -name libSDL2.so | head -1)
+          echo "libSDL2: $L"
+          "$NM" -D "$L" | grep ' Java_' | awk '{print $3}' | sort | tee jni-names.txt | head -5
+          BAD=$(grep -vc '^Java_vn_aow_monika_rgss_sdl_' jni-names.txt || true)
+          echo "tên JNI không đúng gói mới: $BAD"
+          [ "$BAD" = 0 ]
+          [ "$(strings "$L" | grep -c 'org/libsdl/app' || true)" = 0 ]
+
+      - name: Đóng gói gói rgss
+        run: |
+          set -e
+          ABI=${{ inputs.abi }}
+          D=src/app/build/intermediates/stripped_native_libs
+          rm -rf pack && mkdir -p pack/lib
+          find "$D" -path "*/$ABI/*" -name '*.so' -exec cp {} pack/lib/ \;
+          ls -l pack/lib
+          cp self/engines/rgss/UPSTREAM.md pack/UPSTREAM.md
+          cp src/app/jni/mkxp-z/COPYING pack/COPYING-mkxp-z.txt
+          # Thứ tự nạp = getLibraries() của SDLActivity bản port; file chính cuối cùng.
+          python3 - <<'PY'
+          import json, os, hashlib, datetime
+          order = ["SDL2","SDL2_image","SDL2_ttf","SDL2_sound","openal","ruby","mkxp-z"]
+          libs = sorted(os.listdir("pack/lib"))
+          man = {"engine":"mkxp-z","commit":os.environ["SRC_COMMIT"],"abi":"${{ inputs.abi }}",
+                 "built":datetime.datetime.utcnow().strftime("%FT%TZ"),
+                 "loadOrder":["lib"+n+".so" for n in order],
+                 "files":{f:{"size":os.path.getsize("pack/lib/"+f),"sha256":hashlib.sha256(open("pack/lib/"+f,"rb").read()).hexdigest()} for f in libs}}
+          missing=[f for f in man["loadOrder"] if f not in libs]
+          man["missingFromLoadOrder"]=missing
+          json.dump(man, open("pack/manifest.json","w"), indent=1)
+          print(json.dumps(man, indent=1)[:1500])
+          PY
+          (cd pack && zip -9 -r ../rgss-$ABI.zip .)
+          sha256sum rgss-$ABI.zip | tee rgss-$ABI.zip.sha256
+          stat -c 'size=%s' rgss-$ABI.zip
+          { echo "### Gói rgss ($ABI)"; echo '```'; cat rgss-$ABI.zip.sha256; stat -c 'size=%s' rgss-$ABI.zip; ls -l pack/lib | awk '{print $5, $9}'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rgss-${{ inputs.abi }}
+          path: |
+            rgss-${{ inputs.abi }}.zip
+            rgss-${{ inputs.abi }}.zip.sha256
+            jni-names.txt
+
+      - name: Đưa lên Releases
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ secrets.PACKS_TOKEN != '' && secrets.PACKS_TOKEN || github.token }}
+          GH_REPO: ${{ secrets.PACKS_TOKEN != '' && 'aowvn-10diem/aowvn-monika-packs' || github.repository }}
+        run: |
+          gh release create "engines-rgss-${{ github.run_number }}" rgss-${{ inputs.abi }}.zip rgss-${{ inputs.abi }}.zip.sha256 \
+            --title "RGSS (mkxp-z) ${{ inputs.abi }} #${{ github.run_number }}" \
+            --notes "mkxp-z dựng từ bản port BookerRues9/mkxp-z-android-reworked @ $SRC_COMMIT (GPL-2.0-or-later, lõi mkxp-z). JNI của SDL đổi sang vn.aow.monika.rgss.sdl. Nguồn + giấy phép: engines/rgss/UPSTREAM.md trong kho Aow Monika."
