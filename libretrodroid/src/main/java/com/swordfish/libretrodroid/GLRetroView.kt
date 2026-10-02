@@ -343,6 +343,8 @@ class GLRetroView(
     // These functions are called from the GL thread.
     private fun initializeCore() = catchExceptions {
         if (isGameLoaded) return@catchExceptions
+        // Aow Monika: cấu hình RetroAchievements trước khi nạp game (native bật sau retro_load_game).
+        data.achievements?.let { RetroAchievements.configure(it) }
         when {
             data.gameFilePath != null -> loadGameFromPath(data.gameFilePath!!)
             data.gameFileBytes != null -> loadGameFromBytes(data.gameFileBytes!!)

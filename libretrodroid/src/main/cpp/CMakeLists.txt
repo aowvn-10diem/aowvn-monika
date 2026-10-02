@@ -97,6 +97,9 @@ add_library(libretrodroid SHARED
         microphone/microphoneinterface.h
         microphone/microphoneinterface.cpp
         ${LIBRETRO_COMMON}
+        achievements.h
+        achievements.cpp
+        achievementsjni.cpp
         ${RC_SRC}
 )
 target_include_directories(libretrodroid PRIVATE rcheevos/include rcheevos/src)

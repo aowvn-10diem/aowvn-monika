@@ -35,6 +35,8 @@ class GLRetroViewData(context: Context) {
     var skipDuplicateFrames: Boolean = false
     var enableMicrophone: Boolean = false
     var immersiveMode: ImmersiveMode? = null
+    /** Aow Monika: RetroAchievements trong game; null = tắt. */
+    var achievements: RetroAchievements.Config? = null
 }
 
 enum class ViewportAlignment(val value: Int) {

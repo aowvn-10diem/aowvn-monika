@@ -45,6 +45,7 @@
 #include "renderers/es2/imagerendereres2.h"
 #include "renderers/es3/imagerendereres3.h"
 #include "utils/rect.h"
+#include "achievements.h"
 
 namespace libretrodroid {
 
@@ -97,6 +98,9 @@ public:
     void destroy();
 
     void reset();
+
+    // Aow Monika: cấu hình RetroAchievements (gọi trước khi nạp game); Achievements dựng sau retro_load_game.
+    void configureAchievements(const Achievements::Config& config);
 
     void loadGameFromPath(const std::string &gamePath);
     void loadGameFromBytes(const int8_t *data, size_t size);
@@ -184,6 +188,11 @@ private:
     std::unique_ptr<FPSSync> fpsSync;
     std::unique_ptr<Input> input;
     std::unique_ptr<Rumble> rumble;
+
+    // Aow Monika: RetroAchievements.
+    std::optional<Achievements::Config> achievementsConfig;
+    std::unique_ptr<Achievements> achievements;
+    std::string currentGamePath;
 };
 
 } //namespace libretrodroid

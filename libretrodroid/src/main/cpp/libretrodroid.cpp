@@ -333,6 +333,7 @@ void LibretroDroid::loadGameFromPath(const std::string& gamePath) {
         throw std::runtime_error("Cannot load game");
     }
 
+    currentGamePath = gamePath; // Aow Monika: RetroAchievements cần đường dẫn để băm game
     afterGameLoad();
 }
 
@@ -413,6 +414,11 @@ void LibretroDroid::destroy() {
         Environment::getInstance().getHwContextDestroy()();
     }
 
+    // Aow Monika: hủy Achievements TRƯỚC khi gỡ game (còn đọc bộ nhớ lõi lúc gửi tiến độ).
+    achievements = nullptr;
+    achievementsConfig.reset();
+    currentGamePath.clear();
+
     core->retro_unload_game();
     core->retro_deinit();
 
@@ -456,8 +462,10 @@ void LibretroDroid::step() {
         frames = std::min(requestedFrames, 2u);
     }
 
-    for (size_t i = 0; i < frames * frameSpeed; i++)
+    for (size_t i = 0; i < frames * frameSpeed; i++) {
         core->retro_run();
+        if (achievements) achievements->doFrame(); // Aow Monika: mỗi khung hình lõi
+    }
 
     if (video && !video->rendersInVideoCallback()) {
         video->renderFrame();
@@ -618,6 +626,21 @@ void LibretroDroid::afterGameLoad() {
     updateAudioSampleRateMultiplier();
 
     defaultAspectRatio = findDefaultAspectRatio(system_av_info);
+
+    // Aow Monika: bật RetroAchievements nếu app đã cấu hình (đăng nhập + hệ máy hỗ trợ) và game nạp từ đường dẫn.
+    if (achievementsConfig.has_value() && !currentGamePath.empty()) {
+        try {
+            achievements = std::make_unique<Achievements>(core.get(), *achievementsConfig);
+            achievements->start(currentGamePath, Environment::getInstance().getMemoryMap());
+        } catch (const std::exception& e) {
+            LOGE("RetroAchievements lỗi khi khởi tạo: %s", e.what());
+            achievements = nullptr; // thành tựu hỏng không được làm hỏng việc chơi game
+        }
+    }
+}
+
+void LibretroDroid::configureAchievements(const Achievements::Config& config) {
+    achievementsConfig = config;
 }
 
 float LibretroDroid::findDefaultAspectRatio(const retro_system_av_info& system_av_info) {

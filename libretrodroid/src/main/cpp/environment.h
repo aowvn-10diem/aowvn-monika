@@ -108,7 +108,11 @@ public:
 
     const std::vector<std::vector<struct Controller>> &getControllers() const;
 
+    // Aow Monika: bản đồ bộ nhớ do lõi khai báo (RETRO_ENVIRONMENT_SET_MEMORY_MAPS), dùng cho RetroAchievements. nullptr nếu lõi không khai.
+    const struct retro_memory_map* getMemoryMap() const;
+
 private:
+    bool environment_handle_set_memory_maps(const struct retro_memory_map* received);
     bool environment_handle_set_variables(const struct retro_variable* received);
     bool environment_handle_get_variable(struct retro_variable* requested);
     bool environment_handle_set_controller_info(const struct retro_controller_info* received);
@@ -148,6 +152,12 @@ private:
     bool dirtyVariables = false;
 
     std::vector<std::vector<struct Controller>> controllers;
+
+    // Aow Monika: bản sao sâu của retro_memory_map (con trỏ addrspace trỏ vào memoryAddrspaces).
+    std::vector<struct retro_memory_descriptor> memoryDescriptors;
+    std::vector<std::string> memoryAddrspaces;
+    struct retro_memory_map memoryMap {};
+    bool memoryMapValid = false;
 };
 
 struct Variable {

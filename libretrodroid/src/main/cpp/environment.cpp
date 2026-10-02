@@ -64,6 +64,12 @@ void Environment::deinitialize() {
     gameGeometryHeight = 0;
     gameGeometryAspectRatio = -1.0f;
 
+    // Aow Monika: xóa bản đồ bộ nhớ của lõi cũ.
+    memoryDescriptors.clear();
+    memoryAddrspaces.clear();
+    memoryMap = retro_memory_map {};
+    memoryMapValid = false;
+
     rumbleStates.fill(libretrodroid::RumbleState {});
 }
 
@@ -331,6 +337,10 @@ bool Environment::handle_callback_environment(unsigned cmd, void *data) {
             LOGD("Called RETRO_ENVIRONMENT_GET_VFS_INTERFACE");
             return environment_handle_get_vfs_interface(static_cast<struct retro_vfs_interface_info*>(data));
 
+        case RETRO_ENVIRONMENT_SET_MEMORY_MAPS:
+            LOGD("Called RETRO_ENVIRONMENT_SET_MEMORY_MAPS");
+            return environment_handle_set_memory_maps(static_cast<const struct retro_memory_map*>(data));
+
         case RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE:
             LOGD("Called RETRO_ENVIRONMENT_GET_MICROPHONE_INTERFACE");
             return environment_handle_get_microphone_interface(static_cast<struct retro_microphone_interface*>(data));
@@ -479,4 +489,30 @@ void Environment::setEnableVirtualFileSystem(bool value) {
 
 void Environment::setEnableMicrophone(bool value) {
     this->enableMicrophone = value;
+}
+
+// Aow Monika: sao chép sâu bản đồ bộ nhớ (lõi có thể giải phóng mảng gốc sau khi gọi).
+bool Environment::environment_handle_set_memory_maps(const struct retro_memory_map* received) {
+    memoryMapValid = false;
+    memoryDescriptors.clear();
+    memoryAddrspaces.clear();
+    if (received == nullptr || received->descriptors == nullptr || received->num_descriptors == 0) return true;
+
+    memoryAddrspaces.reserve(received->num_descriptors); // giữ nguyên địa chỉ chuỗi
+    for (unsigned i = 0; i < received->num_descriptors; i++) {
+        struct retro_memory_descriptor d = received->descriptors[i];
+        if (d.addrspace != nullptr) {
+            memoryAddrspaces.emplace_back(d.addrspace);
+            d.addrspace = memoryAddrspaces.back().c_str();
+        }
+        memoryDescriptors.push_back(d);
+    }
+    memoryMap.descriptors = memoryDescriptors.data();
+    memoryMap.num_descriptors = static_cast<unsigned>(memoryDescriptors.size());
+    memoryMapValid = true;
+    return true;
+}
+
+const struct retro_memory_map* Environment::getMemoryMap() const {
+    return memoryMapValid ? &memoryMap : nullptr;
 }
