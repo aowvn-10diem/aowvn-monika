@@ -21,6 +21,16 @@ set (LIBRETRO_COMMON
         libretro/libretro-common/time/rtime.c
 )
 
+# Aow Monika: rcheevos (MIT, v12.5.0) cho RetroAchievements trong game. Bỏ file RAIntegration (chỉ dành cho Windows).
+file(GLOB RC_SRC
+        rcheevos/src/*.c
+        rcheevos/src/rapi/*.c
+        rcheevos/src/rcheevos/*.c
+        rcheevos/src/rhash/*.c
+)
+list(FILTER RC_SRC EXCLUDE REGEX ".*rc_client_raintegration\\.c$")
+set_source_files_properties(${RC_SRC} PROPERTIES COMPILE_DEFINITIONS "RC_CLIENT_SUPPORTS_HASH")
+
 add_library(libretrodroid SHARED
         libretrodroidjni.h
         libretrodroidjni.cpp
@@ -87,7 +97,9 @@ add_library(libretrodroid SHARED
         microphone/microphoneinterface.h
         microphone/microphoneinterface.cpp
         ${LIBRETRO_COMMON}
+        ${RC_SRC}
 )
+target_include_directories(libretrodroid PRIVATE rcheevos/include rcheevos/src)
 
 # Support 16k pages for Android 15
 target_link_options(libretrodroid PRIVATE "-Wl,-z,max-page-size=16384")
