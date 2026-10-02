@@ -12,7 +12,7 @@ on:
       variant:
         description: "Kiểu dựng"
         type: choice
-        default: debug
+        default: release
         options: [debug, release]
       publish:
         description: "Đưa APK lên Releases (repo packs công khai nếu có PACKS_TOKEN, không thì repo này)"
@@ -108,21 +108,62 @@ jobs:
           name: kirikiroid2-yuri
           path: out/
 
+      - name: Ký lại bằng khóa Monika (sau khi build xong — khóa không bao giờ đưa vào bước build của mã bên ngoài)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MONIKA_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.MONIKA_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.MONIKA_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.MONIKA_KEY_PASSWORD }}
+        run: |
+          set -e
+          APK=$(ls out/*.apk | head -1)
+          BT="$ANDROID_HOME/build-tools/33.0.2"
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::Thiếu MONIKA_KEYSTORE_BASE64 → giữ khóa ký tạm (bản thử, KHÔNG cập nhật đè được bản đã cài)"
+            cp "$APK" Kirikiroid2.apk
+          else
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/k.jks"
+            "$BT/zipalign" -p -f 4 "$APK" aligned.apk
+            "$BT/apksigner" sign --ks "$RUNNER_TEMP/k.jks" --ks-pass env:KS_PASS --ks-key-alias "$KEY_ALIAS" --key-pass env:KEY_PASS --out Kirikiroid2.apk aligned.apk
+            "$BT/apksigner" verify --print-certs Kirikiroid2.apk | head -3
+            rm -f "$RUNNER_TEMP/k.jks"
+          fi
+          ls -la Kirikiroid2.apk
+
+      - name: Đóng gói module (zip chứa APK + giấy phép + nguồn)
+        run: |
+          set -e
+          mkdir -p pack
+          cp Kirikiroid2.apk pack/
+          cp src/LICENSE pack/LICENSE-Kirikiroid2Yuri.txt
+          cat > pack/SOURCE.txt <<EOT
+          Kirikiroid2Yuri — https://github.com/YuriSizuku/Kirikiroid2Yuri (giấy phép kiểu BSD sửa đổi, xem LICENSE đi kèm)
+          Commit: $SRC_COMMIT
+          Bản vá của Aow Monika (mở thẳng game theo Intent extra "aow_game_path", xin quyền Truy cập mọi tệp, bỏ quyền đọc điện thoại, đổi applicationId):
+          xem thư mục kirikiri/patches trong kho Aow Monika.
+          EOT
+          echo "{\"engine\":\"kirikiroid2-yuri\",\"commit\":\"$SRC_COMMIT\",\"abi\":\"arm64-v8a\",\"built\":\"$(date -u +%FT%TZ)\"}" > pack/manifest.json
+          (cd pack && zip -9 ../kirikiri-arm64.zip *)
+          sha256sum kirikiri-arm64.zip | tee kirikiri-arm64.zip.sha256
+          stat -c 'size=%s' kirikiri-arm64.zip
+          {
+            echo "### Module Kirikiri"
+            echo '```'; cat kirikiri-arm64.zip.sha256; stat -c 'size=%s' kirikiri-arm64.zip; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kirikiri-module
+          path: |
+            kirikiri-arm64.zip
+            kirikiri-arm64.zip.sha256
+
       - name: Đưa lên Releases
         if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ secrets.PACKS_TOKEN != '' && secrets.PACKS_TOKEN || github.token }}
           GH_REPO: ${{ secrets.PACKS_TOKEN != '' && 'aowvn-10diem/aowvn-monika-packs' || github.repository }}
         run: |
-          set -e
-          APK=$(ls out/*.apk | head -1)
-          cp "$APK" Kirikiroid2-AowVN.apk
-          sha256sum Kirikiroid2-AowVN.apk | tee Kirikiroid2-AowVN.apk.sha256
-          cat > SOURCE.txt <<EOT
-          Kirikiroid2Yuri — https://github.com/YuriSizuku/Kirikiroid2Yuri (giấy phép kiểu BSD sửa đổi, xem LICENSE trong kho đó)
-          Commit: $SRC_COMMIT
-          Bản vá của Aow Monika: mở thẳng game theo Intent extra "aow_game_path"; đổi applicationId. Xem kirikiri/patches trong kho Aow Monika.
-          EOT
-          gh release create "engines-kirikiri-${{ github.run_number }}" Kirikiroid2-AowVN.apk Kirikiroid2-AowVN.apk.sha256 SOURCE.txt \
+          gh release create "engines-kirikiri-${{ github.run_number }}" kirikiri-arm64.zip kirikiri-arm64.zip.sha256 \
             --title "Kirikiri (Kirikiroid2Yuri) #${{ github.run_number }}" \
-            --notes "Dựng lại từ mã nguồn Kirikiroid2Yuri @ $SRC_COMMIT. App ngoài; Monika tải và cài khi người chơi có game Kirikiri."
+            --notes "Dựng lại từ mã nguồn Kirikiroid2Yuri @ $SRC_COMMIT + bản vá Aow Monika. Monika tự tải khi người chơi có game Kirikiri."

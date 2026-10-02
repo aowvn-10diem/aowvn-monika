@@ -1,0 +1,41 @@
+diff --git a/project/android/app/AndroidManifest.xml b/project/android/app/AndroidManifest.xml
+index 5db8e3e..a14c698 100644
+--- a/project/android/app/AndroidManifest.xml
++++ b/project/android/app/AndroidManifest.xml
+@@ -16,7 +16,7 @@
+     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+         tools:ignore="ScopedStorage" />
+-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
++    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage"/>
+     <uses-permission android:name="android.permission.INTERNET"/>
+     <application android:label="@string/app_name"
+                  android:icon="@mipmap/ic_launcher"
+diff --git a/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java b/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java
+index 483407a..33aaf81 100644
+--- a/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java
++++ b/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java
+@@ -318,9 +318,23 @@ public class KR2Activity extends Cocos2dxActivity implements ActivityCompat.OnRe
+ 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+             requestExternalWrite();
+         }
++		requestAllFilesAccessIfNeeded();
+ 		initDump(this.getFilesDir().getAbsolutePath() + "/dump");
+ 	}
+ 	
++	// Aow Monika: Android 11+ cần "Truy cập mọi tệp" thì mới đọc game ở Download/ và ghi savedata cạnh game (lỗi gốc: "thư mục trống").
++	private void requestAllFilesAccessIfNeeded() {
++		if (Build.VERSION.SDK_INT < 30) return;
++		try {
++			boolean ok = (Boolean) Class.forName("android.os.Environment").getMethod("isExternalStorageManager").invoke(null);
++			if (ok) return;
++			Intent i = new Intent("android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION", Uri.parse("package:" + getPackageName()));
++			startActivity(i);
++		} catch (Throwable t) {
++			Log.w("Krkr2", "all-files access: " + t);
++		}
++	}
++
+ 	@Override
+ 	public void onDestroy() {
+ 		super.onDestroy();
