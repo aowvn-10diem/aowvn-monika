@@ -111,7 +111,8 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
             job.call = call
             call.execute().use { r ->
                 if (!r.isSuccessful) throw IOException("Máy chủ trả lỗi ${r.code}")
-                r.header("Content-Disposition")?.let { cd -> if (!job.confirmed) main.post { job.name = suggestName(job.url, cd, job.mime) } }
+                // Kiểm "đã xác nhận" LẠI trên luồng chính lúc áp tên: nếu người dùng đặt tên đúng lúc tiêu đề máy chủ về (race), tên người dùng đặt không được bị đè.
+                r.header("Content-Disposition")?.let { cd -> main.post { if (!job.confirmed) job.name = suggestName(job.url, cd, job.mime) } }
                 val len = r.body!!.contentLength()
                 main.post { job.total = len }
                 var last = System.nanoTime(); var lastBytes = 0L; var got = 0L
