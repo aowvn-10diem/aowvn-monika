@@ -39,7 +39,6 @@ object AppGraph {
     val prefs by lazy { Prefs(app) }
     val config by lazy { ConfigRepository(app, http) }
     val feed by lazy { FeedRepository(http, config, java.io.File(app.cacheDir, "feed").apply { mkdirs() }) }
-    val forum by lazy { vn.aow.monika.forum.ForumRepository(http, config, java.io.File(app.cacheDir, "forum").apply { mkdirs() }) }
     val cores by lazy { CoreManager(app, http, config) }
     val packs by lazy { vn.aow.monika.pack.SimpleModule(app, http, config) }
     val azahar by lazy { vn.aow.monika.azahar.AzaharModule(app, http, config) }

@@ -15,23 +15,24 @@
 
 | Package | File | Dòng | Phụ thuộc vào (số tham chiếu) | Được dùng bởi |
 |---|---:|---:|---|---|
-| `ui` | 22 | 4850 | library(20), (gốc)(15), feed(10), runner(6), download(6), diag(5) | runner(22), azahar(19), achievements(17), browser(14), cheats(12), apkinstall(8) |
+| `ui` | 22 | 4785 | library(20), (gốc)(15), feed(10), runner(6), download(6), diag(5) | runner(22), azahar(19), achievements(17), browser(14), cheats(12), apkinstall(8) |
 | `apkinstall` | 27 | 2615 | ui(8), notify(4), library(1) | runner(2), translate(2), achievements(2), ui(1), download(1) |
-| `runner` | 11 | 2070 | ui(22), config(9), cheats(7), translate(5), (gốc)(4), community(3) | azahar(9), ui(6), (gốc)(4), download(2) |
-| `library` | 18 | 1761 | feed(7), (gốc)(6), config(5), ui(3), notify(2) | ui(20), (gốc)(7), download(7), runner(3), cheats(2), achievements(1) |
-| `azahar` | 7 | 1125 | ui(19), runner(9), diag(2), (gốc)(2), community(1), config(1) | ui(2), runner(2), (gốc)(1) |
+| `runner` | 11 | 2116 | ui(22), config(9), cheats(7), translate(5), (gốc)(4), community(3) | azahar(9), ui(6), (gốc)(4), download(2) |
+| `library` | 20 | 1781 | feed(7), pack(7), config(6), (gốc)(6), ui(3), notify(2) | ui(20), download(9), (gốc)(7), runner(3), patch(3), cheats(2) |
+| `azahar` | 7 | 1137 | ui(19), runner(9), diag(2), (gốc)(2), community(1), config(1) | ui(2), runner(2), (gốc)(1), pack(1) |
 | `browser` | 5 | 1061 | ui(14), download(5), (gốc)(1) | ui(5), community(2), (gốc)(1), account(1), achievements(1) |
 | `achievements` | 8 | 632 | ui(17), apkinstall(2), (gốc)(2), browser(1), library(1) | (gốc)(4), ui(2) |
 | `cheats` | 7 | 615 | ui(12), library(2), (gốc)(1) | runner(7) |
-| `download` | 5 | 559 | library(7), (gốc)(5), notify(3), runner(2), config(1), ui(1) | ui(6), browser(5), (gốc)(2) |
+| `download` | 5 | 561 | library(9), (gốc)(5), notify(3), runner(2), config(1), ui(1) | ui(6), browser(5), (gốc)(2) |
 | `(gốc)` | 4 | 408 | library(7), runner(4), feed(4), achievements(4), translate(3), notify(2) | ui(15), library(6), download(5), runner(4), azahar(2), achievements(2) |
-| `diag` | 1 | 359 | (gốc)(1) | ui(5), azahar(2), (gốc)(1), runner(1) |
-| `translate` | 6 | 356 | ui(5), apkinstall(2) | runner(5), (gốc)(3) |
-| `config` | 2 | 337 | — | runner(9), library(5), ui(2), account(2), (gốc)(1), forum(1) |
+| `diag` | 1 | 359 | (gốc)(1) | ui(5), azahar(2), (gốc)(1), runner(1), pack(1) |
+| `translate` | 6 | 341 | ui(5), apkinstall(2) | runner(5), (gốc)(3) |
+| `config` | 2 | 338 | — | runner(9), library(6), ui(2), account(2), pack(2), (gốc)(1) |
 | `account` | 3 | 334 | config(2), browser(1), ui(1), (gốc)(1) | (gốc)(2), ui(2) |
-| `forum` | 1 | 212 | config(1) | ui(2), (gốc)(1) |
+| `pack` | 3 | 268 | config(2), notify(1), library(1), diag(1), (gốc)(1), azahar(1) | library(7), runner(2), (gốc)(1) |
+| `patch` | 2 | 190 | library(3) | ui(1) |
 | `feed` | 2 | 164 | config(1) | ui(10), library(7), (gốc)(4), notify(1) |
-| `notify` | 2 | 124 | feed(1), ui(1), (gốc)(1) | apkinstall(4), download(3), (gốc)(2), library(2) |
+| `notify` | 2 | 124 | feed(1), ui(1), (gốc)(1) | apkinstall(4), download(3), (gốc)(2), library(2), pack(1) |
 | `community` | 2 | 120 | browser(2), (gốc)(1) | ui(5), runner(3), azahar(1) |
 
 ## 3. Sơ đồ phụ thuộc (mũi tên = "gọi tới"; chỉ vẽ cạnh ≥ 3 tham chiếu)
@@ -42,20 +43,21 @@ flowchart LR
   account["account\n334 dòng"]
   achievements["achievements\n632 dòng"]
   apkinstall["apkinstall\n2615 dòng"]
-  azahar["azahar\n1125 dòng"]
+  azahar["azahar\n1137 dòng"]
   browser["browser\n1061 dòng"]
   cheats["cheats\n615 dòng"]
   community["community\n120 dòng"]
-  config["config\n337 dòng"]
+  config["config\n338 dòng"]
   diag["diag\n359 dòng"]
-  download["download\n559 dòng"]
+  download["download\n561 dòng"]
   feed["feed\n164 dòng"]
-  forum["forum\n212 dòng"]
-  library["library\n1761 dòng"]
+  library["library\n1781 dòng"]
   notify["notify\n124 dòng"]
-  runner["runner\n2070 dòng"]
-  translate["translate\n356 dòng"]
-  ui["ui\n4850 dòng"]
+  pack["pack\n268 dòng"]
+  patch["patch\n190 dòng"]
+  runner["runner\n2116 dòng"]
+  translate["translate\n341 dòng"]
+  ui["ui\n4785 dòng"]
   runner -->|22| ui
   ui -->|20| library
   azahar -->|19| ui
@@ -66,19 +68,20 @@ flowchart LR
   ui -->|10| feed
   runner -->|9| config
   azahar -->|9| runner
+  download -->|9| library
   apkinstall -->|8| ui
   root -->|7| library
   runner -->|7| cheats
   library -->|7| feed
-  download -->|7| library
+  library -->|7| pack
   ui -->|6| runner
   ui -->|6| download
+  library -->|6| config
   library -->|6| root
   ui -->|5| diag
   ui -->|5| browser
   ui -->|5| community
   runner -->|5| translate
-  library -->|5| config
   browser -->|5| download
   translate -->|5| ui
   download -->|5| root
@@ -92,6 +95,7 @@ flowchart LR
   runner -->|3| library
   library -->|3| ui
   download -->|3| notify
+  patch -->|3| library
 ```
 
 ## 4. Phụ thuộc hai chiều (ứng viên phải gỡ trước khi tách module)
@@ -104,6 +108,7 @@ flowchart LR
 - `(gốc)` ⇄ `download` (2 / 5)
 - `(gốc)` ⇄ `library` (7 / 6)
 - `(gốc)` ⇄ `notify` (2 / 1)
+- `(gốc)` ⇄ `pack` (1 / 1)
 - `(gốc)` ⇄ `runner` (4 / 4)
 - `account` ⇄ `ui` (1 / 2)
 - `achievements` ⇄ `ui` (17 / 2)
@@ -112,6 +117,7 @@ flowchart LR
 - `azahar` ⇄ `ui` (19 / 2)
 - `browser` ⇄ `ui` (14 / 5)
 - `download` ⇄ `ui` (1 / 6)
+- `library` ⇄ `pack` (7 / 1)
 - `library` ⇄ `ui` (3 / 20)
 - `runner` ⇄ `ui` (22 / 6)
 
@@ -119,12 +125,12 @@ flowchart LR
 
 | File | Dòng |
 |---|---:|
-| `app/src/main/java/vn/aow/monika/ui/screens/LibraryScreen.kt` | 654 |
+| `app/src/main/java/vn/aow/monika/ui/screens/LibraryScreen.kt` | 668 |
 | `app/src/main/java/vn/aow/monika/runner/GamePadOverlay.kt` | 634 |
 | `app/src/main/java/vn/aow/monika/runner/RetroActivity.kt` | 548 |
 | `app/src/main/java/vn/aow/monika/azahar/AzaharActivity.kt` | 448 |
 | `app/src/main/java/vn/aow/monika/browser/InAppBrowserActivity.kt` | 447 |
-| `app/src/main/java/vn/aow/monika/ui/screens/SettingsScreen.kt` | 439 |
+| `app/src/main/java/vn/aow/monika/ui/screens/SettingsScreen.kt` | 440 |
 | `app/src/main/java/vn/aow/monika/diag/Diagnostics.kt` | 359 |
 | `app/src/main/java/vn/aow/monika/ui/theme/Components.kt` | 340 |
 | `app/src/main/java/vn/aow/monika/library/GameInfoResolver.kt` | 329 |
@@ -147,6 +153,7 @@ flowchart LR
 - receiver `.apkinstall.adb.AdbPairing$AdbPairReceiver`
 - provider `.apkinstall.LoaderBusProvider`
 - provider `.apkinstall.GameDataProvider`
+- receiver `.pack.PackChoiceReceiver`
 - receiver `.download.DownloadReceiver`
 - service `androidx.work.impl.foreground.SystemForegroundService`
 - service `.runner.GameWarmService`

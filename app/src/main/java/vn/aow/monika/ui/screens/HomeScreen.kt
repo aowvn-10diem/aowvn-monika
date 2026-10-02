@@ -140,7 +140,6 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                     }
                 }
             }
-            item { ForumSection() }
             item { CommunitySection() }
             item { DonateBanner() }
         }
