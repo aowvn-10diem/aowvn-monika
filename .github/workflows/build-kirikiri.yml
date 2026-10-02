@@ -64,6 +64,7 @@ jobs:
       - name: Khóa ký tạm (chỉ để ký thử)
         working-directory: src/project/android/app
         run: |
+          rm -f sign.jks sign.properties   # repo có sẵn khóa của tác giả, không dùng
           keytool -genkeypair -keystore sign.jks -alias tmp -keyalg RSA -keysize 2048 -validity 3650 \
             -storepass tmppass1 -keypass tmppass1 -dname "CN=tmp"
           printf 'SIGN_KEY_ALIAS=tmp\nSIGN_KEY_PASS=tmppass1\nSIGN_STORE_PASS=tmppass1\n' > sign.properties
