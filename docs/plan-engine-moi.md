@@ -70,3 +70,7 @@
 ## 4. Gợi ý phân công model
 - Bước A, B: Sonnet (medium).
 - Bước C, D, E (spike native, giấy phép, kiến trúc): Opus (high), mỗi bước một session/nhánh riêng; em review rồi gộp.
+
+---
+## ✅ Chỗ chứa gói đã chốt (02/10/2026)
+Repo công khai **`aowvn-10diem/aowvn-monika-packs`**. Gói đưa lên bằng workflow **Build engines** (tự đẩy sang repo phụ khi có secret `PACKS_TOKEN`) hoặc **Mirror pack** (chép gói có sẵn rồi kiểm link tải công khai + SHA-256). Link dạng `https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/<tag>/<file>` đặt vào `config.modules.<tên>.url`. Azahar đã chuyển sang dùng link này (APK không còn đóng sẵn). Bản nhị phân GPL phát hành ở đó phải ghi cách lấy mã nguồn (repo + commit) trong mô tả Release / `manifest.json`.

@@ -27,16 +27,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Cài NDK cho J2ME Loader
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" > /dev/null
-      - name: Đóng sẵn engine 3DS (Azahar) vào APK
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # Repo private nên app không tải được asset của Releases → đóng thẳng gói engine mới nhất vào APK (assets/engines/azahar.zip).
-          tag=$(gh release list --limit 50 --json tagName --jq '[.[]|select(.tagName|startswith("engine-azahar-"))][0].tagName')
-          if [ -z "$tag" ]; then echo "Chưa có engine-azahar-* → APK dùng lõi Citra libretro."; exit 0; fi
-          mkdir -p app/src/main/assets/engines
-          gh release download "$tag" --pattern azahar-android-arm64.zip --output app/src/main/assets/engines/azahar.zip
-          ls -la app/src/main/assets/engines
       - name: Giải mã khóa ký
         env:
           KEYSTORE_BASE64: ${{ secrets.MONIKA_KEYSTORE_BASE64 }}

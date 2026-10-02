@@ -38,3 +38,7 @@
 | opus-mt dịch game chưa đạt | So sánh với ML Kit ở bước 1; không đạt thì giữ ML Kit làm cách mặc định, gói chỉ là tùy chọn |
 | Nạp .so/dex ngoài APK bị Android chặn hoặc lỗi 16 KB page size | Đã làm được với engine Azahar; dùng lại cách đó, kiểm trên Android 14/15 |
 | Máy yếu dịch chậm | Chỉ dịch khi bấm nút; dùng bộ nhớ dịch (`TranslationMemory`) |
+
+---
+## ✅ Chỗ chứa gói đã chốt (02/10/2026)
+Repo công khai **`aowvn-10diem/aowvn-monika-packs`**. Gói đưa lên bằng workflow **Build engines** (tự đẩy sang repo phụ khi có secret `PACKS_TOKEN`) hoặc **Mirror pack** (chép gói có sẵn rồi kiểm link tải công khai + SHA-256). Link dạng `https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/<tag>/<file>` đặt vào `config.modules.<tên>.url`. Azahar đã chuyển sang dùng link này (APK không còn đóng sẵn). Bản nhị phân GPL phát hành ở đó phải ghi cách lấy mã nguồn (repo + commit) trong mô tả Release / `manifest.json`.
