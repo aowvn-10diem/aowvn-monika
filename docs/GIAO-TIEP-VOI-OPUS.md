@@ -152,6 +152,9 @@ flowchart LR
 
 Đặt phương án vào `docs/opus/<ngày>-<chủ đề>.md` (thư mục tạo khi cần) hoặc dán vào cuộc trò chuyện; Sonnet sẽ thi công và ghi kết quả vào mục 4 của tài liệu này.
 
+## 6b. Hộp thư (kênh nhanh)
+Trao đổi hằng ngày Sonnet ⇄ Opus qua `docs/opus/hop-thu/` + `docs/opus/BANG-TIN.md` (quy ước trong `hop-thu/README.md`). Sếp đã duyệt kênh này (03/10/2026).
+
 ## 7. Câu hỏi đang cần phương án
 1. **Tách module** `:theme` / `:core`: thứ tự cắt tối thiểu rủi ro? Có đáng làm trước khi thêm engine mới?
 2. **Dịch offline**: mô hình nào cân bằng chất lượng/dung lượng, và tải theo nhu cầu thế nào để APK không chứa gì (`docs/plan-dich-offline.md`)?
