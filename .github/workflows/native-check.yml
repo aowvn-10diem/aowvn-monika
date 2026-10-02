@@ -17,7 +17,9 @@ jobs:
       - name: Cài NDK + CMake
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
       - name: Biên dịch native (arm64 + armv7)
-        run: ./gradlew :libretrodroid:assembleDebug --console=plain 2>&1 | tee build.log | tail -150
+        run: |
+          set -o pipefail
+          ./gradlew :libretrodroid:assembleDebug --console=plain 2>&1 | tee build.log | tail -150
       - name: Lọc lỗi
         if: failure()
         run: grep -n "error:\|Error\|undefined reference\|FAILED" build.log | head -60

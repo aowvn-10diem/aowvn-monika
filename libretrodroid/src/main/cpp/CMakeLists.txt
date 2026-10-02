@@ -29,7 +29,6 @@ file(GLOB RC_SRC
         rcheevos/src/rhash/*.c
 )
 list(FILTER RC_SRC EXCLUDE REGEX ".*rc_client_raintegration\\.c$")
-set_source_files_properties(${RC_SRC} PROPERTIES COMPILE_DEFINITIONS "RC_CLIENT_SUPPORTS_HASH")
 
 add_library(libretrodroid SHARED
         libretrodroidjni.h
@@ -103,6 +102,8 @@ add_library(libretrodroid SHARED
         ${RC_SRC}
 )
 target_include_directories(libretrodroid PRIVATE rcheevos/include rcheevos/src)
+# rc_client_begin_identify_and_load_game chỉ khai báo khi có RC_CLIENT_SUPPORTS_HASH (áp cho cả mã rcheevos lẫn achievements.cpp).
+target_compile_definitions(libretrodroid PRIVATE RC_CLIENT_SUPPORTS_HASH)
 
 # Support 16k pages for Android 15
 target_link_options(libretrodroid PRIVATE "-Wl,-z,max-page-size=16384")
