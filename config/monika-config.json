@@ -1,5 +1,5 @@
 {
-  "configVersion": 25,
+  "configVersion": 26,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -419,6 +419,18 @@
       ],
       "webPlayer": "onsyuri",
       "engine": "onsyuri"
+    },
+    {
+      "id": "symbian",
+      "name": "Symbian / N-Gage",
+      "runner": "external",
+      "externalApp": "eka2l1",
+      "extensions": [
+        "sis",
+        "sisx",
+        "ngage"
+      ],
+      "labels": []
     }
   ],
   "_engines_ghi_chu": "Nhận diện game dạng thư mục (sau khi giải nén). Quy tắc nào khớp trước thắng. 'entry' = file sẽ mở để chạy.",
@@ -1010,6 +1022,22 @@
       "downloadUrl": "",
       "guide": [
         "Link đang được cập nhật."
+      ]
+    },
+    {
+      "id": "eka2l1",
+      "name": "EKA2L1",
+      "description": "Giả lập Symbian (Nokia N-Gage, S60) — mã nguồn mở. Cần firmware Symbian do bạn tự chép từ máy Nokia của mình.",
+      "packageNames": [
+        "com.github.eka2l1"
+      ],
+      "downloadUrl": "",
+      "plugins": [],
+      "guide": [
+        "Tải EKA2L1 bản Android tại https://github.com/EKA2L1/EKA2L1/releases (file .apk) rồi cài.",
+        "Mở EKA2L1 một lần: cài firmware Symbian (REX/RPKG do bạn tự có) theo hướng dẫn trong app.",
+        "Trong EKA2L1 chọn Cài đặt game và chọn file .sis/.sisx của game.",
+        "Quay lại AowVN Monika để quản lý thư viện game."
       ]
     }
   ],
