@@ -21,6 +21,8 @@ data class MonikaConfig(
     val archivePasswords: List<String> = emptyList(),
     /** Lõi tải sẵn ngay lần đầu mở app (kèm thông báo tiến độ) → chơi được liền, không chờ tải khi bấm Chơi. */
     val prefetchCores: List<String> = emptyList(),
+    /** Đuôi file → gói phụ trợ (id trong [modules]) tải trước ngay khi bắt đầu tải, vd. "7z" → ["archive"], "jar" → ["java"]. */
+    val prefetchByExtension: Map<String, List<String>> = emptyMap(),
     /** Link cộng đồng AowVN (group Facebook, Discord). Để trống = ẩn nút. */
     val community: CommunityConfig = CommunityConfig(),
     val forum: ForumConfig = ForumConfig(),

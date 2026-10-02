@@ -39,6 +39,7 @@ class Downloader(
      */
     suspend fun enqueue(url: String, isTool: Boolean = false, meta: GameMeta? = null): Long {
         val name = resolveFileName(url)
+        if (!isTool) vn.aow.monika.library.Prefetch.onDownloadStart(context, meta?.labels.orEmpty(), name)
         val request = DownloadManager.Request(Uri.parse(url))
             .setTitle(name)
             .setDescription("AowVN Monika")

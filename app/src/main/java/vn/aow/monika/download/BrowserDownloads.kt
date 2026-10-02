@@ -95,6 +95,7 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
         job.name = suggestName(url, contentDisposition, mime)
         job.part = File(staging(), "${System.currentTimeMillis()}-${job.id}.part")
         main.post { jobs.add(job); sheetFor = job; ensureService() }
+        scope.launch { vn.aow.monika.library.Prefetch.onDownloadStart(context, meta?.labels.orEmpty(), job.name) }
         scope.launch { download(job) }
         return job
     }
