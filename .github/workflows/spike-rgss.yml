@@ -1,0 +1,88 @@
+name: Spike RGSS (mkxp-z Android native)
+
+# P0 của docs/rpgmaker (PLAN-rpgmaker-monika.md, [A6]): thử dựng bản port native mkxp-z cho Android, bật tối ưu, đo kích thước.
+# Chỉ để khảo sát — KHÔNG phát hành. Nguồn: https://github.com/BookerRues9/mkxp-z-android-reworked
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Commit/nhánh của mkxp-z-android-reworked"
+        default: "HEAD"
+      abi:
+        description: "ABI"
+        type: choice
+        default: arm64-v8a
+        options: [arm64-v8a, armeabi-v7a]
+
+permissions:
+  contents: read
+
+jobs:
+  spike:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+    steps:
+      - name: Lấy mã nguồn
+        run: |
+          git clone https://github.com/BookerRues9/mkxp-z-android-reworked.git src
+          cd src
+          if [ "${{ inputs.ref }}" != HEAD ]; then git checkout "${{ inputs.ref }}"; fi
+          git log -1 --format='%h %ad %s'
+
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 11 }
+
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: "3.1" }
+
+      - name: Cài NDK 23.2.8568313
+        run: |
+          export JAVA_HOME="$JAVA_HOME_17_X64"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;23.2.8568313" "platforms;android-33" "build-tools;33.0.2" | tail -2
+          sudo apt-get update -qq && sudo apt-get install -y -qq autoconf automake libtool pkg-config bison gperf xxd cmake ninja-build >/dev/null
+
+      - name: Tải phụ thuộc (get_deps.sh)
+        working-directory: src/app/jni
+        run: ./get_deps.sh 2>&1 | tail -30
+
+      - name: Dựng thư viện native (make) — bật tối ưu -O2
+        working-directory: src/app/jni
+        run: |
+          set -o pipefail
+          sed -i 's/-O0/-O2/g' Makefile
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/23.2.8568313" ARCH=linux-x86_64
+          export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$ARCH/bin:$PATH"
+          if [ "${{ inputs.abi }}" = arm64-v8a ]; then H=aarch64-linux-android; T=aarch64-linux-android; else H=armv7a-linux-androideabi; T=arm-linux-androideabi; fi
+          HOST=$H TARGET=$T ABI=${{ inputs.abi }} make -j"$(nproc)" 2>&1 | tee ../../../make.log | tail -40
+
+      - name: Gradle assembleRelease (ndk-build, tối ưu)
+        working-directory: src
+        run: |
+          set -o pipefail
+          sed -i 's/APP_OPTIM := debug/APP_OPTIM := release/; s/^APP_ABI := .*/APP_ABI := ${{ inputs.abi }}/' app/jni/Application.mk
+          sed -i "s/include 'arm64-v8a', 'armeabi-v7a'/include '${{ inputs.abi }}'/" app/build.gradle
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/23.2.8568313"
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease 2>&1 | tee ../gradle.log | tail -40
+
+      - name: Kích thước
+        if: always()
+        run: |
+          {
+            echo "## Kết quả spike RGSS (${{ inputs.abi }})"
+            echo '```'
+            find src -name '*.so' -path '*${{ inputs.abi }}*' \( -path '*/build/*' -o -path '*/libs/*' -o -path '*/obj/*' \) -exec ls -l {} \; 2>/dev/null | awk '{print $5, $9}' | sort -u | head -40
+            find src/app/build -name '*.apk' -exec ls -l {} \; 2>/dev/null | awk '{print $5, $9}'
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spike-rgss-${{ inputs.abi }}
+          path: |
+            make.log
+            gradle.log
+            src/app/build/outputs/apk/**/*.apk
+          if-no-files-found: ignore
