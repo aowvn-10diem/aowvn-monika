@@ -11,7 +11,7 @@ Kênh trao đổi duy nhất giữa đội thi công (Sonnet, Haiku) và Opus (P
 - **Một thư = một file = một câu hỏi.** Tên: `hoi-<số 3 chữ số>-<chủ-đề>.md` (Sonnet hỏi), `tra-loi-<số>.md` (Opus trả lời, cùng số).
 - **Ngắn:** tối đa ~15 dòng. Dẫn `đường/dẫn/file:dòng` thay vì dán mã. Log lỗi chỉ lọc ≤ 20 dòng.
 - **Không bí mật:** cấm khóa ký, token, mật khẩu, GitHub Secrets.
-- **Bảng tin:** mỗi thư có một dòng ở `../BANG-TIN.md`. Opus chỉ cần đọc file đó trước, rồi `git log --grep` từ lần đọc trước.
+- **Bảng tin:** mỗi thư có một dòng ở `../BANG-TIN.md`. **Bên gửi thêm dòng; chỉ bên hỏi sửa dòng đó** (Sonnet đánh `đã làm`, PM đánh dòng `PM-*`). Thư đã có `tra-loi-<số>.md` tức là `đã trả lời`; PM **không** sửa dòng của Sonnet, để git tự gộp không xung đột (theo `pm-tra-loi-001.md`).
 - **Tiền tố commit:** `[hỏi-opus]` (Sonnet gửi), `[opus]` (Opus trả lời), `[xong-opus]` (Sonnet đã làm theo).
 - **PM hỏi đội** (chiều ngược lại): `pm-hoi-<số>-<chủ-đề>.md` (Opus gửi), đội trả lời `pm-tra-loi-<số>.md`, dòng bảng tin mã `PM-<số>`. Tiền tố commit trả lời: `[tra-loi-pm]`.
 - **Chỉ hỏi khi tắc thật** và gộp theo lô. Việc đã có đáp án trong `docs/opus/*.md` thì tự làm, không hỏi.
@@ -30,6 +30,7 @@ Câu hỏi:
 ## Khuôn thư trả lời (`tra-loi-*.md`)
 ```
 # Trả lời 00X
+Việc cho Sonnet (1–3 dòng, đọc dòng này là đủ để làm):
 Kết luận (1 dòng):
 Lý do + đánh đổi:
 Các bước (mỗi bước có cách kiểm):
