@@ -9,7 +9,7 @@ class ScreenTranslator(http: OkHttpClient, private val s: TranslateSettings, pri
     private val ai = AiTranslator(http)
 
     suspend fun translateFrame(bmp: Bitmap): List<TLine> {
-        if (s.provider == "ai" && s.vision) {
+        if (s.provider != "google" && s.vision) {
             requireKey()
             return ai.translateImage(bmp, s.sourceLang, s.baseUrl, s.apiKey, s.model)
         }
@@ -30,9 +30,8 @@ class ScreenTranslator(http: OkHttpClient, private val s: TranslateSettings, pri
 
     private suspend fun callProvider(lines: List<String>): List<String> = when (s.provider) {
         "google" -> { requireKey(); google.translate(lines, s.sourceLang, s.apiKey) }
-        "ai" -> { requireKey(); ai.translate(lines, s.sourceLang, s.baseUrl, s.apiKey, s.model) }
-        else -> MlKit.translate(lines, s.sourceLang)
+        else -> { requireKey(); ai.translate(lines, s.sourceLang, s.baseUrl, s.apiKey, s.model) }
     }
 
-    private fun requireKey() { if (s.apiKey.isBlank()) throw TranslateException("Chưa nhập khóa API trong Cài đặt → Dịch màn hình") }
+    private fun requireKey() { if (s.apiKey.isBlank()) throw TranslateException("Chưa nhập khóa API trong Cài đặt → Dịch màn hình game") }
 }

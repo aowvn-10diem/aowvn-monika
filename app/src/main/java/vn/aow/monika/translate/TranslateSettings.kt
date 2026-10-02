@@ -7,13 +7,13 @@ import vn.aow.monika.apkinstall.repack.KeyWrap
 
 /**
  * Cài đặt dịch màn hình. Khóa API do người dùng tự nhập, mã hóa bằng Android Keystore, chỉ lưu trên máy này.
- * provider: "mlkit" (dịch trên máy, không cần khóa) | "google" (Google Cloud Translation) | "ai" (API kiểu OpenAI: OpenAI, Gemini, OpenRouter…)
+ * provider: "google" (Google Cloud Translation) | "ai" (API kiểu OpenAI: OpenAI, Gemini, OpenRouter…)
  */
 class TranslateSettings(context: Context, private val wrap: KeyWrap = AndroidKeystoreWrap) {
     private val sp = context.getSharedPreferences("translate", Context.MODE_PRIVATE)
 
     var provider: String
-        get() = sp.getString("provider", "mlkit") ?: "mlkit"
+        get() = (sp.getString("provider", "ai") ?: "ai").let { if (it == "mlkit") "ai" else it }
         set(v) = sp.edit().putString("provider", v).apply()
 
     /** Ngôn ngữ chữ trong game: "en" | "ja" (OCR của ML Kit có Latin + Nhật). */

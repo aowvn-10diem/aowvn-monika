@@ -33,6 +33,10 @@
         android:theme="@style/Theme.Monika"
         tools:targetApi="35">
 
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr,ocr_japanese" />
+
         <activity
             android:name=".ui.MainActivity"
             android:theme="@style/Theme.Monika.Starting"

@@ -127,7 +127,7 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     )
                 }
 
-                SettingGroup("translate", open, { open = it }, R.drawable.ic_fluent_globe_24_regular, primaryGradient(), "Dịch màn hình game", "Dịch trên máy (miễn phí) hoặc dùng khóa API của bạn") {
+                SettingGroup("translate", open, { open = it }, R.drawable.ic_fluent_globe_24_regular, primaryGradient(), "Dịch màn hình game", "Dùng khóa API của bạn · gói dịch offline sắp có") {
                     val ts = AppGraph.translateSettings
                     var provider by remember { mutableStateOf(ts.provider) }
                     var lang by remember { mutableStateOf(ts.sourceLang) }
@@ -136,24 +136,25 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     var model by remember { mutableStateOf(ts.model) }
                     var vision by remember { mutableStateOf(ts.vision) }
                     var testing by remember { mutableStateOf(false) }
-                    val names = mapOf("mlkit" to "Trên máy (miễn phí)", "google" to "Google Dịch API", "ai" to "API AI (OpenAI/Gemini…)")
-                    ChipBar(listOf("mlkit", "google", "ai"), provider, { names[it] ?: it }, { provider = it; ts.provider = it }, accent = true, contentPadding = PaddingValues(0.dp))
+                    val names = mapOf("google" to "Google Dịch API", "ai" to "API AI (OpenAI/Gemini…)")
+                    ChipBar(listOf("google", "ai"), provider, { names[it] ?: it }, { provider = it; ts.provider = it }, accent = true, contentPadding = PaddingValues(0.dp))
                     ChipBar(listOf("en", "ja"), lang, { if (it == "ja") "Chữ trong game: Nhật" else "Chữ trong game: Anh" }, { lang = it; ts.sourceLang = it }, accent = true, contentPadding = PaddingValues(0.dp))
                     Text(
                         when (provider) {
                             "google" -> "Dùng khóa Google Cloud Translation của bạn. Chữ được đọc trên máy rồi chỉ gửi phần chữ (không gửi ảnh) tới Google; chi phí tính theo tài khoản của bạn."
-                            "ai" -> "Dùng API kiểu OpenAI của bạn (OpenAI, Gemini qua đường dẫn tương thích OpenAI, OpenRouter…). Hiểu ngữ cảnh game tốt hơn nhưng tính phí theo lượng chữ; bật \"AI nhìn ảnh\" thì ảnh chụp game cũng được gửi đi."
-                            else -> "Đọc chữ và dịch hoàn toàn trên máy bằng Google ML Kit, không tốn phí, không gửi dữ liệu đi đâu. Lần đầu cần mạng để tải mô hình (~30 MB). Chất lượng ở mức dịch thông thường, hộp thoại game dài/nhiều tiếng lóng có thể chưa mượt."
+                            else -> "Dùng API kiểu OpenAI của bạn (OpenAI, Gemini qua đường dẫn tương thích OpenAI, OpenRouter…). Hiểu ngữ cảnh game tốt hơn nhưng tính phí theo lượng chữ; bật \"AI nhìn ảnh\" thì ảnh chụp game cũng được gửi đi."
                         },
                         style = Monika.type.caption, color = c.textSecondary,
                     )
-                    if (provider != "mlkit") {
-                        androidx.compose.material3.OutlinedTextField(
-                            key, { key = it; ts.apiKey = it }, Modifier.fillMaxWidth(), singleLine = true, shape = Radius.small, label = { Text("Khóa API") },
-                            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                        )
-                        Text("Khóa được mã hóa và chỉ lưu trên máy này.", style = Monika.type.caption, color = c.textSecondary)
-                    }
+                    Text(
+                        "Dịch offline miễn phí đang được làm thành gói tải riêng (chỉ tải khi bạn bật), để app không bị nặng.",
+                        style = Monika.type.caption, color = c.textSecondary,
+                    )
+                    androidx.compose.material3.OutlinedTextField(
+                        key, { key = it; ts.apiKey = it }, Modifier.fillMaxWidth(), singleLine = true, shape = Radius.small, label = { Text("Khóa API") },
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    )
+                    Text("Khóa được mã hóa và chỉ lưu trên máy này.", style = Monika.type.caption, color = c.textSecondary)
                     if (provider == "ai") {
                         androidx.compose.material3.OutlinedTextField(base, { base = it; ts.baseUrl = it }, Modifier.fillMaxWidth(), singleLine = true, shape = Radius.small, label = { Text("Địa chỉ API (kết thúc /v1)") })
                         androidx.compose.material3.OutlinedTextField(model, { model = it; ts.model = it }, Modifier.fillMaxWidth(), singleLine = true, shape = Radius.small, label = { Text("Tên mô hình") })
