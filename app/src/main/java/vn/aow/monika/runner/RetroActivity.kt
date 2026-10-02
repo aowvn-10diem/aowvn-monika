@@ -1,5 +1,6 @@
 package vn.aow.monika.runner
 
+import vn.aow.monika.achievements.InGameAchievementsSheet
 import vn.aow.monika.translate.TranslateResultSheet
 import android.app.Activity
 import android.content.Intent
@@ -56,6 +57,9 @@ class RetroActivity : ComponentActivity() {
     // RetroAchievements: raWanted = đã cấu hình hardcore; raActive = game đã nhận diện + hardcore → khóa nạp state/cheat.
     private var raWanted = false
     private var raActive = false
+    private var raLoaded by mutableStateOf(false)
+    private var raSheet by mutableStateOf<vn.aow.monika.achievements.InGameSummary?>(null)
+    private var raSheetOpen by mutableStateOf(false)
     private val raListener = object : com.swordfish.libretrodroid.RetroAchievements.Listener {
         override fun onUnlocked(id: Int, title: String, description: String, badgeUrl: String, points: Int) {
             showToast("🏆 Đã mở: $title (+$points điểm)", 3500)
@@ -63,7 +67,7 @@ class RetroActivity : ComponentActivity() {
 
         override fun onState(state: com.swordfish.libretrodroid.RetroAchievements.State, message: String?) {
             when (state) {
-                com.swordfish.libretrodroid.RetroAchievements.State.GAME_LOADED -> { raActive = raWanted; showToast("Thành tựu: ${message ?: "đã sẵn sàng"}", 2600) }
+                com.swordfish.libretrodroid.RetroAchievements.State.GAME_LOADED -> { raActive = raWanted; raLoaded = true; showToast("Thành tựu: ${message ?: "đã sẵn sàng"}", 2600) }
                 com.swordfish.libretrodroid.RetroAchievements.State.LOGIN_FAILED -> showToast("Thành tựu: đăng nhập lỗi (${message ?: "?"}). Vào Thành tựu để bật lại.", 4000)
                 com.swordfish.libretrodroid.RetroAchievements.State.GAME_NOT_FOUND -> showToast("Game này chưa có thành tựu trên RetroAchievements", 2600)
                 else -> message?.let { showToast(it, 3000) }
@@ -220,6 +224,9 @@ class RetroActivity : ComponentActivity() {
                             showToast("Đã về mặc định. Mở lại game để áp dụng hết.", 2600)
                         },
                         extraActions = listOfNotNull(
+                            if (raLoaded) vn.aow.monika.ui.theme.SheetAction("Thành tựu", vn.aow.monika.R.drawable.ic_fluent_star_24_regular) {
+                                raSheet = vn.aow.monika.achievements.parseInGameAchievements(com.swordfish.libretrodroid.RetroAchievements.describeJson()); raSheetOpen = true
+                            } else null,
                             ui.styleLabel?.let { label ->
                                 vn.aow.monika.ui.theme.SheetAction("Kiểu hình: $label", vn.aow.monika.R.drawable.ic_fluent_eye_24_regular) { cycleDisplayStyle() }
                             },
@@ -228,6 +235,7 @@ class RetroActivity : ComponentActivity() {
                         ),
                     )
                     TranslateResultSheet(translateResult, translateBusy) { translateResult = null }
+                    InGameAchievementsSheet(raSheet, raSheetOpen) { raSheetOpen = false }
                     CheatSheet(cheats) { cheatPicker.launch(arrayOf("text/plain", "application/octet-stream", "*/*")) }
                     }
                 }
