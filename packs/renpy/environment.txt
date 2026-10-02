@@ -1,0 +1,9 @@
+# Aow Monika: bootstrap của Ren'Py thực thi file này trước khi đọc tham số (renpy/bootstrap.py).
+# Dùng để trỏ Ren'Py tới thư mục game và thư mục save do Monika quản (biến môi trường do RenpyGameActivity đặt).
+# [CHƯA KIỂM] thứ tự thực thi trên 8.5.3 / 7.8.7 — kiểm ở P5 (Emulator Test). Không chạy được → thay private/main.py bằng file bọc.
+import os as _os, sys as _sys
+_base = _os.environ.get("MONIKA_GAME_BASE")
+_save = _os.environ.get("MONIKA_SAVE_DIR")
+if _base:
+    _sys.argv[1:] = [_base, "run"] + (["--savedir", _save] if _save else [])
+del _os, _sys, _base, _save
