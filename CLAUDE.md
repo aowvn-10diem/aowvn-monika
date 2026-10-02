@@ -54,6 +54,7 @@ Repo **chưa có** GitHub Secrets ký app (`MONIKA_KEYSTORE_*`) và cũng không
 7. Token GitHub của phiên **không tạo được Secrets** (API trả 403). Secret phải do chủ repo tự thêm ở Settings → Secrets and variables → Actions.
 5. **Đẩy tag bị proxy của phiên chặn** (`git push origin v…` báo "remote end hung up"). Push nhánh `main` vẫn bình thường. Release trên CI chạy tay bằng `workflow_dispatch` (tham số `tag`).
 6. Lỗi "auto mode classifier gave no verdict" là **sự cố máy chủ kiểm duyệt**, không phải lỗi lệnh. Đừng suy ra thiếu công cụ hay quyền. Chuyển sang Read/Edit/Grep, rồi thử lại Bash sau.
+- Vá Việt hóa ROM: `patch/RomPatcher.kt` (IPS/BPS/UPS, nhận diện theo chữ ký, BPS/UPS kiểm CRC32) + `patch/PatchFlow.kt` (menu game trong Thư viện → "Vá Việt hóa", ghi game mới vào thư mục riêng "<tên> (Việt hóa)"). Chưa hỗ trợ xdelta/PPF/APS và ISO lớn (> 256 MB).
 
 ## Việc còn lại (theo thứ tự ưu tiên)
 

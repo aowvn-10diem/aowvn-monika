@@ -355,6 +355,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
             },
         )
         GameMenuSheet(gameMenu, { gameMenu = null }, pinned,
+            onPatched = { reloadKey++ },
             onPlay = { play(it) },
             onExtract = { password = ""; toExtract = it },
             onDelete = { toDelete = it },
@@ -573,7 +574,7 @@ private fun redownload(context: android.content.Context, g: Game) {
 /** Menu của 1 game (nút ⋯ trên ô hoặc giữ lâu): chơi, mở bài, giữ lại, giải nén, xóa/ẩn + thời gian đã chơi. */
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
-    game: Game?, onDismiss: () -> Unit, pinned: Set<String>,
+    game: Game?, onDismiss: () -> Unit, pinned: Set<String>, onPatched: () -> Unit,
     onPlay: (Game) -> Unit, onExtract: (Game) -> Unit, onDelete: (Game) -> Unit, onTogglePin: (Game) -> Unit,
 ) {
     val context = LocalContext.current
@@ -587,6 +588,17 @@ private fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
     var raGameId by remember(g?.key, raCreds) { mutableStateOf<Int?>(null) }
     LaunchedEffect(g?.key, raCreds) { raGameId = if (g == null || raCreds == null) null else runCatching { AppGraph.raIndex.gameIdFor(g) }.getOrNull() }
     var raOpen by remember { mutableStateOf<Int?>(null) }
+    // Vá Việt hóa: chọn file bản vá (.ips/.bps/.ups) → tạo bản "(Việt hóa)" cạnh ROM gốc, không đụng ROM gốc.
+    val scope = rememberCoroutineScope()
+    var patchTarget by remember { mutableStateOf<Game?>(null) }
+    val patchPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val target = patchTarget; patchTarget = null
+        if (uri != null && target != null) scope.launch {
+            val msg = vn.aow.monika.patch.PatchFlow.run(context, target.entry!!, uri)
+            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+            onPatched()
+        }
+    }
     MonikaMenuSheet(
         game != null, onDismiss,
         title = g?.name,
@@ -600,6 +612,8 @@ private fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
         actions = if (g == null) emptyList() else buildList {
             if (g.system != null && !g.locked && !g.evicted) add(SheetAction("Chơi", R.drawable.ic_fluent_play_24_filled, highlight = true) { onPlay(g) })
             if (g.needsExtract) add(SheetAction("Giải nén", R.drawable.ic_fluent_archive_24_regular) { onExtract(g) })
+            if (g.entry?.isFile == true && !g.needsExtract && g.system?.runner == "libretro")
+                add(SheetAction("Vá Việt hóa (IPS/BPS/UPS)", R.drawable.ic_fluent_archive_24_regular) { patchTarget = g; patchPicker.launch(arrayOf("*/*")) })
             if (g.evicted) add(SheetAction("Tải lại", R.drawable.ic_fluent_arrow_download_24_regular, highlight = true) { redownload(context, g) })
             if (!g.evicted && (g.meta?.postId != null || g.meta?.postUrl != null)) add(SheetAction("Xem bài viết", R.drawable.ic_fluent_news_24_regular) { redownload(context, g) })
             if (g.meta != null && !g.external && !g.evicted) add(
