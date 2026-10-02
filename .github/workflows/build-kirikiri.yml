@@ -119,8 +119,8 @@ jobs:
           cp -r src/project/android/app/java embed/java/kr2-java
           cp -r src/project/android/app/res embed/java/kr2-res
           cp src/project/android/app/AndroidManifest.xml embed/java/kr2-AndroidManifest.xml
-          SO=$(find "$GITHUB_WORKSPACE/build_android" -name 'libkrkr2yuri.so' -path '*stripped*' | head -1)
-          [ -z "$SO" ] && SO=$(find "$GITHUB_WORKSPACE/build_android" -name 'libkrkr2yuri.so' | head -1)
+          SO=$(find "$GITHUB_WORKSPACE/src" -name 'libkrkr2yuri.so' -path '*build_android*' -path '*stripped*' 2>/dev/null | head -1)
+          [ -z "$SO" ] && SO=$(find "$GITHUB_WORKSPACE/src" -name 'libkrkr2yuri.so' -path '*build_android*' 2>/dev/null | head -1)
           echo "SO=$SO"; ls -la "$SO"
           cp "$SO" embed/lib/libkrkr2yuri.so
           "$ANDROID_HOME/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded embed/lib/libkrkr2yuri.so || true
