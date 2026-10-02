@@ -197,3 +197,17 @@ Phần native giai đoạn 2 nằm trong module mới `:libretrodroid`.
 | Lõi không khai bản đồ bộ nhớ đúng | Kiểm từng hệ (2.6), tắt hệ lỗi |
 | Khóa web API/ token lộ | Mã hóa bằng Android Keystore, không log, không gửi kèm báo lỗi |
 | Tốc độ: `rc_client_do_frame` mỗi khung | Thường nhẹ; nếu tụt FPS ở máy yếu → chỉ bật khi đã đăng nhập (mặc định đã vậy) |
+
+---
+## ✅ Tiến độ giai đoạn 2 (02/10/2026, GMT+7)
+
+| Mục | Trạng thái | Ghi chú |
+|---|---|---|
+| 2.1 Nhúng LibretroDroid 0.14.0 | ✅ CI xanh (Emulator Test run 7) | Phải bỏ `oboe/apps` vì `gradle-wrapper.jar` lạ làm bước kiểm wrapper của CI đỏ |
+| 2.2 Thêm rcheevos | ✅ CI xanh (run 8) | Dùng **v12.5.0** (commit `1433173`): commit `f87c0de` ghi trong plan không có trên remote |
+| 2.3 Cầu nối native (`achievements.cpp/h`, `achievementsjni.cpp`, bản đồ bộ nhớ lõi, `doFrame` mỗi khung) | ✅ biên dịch + Emulator Test xanh (run 10) | RA **tắt** khi chưa cấu hình → game chạy như cũ |
+| 2.4 Kotlin `RetroAchievements` (HTTP bằng `HttpURLConnection`, sự kiện, JSON danh sách) | ✅ biên dịch | |
+| 2.5 App: lấy token bằng mật khẩu (`RaAccount.enableInGame`), thẻ "Thành tựu khi chơi game", Hardcore, toast mở khóa, khóa nạp state/cheat | ✅ biên dịch + test | Danh sách thành tựu trong game (sheet) chưa làm: JSON đã có ở `RetroAchievements.describeJson()` |
+| 2.6 Kiểm máy thật | ⛔ **chưa** | Cần tài khoản RA thật; chưa kiểm `rc_libretro_memory_init` với từng lõi |
+
+**Hạn chế đã biết:** chỉ bật cho game nạp bằng đường dẫn file (không VFS/bytes) và cho các hệ trong `RaHasher.consoleFor` (GB/GBC/GBA/NES/SNES/Genesis/SMS/GG/NGP/WS/A2600). NDS/PS1/N64 chưa. Hardcore chỉ được RA công nhận sau khi RAdmin duyệt client "AowMonika" (⛔ việc của sếp); chưa duyệt thì vẫn mở khóa nhưng tính softcore.
