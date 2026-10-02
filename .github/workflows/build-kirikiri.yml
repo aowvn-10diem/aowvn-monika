@@ -14,21 +14,33 @@ on:
         type: choice
         default: debug
         options: [debug, release]
+      publish:
+        description: "Đưa APK lên Releases (repo packs công khai nếu có PACKS_TOKEN, không thì repo này)"
+        type: boolean
+        default: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-22.04
     timeout-minutes: 180
     steps:
+      - uses: actions/checkout@v4
+        with:
+          path: self
+
       - name: Lấy mã nguồn Kirikiroid2Yuri
         run: |
           git clone --depth 1 https://github.com/YuriSizuku/Kirikiroid2Yuri.git src
           cd src
           if [ "${{ inputs.ref }}" != HEAD ]; then git fetch --depth 1 origin "${{ inputs.ref }}" && git checkout FETCH_HEAD; fi
-          git log -1 --format='%h %ad %s' 
+          git log -1 --format='%h %ad %s'
+          # Bản vá của Aow Monika (kirikiri/patches): mở thẳng game từ Intent, đổi applicationId để không đụng bản gốc
+          for p in ../self/kirikiri/patches/*.patch; do echo "áp $p"; git apply --verbose "$p"; done
+          sed -i 's|applicationId "com.yuri.kirikiri2"|applicationId "vn.aow.monika.kirikiri"|' project/android/app/build.gradle
+          grep -n applicationId project/android/app/build.gradle
           echo "SRC_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v4
@@ -82,8 +94,8 @@ jobs:
         if: always()
         run: |
           mkdir -p out && cp /tmp/gradle.log out/ 2>/dev/null || true
-          # buildDir của dự án = ../../../build_android tính từ project/android → gốc workspace
-          find "$GITHUB_WORKSPACE/build_android" /build_android -name '*.apk' 2>/dev/null | while read -r f; do cp "$f" out/; done
+          find "$GITHUB_WORKSPACE" / -xdev -name '*.apk' -newer /tmp/gradle.log -o -xdev -name '*.apk' -mmin -30 2>/dev/null | grep -v Kirikiroid2_yuri_1.3.9 | sort -u | tee /tmp/apks.txt
+          while read -r f; do cp "$f" out/; done < /tmp/apks.txt
           for a in out/*.apk; do [ -f "$a" ] && { echo "== $a"; unzip -l "$a" | grep -E '\.so|classes.*dex|AndroidManifest' ; } ; done || true
           {
             echo "### Kirikiroid2Yuri @ $SRC_COMMIT"
@@ -95,3 +107,22 @@ jobs:
         with:
           name: kirikiroid2-yuri
           path: out/
+
+      - name: Đưa lên Releases
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ secrets.PACKS_TOKEN != '' && secrets.PACKS_TOKEN || github.token }}
+          GH_REPO: ${{ secrets.PACKS_TOKEN != '' && 'aowvn-10diem/aowvn-monika-packs' || github.repository }}
+        run: |
+          set -e
+          APK=$(ls out/*.apk | head -1)
+          cp "$APK" Kirikiroid2-AowVN.apk
+          sha256sum Kirikiroid2-AowVN.apk | tee Kirikiroid2-AowVN.apk.sha256
+          cat > SOURCE.txt <<EOT
+          Kirikiroid2Yuri — https://github.com/YuriSizuku/Kirikiroid2Yuri (giấy phép kiểu BSD sửa đổi, xem LICENSE trong kho đó)
+          Commit: $SRC_COMMIT
+          Bản vá của Aow Monika: mở thẳng game theo Intent extra "aow_game_path"; đổi applicationId. Xem kirikiri/patches trong kho Aow Monika.
+          EOT
+          gh release create "engines-kirikiri-${{ github.run_number }}" Kirikiroid2-AowVN.apk Kirikiroid2-AowVN.apk.sha256 SOURCE.txt \
+            --title "Kirikiri (Kirikiroid2Yuri) #${{ github.run_number }}" \
+            --notes "Dựng lại từ mã nguồn Kirikiroid2Yuri @ $SRC_COMMIT. App ngoài; Monika tải và cài khi người chơi có game Kirikiri."

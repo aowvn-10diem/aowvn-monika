@@ -1,0 +1,52 @@
+diff --git a/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java b/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java
+index 483407a..adea0d3 100644
+--- a/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java
++++ b/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java
+@@ -300,6 +300,16 @@ public class KR2Activity extends Cocos2dxActivity implements ActivityCompat.OnRe
+ 
+ 	static public KR2Activity sInstance;
+ 	static public KR2Activity GetInstance() {return sInstance;}
++
++	// Aow Monika: đường dẫn game do app ngoài truyền qua Intent (extra "aow_game_path") → mở thẳng game, bỏ qua trình duyệt file.
++	static public String getStartupGamePath() {
++		try {
++			KR2Activity a = sInstance;
++			if (a == null || a.getIntent() == null) return "";
++			String p = a.getIntent().getStringExtra("aow_game_path");
++			return p == null ? "" : p;
++		} catch (Throwable t) { return ""; }
++	}
+     
+ 	@Override
+ 	public void onCreate(Bundle savedInstanceState) {
+diff --git a/src/core/environ/android/AndroidUtils.cpp b/src/core/environ/android/AndroidUtils.cpp
+index aac3a00..d3fba3d 100644
+--- a/src/core/environ/android/AndroidUtils.cpp
++++ b/src/core/environ/android/AndroidUtils.cpp
+@@ -1,4 +1,5 @@
+ #include "AndroidUtils.h"
++#include "cocos2d/MainScene.h"
+ #include "minizip/unzip.h"
+ #include "zlib.h"
+ #include <map>
+@@ -601,6 +602,20 @@ bool TVPCheckStartupArg() {
+ 	};
+ 	static_cast<HackForScheduler*>(director->getScheduler())->regProcessEvents();
+ #endif
++	// Aow Monika: mở thẳng game theo đường dẫn trong Intent (nếu có)
++	{
++		JniMethodInfo mi;
++		if (JniHelper::getStaticMethodInfo(mi, "org/tvp/kirikiri2/KR2Activity", "getStartupGamePath", "()Ljava/lang/String;")) {
++			jstring js = (jstring)mi.env->CallStaticObjectMethod(mi.classID, mi.methodID);
++			if (js) {
++				const char *c = mi.env->GetStringUTFChars(js, nullptr);
++				std::string path = c ? c : "";
++				if (c) mi.env->ReleaseStringUTFChars(js, c);
++				mi.env->DeleteLocalRef(js);
++				if (!path.empty() && TVPMainScene::GetInstance()->startupFrom(path)) return true;
++			}
++		}
++	}
+ 	return false;
+ }
+ 
