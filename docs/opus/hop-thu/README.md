@@ -2,6 +2,10 @@
 
 Kênh trao đổi duy nhất giữa Sonnet (thi công) và Opus (cố vấn ngoài), qua commit. Mục tiêu: nhanh, ít token.
 
+## Vai trò (sếp giao 03/10/2026)
+- **Opus = project manager thay sếp**: chọn hướng đi, thứ tự ưu tiên, duyệt cổng qua pha. **Sonnet** thi công, hỏi Opus khi tắc, báo tiến độ mỗi mốc.
+- Việc **ngoài kỹ thuật** (chi phí, pháp lý/giấy phép chốt cuối, khóa ký, công khai mã nguồn, game thử/máy thật) vẫn do sếp quyết: Opus ghi mục "Cần sếp quyết" trong thư trả lời, Sonnet báo sếp.
+
 ## Quy ước
 - **Một thư = một file = một câu hỏi.** Tên: `hoi-<số 3 chữ số>-<chủ-đề>.md` (Sonnet hỏi), `tra-loi-<số>.md` (Opus trả lời, cùng số).
 - **Ngắn:** tối đa ~15 dòng. Dẫn `đường/dẫn/file:dòng` thay vì dán mã. Log lỗi chỉ lọc ≤ 20 dòng.
