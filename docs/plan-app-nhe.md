@@ -53,3 +53,35 @@ Hiện có: `CoreManager` (lõi libretro), `AzaharModule` (engine 3DS). Tổng q
 | Repo phụ bị GitHub giới hạn băng thông/tốc độ | Giữ tùy chọn chuyển sang Cloudflare R2 chỉ bằng đổi `url` trong config |
 | Gói lỗi/độc hại bị thay | Kiểm SHA-256 lấy từ config (config đi qua Worker của AowVN) |
 | Nhiều gói làm tăng độ phức tạp hỗ trợ | Một `PackManager` duy nhất, mọi gói cùng cách tải/báo lỗi |
+
+---
+## 7. Tải trước thông minh ("tải phần đằng sau ngay trong lúc đang tải")
+
+**Hiện có:** `CorePrefetchWorker` tải lõi libretro (a) lần đầu mở app theo `prefetchCores` trong config, (b) **sau khi** giải nén xong game mới (`LibraryScreen` dòng ~139). Tức là bước tải phụ chỉ bắt đầu **khi game đã tải xong** — chậm hơn cần thiết.
+
+**Mục tiêu:** ngay khi người dùng bắt đầu một việc, đoán được "phần đằng sau" cần gì và tải song song với việc đang làm.
+
+### 7.1 Tín hiệu để đoán (rẻ → chắc)
+| Thời điểm | Tín hiệu | Đoán ra |
+|---|---|---|
+| Mở bài viết game (`PostScreen`) | Nhãn bài (`labels`, vd. "Game NDS Việt Hóa") khớp `systems[].labels` | Hệ máy → lõi/engine của hệ đó |
+| **Bấm tải** (`BrowserDownloads.start` / `Downloader.enqueue`) | `GameMeta.labels` đi kèm; đuôi/mime/tên file (`.zip .7z .rar` → cần giải nén; `.jar .jad` → game Java; `.apk .xapk` → trình cài APK; `.iso .cso`, `.nds`…) | Gói cần: **giải nén**, **game Java**, lõi đúng hệ, engine 3DS… |
+| Đang tải (có `Content-Disposition` → tên thật) | Tên file chính xác hơn | Hiệu chỉnh đoán (vd. tên `.7z`) |
+| Tải xong, trước giải nén | Nhìn vào bên trong file nén (danh sách entry) | Hệ máy thật → lõi |
+
+### 7.2 Thành phần mới `PrefetchPlanner` (một chỗ duy nhất)
+- `fun plan(signals): List<PackRef>` — hàm thuần (dễ test): nhận nhãn bài + tên/đuôi file + mime, trả danh sách gói cần (cores, `archive`, `java`, `azahar`…). Bảng ánh xạ đuôi/nhãn → gói nằm trong **config** (sửa không cần APK mới).
+- `PackManager.prefetch(refs, reason)` — xếp hàng, **loại trùng** (đang tải/đã có thì bỏ qua), ưu tiên gói nhỏ trước, **không tranh băng thông** với file game đang tải (giới hạn song song 1–2, hạ ưu tiên khi game đang tải).
+- Móc vào: `PostScreen` (mở bài), `BrowserDownloads.start`, `Downloader.enqueue`, `ImportWorker` (nhập file từ máy), `GameLauncher` (bấm Chơi mà vẫn thiếu → tải ngay, hiện hộp tiến độ).
+
+### 7.3 Quy tắc để không phí / không gây khó chịu
+1. **Mạng:** tải trước chỉ khi có Wi-Fi, hoặc gói nhỏ (< 15 MB) trên dữ liệu di động; tôn trọng chế độ Tiết kiệm dữ liệu của Android. Tùy chọn trong Cài đặt đã có ("Tải trước game"); thêm "Tải trước thành phần: Wi-Fi / Luôn / Tắt".
+2. **Đoán sai thì rẻ:** gói đoán sai chỉ là tải thừa; ghi lại tỉ lệ đoán đúng (số liệu ẩn danh trong báo cáo lỗi nếu bật) để chỉnh bảng ánh xạ. Không tải thứ > 30 MB khi chỉ mới đoán từ nhãn bài (chờ tín hiệu chắc hơn như tên file) trừ khi đang trên Wi-Fi.
+3. **Hiển thị:** một dòng phụ trong màn Tải xuống ("Đang chuẩn bị bộ giải nén…", có thể hủy); không thông báo ồn ào; xong thì im lặng.
+4. **Hủy gọn:** người dùng hủy tải game → hủy tải trước nếu chưa dùng tới.
+5. **An toàn:** vẫn kiểm SHA-256 (mục 4); không thực thi gì từ gói trước khi kiểm xong.
+
+### 7.4 Thứ tự làm
+1. **Làm ngay được (không cần gói mới):** đưa việc tải lõi libretro lên **lúc bắt đầu tải/mở bài** thay vì sau khi giải nén; thêm hàm thuần `PrefetchPlanner.plan` + test. (Hiệu quả thấy ngay vì lõi nặng 2–20 MB.)
+2. **Cùng `PackManager`:** móc cho Azahar (khi có game 3DS), "Giải nén", "Game Java" (các bước 2–3 mục 3).
+3. Kiểm: unit test bảng ánh xạ (nhãn/đuôi → gói), test không tải trùng, Emulator Test không tải khi chưa có tín hiệu.
