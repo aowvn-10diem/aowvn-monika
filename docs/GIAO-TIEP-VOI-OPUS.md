@@ -136,7 +136,7 @@ flowchart LR
 5. RetroAchievements cho NDS/N64/PS1 (cần cách băm riêng).
 6. xdelta/PPF cho vá Việt hóa; ISO > 256 MB.
 7. Nhúng sâu Ren'Py, RPG Maker XP/VX/Ace (`docs/plan-engine-moi.md`), Symbian.
-8. **Nhúng Symbian (EKA2L1)**: sếp chốt vẫn phải nhúng, làm sau RPG Maker và Ren'Py; chưa có phương án (xem `docs/opus/2026-10-03-nhung-renpy-rgss.md` mục 8). Hiện vẫn mở app ngoài EKA2L1.
+8. **Nhúng Symbian (EKA2L1)**: sếp chốt vẫn phải nhúng, làm sau RPG Maker và Ren'Py. ĐÃ CÓ phương án: `docs/opus/2026-10-03-nhung-symbian-eka2l1.md` (khối S0–S7; chờ sếp chốt A1, A2 ở mục 8 của file đó). Hiện vẫn mở app ngoài EKA2L1.
 9. Kirikiri chỉ có **arm64-v8a** (nguồn Yuri chỉ dựng cho chip này).
 
 ## 6. Cách làm việc và cách đưa phương án (giao thức cho Opus)
@@ -163,4 +163,4 @@ Trao đổi hằng ngày Sonnet ⇄ Opus qua `docs/opus/hop-thu/` + `docs/opus/B
 5. **Nhúng sâu Ren'Py và RPG Maker XP/VX/Ace**: ĐÃ CÓ phương án (`docs/opus/2026-10-03-nhung-renpy-rgss.md`), đang thi công: E0 xong, R0 spike đang chạy.
 6. **Kiểm thử không có máy thật**: bổ sung gì ở Emulator Test để bắt được lỗi chạm/âm thanh/lưu của Kirikiri?
 7. **Chất lượng crash log**: còn thiếu tín hiệu nào để chẩn đoán từ xa mà không cần máy thật?
-8. **Nhúng Symbian (EKA2L1)**: đóng gói thế nào, nhập firmware ra sao?
+8. **Nhúng Symbian (EKA2L1)**: ĐÃ CÓ phương án (`docs/opus/2026-10-03-nhung-symbian-eka2l1.md`): mô hình Azahar (JNI viết lại bằng Kotlin + gói `symbian-{abi}.zip` dựng từ nguồn ghim commit), firmware người chơi tự nhập theo 3 đường (zip cấu hình sẵn / ROM (+RPKG) / VPL).
