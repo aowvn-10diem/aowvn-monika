@@ -24,9 +24,9 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 
 | Mã | Việc | Giao | Phụ thuộc | Cách kiểm | Trạng thái |
 |---|---|---|---|---|---|
-| V01 | R0: spike mkxp-z ra `libmkxp-z.so` arm64, ghi `docs/opus/ket-qua/R0.md`. Ngưỡng dừng: 5 nguyên nhân hỏng khác nhau (đã dùng 2) | Sonnet | — | Artifact `.so` + bảng kích thước | đang làm |
-| V02 | R1: `build-rgss.yml` + `engines/rgss/`, áp `hop-thu/tra-loi-001.md` | Sonnet | V01 | `grep`/`nm`/`strings` theo thư 001; máy sạch dựng ra `rgss-{abi}.zip` | chờ |
-| V03 | P0: spike Ren'Py, ghi `docs/opus/ket-qua/P0.md` | Sonnet | — | Bảng đường dẫn + kích thước thật | đang làm |
+| V01 | R0: spike mkxp-z ra `libmkxp-z.so` arm64, ghi `docs/opus/ket-qua/R0.md`. Ngưỡng dừng: 5 nguyên nhân hỏng khác nhau (đã dùng 2) | Sonnet | — | Artifact `.so` + bảng kích thước | xong (7ec1c47: R0.md; còn cổng G1 hỏi sếp 1 game XP) |
+| V02 | R1: `build-rgss.yml` + `engines/rgss/`, áp `hop-thu/tra-loi-001.md` | Sonnet | V01 | `grep`/`nm`/`strings` theo thư 001; máy sạch dựng ra `rgss-{abi}.zip` | đang làm (f55a72e: build-rgss.yml; chờ run đầu; hướng tạm clone-và-dựng, hỏi thư 004) |
+| V03 | P0: spike Ren'Py, ghi `docs/opus/ket-qua/P0.md` | Sonnet | — | Bảng đường dẫn + kích thước thật | đang làm (RAPT không chứa private/; đổi sang `launcher distribute --no-archive`, run 5) |
 | V04 | P1: `build-renpy-pack.yml` (song song, chỉ CI) | Sonnet | V03 | Artifact `renpy8-{abi}.zip` + `.sha256` | chờ |
 | V05 | Phát hành Kirikiri 0.7.3 | Sonnet | — | Release có APK universal, SHA-256 chữ ký đúng (`CLAUDE.md`) | đang làm |
 | V06 | Mỗi lượt kiểm tra: gộp nhánh `docs/opus-tra-loi` vào `main` | Sonnet | — | `main` có các commit `[opus]` mới | lặp lại |
