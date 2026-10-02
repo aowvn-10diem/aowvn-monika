@@ -36,7 +36,7 @@ Thư viện native lớn nhất (nén): `libc++_shared` 7,8 · `liboboe` 3,0 · 
 Hiện có: `CoreManager` (lõi libretro), `AzaharModule` (engine 3DS). Tổng quát hóa thành `PackManager`:
 1. **Danh mục gói trong config** (`modules.<tên>`: url, version, sha256, kích thước, abis, `minAppVersion`). Cùng nguồn: repo phụ công khai `aowvn-10diem/aowvn-monika-packs`.
 2. **Tải an toàn:** kiểm **SHA-256** trước khi dùng (hiện `AzaharModule` chưa kiểm), ghi vào file tạm rồi đổi tên (không để gói dở), **tiếp tục tải khi mất mạng** (HTTP Range), thử lại.
-3. **Trải nghiệm lần đầu:** khi bấm Chơi mà thiếu gói → hộp thoại "Cần tải X MB để chơi game này" (nút Tải / Để sau; gợi ý dùng Wi-Fi nếu > 30 MB), thanh tiến độ, tự vào game khi xong. Có tùy chọn **"Tải sẵn tất cả"** trong Cài đặt (đã có `CorePrefetchWorker` cho lõi).
+3. **Trải nghiệm lần đầu:** khi bấm Chơi mà thiếu gói → hộp thoại "Cần tải X MB để chơi game này" (nút Tải / Để sau; gói > 15 MB: hỏi "Đợi Wi-Fi" hoặc "Tải luôn bằng 4G", xem mục 7), thanh tiến độ, tự vào game khi xong. Có tùy chọn **"Tải sẵn tất cả"** trong Cài đặt (đã có `CorePrefetchWorker` cho lõi).
 4. **Quản lý dung lượng:** màn Cài đặt → Bộ nhớ liệt kê gói đã tải + dung lượng + nút xóa (đã có phần xóa lõi tự động ở `StorageSettings`).
 5. **Chẩn đoán:** mọi lỗi tải/nạp gói đi qua `Diagnostics` với nhãn `pack:<tên>` (khớp kế hoạch crash log theo thành phần).
 6. **Kiểm:** unit test (SHA sai bị từ chối, tải dở không để lại gói hỏng, tiếp tục tải), Emulator Test không tải gì khi chưa dùng tính năng.
@@ -75,8 +75,8 @@ Hiện có: `CoreManager` (lõi libretro), `AzaharModule` (engine 3DS). Tổng q
 - Móc vào: `PostScreen` (mở bài), `BrowserDownloads.start`, `Downloader.enqueue`, `ImportWorker` (nhập file từ máy), `GameLauncher` (bấm Chơi mà vẫn thiếu → tải ngay, hiện hộp tiến độ).
 
 ### 7.3 Quy tắc để không phí / không gây khó chịu
-1. **Mạng:** tải trước chỉ khi có Wi-Fi, hoặc gói nhỏ (< 15 MB) trên dữ liệu di động; tôn trọng chế độ Tiết kiệm dữ liệu của Android. Tùy chọn trong Cài đặt đã có ("Tải trước game"); thêm "Tải trước thành phần: Wi-Fi / Luôn / Tắt".
-2. **Đoán sai thì rẻ:** gói đoán sai chỉ là tải thừa; ghi lại tỉ lệ đoán đúng (số liệu ẩn danh trong báo cáo lỗi nếu bật) để chỉnh bảng ánh xạ. Không tải thứ > 30 MB khi chỉ mới đoán từ nhãn bài (chờ tín hiệu chắc hơn như tên file) trừ khi đang trên Wi-Fi.
+1. **Mạng (đã chốt 02/10/2026):** gói ≤ 15 MB **tự tải ngay cả trên 4G**. Gói > 15 MB: hỏi người dùng 1 lần cho mỗi gói — **"Đợi Wi-Fi"** hoặc **"Tải luôn bằng 4G"**. Chọn "Đợi Wi-Fi" → gói vào hàng chờ; `ConnectivityManager.NetworkCallback` phát hiện máy chuyển sang Wi-Fi (mạng không tính phí) thì **tải ngay**, không cần mở lại app (WorkManager ràng `NetworkType.UNMETERED` làm dự phòng khi app bị tắt). Chọn "Tải luôn" → tải ngay trên 4G. Hỏi bằng thông báo/hộp thoại không chặn, ghi nhớ lựa chọn cho gói đó. Tôn trọng chế độ Tiết kiệm dữ liệu của Android (khi bật: gói ≤ 15 MB cũng hỏi). Cài đặt: "Tải trước thành phần: Tự động / Chỉ Wi-Fi / Tắt".
+2. **Đoán sai thì rẻ:** gói đoán sai chỉ là tải thừa; ghi lại tỉ lệ đoán đúng (số liệu ẩn danh trong báo cáo lỗi nếu bật) để chỉnh bảng ánh xạ. Gói > 15 MB mới đoán từ nhãn bài (chưa có tín hiệu chắc như tên file) thì chưa hỏi, chỉ hỏi khi tín hiệu đủ chắc; trên Wi-Fi thì tải luôn.
 3. **Hiển thị:** một dòng phụ trong màn Tải xuống ("Đang chuẩn bị bộ giải nén…", có thể hủy); không thông báo ồn ào; xong thì im lặng.
 4. **Hủy gọn:** người dùng hủy tải game → hủy tải trước nếu chưa dùng tới.
 5. **An toàn:** vẫn kiểm SHA-256 (mục 4); không thực thi gì từ gói trước khi kiểm xong.
