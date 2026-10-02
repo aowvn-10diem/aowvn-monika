@@ -34,7 +34,11 @@ jobs:
         working-directory: renpy-${{ inputs.version }}-sdk/rapt
         run: |
           set -o pipefail
-          yes | PYTHONPATH="$PWD/.." python3 android.py installsdk 2>&1 | tail -25
+          cd ..
+          ls lib/py3-linux-x86_64 | head -20
+          chmod +x lib/py3-linux-x86_64/* 2>/dev/null || true
+          # Python riêng của SDK (có sẵn phần mở rộng renpy.pygame); không dùng -E để PYTHONPATH có hiệu lực
+          yes | PYTHONPATH="$PWD:$PWD/lib/py3-linux-x86_64" lib/py3-linux-x86_64/python rapt/android.py installsdk 2>&1 | tail -25
 
       - name: Tạo khóa tạm + cấu hình dự án the_question
         working-directory: renpy-${{ inputs.version }}-sdk
