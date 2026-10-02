@@ -44,7 +44,10 @@ jobs:
 
       - name: Tải phụ thuộc (get_deps.sh)
         working-directory: src/app/jni
-        run: ./get_deps.sh 2>&1 | tail -30
+        run: |
+          set -o pipefail
+          bash ./get_deps.sh 2>&1 | tail -30
+          ls
 
       - name: Dựng thư viện native (make) — bật tối ưu -O2
         working-directory: src/app/jni
