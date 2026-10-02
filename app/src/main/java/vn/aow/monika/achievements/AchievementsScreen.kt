@@ -149,6 +149,7 @@ private fun SignedIn(creds: RaAccount.Creds, onOpenGame: (Int) -> Unit) {
         }
         is Load.Ok -> {
             val (profile, games, unlocks) = d.v
+            InGameCard()
             MonikaCard(Modifier.fillMaxWidth(), shape = Radius.hero, padding = PaddingValues(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     AsyncImage(RaApi.media(profile.userPic), null, contentScale = ContentScale.Crop, modifier = Modifier.size(56.dp).clip(Radius.pill).background(c.surfaceSoft))
@@ -189,6 +190,60 @@ private fun SignedIn(creds: RaAccount.Creds, onOpenGame: (Int) -> Unit) {
                     }
                 }
             }
+        }
+    }
+}
+
+/** Bật thành tựu mở khóa NGAY KHI CHƠI (RetroAchievements). Cần mật khẩu 1 lần để lấy mã đăng nhập; mật khẩu không được lưu. */
+@Composable
+private fun InGameCard() {
+    val c = Monika.colors
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val enabled by AppGraph.ra.inGame.collectAsState()
+    var password by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var hardcore by remember { mutableStateOf(AppGraph.ra.hardcore) }
+    MonikaCard(Modifier.fillMaxWidth(), shape = Radius.hero, padding = PaddingValues(18.dp)) {
+        Text("Thành tựu khi chơi game", style = Monika.type.cardTitle, color = c.text)
+        if (enabled) {
+            Text(
+                "Đã bật. Chơi game GB/GBC/GBA/NES/SNES/Genesis/Master System/Game Gear/NGP/WonderSwan/Atari 2600 có thành tựu thì Monika báo ngay lúc mở khóa và đồng bộ lên tài khoản của bạn.",
+                style = Monika.type.caption, color = c.textSecondary, modifier = Modifier.padding(top = 6.dp),
+            )
+            Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Chế độ Hardcore", style = Monika.type.bodyStrong, color = c.text)
+                    Text(
+                        if (hardcore) "Bật: khóa nạp state, mã cheat và chạy chậm khi game có thành tựu. Điểm được tính hardcore (cần RetroAchievements duyệt app)."
+                        else "Tắt (softcore): được dùng nạp state, cheat, chạy chậm. Điểm tính softcore.",
+                        style = Monika.type.caption, color = c.textSecondary,
+                    )
+                }
+                androidx.compose.material3.Switch(hardcore, { hardcore = it; AppGraph.ra.hardcore = it })
+            }
+            SoftPillButton("Tắt thành tựu trong game", { AppGraph.ra.disableInGame() }, R.drawable.ic_fluent_sign_out_24_regular, Modifier.padding(top = 10.dp))
+        } else {
+            Text(
+                "Để mở khóa thành tựu ngay trong game, nhập mật khẩu RetroAchievements một lần. Monika chỉ dùng nó để lấy mã đăng nhập (lưu mã hóa trên máy), không lưu mật khẩu.",
+                style = Monika.type.caption, color = c.textSecondary, modifier = Modifier.padding(top = 6.dp, bottom = 10.dp),
+            )
+            OutlinedTextField(
+                password, { password = it }, Modifier.fillMaxWidth(), singleLine = true, shape = Radius.small, label = { Text("Mật khẩu RetroAchievements") },
+                visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            )
+            error?.let { Text(it, style = Monika.type.caption, color = c.danger, modifier = Modifier.padding(top = 8.dp)) }
+            GradientButton(if (busy) "Đang đăng nhập…" else "Bật thành tựu trong game", {
+                if (busy || password.isBlank()) return@GradientButton
+                busy = true; error = null
+                scope.launch {
+                    runCatching { AppGraph.ra.enableInGame(password) }
+                        .onSuccess { password = ""; Toast.makeText(context, "Đã bật thành tựu trong game", Toast.LENGTH_SHORT).show() }
+                        .onFailure { error = if (it is RaAuthException) (it.message ?: "Sai mật khẩu") else "Không kết nối được RetroAchievements" }
+                    busy = false
+                }
+            }, Modifier.fillMaxWidth().padding(top = 12.dp), icon = R.drawable.ic_fluent_star_24_regular, height = 48.dp, enabled = !busy)
         }
     }
 }

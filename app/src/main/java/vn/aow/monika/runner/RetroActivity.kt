@@ -52,6 +52,24 @@ class RetroActivity : ComponentActivity() {
     private val ui = InGameState()
     private var ready by mutableStateOf(false)
     private lateinit var cheats: CheatController
+
+    // RetroAchievements: raWanted = đã cấu hình hardcore; raActive = game đã nhận diện + hardcore → khóa nạp state/cheat.
+    private var raWanted = false
+    private var raActive = false
+    private val raListener = object : com.swordfish.libretrodroid.RetroAchievements.Listener {
+        override fun onUnlocked(id: Int, title: String, description: String, badgeUrl: String, points: Int) {
+            showToast("🏆 Đã mở: $title (+$points điểm)", 3500)
+        }
+
+        override fun onState(state: com.swordfish.libretrodroid.RetroAchievements.State, message: String?) {
+            when (state) {
+                com.swordfish.libretrodroid.RetroAchievements.State.GAME_LOADED -> { raActive = raWanted; showToast("Thành tựu: ${message ?: "đã sẵn sàng"}", 2600) }
+                com.swordfish.libretrodroid.RetroAchievements.State.LOGIN_FAILED -> showToast("Thành tựu: đăng nhập lỗi (${message ?: "?"}). Vào Thành tựu để bật lại.", 4000)
+                com.swordfish.libretrodroid.RetroAchievements.State.GAME_NOT_FOUND -> showToast("Game này chưa có thành tựu trên RetroAchievements", 2600)
+                else -> message?.let { showToast(it, 3000) }
+            }
+        }
+    }
     private val cheatPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { u -> if (u != null) cheats.importFile(u) }
     private var aspect = 4f / 3f
 
@@ -206,7 +224,7 @@ class RetroActivity : ComponentActivity() {
                                 vn.aow.monika.ui.theme.SheetAction("Kiểu hình: $label", vn.aow.monika.R.drawable.ic_fluent_eye_24_regular) { cycleDisplayStyle() }
                             },
                             vn.aow.monika.ui.theme.SheetAction("Dịch khung này", vn.aow.monika.R.drawable.ic_fluent_globe_24_regular) { translateFrame() },
-                            vn.aow.monika.ui.theme.SheetAction("Mã cheat", vn.aow.monika.R.drawable.ic_fluent_document_24_regular) { cheats.show() },
+                            vn.aow.monika.ui.theme.SheetAction("Mã cheat", vn.aow.monika.R.drawable.ic_fluent_document_24_regular) { if (raActive) showToast("Hardcore: không dùng mã cheat khi chơi game có thành tựu") else cheats.show() },
                         ),
                     )
                     TranslateResultSheet(translateResult, translateBusy) { translateResult = null }
@@ -243,6 +261,10 @@ class RetroActivity : ComponentActivity() {
             val data = GLRetroViewData(this@RetroActivity).apply {
                 coreFilePath = core.absolutePath
                 gameFilePath = gamePath
+                // Thành tựu RetroAchievements: chỉ khi đã bật trong game + hệ máy hỗ trợ (xem achievements/RaInGame).
+                achievements = vn.aow.monika.achievements.RaInGame.config(
+                    intent.getStringExtra(EXTRA_SYSTEM_ID).orEmpty(), File(gamePath), AppGraph.ra.hardcore, raListener,
+                )?.also { raWanted = AppGraph.ra.hardcore }
                 systemDirectory = AppGraph.cores.systemDir().absolutePath
                 savesDirectory = sramFile.parentFile!!.absolutePath
                 saveRAMState = sramFile.takeIf { it.exists() }?.readBytes()
@@ -276,7 +298,7 @@ class RetroActivity : ComponentActivity() {
                     if (e is GLRetroView.GLRetroEvents.FrameRendered && !firstFrame) {
                         firstFrame = true
                         Diagnostics.stage(this@RetroActivity, "first-frame")
-                        cheats.applyAll() // lõi đã nạp game → áp các mã đang bật
+                        if (!raWanted) cheats.applyAll() // lõi đã nạp game → áp các mã đang bật (hardcore: không áp cheat)
                     }
                     if (e is GLRetroView.GLRetroEvents.FrameRendered) dismissLoading()
                 }
@@ -453,6 +475,7 @@ class RetroActivity : ComponentActivity() {
 
     private fun loadState() {
         val view = retroView ?: return
+        if (raActive) { ui.menuOpen = false; showToast("Hardcore: không nạp state khi chơi game có thành tựu"); return }
         val slot = ui.slot
         ui.menuOpen = false
         val file = slotFile(slot)

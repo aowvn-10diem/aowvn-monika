@@ -31,6 +31,21 @@ class RaApi(private val http: OkHttpClient, private val base: String = "https://
         }
     }
 
+    /** Đăng nhập bằng mật khẩu để lấy mã đăng nhập (token) cho rcheevos trong game. Mật khẩu không được lưu. */
+    suspend fun loginWithPassword(user: String, password: String): String = withContext(Dispatchers.IO) {
+        val form = okhttp3.FormBody.Builder().add("r", "login2").add("u", user.trim()).add("p", password).build()
+        http.newCall(Request.Builder().url("$base/dorequest.php").post(form).header("User-Agent", "AowMonika (Android)").build()).execute().use { r ->
+            val text = r.body?.string().orEmpty()
+            if (!r.isSuccessful) throw IOException("RetroAchievements trả lỗi ${r.code}")
+            val o = runCatching { Json.parseToJsonElement(text) as kotlinx.serialization.json.JsonObject }.getOrNull()
+                ?: throw IOException("Phản hồi RetroAchievements không đọc được")
+            val ok = (o["Success"] as? kotlinx.serialization.json.JsonPrimitive)?.content == "true"
+            val token = (o["Token"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+            if (!ok || token.isNullOrBlank()) throw RaAuthException((o["Error"] as? kotlinx.serialization.json.JsonPrimitive)?.content ?: "Sai tên hoặc mật khẩu")
+            token
+        }
+    }
+
     suspend fun profile(user: String, key: String): RaProfile {
         val body = get("API_GetUserProfile", key, "u" to user)
         val p = json.decodeFromString(RaProfile.serializer(), body)
