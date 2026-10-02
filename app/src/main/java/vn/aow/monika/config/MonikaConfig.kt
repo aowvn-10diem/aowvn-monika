@@ -25,6 +25,7 @@ data class MonikaConfig(
     val prefetchByExtension: Map<String, List<String>> = emptyMap(),
     /** Link cộng đồng AowVN (group Facebook, Discord). Để trống = ẩn nút. */
     val community: CommunityConfig = CommunityConfig(),
+    val forum: ForumConfig = ForumConfig(),
     /** Chặn quảng cáo trong trình duyệt nhúng. */
     val adblock: AdBlockConfig = AdBlockConfig(),
     /** Tài khoản AowVN (Firebase của web aow.vn): đăng nhập, điểm danh, đánh giá, vote/donate. */
@@ -139,6 +140,17 @@ data class CommunityChannel(
     val subtitle: String = "",
     val url: String,
     val emoji: String = "fluent3d_speech_balloon",
+)
+
+/** Diễn đàn AowVN (Flarum): Trang chủ hiện chủ đề mới nhất + lối tắt chuyên mục. */
+@Serializable
+data class ForumConfig(
+    val enabled: Boolean = true,
+    val baseUrl: String = "https://forum.aowvn.org",
+    /** Số chủ đề hiện ở Trang chủ. */
+    val limit: Int = 6,
+    /** Tên chuyên mục (tag) không hiện ở app. */
+    val hiddenTags: List<String> = emptyList(),
 )
 
 @Serializable

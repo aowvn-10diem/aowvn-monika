@@ -1,5 +1,5 @@
 {
-  "configVersion": 27,
+  "configVersion": 28,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -532,6 +532,13 @@
         "subtitle": "Chat, nhóm dịch",
         "url": "https://discord.gg/ynZAnpnXPk",
         "emoji": "fluent3d_speech_balloon"
+      },
+      {
+        "id": "forum",
+        "name": "Forum AowVN",
+        "subtitle": "Bài viết, thảo luận",
+        "url": "https://forum.aowvn.org",
+        "emoji": "fluent3d_classical_building"
       }
     ]
   },
@@ -1149,6 +1156,14 @@
     ],
     "001": [
       "sevenzip"
+    ]
+  },
+  "forum": {
+    "enabled": true,
+    "baseUrl": "https://forum.aowvn.org",
+    "limit": 6,
+    "hiddenTags": [
+      "Nhà Tù AowVN"
     ]
   }
 }

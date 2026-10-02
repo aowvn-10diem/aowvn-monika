@@ -15,7 +15,7 @@
 
 | Package | File | Dòng | Phụ thuộc vào (số tham chiếu) | Được dùng bởi |
 |---|---:|---:|---|---|
-| `ui` | 22 | 4785 | library(20), (gốc)(15), feed(10), runner(6), download(6), diag(5) | runner(22), azahar(19), achievements(17), browser(14), cheats(12), apkinstall(8) |
+| `ui` | 22 | 4865 | library(20), (gốc)(15), feed(10), runner(6), download(6), diag(5) | runner(22), azahar(19), achievements(17), browser(14), cheats(12), apkinstall(8) |
 | `apkinstall` | 27 | 2615 | ui(8), notify(4), library(1) | runner(2), translate(2), achievements(2), ui(1), download(1) |
 | `runner` | 11 | 2116 | ui(22), config(9), cheats(7), translate(5), (gốc)(4), community(3) | azahar(9), ui(6), (gốc)(4), download(2) |
 | `library` | 20 | 1781 | feed(7), pack(7), config(6), (gốc)(6), ui(3), notify(2) | ui(20), download(9), (gốc)(7), runner(3), patch(3), cheats(2) |
@@ -24,12 +24,13 @@
 | `achievements` | 8 | 632 | ui(17), apkinstall(2), (gốc)(2), browser(1), library(1) | (gốc)(4), ui(2) |
 | `cheats` | 7 | 615 | ui(12), library(2), (gốc)(1) | runner(7) |
 | `download` | 5 | 561 | library(9), (gốc)(5), notify(3), runner(2), config(1), ui(1) | ui(6), browser(5), (gốc)(2) |
-| `(gốc)` | 4 | 408 | library(7), runner(4), feed(4), achievements(4), translate(3), notify(2) | ui(15), library(6), download(5), runner(4), azahar(2), achievements(2) |
+| `(gốc)` | 4 | 409 | library(7), runner(4), feed(4), achievements(4), translate(3), notify(2) | ui(15), library(6), download(5), runner(4), azahar(2), achievements(2) |
 | `diag` | 1 | 359 | (gốc)(1) | ui(5), azahar(2), (gốc)(1), runner(1), pack(1) |
+| `config` | 2 | 350 | — | runner(9), library(6), ui(2), account(2), pack(2), (gốc)(1) |
 | `translate` | 6 | 341 | ui(5), apkinstall(2) | runner(5), (gốc)(3) |
-| `config` | 2 | 338 | — | runner(9), library(6), ui(2), account(2), pack(2), (gốc)(1) |
 | `account` | 3 | 334 | config(2), browser(1), ui(1), (gốc)(1) | (gốc)(2), ui(2) |
 | `pack` | 3 | 268 | config(2), notify(1), library(1), diag(1), (gốc)(1), azahar(1) | library(7), runner(2), (gốc)(1) |
+| `forum` | 1 | 212 | config(1) | ui(2), (gốc)(1) |
 | `patch` | 2 | 190 | library(3) | ui(1) |
 | `feed` | 2 | 164 | config(1) | ui(10), library(7), (gốc)(4), notify(1) |
 | `notify` | 2 | 124 | feed(1), ui(1), (gốc)(1) | apkinstall(4), download(3), (gốc)(2), library(2), pack(1) |
@@ -39,7 +40,7 @@
 
 ```mermaid
 flowchart LR
-  root["(gốc)\n408 dòng"]
+  root["(gốc)\n409 dòng"]
   account["account\n334 dòng"]
   achievements["achievements\n632 dòng"]
   apkinstall["apkinstall\n2615 dòng"]
@@ -47,17 +48,18 @@ flowchart LR
   browser["browser\n1061 dòng"]
   cheats["cheats\n615 dòng"]
   community["community\n120 dòng"]
-  config["config\n338 dòng"]
+  config["config\n350 dòng"]
   diag["diag\n359 dòng"]
   download["download\n561 dòng"]
   feed["feed\n164 dòng"]
+  forum["forum\n212 dòng"]
   library["library\n1781 dòng"]
   notify["notify\n124 dòng"]
   pack["pack\n268 dòng"]
   patch["patch\n190 dòng"]
   runner["runner\n2116 dòng"]
   translate["translate\n341 dòng"]
-  ui["ui\n4785 dòng"]
+  ui["ui\n4865 dòng"]
   runner -->|22| ui
   ui -->|20| library
   azahar -->|19| ui
