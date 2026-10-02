@@ -72,7 +72,9 @@ object PackManager {
         val cm = cm(context)
         val unmetered = !cm.isActiveNetworkMetered
         val saver = cm.restrictBackgroundStatus == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED
-        when (PackPolicy.decide(size, unmetered, saver, choiceOf(context, id))) {
+        val decision = PackPolicy.decide(size, unmetered, saver, choiceOf(context, id))
+        runCatching { vn.aow.monika.diag.Diagnostics.crumb(context, "pack", "yêu cầu $id ~${size / 1024}KB wifi=$unmetered tiết kiệm=$saver → $decision") }
+        when (decision) {
             PackAction.START -> enqueue(context, id, wifiOnly = false)
             PackAction.WAIT -> enqueue(context, id, wifiOnly = true)
             PackAction.ASK -> ask(context, id, size)
@@ -133,6 +135,7 @@ class PackWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     override suspend fun doWork(): Result {
         val id = inputData.getString(KEY_ID) ?: return Result.success()
         if (!PackManager.needed(id)) return Result.success()
+        runCatching { vn.aow.monika.diag.Diagnostics.crumb(applicationContext, "pack", "bắt đầu $id (lần ${runAttemptCount + 1})") }
         runCatching { setForeground(info("Đang chuẩn bị thành phần", id, null)) }
         val nm = applicationContext.getSystemService(NotificationManager::class.java)
         return try {
@@ -140,10 +143,14 @@ class PackWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 val pct = st.substringAfterLast(' ').removeSuffix("%").toIntOrNull()
                 runCatching { nm.notify(NOTI_ID, Notifier.progress(applicationContext, "Đang tải thành phần", id, pct)) }
             }
+            runCatching { vn.aow.monika.diag.Diagnostics.crumb(applicationContext, "pack", "xong $id") }
             Result.success()
         } catch (e: Exception) {
-            runCatching { vn.aow.monika.diag.Diagnostics.recordCoreFailure(applicationContext, "pack:$id", e.message ?: e.toString()) }
-            if (runAttemptCount < 3) Result.retry() else Result.failure()
+            // Chỉ báo cáo khi hết lượt thử (retry còn thì chỉ ghi vệt) → không đẻ 3 báo cáo cho 1 lần tải lỗi.
+            val last = runAttemptCount >= 2
+            runCatching { vn.aow.monika.diag.Diagnostics.crumb(applicationContext, "pack", "$id lần ${runAttemptCount + 1} lỗi: ${e.javaClass.simpleName} ${e.message.orEmpty().take(80)}") }
+            if (last) runCatching { vn.aow.monika.diag.Diagnostics.recordHandled(applicationContext, "pack:$id", "tải/cài lỗi sau ${runAttemptCount + 1} lần thử", e) }
+            if (!last) Result.retry() else Result.failure()
         } finally { runCatching { nm.cancel(NOTI_ID) } }
     }
 

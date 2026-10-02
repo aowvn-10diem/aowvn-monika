@@ -64,3 +64,9 @@ Repo **chưa có** GitHub Secrets ký app (`MONIKA_KEYSTORE_*`) và cũng không
 4. Giải nén: zip/rar/rar5/7z (libarchive 1.1.6; 1.1.7 đòi compileSdk 37), file chia nhiều phần, % tiến độ (thông báo + màn Thư viện). 7z có mật khẩu: libarchive lỗi → `SevenZipExtractor` (Commons Compress, test `SevenZipTest` với file mẫu `app/src/test/resources/7z/`). Chưa test trên máy thật.
 5. ĐÃ nhúng J2ME Loader (runner "j2me") + phím ảo kiểu Monika. Còn: ONScripter (native C++ + SDL, cần high).
 6. Port Ren'Py, mkxp-z (RPG Maker XP/VX/Ace) — khó, làm sau.
+
+## Bắt crash log (`diag/`)
+- `Diagnostics` là kho báo cáo duy nhất; mọi báo cáo có `component` (`pack:<tên>`, `engine:libretro:<lõi>`, `engine:onsyuri`, `ra`, `net`, `app:<mục>`), `env` (RAM/heap/đĩa/mạng), `crumbs` (vệt sự kiện), `count` (lỗi trùng dấu vân tay được gộp).
+- Nguồn: lỗi Java (`CrashReporter`), game chết (phiên + `ApplicationExitInfo`), chết của tiến trình chính (`collectProcessDeaths`: native/ANR/hết RAM), lỗi bắt được (`recordHandled`, không bật hộp thoại).
+- Thêm mã mới: ghi vệt bằng `Diagnostics.crumb(ctx, tag, msg)`; lỗi nuốt-được thì `recordHandled(ctx, "pack:x", "mô tả", e)`. Nội dung báo cáo luôn qua `scrub` (che đường dẫn/email/token).
+- Vệt sự kiện nằm ở file `diag/crumbs/<pid>.log` → sống sót cả khi native crash.

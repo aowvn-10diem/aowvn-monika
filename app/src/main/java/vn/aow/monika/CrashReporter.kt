@@ -25,9 +25,13 @@ import kotlin.system.exitProcess
  * Không gửi gì lên mạng. Chạy trước mọi thứ khác trong Application.
  */
 object CrashReporter {
+    @Volatile private var handling = false
+
     fun install(app: Application) {
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, e ->
+            if (handling) { previous?.uncaughtException(thread, e); return@setDefaultUncaughtExceptionHandler } // lỗi trong lúc xử lý lỗi: đừng lặp
+            handling = true
             runCatching {
                 // Lưu vào kho báo cáo (kèm lõi/game đang chạy nếu là lỗi ở tiến trình game) + file "lỗi gần nhất" cho màn báo lỗi.
                 val report = vn.aow.monika.diag.Diagnostics.recordJavaCrash(app, thread.name, e)

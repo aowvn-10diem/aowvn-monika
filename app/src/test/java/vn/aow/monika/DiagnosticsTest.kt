@@ -11,6 +11,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import vn.aow.monika.diag.Breadcrumbs
 import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.ui.TestApp
 import java.io.File
@@ -96,5 +97,44 @@ class DiagnosticsTest {
         assertEquals(false, sent)
         val clip = app.getSystemService(android.content.ClipboardManager::class.java).primaryClip!!.getItemAt(0).text.toString()
         assertTrue(clip.contains("Pokemon.nds"))
+    }
+
+    @Test fun handledErrorCarriesComponentCrumbsAndEnv() {
+        Diagnostics.crumb(app, "pack", "yêu cầu sevenzip")
+        val r = Diagnostics.recordHandled(app, "pack:sevenzip", "tải lỗi", java.io.IOException("hết dung lượng"))
+        assertEquals("pack:sevenzip", r.component)
+        assertTrue(r.crumbs.any { it.contains("yêu cầu sevenzip") })
+        assertTrue(r.env.contains("RAM") && r.env.contains("đĩa"))
+        assertTrue(r.toText().contains("Thành phần: pack:sevenzip") && r.toText().contains("vệt sự kiện"))
+    }
+
+    @Test fun sameErrorIsMergedWithCount() {
+        repeat(3) { Diagnostics.recordHandled(app, "pack:onsyuri", "tải lỗi", java.io.IOException("timeout 1$it")) }
+        val l = Diagnostics.list(app)
+        assertEquals(1, l.size)
+        assertEquals(3, l[0].count)
+        Diagnostics.recordHandled(app, "pack:azahar", "tải lỗi", java.io.IOException("x"))
+        assertEquals(2, Diagnostics.list(app).size) // thành phần khác → báo cáo riêng
+    }
+
+    @Test fun javaCrashGetsComponentFromStack() {
+        val e = RuntimeException("boom").apply { stackTrace = arrayOf(StackTraceElement("vn.aow.monika.pack.SimpleModule", "ensure", "SimpleModule.kt", 42)) }
+        val r = Diagnostics.recordJavaCrash(app, "main", e)
+        assertEquals("pack", r.component)
+        assertTrue(r.title.contains("pack"))
+    }
+
+    @Test fun deadGameSessionKeepsCrumbsAndLibretroComponent() {
+        fakeDeadSession("loading-game")
+        Breadcrumbs.add(app, "stage", "loading-game", pid = 424242)
+        val r = Diagnostics.collect(app)!!
+        assertEquals("engine:libretro:desmume", r.component)
+        assertTrue(r.crumbs.single().contains("loading-game"))
+    }
+
+    @Test fun scrubHidesPathsEmailsAndTokens() {
+        val t = Diagnostics.scrub(app, "open /storage/emulated/0/Download/Vy.nds from /data/user/0/vn.aow.monika/files/x.so mail a.b@c.vn token=abc123&k=1 Authorization: Bearer zzz")
+        assertTrue(!t.contains("/storage") && !t.contains("/data/user") && !t.contains("a.b@c.vn") && !t.contains("abc123"))
+        assertTrue(t.contains("Vy.nds"))
     }
 }

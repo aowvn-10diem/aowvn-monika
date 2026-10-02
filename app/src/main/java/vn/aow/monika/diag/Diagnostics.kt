@@ -66,10 +66,20 @@ object Diagnostics {
         val fromGame: Boolean = false,
         val seen: Boolean = false,
         val sent: Boolean = false,
+        /** Thành phần gây lỗi: "pack:sevenzip", "engine:libretro", "engine:onsyuri", "app:ui"… (suy từ stack + vệt sự kiện). */
+        val component: String = "",
+        /** Dấu vân tay lỗi: cùng lỗi lặp lại thì gộp, tăng [count] thay vì đẻ thêm báo cáo. */
+        val fingerprint: String = "",
+        val count: Int = 1,
+        /** Ảnh chụp máy lúc lỗi: RAM, heap, đĩa trống, mạng, nguồn. */
+        val env: String = "",
+        /** Vệt sự kiện ngay trước lỗi (mới nhất cuối). */
+        val crumbs: List<String> = emptyList(),
     ) {
         fun toText(): String = buildString {
             appendLine("== Báo lỗi Aow Monika ==")
             appendLine(title)
+            if (component.isNotBlank()) appendLine("Thành phần: $component${if (count > 1) " · lặp $count lần" else ""}")
             appendLine("Thời điểm: ${java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.US).format(time)}")
             appendLine("Bản app: $app")
             appendLine("Máy: $device")
@@ -80,8 +90,10 @@ object Diagnostics {
                 val played = (it.lastAlive - it.startedAt).coerceAtLeast(0) / 1000
                 appendLine("Giai đoạn cuối: ${it.stage} · sống được ${played}s")
             }
+            if (env.isNotBlank()) appendLine("Tình trạng máy: $env")
             if (reason.isNotBlank()) appendLine("Lý do (Android): $reason")
             if (detail.isNotBlank()) { appendLine(); appendLine(detail) }
+            if (crumbs.isNotEmpty()) { appendLine(); appendLine("-- vệt sự kiện trước lỗi --"); crumbs.forEach(::appendLine) }
             if (log.isNotEmpty()) { appendLine(); appendLine("-- log --"); log.forEach(::appendLine) }
         }
     }
@@ -103,6 +115,7 @@ object Diagnostics {
 
     fun begin(c: Context, kind: String, core: String, coreInfo: String, game: String, system: String) {
         val now = System.currentTimeMillis()
+        Breadcrumbs.add(c, "begin", "$kind · $core · $system")
         write(c, Session(Process.myPid(), now, kind, core, coreInfo, game, system, "start", now, now))
     }
 
@@ -116,7 +129,11 @@ object Diagnostics {
         val s = read(c) ?: return
         val now = System.currentTimeMillis()
         write(c, s.copy(stage = stage, stageAt = now, lastAlive = now))
+        Breadcrumbs.add(c, "stage", stage)
     }
+
+    /** Ghi 1 sự kiện vào vệt (gọn): Diagnostics.crumb(ctx, "pack", "tải sevenzip 45%"). */
+    fun crumb(c: Context, tag: String, msg: String) = Breadcrumbs.add(c, tag, msg)
 
     /** Nhịp sống: biết game còn chạy tới lúc nào (Android cũ không cho hỏi lý do chết). */
     fun heartbeat(c: Context) {
@@ -166,13 +183,17 @@ object Diagnostics {
         val trace = exit?.let { traceStrings(it) }.orEmpty()
         val log = logcat(s.pid)
         val whenDied = exit?.timestamp ?: s.lastAlive.takeIf { it > 0 } ?: System.currentTimeMillis()
-        val r = Report(
+        val detail = scrub(c, trace.joinToString("\n"))
+        val crumbs = Breadcrumbs.read(c, s.pid)
+        val r = record(c, Report(
             id = whenDied, time = whenDied, kind = kind,
             title = title(kind, s), app = appLine(), device = deviceLine(),
             session = s, reason = reason,
-            detail = trace.joinToString("\n"), log = log, fromGame = true,
-        )
-        save(c, r)
+            detail = detail, log = log.map { scrub(c, it) }, fromGame = true,
+            component = Components.of(c, s, detail + "\n" + crumbs.joinToString("\n")),
+            env = envLine(c), crumbs = crumbs,
+        ))
+        Breadcrumbs.drop(c, s.pid)
         pending.value = r
         return r
     }
@@ -267,17 +288,37 @@ object Diagnostics {
         val s = read(c)?.takeIf { it.pid == Process.myPid() }
         val sw = java.io.StringWriter()
         e.printStackTrace(java.io.PrintWriter(sw))
+        val stack = scrub(c, sw.toString())
         val now = System.currentTimeMillis()
-        val r = Report(
+        val comp = Components.of(c, s, stack)
+        Breadcrumbs.add(c, "crash", "${e.javaClass.simpleName}: ${e.message.orEmpty().take(120)} [luồng $threadName]")
+        val r = record(c, Report(
             id = now, time = now, kind = "java",
-            title = if (s != null) title("java", s) else "Aow Monika gặp lỗi: ${e.javaClass.simpleName}",
+            title = if (s != null) title("java", s) else "Aow Monika gặp lỗi: ${e.javaClass.simpleName}${if (comp.isNotBlank()) " ($comp)" else ""}",
             app = appLine(), device = deviceLine(), session = s?.copy(lastAlive = now),
-            reason = "Luồng $threadName", detail = sw.toString().take(12_000),
-            log = logcat(Process.myPid(), 80), fromGame = s != null,
-        )
-        save(c, r)
+            reason = "Luồng $threadName", detail = stack.take(12_000),
+            log = logcat(Process.myPid(), 80).map { scrub(c, it) }, fromGame = s != null,
+            component = comp, env = envLine(c), crumbs = Breadcrumbs.read(c, Process.myPid()),
+        ))
         if (s != null) end(c) // đã ghi báo cáo → lần sau đừng tạo thêm báo cáo "chết bất thường" cho cùng phiên
         return r
+    }
+
+    /**
+     * Lỗi đã bắt được (không làm app chết) nhưng đáng ghi: tải/giải nén gói hỏng, engine không khởi động…
+     * [component] dạng "pack:sevenzip" / "engine:onsyuri". Hiện trong Nhật ký lỗi, KHÔNG bật hộp thoại.
+     */
+    fun recordHandled(c: Context, component: String, what: String, e: Throwable? = null): Report {
+        val now = System.currentTimeMillis()
+        val stack = e?.let { val sw = java.io.StringWriter(); it.printStackTrace(java.io.PrintWriter(sw)); scrub(c, sw.toString()).take(8_000) }.orEmpty()
+        Breadcrumbs.add(c, "error", "$component: $what")
+        val s = read(c)?.takeIf { it.pid == Process.myPid() }
+        return record(c, Report(
+            id = now, time = now, kind = "handled",
+            title = "Lỗi $component: $what", app = appLine(), device = deviceLine(), session = s,
+            reason = what, detail = stack, log = emptyList(), fromGame = false,
+            component = component, env = envLine(c), crumbs = Breadcrumbs.read(c, Process.myPid()),
+        ))
     }
 
     /**
@@ -290,11 +331,12 @@ object Diagnostics {
         val r = Report(
             id = now, time = now, kind = "core-error",
             title = "Lõi không chạy được game: $what — ${s?.game.orEmpty().ifBlank { "game" }} (${s?.system.orEmpty()}, lõi ${s?.core.orEmpty().ifBlank { "?" }})",
-            app = appLine(), device = deviceLine(), session = s, reason = what, detail = detail,
-            log = logcat(Process.myPid(), 120), fromGame = true,
+            app = appLine(), device = deviceLine(), session = s, reason = what, detail = scrub(c, detail),
+            log = logcat(Process.myPid(), 120).map { scrub(c, it) }, fromGame = true,
+            component = if (what.startsWith("pack:")) what else Components.of(c, s, detail),
+            env = envLine(c), crumbs = Breadcrumbs.read(c, Process.myPid()),
         )
-        save(c, r)
-        return r
+        return record(c, r)
     }
 
     /** Gửi ngầm (không clipboard) nếu người chơi không tắt và config `crash.autoSend` bật. Chạy ở luồng nền. */
@@ -307,6 +349,102 @@ object Diagnostics {
             }.getOrDefault(false)
             if (ok) save(c, r.copy(sent = true))
         }.start()
+    }
+
+    // ---------- Gộp trùng, che thông tin riêng, chụp tình trạng máy ----------
+
+    /** Lưu báo cáo mới; nếu cùng dấu vân tay với báo cáo trước (trong 30 báo cáo gần nhất) thì gộp: tăng đếm, giữ bản mới nhất. */
+    private fun record(c: Context, r0: Report): Report {
+        val fp = fingerprint(r0)
+        val prev = list(c).firstOrNull { it.fingerprint == fp }
+        val r = r0.copy(fingerprint = fp, count = (prev?.count ?: 0) + 1, sent = false, seen = prev?.seen == true && prev.count >= 3)
+        prev?.let { File(reportsDir(c), "${it.id}.json").delete() }
+        save(c, r)
+        return r
+    }
+
+    /** Cùng loại + cùng thành phần + cùng 3 dòng stack đầu (bỏ số dòng/địa chỉ) → cùng lỗi. */
+    internal fun fingerprint(r: Report): String {
+        val frames = r.detail.lineSequence().map { it.trim() }
+            .filter { it.startsWith("at ") || it.contains(".so") || it.contains("Exception") || it.contains("Error") }
+            .map { it.replace(Regex("""\(.*?\)|0x[0-9a-fA-F]+|#\d+|\d+"""), "") }
+            .take(3).joinToString("|")
+        val key = "${r.kind}|${r.component}|${r.session?.core.orEmpty()}|${r.reason.take(60).replace(Regex("""\d+"""), "")}|$frames"
+        return Integer.toHexString(key.hashCode())
+    }
+
+    private val PATH_APP = Regex("""/(?:data/user/\d+|data/data|storage/emulated/\d+|sdcard)/[^\s:'")]+""")
+    private val EMAIL = Regex("""[\w.+-]+@[\w-]+(?:\.[\w-]+)+""")
+    private val SECRET = Regex("""(?i)(token|key|password|passwd|authorization|secret)(["']?\s*[:=]\s*["']?)[^\s&"',}]+""")
+
+    /** Bỏ đường dẫn thật (có thể chứa tên người dùng/tên file riêng tư), email, token khỏi nội dung báo cáo. */
+    internal fun scrub(c: Context?, text: String): String = text
+        .replace(PATH_APP) { m -> val v = m.value; "<" + (if (v.contains("/storage") || v.contains("sdcard")) "bộ-nhớ" else "app") + ">/" + v.substringAfterLast('/') }
+        .replace(EMAIL, "<email>")
+        .replace(SECRET) { m -> m.groupValues[1] + m.groupValues[2] + "<ẩn>" }
+
+    /** RAM trống, heap, đĩa trống, mạng, pin — thường là nguyên nhân thật của lỗi tải/giải nén/hết bộ nhớ. */
+    internal fun envLine(c: Context): String = runCatching {
+        val mi = ActivityManager.MemoryInfo().also { c.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }
+        val rt = Runtime.getRuntime()
+        val mb = 1024L * 1024
+        val disk = c.filesDir.usableSpace / mb
+        val net = runCatching {
+            val cm = c.getSystemService(android.net.ConnectivityManager::class.java)
+            val caps = cm.getNetworkCapabilities(cm.activeNetwork)
+            when {
+                caps == null -> "không mạng"
+                caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
+                caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> "4G/5G"
+                else -> "mạng khác"
+            }
+        }.getOrDefault("?")
+        "RAM trống ${mi.availMem / mb}/${mi.totalMem / mb} MB${if (mi.lowMemory) " (THẤP)" else ""} · heap ${(rt.totalMemory() - rt.freeMemory()) / mb}/${rt.maxMemory() / mb} MB · đĩa trống $disk MB · mạng $net"
+    }.getOrDefault("")
+
+    /**
+     * Quét lý do chết của CHÍNH tiến trình chính (và ":midlet"/":crash") do Android ghi lại: native crash, ANR, hết RAM…
+     * — những lần chết không có ngoại lệ Java để CrashReporter bắt. Gọi lúc mở app; chỉ tạo báo cáo cho lần chết mới.
+     */
+    fun collectProcessDeaths(c: Context): List<Report> {
+        if (Build.VERSION.SDK_INT < 30) return emptyList()
+        val stamp = File(dir(c), "last-scan.txt")
+        val last = runCatching { stamp.readText().trim().toLong() }.getOrDefault(0L)
+        val exits = runCatching { c.getSystemService(ActivityManager::class.java).getHistoricalProcessExitReasons(c.packageName, 0, 12) }.getOrDefault(emptyList())
+        val out = ArrayList<Report>()
+        var newest = last
+        for (e in exits) {
+            if (e.timestamp <= last) continue
+            newest = maxOf(newest, e.timestamp)
+            val kind = when (e.reason) {
+                ApplicationExitInfo.REASON_CRASH_NATIVE -> "native"
+                ApplicationExitInfo.REASON_ANR -> "anr"
+                ApplicationExitInfo.REASON_LOW_MEMORY -> "lowmem"
+                ApplicationExitInfo.REASON_INITIALIZATION_FAILURE -> "initfail"
+                ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE -> "resource"
+                else -> continue // CRASH (Java) đã có CrashReporter; thoát bình thường / người dùng vuốt tắt thì bỏ qua
+            }
+            // Tiến trình game đã được [collect] xử lý (có phiên) → tránh báo hai lần.
+            if (e.processName?.endsWith(":game") == true && File(reportsDir(c), "${e.timestamp}.json").exists()) continue
+            val trace = scrub(c, traceStrings(e).joinToString("\n"))
+            val crumbs = Breadcrumbs.read(c, e.pid)
+            val proc = e.processName.orEmpty().substringAfter(':', "chính")
+            val comp = Components.of(c, null, trace + "\n" + crumbs.joinToString("\n")).ifBlank { "app:$proc" }
+            out += record(c, Report(
+                id = e.timestamp, time = e.timestamp, kind = kind,
+                title = when (kind) {
+                    "native" -> "Mã native bị sập (tiến trình $proc) — $comp"
+                    "anr" -> "App bị treo, không phản hồi (tiến trình $proc) — $comp"
+                    "lowmem" -> "Máy hết bộ nhớ, Android tắt app (tiến trình $proc)"
+                    else -> "App bị tắt: ${describeReason(e)} (tiến trình $proc)"
+                },
+                app = appLine(), device = deviceLine(), reason = describeReason(e), detail = trace,
+                log = emptyList(), component = comp, env = envLine(c), crumbs = crumbs,
+            ))
+            Breadcrumbs.drop(c, e.pid)
+        }
+        runCatching { stamp.writeText(newest.toString()) }
+        return out
     }
 
     // ---------- Kho báo cáo ----------

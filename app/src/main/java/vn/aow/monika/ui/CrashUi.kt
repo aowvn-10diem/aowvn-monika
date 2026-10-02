@@ -110,7 +110,8 @@ fun BoxScope.CrashUi() {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 reports.take(12).forEach { r ->
                     SheetRow(
-                        r.title, maxTitleLines = 3, subtitle = java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.US).format(r.time) + if (r.sent) " · đã gửi" else "",
+                        r.title, maxTitleLines = 3, subtitle = java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.US).format(r.time) +
+                            (if (r.component.isNotBlank()) " · ${r.component}" else "") + (if (r.count > 1) " · ×${r.count}" else "") + if (r.sent) " · đã gửi" else "",
                         icon = R.drawable.ic_fluent_info_24_regular, onClick = { detail = r },
                     )
                 }
@@ -128,7 +129,7 @@ fun BoxScope.CrashUi() {
         title = d?.title, subtitle = d?.let { java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.US).format(it.time) },
         header = {
             Text(
-                d?.toText()?.take(2500).orEmpty(), style = Monika.type.caption, color = SheetColors.textSecondary,
+                d?.toText()?.take(4000).orEmpty(), style = Monika.type.caption, color = SheetColors.textSecondary,
                 maxLines = 40, overflow = TextOverflow.Ellipsis,
             )
         },

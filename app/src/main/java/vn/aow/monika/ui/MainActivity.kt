@@ -80,10 +80,10 @@ class MainActivity : ComponentActivity() {
         AppGraph.prefs.endSession()
         // Phiên game trước chết bất thường? (lõi native sập, hết RAM, treo…) → tạo báo cáo + hỏi người chơi.
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { runCatching {
-            vn.aow.monika.diag.Diagnostics.collect(applicationContext)?.let { r ->
-                val cr = AppGraph.config.current.crash
-                vn.aow.monika.diag.Diagnostics.autoSend(applicationContext, AppGraph.http, r, cr.endpoint, cr.autoSend, AppGraph.prefs.autoSendCrash)
-            }
+            val cr = AppGraph.config.current.crash
+            val fresh = listOfNotNull(vn.aow.monika.diag.Diagnostics.collect(applicationContext)) + vn.aow.monika.diag.Diagnostics.collectProcessDeaths(applicationContext)
+            fresh.forEach { r -> vn.aow.monika.diag.Diagnostics.autoSend(applicationContext, AppGraph.http, r, cr.endpoint, cr.autoSend, AppGraph.prefs.autoSendCrash) }
+            vn.aow.monika.diag.Breadcrumbs.sweep(applicationContext)
         } }
     }
 

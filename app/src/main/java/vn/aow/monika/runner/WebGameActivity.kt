@@ -73,6 +73,22 @@ class WebGameActivity : ComponentActivity() {
 
                 override fun onPageFinished(view: WebView, url: String?) {
                     cheatsRef?.onPageFinished()
+                    vn.aow.monika.diag.Diagnostics.crumb(this@WebGameActivity, "web", "trang tải xong ($player)")
+                }
+
+                override fun onReceivedError(view: WebView, request: WebResourceRequest, error: android.webkit.WebResourceError) {
+                    // Chỉ quan tâm trang chính; tài nguyên phụ lỗi lặt vặt thì ghi vệt thôi.
+                    val main = request.isForMainFrame
+                    vn.aow.monika.diag.Diagnostics.crumb(this@WebGameActivity, "web", "lỗi tải ${if (main) "TRANG" else "tài nguyên"}: ${error.description} ${request.url.lastPathSegment.orEmpty()}")
+                }
+
+                override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
+                    // Tiến trình render của WebView chết (hết RAM / crash) — nếu không xử lý, cả app bị kéo sập.
+                    val why = if (detail.didCrash()) "render process crash" else "render process bị hệ thống tắt (thiếu RAM)"
+                    vn.aow.monika.diag.Diagnostics.recordHandled(this@WebGameActivity, "engine:$player", why)
+                    android.widget.Toast.makeText(this@WebGameActivity, "Game web bị dừng ($why). Mở lại game để chơi tiếp.", android.widget.Toast.LENGTH_LONG).show()
+                    finish()
+                    return true
                 }
             }
         }
@@ -110,7 +126,9 @@ class WebGameActivity : ComponentActivity() {
             if (pm.needed(pm.ONSYURI)) {
                 android.widget.Toast.makeText(this, "Đang tải engine ONScripter (chỉ lần đầu)…", android.widget.Toast.LENGTH_LONG).show()
                 lifecycleScope.launch {
-                    val ok = runCatching { pm.install(pm.ONSYURI) {} }.isSuccess
+                    val err = runCatching { pm.install(pm.ONSYURI) {} }.exceptionOrNull()
+                    val ok = err == null
+                    if (err != null) vn.aow.monika.diag.Diagnostics.recordHandled(this@WebGameActivity, "pack:onsyuri", "không tải được engine khi mở game", err)
                     if (ok) web.loadUrl(start) else {
                         android.widget.Toast.makeText(this@WebGameActivity, "Không tải được engine ONScripter. Kiểm tra mạng rồi thử lại.", android.widget.Toast.LENGTH_LONG).show()
                         finish()
