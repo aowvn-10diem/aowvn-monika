@@ -69,24 +69,30 @@ class GameLauncher(private val configRepo: ConfigRepository) {
                 activity.startActivity(ru.playsoftware.j2meloader.J2meRuntime.openGameIntent(activity, Installer.uriFor(activity, entry)))
                 LaunchResult.Started
             }
-            "external" -> launchExternal(activity, system.externalApp, entry)
+            "external" ->
+                // Kirikiri chạy ngay trong Monika khi gói engine có cho máy này (arm64); không thì app ngoài như cũ.
+                if (system.engine == vn.aow.monika.pack.PackManager.KIRIKIRI && AppGraph.packs.supported(vn.aow.monika.pack.PackManager.KIRIKIRI))
+                    launchKirikiri(activity, game, entry)
+                else launchExternal(activity, system.externalApp, entry)
             else -> LaunchResult.Failed("Kiểu trình chạy '${system.runner}' chưa được hỗ trợ ở bản app này. Hãy cập nhật app.")
         }
+    }
+
+    /** Engine Kirikiri nhúng: chưa có gói → đưa vào hàng tải theo luật mạng (≤15 MB tự tải, lớn hơn hỏi Wi-Fi/4G); có rồi → chạy luôn. */
+    private fun launchKirikiri(activity: Activity, game: Game, entry: File): LaunchResult {
+        val pm = vn.aow.monika.pack.PackManager
+        if (pm.needed(pm.KIRIKIRI)) {
+            pm.request(activity.applicationContext, pm.KIRIKIRI)
+            return LaunchResult.Failed("Đang tải thành phần Kirikiri (chỉ lần đầu). Tải xong sẽ có thông báo, rồi bấm Chơi lại.")
+        }
+        vn.aow.monika.runner.KirikiriGameActivity.start(activity, entry.takeIf { it.isFile }, game.name, game.key)
+        return LaunchResult.Started
     }
 
     private fun launchExternal(activity: Activity, appId: String?, entry: File): LaunchResult {
         val app = appId?.let { configRepo.current.externalApp(it) }
             ?: return LaunchResult.Failed("Cấu hình thiếu app ngoài '$appId'.")
-        val pkg = ExternalApps.installedPackage(activity, app) ?: return installFromPack(activity, app)
-
-        // Kirikiroid2 bản Aow Monika dựng (có vá): nhận thẳng đường dẫn game qua Intent, khỏi chọn thư mục trong app.
-        if (pkg == KIRIKIRI_AOW_PACKAGE && entry.isFile) {
-            val open = activity.packageManager.getLaunchIntentForPackage(pkg)
-            if (open != null) {
-                activity.startActivity(open.putExtra(KIRIKIRI_EXTRA_GAME_PATH, entry.absolutePath))
-                return LaunchResult.Started
-            }
-        }
+        val pkg = ExternalApps.installedPackage(activity, app) ?: return LaunchResult.NeedApp(app)
 
         if (entry.isFile) {
             val intent = Intent(Intent.ACTION_VIEW)
@@ -104,28 +110,6 @@ class GameLauncher(private val configRepo: ConfigRepository) {
             ?: return LaunchResult.Failed("Không mở được ${app.name}.")
         activity.startActivity(open)
         return LaunchResult.OpenedApp(app, (if (entry.isFile) entry.parentFile!! else entry).absolutePath)
-    }
-}
-
-const val KIRIKIRI_AOW_PACKAGE = "vn.aow.monika.kirikiri"
-const val KIRIKIRI_EXTRA_GAME_PATH = "aow_game_path"
-
-/**
- * App ngoài có gói riêng trong config (`ExternalApp.pack`, vd. Kirikiri): chưa cài thì tự lo hết —
- * chưa tải → đưa vào hàng tải theo luật mạng (≤15 MB tự tải, lớn hơn hỏi Wi-Fi/4G); đã tải → mở trình cài APK.
- * Máy không hợp gói (vd. 32-bit) hoặc gói chưa có link → quay về cách cũ (hướng dẫn tải tay).
- */
-private fun installFromPack(activity: Activity, app: ExternalApp): LaunchResult {
-    val pm = vn.aow.monika.pack.PackManager
-    if (app.pack.isBlank() || !AppGraph.packs.supported(app.pack)) return LaunchResult.NeedApp(app)
-    if (pm.needed(app.pack)) {
-        pm.request(activity.applicationContext, app.pack)
-        return LaunchResult.Failed("Đang tải thành phần ${app.name} (chỉ lần đầu). Xong sẽ có thông báo để cài, rồi bấm Chơi lại.")
-    }
-    val apk = java.io.File(AppGraph.packs.dir(app.pack), vn.aow.monika.pack.PackManager.KIRIKIRI_APK)
-    return when (val r = Installer.install(activity, apk)) {
-        LaunchResult.Started -> LaunchResult.Failed("Đang mở trình cài ${app.name}. Cài xong, quay lại bấm Chơi.")
-        else -> r
     }
 }
 

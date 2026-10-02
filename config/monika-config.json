@@ -382,12 +382,11 @@
       "name": "Kirikiri (KAG)",
       "runner": "external",
       "externalApp": "kirikiroid2",
+      "engine": "kirikiri",
       "extensions": [
         "xp3"
       ],
-      "labels": [
-        "Visual Novel Việt Hóa"
-      ]
+      "labels": []
     },
     {
       "id": "renpy",
@@ -983,7 +982,6 @@
         "org.tvp.kirikiri2_yuri_debloated_10309",
         "org.tvp.kirikiri2"
       ],
-      "pack": "kirikiri",
       "downloadUrl": "https://www.aow.vn/p/tai-gia-lap-kirikiroid.html",
       "guide": [
         "Bấm nút Tải để tải file cài đặt Kirikiroid2.",

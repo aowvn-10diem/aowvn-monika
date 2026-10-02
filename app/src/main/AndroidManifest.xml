@@ -76,6 +76,16 @@
             android:theme="@style/Theme.Monika.Fullscreen" />
 
         <activity
+            android:name=".runner.KirikiriGameActivity"
+            android:process=":game"
+            android:taskAffinity="com.aow.monika.kirikiri"
+            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize"
+            android:screenOrientation="sensorLandscape"
+            android:windowSoftInputMode="adjustPan"
+            android:exported="false"
+            android:theme="@style/Theme.Monika.Fullscreen" />
+
+        <activity
             android:name=".azahar.AzaharActivity"
             android:process=":game"
             android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize"

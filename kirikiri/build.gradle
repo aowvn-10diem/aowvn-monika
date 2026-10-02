@@ -1,0 +1,31 @@
+// Kirikiroid2Yuri (mã Java) + cocos2d-x (MIT) nhúng vào Aow Monika: https://github.com/YuriSizuku/Kirikiroid2Yuri
+// Thư viện native libkrkr2yuri.so và tài nguyên KHÔNG nằm trong APK — Monika tải thành "gói" khi người chơi có game Kirikiri.
+// Bản vá của Aow Monika: thư mục patches/ (áp lên mã gốc khi dựng gói); chỉ sửa chỗ có chú thích "Aow Monika:". Xem docs/plan-kirikiri.md.
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace = "vn.aow.monika.kirikiri"
+    compileSdk 33 // KR2Activity có hàm static getDeviceId() trùng tên Context.getDeviceId() (API 34) mà mã native gọi theo tên này
+
+    defaultConfig {
+        minSdk 26
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    buildFeatures {
+        aidl true
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.annotation:annotation:1.9.1'
+    implementation 'androidx.core:core:1.15.0'
+    implementation 'androidx.documentfile:documentfile:1.0.1'
+}

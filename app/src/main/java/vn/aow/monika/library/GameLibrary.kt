@@ -56,7 +56,6 @@ class GameLibrary(
         val cfg = configRepo.current
         games.mapNotNull { it.system }.distinct().forEach { s ->
             val id = s.engine?.takeIf { cfg.modules.containsKey(it) }
-                ?: s.externalApp?.let { cfg.externalApp(it)?.pack }?.takeIf { it.isNotBlank() && cfg.modules.containsKey(it) }
             if (id != null && prefetched.add(id)) vn.aow.monika.pack.PackManager.prefetch(context, listOf(id))
         }
     }

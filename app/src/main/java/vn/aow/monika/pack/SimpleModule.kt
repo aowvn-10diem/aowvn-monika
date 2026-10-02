@@ -12,7 +12,7 @@ import java.util.zip.ZipInputStream
 
 /**
  * Gói thư viện native tải theo nhu cầu (khác [vn.aow.monika.azahar.AzaharModule] ở chỗ chung cho mọi gói đơn giản):
- * url có thể chứa "{abi}", tải ra file tạm → kiểm SHA-256 → giải nén phẳng vào filesDir/packs/<id>/ → ghi version.
+ * url có thể chứa "{abi}", tải ra file tạm → kiểm SHA-256 → giải nén (giữ cây thư mục, chặn ../) vào filesDir/packs/<id>/ → ghi version.
  * Gói sai/hỏng không bao giờ để lại thư mục dùng được.
  */
 class SimpleModule(
@@ -73,7 +73,11 @@ class SimpleModule(
                 while (true) {
                     val e = z.nextEntry ?: break
                     if (e.isDirectory) continue
-                    File(out, File(e.name).name).outputStream().use { z.copyTo(it) } // phẳng, chặn ../
+                    // Giữ cây thư mục trong zip (gói Kirikiri có assets/ui/...); chặn thoát khỏi thư mục gói (zip-slip).
+                    val dest = File(out, e.name).canonicalFile
+                    if (!dest.path.startsWith(out.canonicalPath + File.separator)) continue
+                    dest.parentFile?.mkdirs()
+                    dest.outputStream().use { z.copyTo(it) }
                 }
             }
             if (!File(out, mainFile).isFile) { out.deleteRecursively(); throw IOException("Gói $id không có $mainFile") }

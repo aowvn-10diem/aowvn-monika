@@ -1,18 +1,18 @@
 diff --git a/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java b/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java
-index 483407a..3fb82a3 100644
+index 5774195..6689090 100644
 --- a/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java
 +++ b/project/android/app/java/org/tvp/kirikiri2/KR2Activity.java
-@@ -300,6 +300,10 @@ public class KR2Activity extends Cocos2dxActivity implements ActivityCompat.OnRe
- 
+@@ -301,6 +301,10 @@ public class KR2Activity extends Cocos2dxActivity implements ActivityCompat.OnRe
  	static public KR2Activity sInstance;
  	static public KR2Activity GetInstance() {return sInstance;}
-+
+ 
 +	// Aow Monika: thư mục tài nguyên (ui, font...) do app chủ truyền vào; trống = đọc trong APK như bản gốc.
 +	public static String sAssetsRoot = "";
 +	static public String getAssetsRoot() { return sAssetsRoot == null ? "" : sAssetsRoot; }
-     
- 	@Override
- 	public void onCreate(Bundle savedInstanceState) {
++
+ 	// Aow Monika: đường dẫn game do app ngoài truyền qua Intent (extra "aow_game_path") → mở thẳng game, bỏ qua trình duyệt file.
+ 	static public String getStartupGamePath() {
+ 		try {
 diff --git a/src/core/environ/cocos2d/AppDelegate.cpp b/src/core/environ/cocos2d/AppDelegate.cpp
 index 735614e..be640a8 100644
 --- a/src/core/environ/cocos2d/AppDelegate.cpp
