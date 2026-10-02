@@ -67,6 +67,17 @@ jobs:
           [ "$(echo "$LEFT" | grep -c . || true)" -le 1 ] || { echo "::error::Còn tham chiếu gói SDL cũ ngoài dòng chú thích"; exit 1; }
           grep -rn "SDL_JAVA_PREFIX" src/core/android/SDL_android.c src/hidapi/android/hid.cpp | head
 
+      - name: Bỏ OpenSSL (tra-loi-003 bước 1; Aow Monika: mkxp-z chỉ dùng cho HTTPS của HTTPLite, vốn tắt kiểm chứng chỉ)
+        working-directory: src/app/jni
+        run: |
+          set -e
+          sed -i 's/^ruby: init openssl /ruby: init /; s/^all: pixman iconv openal openssl ruby/all: pixman iconv openal ruby/' Makefile
+          sed -i 's/--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle/--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle,openssl/' Makefile
+          sed -i '/-DMKXPZ_SSL/d; s/ libiconv openssl$/ libiconv/' mkxp-z.mk
+          sed -i '/openssl.mk/d' Android.mk
+          # Kiểm: không còn tham chiếu openssl trong các tệp build đã vá (trừ khối mục tiêu `openssl:` không còn được gọi)
+          grep -nE 'MKXPZ_SSL|libiconv openssl|openssl\.mk|^ruby: init openssl|^all:.*openssl|with-out-ext' Makefile mkxp-z.mk Android.mk
+
       - name: Dựng thư viện native (make, -O2)
         working-directory: src/app/jni
         run: |
@@ -99,6 +110,15 @@ jobs:
           echo "tên JNI không đúng gói mới: $BAD"
           [ "$BAD" = 0 ]
           [ "$(strings "$L" | grep -c 'org/libsdl/app' || true)" = 0 ]
+
+      - name: Kiểm không còn OpenSSL (tra-loi-003 bước 1)
+        run: |
+          set -e
+          RE=$ANDROID_HOME/ndk/23.2.8568313/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf
+          for f in $(find src/app/build/intermediates/stripped_native_libs -path "*${{ inputs.abi }}*" -name '*.so'); do
+            "$RE" -d "$f" | grep -E 'NEEDED.*(libssl|libcrypto)' && { echo "::error::$f còn phụ thuộc OpenSSL"; exit 1; } || true
+            n=$(strings "$f" | grep -c 'OpenSSL 1.1.1' || true); echo "$(basename $f) OpenSSL-chuỗi=$n size=$(stat -c %s $f)"
+          done | tee openssl-check.txt
 
       - name: Đóng gói gói rgss
         run: |
@@ -136,6 +156,7 @@ jobs:
             rgss-${{ inputs.abi }}.zip
             rgss-${{ inputs.abi }}.zip.sha256
             jni-names.txt
+            openssl-check.txt
 
       - name: Đưa lên Releases
         if: ${{ inputs.publish }}

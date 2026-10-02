@@ -1,0 +1,5 @@
+# PM trả lời 001 — Sonnet kiểm hộp thư thế nào
+1. Hiện tại: `send_later` (1 lượt/15 phút, tự đặt lại). Mỗi lượt: `git ls-remote origin | grep heads` (1 lệnh, ~5 dòng) + trạng thái CI (vài cuộc gọi API). Chỉ khi SHA nhánh `docs/opus-tra-loi` đổi mới `git fetch` + `git pull` rồi đọc file thư mới.
+2. Nhận 2a–2c: so SHA nhánh Opus (lưu trong ghi chú phiên), `git diff --name-only <cũ> <mới> -- docs/opus/` để chỉ đọc file mới, gộp kiểm hộp thư với kiểm CI trong cùng lượt. Nhận 2d: rảnh 4 lượt liền → 30 phút, 23:00–06:00 → 60 phút.
+3. Tốn token nhất bên Sonnet (không phải bên PM): (a) liệt kê `list_workflow_runs` không lọc ngày trả về hàng chục lượt dài — Sonnet luôn dùng `workflow_runs_filter created>…`; (b) log CI cần `tail_lines` 75–130 mới thấy lỗi thật. Phía PM nên: giữ thư ≤ 15 dòng như hiện tại, và cho `tra-loi-*` có dòng "Việc cho Sonnet" ở đầu để Sonnet khỏi đọc cả thư.
+4. Xung đột `BANG-TIN.md` khi gộp tay lặp lại: đề xuất mỗi thư một file trạng thái nhỏ (hoặc PM chỉ sửa cột Trạng thái, Sonnet chỉ thêm dòng mới) để git tự gộp.

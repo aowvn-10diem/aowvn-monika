@@ -12,3 +12,7 @@
 | pixman 0.42.2, uchardet 0.0.8, libiconv 1.17, OpenSSL 1.1.1t | — | MIT / MPL / LGPL / Apache-2.0 | OpenSSL 1.1.1t hết hỗ trợ: cân nhắc bỏ (thư 003) |
 
 Dựng: `.github/workflows/build-rgss.yml`. Kiểm sau dựng: tên hàm JNI của `libSDL2.so` phải bắt đầu `Java_vn_aow_monika_rgss_sdl_` và không còn chuỗi `org/libsdl/app`.
+
+**Trạng thái giấy phép build:** chờ tác giả bản port (xin giấy phép cho `Makefile`, `*.mk`, `get_deps.sh`; cổng G8, việc của sếp, trước R7). Chưa có thì phải viết lại script dựng riêng (hướng B) trước khi phát hành gói `rgss`.
+
+**Sửa đổi của Aow Monika trên mã nguồn (đều nằm trong lệnh `sed` của `build-rgss.yml`, chú thích `Aow Monika:`):** (1) đổi gói JNI của SDL sang `vn.aow.monika.rgss.sdl`; (2) bỏ OpenSSL (`-DMKXPZ_SSL`, thư viện tĩnh, ext Ruby `openssl`); (3) `-O0` → `-O2`, `APP_OPTIM release`; (4) chạy `make_xxd.sh` trước ndk-build.
