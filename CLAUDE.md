@@ -19,6 +19,8 @@ Chủ repo giao tiếp tiếng Việt; tài liệu và chuỗi giao diện viế
 - Config từ xa có `configVersion` thấp hơn bản trong APK bị bỏ qua. Nhớ tăng `configVersion` và đồng bộ Cloudflare khi sửa config.
 - Không bao giờ commit keystore/mật khẩu ký, không in chúng ra log/chat. Cách ký hiện tại: xem mục "Phát hành APK".
 
+- Bàn giao cho Opus (tham gia từ ngoài, đưa phương án): `docs/GIAO-TIEP-VOI-OPUS.md`. Cập nhật mục 4 của file đó sau mỗi mốc lớn.
+
 ## Sự thật đã xác minh
 
 - Feed: `https://www.aow.vn/feeds/posts/default?alt=json&orderby=published`, bài lẻ: `/feeds/posts/default/{postId}?alt=json`. Blog ID `4482370512868492154`.
