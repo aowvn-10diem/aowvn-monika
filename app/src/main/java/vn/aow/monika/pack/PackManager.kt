@@ -38,6 +38,11 @@ object PackManager {
             supported = { AppGraph.packs.supported(ONSYURI) },
             ensure = { st -> AppGraph.packs.ensure(ONSYURI, ONSYURI_MAIN, st) },
         ),
+        KIRIKIRI to Installer(
+            ready = { AppGraph.packs.ready(KIRIKIRI, KIRIKIRI_APK) },
+            supported = { AppGraph.packs.supported(KIRIKIRI) },
+            ensure = { st -> AppGraph.packs.ensure(KIRIKIRI, KIRIKIRI_APK, st) },
+        ),
         SEVENZIP to Installer(
             ready = { AppGraph.packs.ready(SEVENZIP, SEVENZIP_LIB) },
             supported = { AppGraph.packs.supported(SEVENZIP) },
@@ -47,6 +52,8 @@ object PackManager {
 
     const val ONSYURI = "onsyuri"
     const val ONSYURI_MAIN = "onsyuri.wasm"
+    const val KIRIKIRI = "kirikiri"
+    const val KIRIKIRI_APK = "Kirikiroid2.apk"
     const val SEVENZIP = "sevenzip"
     const val SEVENZIP_LIB = "lib7-Zip-JBinding.so"
 
@@ -97,6 +104,21 @@ object PackManager {
         WorkManager.getInstance(context).enqueueUniqueWork("pack-$id", if (wifiOnly) ExistingWorkPolicy.KEEP else ExistingWorkPolicy.REPLACE, req)
     }
 
+    /** Gói Kirikiri tải xong → thông báo "Cài Kirikiri": chạm vào mở trình cài APK (người chơi không phải tìm file). */
+    internal fun notifyInstallReady(context: Context) {
+        val apk = java.io.File(AppGraph.packs.dir(KIRIKIRI), KIRIKIRI_APK)
+        if (!apk.isFile) return
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        val pi = PendingIntent.getActivity(context, 4310, vn.aow.monika.runner.Installer.installIntent(context, apk), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val n = NotificationCompat.Builder(context, "downloads")
+            .setSmallIcon(R.drawable.ic_stat_monika)
+            .setContentTitle("Đã tải xong thành phần Kirikiri")
+            .setContentText("Chạm để cài, rồi quay lại bấm Chơi.")
+            .setContentIntent(pi).setAutoCancel(true).build()
+        NotificationManagerCompat.from(context).notify(4310, n)
+    }
+
     private fun askId(id: String) = 4300 + (id.hashCode() and 0xff)
 
     private fun ask(context: Context, id: String, size: Long) {
@@ -144,6 +166,7 @@ class PackWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 runCatching { nm.notify(NOTI_ID, Notifier.progress(applicationContext, "Đang tải thành phần", id, pct)) }
             }
             runCatching { vn.aow.monika.diag.Diagnostics.crumb(applicationContext, "pack", "xong $id") }
+            if (id == PackManager.KIRIKIRI) runCatching { PackManager.notifyInstallReady(applicationContext) }
             Result.success()
         } catch (e: Exception) {
             // Chỉ báo cáo khi hết lượt thử (retry còn thì chỉ ghi vệt) → không đẻ 3 báo cáo cho 1 lần tải lỗi.

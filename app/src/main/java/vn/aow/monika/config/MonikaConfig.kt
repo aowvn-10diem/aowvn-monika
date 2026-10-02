@@ -262,6 +262,8 @@ data class ExternalApp(
     val downloadUrl: String = "",
     val plugins: List<Plugin> = emptyList(),
     val guide: List<String> = emptyList(),
+    /** Id gói trong `modules` chứa APK của app này; có → Monika tự tải gói + mở trình cài thay vì bắt người chơi tự tìm. */
+    val pack: String = "",
 )
 
 @Serializable

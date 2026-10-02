@@ -1,5 +1,5 @@
 {
-  "configVersion": 28,
+  "configVersion": 29,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -979,8 +979,11 @@
       "name": "Kirikiroid2",
       "description": "Chạy visual novel engine Kirikiri (file .xp3).",
       "packageNames": [
+        "vn.aow.monika.kirikiri",
+        "org.tvp.kirikiri2_yuri_debloated_10309",
         "org.tvp.kirikiri2"
       ],
+      "pack": "kirikiri",
       "downloadUrl": "https://www.aow.vn/p/tai-gia-lap-kirikiroid.html",
       "guide": [
         "Bấm nút Tải để tải file cài đặt Kirikiroid2.",
@@ -1148,6 +1151,9 @@
     "genesis_plus_gx"
   ],
   "prefetchByExtension": {
+    "xp3": [
+      "kirikiri"
+    ],
     "rar": [
       "sevenzip"
     ],

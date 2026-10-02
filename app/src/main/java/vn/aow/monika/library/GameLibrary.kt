@@ -44,7 +44,22 @@ class GameLibrary(
 
     val scanner = DeviceScanner(context)
 
-    fun list(): List<Game> = (internalGames() + externalGames()).map { g -> info?.apply(g) ?: g }.also { cached = it }
+    fun list(): List<Game> = (internalGames() + externalGames()).map { g -> info?.apply(g) ?: g }.also { cached = it; prefetchFor(it) }
+
+    private val prefetched = HashSet<String>()
+
+    /**
+     * Có game thuộc hệ cần engine/app tải thêm (ONScripter, Kirikiri...) → xếp tải ngay theo luật mạng, để lúc bấm Chơi đã sẵn.
+     * Mỗi gói chỉ xếp 1 lần mỗi lần mở app; mọi lỗi được nuốt.
+     */
+    private fun prefetchFor(games: List<Game>) = runCatching {
+        val cfg = configRepo.current
+        games.mapNotNull { it.system }.distinct().forEach { s ->
+            val id = s.engine?.takeIf { cfg.modules.containsKey(it) }
+                ?: s.externalApp?.let { cfg.externalApp(it)?.pack }?.takeIf { it.isNotBlank() && cfg.modules.containsKey(it) }
+            if (id != null && prefetched.add(id)) vn.aow.monika.pack.PackManager.prefetch(context, listOf(id))
+        }
+    }
 
     /** Game quét được trong máy, nhận diện hệ theo đuôi file. */
     private fun externalGames(): List<Game> = runCatching {
