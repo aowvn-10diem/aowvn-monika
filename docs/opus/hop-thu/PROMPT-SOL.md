@@ -16,7 +16,7 @@ Bạn làm phần CI, chẩn đoán lỗi và tài liệu. Viết tiếng Việt
      git fetch origin docs/opus-tra-loi && git show origin/docs/opus-tra-loi:docs/opus/KE-HOACH.md
    - Phương án mà dòng việc trỏ tới. Ví dụ V20 → docs/opus/2026-10-03-kiem-thu-chan-doan.md, mục D1.
 
-2) VIỆC CỦA BẠN, theo thứ tự: V23 → V20 → sol/H01-H03 (tiếp quản PR #4 của Haiku) → H02. Thứ tự mới nhất luôn ở dòng "Thứ tự" của KE-HOACH.md.
+2) VIỆC CỦA BẠN, theo thứ tự: V24 → gộp PR #5 → sửa PR #6 (V20) → H02. Thứ tự mới nhất luôn ở dòng "Thứ tự" của KE-HOACH.md.
    Làm từng việc một, đúng phạm vi ghi trong dòng việc và phương án. Không tự mở việc ngoài bảng.
 
 3) CÁCH NỘP BÀI:
