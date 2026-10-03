@@ -1,8 +1,8 @@
 # Kế hoạch & bảng việc Aow Monika
 
-> Chủ: Opus (PM, sếp giao 03/10/2026). Đội thi công: **Sonnet** (việc khó: native, engine, luồng app) và **Haiku** (việc nhẹ, máy móc: tài liệu, kiểm tra, sửa nhỏ có test sẵn). Sếp quyết việc ngoài kỹ thuật (mục 4).
+> Chủ: Opus (PM, sếp giao 03/10/2026). Đội thi công: **Sonnet** (việc khó: native, engine, luồng app), **Sol** (từ 03/10: CI, chẩn đoán, tài liệu; nộp qua PR, `PROMPT-SOL.md`) và **Haiku** (việc nhẹ, máy móc: tài liệu, kiểm tra, sửa nhỏ có test sẵn). Sếp quyết việc ngoài kỹ thuật (mục 4).
 > Đây là **nguồn sự thật duy nhất về tiến độ**. Mỗi phương án chi tiết nằm trong `docs/opus/<ngày>-<chủ đề>.md`; bảng này chỉ trỏ tới.
-> Cập nhật: 03/10/2026 12:55 (GMT+7), `main` @ `8229bae`, app 0.7.3 (versionCode 38), `configVersion` 31.
+> Cập nhật: 03/10/2026 15:10 (GMT+7), `main` @ `687c537`, app 0.7.3 (versionCode 38), `configVersion` 31.
 
 ## 1. Mốc
 
@@ -43,16 +43,17 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | V17 | P2: module `:renpy` (dòng P2 của phương án Ren'Py/RGSS): Java của **đúng RAPT 8.5.3**, bản vá ở `renpy/patches/` (bỏ Play Asset Delivery, `renpyiap`, `slf4j`), `build.gradle` Groovy riêng, `UPSTREAM.md`, chỉ sửa chỗ `Aow Monika:`. Xem U8 (`compileSdk`) | Sonnet | V12 | `./gradlew :renpy:assembleRelease` và `assembleRelease` của app xanh; `dexdump` thấy cùng lúc `org.libsdl.app.SDLActivity` (Ren'Py) và `vn.aow.monika.rgss.sdl.SDLActivity` (RGSS); ghi mức APK tăng vào `ket-qua/P0.md` | chờ |
 | V18 | Game kiểm thử Kirikiri tự sinh, bước K1–K8 của `2026-10-03-kiem-thu-chan-doan.md` (vẽ, chạm, Back, âm thanh, lưu/tải qua lần chết tiến trình, quay lại sau Home); `emulator-options` bỏ `-noaudio` | Sonnet | — | Emulator Test API 30+34 xanh với đủ file dấu `monika-*.txt`; K6 không chạy được âm thanh thì ghi lý do vào `ket-qua/` và để K6 "chỉ báo" | chờ |
 | V19 | Bài kiểm đường báo lỗi K10: `kill -11` tiến trình `:game` → báo cáo native có `component`/`stage`/`crumbs` đúng; `kill -9` chỉ ghi kết quả | Sonnet | V18 | Emulator Test xanh, in nội dung báo cáo JSON vào log | chờ |
-| V20 | D1 ngăn xếp đọc được: (1) **từ lần phát hành tới** đính `mapping-<tag>.txt` vào release + retrace trong `crash-reports.sh`; (2) workflow dựng gói giữ ký hiệu `.so` (`symbols-*.zip`, bảng BuildId); (3) đọc tombstone protobuf đúng trường (lấy số trường từ `tombstone.proto` AOSP); (4) API 30: thêm dòng `DEBUG` quanh lúc chết | Sonnet | — (phần 3–4 sau V19) | Retrace ra tên lớp gốc; báo cáo K10 trên API 34 có `build_id` + `rel_pc`, `crash-reports.sh` in tên hàm | chờ |
+| V20 | D1 ngăn xếp đọc được: (1) **từ lần phát hành tới** đính `mapping-<tag>.txt` vào release + retrace trong `crash-reports.sh`; (2) workflow dựng gói giữ ký hiệu `.so` (`symbols-*.zip`, bảng BuildId); (3) đọc tombstone protobuf đúng trường (lấy số trường từ `tombstone.proto` AOSP); (4) API 30: thêm dòng `DEBUG` quanh lúc chết | Sol | — (phần 3–4 sau V19) | Retrace ra tên lớp gốc; báo cáo K10 trên API 34 có `build_id` + `rel_pc`, `crash-reports.sh` in tên hàm | PR #6 (phần 1–2): PM yêu cầu sửa 1 điểm (bước ký hiệu không được chặn việc phát hành gói); SOL-002 đã trả lời (chọn A). Phần 3–4 sau V19 |
 | V21 | D5 nút "Báo lỗi game này" trong menu game (ảnh `PixelCopy` + mô tả + vệt + logcat 60 giây) + D4 thêm thông tin môi trường. Đọc mã Worker trước (giới hạn ảnh) | Sonnet | — (A1 đã chốt 03/10: ảnh mặc định bật, chọn loại lỗi bằng nút, gõ tùy chọn) | Test Robolectric màn gửi; Emulator Test tạo được báo cáo `kind=user` kèm ảnh; unit test chuỗi `env` | chờ |
 | V22 | D2 mẫu lỗi engine trong config (`engines.<id>.errorPatterns`, mặc định rỗng) + D3 theo dõi màn đen bằng `PixelCopy` + D6 `crash-reports.sh --by-fp` | Sonnet | V19 | Script XP tự sinh `raise "monika-ci"` → có báo cáo `engine:rgss`; K3 bình thường không tạo báo cáo màn đen | chờ |
-| H01 | Sửa đầu `docs/GIAO-TIEP-VOI-OPUS.md` thành 0.7.3 / versionCode 38 / `configVersion` 31. Mục 4: thêm dòng "E0 xong", "R4 xong" | Haiku | — | Diff chỉ đụng file đó | chờ |
-| H02 | Chạy lại `python3 scripts/gen-architecture.py`, commit `docs/KIEN-TRUC.md`. Nếu bảng module vẫn thiếu `:libretrodroid`/`:kirikiri` thì **không sửa script**: ghi `kẹt` và gửi thư | Haiku | — | `git diff` chỉ đụng `docs/KIEN-TRUC.md` | chờ |
-| H03 | `docs/TEST-MAY-THAT.md`: thêm mục "Kirikiri (0.7.3)" cho sếp thử: mở game `.xp3` → màn chuẩn bị tự tải gói → vào game → chạm, âm thanh, lưu/tải, tua nhanh, menu tiếng Việt, thoát. Máy 32-bit phải thấy thông báo chưa hỗ trợ. Nguồn: `docs/plan-kirikiri.md` + mục 4 của tài liệu bàn giao | Haiku | — | Chỉ đụng tài liệu; mỗi dòng là một thao tác sếp làm được | chờ |
+| V23 | Kho artifact của Actions lại đầy (Emulator Test run 20 không tải lên được `ket-qua`, mất log gỡ lỗi). Gốc: 7 workflow tải artifact **không đặt `retention-days`** (mặc định giữ rất lâu): `build-engines`, `build-kirikiri`, `build-renpy-pack`, `build-rgss`, `spike-renpy`, `spike-rgss`, `test-lab`. Sửa: (1) thêm `retention-days: 3` cho mọi `upload-artifact` (gói đã có bản ở release riêng tư); (2) workflow `don-dep-actions.yml` (`workflow_dispatch` + cron hằng ngày, `permissions: actions: write, contents: write`, dùng `GITHUB_TOKEN`) xóa artifact cũ hơn 2 ngày và mọi release `ci-apk-*` (gồm 2 release của run 16, 17) | Sol | — | `grep` mọi `upload-artifact` đều có `retention-days`; chạy tay workflow dọn: hết `ci-apk-*`, Emulator Test kế tiếp tải được `ket-qua-api-*` | PR #5 PM duyệt (03/10 16:05); chờ Sol gộp → PM kiểm run "Dọn dẹp Actions" |
+| H01 | Sửa đầu `docs/GIAO-TIEP-VOI-OPUS.md` thành 0.7.3 / versionCode 38 / `configVersion` 31. Mục 4: thêm dòng "E0 xong", "R4 xong" | Haiku | — | Diff chỉ đụng file đó | xong trong PR #4 của Haiku (đạt); Sol gộp cùng H03 |
+| H02 | Chạy lại `python3 scripts/gen-architecture.py`, commit `docs/KIEN-TRUC.md`. Nếu bảng module vẫn thiếu `:libretrodroid`/`:kirikiri` thì **không sửa script**: ghi `kẹt` và gửi thư | Sol | — | `git diff` chỉ đụng `docs/KIEN-TRUC.md` | Haiku kẹt đúng luật (thư 006); PM đã trả lời `tra-loi-006.md`: sửa script đọc `include(...)` trong `settings.gradle.kts`. Giao Sol |
+| H03 | `docs/TEST-MAY-THAT.md`: thêm mục "Kirikiri (0.7.3)" cho sếp thử: mở game `.xp3` → màn chuẩn bị tự tải gói → vào game → chạm, âm thanh, lưu/tải, tua nhanh, menu tiếng Việt, thoát. Máy 32-bit phải thấy thông báo chưa hỗ trợ. Nguồn: `docs/plan-kirikiri.md` + mục 4 của tài liệu bàn giao | Sol (tiếp quản PR #4) | — | Chỉ đụng tài liệu; mỗi dòng là một thao tác sếp làm được | PR #4 cần sửa: 6b.2 phải là thông báo "chưa hỗ trợ máy 32-bit" (không tải gói); 6b.6 là "Tua nhanh" (giữ Ctrl, bỏ qua thoại đã đọc), không phải 2x; 6b.7 viết lại theo menu thật của `KirikiriOverlay` (Menu game · Tua nhanh · Thoát). Sol làm ở nhánh `sol/H01-H03` (lấy H01 + H03 từ PR #4, gộp main), rồi đóng PR #4 |
 | O01 | Trả lời hộp thư; cập nhật bảng này sau mỗi mốc | Opus | — | `BANG-TIN.md` không còn thư `mở` quá 1 lượt kiểm tra | lặp lại |
 | O02 | Phương án câu 6 + 7 (kiểm thử không máy thật, crash log) | Opus | — | File `docs/opus/<ngày>-kiem-thu-chan-doan.md` | xong (`docs/opus/2026-10-03-kiem-thu-chan-doan.md`) |
 
-**Thứ tự cho Sonnet (03/10 12:55):** V16 (R5) → V18 → V19 → R6. V20 phần (1) làm ngay trong lần phát hành tới. V17, V20–V22 xen vào lúc chờ CI; A1 đã chốt nên V21 làm được.
+**Thứ tự (03/10 15:10).** Sonnet: sửa xong V16 → V18 → V19 → R6; V17, V21, V22 xen lúc chờ CI (V21 sau khi V20 đã gộp, vì cùng sửa `diag/Diagnostics.kt`). **Sol:** V23 (PR #5) → V20 → `sol/H01-H03` (tiếp quản PR #4 của Haiku, sửa H03) → H02 (sửa script theo `tra-loi-006.md`). Mỗi việc một PR, gộp khi Build xanh và PM đã comment "PM duyệt".
 
 Việc tiếp theo của từng khối (R2–R7, P2–P7, S0–S7) nằm sẵn trong file phương án. Khi một việc trên `xong`, PM thêm việc kế tiếp vào bảng; đội thi công không tự mở việc ngoài bảng.
 
@@ -62,6 +63,7 @@ Việc tiếp theo của từng khối (R2–R7, P2–P7, S0–S7) nằm sẵn t
 |---|---|---|
 | Sonnet | Mọi việc `Giao: Sonnet`; sửa nhỏ để CI xanh | Đổi hướng hay thứ tự mốc; phát hành gói GPL mới trước cổng G5 |
 | Haiku | Chỉ việc `Giao: Haiku`, đúng phạm vi ghi trong dòng việc | Sửa mã native, workflow build, `config/monika-config.json`, khóa ký. Việc to hơn mô tả → ghi `kẹt` và gửi thư, không tự làm rộng ra |
+| Sol | Chỉ việc `Giao: Sol`; nộp bằng PR từ nhánh `sol/<mã>`, tự gộp khi Build xanh + PM comment "PM duyệt" | Push thẳng `main`; phát hành, tag, khóa ký, secrets; sửa dòng việc của người khác; đổi hướng hay thứ tự mốc |
 | Opus | Lên kế hoạch, viết phương án, trả lời thư, duyệt qua pha, giao việc | Sửa mã app, push `main`, phát hành, chạm bí mật |
 
 Chạy `./gradlew testDebugUnitTest` trước mọi push có đụng mã (`CLAUDE.md`). Việc chỉ đụng tài liệu thì không cần.
@@ -79,11 +81,11 @@ Sonnet hỏi sếp khi tới bước cần; mỗi lần một câu.
 | G5 | Công khai mã nguồn Monika trước khi phát hành gói GPL mới (`rgss`, `renpy`, `symbian`) | Trước khi phát hành bản app có gói GPL mới | **sếp tự làm (03/10), không chặn đội**: cứ dựng, publish gói và làm tiếp theo plan |
 | G6 | Nhắn RAdmin duyệt client "AowMonika" (hardcore) | Bất kỳ lúc nào | chờ sếp |
 | G7 | Thử Kirikiri 0.7.3 trên máy thật theo `TEST-MAY-THAT.md` (H03) | Sau V05 + H03 | chờ |
-| G8 | Xin tác giả bản port mkxp-z (`BookerRues9`/`thehatkid`) giấy phép cho `Makefile`, `*.mk`, `get_deps.sh`. Không có thì phải viết lại script dựng (`tra-loi-004.md`) | Trước R7 | chờ sếp |
+| G8 | Xin tác giả bản port mkxp-z (`BookerRues9`/`thehatkid`) giấy phép cho `Makefile`, `*.mk`, `get_deps.sh`. Không có thì phải viết lại script dựng (`tra-loi-004.md`) | Trước R7 | sếp đã hỏi tác giả (03/10), chờ trả lời; đội cứ chạy theo plan. Tới R7 chưa có giấy phép thì làm hướng B (viết lại script dựng) |
 | G9 | Cài secrets Firebase Test Lab (`GCP_SA_KEY`, `GCP_PROJECT_ID`) theo `docs/TEST-LAB.md`: workflow `test-lab.yml` chưa chạy lần nào. Mở đường chạy game tự sinh trên máy ARM thật (Game Loop) | Khi tiện, không chặn đội | sếp đang làm (hướng dẫn chi tiết: `docs/TEST-LAB.md`, 03/10) |
 
 ## 5. Nhịp theo dõi
 
 - Opus kiểm mỗi **15 phút** (sếp chốt 03/10): `git ls-remote origin`, SHA không đổi thì dừng. Rảnh 4 lượt liền → 30 phút; 23:00–06:00 → 60 phút; có việc mới thì quay về 15 phút. Có commit mới → đọc `BANG-TIN.md`, bảng này, `git log` từ lần trước và trạng thái CI.
 - Sonnet kiểm cùng nhịp, theo cách ít token chốt ở `pm-tra-loi-001.md`.
-- Opus báo sếp chỉ khi qua mốc, có việc kẹt, hoặc có cổng cần quyết.
+- Opus **không nhắn sếp chi tiết** (sếp chốt 03/10): tiến độ ghi lên trang theo dõi https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d (Opus cập nhật mỗi lượt có thay đổi). Chỉ nhắn sếp khi cần sếp quyết, 1–2 dòng.

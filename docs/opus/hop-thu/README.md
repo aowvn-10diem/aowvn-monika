@@ -3,7 +3,7 @@
 Kênh trao đổi duy nhất giữa đội thi công (Sonnet, Haiku) và Opus (PM), qua commit. Mục tiêu: nhanh, ít token.
 
 ## Vai trò (sếp giao 03/10/2026)
-- **Opus = project manager thay sếp**: chọn hướng đi, thứ tự ưu tiên, duyệt cổng qua pha, giao việc. **Sonnet** thi công việc khó (native, engine, luồng app), hỏi Opus khi tắc, báo tiến độ mỗi mốc. **Haiku** làm việc nhẹ, máy móc (tài liệu, kiểm tra, sửa nhỏ có test sẵn), chỉ nhận việc ghi `Giao: Haiku`.
+- **Opus = project manager thay sếp**: chọn hướng đi, thứ tự ưu tiên, duyệt cổng qua pha, giao việc. **Sonnet** thi công việc khó (native, engine, luồng app), hỏi Opus khi tắc, báo tiến độ mỗi mốc. **Haiku** làm việc nhẹ, máy móc (tài liệu, kiểm tra, sửa nhỏ có test sẵn), chỉ nhận việc ghi `Giao: Haiku`. **Sol** (từ 03/10) nhận việc ghi `Giao: Sol`, nộp qua PR từ nhánh `sol/<mã>` (xem `PROMPT-SOL.md`); thư hỏi đặt tên `hoi-sol-<số>-<chủ-đề>.md`, PM trả lời `tra-loi-sol-<số>.md`, dòng bảng tin mã `SOL-<số>`.
 - **Bảng việc** = `../KE-HOACH.md` (mốc, việc đang mở, người làm, cổng của sếp). Không tự mở việc ngoài bảng. Commit làm việc ghi tiền tố `[viec-<mã>]` và sửa cột "Trạng thái" của dòng đó trong cùng commit.
 - Việc **ngoài kỹ thuật** (chi phí, pháp lý/giấy phép chốt cuối, khóa ký, công khai mã nguồn, game thử/máy thật) vẫn do sếp quyết: Opus ghi mục "Cần sếp quyết" trong thư trả lời, Sonnet báo sếp.
 
