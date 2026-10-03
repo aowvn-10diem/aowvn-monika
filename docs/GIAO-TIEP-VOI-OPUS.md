@@ -1,7 +1,7 @@
 # Giao tiếp với Opus
 
 > **Mục đích.** Tài liệu bàn giao để **Opus tham gia từ bên ngoài** (không cần đổi model của phiên đang làm) đọc là hiểu dự án, rồi **đưa phương án** cho các câu hỏi ở mục 7. Người thi công hiện tại là Claude Code (Sonnet); chủ repo ("sếp") quyết định cuối cùng.
-> Cập nhật: 03/10/2026 (GMT+7), bản app 0.7.2 (versionCode 37), `configVersion` 30. Chỗ ghi **[CHƯA KIỂM]** = chưa thử trên máy thật, đừng coi là chạy được.
+> Cập nhật: 03/10/2026 (GMT+7), bản app 0.7.3 (versionCode 38), `configVersion` 31. Chỗ ghi **[CHƯA KIỂM]** = chưa thử trên máy thật, đừng coi là chạy được.
 > Đọc kèm: `CLAUDE.md` (luật bắt buộc), `docs/KIEN-TRUC.md` (tự sinh), `docs/KIEN-TRUC-tay.md` (luồng + "sửa X mở file nào").
 
 ## 1. Dự án là gì
@@ -125,6 +125,8 @@ flowchart LR
 | Crash log theo thành phần (dedup, env, crumbs, ApplicationExitInfo) | Xong | Unit test |
 | Kirikiri (visual novel .xp3) nhúng trong Monika | Lõi dựng từ nguồn, lib nạp từ gói trong máy ảo không sập (API 30/34) | **[CHƯA KIỂM]** chơi game thật, âm thanh, chạm, lưu, tua nhanh |
 | Kirikiri tích hợp sâu (commit 92a65b2): màn chuẩn bị tự tải, menu Monika, Việt hóa 119 chuỗi | Mã xong, test xanh | Gói có bản dịch **đang dựng lại**; sau đó cập nhật `modules.kirikiri` + Emulator Test + phát hành 0.7.3 |
+| E0: EngineRoutes/EnginePrepActivity/`allowExternalApp` | Xong | Cơ sở cho nhúng engine mới |
+| R4: MkxpConfigWriter (tuy chọn lõi mkxp-z) | Xong | Chuẩn bị cho R2–R3 |
 | ONScripter (web, Onsyuri), Ruffle, HTML5 | Có runner | **[CHƯA KIỂM]** máy thật |
 | Ren'Py, RPG Maker XP/VX/Ace, Symbian | Vẫn dùng app ngoài (JoiPlay, EKA2L1) | Chưa nhúng |
 
