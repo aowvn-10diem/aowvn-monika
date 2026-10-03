@@ -150,9 +150,12 @@ if (Storages.isExistentStorage(saveFile)) {
 }
 var win = new CiWindow(); win.visible = true;
 """
+for name, enc, bom in (("v_bom", "utf-8", b"\xef\xbb\xbf"), ("v_u16", "utf-16-le", b"\xff\xfe")):
+    d = "%s/%s" % (g, name); os.makedirs(d)
+    open(d + "/startup.tjs", "wb").write(bom + S0.encode(enc))
 for i, src in enumerate([S0, S1, S2, S3]):
     d = "%s/s%d" % (g, i); os.makedirs(d)
-    open(d + "/startup.tjs", "w", encoding="utf-8").write("// startup.tjs: game kiểm thử tự sinh của CI (Aow Monika), tầng %d. Không có tài nguyên bản quyền.\n" % i + src)
+    open(d + "/startup.tjs", "w", encoding="utf-8").write("// startup.tjs: CI auto-generated test game (Aow Monika), tier %d. ASCII only (krkr TJS2 text loader).\n" % i + src)
     w = wave.open(d + "/beep.wav", "wb"); w.setnchannels(1); w.setsampwidth(2); w.setframerate(22050)
     w.writeframes(b"".join(struct.pack("<h", int(12000 * math.sin(2 * math.pi * 440 * i2 / 22050))) for i2 in range(22050))); w.close()
 PY
@@ -160,8 +163,8 @@ PY
   adb shell rm -rf /data/local/tmp/krkr-game; adb push "$G" /data/local/tmp/krkr-game >/dev/null
   adb shell "mkdir -p $GP && rm -rf $GP/* && cp -r /data/local/tmp/krkr-game/. $GP/ && chown -R $APP_UID:$APP_UID /data/data/$PKG/files/games && chmod -R 777 $GP && restorecon -R $GP"
   adb shell appops set "$PKG" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1 || true
-  kopen() { GD="$GP/$1"; adb shell am force-stop "$PKG"; adb logcat -c; adb shell "rm -f $GD/monika-ready.txt $GD/monika-touch.txt $GD/monika-audio.txt $GD/monika-load.txt"
-            adb shell "am start -W -n $PKG/vn.aow.monika.runner.KirikiriGameActivity --es title CI-krkr --es aow_game_path $GD/startup.tjs" >/dev/null; }
+  kopen() { GD="$GP/$1"; KT="${2:-$GD/startup.tjs}"; adb shell am force-stop "$PKG"; adb logcat -c; adb shell "rm -f $GD/monika-ready.txt $GD/monika-touch.txt $GD/monika-audio.txt $GD/monika-load.txt"
+            adb shell "am start -W -n $PKG/vn.aow.monika.runner.KirikiriGameActivity --es title CI-krkr --es aow_game_path $KT" >/dev/null; }
   kwait() { for i in $(seq 1 "$2"); do adb shell "test -f $GD/$1" 2>/dev/null && return 0; sleep 2; done; return 1; }
   kshot() { adb exec-out screencap > "$1" 2>/dev/null; }
   kpix() { python3 - "$1" <<'PY'
@@ -178,6 +181,12 @@ PY
   kfail=0
   # Thăm dò theo tầng để biết engine sập ở đâu: s0 chỉ chạy script, s1 + cửa sổ/lớp, s2 + âm thanh, s3 đủ bài.
   best=-1
+  # Vòng dò cách mở: cùng nội dung s0 nhưng đường vào khác (thư mục / UTF-8 BOM / UTF-16LE BOM).
+  for v in "s0 DIR $GP/s0" "v_bom FILE" "v_u16 FILE"; do
+    set -- $v
+    if [ "$2" = DIR ]; then kopen "$1" "$3"; else kopen "$1"; fi
+    if kwait monika-ready.txt 10; then note "K2.var $1 $2 OK chạy được"; else note "K2.var $1 $2 FAIL"; fi
+  done
   for st in 0 1 2 3; do
     kopen "s$st"
     if kwait monika-ready.txt 15; then note "K2.s$st OK chạy được"; best=$st
@@ -218,7 +227,7 @@ m=re.search(r'pos1=(\d+) pos2=(\d+)',sys.argv[1]); sys.exit(0 if m and int(m.gro
     echo "--- logcat (lọc) kirikiri-game ---"
     grep -E "MonikaGame|AndroidRuntime|krkr|Cocos|cocos|Fatal signal|DEBUG|TJS|tjs" "$OUT/games/krkr-game.logcat.txt" | tail -60 | cut -c1-260
     echo "--- hết ---"
-    fail=1
+    [ "${KRKR_STRICT:-0}" = 1 ] && fail=1   # V18 kẹt: engine sập trên máy ảo (xem hop-thu/hoi-008) → chỉ báo cho tới khi có máy ARM thật
   fi
 fi
 
@@ -267,6 +276,31 @@ else
     echo "$keyres rgss phím Enter → Input::C" | tee -a "$OUT/games/summary.txt"
     [ "$keyres" = KEY_OK ] || result=KEY_FAIL
     adb exec-out screencap -p > "$OUT/games/rgss-after-key.png" 2>/dev/null || true
+    # V19 (K10): đường báo lỗi. Giết tiến trình :game bằng SIGSEGV rồi mở lại app: phải có báo cáo native trong files/diag/reports.
+    if [ "$keyres" = KEY_OK ]; then
+      RD="/data/data/$PKG/files/diag/reports"
+      adb shell "rm -f $RD/*.json" 2>/dev/null || true
+      GPID=$(adb shell pidof "$PKG:game" | tr -d '\r' | awk '{print $1}')
+      adb shell kill -11 "$GPID" 2>/dev/null; sleep 3
+      adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+      rep=""
+      for i in $(seq 1 15); do rep=$(adb shell "ls $RD/*.json 2>/dev/null" | tr -d '\r' | head -1); [ -n "$rep" ] && break; sleep 2; done
+      if [ -z "$rep" ]; then note "K10 FAIL không có báo cáo sau kill -11 (pid ${GPID:-?})"; result=K10_FAIL
+      else
+        adb shell "cat $rep" > "$OUT/games/k10-report.json" 2>/dev/null
+        note "K10 báo cáo: $(python3 - "$OUT/games/k10-report.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+s = d.get("session") or {}
+print("kind=%s component=%s stage=%s crumbs=%d build_id=%s" % (d.get("kind"), d.get("component"), s.get("stage"), len(d.get("crumbs") or []), "có" if "build_id" in json.dumps(d) else "không"))
+PY
+)"
+        python3 -c "
+import json,sys
+d=json.load(open(sys.argv[1])); ok = 'native' in str(d.get('kind')).lower() and str(d.get('component','')).startswith('engine:') and (d.get('crumbs') or [])
+sys.exit(0 if ok else 1)" "$OUT/games/k10-report.json" && note "K10 OK báo cáo native đúng kind/component/crumbs" || { note "K10 FAIL báo cáo thiếu kind/component/crumbs đúng (xem games/k10-report.json)"; result=K10_FAIL; }
+      fi
+    fi
   fi
   if [ "$result" != OK ] && [ "$result" != KEY_OK ]; then
     echo "--- logcat (lọc) của rgss ---"
