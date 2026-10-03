@@ -96,7 +96,7 @@ fi
 
 # ---- Kirikiri: game kiểm thử TỰ SINH (docs/opus/2026-10-03-kiem-thu-chan-doan.md, K1–K8). Cần gói đã đặt ở khối trên.
 # Mỗi bước in "KN <KẾT QUẢ> ..." vào summary. K6 (âm thanh) và K8 (Home) mới chỉ báo, chưa làm đỏ.
-if [ -d "$OUT/kpack" ] && [ -n "${KRKR_GAME:-1}" ]; then
+if [ -d "$OUT/kpack" ] && [ -n "${KRKR_GAME:-}" ]; then   # tắt mặc định: V18 kẹt (engine sập, báo cáo sập làm nhiễu K10); bật bằng KRKR_GAME=1
   echo "=== kirikiri-game (K1–K8)"
   G="$OUT/krkr-game"; rm -rf "$G"; mkdir -p "$G"
   python3 - "$G" <<'PY'
@@ -287,6 +287,7 @@ else
       for i in $(seq 1 15); do rep=$(adb shell "grep -l 'engine:rgss' $RD/*.json 2>/dev/null" | tr -d '\r' | head -1); [ -n "$rep" ] && break; sleep 2; done
       # Báo cáo của game rgss vừa giết; nếu không có, lấy báo cáo bất kỳ để in ra cho dễ chẩn đoán (có thể là của lần sập Kirikiri trước đó).
       [ -n "$rep" ] || rep=$(adb shell "ls -t $RD/*.json 2>/dev/null" | tr -d '\r' | head -1)
+      adb shell "for f in $RD/*.json; do echo \$f; grep -o '\"component\": *\"[^\"]*\"' \$f; done" 2>/dev/null | tr -d '\r' | paste -sd' ' | cut -c1-600 | sed 's/^/K10 các báo cáo hiện có: /' | tee -a "$OUT/games/summary.txt"
       if [ -z "$rep" ]; then note "K10 FAIL không có báo cáo sau kill -11 (pid ${GPID:-?})"; result=K10_FAIL
       else
         adb shell "cat $rep" > "$OUT/games/k10-report.json" 2>/dev/null
