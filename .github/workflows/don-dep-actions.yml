@@ -1,0 +1,71 @@
+name: Dọn dẹp Actions
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/don-dep-actions.yml']
+  schedule:
+    - cron: "17 0 * * *" # 07:17 giờ Việt Nam, hằng ngày
+
+permissions:
+  actions: write
+  contents: write
+
+concurrency:
+  group: don-dep-actions
+  cancel-in-progress: false
+
+jobs:
+  don-dep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Xóa artifact quá 2 ngày và release APK tạm
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const repo = { owner: context.repo.owner, repo: context.repo.repo };
+            const cutoff = Date.now() - 2 * 24 * 60 * 60 * 1000;
+            // Lấy đủ các trang TRƯỚC khi xóa, tránh bỏ sót khi danh sách đổi.
+            const artifacts = await github.paginate(
+              github.rest.actions.listArtifactsForRepo, { ...repo, per_page: 100 }
+            );
+            const releases = await github.paginate(
+              github.rest.repos.listReleases, { ...repo, per_page: 100 }
+            );
+            let deletedArtifacts = 0;
+            let deletedReleases = 0;
+            let deletedTags = 0;
+            async function remove(action) {
+              try {
+                await action();
+                return true;
+              } catch (error) {
+                if (error.status === 404) return false; // Tác vụ khác đã xóa.
+                throw error;
+              }
+            }
+            for (const artifact of artifacts) {
+              if (Date.parse(artifact.created_at) >= cutoff ||
+                  !Number.isFinite(Date.parse(artifact.created_at))) continue;
+              if (await remove(() => github.rest.actions.deleteArtifact({
+                ...repo, artifact_id: artifact.id
+              }))) deletedArtifacts++;
+            }
+            for (const release of releases) {
+              if (!release.tag_name.startsWith("ci-apk-")) continue;
+              if (await remove(() => github.rest.repos.deleteRelease({
+                ...repo, release_id: release.id
+              }))) deletedReleases++;
+              if (await remove(() => github.rest.git.deleteRef({
+                ...repo, ref: "tags/" + release.tag_name
+              }))) deletedTags++;
+            }
+            await core.summary
+              .addHeading("Dọn dẹp Actions")
+              .addRaw("Artifact quá 2 ngày đã xóa: " + deletedArtifacts + "\n", true)
+              .addRaw("Release ci-apk-* đã xóa: " + deletedReleases + "\n", true)
+              .addRaw("Tag ci-apk-* đã xóa: " + deletedTags + "\n", true)
+              .write();

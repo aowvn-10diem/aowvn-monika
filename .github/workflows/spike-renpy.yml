@@ -72,6 +72,7 @@ jobs:
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         if: always()
         with:
+          retention-days: 3
           name: spike-renpy
           path: |
             distribute.log
