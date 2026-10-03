@@ -154,6 +154,7 @@ jobs:
           { echo "### Gói rgss ($ABI)"; echo '```'; cat rgss-$ABI.zip.sha256; stat -c 'size=%s' rgss-$ABI.zip; ls -l pack/lib | awk '{print $5, $9}'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
+        continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         with:
           name: rgss-${{ inputs.abi }}
           path: |

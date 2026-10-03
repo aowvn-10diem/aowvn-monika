@@ -31,6 +31,7 @@ jobs:
           ./gradlew assembleRelease --console=plain
           python3 scripts/check-r8-mapping.py app/build/outputs/mapping/release/mapping.txt
       - uses: actions/upload-artifact@v4
+        continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         with:
           name: apk
           path: app/build/outputs/apk/release/app-universal-release.apk
@@ -82,6 +83,7 @@ jobs:
             # Crash của app = lỗi, dù Maestro có báo xanh.
             if grep -E "FATAL EXCEPTION|AndroidRuntime.*com\.aow\.monika|IncompatibleClassChangeError" out/logcat.txt | head -20 > out/crash.txt && [ -s out/crash.txt ]; then echo CRASH > out/crash.flag; fi
       - uses: actions/upload-artifact@v4
+        continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         if: always()
         with:
           name: ket-qua-api-${{ matrix.api }}
