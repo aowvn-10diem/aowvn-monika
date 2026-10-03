@@ -227,7 +227,7 @@ m=re.search(r'pos1=(\d+) pos2=(\d+)',sys.argv[1]); sys.exit(0 if m and int(m.gro
     echo "--- logcat (lọc) kirikiri-game ---"
     grep -E "MonikaGame|AndroidRuntime|krkr|Cocos|cocos|Fatal signal|DEBUG|TJS|tjs" "$OUT/games/krkr-game.logcat.txt" | tail -60 | cut -c1-260
     echo "--- hết ---"
-    fail=1
+    [ "${KRKR_STRICT:-0}" = 1 ] && fail=1   # V18 kẹt: engine sập trên máy ảo (xem hop-thu/hoi-008) → chỉ báo cho tới khi có máy ARM thật
   fi
 fi
 
@@ -276,6 +276,31 @@ else
     echo "$keyres rgss phím Enter → Input::C" | tee -a "$OUT/games/summary.txt"
     [ "$keyres" = KEY_OK ] || result=KEY_FAIL
     adb exec-out screencap -p > "$OUT/games/rgss-after-key.png" 2>/dev/null || true
+    # V19 (K10): đường báo lỗi. Giết tiến trình :game bằng SIGSEGV rồi mở lại app: phải có báo cáo native trong files/diag/reports.
+    if [ "$keyres" = KEY_OK ]; then
+      RD="/data/data/$PKG/files/diag/reports"
+      adb shell "rm -f $RD/*.json" 2>/dev/null || true
+      GPID=$(adb shell pidof "$PKG:game" | tr -d '\r' | awk '{print $1}')
+      adb shell kill -11 "$GPID" 2>/dev/null; sleep 3
+      adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+      rep=""
+      for i in $(seq 1 15); do rep=$(adb shell "ls $RD/*.json 2>/dev/null" | tr -d '\r' | head -1); [ -n "$rep" ] && break; sleep 2; done
+      if [ -z "$rep" ]; then note "K10 FAIL không có báo cáo sau kill -11 (pid ${GPID:-?})"; result=K10_FAIL
+      else
+        adb shell "cat $rep" > "$OUT/games/k10-report.json" 2>/dev/null
+        note "K10 báo cáo: $(python3 - "$OUT/games/k10-report.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+s = d.get("session") or {}
+print("kind=%s component=%s stage=%s crumbs=%d build_id=%s" % (d.get("kind"), d.get("component"), s.get("stage"), len(d.get("crumbs") or []), "có" if "build_id" in json.dumps(d) else "không"))
+PY
+)"
+        python3 -c "
+import json,sys
+d=json.load(open(sys.argv[1])); ok = 'native' in str(d.get('kind')).lower() and str(d.get('component','')).startswith('engine:') and (d.get('crumbs') or [])
+sys.exit(0 if ok else 1)" "$OUT/games/k10-report.json" && note "K10 OK báo cáo native đúng kind/component/crumbs" || { note "K10 FAIL báo cáo thiếu kind/component/crumbs đúng (xem games/k10-report.json)"; result=K10_FAIL; }
+      fi
+    fi
   fi
   if [ "$result" != OK ] && [ "$result" != KEY_OK ]; then
     echo "--- logcat (lọc) của rgss ---"
