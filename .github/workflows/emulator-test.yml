@@ -62,11 +62,32 @@ jobs:
         if: ${{ steps.dl_apk.outcome != 'success' }}
         env: { GH_TOKEN: "${{ github.token }}" }
         run: gh release download "ci-apk-${{ github.run_id }}" -p 'app-universal-release.apk' -D .
-      - name: Tải gói rgss thử (release riêng tư của repo này)
+      - name: Tải gói rgss thử từ release nháp (V24/G8)
         if: ${{ inputs.rgss_tag != '' }}
-        env: { GH_TOKEN: "${{ github.token }}" }
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RGSS_TAG: ${{ inputs.rgss_tag }}
         run: |
-          mkdir -p rgss-pack && gh release download "${{ inputs.rgss_tag }}" -p 'rgss-arm64-v8a.zip' -D rgss-pack
+          set -euo pipefail
+          # /releases/tags chỉ tìm bản đã phát hành; liệt kê có xác thực để thấy draft.
+          gh api --paginate --slurp "repos/$GH_REPO/releases?per_page=100" > "$RUNNER_TEMP/rgss-releases.json"
+          ASSET_ID=$(python3 - <<'PY'
+          import json, os
+          with open(os.path.join(os.environ["RUNNER_TEMP"], "rgss-releases.json")) as source:
+              pages = json.load(source)
+          releases = [r for page in pages for r in page if r.get("tag_name") == os.environ["RGSS_TAG"] and r.get("draft") is True]
+          if len(releases) != 1:
+              raise SystemExit("Không tìm thấy duy nhất một release RGSS nháp; kiểm tag và quyền GITHUB_TOKEN.")
+          assets = [a for a in releases[0].get("assets", []) if a.get("name") == "rgss-arm64-v8a.zip"]
+          if len(assets) != 1 or type(assets[0].get("id")) is not int or assets[0]["id"] <= 0:
+              raise SystemExit("Release RGSS nháp thiếu asset rgss-arm64-v8a.zip hợp lệ.")
+          print(assets[0]["id"])
+          PY
+          )
+          mkdir -p rgss-pack
+          gh api "repos/$GH_REPO/releases/assets/$ASSET_ID" -H "Accept: application/octet-stream" > rgss-pack/rgss-arm64-v8a.zip
+          unzip -tq rgss-pack/rgss-arm64-v8a.zip
           ls -l rgss-pack
       - name: Bật KVM (máy ảo chạy nhanh)
         run: |
