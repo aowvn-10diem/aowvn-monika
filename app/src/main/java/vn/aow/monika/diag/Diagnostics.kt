@@ -242,6 +242,8 @@ object Diagnostics {
         if (e.reason != ApplicationExitInfo.REASON_CRASH_NATIVE && e.reason != ApplicationExitInfo.REASON_ANR) return emptyList()
         return runCatching {
             val bytes = e.traceInputStream?.use { it.readNBytesCompat(400_000) } ?: return emptyList()
+            // Android 12+: tombstone protobuf → đọc đúng trường (tín hiệu, luồng gây lỗi, ngăn xếp có build_id); không được thì nhặt chuỗi như trước.
+            if (e.reason == ApplicationExitInfo.REASON_CRASH_NATIVE) TombstoneParser.parse(bytes)?.let { return TombstoneParser.toLines(it) }
             val out = LinkedHashSet<String>()
             val run = StringBuilder()
             fun flush() {

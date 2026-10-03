@@ -284,7 +284,9 @@ else
       adb shell kill -11 "$GPID" 2>/dev/null; sleep 3
       adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
       rep=""
-      for i in $(seq 1 15); do rep=$(adb shell "ls $RD/*.json 2>/dev/null" | tr -d '\r' | head -1); [ -n "$rep" ] && break; sleep 2; done
+      for i in $(seq 1 15); do rep=$(adb shell "grep -l 'engine:rgss' $RD/*.json 2>/dev/null" | tr -d '\r' | head -1); [ -n "$rep" ] && break; sleep 2; done
+      # Báo cáo của game rgss vừa giết; nếu không có, lấy báo cáo bất kỳ để in ra cho dễ chẩn đoán (có thể là của lần sập Kirikiri trước đó).
+      [ -n "$rep" ] || rep=$(adb shell "ls -t $RD/*.json 2>/dev/null" | tr -d '\r' | head -1)
       if [ -z "$rep" ]; then note "K10 FAIL không có báo cáo sau kill -11 (pid ${GPID:-?})"; result=K10_FAIL
       else
         adb shell "cat $rep" > "$OUT/games/k10-report.json" 2>/dev/null
