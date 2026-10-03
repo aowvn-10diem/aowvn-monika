@@ -85,6 +85,7 @@ jobs:
           arch: x86_64
           target: google_apis
           disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
           script: |
             mkdir -p out
             adb install -r app-universal-release.apk

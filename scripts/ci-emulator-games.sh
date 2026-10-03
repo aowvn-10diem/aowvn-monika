@@ -94,6 +94,107 @@ else
   [ "$result" = OK ] || fail=1
 fi
 
+# ---- Kirikiri: game kiểm thử TỰ SINH (docs/opus/2026-10-03-kiem-thu-chan-doan.md, K1–K8). Cần gói đã đặt ở khối trên.
+# Mỗi bước in "KN <KẾT QUẢ> ..." vào summary. K6 (âm thanh) và K8 (Home) mới chỉ báo, chưa làm đỏ.
+if [ -d "$OUT/kpack" ] && [ -n "${KRKR_GAME:-1}" ]; then
+  echo "=== kirikiri-game (K1–K8)"
+  G="$OUT/krkr-game"; rm -rf "$G"; mkdir -p "$G"
+  python3 - "$G" <<'PY'
+import sys, wave, struct, math
+g = sys.argv[1]
+w = wave.open(g + "/beep.wav", "wb"); w.setnchannels(1); w.setsampwidth(2); w.setframerate(22050)
+w.writeframes(b"".join(struct.pack("<h", int(12000 * math.sin(2 * math.pi * 440 * i / 22050))) for i in range(22050))); w.close()
+open(g + "/startup.tjs", "w", encoding="utf-8").write(r"""// startup.tjs: game kiểm thử tự sinh của CI (Aow Monika). Không có tài nguyên bản quyền.
+var out = System.exePath;
+function mark(name, text) { var a = []; a.add(text + " t=" + System.getTickCount()); a.save(out + name); }
+class CiWindow extends Window {
+  var base, snd, t, pos1;
+  function CiWindow() {
+    super.Window();
+    setInnerSize(640, 360);
+    base = new Layer(this, null);
+    base.setImageSize(640, 360); base.setSizeToImageSize();
+    base.fillRect(0, 0, 640, 360, 0xFFF28C28);
+    base.visible = true;
+    snd = new WaveSoundBuffer(this);
+    snd.open("beep.wav"); snd.looping = true; snd.play();
+    t = new Timer(onTimer, ""); t.interval = 1500; t.enabled = true;
+    mark("monika-ready.txt", "ready");
+  }
+  function onTimer() {
+    if (pos1 === void) { pos1 = snd.position; return; }
+    mark("monika-audio.txt", "status=" + snd.status + " pos1=" + pos1 + " pos2=" + snd.position);
+    t.enabled = false;
+  }
+  function onMouseDown(x, y, button, shift) { mark("monika-touch.txt", "x=" + x + " y=" + y + " b=" + button); }
+}
+var saveFile = System.exePath + "monika-save.txt";
+if (Storages.isExistentStorage(saveFile)) {
+  var d = Scripts.evalStorage(saveFile);
+  mark("monika-load.txt", "n=" + (d.n + 1));
+} else {
+  var d = %["n" => 1];
+  (Dictionary.saveStruct incontextof d)(saveFile);
+}
+var win = new CiWindow(); win.visible = true;
+""")
+PY
+  GP="/data/data/$PKG/files/games/krkr-ci"
+  adb shell rm -rf /data/local/tmp/krkr-game; adb push "$G" /data/local/tmp/krkr-game >/dev/null
+  adb shell "mkdir -p $GP && rm -rf $GP/* && cp -r /data/local/tmp/krkr-game/. $GP/ && chown -R $APP_UID:$APP_UID /data/data/$PKG/files/games && chmod -R 777 $GP && restorecon -R $GP"
+  adb shell appops set "$PKG" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1 || true
+  kopen() { adb shell am force-stop "$PKG"; adb logcat -c; adb shell "rm -f $GP/monika-ready.txt $GP/monika-touch.txt $GP/monika-audio.txt $GP/monika-load.txt"
+            adb shell "am start -W -n $PKG/vn.aow.monika.runner.KirikiriGameActivity --es title CI-krkr --es aow_game_path $GP/startup.tjs" >/dev/null; }
+  kwait() { for i in $(seq 1 "$2"); do adb shell "test -f $GP/$1" 2>/dev/null && return 0; sleep 2; done; return 1; }
+  kshot() { adb exec-out screencap > "$1" 2>/dev/null; }
+  kpix() { python3 - "$1" <<'PY'
+import sys, struct
+d = open(sys.argv[1], "rb").read()
+w, h = struct.unpack("<II", d[:8]); hdr = len(d) - w * h * 4
+if hdr < 12 or hdr > 64: print("BAD %dx%d len=%d" % (w, h, len(d))); sys.exit()
+o = hdr + ((h // 2) * w + w // 2) * 4
+print("%d %d %d %d %d" % (w, h, d[o], d[o + 1], d[o + 2]))
+PY
+  }
+  kpid() { adb shell pidof "$PKG:game" >/dev/null 2>&1 || adb shell ps -A | grep -q "$PKG:game"; }
+  note() { echo "$*" | tee -a "$OUT/games/summary.txt"; }
+  kfail=0
+  kopen
+  if kwait monika-ready.txt 30; then note "K2 OK game kiểm thử mở được (monika-ready.txt)"; else note "K2 FAIL không có monika-ready.txt sau 60s"; kfail=1; fi
+  if [ "$kfail" = 0 ]; then
+    sleep 3; kshot "$OUT/games/krkr-k3.raw"; read -r W H R Gc B <<<"$(kpix "$OUT/games/krkr-k3.raw")"
+    if [ "$W" = BAD ] || [ -z "${R:-}" ]; then note "K3 FAIL không đọc được ảnh chụp ($W $H)"; kfail=1
+    elif python3 -c "import sys;r,g,b=map(int,sys.argv[1:4]);sys.exit(0 if abs(r-242)<=40 and abs(g-140)<=40 and abs(b-40)<=40 else 1)" "$R" "$Gc" "$B"; then note "K3 OK vẽ hình: điểm giữa màn = $R,$Gc,$B (cam)"
+    else note "K3 FAIL điểm giữa màn = $R,$Gc,$B (mong 242,140,40); ${W}x${H}"; kfail=1; fi
+    adb shell input tap $((W/2)) $((H/2)); kwait monika-touch.txt 3 || { adb shell input tap $((W/2)) $((H/2)); kwait monika-touch.txt 3; }
+    TOUCH=$(adb shell "cat $GP/monika-touch.txt" 2>/dev/null | tr -d '\r')
+    if [ -n "$TOUCH" ]; then note "K4 OK chạm: $TOUCH"; else note "K4 FAIL không có monika-touch.txt (lớp phủ nuốt chạm hoặc API chạm sai)"; kfail=1; fi
+    adb shell input keyevent KEYCODE_BACK; sleep 2; kshot "$OUT/games/krkr-k5.raw"
+    if kpid && ! cmp -s "$OUT/games/krkr-k3.raw" "$OUT/games/krkr-k5.raw"; then note "K5 OK Back mở menu, game còn sống"; else note "K5 FAIL Back làm thoát game hoặc không đổi hình"; kfail=1; fi
+    adb shell input keyevent KEYCODE_BACK; sleep 1
+    kwait monika-audio.txt 10 >/dev/null 2>&1 || true
+    AUD=$(adb shell "cat $GP/monika-audio.txt" 2>/dev/null | tr -d '\r')
+    if echo "$AUD" | grep -q "status=play" && python3 -c "
+import re,sys
+m=re.search(r'pos1=(\d+) pos2=(\d+)',sys.argv[1]); sys.exit(0 if m and int(m.group(2))>int(m.group(1)) else 1)" "$AUD"; then note "K6 OK âm thanh chạy: $AUD"; else note "K6 BÁO (chưa đỏ) âm thanh: '${AUD:-không có file}'"; fi
+    adb shell dumpsys audio > "$OUT/games/krkr-dumpsys-audio.txt" 2>/dev/null || true
+    adb shell "ls -l $GP; cat $GP/monika-save.txt 2>/dev/null" | tee -a "$OUT/games/krkr-files.txt" >/dev/null
+    kopen
+    if kwait monika-load.txt 30; then LD=$(adb shell "cat $GP/monika-load.txt" | tr -d '\r'); if echo "$LD" | grep -q "n=2"; then note "K7 OK lưu/tải bền qua lần chết tiến trình: $LD"; else note "K7 FAIL nội dung '$LD'"; kfail=1; fi
+    else note "K7 FAIL không có monika-load.txt sau lần mở lại"; kfail=1; fi
+    sleep 3; adb shell input keyevent KEYCODE_HOME; sleep 3; adb shell input keyevent KEYCODE_APP_SWITCH; sleep 1; adb shell input keyevent KEYCODE_APP_SWITCH; sleep 3
+    kshot "$OUT/games/krkr-k8.raw"; read -r W2 H2 R2 G2 B2 <<<"$(kpix "$OUT/games/krkr-k8.raw")"
+    note "K8 BÁO (chưa đỏ) sau Home + APP_SWITCH: tiến trình $(kpid && echo sống || echo CHẾT), điểm giữa = ${R2:-?},${G2:-?},${B2:-?}"
+  fi
+  adb logcat -d > "$OUT/games/krkr-game.logcat.txt" 2>/dev/null
+  if [ "$kfail" != 0 ]; then
+    echo "--- logcat (lọc) kirikiri-game ---"
+    grep -E "MonikaGame|AndroidRuntime|krkr|Cocos|cocos|Fatal signal|DEBUG|TJS|tjs" "$OUT/games/krkr-game.logcat.txt" | tail -60 | cut -c1-260
+    echo "--- hết ---"
+    fail=1
+  fi
+fi
+
 # ---- RPG Maker XP/VX/Ace (RGSS, mkxp-z nhúng): đặt gói rgss vào files/packs/rgss như PackManager làm, sinh một "game" XP tối thiểu
 # (Game.ini + Data/Scripts.rxdata: ghi monika-ok.txt rồi thoát; không vẽ gì nên không cần RTP), mở RgssGameActivity.
 # Kiểm: nạp được .so từ gói (SDL đổi gói + FindClass), không "Failed to register methods", Ruby chạy script, game ghi được file.
@@ -130,8 +231,9 @@ else
   # Phím: game chờ Input::C; gửi Enter qua hệ thống (đi đường SDL → mkxp-z, cùng đường lớp phủ Monika gọi onNativeKeyDown).
   if [ "$result" = OK ]; then
     keyres=KEY_TIMEOUT
-    for i in $(seq 1 10); do
-      adb shell input keyevent KEYCODE_ENTER
+    # Nhấn-nhả tức thì có thể lọt giữa hai khung hình (mkxp-z đọc trạng thái phím mỗi Input.update, máy ảo vẽ bằng SwiftShader rất chậm) → nhấn giữ.
+    for i in $(seq 1 15); do
+      adb shell input keyevent --longpress KEYCODE_ENTER
       sleep 2
       if adb shell "test -f $P/games/rgss-ci/monika-key.txt" 2>/dev/null; then keyres=KEY_OK; break; fi
     done
