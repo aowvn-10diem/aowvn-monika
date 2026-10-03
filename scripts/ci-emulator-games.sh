@@ -285,15 +285,20 @@ else
       adb shell am force-stop "$PKG"
       adb shell "am start -W -n $PKG/vn.aow.monika.runner.RgssGameActivity --es title CI-rgss --es game_path $P/games/rgss-ci" >/dev/null
       for i in $(seq 1 15); do adb shell "test -f $P/games/rgss-ci/monika-ok.txt" 2>/dev/null && break; sleep 2; done
+      K10_PID=$(adb shell pidof "$PKG:game" 2>/dev/null | tr -d '\r' | awk '{print $1}')
+      K10_T0=$(( $(adb shell date +%s | tr -d '\r') * 1000 - 5000 ))
       for i in $(seq 1 10); do adb shell input keyevent --longpress KEYCODE_ENTER; sleep 2; adb shell pidof "$PKG:game" >/dev/null 2>&1 || break; done
       sleep 3
+      echo "K10 lượt thử: pid=$K10_PID từ_ms=$K10_T0" | tee -a "$OUT/games/summary.txt"
       adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
       rep=""
       for i in $(seq 1 15); do rep=$(adb shell "grep -l 'engine:rgss' $RD/*.json 2>/dev/null" | tr -d '\r' | head -1); [ -n "$rep" ] && break; sleep 2; done
-      # Báo cáo của game rgss vừa giết; nếu không có, lấy báo cáo bất kỳ để in ra cho dễ chẩn đoán (có thể là của lần sập Kirikiri trước đó).
-      [ -n "$rep" ] || rep=$(adb shell "ls -t $RD/*.json 2>/dev/null" | tr -d '\r' | head -1)
+      # Nhánh dự phòng CHỈ để in chẩn đoán, không bao giờ làm K10 đạt (V31).
+      diagrep=""; [ -n "$rep" ] || diagrep=$(adb shell "ls -t $RD/*.json 2>/dev/null" | tr -d '\r' | head -1)
       adb shell "for f in $RD/*.json; do echo \$f; grep -o '\"component\": *\"[^\"]*\"' \$f; done" 2>/dev/null | tr -d '\r' | paste -sd' ' | cut -c1-600 | sed 's/^/K10 các báo cáo hiện có: /' | tee -a "$OUT/games/summary.txt"
-      if [ -z "$rep" ]; then note "K10 FAIL không có báo cáo engine:rgss sau khi game tự gây SIGSEGV"; result=K10_FAIL
+      if [ -z "$rep" ]; then
+        [ -z "$diagrep" ] || adb shell "cat $diagrep" > "$OUT/games/k10-report-diag.json" 2>/dev/null
+        note "K10 FAIL không có báo cáo engine:rgss sau khi game tự gây SIGSEGV (báo cáo khác nếu có: games/k10-report-diag.json, chỉ để chẩn đoán)"; result=K10_FAIL
       else
         adb shell "cat $rep" > "$OUT/games/k10-report.json" 2>/dev/null
         note "K10 báo cáo: $(python3 - "$OUT/games/k10-report.json" <<'PY'
@@ -305,8 +310,9 @@ PY
 )"
         python3 -c "
 import json,sys
-d=json.load(open(sys.argv[1])); ok = 'native' in str(d.get('kind')).lower() and str(d.get('component','')).startswith('engine:') and (d.get('crumbs') or [])
-sys.exit(0 if ok else 1)" "$OUT/games/k10-report.json" && note "K10 OK báo cáo native đúng kind/component/crumbs" || { note "K10 FAIL báo cáo thiếu kind/component/crumbs đúng (xem games/k10-report.json)"; result=K10_FAIL; }
+d=json.load(open(sys.argv[1])); t0=int(sys.argv[2]); pid=sys.argv[3]
+ok = 'native' in str(d.get('kind')).lower() and d.get('component')=='engine:rgss' and (d.get('crumbs') or []) and int(d.get('time') or d.get('id') or 0) >= t0 and (not pid or pid in json.dumps(d))
+sys.exit(0 if ok else 1)" "$OUT/games/k10-report.json" "$K10_T0" "$K10_PID" && note "K10 OK báo cáo native đúng kind/component/crumbs" || { note "K10 FAIL báo cáo thiếu kind/component/crumbs đúng (xem games/k10-report.json)"; result=K10_FAIL; }
       fi
     fi
   fi

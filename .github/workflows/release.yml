@@ -9,6 +9,10 @@ on:
       tag:
         description: "Tên bản phát hành, vd. v0.3.8 (tự tạo tag nếu chưa có)"
         required: true
+      stable:
+        description: "true = bản chính thức (CHỈ sau khi có kết quả máy thật); mặc định là prerelease"
+        required: false
+        default: "false"
 
 permissions:
   contents: write
@@ -61,6 +65,8 @@ jobs:
             mapping-${{ env.TAG }}.txt
           tag_name: ${{ env.TAG }}
           generate_release_notes: true
+          # Luật V31: bản chưa có kết quả thử trên máy thật luôn là prerelease.
+          prerelease: ${{ inputs.stable != 'true' }}
       - name: Up APK lên Pixeldrain (nếu có secret PIXELDRAIN_API_KEY)
         env:
           PIXELDRAIN_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
