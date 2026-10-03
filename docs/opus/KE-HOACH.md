@@ -44,7 +44,7 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | V18 | Game kiểm thử Kirikiri tự sinh, bước K1–K8 của `2026-10-03-kiem-thu-chan-doan.md` (vẽ, chạm, Back, âm thanh, lưu/tải qua lần chết tiến trình, quay lại sau Home); `emulator-options` bỏ `-noaudio` | Sonnet | — | Emulator Test API 30+34 xanh với đủ file dấu `monika-*.txt`; K6 không chạy được âm thanh thì ghi lý do vào `ket-qua/` và để K6 "chỉ báo" | chờ |
 | V19 | Bài kiểm đường báo lỗi K10: `kill -11` tiến trình `:game` → báo cáo native có `component`/`stage`/`crumbs` đúng; `kill -9` chỉ ghi kết quả | Sonnet | V18 | Emulator Test xanh, in nội dung báo cáo JSON vào log | chờ |
 | V20 | D1 ngăn xếp đọc được: (1) **từ lần phát hành tới** đính `mapping-<tag>.txt` vào release + retrace trong `crash-reports.sh`; (2) workflow dựng gói giữ ký hiệu `.so` (`symbols-*.zip`, bảng BuildId); (3) đọc tombstone protobuf đúng trường (lấy số trường từ `tombstone.proto` AOSP); (4) API 30: thêm dòng `DEBUG` quanh lúc chết | Sonnet | — (phần 3–4 sau V19) | Retrace ra tên lớp gốc; báo cáo K10 trên API 34 có `build_id` + `rel_pc`, `crash-reports.sh` in tên hàm | chờ |
-| V21 | D5 nút "Báo lỗi game này" trong menu game (ảnh `PixelCopy` + mô tả + vệt + logcat 60 giây) + D4 thêm thông tin môi trường. Đọc mã Worker trước (giới hạn ảnh) | Sonnet | sếp chốt A1 của phương án (ô ảnh mặc định bật) | Test Robolectric màn gửi; Emulator Test tạo được báo cáo `kind=user` kèm ảnh; unit test chuỗi `env` | chờ |
+| V21 | D5 nút "Báo lỗi game này" trong menu game (ảnh `PixelCopy` + mô tả + vệt + logcat 60 giây) + D4 thêm thông tin môi trường. Đọc mã Worker trước (giới hạn ảnh) | Sonnet | — (A1 đã chốt 03/10: ảnh mặc định bật, chọn loại lỗi bằng nút, gõ tùy chọn) | Test Robolectric màn gửi; Emulator Test tạo được báo cáo `kind=user` kèm ảnh; unit test chuỗi `env` | chờ |
 | V22 | D2 mẫu lỗi engine trong config (`engines.<id>.errorPatterns`, mặc định rỗng) + D3 theo dõi màn đen bằng `PixelCopy` + D6 `crash-reports.sh --by-fp` | Sonnet | V19 | Script XP tự sinh `raise "monika-ci"` → có báo cáo `engine:rgss`; K3 bình thường không tạo báo cáo màn đen | chờ |
 | H01 | Sửa đầu `docs/GIAO-TIEP-VOI-OPUS.md` thành 0.7.3 / versionCode 38 / `configVersion` 31. Mục 4: thêm dòng "E0 xong", "R4 xong" | Haiku | — | Diff chỉ đụng file đó | chờ |
 | H02 | Chạy lại `python3 scripts/gen-architecture.py`, commit `docs/KIEN-TRUC.md`. Nếu bảng module vẫn thiếu `:libretrodroid`/`:kirikiri` thì **không sửa script**: ghi `kẹt` và gửi thư | Haiku | — | `git diff` chỉ đụng `docs/KIEN-TRUC.md` | chờ |
@@ -52,7 +52,7 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | O01 | Trả lời hộp thư; cập nhật bảng này sau mỗi mốc | Opus | — | `BANG-TIN.md` không còn thư `mở` quá 1 lượt kiểm tra | lặp lại |
 | O02 | Phương án câu 6 + 7 (kiểm thử không máy thật, crash log) | Opus | — | File `docs/opus/<ngày>-kiem-thu-chan-doan.md` | xong (`docs/opus/2026-10-03-kiem-thu-chan-doan.md`) |
 
-**Thứ tự cho Sonnet (03/10 12:55):** V16 (R5) → V18 → V19 → R6. V20 phần (1) làm ngay trong lần phát hành tới. V17, V20–V22 xen vào lúc chờ CI; V21 chờ sếp chốt A1.
+**Thứ tự cho Sonnet (03/10 12:55):** V16 (R5) → V18 → V19 → R6. V20 phần (1) làm ngay trong lần phát hành tới. V17, V20–V22 xen vào lúc chờ CI; A1 đã chốt nên V21 làm được.
 
 Việc tiếp theo của từng khối (R2–R7, P2–P7, S0–S7) nằm sẵn trong file phương án. Khi một việc trên `xong`, PM thêm việc kế tiếp vào bảng; đội thi công không tự mở việc ngoài bảng.
 
@@ -80,7 +80,7 @@ Sonnet hỏi sếp khi tới bước cần; mỗi lần một câu.
 | G6 | Nhắn RAdmin duyệt client "AowMonika" (hardcore) | Bất kỳ lúc nào | chờ sếp |
 | G7 | Thử Kirikiri 0.7.3 trên máy thật theo `TEST-MAY-THAT.md` (H03) | Sau V05 + H03 | chờ |
 | G8 | Xin tác giả bản port mkxp-z (`BookerRues9`/`thehatkid`) giấy phép cho `Makefile`, `*.mk`, `get_deps.sh`. Không có thì phải viết lại script dựng (`tra-loi-004.md`) | Trước R7 | chờ sếp |
-| G9 | Cài secrets Firebase Test Lab (`GCP_SA_KEY`, `GCP_PROJECT_ID`) theo `docs/TEST-LAB.md`: workflow `test-lab.yml` chưa chạy lần nào. Mở đường chạy game tự sinh trên máy ARM thật (Game Loop) | Khi tiện, không chặn đội | chờ sếp |
+| G9 | Cài secrets Firebase Test Lab (`GCP_SA_KEY`, `GCP_PROJECT_ID`) theo `docs/TEST-LAB.md`: workflow `test-lab.yml` chưa chạy lần nào. Mở đường chạy game tự sinh trên máy ARM thật (Game Loop) | Khi tiện, không chặn đội | sếp đang làm (hướng dẫn chi tiết: `docs/TEST-LAB.md`, 03/10) |
 
 ## 5. Nhịp theo dõi
 

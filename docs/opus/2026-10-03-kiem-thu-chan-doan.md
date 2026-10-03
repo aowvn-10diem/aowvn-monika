@@ -140,17 +140,16 @@ Phiên game (`begin/stage/heartbeat/end`), lý do chết lấy từ `Application
   - Vá 4 (API 30, không có tombstone protobuf): `logcat(pid)` bỏ sót các dòng `DEBUG` của `crash_dump`, vì chúng có pid khác. Lấy thêm dòng `DEBUG` trong khoảng ±5 giây quanh thời điểm chết. **[CHƯA KIỂM]** app có đọc được các dòng này không (logd lọc theo uid; `crash_dump` chạy cùng uid với app).
   - Kiểm: dùng K10 trên API 34, báo cáo có khung với `build_id` và `rel_pc`, và `crash-reports.sh` in ra được tên hàm.
 
-**D5. Lỗi không gây crash: người chơi tự báo.** Thêm mục **"Báo lỗi game này"** vào menu Monika trong game (Retro, Kirikiri, RGSS, sau này Ren'Py). Bấm vào thì gom:
-- ảnh màn hiện tại bằng `PixelCopy` của SurfaceView, thu nhỏ ≤ 480p, JPEG ≤ 100 KB;
-- một dòng mô tả do người chơi gõ;
-- vệt sự kiện và logcat 60 giây gần nhất của `:game`;
-- `env`.
-
-Gửi qua Worker sẵn có với `kind = "user"`. Chỉ chụp khi người chơi bấm. Có màn xem trước, và người chơi bỏ được ô "đính kèm ảnh".
+**D5. Lỗi không gây crash: người chơi tự báo.** Thêm mục **"Báo lỗi game này"** vào menu Monika trong game (Retro, Kirikiri, RGSS, sau này Ren'Py). Sếp đã chốt (03/10): **đính kèm ảnh màn hình mặc định bật**, và **người chơi gõ càng ít càng tốt**.
+- Ảnh màn hiện tại: chụp bằng `PixelCopy` của SurfaceView **ngay lúc mở menu**, trước khi menu che màn game. Thu nhỏ ≤ 480p, JPEG ≤ 100 KB. Ô "Đính kèm ảnh màn hình" **bật sẵn**, có ảnh xem trước, người chơi bỏ tick được.
+- Loại lỗi: **chọn bằng nút**, không bắt gõ. Gồm: "Không có tiếng", "Chạm/nút không ăn", "Không lưu/tải được", "Màn đen/hình lỗi", "Giật, chậm", "Văng game", "Khác". Chọn 1 nút là gửi được ngay. Ô gõ thêm **tùy chọn**, để thu gọn.
+- App tự chọn sẵn loại lỗi khi có dấu hiệu: vệt `black-frame` (D3) → "Màn đen"; âm lượng nhạc bằng 0 (D4) → "Không có tiếng". Riêng trường hợp âm lượng bằng 0, hiện thêm một dòng "Âm lượng máy đang tắt" để người chơi tự sửa trước khi gửi.
+- Gửi kèm tự động, người chơi không phải làm gì: vệt sự kiện + logcat 60 giây gần nhất của `:game`, `env`, tên game, hệ, lõi, giai đoạn.
+- Gửi qua Worker sẵn có với `kind = "user"`. Ảnh chỉ được chụp trong luồng này, không chụp ngầm.
 
 Kiểm:
-- test Robolectric cho màn gửi;
-- Emulator Test: mở menu → bấm "Báo lỗi" → có file báo cáo `kind=user` kèm ảnh. Không gửi thật, vì CI không có endpoint.
+- test Robolectric cho màn gửi (ô ảnh bật sẵn, gửi được chỉ với 1 lần chạm nút loại lỗi);
+- Emulator Test: mở menu → bấm "Báo lỗi" → bấm "Màn đen/hình lỗi" → có file báo cáo `kind=user` kèm ảnh. Không gửi thật, vì CI không có endpoint.
 
 **[CHƯA KIỂM]** Worker hiện có nhận được ảnh (giới hạn kích thước, nơi lưu KV/R2) hay không: cần đọc mã Worker trước khi làm.
 
@@ -182,7 +181,7 @@ Kiểm: unit test cho hàm dựng chuỗi `env`; báo cáo của K10 có đủ c
 - `PixelCopy` có chụp được SurfaceView của SDL/cocos trên mọi máy không (D3, D5). Máy chụp không được thì bỏ qua lặng lẽ và ghi vệt.
 
 ### Cần sếp quyết
-- **[A1]** D5: ô "đính kèm ảnh màn hình" **mặc định bật**, có xem trước, người chơi bỏ tick được. PM đề xuất bật.
+- **[A1] ĐÃ CHỐT (sếp, 03/10):** ảnh màn hình mặc định bật; hạn chế người chơi phải gõ (chọn loại lỗi bằng nút, ô gõ tùy chọn).
 - **[A2]** G9: cài secrets cho Test Lab (`docs/TEST-LAB.md`) khi tiện. Không chặn giai đoạn 1.
 
 ---
@@ -194,5 +193,5 @@ Kiểm: unit test cho hàm dựng chuỗi `env`; báo cáo của K10 có đủ c
 | 6. Kiểm thử không máy thật | Game kiểm thử tự sinh + file dấu (khuôn R3); 7 bài kiểm K1–K7 cho Kirikiri; K9 áp cho RGSS ở R6; giai đoạn 2 là Test Lab Game Loop (G9) | V18: K1–K8 vào `ci-emulator-games.sh` (+ `emulator-options` bỏ `-noaudio`). K9 gộp vào R6 |
 | 6/7. Kiểm đường báo lỗi | `kill -11` tiến trình `:game` → phải có báo cáo native đúng `component`/`stage`/`crumbs` | V19: K10 |
 | 7. Ngăn xếp đọc được | Lưu `mapping.txt` + ký hiệu `.so` theo phiên bản; đọc tombstone protobuf đúng trường; retrace/symbolize trong `crash-reports.sh` | V20: D1 (cả 4 vá) |
-| 7. Lỗi không crash | Nút "Báo lỗi game này" kèm ảnh + mô tả (cần sếp chốt A1) | V21: D5 + D4 |
+| 7. Lỗi không crash | Nút "Báo lỗi game này": ảnh mặc định bật, chọn loại lỗi bằng nút, gõ tùy chọn (A1 đã chốt) | V21: D5 + D4 |
 | 7. Lỗi script / màn đen | Mẫu lỗi engine trong config; theo dõi màn đen bằng `PixelCopy` | V22: D2 + D3 (+ D6) |
