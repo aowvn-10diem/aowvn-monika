@@ -104,7 +104,7 @@ if [ -z "${RGSS_PACK_ZIP:-}" ] || [ ! -f "$RGSS_PACK_ZIP" ]; then
 else
   rm -rf "$OUT/rpack" "$OUT/rgame" && mkdir -p "$OUT/rpack" "$OUT/rgame/Data" && unzip -q "$RGSS_PACK_ZIP" -d "$OUT/rpack"
   printf '[Game]\r\nTitle=Monika RGSS CI\r\nScripts=Data\\Scripts.rxdata\r\nRTP1=\r\n' > "$OUT/rgame/Game.ini"
-  ruby -rzlib -e 'code = "File.open(%q(monika-ok.txt), %q(w)) { |f| f.write(%q(ok)) }\nexit\n"; File.binwrite(ARGV[0], Marshal.dump([[1, "Main", Zlib::Deflate.deflate(code)]]))' "$OUT/rgame/Data/Scripts.rxdata"
+  ruby -rzlib -e 'code = "File.open(%q(monika-ok.txt), %q(w)) { |f| f.write(%q(ok)) }\nloop do\n  Graphics.update\n  Input.update\n  if Input.trigger?(Input::C)\n    File.open(%q(monika-key.txt), %q(w)) { |f| f.write(%q(enter)) }\n    exit\n  end\nend\n"; File.binwrite(ARGV[0], Marshal.dump([[1, "Main", Zlib::Deflate.deflate(code)]]))' "$OUT/rgame/Data/Scripts.rxdata"
   ls -l "$OUT/rgame" "$OUT/rgame/Data"
   adb shell rm -rf /data/local/tmp/rpack /data/local/tmp/rgame
   adb push "$OUT/rpack" /data/local/tmp/rpack >/dev/null
@@ -127,11 +127,23 @@ else
   adb exec-out screencap -p > "$OUT/games/rgss.png" 2>/dev/null || true
   adb logcat -d > "$OUT/games/rgss.logcat.txt" 2>/dev/null
   echo "$result rgss (nhúng)" | tee -a "$OUT/games/summary.txt"
-  if [ "$result" != OK ]; then
+  # Phím: game chờ Input::C; gửi Enter qua hệ thống (đi đường SDL → mkxp-z, cùng đường lớp phủ Monika gọi onNativeKeyDown).
+  if [ "$result" = OK ]; then
+    keyres=KEY_TIMEOUT
+    for i in $(seq 1 10); do
+      adb shell input keyevent KEYCODE_ENTER
+      sleep 2
+      if adb shell "test -f $P/games/rgss-ci/monika-key.txt" 2>/dev/null; then keyres=KEY_OK; break; fi
+    done
+    echo "$keyres rgss phím Enter → Input::C" | tee -a "$OUT/games/summary.txt"
+    [ "$keyres" = KEY_OK ] || result=KEY_FAIL
+    adb exec-out screencap -p > "$OUT/games/rgss-after-key.png" 2>/dev/null || true
+  fi
+  if [ "$result" != OK ] && [ "$result" != KEY_OK ]; then
     echo "--- logcat (lọc) của rgss ---"
     grep -E "MonikaGame|Monika|AndroidRuntime|SDL|mkxp|ruby|Fatal signal|DEBUG|Diagnostics|UnsatisfiedLink" "$OUT/games/rgss.logcat.txt" | tail -80 | cut -c1-260
     echo "--- hết ---"
   fi
-  [ "$result" = OK ] || fail=1
+  [ "$result" = OK ] && [ "${keyres:-}" = KEY_OK ] || fail=1
 fi
 exit $fail

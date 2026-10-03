@@ -24,6 +24,9 @@ import java.util.Locale
  */
 class RgssGameActivity : SDLActivity() {
     private var clock: PlayClock? = null
+    private var host: ComposeHost? = null
+    private val ui = InGameState()
+    private var shiftHeld by androidx.compose.runtime.mutableStateOf(false)
 
     private fun packDir() = File(filesDir, "packs/${PackManager.RGSS}")
 
@@ -69,12 +72,48 @@ class RgssGameActivity : SDLActivity() {
         clock = PlayClock(intent.getStringExtra(PlayClock.EXTRA_KEY))
         super.onCreate(savedInstanceState)
         Diagnostics.stage(this, "created")
+        ui.opacity = vn.aow.monika.AppGraph.prefs.padOpacity
+        // Phím ảo + menu Monika đè lên màn game (SDL không phải ComponentActivity nên ComposeHost tự cấp vòng đời, như Kirikiri).
+        host = ComposeHost(this).also { h ->
+            h.attach(SDLActivity.getContentView() as android.view.ViewGroup) {
+                RgssOverlay(
+                    state = ui, title = intent.getStringExtra(EXTRA_TITLE).orEmpty().ifBlank { "RPG Maker" }, shiftHeld = shiftHeld,
+                    onSend = { action, key -> sendKey(action, rgssKey(key)) },
+                    onShift = { setShift(!shiftHeld) },
+                    onOpacity = {
+                        ui.opacity = when { ui.opacity < 0.4f -> 0.65f; ui.opacity < 0.9f -> 1f; else -> 0.3f }
+                        vn.aow.monika.AppGraph.prefs.padOpacity = ui.opacity
+                    },
+                    onExit = { finish() },
+                )
+            }
+        }
     }
 
-    override fun onResume() { super.onResume(); clock?.resume(); Diagnostics.stage(this, "playing") }
-    override fun onPause() { clock?.pause(); Diagnostics.heartbeat(this); super.onPause() }
+    private fun sendKey(action: Int, key: Int) {
+        if (action == android.view.KeyEvent.ACTION_DOWN) SDLActivity.onNativeKeyDown(key) else SDLActivity.onNativeKeyUp(key)
+    }
+
+    /** "Chạy nhanh" = giữ Shift (nút A của RGSS: chạy/đi nhanh). */
+    private fun setShift(on: Boolean) {
+        shiftHeld = on
+        sendKey(if (on) android.view.KeyEvent.ACTION_DOWN else android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_SHIFT_LEFT)
+    }
+
+    // Back của máy → menu Monika (SDL gốc sẽ gửi phím Back vào game).
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (event.keyCode == android.view.KeyEvent.KEYCODE_BACK) {
+            if (event.action == android.view.KeyEvent.ACTION_UP) ui.menuOpen = !ui.menuOpen
+            return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    override fun onResume() { super.onResume(); host?.resume(); clock?.resume(); Diagnostics.stage(this, "playing") }
+    override fun onPause() { if (shiftHeld) setShift(false); host?.pause(); clock?.pause(); Diagnostics.heartbeat(this); super.onPause() }
 
     override fun onDestroy() {
+        host?.destroy()
         super.onDestroy()
         Diagnostics.end(this) // thoát bình thường → không tạo báo cáo "chết bất thường"
         // Ruby không khởi tạo lại được trong cùng tiến trình (mkxp-z) → kết thúc tiến trình khi thoát.
