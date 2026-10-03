@@ -32,3 +32,21 @@
 - Mỗi thư mục trong `vn/aow/monika/` là **một thành phần**; code ở thành phần này không gọi thẳng nội bộ thành phần khác ngoài API công khai của nó.
 - Log/báo lỗi gắn nhãn thành phần theo tên thư mục (`runner`, `apkinstall`, `browser`, `j2me`…). Tag log của game: `MonikaGame`.
 - Thêm thành phần mới → tạo thư mục mới, chạy lại `python3 scripts/gen-architecture.py`, commit cả `docs/KIEN-TRUC.md`.
+
+## E. Engine nhúng (Kirikiri, RPG Maker)
+Luồng chung: `EngineRoutes` → `EnginePrepActivity` (chuẩn bị) → `PackManager` (tải gói) → `*GameActivity` (chơi) + `*Overlay` (menu/phím).
+
+| Bước | File | Việc |
+|---|---|---|
+| 1. Nhận diện | `runner/GameLauncher.kt` | Kiểm `system.engine` → gọi `EnginePrepActivity.start()` |
+| 2. Chuẩn bị | `runner/EnginePrepActivity.kt` | Màn tải gói, xin quyền (API 30+), xin đọc file |
+| 3. Gói tải thêm | `pack/PackManager.kt` | Tải `.zip` từ `modules.<id>` + SHA-256 + giải nén → `filesDir/packs/<id>` |
+| 4. Mở activity | `runner/EngineRoutes.kt` | Chọn `*GameActivity` và gọi `.start(activity, game, title, key)` |
+| 5. Nạp thư viện | `runner/*GameActivity.kt` | Tự tìm thư viện (`files/packs/<id>/*.so`) + gọi `System.loadLibrary` hoặc `System.load()` |
+| 6. Giao diện | `runner/*Overlay.kt` | Phím ảo + menu Monika (đóng/mở bằng nút hoặc Back) |
+
+**Thêm engine mới:**
+1. Tạo entry ở `EngineRoutes.all` với `packId` khớp `modules.<packId>` trong config.
+2. Viết `*GameActivity` (tiến trình `:game`, nạp gói từ `PackManager`) + `*Overlay` (UI menu/phím).
+3. Gói `.so` + tài nguyên nằm ở repo `aowvn-monika-packs`, release theo `modules.<packId>.size` + `.sha256`.
+4. Cập nhật `config/monika-config.json` → tăng `configVersion` → push `main` → app tự cập nhật.
