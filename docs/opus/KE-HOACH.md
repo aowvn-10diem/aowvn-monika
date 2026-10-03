@@ -2,7 +2,7 @@
 
 > Chủ: Opus (PM, sếp giao 03/10/2026). Đội thi công: **Sonnet** (việc khó: native, engine, luồng app) và **Haiku** (việc nhẹ, máy móc: tài liệu, kiểm tra, sửa nhỏ có test sẵn). Sếp quyết việc ngoài kỹ thuật (mục 4).
 > Đây là **nguồn sự thật duy nhất về tiến độ**. Mỗi phương án chi tiết nằm trong `docs/opus/<ngày>-<chủ đề>.md`; bảng này chỉ trỏ tới.
-> Cập nhật: 03/10/2026 11:55 (GMT+7), `main` @ `bd75eb7`, app 0.7.3 (versionCode 38), `configVersion` 31.
+> Cập nhật: 03/10/2026 12:55 (GMT+7), `main` @ `8229bae`, app 0.7.3 (versionCode 38), `configVersion` 31.
 
 ## 1. Mốc
 
@@ -13,7 +13,7 @@
 | M2 | Ren'Py 8 nhúng (khối P) | như trên | P0, P1 xong (gói `renpy8` arm64 22,6 MB) · P2 mở (V17) |
 | M3 | Ren'Py 7 (khối P7) | như trên | chờ M2 |
 | M4 | Symbian/N-Gage nhúng (khối S) | `2026-10-03-nhung-symbian-eka2l1.md` | chờ sếp chốt A1, A2 · làm sau M2 |
-| Q | Phương án cho câu 6 và 7 của mục 7 (kiểm thử khi không có máy thật; chất lượng crash log) | Opus viết | Opus làm, cần xong **trước R6** |
+| Q | Phương án cho câu 6 và 7 của mục 7 (kiểm thử khi không có máy thật; chất lượng crash log) | `2026-10-03-kiem-thu-chan-doan.md` | **phương án xong** (03/10) · thi công V18–V22 |
 | — | Câu 1, 2, 3, 4 của mục 7 (tách module, dịch offline, Kirikiri 32-bit, RA cho NDS/N64/PS1) | chưa có | tồn đọng, xếp sau M2 |
 
 Thứ tự giao hàng (Q3 của sếp): **M1 → M2 → M3 → M4**. Spike chỉ dùng CI, không đụng `:app`, thì được chạy song song.
@@ -26,7 +26,7 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 |---|---|---|---|---|---|
 | V01 | R0: spike mkxp-z ra `libmkxp-z.so` arm64, ghi `docs/opus/ket-qua/R0.md`. Ngưỡng dừng: 5 nguyên nhân hỏng khác nhau (đã dùng 2) | Sonnet | — | Artifact `.so` + bảng kích thước | xong (7ec1c47: R0.md; còn cổng G1 hỏi sếp 1 game XP) |
 | V02 | R1: `build-rgss.yml` + `engines/rgss/`, áp `hop-thu/tra-loi-001.md` | Sonnet | V01 | `grep`/`nm`/`strings` theo thư 001; máy sạch dựng ra `rgss-{abi}.zip` | xong (run 3 xanh; R1.md: gói rgss-arm64 7,6 MiB, JNI+OpenSSL kiểm đạt; chưa publish) |
-| V07 | R1.1 theo `tra-loi-003.md`: bỏ OpenSSL (`-DMKXPZ_SSL`, `openssl` của Ruby), cắt ký hiệu rồi đo lại `libSDL2_ttf.so`; theo `tra-loi-004.md`: ghim commit bản port, ghi trạng thái giấy phép vào `UPSTREAM.md` | Sonnet | V02 | `readelf`/`strings` không còn OpenSSL; bảng kích thước trước/sau; gói `rgss` arm64 ≤ 15 MB | chờ |
+| V07 | R1.1 theo `tra-loi-003.md`: bỏ OpenSSL (`-DMKXPZ_SSL`, `openssl` của Ruby), cắt ký hiệu rồi đo lại `libSDL2_ttf.so`; theo `tra-loi-004.md`: ghim commit bản port, ghi trạng thái giấy phép vào `UPSTREAM.md` | Sonnet | V02 | `readelf`/`strings` không còn OpenSSL; bảng kích thước trước/sau; gói `rgss` arm64 ≤ 15 MB | xong (PM đóng 03/10 theo `2ee93cc`: bỏ OpenSSL + bước kiểm trong `build-rgss.yml`; ghim `b668e08` và trạng thái giấy phép trong `engines/rgss/UPSTREAM.md`; gói arm64 7,6 MiB, v7a 7,1 MiB đều ≤ 15 MB nên không cần đo riêng `libSDL2_ttf.so`) |
 | V08 | R2: module `:rgss` (9 file Java SDL 2.26.3 đổi gói `vn.aow.monika.rgss.sdl`, bước 3 của thư 001) | Sonnet | V02 | `assembleRelease` xanh; `dexdump` thấy cả hai `SDLActivity`; đo APK tăng | xong (6f0623e: module :rgss biên dịch, :app + toàn bộ test xanh trên CI; chưa đo APK tăng) |
 | V03 | P0: spike Ren'Py, ghi `docs/opus/ket-qua/P0.md` | Sonnet | — | Bảng đường dẫn + kích thước thật | xong (P0.md, run 5 xanh) |
 | V04 | P1: `build-renpy-pack.yml` (song song, chỉ CI) | Sonnet | V03 | Artifact `renpy8-{abi}.zip` + `.sha256` | xong (9d67241, run 1 xanh: renpy8-arm64-v8a.zip ≈ 22,6 MB, SHA-256 29c32501…a554c; armv7 cùng run; chưa publish — chờ cổng G5) |
@@ -41,13 +41,18 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | V15 | `build-rgss.yml`: thêm `armeabi-v7a` vào ma trận ABI (`tra-loi-003.md`, bắt buộc trước R7). Không đổi mã, cùng vá SDL và cùng cờ bỏ OpenSSL như arm64 | Sonnet | V12 | Artifact `rgss-armeabi-v7a.zip`; `readelf -h` các `.so` ra `Machine: ARM`; `llvm-nm -D libSDL2.so` có `Java_vn_aow_monika_rgss_sdl_*`, không có `Java_org_libsdl_app_*`; ghi kích thước vào `ket-qua/R1.md`. Chạy thật trên máy 32-bit **[CHƯA KIỂM]** (máy ảo CI là 64-bit) | xong (build-rgss run 5, release riêng tư `engines-rgss-5`, `rgss-armeabi-v7a.zip` 7.455.174 byte; các kiểm `readelf`/`llvm-nm` nằm trong workflow, xanh; máy 32-bit thật **[CHƯA KIỂM]**) |
 | V16 | R5 theo phương án Ren'Py/RGSS (dòng R5): lớp phủ + phím (`pad: "rpg"`, nối `SDLActivity.onNativeKeyDown/Up`), menu Monika qua `ComposeHost`, `PackManager.installers` (`rgss`), `EngineRoute`, config `modules.rgss` + `systems[rgss].engine` + `entry`, tăng `configVersion`. **Giữ `allowExternalApp: true` cho `rgss` và `kirikiri`**: tắt ở R7 (cần V15 + G8). Không phát hành bản app nào có `systems[rgss].engine` khi gói `rgss` chưa publish; gói thử để ở release riêng tư như V12 | Sonnet | V12 | Test giao diện Robolectric cho lớp phủ (ảnh trong `anh-chup-giao-dien`); `ConfigTest` đọc được config mới và cũ; Emulator Test `rgss_tag`: bấm phím ảo → game nhận phím (game XP tự sinh in phím vào file) | chờ |
 | V17 | P2: module `:renpy` (dòng P2 của phương án Ren'Py/RGSS): Java của **đúng RAPT 8.5.3**, bản vá ở `renpy/patches/` (bỏ Play Asset Delivery, `renpyiap`, `slf4j`), `build.gradle` Groovy riêng, `UPSTREAM.md`, chỉ sửa chỗ `Aow Monika:`. Xem U8 (`compileSdk`) | Sonnet | V12 | `./gradlew :renpy:assembleRelease` và `assembleRelease` của app xanh; `dexdump` thấy cùng lúc `org.libsdl.app.SDLActivity` (Ren'Py) và `vn.aow.monika.rgss.sdl.SDLActivity` (RGSS); ghi mức APK tăng vào `ket-qua/P0.md` | chờ |
+| V18 | Game kiểm thử Kirikiri tự sinh, bước K1–K8 của `2026-10-03-kiem-thu-chan-doan.md` (vẽ, chạm, Back, âm thanh, lưu/tải qua lần chết tiến trình, quay lại sau Home); `emulator-options` bỏ `-noaudio` | Sonnet | — | Emulator Test API 30+34 xanh với đủ file dấu `monika-*.txt`; K6 không chạy được âm thanh thì ghi lý do vào `ket-qua/` và để K6 "chỉ báo" | chờ |
+| V19 | Bài kiểm đường báo lỗi K10: `kill -11` tiến trình `:game` → báo cáo native có `component`/`stage`/`crumbs` đúng; `kill -9` chỉ ghi kết quả | Sonnet | V18 | Emulator Test xanh, in nội dung báo cáo JSON vào log | chờ |
+| V20 | D1 ngăn xếp đọc được: (1) **từ lần phát hành tới** đính `mapping-<tag>.txt` vào release + retrace trong `crash-reports.sh`; (2) workflow dựng gói giữ ký hiệu `.so` (`symbols-*.zip`, bảng BuildId); (3) đọc tombstone protobuf đúng trường (lấy số trường từ `tombstone.proto` AOSP); (4) API 30: thêm dòng `DEBUG` quanh lúc chết | Sonnet | — (phần 3–4 sau V19) | Retrace ra tên lớp gốc; báo cáo K10 trên API 34 có `build_id` + `rel_pc`, `crash-reports.sh` in tên hàm | chờ |
+| V21 | D5 nút "Báo lỗi game này" trong menu game (ảnh `PixelCopy` + mô tả + vệt + logcat 60 giây) + D4 thêm thông tin môi trường. Đọc mã Worker trước (giới hạn ảnh) | Sonnet | — (A1 đã chốt 03/10: ảnh mặc định bật, chọn loại lỗi bằng nút, gõ tùy chọn) | Test Robolectric màn gửi; Emulator Test tạo được báo cáo `kind=user` kèm ảnh; unit test chuỗi `env` | chờ |
+| V22 | D2 mẫu lỗi engine trong config (`engines.<id>.errorPatterns`, mặc định rỗng) + D3 theo dõi màn đen bằng `PixelCopy` + D6 `crash-reports.sh --by-fp` | Sonnet | V19 | Script XP tự sinh `raise "monika-ci"` → có báo cáo `engine:rgss`; K3 bình thường không tạo báo cáo màn đen | chờ |
 | H01 | Sửa đầu `docs/GIAO-TIEP-VOI-OPUS.md` thành 0.7.3 / versionCode 38 / `configVersion` 31. Mục 4: thêm dòng "E0 xong", "R4 xong" | Haiku | — | Diff chỉ đụng file đó | chờ |
 | H02 | Chạy lại `python3 scripts/gen-architecture.py`, commit `docs/KIEN-TRUC.md`. Nếu bảng module vẫn thiếu `:libretrodroid`/`:kirikiri` thì **không sửa script**: ghi `kẹt` và gửi thư | Haiku | — | `git diff` chỉ đụng `docs/KIEN-TRUC.md` | chờ |
 | H03 | `docs/TEST-MAY-THAT.md`: thêm mục "Kirikiri (0.7.3)" cho sếp thử: mở game `.xp3` → màn chuẩn bị tự tải gói → vào game → chạm, âm thanh, lưu/tải, tua nhanh, menu tiếng Việt, thoát. Máy 32-bit phải thấy thông báo chưa hỗ trợ. Nguồn: `docs/plan-kirikiri.md` + mục 4 của tài liệu bàn giao | Haiku | — | Chỉ đụng tài liệu; mỗi dòng là một thao tác sếp làm được | chờ |
 | O01 | Trả lời hộp thư; cập nhật bảng này sau mỗi mốc | Opus | — | `BANG-TIN.md` không còn thư `mở` quá 1 lượt kiểm tra | lặp lại |
-| O02 | Phương án câu 6 + 7 (kiểm thử không máy thật, crash log) | Opus | — | File `docs/opus/<ngày>-kiem-thu-chan-doan.md` | chờ |
+| O02 | Phương án câu 6 + 7 (kiểm thử không máy thật, crash log) | Opus | — | File `docs/opus/<ngày>-kiem-thu-chan-doan.md` | xong (`docs/opus/2026-10-03-kiem-thu-chan-doan.md`) |
 
-**Thứ tự cho Sonnet (03/10 11:55):** đóng V12 (chạy thêm API 30) → V14 → V07 → V16. V15 chỉ chạy CI: đẩy lúc chờ CI của việc khác. V17 làm sau V16, hoặc xen vào lúc chờ CI.
+**Thứ tự cho Sonnet (03/10 12:55):** V16 (R5) → V18 → V19 → R6. V20 phần (1) làm ngay trong lần phát hành tới. V17, V20–V22 xen vào lúc chờ CI; A1 đã chốt nên V21 làm được.
 
 Việc tiếp theo của từng khối (R2–R7, P2–P7, S0–S7) nằm sẵn trong file phương án. Khi một việc trên `xong`, PM thêm việc kế tiếp vào bảng; đội thi công không tự mở việc ngoài bảng.
 
@@ -75,6 +80,7 @@ Sonnet hỏi sếp khi tới bước cần; mỗi lần một câu.
 | G6 | Nhắn RAdmin duyệt client "AowMonika" (hardcore) | Bất kỳ lúc nào | chờ sếp |
 | G7 | Thử Kirikiri 0.7.3 trên máy thật theo `TEST-MAY-THAT.md` (H03) | Sau V05 + H03 | chờ |
 | G8 | Xin tác giả bản port mkxp-z (`BookerRues9`/`thehatkid`) giấy phép cho `Makefile`, `*.mk`, `get_deps.sh`. Không có thì phải viết lại script dựng (`tra-loi-004.md`) | Trước R7 | chờ sếp |
+| G9 | Cài secrets Firebase Test Lab (`GCP_SA_KEY`, `GCP_PROJECT_ID`) theo `docs/TEST-LAB.md`: workflow `test-lab.yml` chưa chạy lần nào. Mở đường chạy game tự sinh trên máy ARM thật (Game Loop) | Khi tiện, không chặn đội | sếp đang làm (hướng dẫn chi tiết: `docs/TEST-LAB.md`, 03/10) |
 
 ## 5. Nhịp theo dõi
 
