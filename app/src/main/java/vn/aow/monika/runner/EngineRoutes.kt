@@ -13,13 +13,14 @@ class EngineRoute(
     val packId: String,
     /** Tên hiển thị trên màn chuẩn bị và trong câu báo lỗi. */
     val label: String,
-    /** Mở màn chơi (gói đã sẵn sàng). [entry] = file/thư mục game; null = để engine tự hỏi. */
+    /** Mở màn chơi (gói đã sẵn sàng). [entry] = file hoặc thư mục game; null = để engine tự hỏi. */
     val open: (activity: Activity, entry: File?, title: String, key: String?) -> Unit,
 )
 
 object EngineRoutes {
     val all: Map<String, EngineRoute> = mapOf(
-        "kirikiri" to EngineRoute(PackManager.KIRIKIRI, "Kirikiri") { a, e, t, k -> KirikiriGameActivity.start(a, e, t, k) },
+        "kirikiri" to EngineRoute(PackManager.KIRIKIRI, "Kirikiri") { a, e, t, k -> KirikiriGameActivity.start(a, e?.takeIf { it.isFile }, t, k) },
+        "rgss" to EngineRoute(PackManager.RGSS, "RPG Maker XP/VX/Ace") { a, e, t, k -> RgssGameActivity.start(a, e, t, k) },
     )
 
     /** Engine đã đăng ký VÀ gói của nó có bản cho kiến trúc máy này. */

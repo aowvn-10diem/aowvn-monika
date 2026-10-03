@@ -43,6 +43,11 @@ object PackManager {
             supported = { AppGraph.packs.supported(KIRIKIRI) },
             ensure = { st -> AppGraph.packs.ensure(KIRIKIRI, KIRIKIRI_LIB, st) },
         ),
+        RGSS to Installer(
+            ready = { AppGraph.packs.ready(RGSS, RGSS_MAIN) },
+            supported = { AppGraph.packs.supported(RGSS) },
+            ensure = { st -> AppGraph.packs.ensure(RGSS, RGSS_MAIN, st) },
+        ),
         SEVENZIP to Installer(
             ready = { AppGraph.packs.ready(SEVENZIP, SEVENZIP_LIB) },
             supported = { AppGraph.packs.supported(SEVENZIP) },
@@ -54,6 +59,8 @@ object PackManager {
     const val ONSYURI_MAIN = "onsyuri.wasm"
     const val KIRIKIRI = "kirikiri"
     const val KIRIKIRI_LIB = "libkrkr2yuri.so"
+    const val RGSS = "rgss"
+    const val RGSS_MAIN = "lib/libmkxp-z.so"
     const val SEVENZIP = "sevenzip"
     const val SEVENZIP_LIB = "lib7-Zip-JBinding.so"
 
