@@ -21,7 +21,7 @@ class KirikiriEntryTest {
         // Thứ tự tạo file cố ý để patch*.xp3 xuất hiện trước trong thư mục.
         file(dir, "patch.xp3", 50); (2..5).forEach { file(dir, "patch$it.xp3", 50) }
         file(dir, "karanoshojo.xp3", 5000)
-        file(dir, "karanoshojo.exe", 300)
+        file(dir, "karanoshojo.exe", 300); file(dir, "Uninstall.exe", 200)
         file(dir, "plugin/layerEx.dll", 20); file(dir, "KnS.ico", 5)
         val g = GameDetector.detect(dir, cfg)
         assertEquals("kirikiri", g.system?.id)
@@ -53,5 +53,31 @@ class KirikiriEntryTest {
         val dir = tmp.newFolder("plain-exe")
         file(dir, "setup.exe", bytes = ByteArray(2000) { 3 })
         assertNull(GameDetector.detect(dir, cfg).system)
+    }
+
+    @Test fun exeCoXp3NoiSauPhanPE() {
+        // PE tối thiểu: "MZ", e_lfanew=0x80, "PE\0\0", 1 section có rawPtr=0x200 rawSize=0x100 → overlay bắt đầu tại 0x300.
+        val b = ByteArray(0x300 + 64)
+        b[0] = 'M'.code.toByte(); b[1] = 'Z'.code.toByte(); b[0x3C] = 0x80.toByte()
+        val pe = 0x80
+        b[pe] = 'P'.code.toByte(); b[pe + 1] = 'E'.code.toByte()
+        b[pe + 6] = 1                                   // NumberOfSections
+        b[pe + 20] = 0xE0.toByte()                      // SizeOfOptionalHeader = 0xE0
+        val sec = pe + 24 + 0xE0
+        b[sec + 16] = 0x00; b[sec + 17] = 0x01           // SizeOfRawData = 0x100
+        b[sec + 20] = 0x00; b[sec + 21] = 0x02           // PointerToRawData = 0x200
+        val sig = byteArrayOf(0x58, 0x50, 0x33, 0x0d, 0x0a, 0x20, 0x0a, 0x1a, 0x8b.toByte(), 0x67, 0x01)
+        System.arraycopy(sig, 0, b, 0x300, sig.size)
+        val dir = tmp.newFolder("pe-overlay")
+        file(dir, "game.exe", bytes = b)
+        assertEquals("game.exe", GameDetector.detect(dir, cfg).entry?.name)
+    }
+
+    @Test fun pairedExe_traVeExeDiKemKhoChinh() {
+        val dir = tmp.newFolder("kara-exe")
+        file(dir, "patch.xp3", 50); file(dir, "karanoshojo.xp3", 5000); file(dir, "karanoshojo.exe", 300)
+        val sys = cfg.systems.first { it.id == "kirikiri" }.copy(entryPick = "pairedExe")
+        val picked = EntryPick.pick(dir.listFiles().orEmpty().filter { EntryPick.acceptable(it, sys) }, sys)
+        assertEquals("karanoshojo.exe", picked?.name)
     }
 }

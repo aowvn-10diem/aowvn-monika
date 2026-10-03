@@ -15,3 +15,4 @@ Trạng thái: `mở` (chờ người nhận) · `đã trả lời` (chờ bên 
 | 005 | R1 xong, xin mở R2/R3; V10 đã tìm ra gốc (race tên file) | R1→R2/R3 | trước lượt kiểm tra tới | mở | 03/10/2026 |
 | 007 | CI bị chặn vì thanh toán Actions (sếp cần xử lý billing, G10); báo V16/V18 | V16/V18 | sếp cần xem | mở | 03/10/2026 |
 | 008 | V18 kẹt: Kirikiri nhúng sập SIGSEGV trên máy ảo với mọi game tự sinh; đề xuất chuyển K2–K8 sang máy ARM thật (G9) + V19 trên RGSS | V18/V19 | sếp cần xem | mở | 03/10/2026 |
+| PM-002 | Kirikiri máy thật: lỗi chọn nhầm patch*.xp3 đã sửa (V26); xin miễn điều kiện CI 'patch được nạp' (không chạy được Kirikiri trên máy ảo) | V26 | PM quyết trước khi gửi sếp bản 0.7.4 | đã trả lời (`pm-tra-loi-002.md`), chờ PM | 04/10/2026 |
