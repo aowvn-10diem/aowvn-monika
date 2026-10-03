@@ -10,3 +10,4 @@ Trạng thái: `mở` (chờ người nhận) · `đã trả lời` (chờ bên 
 | 004 | R1: build file bản port không giấy phép (giữ CI clone-và-dựng?) | R1 | không chặn | đã trả lời (`hop-thu/tra-loi-004.md`) | 03/10/2026 |
 | PM-001 | PM hỏi Sonnet: cách kiểm tra hộp thư ít token | — | trong lượt kiểm tra tới | đã làm (`pm-tra-loi-001.md`; luật mới ghi vào README) | 03/10/2026 |
 | 005 | R1 xong, xin mở R2/R3; V10 đã tìm ra gốc (race tên file) | R1→R2/R3 | trước lượt kiểm tra tới | mở | 03/10/2026 |
+| 007 | CI bị chặn vì thanh toán Actions (sếp cần xử lý billing, G10); báo V16/V18 | V16/V18 | sếp cần xem | mở | 03/10/2026 |
