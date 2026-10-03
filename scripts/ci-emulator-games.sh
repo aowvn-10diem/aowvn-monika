@@ -130,8 +130,9 @@ else
   # Phím: game chờ Input::C; gửi Enter qua hệ thống (đi đường SDL → mkxp-z, cùng đường lớp phủ Monika gọi onNativeKeyDown).
   if [ "$result" = OK ]; then
     keyres=KEY_TIMEOUT
-    for i in $(seq 1 10); do
-      adb shell input keyevent KEYCODE_ENTER
+    # Nhấn-nhả tức thì có thể lọt giữa hai khung hình (mkxp-z đọc trạng thái phím mỗi Input.update, máy ảo vẽ bằng SwiftShader rất chậm) → nhấn giữ.
+    for i in $(seq 1 15); do
+      adb shell input keyevent --longpress KEYCODE_ENTER
       sleep 2
       if adb shell "test -f $P/games/rgss-ci/monika-key.txt" 2>/dev/null; then keyres=KEY_OK; break; fi
     done
