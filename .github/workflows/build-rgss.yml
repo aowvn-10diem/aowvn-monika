@@ -19,7 +19,7 @@ on:
         type: boolean
         default: false
       private_only:
-        description: "Với publish: CHỈ đưa lên release của repo này (riêng tư) để Emulator Test dùng, không lên repo packs công khai"
+        description: "Giữ tương thích lượt chạy cũ; gói luôn vào release nháp của repo Monika tới khi G8 xong"
         type: boolean
         default: true
 
@@ -164,6 +164,7 @@ jobs:
             jni-names.txt
             openssl-check.txt
 
+      # V24/G8: repo đã công khai; gói và symbols-rgss-* phải là draft tới khi giấy phép được chốt.
       - name: Giữ ký hiệu native theo BuildId (V20/D1)
         continue-on-error: true
         run: |
@@ -188,12 +189,12 @@ jobs:
             --title "Ký hiệu rgss-${{ github.run_number }}-${{ inputs.abi }}" \
             --notes "V20/D1: bảng BuildId trong build-ids.tsv; debug/symtab/dynamic-only ghi rõ trong từng dòng."
 
-      - name: Đưa lên Releases
+      - name: Đưa lên release nháp (chờ G8)
         if: ${{ inputs.publish }}
         env:
-          GH_TOKEN: ${{ (!inputs.private_only && secrets.PACKS_TOKEN != '') && secrets.PACKS_TOKEN || github.token }}
-          GH_REPO: ${{ (!inputs.private_only && secrets.PACKS_TOKEN != '') && 'aowvn-10diem/aowvn-monika-packs' || github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          gh release create "engines-rgss-${{ github.run_number }}" rgss-${{ inputs.abi }}.zip rgss-${{ inputs.abi }}.zip.sha256 \
+          gh release create --draft "engines-rgss-${{ github.run_number }}" rgss-${{ inputs.abi }}.zip rgss-${{ inputs.abi }}.zip.sha256 \
             --title "RGSS (mkxp-z) ${{ inputs.abi }} #${{ github.run_number }}" \
             --notes "mkxp-z dựng từ bản port BookerRues9/mkxp-z-android-reworked @ $SRC_COMMIT (GPL-2.0-or-later, lõi mkxp-z). JNI của SDL đổi sang vn.aow.monika.rgss.sdl. Nguồn + giấy phép: engines/rgss/UPSTREAM.md trong kho Aow Monika."
