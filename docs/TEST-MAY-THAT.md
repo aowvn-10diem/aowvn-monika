@@ -93,12 +93,12 @@ Kirikiri nhúng sâu trong Monika (không phải app ngoài): màn chuẩn bị 
 | # | Thao tác | Kết quả mong đợi | KQ |
 |---|---|---|---|
 | 6b.1 | Máy arm64 (arm64-v8a): Thư viện → +Game → chọn file `.xp3` lần đầu | Có bước tải gói Kirikiri + thông báo tiến độ, rồi vào game | |
-| 6b.2 | Máy 32-bit (armeabi-v7a): Bấm game Kirikiri | Hiện thông báo "Kirikiri chưa hỗ trợ máy 32-bit" hoặc tự tải gói arm64 xong báo lỗi | |
+| 6b.2 | Máy 32-bit (armeabi-v7a): Bấm game Kirikiri | Hiện thông báo "Kirikiri chưa hỗ trợ máy 32-bit" (không tải gói arm64) | |
 | 6b.3 | Vào game Kirikiri → chạm vào cảnh, kéo → có phản ứng (chữ hiện, menu, phím) | Không văng; nhân vật / nội dung hiện được | |
 | 6b.4 | Game có tiếng (BGM, hiệu ứng) | Âm thanh phát bình thường | |
 | 6b.5 | Lưu / Tải game trong menu game hoặc gọi menu Monika | Lưu được, tải đúng vị trí đã lưu, không mất tiến độ | |
-| 6b.6 | Menu Monika (… phím dưới cùng) → Tốc độ 2x | Game tua nhanh | |
-| 6b.7 | Menu Monika → Cài đặt nhân vật / ngôn ngữ (nếu game hỗ trợ Việt hóa) | Chữ Việt hóa hiển thị đủ dấu, không xáo trộn | |
+| 6b.6 | Menu Monika (… phím dưới cùng) → Tua nhanh (giữ Ctrl để bỏ qua thoại đã đọc) | Game tua nhanh bỏ qua thoại | |
+| 6b.7 | Menu Monika → Menu game | Menu Kirikiri hiện các tùy chọn (Lưu, Tải, Cầu hình, v.v.) | |
 | 6b.8 | Thoát game (bấm menu, chọn Thoát hoặc bấm back) | Quay lại Thư viện, game vẫn có icon + tên | |
 
 ## 7. Bộ nhớ & ổn định
