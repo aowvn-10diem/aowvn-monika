@@ -1,17 +1,40 @@
 #!/bin/bash
-# Xem báo lỗi game/lõi người chơi gửi về.
-#   CRASH_ADMIN_TOKEN=<mã> scripts/crash-reports.sh          → thống kê + 100 báo cáo mới nhất
-#   CRASH_ADMIN_TOKEN=<mã> scripts/crash-reports.sh <id>     → chi tiết 1 báo cáo (id như r:1790664060430:93300910)
+# Xem báo lỗi; Java retrace theo mapping đúng phiên bản, native ghép theo BuildId.
+# CRASH_ADMIN_TOKEN=<mã> scripts/crash-reports.sh [<id>]
+# scripts/crash-reports.sh --file report.json --mapping mapping-v0.7.4.txt --r8-jar /path/r8.jar
+# scripts/crash-reports.sh <id> --symbols-dir /path/symbols --symbolizer /path/llvm-symbolizer
 set -euo pipefail
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 U="${CRASH_URL:-https://aowvn-monika-crash.aowvn-system.workers.dev}"
+REPORT_ID=""
+REPORT_FILE=""
+OPTIONS=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --file)
+      [ $# -ge 2 ] || { echo "Thiếu đường dẫn sau --file" >&2; exit 2; }
+      REPORT_FILE=$2; shift 2 ;;
+    --mapping|--r8-jar|--symbols-dir|--symbolizer)
+      [ $# -ge 2 ] || { echo "Thiếu giá trị sau $1" >&2; exit 2; }
+      OPTIONS+=("$1" "$2"); shift 2 ;;
+    --*) echo "Tùy chọn chưa hỗ trợ: $1" >&2; exit 2 ;;
+    *)
+      [ -z "$REPORT_ID" ] || { echo "Chỉ nhận một mã báo cáo" >&2; exit 2; }
+      REPORT_ID=$1; shift ;;
+  esac
+done
+if [ -n "$REPORT_FILE" ]; then
+  [ -z "$REPORT_ID" ] || { echo "Chọn --file hoặc mã báo cáo" >&2; exit 2; }
+  exec python3 "$SCRIPT_DIR/crash-report-detail.py" --file "$REPORT_FILE" "${OPTIONS[@]}"
+fi
 : "${CRASH_ADMIN_TOKEN:?Cần biến CRASH_ADMIN_TOKEN (mã quản trị)}"
 H=(-H "authorization: Bearer $CRASH_ADMIN_TOKEN")
-if [ $# -ge 1 ]; then
-  curl -fsS "${H[@]}" "$U/reports/$(python3 -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))' "$1")" | python3 -c '
-import json,sys
-r=json.load(sys.stdin); s=r.get("session",{})
-print(r["title"]); print("Máy:",r["device"]); print("Bản app:",r["app"]); print("Lõi:",s.get("core"),"|",s.get("coreInfo")); print("Game:",s.get("game"),"| Hệ:",s.get("system"),"| Giai đoạn:",s.get("stage"))
-print("Lý do:",r.get("reason")); print(); print(r.get("detail","")); print("\n-- log --"); print("\n".join(r.get("log",[])))'
+if [ -n "$REPORT_ID" ]; then
+  REPORT_FILE=$(mktemp)
+  trap 'rm -f "$REPORT_FILE"' EXIT
+  ID=$(python3 -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=""))' "$REPORT_ID")
+  curl -fsS "${H[@]}" "$U/reports/$ID" > "$REPORT_FILE"
+  python3 "$SCRIPT_DIR/crash-report-detail.py" --file "$REPORT_FILE" "${OPTIONS[@]}"
 else
   echo "== Thống kê (lõi | loại | giai đoạn) =="; curl -fsS "${H[@]}" "$U/stats" | python3 -c 'import json,sys;d=json.load(sys.stdin);print("Tổng:",d["total"]);[print(f'"'"'{x["n"]:4}  {x["k"]}'"'"') for x in d["byCoreKindStage"]]'
   echo; echo "== Mới nhất =="; curl -fsS "${H[@]}" "$U/reports" | python3 -c 'import json,sys,datetime

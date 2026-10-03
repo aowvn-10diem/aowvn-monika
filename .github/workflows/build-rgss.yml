@@ -165,6 +165,30 @@ jobs:
             openssl-check.txt
 
       # V24/G8: repo đã công khai; gói và symbols-rgss-* phải là draft tới khi giấy phép được chốt.
+      - name: Giữ ký hiệu native theo BuildId (V20/D1)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 self/scripts/package-native-symbols.py --pack pack/lib --source-root src \
+            --readelf "$ANDROID_HOME/ndk/23.2.8568313/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" --abi ${{ inputs.abi }} \
+            --output "symbols-rgss-${{ github.run_number }}-${{ inputs.abi }}.zip"
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: symbols-rgss-${{ github.run_number }}-${{ inputs.abi }}
+          path: symbols-rgss-${{ github.run_number }}-${{ inputs.abi }}.zip
+          retention-days: 3
+      - name: Lưu ký hiệu vào release nháp của Monika (V24/G8)
+        continue-on-error: true
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "symbols-rgss-${{ github.run_number }}-${{ inputs.abi }}" "symbols-rgss-${{ github.run_number }}-${{ inputs.abi }}.zip" \
+            --repo "${{ github.repository }}" --target "${{ github.sha }}" --draft \
+            --title "Ký hiệu rgss-${{ github.run_number }}-${{ inputs.abi }}" \
+            --notes "V20/D1: bảng BuildId trong build-ids.tsv; debug/symtab/dynamic-only ghi rõ trong từng dòng."
+
       - name: Đưa lên release nháp (chờ G8)
         if: ${{ inputs.publish }}
         env:

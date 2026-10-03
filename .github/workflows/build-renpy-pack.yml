@@ -101,6 +101,30 @@ jobs:
             renpy8-${{ matrix.abi }}.zip
             renpy8-${{ matrix.abi }}.zip.sha256
 
+      - name: Giữ ký hiệu native theo BuildId (V20/D1)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 self/scripts/package-native-symbols.py --pack pack --source-root renpy-${{ inputs.version }}-sdk \
+            --readelf readelf --abi ${{ matrix.abi }} \
+            --output "symbols-renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}.zip"
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: symbols-renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}
+          path: symbols-renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}.zip
+          retention-days: 3
+      - name: Lưu ký hiệu vào release của Monika
+        continue-on-error: true
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "symbols-renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}" "symbols-renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}.zip" \
+            --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease \
+            --title "Ký hiệu renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}" \
+            --notes "V20/D1: bảng BuildId trong build-ids.tsv; debug/symtab/dynamic-only ghi rõ trong từng dòng."
+
       - name: Đưa lên Releases
         if: ${{ inputs.publish }}
         env:
