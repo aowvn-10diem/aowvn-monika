@@ -28,3 +28,22 @@ Tên game và nơi sếp để game: PM đang hỏi sếp, sẽ ghi bổ sung v�
   (b) `.exe`: exe nằm cạnh `data.xp3`, hoặc exe có xp3 gắn bên trong.
 - Hiện config chỉ nhận dấu `data.xp3`. Game chỉ có `.exe` thì không được nhận là Kirikiri. Lưu ý `.exe` còn dùng cho RPG Maker (`Game.exe` + `Game.ini`/`.rgssad`) và Ren'Py, nên dấu nhận dạng phải phân biệt được (ví dụ tìm chữ ký XP3 trong exe). Thiết kế do Sonnet quyết, đặt trong config (config-first) và có `ConfigTest`.
 - Thêm vào bước 1: krkr2yuri có mở được `.exe` không (cả exe cạnh xp3 lẫn exe nhúng xp3) [CHƯA KIỂM].
+
+## Bổ sung 2, 03/10 21:55: **gần như chắc đã ra nguyên nhân**
+Sếp thử **bản Android**. PM đọc danh sách file trong file nén sếp đưa (RAR4, 858 MB; chỉ đọc phần đầu mục, không tải hết):
+```
+Kara no Shoujo - AowVN.org/            ← tên thư mục có dấu cách
+  karanoshojo.exe      5 467 243
+  karanoshojo.xp3    853 153 557       ← kho chính; KHÔNG có data.xp3
+  patch.xp3 … patch5.xp3               ← 5 bản vá (Việt hóa)
+  plugin/*.dll (layerEx*, windowEx, wuvorbis, shrinkCopy), KnS.ico, Uninstall.*, Walk.doc
+"Chạy File EXE là chơi được .txt" (ở gốc file nén)
+```
+- **Lỗi ở Monika, không ở engine:** `GameLibrary.detectFiles` không thấy dấu `data.xp3`, nên rơi xuống nhánh nhận theo đuôi file: `files.firstOrNull { ext == "xp3" }`. Nhánh này lấy **file .xp3 đầu tiên theo thứ tự thư mục**, thường là một `patch*.xp3`. Kirikiri mở bản vá thay cho kho chính → "Cannot find storage startup.tjs".
+- **Sửa (config-first), đề xuất của PM:** quy tắc chọn lối vào cho Kirikiri, theo thứ tự:
+  1. `data.xp3`;
+  2. `<tên>.xp3` trùng tên với `<tên>.exe` cùng thư mục (ở đây `karanoshojo.exe` ↔ `karanoshojo.xp3`);
+  3. file `.xp3` lớn nhất, bỏ qua `patch*.xp3`.
+  Truyền cho krkr2 kho chính hoặc `.exe`, tùy `startupFrom` nhận gì (bước 1). Bản vá `patch*.xp3` để Kirikiri tự gắn như trên PC.
+- **Test bắt buộc:** unit test dựng cây thư mục giống hệt ở trên (tên có dấu cách, có `patch*.xp3`, `plugin/*.dll`), kết quả phải ra lối vào `karanoshojo.xp3` hoặc `.exe`. Game tự sinh trên Emulator Test cũng đổi sang cấu trúc `<tên>.exe` + `<tên>.xp3` + `patch.xp3`.
+- Game thật: PM giữ link, **không** ghi vào repo công khai. Cần thì ghi trong `pm-tra-loi-002.md`, sếp sẽ gửi thẳng.
