@@ -126,7 +126,12 @@ flowchart LR
 | Kirikiri (visual novel .xp3) nhúng trong Monika | Lõi dựng từ nguồn, lib nạp từ gói trong máy ảo không sập (API 30/34) | **[CHƯA KIỂM]** chơi game thật, âm thanh, chạm, lưu, tua nhanh |
 | Kirikiri tích hợp sâu (commit 92a65b2): màn chuẩn bị tự tải, menu Monika, Việt hóa 119 chuỗi | Mã xong, test xanh | Gói có bản dịch **đang dựng lại**; sau đó cập nhật `modules.kirikiri` + Emulator Test + phát hành 0.7.3 |
 | E0: EngineRoutes/EnginePrepActivity/`allowExternalApp` | Xong | Cơ sở cho nhúng engine mới |
+| R0: Spike mkxp-z Android arm64 | Xong (xem `docs/opus/ket-qua/R0.md`) | Dựng được; gói ≈ 11 MB |
+| R1: Dựng gói `rgss` arm64 + đổi gói SDL + bỏ OpenSSL | Xong (xem `docs/opus/ket-qua/R1.md`) | `rgss-arm64-v8a.zip` 7,6 MiB, `rgss-armeabi-v7a.zip` 7,1 MiB (V15) |
+| R2: Module `:rgss` (đổi gói SDL) | Xong (commit cùng R1) | `assembleRelease` xanh |
+| R3: RgssGameActivity + Emulator Test | Xong (xem `docs/opus/ket-qua/R3.md`) | API 34+30 ĐẠT; rgss-lib-loaded + KEY_OK |
 | R4: MkxpConfigWriter (tuy chọn lõi mkxp-z) | Xong | Chuẩn bị cho R2–R3 |
+| R5: Lớp phủ + phím RPG Maker | Một phần (xem `docs/opus/ket-qua/R5.md`) | Phím + Menu xong API 34; config hoãn chờ G5/G8 |
 | ONScripter (web, Onsyuri), Ruffle, HTML5 | Có runner | **[CHƯA KIỂM]** máy thật |
 | Ren'Py, RPG Maker XP/VX/Ace, Symbian | Vẫn dùng app ngoài (JoiPlay, EKA2L1) | Chưa nhúng |
 
