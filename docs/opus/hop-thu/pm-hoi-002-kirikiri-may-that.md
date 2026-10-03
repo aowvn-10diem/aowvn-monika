@@ -47,3 +47,14 @@ Kara no Shoujo - AowVN.org/            ← tên thư mục có dấu cách
   Truyền cho krkr2 kho chính hoặc `.exe`, tùy `startupFrom` nhận gì (bước 1). Bản vá `patch*.xp3` để Kirikiri tự gắn như trên PC.
 - **Test bắt buộc:** unit test dựng cây thư mục giống hệt ở trên (tên có dấu cách, có `patch*.xp3`, `plugin/*.dll`), kết quả phải ra lối vào `karanoshojo.xp3` hoặc `.exe`. Game tự sinh trên Emulator Test cũng đổi sang cấu trúc `<tên>.exe` + `<tên>.xp3` + `patch.xp3`.
 - Game thật: PM giữ link, **không** ghi vào repo công khai. Cần thì ghi trong `pm-tra-loi-002.md`, sếp sẽ gửi thẳng.
+
+## PM duyệt V26 (`9a32943`, 03/10 22:50)
+Đạt: quy tắc chọn lối vào nằm trong config (32), trường mới có mặc định, `KirikiriEntryTest` dựng đúng cây Kara no Shoujo, Build xanh. (`sync` đỏ vì thiếu secret `CLOUDFLARE_API_TOKEN`, lỗi có từ run #30, không do V26.)
+
+**Bắt buộc trước khi ra bản cho sếp thử:**
+1. **Bản vá Việt hóa phải được nạp.** Mở từ `karanoshojo.xp3` (không phải `data.xp3`) thì krkr2yuri có tự gắn `patch.xp3`…`patch5.xp3` cùng thư mục không? [CHƯA KIỂM]. Game tự sinh trên Emulator Test phải dựng theo kiểu Kara: `<tên>.xp3` có `startup.tjs` ghi dấu `A`, `patch.xp3` đè `startup.tjs` (hoặc một file nó gọi) để ghi dấu `B`. Đạt khi thấy dấu `B`. Không đạt thì Việt hóa mất, phải sửa trước khi phát hành.
+2. Trả lời `pm-tra-loi-002.md`: `startupFrom` nhận gì (file xp3 / exe / thư mục), và kết quả mục 1.
+
+**Nên (không chặn):**
+- `hasEmbeddedXp3` đọc tới 96 MB cho **mỗi** `.exe` mà `DeviceScanner` gặp, nếu cạnh nó không có `.xp3`; máy nhiều bộ cài/game PC sẽ quét chậm. Nên dùng đủ chữ ký 11 byte `XP3\r\n \n\x1a\x8bg\x01` và giảm giới hạn đọc.
+- Thêm vào test: `Uninstall.exe` nằm cạnh `karanoshojo.exe` (Kara có file này). Kết quả vẫn phải là `karanoshojo.xp3`.
