@@ -1,5 +1,5 @@
 {
-  "configVersion": 31,
+  "configVersion": 32,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -385,6 +385,16 @@
       "engine": "kirikiri",
       "extensions": [
         "xp3"
+      ],
+      "extensionsSniffed": [
+        "exe"
+      ],
+      "entryExclude": [
+        "^patch\\d*\\.xp3$"
+      ],
+      "entryPick": "paired",
+      "entryPairExt": [
+        "exe"
       ],
       "labels": []
     },

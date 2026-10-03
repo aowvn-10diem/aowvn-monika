@@ -41,7 +41,8 @@ class DeviceScanner(private val context: Context) {
      * Bỏ qua: thư mục ẩn, Android/data + obb, thư mục game của chính Monika (đã có trong thư viện), thư mục quá sâu.
      */
     fun scan(cfg: MonikaConfig, onProgress: (Int) -> Unit = {}): Int {
-        val exts = cfg.systems.filter { it.runner != "apk" }.flatMap { it.extensions }.map { it.lowercase() }.toSet() - setOf("ldb")
+        val exts = cfg.systems.filter { it.runner != "apk" }.flatMap { it.extensions + it.extensionsSniffed }.map { it.lowercase() }.toSet() - setOf("ldb")
+        val sniffedExts = cfg.systems.flatMap { it.extensionsSniffed }.map { it.lowercase() }.toSet()
         val root = Environment.getExternalStorageDirectory()
         val own = GameStorage.games(context).canonicalPath
         val hits = mutableListOf<String>()
@@ -58,7 +59,7 @@ class DeviceScanner(private val context: Context) {
                     val path = runCatching { f.canonicalPath }.getOrNull() ?: continue
                     if (path == own || path.startsWith("$own/") || SKIP.any { path.endsWith(it) }) continue
                     walk(f, depth + 1)
-                } else if (f.extension.lowercase() in exts && f.length() >= MIN_SIZE && RomSniff.accepts(f)) {
+                } else if (f.extension.lowercase() in exts && f.length() >= MIN_SIZE && RomSniff.accepts(f) && (f.extension.lowercase() !in sniffedExts || EntryPick.isXp3Exe(f))) {
                     hits += f.absolutePath
                 }
             }

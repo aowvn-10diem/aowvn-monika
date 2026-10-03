@@ -63,9 +63,20 @@ class GameLibrary(
     /** Game quét được trong máy, nhận diện hệ theo đuôi file. */
     private fun externalGames(): List<Game> = runCatching {
         val cfg = configRepo.current
-        scanner.found().mapNotNull { f ->
-            val system = cfg.systems.firstOrNull { s -> s.extensions.any { it.equals(f.extension, true) } && RomSniff.accepts(f) } ?: return@mapNotNull null
-            Game(f.parentFile ?: f, f.nameWithoutExtension.replace('_', ' '), system, f, external = true)
+        val matched = scanner.found().mapNotNull { f ->
+            val system = cfg.systems.firstOrNull { s -> (s.extensions + s.extensionsSniffed).any { it.equals(f.extension, true) } && EntryPick.acceptable(f, s) } ?: return@mapNotNull null
+            Triple(f, system, f.parentFile?.path.orEmpty())
+        }
+        // Hệ có quy tắc chọn riêng (Kirikiri): mỗi thư mục chỉ ra MỘT game (bỏ patch*.xp3, ghép exe ↔ xp3), không mỗi file một game.
+        val grouped = matched.groupBy { (_, s, dirPath) -> if (s.entryPick.equals("first", true)) null else s.id to dirPath }
+        grouped.flatMap { (key, list) ->
+            val picked = if (key == null) list.map { it.first } else listOfNotNull(EntryPick.pick(list.map { it.first }, list.first().second))
+            picked.map { f ->
+                val system = list.first { it.first == f }.second
+                // Tên hiển thị của game theo thư mục chứa khi hệ có nhiều file (tên file kho chính thường là viết tắt).
+                val title = if (key == null) f.nameWithoutExtension.replace('_', ' ') else (f.parentFile?.name ?: f.nameWithoutExtension).replace('_', ' ')
+                Game(f.parentFile ?: f, title, system, f, external = true)
+            }
         }
     }.getOrDefault(emptyList())
 
@@ -124,10 +135,13 @@ object GameDetector {
             }
         }
         for (system in cfg.systems) {
-            for (ext in system.extensions) {
-                files.firstOrNull { it.extension.equals(ext, ignoreCase = true) && RomSniff.accepts(it) }
-                    ?.let { return Game(dir, dir.name, system, it) }
-            }
+            // Gom mọi file hợp đuôi (kể cả đuôi cần kiểm loại thật) rồi chọn theo quy tắc của hệ máy, không lấy bừa file đầu tiên.
+            val exts = system.extensions + system.extensionsSniffed
+            if (exts.isEmpty()) continue
+            val cands = files.filter { f -> exts.any { it.equals(f.extension, true) } && EntryPick.acceptable(f, system) }
+            // Đuôi khai trong "extensions" giữ thứ tự ưu tiên cũ khi không có quy tắc chọn riêng.
+            val ordered = if (system.entryPick.equals("first", true)) system.extensions.flatMap { e -> cands.filter { it.extension.equals(e, true) } } + cands.filter { c -> system.extensions.none { it.equals(c.extension, true) } } else cands
+            EntryPick.pick(ordered, system)?.let { return Game(dir, dir.name, system, it) }
         }
         val needsExtract = files.any { ArchiveExtractor.isArchive(it) }
         return Game(dir, dir.name, null, null, needsExtract)

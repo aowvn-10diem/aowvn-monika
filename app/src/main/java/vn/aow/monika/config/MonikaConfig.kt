@@ -193,6 +193,17 @@ data class SystemDef(
      * Mặc định true để đọc được config cũ; bật tắt theo từng hệ khi engine nhúng của hệ đó đã phát hành.
      */
     val allowExternalApp: Boolean = true,
+    /**
+     * Đuôi chỉ nhận khi file đúng loại thật (vd. kirikiri: "exe" phải là exe có XP3 gắn trong hoặc có .xp3 cùng thư mục;
+     * exe thường của Windows/RPG Maker/Ren'Py thì không). Để RIÊNG khỏi [extensions] để app cũ không nhận nhầm mọi file .exe.
+     */
+    val extensionsSniffed: List<String> = emptyList(),
+    /** Tên file (regex, so với tên đầy đủ) KHÔNG được làm lối vào game, vd. bản vá "^patch\\d*\\.xp3$". */
+    val entryExclude: List<String> = emptyList(),
+    /** Cách chọn lối vào khi một thư mục có nhiều file hợp đuôi: first = đầu tiên · largest = lớn nhất · paired = trùng tên với file đi kèm ([entryPairExt]) rồi lớn nhất. */
+    val entryPick: String = "first",
+    /** Với entryPick = paired: đuôi file đi kèm, vd. ["exe"] (karanoshojo.exe ↔ karanoshojo.xp3). */
+    val entryPairExt: List<String> = emptyList(),
 )
 
 @Serializable
