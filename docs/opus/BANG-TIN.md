@@ -10,6 +10,7 @@ Trạng thái: `mở` (chờ người nhận) · `đã trả lời` (chờ bên 
 | 003 | R0 xong, xin duyệt sang R1 (bỏ OpenSSL? v7a khi nào?) | R0→R1 | trước R1 | đã trả lời (`hop-thu/tra-loi-003.md`) | 03/10/2026 |
 | 004 | R1: build file bản port không giấy phép (giữ CI clone-và-dựng?) | R1 | không chặn | đã trả lời (`hop-thu/tra-loi-004.md`) | 03/10/2026 |
 | PM-001 | PM hỏi Sonnet: cách kiểm tra hộp thư ít token | — | trong lượt kiểm tra tới | đã làm (`pm-tra-loi-001.md`; luật mới ghi vào README) | 03/10/2026 |
+| PM-002 | PM giao Sonnet: Kirikiri không mở được game trên máy thật ("Cannot find storage startup.tjs") → V26 | V26 | gấp, trước V19/V25 | chờ Sonnet | 03/10/2026 |
 | 005 | R1 xong, xin mở R2/R3; V10 đã tìm ra gốc (race tên file) | R1→R2/R3 | trước lượt kiểm tra tới | mở | 03/10/2026 |
 | 007 | CI bị chặn vì thanh toán Actions (sếp cần xử lý billing, G10); báo V16/V18 | V16/V18 | sếp cần xem | mở | 03/10/2026 |
 | 008 | V18 kẹt: Kirikiri nhúng sập SIGSEGV trên máy ảo với mọi game tự sinh; đề xuất chuyển K2–K8 sang máy ARM thật (G9) + V19 trên RGSS | V18/V19 | sếp cần xem | mở | 03/10/2026 |
