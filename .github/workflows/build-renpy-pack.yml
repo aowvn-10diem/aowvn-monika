@@ -101,17 +101,20 @@ jobs:
             renpy8-${{ matrix.abi }}.zip.sha256
 
       - name: Giữ ký hiệu native theo BuildId (V20/D1)
+        continue-on-error: true
         run: |
           set -euo pipefail
           python3 self/scripts/package-native-symbols.py --pack pack --source-root renpy-${{ inputs.version }}-sdk \
             --readelf readelf --abi ${{ matrix.abi }} \
             --output "symbols-renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}.zip"
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: symbols-renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}
           path: symbols-renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}.zip
           retention-days: 3
-      - name: Lưu ký hiệu vào release riêng tư của Monika
+      - name: Lưu ký hiệu vào release của Monika
+        continue-on-error: true
         if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ github.token }}

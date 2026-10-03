@@ -169,17 +169,20 @@ jobs:
             kirikiri-arm64.zip.sha256
 
       - name: Giữ ký hiệu native theo BuildId (V20/D1)
+        continue-on-error: true
         run: |
           set -euo pipefail
           python3 self/scripts/package-native-symbols.py --pack pack --source-root src --source-root /build_android \
             --readelf "$ANDROID_HOME/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" --abi arm64-v8a \
             --output "symbols-kirikiri-${{ github.run_number }}-arm64-v8a.zip"
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: symbols-kirikiri-${{ github.run_number }}-arm64-v8a
           path: symbols-kirikiri-${{ github.run_number }}-arm64-v8a.zip
           retention-days: 3
-      - name: Lưu ký hiệu vào release riêng tư của Monika
+      - name: Lưu ký hiệu vào release của Monika
+        continue-on-error: true
         if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ github.token }}
