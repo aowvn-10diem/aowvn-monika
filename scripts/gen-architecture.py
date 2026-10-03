@@ -48,14 +48,28 @@ for f, s in text.items():
 # Đếm thêm: dùng AppGraph/Prefs không cần import khi nằm cùng package gốc (bỏ qua), ở package khác thì phải import → đã tính.
 def w(a, b): return edges.get((a, b), 0)
 
+module_roles = {
+    ":app": "Ứng dụng Monika (toàn bộ mã Kotlin bên dưới)",
+    ":libretrodroid": "LibretroDroid nhúng, chạy lõi libretro và RetroAchievements (xem `docs/LIBRETRODROID.md`)",
+    ":kirikiri": "Lớp Java Kirikiri (Kirikiroid2Yuri); native và tài nguyên tải qua gói engine",
+    ":rgss": "Lớp Java SDL đã đổi gói cho mkxp-z (RPG Maker XP/VX/Ace); native tải qua gói engine",
+    ":j2me": "Lõi game Java: JL-Mod nhúng + chỉnh sửa Monika (xem `docs/J2ME-LOADER.md`)",
+    ":dexlib": "dx của AOSP: chuyển .jar → .dex cho game Java",
+    ":loader": "Bộ nạp data chạy trong game đã chỉnh (Java thuần → .dex nhúng vào assets)",
+}
+settings = open(os.path.join(ROOT, "settings.gradle.kts"), encoding="utf-8").read()
+modules = dict.fromkeys(
+    module
+    for include in re.finditer(r"^\s*include\s*\(([^)]*)\)", settings, re.M)
+    for module in re.findall(r"[\"'](:[^\"']+)[\"']", include.group(1))
+)
+
 lines = ["# Kiến trúc Aow Monika (tự sinh — đừng sửa tay)", "",
          "> Sinh bởi `scripts/gen-architecture.py` từ mã nguồn. Phần luồng chính / nơi sửa gì: xem `docs/KIEN-TRUC-tay.md` (viết tay, cuối tệp này).", "",
          "## 1. Module Gradle", "",
-         "| Module | Vai trò |", "|---|---|",
-         "| `:app` | Ứng dụng Monika (toàn bộ mã Kotlin bên dưới) |",
-         "| `:j2me` | Lõi game Java: JL-Mod nhúng + chỉnh sửa Monika (xem `docs/J2ME-LOADER.md`) |",
-         "| `:dexlib` | dx của AOSP: chuyển .jar → .dex cho game Java |",
-         "| `:loader` | Bộ nạp data chạy trong game đã chỉnh (Java thuần → .dex nhúng vào assets) |", "",
+         "| Module | Vai trò |", "|---|---|"]
+lines += ["| `%s` | %s |" % (module, module_roles.get(module, "(chưa có mô tả)")) for module in modules]
+lines += ["",
          "## 2. Package trong `:app`", "",
          "| Package | File | Dòng | Phụ thuộc vào (số tham chiếu) | Được dùng bởi |", "|---|---:|---:|---|---|"]
 for p in sorted(pkgs, key=lambda x: -info[x]["lines"]):
