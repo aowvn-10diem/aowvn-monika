@@ -89,7 +89,7 @@ class GameLauncher(private val configRepo: ConfigRepository) {
     /** Engine Kirikiri nhúng: chưa có gói → đưa vào hàng tải theo luật mạng (≤15 MB tự tải, lớn hơn hỏi Wi-Fi/4G); có rồi → chạy luôn. */
     /** Một chạm là chơi: màn chuẩn bị tự tải gói (quy tắc mạng chung), xin quyền nếu cần, rồi tự mở game. */
     private fun launchEmbedded(activity: Activity, route: EngineRoute, engine: String, game: Game, entry: File): LaunchResult {
-        EnginePrepActivity.start(activity, engine, entry.takeIf { it.isFile }, game.name, game.key)
+        EnginePrepActivity.start(activity, engine, entry, game.name, game.key)
         return LaunchResult.Started
     }
 

@@ -82,6 +82,7 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
+        continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         if: always()
         with:
           name: spike-rgss-${{ inputs.abi }}

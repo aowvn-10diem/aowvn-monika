@@ -103,6 +103,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
+        continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         if: always()
         with:
           name: kirikiroid2-yuri
@@ -132,6 +133,7 @@ jobs:
           ls -la kirikiri-embed-inputs.tgz
 
       - uses: actions/upload-artifact@v4
+        continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         with:
           name: kirikiri-embed-inputs
           path: kirikiri-embed-inputs.tgz
@@ -159,6 +161,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
+        continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         with:
           name: kirikiri-module
           path: |

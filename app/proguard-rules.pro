@@ -41,3 +41,13 @@
 -keep class io.github.muntashirakon.crypto.** { *; }
 -dontwarn org.bouncycastle.**
 -dontwarn io.github.muntashirakon.**
+
+# RPG Maker (mkxp-z): mã native tìm trường tĩnh GAME_PATH và các hàm tĩnh theo TÊN trên lớp của Activity (JNI) — không đổi tên/cắt.
+-keepclassmembers class vn.aow.monika.runner.RgssGameActivity {
+    public static java.lang.String GAME_PATH;
+    public static ** getSystemLanguage();
+    public static ** hasVibrator();
+    public static ** vibrate(int);
+    public static ** vibrateStop();
+    public static ** inMultiWindow(android.app.Activity);
+}

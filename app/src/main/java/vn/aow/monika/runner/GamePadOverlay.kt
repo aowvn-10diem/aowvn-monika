@@ -340,7 +340,7 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.awa
 }
 
 @Composable
-private fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) -> Unit, motion: (Int, Float, Float) -> Unit, modifier: Modifier) {
+internal fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) -> Unit, motion: (Int, Float, Float) -> Unit, modifier: Modifier) {
     val useStick = layout.hasStick && (state.stickMode ?: layout.stickDefault)
     Column(modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 16.dp).alpha(if (state.editing) 1f else state.opacity)) {
         ShoulderRow(layout, send)

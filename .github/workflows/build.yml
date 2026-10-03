@@ -22,14 +22,18 @@ jobs:
       - name: Kiểm tra cấu hình + test
         run: ./gradlew testDebugUnitTest --console=plain
       - uses: actions/upload-artifact@v4
+        continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         if: always()
         with:
           name: anh-chup-giao-dien
           path: app/build/screenshots/
           if-no-files-found: ignore
+          retention-days: 2   # hạn mức lưu trữ Actions từng đầy (14 GB artifact) → giữ ngắn
       - name: Build APK debug
         run: ./gradlew assembleDebug --console=plain
       - uses: actions/upload-artifact@v4
+        continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         with:
           name: AowVN-Monika-debug
           path: app/build/outputs/apk/debug/*.apk
+          retention-days: 1   # mỗi bản 83 MB; hạn mức lưu trữ Actions từng đầy

@@ -163,6 +163,6 @@ Trao đổi hằng ngày Sonnet ⇄ Opus qua `docs/opus/hop-thu/` + `docs/opus/B
 3. **Kirikiri trên máy ARM 32-bit** (armeabi-v7a): có đường nào ngoài tự dựng từ nguồn Yuri không?
 4. **RetroAchievements** cho NDS/N64/PS1: băm ROM và nhận diện đúng mà không phình APK?
 5. **Nhúng sâu Ren'Py và RPG Maker XP/VX/Ace**: ĐÃ CÓ phương án (`docs/opus/2026-10-03-nhung-renpy-rgss.md`), đang thi công: E0 xong, R0 spike đang chạy.
-6. **Kiểm thử không có máy thật**: bổ sung gì ở Emulator Test để bắt được lỗi chạm/âm thanh/lưu của Kirikiri?
-7. **Chất lượng crash log**: còn thiếu tín hiệu nào để chẩn đoán từ xa mà không cần máy thật?
+6. **Kiểm thử không có máy thật**: bổ sung gì ở Emulator Test để bắt được lỗi chạm/âm thanh/lưu của Kirikiri? ĐÃ CÓ phương án (`docs/opus/2026-10-03-kiem-thu-chan-doan.md`): game kiểm thử tự sinh + file dấu (K1–K10), việc V18–V19.
+7. **Chất lượng crash log**: còn thiếu tín hiệu nào để chẩn đoán từ xa mà không cần máy thật? ĐÃ CÓ phương án (cùng file): D1 lưu mapping R8 + ký hiệu `.so`, đọc đúng tombstone; D5 nút "Báo lỗi game này"; D2–D4, D6. Việc V20–V22.
 8. **Nhúng Symbian (EKA2L1)**: ĐÃ CÓ phương án (`docs/opus/2026-10-03-nhung-symbian-eka2l1.md`): mô hình Azahar (JNI viết lại bằng Kotlin + gói `symbian-{abi}.zip` dựng từ nguồn ghim commit), firmware người chơi tự nhập theo 3 đường (zip cấu hình sẵn / ROM (+RPKG) / VPL).
