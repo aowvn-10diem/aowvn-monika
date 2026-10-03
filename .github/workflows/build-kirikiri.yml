@@ -168,6 +168,27 @@ jobs:
             kirikiri-arm64.zip
             kirikiri-arm64.zip.sha256
 
+      - name: Giữ ký hiệu native theo BuildId (V20/D1)
+        run: |
+          set -euo pipefail
+          python3 self/scripts/package-native-symbols.py --pack pack --source-root src --source-root /build_android \
+            --readelf "$ANDROID_HOME/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" --abi arm64-v8a \
+            --output "symbols-kirikiri-${{ github.run_number }}-arm64-v8a.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: symbols-kirikiri-${{ github.run_number }}-arm64-v8a
+          path: symbols-kirikiri-${{ github.run_number }}-arm64-v8a.zip
+          retention-days: 3
+      - name: Lưu ký hiệu vào release riêng tư của Monika
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "symbols-kirikiri-${{ github.run_number }}-arm64-v8a" "symbols-kirikiri-${{ github.run_number }}-arm64-v8a.zip" \
+            --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease \
+            --title "Ký hiệu kirikiri-${{ github.run_number }}-arm64-v8a" \
+            --notes "V20/D1: bảng BuildId trong build-ids.tsv; debug/symtab/dynamic-only ghi rõ trong từng dòng."
+
       - name: Đưa lên Releases
         if: ${{ inputs.publish }}
         env:

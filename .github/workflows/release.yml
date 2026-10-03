@@ -51,11 +51,14 @@ jobs:
           python3 scripts/check-r8-mapping.py app/build/outputs/mapping/release/mapping.txt
           # Chỉ phát hành 1 APK chung cho mọi máy: app-universal-release.apk → AowVN-Monika-v0.4.5.apk
           cp app/build/outputs/apk/release/app-universal-release.apk "AowVN-Monika-${TAG}.apk"
+          cp app/build/outputs/mapping/release/mapping.txt "mapping-${TAG}.txt"
           # CHỈ phát hành bản chung (quyết định của sếp 02/10/2026): người dùng không phải chọn bản. Đừng thêm APK arm64/armv7 vào Release.
           ls -l AowVN-Monika-*.apk
       - uses: softprops/action-gh-release@v2
         with:
-          files: AowVN-Monika-*.apk
+          files: |
+            AowVN-Monika-*.apk
+            mapping-${{ env.TAG }}.txt
           tag_name: ${{ env.TAG }}
           generate_release_notes: true
       - name: Up APK lên Pixeldrain (nếu có secret PIXELDRAIN_API_KEY)

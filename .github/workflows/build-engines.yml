@@ -181,6 +181,26 @@ jobs:
           name: azahar-android-arm64
           path: azahar-android-arm64.zip
 
+      - name: Giữ ký hiệu native theo BuildId (V20/D1)
+        run: |
+          set -euo pipefail
+          python3 self/scripts/package-native-symbols.py --pack pack --source-root src \
+            --readelf "$(ls -d "$ANDROID_HOME"/ndk/*/ | tail -1)/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" --abi arm64-v8a \
+            --output "symbols-azahar-${{ github.run_number }}-arm64-v8a.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: symbols-azahar-${{ github.run_number }}-arm64-v8a
+          path: symbols-azahar-${{ github.run_number }}-arm64-v8a.zip
+          retention-days: 3
+      - name: Lưu ký hiệu vào release riêng tư của Monika
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "symbols-azahar-${{ github.run_number }}-arm64-v8a" "symbols-azahar-${{ github.run_number }}-arm64-v8a.zip" \
+            --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease \
+            --title "Ký hiệu azahar-${{ github.run_number }}-arm64-v8a" \
+            --notes "V20/D1: bảng BuildId trong build-ids.tsv; debug/symtab/dynamic-only ghi rõ trong từng dòng."
+
       - name: Đưa lên Releases (repo phụ công khai nếu có PACKS_TOKEN, không thì repo này)
         env:
           GH_TOKEN: ${{ secrets.PACKS_TOKEN != '' && secrets.PACKS_TOKEN || github.token }}
