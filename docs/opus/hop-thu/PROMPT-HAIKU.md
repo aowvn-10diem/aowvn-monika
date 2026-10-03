@@ -23,7 +23,7 @@ Trả lời tiếng Việt, ngắn, kết luận trước.
 3) CÁCH NỘP BÀI:
    - Không push thẳng main.
    - Mỗi việc một nhánh haiku/<mã>, tạo từ main mới nhất. Riêng H03 thì sửa ngay trên nhánh của PR #4.
-   - Mở Pull Request vào main, tiêu đề "[viec-<mã>] <mô tả ngắn>". Trong PR, đổi cột "Trạng thái" của dòng mình thành "PR #<số>".
+   - Mở Pull Request vào main, tiêu đề "[viec-<mã>] <mô tả ngắn>". KHÔNG sửa docs/opus/KE-HOACH.md trong PR (tránh xung đột); PM tự ghi trạng thái.
    - Có đụng mã (ví dụ H06): chạy ./gradlew testDebugUnitTest trước khi push, và chỉ gộp khi CI "Build" xanh.
    - Chỉ gộp khi PM đã comment trên PR một dòng bắt đầu bằng "PM duyệt". Gặp "PM yêu cầu sửa: …" thì sửa trên cùng nhánh.
    - Gộp bằng merge commit. Bị xung đột: gộp main vào nhánh rồi push. Không rebase, không force-push.

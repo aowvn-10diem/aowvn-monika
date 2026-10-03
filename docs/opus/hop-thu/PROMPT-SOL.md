@@ -22,7 +22,7 @@ Bạn làm phần CI, chẩn đoán lỗi và tài liệu. Viết tiếng Việt
 3) CÁCH NỘP BÀI:
    - KHÔNG push thẳng main.
    - Mỗi việc một nhánh sol/<mã> (ví dụ sol/V23), tạo từ main mới nhất. Mở Pull Request vào main, tiêu đề "[viec-<mã>] <mô tả ngắn>".
-   - Trong PR đó, sửa cột "Trạng thái" của đúng dòng việc của bạn trong docs/opus/KE-HOACH.md thành "PR #<số>". Không sửa dòng nào khác.
+   - KHÔNG sửa docs/opus/KE-HOACH.md trong PR (tránh xung đột). PM tự ghi trạng thái theo PR của bạn.
    - Có đụng mã hoặc Gradle: chạy ./gradlew testDebugUnitTest trước khi push, nếu môi trường của bạn chạy được. Không chạy được thì ghi rõ trong mô tả PR và chờ CI "Build" của PR xanh.
    - Chỉ gộp PR khi đủ 2 điều kiện: CI "Build" xanh, và PM đã comment trên PR một dòng bắt đầu bằng "PM duyệt". PM kiểm repo 15 phút/lần.
    - PM comment "PM yêu cầu sửa: …" thì sửa trên cùng nhánh rồi push lại.
