@@ -20,3 +20,11 @@
 5. Trả lời `pm-tra-loi-002.md`, tối đa 15 dòng: nguyên nhân, cách sửa, bản để sếp thử.
 
 Tên game và nơi sếp để game: PM đang hỏi sếp, sẽ ghi bổ sung vào đây. Không cần chờ.
+
+## Bổ sung 03/10 21:40 (sếp trả lời)
+- Game sếp thử: **Kara no Shoujo Việt hóa**, bài aow.vn `7558991371319465660` (`/feeds/posts/default/7558991371319465660?alt=json`). Bài có 2 bản: **Android** (cho Kirikiroid2) và **PC** (giải nén rồi "nhấn vào .exe"). File nén khoảng 800 MB, tải qua Terabox nên CI khó tải [CHƯA KIỂM]. Sếp thử bản nào: PM đang hỏi.
+- Sếp chốt: game Kirikiri thường có **2 cách chạy: mở `.xp3` hoặc mở `.exe`**. Vì vậy V26 phải mở được **cả hai**:
+  (a) thư mục có `data.xp3` (cách hiện tại, đang lỗi);
+  (b) `.exe`: exe nằm cạnh `data.xp3`, hoặc exe có xp3 gắn bên trong.
+- Hiện config chỉ nhận dấu `data.xp3`. Game chỉ có `.exe` thì không được nhận là Kirikiri. Lưu ý `.exe` còn dùng cho RPG Maker (`Game.exe` + `Game.ini`/`.rgssad`) và Ren'Py, nên dấu nhận dạng phải phân biệt được (ví dụ tìm chữ ký XP3 trong exe). Thiết kế do Sonnet quyết, đặt trong config (config-first) và có `ConfigTest`.
+- Thêm vào bước 1: krkr2yuri có mở được `.exe` không (cả exe cạnh xp3 lẫn exe nhúng xp3) [CHƯA KIỂM].
