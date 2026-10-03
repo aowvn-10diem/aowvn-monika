@@ -95,6 +95,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         with:
+          retention-days: 3
           name: renpy8-${{ matrix.abi }}
           path: |
             renpy8-${{ matrix.abi }}.zip

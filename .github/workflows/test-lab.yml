@@ -68,6 +68,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
+          retention-days: 3
           name: testlab-ket-qua
           path: testlab/
           if-no-files-found: ignore

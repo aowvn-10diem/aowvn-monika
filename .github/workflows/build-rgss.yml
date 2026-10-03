@@ -156,6 +156,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         with:
+          retention-days: 3
           name: rgss-${{ inputs.abi }}
           path: |
             rgss-${{ inputs.abi }}.zip
