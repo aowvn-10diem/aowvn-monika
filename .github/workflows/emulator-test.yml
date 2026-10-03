@@ -71,12 +71,20 @@ jobs:
         run: |
           set -euo pipefail
           # /releases/tags chỉ tìm bản đã phát hành; liệt kê có xác thực để thấy draft.
-          gh api --paginate --slurp "repos/$GH_REPO/releases?per_page=100" > "$RUNNER_TEMP/rgss-releases.json"
+          gh api --paginate "repos/$GH_REPO/releases?per_page=100" > "$RUNNER_TEMP/rgss-releases.json"
           ASSET_ID=$(python3 - <<'PY'
           import json, os
           with open(os.path.join(os.environ["RUNNER_TEMP"], "rgss-releases.json")) as source:
-              pages = json.load(source)
-          releases = [r for page in pages for r in page if r.get("tag_name") == os.environ["RGSS_TAG"] and r.get("draft") is True]
+              text = source.read().lstrip()
+          decoder = json.JSONDecoder()
+          all_releases = []
+          while text:
+              page, end = decoder.raw_decode(text)
+              if not isinstance(page, list):
+                  raise SystemExit("Phản hồi danh sách release không hợp lệ.")
+              all_releases.extend(page)
+              text = text[end:].lstrip()
+          releases = [r for r in all_releases if r.get("tag_name") == os.environ["RGSS_TAG"] and r.get("draft") is True]
           if len(releases) != 1:
               raise SystemExit("Không tìm thấy duy nhất một release RGSS nháp; kiểm tag và quyền GITHUB_TOKEN.")
           assets = [a for a in releases[0].get("assets", []) if a.get("name") == "rgss-arm64-v8a.zip"]
