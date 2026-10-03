@@ -101,6 +101,25 @@ Kirikiri nhúng sâu trong Monika (không phải app ngoài): màn chuẩn bị 
 | 6b.7 | Menu Monika → Menu game | Menu Kirikiri hiện các tùy chọn (Lưu, Tải, Cầu hình, v.v.) | |
 | 6b.8 | Thoát game (bấm menu, chọn Thoát hoặc bấm back) | Quay lại Thư viện, game vẫn có icon + tên | |
 
+## 6c. RPG Maker XP/VX/Ace (nhúng) — sau R7
+
+⚠️ **Chỉ áp dụng khi app có gói `rgss`.** Chuẩn bị game XP (hoặc VX/Ace nếu có) dạng thư mục: chứa `Game.ini` hoặc tên file `.rgss*a`.
+
+| # | Thao tác | Kết quả mong đợi | KQ |
+|---|---|---|---|
+| 6c.1 | Thư viện → +Game → chọn thư mục game XP lần đầu | Màn chuẩn bị tải gói `rgss` + thông báo tiến độ, rồi vào game | |
+| 6c.2 | Chạm phía dưới màn, thấy D-pad + nút A/B + START/SELECT | Phím ảo thể hiện bố cục RPG, không che hết game | |
+| 6c.3 | Bấm nút A (dưới cùng bên phải phím) | Game nhận Enter, nhân vật/menu/lựa chọn phản ứng đúng | |
+| 6c.4 | Bấm nút B (bên trái nút A) | Game nhận X, mở/đóng menu trong game | |
+| 6c.5 | Bấm D-pad (mũi tên 4 hướng) | Nhân vật / con trỏ menu di chuyển, hiển thị đúng | |
+| 6c.6 | Bấm Menu game (… phía trên cùng bên phải) | Menu Monika hiện 4 nút: Chơi tiếp · Chạy nhanh (giữ Shift) · Độ mờ phím · Thoát | |
+| 6c.7 | Menu Monika: bấm "Chạy nhanh (giữ Shift): tắt" | Menu đóng; sau đó giữ nút Shift (phím bàn phím của máy) → game tua nhanh, thả ra bình thường | |
+| 6c.8 | Menu Monika: bấm "Độ mờ phím" 2 lần | Phím ảo mờ/đậm theo mức, menu tự đóng; sau khi thoát game độ mờ được lưu | |
+| 6c.9 | Menu Monika: bấm "Thoát game" | Quay lại Thư viện; game vẫn có icon + tên, chưa bị dọn | |
+| 6c.10 | Bấm nút Back của máy khi ở trong game | Menu Monika hiện/ẩn (toggle) | |
+| 6c.11 | Trong game: Ctrl+S lưu (hoặc menu trong game) → Ctrl+L tải | Save lưu đúng, tải về đúng vị trí + tình trạng trước khi lưu | |
+| 6c.12 | Máy 32-bit (armeabi-v7a): bấm game XP | Hiện thông báo "RPG Maker chưa hỗ trợ máy 32-bit" (không tải gói) | |
+
 ## 7. Bộ nhớ & ổn định
 
 | # | Thao tác | Kết quả mong đợi | KQ |
