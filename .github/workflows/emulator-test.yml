@@ -103,7 +103,7 @@ jobs:
         with:
           name: ket-qua-api-${{ matrix.api }}
           path: out/
-          retention-days: 3
+          retention-days: 7
       - name: Kết luận
         run: |
           if [ -f out/games.failed ]; then echo "::error::Có hệ máy không lên hình — xem games/summary.txt, games/*.png, games/*.logcat.txt"; cat out/games/summary.txt 2>/dev/null; exit 1; fi

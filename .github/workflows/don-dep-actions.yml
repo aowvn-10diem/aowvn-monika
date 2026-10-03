@@ -2,6 +2,9 @@ name: Dọn dẹp Actions
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/don-dep-actions.yml']
   schedule:
     - cron: "17 0 * * *" # 07:17 giờ Việt Nam, hằng ngày
 
