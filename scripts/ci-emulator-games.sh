@@ -241,7 +241,7 @@ if [ -z "${RGSS_PACK_ZIP:-}" ] || [ ! -f "$RGSS_PACK_ZIP" ]; then
 else
   rm -rf "$OUT/rpack" "$OUT/rgame" && mkdir -p "$OUT/rpack" "$OUT/rgame/Data" && unzip -q "$RGSS_PACK_ZIP" -d "$OUT/rpack"
   printf '[Game]\r\nTitle=Monika RGSS CI\r\nScripts=Data\\Scripts.rxdata\r\nRTP1=\r\n' > "$OUT/rgame/Game.ini"
-  ruby -rzlib -e 'code = "File.open(%q(monika-ok.txt), %q(w)) { |f| f.write(%q(ok)) }\nloop do\n  Graphics.update\n  Input.update\n  if Input.trigger?(Input::C)\n    File.open(%q(monika-key.txt), %q(w)) { |f| f.write(%q(enter)) }\n    exit\n  end\nend\n"; File.binwrite(ARGV[0], Marshal.dump([[1, "Main", Zlib::Deflate.deflate(code)]]))' "$OUT/rgame/Data/Scripts.rxdata"
+  ruby -rzlib -e 'code = "File.open(%q(monika-ok.txt), %q(w)) { |f| f.write(%q(ok)) }\nloop do\n  Graphics.update\n  Input.update\n  if Input.trigger?(Input::C)\n    Process.kill(11, Process.pid) if File.exist?(%q(crash-on-key.txt))\n    File.open(%q(monika-key.txt), %q(w)) { |f| f.write(%q(enter)) }\n    exit\n  end\nend\n"; File.binwrite(ARGV[0], Marshal.dump([[1, "Main", Zlib::Deflate.deflate(code)]]))' "$OUT/rgame/Data/Scripts.rxdata"
   ls -l "$OUT/rgame" "$OUT/rgame/Data"
   adb shell rm -rf /data/local/tmp/rpack /data/local/tmp/rgame
   adb push "$OUT/rpack" /data/local/tmp/rpack >/dev/null
@@ -280,15 +280,20 @@ else
     if [ "$keyres" = KEY_OK ]; then
       RD="/data/data/$PKG/files/diag/reports"
       adb shell "rm -f $RD/*.json" 2>/dev/null || true
-      GPID=$(adb shell pidof "$PKG:game" | tr -d '\r' | awk '{print $1}')
-      adb shell kill -11 "$GPID" 2>/dev/null; sleep 3
+      # Giết từ ngoài (kill -11) không chắc ra REASON_CRASH_NATIVE → để chính game tự gây SIGSEGV thật (Ruby: Process.kill(11, pid)).
+      adb shell "touch $P/games/rgss-ci/crash-on-key.txt; rm -f $P/games/rgss-ci/monika-ok.txt $P/games/rgss-ci/monika-key.txt; chmod 666 $P/games/rgss-ci/crash-on-key.txt"
+      adb shell am force-stop "$PKG"
+      adb shell "am start -W -n $PKG/vn.aow.monika.runner.RgssGameActivity --es title CI-rgss --es game_path $P/games/rgss-ci" >/dev/null
+      for i in $(seq 1 15); do adb shell "test -f $P/games/rgss-ci/monika-ok.txt" 2>/dev/null && break; sleep 2; done
+      for i in $(seq 1 10); do adb shell input keyevent --longpress KEYCODE_ENTER; sleep 2; adb shell pidof "$PKG:game" >/dev/null 2>&1 || break; done
+      sleep 3
       adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
       rep=""
       for i in $(seq 1 15); do rep=$(adb shell "grep -l 'engine:rgss' $RD/*.json 2>/dev/null" | tr -d '\r' | head -1); [ -n "$rep" ] && break; sleep 2; done
       # Báo cáo của game rgss vừa giết; nếu không có, lấy báo cáo bất kỳ để in ra cho dễ chẩn đoán (có thể là của lần sập Kirikiri trước đó).
       [ -n "$rep" ] || rep=$(adb shell "ls -t $RD/*.json 2>/dev/null" | tr -d '\r' | head -1)
       adb shell "for f in $RD/*.json; do echo \$f; grep -o '\"component\": *\"[^\"]*\"' \$f; done" 2>/dev/null | tr -d '\r' | paste -sd' ' | cut -c1-600 | sed 's/^/K10 các báo cáo hiện có: /' | tee -a "$OUT/games/summary.txt"
-      if [ -z "$rep" ]; then note "K10 FAIL không có báo cáo sau kill -11 (pid ${GPID:-?})"; result=K10_FAIL
+      if [ -z "$rep" ]; then note "K10 FAIL không có báo cáo engine:rgss sau khi game tự gây SIGSEGV"; result=K10_FAIL
       else
         adb shell "cat $rep" > "$OUT/games/k10-report.json" 2>/dev/null
         note "K10 báo cáo: $(python3 - "$OUT/games/k10-report.json" <<'PY'
