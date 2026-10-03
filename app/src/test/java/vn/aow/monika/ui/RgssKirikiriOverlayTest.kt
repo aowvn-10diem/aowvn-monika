@@ -38,11 +38,16 @@ class RgssKirikiriOverlayTest {
         rule.mainClock.advanceTimeBy(1_000)
     }
 
-    private fun kirikiriOverlay(state: InGameState = InGameState()) {
+    private fun kirikiriOverlay(open: Boolean = false) {
         rule.setContent {
             MonikaTheme {
                 KirikiriOverlay(
-                    state = state, title = "Visual Novel", onSend = { _, _ -> },
+                    title = "Visual Novel",
+                    open = open,
+                    fastForward = false,
+                    onOpen = {},
+                    onGameMenu = {},
+                    onFastForward = {},
                     onExit = {},
                 )
             }
@@ -74,9 +79,8 @@ class RgssKirikiriOverlayTest {
 
     @Test
     fun kirikiriOverlayOpen() {
-        val s = InGameState().apply { menuOpen = true }
-        kirikiriOverlay(s)
-        rule.onNodeWithText("Menu game").assertExists()
+        kirikiriOverlay(open = true)
+        rule.onNodeWithText("Menu game (lưu/tải/cài đặt)").assertExists()
         rule.shot("kirikiri-overlay-menu-mo")
     }
 }
