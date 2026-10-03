@@ -12,6 +12,8 @@ Bạn làm phần CI, chẩn đoán lỗi và tài liệu. Viết tiếng Việt
    - CLAUDE.md: luật dự án, bắt buộc tuân thủ.
    - docs/opus/hop-thu/README.md: quy ước hộp thư.
    - docs/opus/KE-HOACH.md: bảng việc. Chỉ nhận dòng có "Giao: Sol".
+     PM ghi bảng việc trên nhánh docs/opus-tra-loi; Sonnet gộp nhánh đó vào main định kỳ. Nếu dòng "Giao: Sol" chưa có trên main thì đọc bản trên nhánh:
+     git fetch origin docs/opus-tra-loi && git show origin/docs/opus-tra-loi:docs/opus/KE-HOACH.md
    - Phương án mà dòng việc trỏ tới. Ví dụ V20 → docs/opus/2026-10-03-kiem-thu-chan-doan.md, mục D1.
 
 2) VIỆC CỦA BẠN, theo thứ tự: V23 → V20 → H01 → H02 → H03.
