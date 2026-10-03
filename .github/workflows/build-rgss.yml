@@ -18,6 +18,10 @@ on:
         description: "Đưa gói lên Releases (repo packs nếu có PACKS_TOKEN, không thì repo này)"
         type: boolean
         default: false
+      private_only:
+        description: "Với publish: CHỈ đưa lên release của repo này (riêng tư) để Emulator Test dùng, không lên repo packs công khai"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -161,8 +165,8 @@ jobs:
       - name: Đưa lên Releases
         if: ${{ inputs.publish }}
         env:
-          GH_TOKEN: ${{ secrets.PACKS_TOKEN != '' && secrets.PACKS_TOKEN || github.token }}
-          GH_REPO: ${{ secrets.PACKS_TOKEN != '' && 'aowvn-10diem/aowvn-monika-packs' || github.repository }}
+          GH_TOKEN: ${{ (!inputs.private_only && secrets.PACKS_TOKEN != '') && secrets.PACKS_TOKEN || github.token }}
+          GH_REPO: ${{ (!inputs.private_only && secrets.PACKS_TOKEN != '') && 'aowvn-10diem/aowvn-monika-packs' || github.repository }}
         run: |
           gh release create "engines-rgss-${{ github.run_number }}" rgss-${{ inputs.abi }}.zip rgss-${{ inputs.abi }}.zip.sha256 \
             --title "RGSS (mkxp-z) ${{ inputs.abi }} #${{ github.run_number }}" \

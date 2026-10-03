@@ -93,4 +93,45 @@ else
   fi
   [ "$result" = OK ] || fail=1
 fi
+
+# ---- RPG Maker XP/VX/Ace (RGSS, mkxp-z nhúng): đặt gói rgss vào files/packs/rgss như PackManager làm, sinh một "game" XP tối thiểu
+# (Game.ini + Data/Scripts.rxdata: ghi monika-ok.txt rồi thoát; không vẽ gì nên không cần RTP), mở RgssGameActivity.
+# Kiểm: nạp được .so từ gói (SDL đổi gói + FindClass), không "Failed to register methods", Ruby chạy script, game ghi được file.
+# Chỉ chạy khi có RGSS_PACK_ZIP (workflow đưa vào khi nhập rgss_tag).
+echo "=== rgss (nhúng)"
+if [ -z "${RGSS_PACK_ZIP:-}" ] || [ ! -f "$RGSS_PACK_ZIP" ]; then
+  echo "SKIP rgss (không có RGSS_PACK_ZIP)" | tee -a "$OUT/games/summary.txt"
+else
+  rm -rf "$OUT/rpack" "$OUT/rgame" && mkdir -p "$OUT/rpack" "$OUT/rgame/Data" && unzip -q "$RGSS_PACK_ZIP" -d "$OUT/rpack"
+  printf '[Game]\r\nTitle=Monika RGSS CI\r\nScripts=Data\\Scripts.rxdata\r\nRTP1=\r\n' > "$OUT/rgame/Game.ini"
+  ruby -rzlib -e 'code = "File.open(%q(monika-ok.txt), %q(w)) { |f| f.write(%q(ok)) }\nexit\n"; File.binwrite(ARGV[0], Marshal.dump([[1, "Main", Zlib::Deflate.deflate(code)]]))' "$OUT/rgame/Data/Scripts.rxdata"
+  ls -l "$OUT/rgame" "$OUT/rgame/Data"
+  adb shell rm -rf /data/local/tmp/rpack /data/local/tmp/rgame
+  adb push "$OUT/rpack" /data/local/tmp/rpack >/dev/null
+  adb push "$OUT/rgame" /data/local/tmp/rgame >/dev/null
+  P="/data/data/$PKG/files"
+  adb shell "mkdir -p $P/packs $P/games && rm -rf $P/packs/rgss $P/games/rgss-ci && cp -r /data/local/tmp/rpack $P/packs/rgss && cp -r /data/local/tmp/rgame $P/games/rgss-ci && chown -R $APP_UID:$APP_UID $P/packs $P/games && chmod -R 777 $P/games/rgss-ci && chmod -R 755 $P/packs && restorecon -R $P"
+  # PackManager.ready() cần tệp "version" khớp config; ở đây bỏ qua (mở thẳng Activity), nên không cần.
+  adb shell am force-stop "$PKG"
+  adb logcat -c
+  adb shell am start -W -n "$PKG/vn.aow.monika.runner.RgssGameActivity" --es title "CI rgss" --es game_path "$P/games/rgss-ci" >/dev/null
+  result=TIMEOUT
+  for i in $(seq 1 30); do
+    sleep 4
+    adb logcat -d > "$OUT/games/rgss.logcat.txt" 2>/dev/null
+    if grep -q "SDL: Failed to register methods" "$OUT/games/rgss.logcat.txt"; then result=JNI_REGISTER; break; fi
+    if adb shell "test -f $P/games/rgss-ci/monika-ok.txt" 2>/dev/null; then result=OK; break; fi
+    if grep -qE "MonikaGame: error|FATAL EXCEPTION|Fatal signal" "$OUT/games/rgss.logcat.txt"; then result=CRASH; break; fi
+  done
+  grep -q "MonikaGame: rgss-lib-loaded" "$OUT/games/rgss.logcat.txt" && echo "rgss-lib-loaded: có" || echo "rgss-lib-loaded: KHÔNG"
+  adb exec-out screencap -p > "$OUT/games/rgss.png" 2>/dev/null || true
+  adb logcat -d > "$OUT/games/rgss.logcat.txt" 2>/dev/null
+  echo "$result rgss (nhúng)" | tee -a "$OUT/games/summary.txt"
+  if [ "$result" != OK ]; then
+    echo "--- logcat (lọc) của rgss ---"
+    grep -E "MonikaGame|Monika|AndroidRuntime|SDL|mkxp|ruby|Fatal signal|DEBUG|Diagnostics|UnsatisfiedLink" "$OUT/games/rgss.logcat.txt" | tail -80 | cut -c1-260
+    echo "--- hết ---"
+  fi
+  [ "$result" = OK ] || fail=1
+fi
 exit $fail

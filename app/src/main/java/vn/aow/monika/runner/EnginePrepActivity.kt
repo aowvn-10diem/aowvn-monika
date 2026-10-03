@@ -134,7 +134,7 @@ class EnginePrepActivity : ComponentActivity() {
     private fun play() {
         if (started) return
         started = true
-        route?.open?.invoke(this, entry?.takeIf { it.isFile }, title, intent.getStringExtra(EXTRA_KEY))
+        route?.open?.invoke(this, entry, title, intent.getStringExtra(EXTRA_KEY))
         finish()
     }
 

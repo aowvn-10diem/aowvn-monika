@@ -81,6 +81,16 @@
             android:theme="@style/Theme.Monika.Fullscreen" />
 
         <activity
+            android:name=".runner.RgssGameActivity"
+            android:process=":game"
+            android:taskAffinity="com.aow.monika.rgss"
+            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize|density|uiMode|layoutDirection"
+            android:screenOrientation="sensorLandscape"
+            android:windowSoftInputMode="adjustPan"
+            android:exported="false"
+            android:theme="@style/Theme.Monika.Fullscreen" />
+
+        <activity
             android:name=".runner.KirikiriGameActivity"
             android:process=":game"
             android:taskAffinity="com.aow.monika.kirikiri"
