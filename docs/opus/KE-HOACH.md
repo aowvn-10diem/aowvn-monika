@@ -53,7 +53,7 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | O01 | Trả lời hộp thư; cập nhật bảng này sau mỗi mốc | Opus | — | `BANG-TIN.md` không còn thư `mở` quá 1 lượt kiểm tra | lặp lại |
 | O02 | Phương án câu 6 + 7 (kiểm thử không máy thật, crash log) | Opus | — | File `docs/opus/<ngày>-kiem-thu-chan-doan.md` | xong (`docs/opus/2026-10-03-kiem-thu-chan-doan.md`) |
 
-**Thứ tự (03/10 15:10).** Sonnet: sửa xong V16 → V18 → V19 → R6; V17, V21, V22 xen lúc chờ CI (V21 sau khi V20 đã gộp, vì cùng sửa `diag/Diagnostics.kt`). **Sol:** V23 (PR #5) → V20 → `sol/H01-H03` (tiếp quản PR #4 của Haiku, sửa H03) → H02 (sửa script theo `tra-loi-006.md`). Mỗi việc một PR, gộp khi Build xanh và PM đã comment "PM duyệt".
+**Thứ tự (03/10 16:20, CI bị chặn G10).** Sonnet: V17 (P2, kiểm bằng Gradle cục bộ) → V22 phần D2; V18 dừng ở `ec9f553`, CI mở lại thì chạy Emulator Test API 34 trước tiên, rồi V19 → R6. **Sol:** gộp PR #5 (Build đã xanh trước khi bị chặn) → `sol/H01-H03` + H02 (PR chỉ đụng tài liệu/script Python: Build không chạy, nên chỉ cần PM duyệt) → sửa PR #6 khi CI mở lại.
 
 Việc tiếp theo của từng khối (R2–R7, P2–P7, S0–S7) nằm sẵn trong file phương án. Khi một việc trên `xong`, PM thêm việc kế tiếp vào bảng; đội thi công không tự mở việc ngoài bảng.
 
@@ -83,6 +83,7 @@ Sonnet hỏi sếp khi tới bước cần; mỗi lần một câu.
 | G7 | Thử Kirikiri 0.7.3 trên máy thật theo `TEST-MAY-THAT.md` (H03) | Sau V05 + H03 | chờ |
 | G8 | Xin tác giả bản port mkxp-z (`BookerRues9`/`thehatkid`) giấy phép cho `Makefile`, `*.mk`, `get_deps.sh`. Không có thì phải viết lại script dựng (`tra-loi-004.md`) | Trước R7 | sếp đã hỏi tác giả (03/10), chờ trả lời; đội cứ chạy theo plan. Tới R7 chưa có giấy phép thì làm hướng B (viết lại script dựng) |
 | G9 | Cài secrets Firebase Test Lab (`GCP_SA_KEY`, `GCP_PROJECT_ID`) theo `docs/TEST-LAB.md`: workflow `test-lab.yml` chưa chạy lần nào. Mở đường chạy game tự sinh trên máy ARM thật (Game Loop) | Khi tiện, không chặn đội | sếp đang làm (hướng dẫn chi tiết: `docs/TEST-LAB.md`, 03/10) |
+| G10 | GitHub Actions bị chặn vì thanh toán (từ ~16:02 03/10, thư 007): sửa thẻ/hạn mức chi tiêu ở Settings → Billing của `aowvn-10diem`, **hoặc** công khai repo (G5), vì repo công khai được chạy Actions miễn phí trên runner chuẩn | Ngay: mọi việc cần CI đang đứng | chờ sếp |
 
 ## 5. Nhịp theo dõi
 
