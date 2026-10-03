@@ -152,7 +152,7 @@ var win = new CiWindow(); win.visible = true;
 """
 for i, src in enumerate([S0, S1, S2, S3]):
     d = "%s/s%d" % (g, i); os.makedirs(d)
-    open(d + "/startup.tjs", "w", encoding="utf-8").write("// startup.tjs: game kiểm thử tự sinh của CI (Aow Monika), tầng %d. Không có tài nguyên bản quyền.\n" % i + src)
+    open(d + "/startup.tjs", "w", encoding="utf-8").write("// startup.tjs: CI auto-generated test game (Aow Monika), tier %d. ASCII only (krkr TJS2 text loader).\n" % i + src)
     w = wave.open(d + "/beep.wav", "wb"); w.setnchannels(1); w.setsampwidth(2); w.setframerate(22050)
     w.writeframes(b"".join(struct.pack("<h", int(12000 * math.sin(2 * math.pi * 440 * i2 / 22050))) for i2 in range(22050))); w.close()
 PY
