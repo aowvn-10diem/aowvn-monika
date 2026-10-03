@@ -53,7 +53,7 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | O01 | Trả lời hộp thư; cập nhật bảng này sau mỗi mốc | Opus | — | `BANG-TIN.md` không còn thư `mở` quá 1 lượt kiểm tra | lặp lại |
 | O02 | Phương án câu 6 + 7 (kiểm thử không máy thật, crash log) | Opus | — | File `docs/opus/<ngày>-kiem-thu-chan-doan.md` | xong (`docs/opus/2026-10-03-kiem-thu-chan-doan.md`) |
 
-**Thứ tự (03/10 16:20, CI bị chặn G10).** Sonnet: V17 (P2, kiểm bằng Gradle cục bộ) → V22 phần D2; V18 dừng ở `ec9f553`, CI mở lại thì chạy Emulator Test API 34 trước tiên, rồi V19 → R6. **Sol:** gộp PR #5 (Build đã xanh trước khi bị chặn) → `sol/H01-H03` + H02 (PR chỉ đụng tài liệu/script Python: Build không chạy, nên chỉ cần PM duyệt) → sửa PR #6 khi CI mở lại.
+**Thứ tự (03/10 16:20, CI bị chặn G10).** Sonnet: V17 (P2, kiểm bằng Gradle cục bộ) → V22 phần D2; V18 dừng ở `ec9f553`, CI mở lại thì chạy Emulator Test API 34 trước tiên, rồi V19 → R6. **Sol:** gộp PR #5 (Build đã xanh trước khi bị chặn) → `sol/H01-H03` (chỉ đụng tài liệu, Build không chạy: chỉ cần PM duyệt) → H02 (có đụng `scripts/*.py`, Build sẽ chạy nhưng đang bị chặn: trong lúc G10 chưa xong, PM duyệt dựa trên output chạy script cục bộ dán trong mô tả PR) → sửa PR #6 khi CI mở lại.
 
 Việc tiếp theo của từng khối (R2–R7, P2–P7, S0–S7) nằm sẵn trong file phương án. Khi một việc trên `xong`, PM thêm việc kế tiếp vào bảng; đội thi công không tự mở việc ngoài bảng.
 
