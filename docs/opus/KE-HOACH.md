@@ -2,7 +2,7 @@
 
 > Chủ: Opus (PM, sếp giao 03/10/2026). Đội thi công: **Sonnet** (việc khó: native, engine, luồng app) và **Haiku** (việc nhẹ, máy móc: tài liệu, kiểm tra, sửa nhỏ có test sẵn). Sếp quyết việc ngoài kỹ thuật (mục 4).
 > Đây là **nguồn sự thật duy nhất về tiến độ**. Mỗi phương án chi tiết nằm trong `docs/opus/<ngày>-<chủ đề>.md`; bảng này chỉ trỏ tới.
-> Cập nhật: 03/10/2026 11:55 (GMT+7), `main` @ `bd75eb7`, app 0.7.3 (versionCode 38), `configVersion` 31.
+> Cập nhật: 03/10/2026 12:45 (GMT+7), `main` @ `8229bae`, app 0.7.3 (versionCode 38), `configVersion` 31.
 
 ## 1. Mốc
 
@@ -26,7 +26,7 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 |---|---|---|---|---|---|
 | V01 | R0: spike mkxp-z ra `libmkxp-z.so` arm64, ghi `docs/opus/ket-qua/R0.md`. Ngưỡng dừng: 5 nguyên nhân hỏng khác nhau (đã dùng 2) | Sonnet | — | Artifact `.so` + bảng kích thước | xong (7ec1c47: R0.md; còn cổng G1 hỏi sếp 1 game XP) |
 | V02 | R1: `build-rgss.yml` + `engines/rgss/`, áp `hop-thu/tra-loi-001.md` | Sonnet | V01 | `grep`/`nm`/`strings` theo thư 001; máy sạch dựng ra `rgss-{abi}.zip` | xong (run 3 xanh; R1.md: gói rgss-arm64 7,6 MiB, JNI+OpenSSL kiểm đạt; chưa publish) |
-| V07 | R1.1 theo `tra-loi-003.md`: bỏ OpenSSL (`-DMKXPZ_SSL`, `openssl` của Ruby), cắt ký hiệu rồi đo lại `libSDL2_ttf.so`; theo `tra-loi-004.md`: ghim commit bản port, ghi trạng thái giấy phép vào `UPSTREAM.md` | Sonnet | V02 | `readelf`/`strings` không còn OpenSSL; bảng kích thước trước/sau; gói `rgss` arm64 ≤ 15 MB | chờ |
+| V07 | R1.1 theo `tra-loi-003.md`: bỏ OpenSSL (`-DMKXPZ_SSL`, `openssl` của Ruby), cắt ký hiệu rồi đo lại `libSDL2_ttf.so`; theo `tra-loi-004.md`: ghim commit bản port, ghi trạng thái giấy phép vào `UPSTREAM.md` | Sonnet | V02 | `readelf`/`strings` không còn OpenSSL; bảng kích thước trước/sau; gói `rgss` arm64 ≤ 15 MB | xong (PM đóng 03/10 theo `2ee93cc`: bỏ OpenSSL + bước kiểm trong `build-rgss.yml`; ghim `b668e08` và trạng thái giấy phép trong `engines/rgss/UPSTREAM.md`; gói arm64 7,6 MiB, v7a 7,1 MiB đều ≤ 15 MB nên không cần đo riêng `libSDL2_ttf.so`) |
 | V08 | R2: module `:rgss` (9 file Java SDL 2.26.3 đổi gói `vn.aow.monika.rgss.sdl`, bước 3 của thư 001) | Sonnet | V02 | `assembleRelease` xanh; `dexdump` thấy cả hai `SDLActivity`; đo APK tăng | xong (6f0623e: module :rgss biên dịch, :app + toàn bộ test xanh trên CI; chưa đo APK tăng) |
 | V03 | P0: spike Ren'Py, ghi `docs/opus/ket-qua/P0.md` | Sonnet | — | Bảng đường dẫn + kích thước thật | xong (P0.md, run 5 xanh) |
 | V04 | P1: `build-renpy-pack.yml` (song song, chỉ CI) | Sonnet | V03 | Artifact `renpy8-{abi}.zip` + `.sha256` | xong (9d67241, run 1 xanh: renpy8-arm64-v8a.zip ≈ 22,6 MB, SHA-256 29c32501…a554c; armv7 cùng run; chưa publish — chờ cổng G5) |
