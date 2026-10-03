@@ -1,0 +1,55 @@
+# HANDOFF cho Sonnet (phiên thi công) — đọc file này đầu tiên khi phiên mới/phiên mất
+
+> Sao lưu 03/10/2026 (GMT+7). Mục đích: container của phiên có thể bị thu hồi (đã xảy ra một lần: mất bản clone cục bộ, Android SDK, vòng lặp nền, việc chưa commit). Mọi thứ cần để tiếp tục nằm trong repo này, **không có bí mật**.
+> Chủ dự án gọi là **"sếp"**. Đọc tiếp: `CLAUDE.md` (luật dự án) → `docs/opus/KE-HOACH.md` (bảng việc, nguồn sự thật) → `docs/opus/BANG-TIN.md` + `docs/opus/hop-thu/README.md` (kênh với Opus).
+
+## 1. Cách làm việc với sếp (bắt buộc)
+- Xưng **"sếp"**, trả lời **tiếng Việt**, **kết luận trước**, trực tiếp, không rào đón. Nội dung giao sếp luôn đầy đủ (chỉ nén phần suy nghĩ/meta).
+- **Không đoán** số liệu/fact: không chắc thì hỏi. Việc lặp ≥ 2–3 lần → đề xuất dựng script.
+- Giờ báo cáo luôn theo **GMT+7**. Không dán token/khóa/mật khẩu vào chat hay repo.
+- Gửi file cho sếp: `SendUserFile` (≤ 30 MiB) hoặc Pixeldrain (`scripts/pixeldrain-upload.sh`, key do sếp cấp, không ghi vào repo). Mỗi phiên bản Monika chỉ phát hành **một APK universal**.
+- Commit kết thúc bằng 2 dòng: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` và `Claude-Session: <URL phiên>`. Tiền tố commit việc: `[viec-<mã>]`; thư Opus: `[hỏi-opus]`, `[xong-opus]`.
+- Sếp **đã nhận việc công khai mã nguồn và giấy phép** (cổng G5, G8 trong KE-HOACH) — không hỏi lại, nhưng **không phát hành gói GPL mới lên repo packs công khai** cho tới khi sếp báo xong (dùng release riêng tư của repo này để thử).
+- Opus = PM thay sếp (chọn hướng, thứ tự, duyệt cổng). Sonnet = thi công việc khó. Haiku = việc nhẹ (dòng `Giao: Haiku` trong KE-HOACH). Việc ngoài kỹ thuật (tiền, pháp lý, khóa ký, máy thật, game thử) vẫn do sếp.
+
+## 2. Môi trường & hạ tầng
+| Mục | Sự thật |
+|---|---|
+| Repo | `aowvn-10diem/aowvn-monika` (private). Clone: `git clone https://github.com/aowvn-10diem/aowvn-monika /home/user/aowvn-monika`; đặt `git config user.name Claude; user.email noreply@anthropic.com`. Repo packs công khai (asset release): `aowvn-10diem/aowvn-monika-packs`. |
+| Local | Container **không có Android SDK/Gradle cache** sau khi tái tạo → biên dịch/test bằng **CI** (đẩy nhánh → workflow `Build`). Nhánh làm việc: tạo `viec-<mã>` rồi merge `--no-ff` vào `main` khi xanh. |
+| Gradle test | `./gradlew testDebugUnitTest` (cần SDK; nếu có thể). `build.yml` bỏ qua commit chỉ sửa `docs/**`/`*.md`. |
+| Ký APK / phát hành | Workflow `Release` (dispatch, input `tag`) **ký bằng GitHub Secrets** (đã có) và đăng Releases — không cần khóa cục bộ. Tải APK: `curl -L -H "Accept: application/octet-stream" https://api.github.com/repos/aowvn-10diem/aowvn-monika/releases/assets/<id>` (cần token của phiên). Kiểm chữ ký: `apksigner verify --print-certs` → SHA-256 đúng là `c46902e9…d45ab20c`. |
+| Secrets | `PACKS_TOKEN` (đẩy lên repo packs), `PIXELDRAIN_API_KEY`, secret ký APK, `CLOUDFLARE_API_TOKEN` (sync-config hay đỏ vì thiếu). Giá trị do sếp giữ. |
+| Opus | Phiên ngoài, trả lời trên **nhánh** `docs/opus-tra-loi` (không push được `main`) — gộp bằng `git pull --no-rebase origin docs/opus-tra-loi`. `BANG-TIN.md` xung đột thì giữ hàng của cả hai. |
+| Lịch tự kiểm | `mcp__Claude_Code_Remote__send_later` (15–20 phút, rảnh 4 lượt liền → 30, 23:00–06:00 GMT+7 → 60). Mỗi lượt: (1) `git ls-remote origin` so SHA nhánh Opus; (2) CI; (3) việc đang chờ. Vòng lặp nền trong container sẽ mất khi container bị thu hồi. |
+
+## 3. Workflow có sẵn (dispatch bằng `mcp__github__actions_run_trigger`)
+`build.yml` (push) · `release.yml` (`tag`) · `emulator-test.yml` (`apis`, `rgss_tag`) · `build-kirikiri.yml` (`publish`) · `build-rgss.yml` (`abi`, `port_ref`, `publish`, `private_only`) · `build-renpy-pack.yml` (`version`, `publish`) · `spike-rgss.yml` · `spike-renpy.yml` · `sync-config.yml` · `native-check.yml` · `test-lab.yml` · `build-engines.yml` · `mirror-pack.yml`/`publish-pack.yml`.
+
+## 4. Bài học đã trả giá (đừng lặp lại)
+- `list_workflow_runs` **bỏ qua `per_page`** → luôn dùng `workflow_runs_filter` (`{"branch":"…"}` hoặc `{"created":">2026-10-03T00:00:00Z"}`); release.yml không lọc trả hàng chục lượt rất dài.
+- Log CI: `get_job_logs` với `tail_lines` 75–130 mới thấy lỗi thật; `failed_only` cần `run_id`. Artifact/log tải qua `gh api` bị chặn redirect.
+- YAML: tên bước có `: ` (dấu hai chấm + cách) làm workflow hỏng im lặng (run hiện tên = đường dẫn file). Kiểm `python3 -c "import yaml;yaml.safe_load(open(f))"` trước khi push.
+- `pkill -f <mẫu>` có thể giết chính shell của lệnh → lưu PID rồi `kill`.
+- `get_deps.sh` của bản port không có quyền thực thi → chạy `bash`; thiếu `make_xxd.sh` (README bỏ sót). Gói Ren'Py: RAPT **không** chứa `private/` → dùng `launcher distribute --no-archive`.
+- Đừng nối `test; commit && push` mà không kiểm mã thoát test (từng làm phát hành khi test đỏ).
+- Chữ ký, `configVersion` (tăng khi sửa `config/monika-config.json`), `modules.*` phải nằm đúng chỗ — `ConfigTest` chặn.
+- Test tải trình duyệt từng đỏ "ngẫu nhiên": gốc là race tên file (đã sửa, có test tái hiện).
+
+## 5. Trạng thái (cập nhật lần cuối 03/10/2026 ~10:00 GMT+7)
+- **Phát hành:** v0.7.3 (Kirikiri nhúng sâu, menu Việt hóa). `configVersion` 31, versionCode 38.
+- **Đã xong:** E0 (EngineRoutes/EnginePrepActivity/`allowExternalApp`), R0, R1 (gói `rgss-arm64-v8a.zip` 7,6 MiB), R4 (MkxpConfigWriter), P0, P1 (gói `renpy8` ≈ 22,6 MB, chưa publish), V09, V10, V11, V13.
+- **Đang làm (nhánh `viec-v08-r2`):** V08 = R2 (module `:rgss`, 9 file Java SDL 2.26.3 đổi gói `vn.aow.monika.rgss.sdl`, script `engines/rgss/rename-sdl-java.py`) + V12 = R3 (`RgssGameActivity`, route `rgss`, `PackManager.RGSS`, Emulator Test game XP tối thiểu, `build-rgss.yml` `private_only`). Chưa biết CI xanh hay đỏ (không biên dịch cục bộ được). Việc kế: CI xanh → merge main → dựng gói rgss `publish=true, private_only=true` → `emulator-test.yml rgss_tag=<tag>` → ghi `ket-qua/R3.md`.
+- **Việc sau R3 (theo `docs/opus/2026-10-03-nhung-renpy-rgss.md`):** R5 (lớp phủ/phím + đăng ký config `modules.rgss`, tắt app ngoài cho `rgss`/`kirikiri` khi gói phát hành), R6 (5 game thử — hỏi sếp), R7 (RTP/save/chẩn đoán; cần armeabi-v7a), khối P (Ren'Py 8: P2–P7), P7 (Ren'Py 7), khối S (Symbian, phương án `2026-10-03-nhung-symbian-eka2l1.md`, làm sau).
+- **Cổng sếp (KE-HOACH mục 4):** G1 (1 game RPG Maker XP), G2 (5 game R6 + máy thật), G3 (2 game Ren'Py 7/8), G4 (Symbian A1/A2), G5/G8 (công khai mã nguồn + giấy phép build file bản port mkxp-z — **sếp tự làm**), G6 (nhắn RAdmin duyệt client "AowMonika"), G7 (thử Kirikiri 0.7.3 trên máy thật).
+- **Haiku (việc nhẹ, dòng `Giao: Haiku`):** H01 (sửa đầu `GIAO-TIEP-VOI-OPUS.md`), H02 (gen-architecture), H03 (mục thử Kirikiri trong `TEST-MAY-THAT.md`).
+
+## 6. Tài nguyên đã sao lưu trong repo
+- Phương án Opus: `docs/opus/2026-10-03-nhung-renpy-rgss.md`, `2026-10-03-nhung-symbian-eka2l1.md`; thư: `docs/opus/hop-thu/`; kết quả: `docs/opus/ket-qua/{R0,R1,P0}.md`.
+- Plan RPG Maker gốc của sếp (v3, đã bị phương án Opus thay thế nhưng chứa bảng nguồn đã xác minh): `docs/opus/tai-nguyen/PLAN-rpgmaker-monika-v3.md`.
+- Tài liệu dự án: `docs/KIEN-TRUC*.md`, `docs/plan-*.md`, `docs/HUONG-DAN-QUAN-TRI.md`, `docs/CAP-NHAT.md`, `CLAUDE.md`.
+- Prompt cho phiên khác: `docs/opus/hop-thu/PROMPT-OPUS.md`, `PROMPT-HAIKU.md`.
+- **Không sao lưu (cố ý):** khóa ký, token, key Pixeldrain/Cloudflare, ảnh/zip kết quả test cũ, file `.key` trong thư mục upload của sếp.
+
+## 7. Khởi động lại phiên (làm theo thứ tự)
+1. Clone repo, đặt git identity (mục 2). 2. `git fetch --all`; xem nhánh `viec-*`, `docs/opus-tra-loi`. 3. Đọc `KE-HOACH.md` (việc `đang làm`), `BANG-TIN.md` (thư `mở`). 4. Kiểm CI nhánh đang làm bằng `workflow_runs_filter`. 5. Đặt lại `send_later` (mục 2). 6. Báo sếp ngắn: đã phục hồi, đang ở việc nào.
