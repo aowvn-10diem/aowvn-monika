@@ -108,3 +108,13 @@ jobs:
           if [ -f out/games.failed ]; then echo "::error::Có hệ máy không lên hình — xem games/summary.txt, games/*.png, games/*.logcat.txt"; cat out/games/summary.txt 2>/dev/null; exit 1; fi
           if [ -f out/maestro.failed ] || [ -f out/crash.flag ]; then echo "::error::Đỏ — xem crash.txt/logcat.txt trong Artifacts"; cat out/crash.txt 2>/dev/null; exit 1; fi
           echo "Xanh: mở app hai lần không crash trên API ${{ matrix.api }}."
+
+  don-dep:
+    needs: [build, emulator]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - name: Xóa release tạm ci-apk (V14)
+        env: { GH_TOKEN: "${{ github.token }}", GH_REPO: "${{ github.repository }}" }
+        run: gh release delete "ci-apk-${{ github.run_id }}" --yes --cleanup-tag || true
