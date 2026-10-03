@@ -63,6 +63,7 @@ class RgssGameActivity : SDLActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         GAME_PATH = intent.getStringExtra(EXTRA_GAME_PATH).orEmpty() // PHẢI đặt trước super.onCreate: luồng native đọc trường này
+        Log.i("MonikaGame", "rgss game_path=$GAME_PATH")
         val manifest = File(packDir(), "manifest.json").takeIf { it.isFile }?.readText().orEmpty()
         Diagnostics.begin(this, "rgss", "mkxp-z", manifest, intent.getStringExtra(EXTRA_TITLE).orEmpty(), "RPG Maker XP/VX/Ace")
         clock = PlayClock(intent.getStringExtra(PlayClock.EXTRA_KEY))

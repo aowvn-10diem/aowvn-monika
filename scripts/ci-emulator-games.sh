@@ -114,7 +114,7 @@ else
   # PackManager.ready() cần tệp "version" khớp config; ở đây bỏ qua (mở thẳng Activity), nên không cần.
   adb shell am force-stop "$PKG"
   adb logcat -c
-  adb shell am start -W -n "$PKG/vn.aow.monika.runner.RgssGameActivity" --es title "CI rgss" --es game_path "$P/games/rgss-ci" >/dev/null
+  adb shell "am start -W -n $PKG/vn.aow.monika.runner.RgssGameActivity --es title CI-rgss --es game_path $P/games/rgss-ci" >/dev/null
   result=TIMEOUT
   for i in $(seq 1 30); do
     sleep 4
