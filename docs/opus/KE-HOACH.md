@@ -2,7 +2,7 @@
 
 > Chủ: Opus (PM, sếp giao 03/10/2026). Đội thi công: **Sonnet** (việc khó: native, engine, luồng app) và **Haiku** (việc nhẹ, máy móc: tài liệu, kiểm tra, sửa nhỏ có test sẵn). Sếp quyết việc ngoài kỹ thuật (mục 4).
 > Đây là **nguồn sự thật duy nhất về tiến độ**. Mỗi phương án chi tiết nằm trong `docs/opus/<ngày>-<chủ đề>.md`; bảng này chỉ trỏ tới.
-> Cập nhật: 03/10/2026 12:55 (GMT+7), `main` @ `8229bae`, app 0.7.3 (versionCode 38), `configVersion` 31.
+> Cập nhật: 03/10/2026 14:55 (GMT+7), `main` @ `6313771`, app 0.7.3 (versionCode 38), `configVersion` 31.
 
 ## 1. Mốc
 
@@ -46,13 +46,14 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | V20 | D1 ngăn xếp đọc được: (1) **từ lần phát hành tới** đính `mapping-<tag>.txt` vào release + retrace trong `crash-reports.sh`; (2) workflow dựng gói giữ ký hiệu `.so` (`symbols-*.zip`, bảng BuildId); (3) đọc tombstone protobuf đúng trường (lấy số trường từ `tombstone.proto` AOSP); (4) API 30: thêm dòng `DEBUG` quanh lúc chết | Sonnet | — (phần 3–4 sau V19) | Retrace ra tên lớp gốc; báo cáo K10 trên API 34 có `build_id` + `rel_pc`, `crash-reports.sh` in tên hàm | chờ |
 | V21 | D5 nút "Báo lỗi game này" trong menu game (ảnh `PixelCopy` + mô tả + vệt + logcat 60 giây) + D4 thêm thông tin môi trường. Đọc mã Worker trước (giới hạn ảnh) | Sonnet | — (A1 đã chốt 03/10: ảnh mặc định bật, chọn loại lỗi bằng nút, gõ tùy chọn) | Test Robolectric màn gửi; Emulator Test tạo được báo cáo `kind=user` kèm ảnh; unit test chuỗi `env` | chờ |
 | V22 | D2 mẫu lỗi engine trong config (`engines.<id>.errorPatterns`, mặc định rỗng) + D3 theo dõi màn đen bằng `PixelCopy` + D6 `crash-reports.sh --by-fp` | Sonnet | V19 | Script XP tự sinh `raise "monika-ci"` → có báo cáo `engine:rgss`; K3 bình thường không tạo báo cáo màn đen | chờ |
+| V23 | Kho artifact của Actions lại đầy (Emulator Test run 20 không tải lên được `ket-qua`, mất log gỡ lỗi). Gốc: 7 workflow tải artifact **không đặt `retention-days`** (mặc định giữ rất lâu): `build-engines`, `build-kirikiri`, `build-renpy-pack`, `build-rgss`, `spike-renpy`, `spike-rgss`, `test-lab`. Sửa: (1) thêm `retention-days: 3` cho mọi `upload-artifact` (gói đã có bản ở release riêng tư); (2) workflow `don-dep-actions.yml` (`workflow_dispatch` + cron hằng ngày, `permissions: actions: write, contents: write`, dùng `GITHUB_TOKEN`) xóa artifact cũ hơn 2 ngày và mọi release `ci-apk-*` (gồm 2 release của run 16, 17) | Sonnet | — | `grep` mọi `upload-artifact` đều có `retention-days`; chạy tay workflow dọn: hết `ci-apk-*`, Emulator Test kế tiếp tải được `ket-qua-api-*` | chờ |
 | H01 | Sửa đầu `docs/GIAO-TIEP-VOI-OPUS.md` thành 0.7.3 / versionCode 38 / `configVersion` 31. Mục 4: thêm dòng "E0 xong", "R4 xong" | Haiku | — | Diff chỉ đụng file đó | chờ |
 | H02 | Chạy lại `python3 scripts/gen-architecture.py`, commit `docs/KIEN-TRUC.md`. Nếu bảng module vẫn thiếu `:libretrodroid`/`:kirikiri` thì **không sửa script**: ghi `kẹt` và gửi thư | Haiku | — | `git diff` chỉ đụng `docs/KIEN-TRUC.md` | chờ |
 | H03 | `docs/TEST-MAY-THAT.md`: thêm mục "Kirikiri (0.7.3)" cho sếp thử: mở game `.xp3` → màn chuẩn bị tự tải gói → vào game → chạm, âm thanh, lưu/tải, tua nhanh, menu tiếng Việt, thoát. Máy 32-bit phải thấy thông báo chưa hỗ trợ. Nguồn: `docs/plan-kirikiri.md` + mục 4 của tài liệu bàn giao | Haiku | — | Chỉ đụng tài liệu; mỗi dòng là một thao tác sếp làm được | chờ |
 | O01 | Trả lời hộp thư; cập nhật bảng này sau mỗi mốc | Opus | — | `BANG-TIN.md` không còn thư `mở` quá 1 lượt kiểm tra | lặp lại |
 | O02 | Phương án câu 6 + 7 (kiểm thử không máy thật, crash log) | Opus | — | File `docs/opus/<ngày>-kiem-thu-chan-doan.md` | xong (`docs/opus/2026-10-03-kiem-thu-chan-doan.md`) |
 
-**Thứ tự cho Sonnet (03/10 12:55):** V16 (R5) → V18 → V19 → R6. V20 phần (1) làm ngay trong lần phát hành tới. V17, V20–V22 xen vào lúc chờ CI; A1 đã chốt nên V21 làm được.
+**Thứ tự cho Sonnet (03/10 14:55):** V23 (kho artifact đầy làm mất log gỡ lỗi; việc nhỏ) → sửa xong V16 (Emulator Test run 20: `KEY_TIMEOUT rgss phím Enter → Input::C`) → V18 → V19 → R6. V20 phần (1) làm ngay trong lần phát hành tới. V17, V20–V22 xen vào lúc chờ CI.
 
 Việc tiếp theo của từng khối (R2–R7, P2–P7, S0–S7) nằm sẵn trong file phương án. Khi một việc trên `xong`, PM thêm việc kế tiếp vào bảng; đội thi công không tự mở việc ngoài bảng.
 
@@ -86,4 +87,4 @@ Sonnet hỏi sếp khi tới bước cần; mỗi lần một câu.
 
 - Opus kiểm mỗi **15 phút** (sếp chốt 03/10): `git ls-remote origin`, SHA không đổi thì dừng. Rảnh 4 lượt liền → 30 phút; 23:00–06:00 → 60 phút; có việc mới thì quay về 15 phút. Có commit mới → đọc `BANG-TIN.md`, bảng này, `git log` từ lần trước và trạng thái CI.
 - Sonnet kiểm cùng nhịp, theo cách ít token chốt ở `pm-tra-loi-001.md`.
-- Opus báo sếp chỉ khi qua mốc, có việc kẹt, hoặc có cổng cần quyết.
+- Opus **không nhắn sếp chi tiết** (sếp chốt 03/10): tiến độ ghi lên trang theo dõi https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d (Opus cập nhật mỗi lượt có thay đổi). Chỉ nhắn sếp khi cần sếp quyết, 1–2 dòng.
