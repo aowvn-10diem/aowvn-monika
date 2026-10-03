@@ -150,6 +150,9 @@ if (Storages.isExistentStorage(saveFile)) {
 }
 var win = new CiWindow(); win.visible = true;
 """
+for name, enc, bom in (("v_bom", "utf-8", b"\xef\xbb\xbf"), ("v_u16", "utf-16-le", b"\xff\xfe")):
+    d = "%s/%s" % (g, name); os.makedirs(d)
+    open(d + "/startup.tjs", "wb").write(bom + S0.encode(enc))
 for i, src in enumerate([S0, S1, S2, S3]):
     d = "%s/s%d" % (g, i); os.makedirs(d)
     open(d + "/startup.tjs", "w", encoding="utf-8").write("// startup.tjs: CI auto-generated test game (Aow Monika), tier %d. ASCII only (krkr TJS2 text loader).\n" % i + src)
@@ -160,8 +163,8 @@ PY
   adb shell rm -rf /data/local/tmp/krkr-game; adb push "$G" /data/local/tmp/krkr-game >/dev/null
   adb shell "mkdir -p $GP && rm -rf $GP/* && cp -r /data/local/tmp/krkr-game/. $GP/ && chown -R $APP_UID:$APP_UID /data/data/$PKG/files/games && chmod -R 777 $GP && restorecon -R $GP"
   adb shell appops set "$PKG" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1 || true
-  kopen() { GD="$GP/$1"; adb shell am force-stop "$PKG"; adb logcat -c; adb shell "rm -f $GD/monika-ready.txt $GD/monika-touch.txt $GD/monika-audio.txt $GD/monika-load.txt"
-            adb shell "am start -W -n $PKG/vn.aow.monika.runner.KirikiriGameActivity --es title CI-krkr --es aow_game_path $GD/startup.tjs" >/dev/null; }
+  kopen() { GD="$GP/$1"; KT="${2:-$GD/startup.tjs}"; adb shell am force-stop "$PKG"; adb logcat -c; adb shell "rm -f $GD/monika-ready.txt $GD/monika-touch.txt $GD/monika-audio.txt $GD/monika-load.txt"
+            adb shell "am start -W -n $PKG/vn.aow.monika.runner.KirikiriGameActivity --es title CI-krkr --es aow_game_path $KT" >/dev/null; }
   kwait() { for i in $(seq 1 "$2"); do adb shell "test -f $GD/$1" 2>/dev/null && return 0; sleep 2; done; return 1; }
   kshot() { adb exec-out screencap > "$1" 2>/dev/null; }
   kpix() { python3 - "$1" <<'PY'
@@ -178,6 +181,12 @@ PY
   kfail=0
   # Thăm dò theo tầng để biết engine sập ở đâu: s0 chỉ chạy script, s1 + cửa sổ/lớp, s2 + âm thanh, s3 đủ bài.
   best=-1
+  # Vòng dò cách mở: cùng nội dung s0 nhưng đường vào khác (thư mục / UTF-8 BOM / UTF-16LE BOM).
+  for v in "s0 DIR $GP/s0" "v_bom FILE" "v_u16 FILE"; do
+    set -- $v
+    if [ "$2" = DIR ]; then kopen "$1" "$3"; else kopen "$1"; fi
+    if kwait monika-ready.txt 10; then note "K2.var $1 $2 OK chạy được"; else note "K2.var $1 $2 FAIL"; fi
+  done
   for st in 0 1 2 3; do
     kopen "s$st"
     if kwait monika-ready.txt 15; then note "K2.s$st OK chạy được"; best=$st
