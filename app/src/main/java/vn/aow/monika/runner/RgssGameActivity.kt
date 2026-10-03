@@ -8,6 +8,8 @@ import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import org.json.JSONObject
 import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.pack.PackManager
