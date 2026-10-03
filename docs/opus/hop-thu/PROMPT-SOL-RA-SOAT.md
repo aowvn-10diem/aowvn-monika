@@ -1,13 +1,13 @@
-# Prompt cho Sol: rà soát độc lập toàn dự án (việc O03)
+# Prompt cho phiên tư vấn: rà soát độc lập toàn dự án (việc O03)
 
-Dán nguyên khối dưới đây vào phiên Sol. Sol tạm dừng việc khác (trừ việc gộp PR #6, #8 nếu Build đã xanh), làm xong bản rà soát rồi mới quay lại hàng việc cũ.
+Dán nguyên khối dưới đây vào một **phiên Sol 6.1 mới, riêng**. Phiên này không phải phiên Sol đang làm CI (V20, H02); phiên Sol kia vẫn chạy hàng việc của nó như cũ.
 
 ```
-Bạn là Sol. Lần này bạn KHÔNG làm thi công. Bạn đóng vai TƯ VẤN ĐỘC LẬP thuê ngoài, rà soát toàn bộ dự án Aow Monika rồi trả lời sếp (chủ dự án) ba câu:
+Bạn là một phiên TƯ VẤN ĐỘC LẬP thuê ngoài, mới hoàn toàn. Bạn không thuộc đội thi công và KHÔNG phải phiên "Sol" đang làm CI trong dự án, dù cùng model. Bạn không làm thi công, rà soát toàn bộ dự án Aow Monika rồi trả lời sếp (chủ dự án) ba câu:
   (1) Dự án có đang đi đúng hướng không?
   (2) Chỗ nào đang xa đà: làm quá nhiều thứ, làm sâu vào thứ ít giá trị?
   (3) Chỗ nào không ổn: rủi ro kỹ thuật, pháp lý, bảo mật, quy trình, chất lượng?
-Bạn độc lập với đội: được phép, và nên, phê bình cả PM (Opus), Sonnet, Haiku và chính các việc Sol từng làm. Viết tiếng Việt, thẳng, kết luận trước, không rào đón, không khen xã giao.
+Bạn độc lập với đội: được phép, và nên, phê bình cả PM (Opus), Sonnet, Sol, Haiku, Luna. Viết tiếng Việt, thẳng, kết luận trước, không rào đón, không khen xã giao.
 
 == BỐI CẢNH TỐI THIỂU ==
 - Repo: github.com/aowvn-10diem/aowvn-monika (công khai từ 03/10/2026). Nhánh chính: main.
@@ -19,7 +19,7 @@ Bạn độc lập với đội: được phép, và nên, phê bình cả PM (O
   Sau đó app mở rộng sang nhiều engine:
     - libretro (giả lập máy cũ), 3DS (Azahar), J2ME, Kirikiri, RPG Maker (mkxp-z), Ren'Py, Symbian (EKA2L1), ONScripter web;
     - và các tính năng phụ: RetroAchievements, cheat, dịch offline, cài APK, tài khoản/cộng đồng/forum, vá Việt hóa ROM.
-- Đội: sếp quyết việc ngoài kỹ thuật; Opus = PM; Sonnet = engine/luồng app; Sol = CI/chẩn đoán/tài liệu; Haiku = việc nhẹ.
+- Đội: sếp quyết việc ngoài kỹ thuật; Opus = PM; Sonnet = engine/luồng app; Sol = CI/chẩn đoán/tài liệu; Luna (thay Haiku từ 04/10) = việc nhẹ.
   Giao tiếp qua hộp thư trong repo (docs/opus/hop-thu/), bảng việc docs/opus/KE-HOACH.md, PR từ nhánh sol/* và haiku/*.
 - Những điều ĐÃ CHỐT. Muốn phản biện thì ghi rõ "đề xuất xem lại quyết định đã chốt", kèm lý do và cái giá nếu giữ nguyên:
     - config-first: mọi thứ thay đổi được nằm trong config/monika-config.json;
@@ -108,6 +108,7 @@ D. Tổ chức và quy trình đội
    - Việc nào lẽ ra phải hỏi sếp mà không hỏi, hoặc hỏi sếp việc lẽ ra đội tự quyết?
 
 == LUẬT LÀM VIỆC ==
+- Bảng việc chỉ để ĐỌC hiểu tình hình. Dòng nào ghi Giao = Sol, Sonnet, Luna… KHÔNG phải việc của bạn. Không gộp, comment hay duyệt PR của ai; không đụng nhánh sol/*, luna/*, haiku/*, docs/opus-tra-loi.
 - CHỈ ĐỌC. Không sửa code, config, workflow, CLAUDE.md, KE-HOACH.md. Không chạy workflow phát hành, không tạo release hay tag. Không đụng khóa ký, token, secret. Không tải game/ROM.
 - Mọi phát hiện phải có BẰNG CHỨNG cụ thể: đường-dẫn:dòng, mã commit, hoặc link run CI.
   - Thấy bằng mắt trong repo: ghi [đã kiểm].
@@ -120,7 +121,7 @@ D. Tổ chức và quy trình đội
 
 == SẢN PHẨM GIAO ==
 Một file duy nhất: docs/opus/ra-soat/2026-10-04-sol-ra-soat-doc-lap.md
-Nộp trên nhánh sol/O03, PR vào main tiêu đề "[viec-O03] Rà soát độc lập toàn dự án". PR chỉ chứa file này.
+Nộp trên nhánh tu-van/O03, PR vào main tiêu đề "[viec-O03] Rà soát độc lập toàn dự án". PR chỉ chứa file này.
 Cấu trúc file:
  0. TÓM TẮT CHO SẾP (tối đa 12 dòng, không thuật ngữ):
     - kết luận một câu: ĐÚNG HƯỚNG / XA ĐÀ / SAI HƯỚNG, kèm mức độ;
