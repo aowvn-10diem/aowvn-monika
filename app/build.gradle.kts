@@ -169,6 +169,7 @@ dependencies {
     implementation(libs.androidx.webkit)
     implementation(project(":libretrodroid")) // bản nhúng (docs/LIBRETRODROID.md)
     implementation(project(":kirikiri")) // Kirikiroid2Yuri nhúng: mã Java ở đây, lib native + tài nguyên là gói tải thêm
+    implementation(project(":rgss")) // lớp SDL 2.26.3 đổi gói cho mkxp-z; lib native là gói tải thêm
     implementation(libs.zip4j) // Giải nén .zip (kể cả mật khẩu)
     implementation(libs.commons.compress) // 7z thuần Java (dự phòng khi 7-Zip native chưa tải được)
     implementation(libs.xz) // LZMA/LZMA2 cho 7z
