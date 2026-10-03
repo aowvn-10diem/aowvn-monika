@@ -2,15 +2,15 @@
 
 > Chủ: Opus (PM, sếp giao 03/10/2026). Đội thi công: **Sonnet** (việc khó: native, engine, luồng app) và **Haiku** (việc nhẹ, máy móc: tài liệu, kiểm tra, sửa nhỏ có test sẵn). Sếp quyết việc ngoài kỹ thuật (mục 4).
 > Đây là **nguồn sự thật duy nhất về tiến độ**. Mỗi phương án chi tiết nằm trong `docs/opus/<ngày>-<chủ đề>.md`; bảng này chỉ trỏ tới.
-> Cập nhật: 03/10/2026 06:10 (GMT+7), `main` @ `abf636b`, app 0.7.3 (versionCode 38), `configVersion` 31.
+> Cập nhật: 03/10/2026 11:55 (GMT+7), `main` @ `bd75eb7`, app 0.7.3 (versionCode 38), `configVersion` 31.
 
 ## 1. Mốc
 
 | Mốc | Nội dung | Phương án | Trạng thái |
 |---|---|---|---|
 | M0 | Kirikiri 0.7.3 (menu tiếng Việt) phát hành | — | **xong** (đã gửi sếp APK); máy thật **[CHƯA KIỂM]** (G7) |
-| M1 | RPG Maker XP/VX/Ace nhúng (khối R), tắt app ngoài cho `rgss` và `kirikiri` | `2026-10-03-nhung-renpy-rgss.md` | R0, R1 (gói 7,6 MiB), R4 xong · tiếp R2 → R3 |
-| M2 | Ren'Py 8 nhúng (khối P) | như trên | P0, P1 xong (gói `renpy8` arm64 22,6 MB) · P2+ chờ R3 |
+| M1 | RPG Maker XP/VX/Ace nhúng (khối R), tắt app ngoài cho `rgss` và `kirikiri` | `2026-10-03-nhung-renpy-rgss.md` | R0, R1 (gói 7,6 MiB), R2, R4 xong · **R3 đạt trên API 34** (Emulator Test run 17 @ `bd75eb7`: game XP tự sinh ghi được `monika-ok.txt`; còn chạy API 30) · tiếp R5 (V16), armeabi-v7a (V15) |
+| M2 | Ren'Py 8 nhúng (khối P) | như trên | P0, P1 xong (gói `renpy8` arm64 22,6 MB) · P2 mở (V17) |
 | M3 | Ren'Py 7 (khối P7) | như trên | chờ M2 |
 | M4 | Symbian/N-Gage nhúng (khối S) | `2026-10-03-nhung-symbian-eka2l1.md` | chờ sếp chốt A1, A2 · làm sau M2 |
 | Q | Phương án cho câu 6 và 7 của mục 7 (kiểm thử khi không có máy thật; chất lượng crash log) | Opus viết | Opus làm, cần xong **trước R6** |
@@ -38,11 +38,16 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | V12 | R3: `RgssGameActivity` (`:game`, hợp đồng JNI, nạp `.so` theo `manifest.json`) + Emulator Test với "game" XP tối thiểu tự sinh (`hop-thu/tra-loi-005.md` bước 3) | Sonnet | V08 | API 30 và 34: có `MonikaGame: rgss-lib-loaded` + file `monika-ok.txt`; không có `Failed to register methods` | đang làm (mã + Emulator Test đã gộp main; chờ dựng gói rgss riêng tư rồi emulator-test rgss_tag) |
 | V13 | `.gitignore` thêm `.kotlin/`; gỡ `.kotlin/sessions/*.salive` khỏi repo | Sonnet | — | `git ls-files .kotlin` rỗng | xong (.kotlin/ trong .gitignore, gỡ khỏi repo) |
 | V14 | `emulator-test.yml`: release tạm `ci-apk-<run_id>` (commit `62a4a70`) phải tự xóa cuối job: thêm bước `if: always()` chạy `gh release delete "ci-apk-${{ github.run_id }}" --yes --cleanup-tag \|\| true`. Không để release tạm tích lại lẫn với release thật `v*` | Sonnet | — | Sau một lần chạy Emulator Test, `gh release list` không còn `ci-apk-*` | chờ |
+| V15 | `build-rgss.yml`: thêm `armeabi-v7a` vào ma trận ABI (`tra-loi-003.md`, bắt buộc trước R7). Không đổi mã, cùng vá SDL và cùng cờ bỏ OpenSSL như arm64 | Sonnet | V12 | Artifact `rgss-armeabi-v7a.zip`; `readelf -h` các `.so` ra `Machine: ARM`; `llvm-nm -D libSDL2.so` có `Java_vn_aow_monika_rgss_sdl_*`, không có `Java_org_libsdl_app_*`; ghi kích thước vào `ket-qua/R1.md`. Chạy thật trên máy 32-bit **[CHƯA KIỂM]** (máy ảo CI là 64-bit) | chờ |
+| V16 | R5 theo phương án Ren'Py/RGSS (dòng R5): lớp phủ + phím (`pad: "rpg"`, nối `SDLActivity.onNativeKeyDown/Up`), menu Monika qua `ComposeHost`, `PackManager.installers` (`rgss`), `EngineRoute`, config `modules.rgss` + `systems[rgss].engine` + `entry`, tăng `configVersion`. **Giữ `allowExternalApp: true` cho `rgss` và `kirikiri`**: tắt ở R7 (cần V15 + G8). Không phát hành bản app nào có `systems[rgss].engine` khi gói `rgss` chưa publish; gói thử để ở release riêng tư như V12 | Sonnet | V12 | Test giao diện Robolectric cho lớp phủ (ảnh trong `anh-chup-giao-dien`); `ConfigTest` đọc được config mới và cũ; Emulator Test `rgss_tag`: bấm phím ảo → game nhận phím (game XP tự sinh in phím vào file) | chờ |
+| V17 | P2: module `:renpy` (dòng P2 của phương án Ren'Py/RGSS): Java của **đúng RAPT 8.5.3**, bản vá ở `renpy/patches/` (bỏ Play Asset Delivery, `renpyiap`, `slf4j`), `build.gradle` Groovy riêng, `UPSTREAM.md`, chỉ sửa chỗ `Aow Monika:`. Xem U8 (`compileSdk`) | Sonnet | V12 | `./gradlew :renpy:assembleRelease` và `assembleRelease` của app xanh; `dexdump` thấy cùng lúc `org.libsdl.app.SDLActivity` (Ren'Py) và `vn.aow.monika.rgss.sdl.SDLActivity` (RGSS); ghi mức APK tăng vào `ket-qua/P0.md` | chờ |
 | H01 | Sửa đầu `docs/GIAO-TIEP-VOI-OPUS.md` thành 0.7.3 / versionCode 38 / `configVersion` 31. Mục 4: thêm dòng "E0 xong", "R4 xong" | Haiku | — | Diff chỉ đụng file đó | chờ |
 | H02 | Chạy lại `python3 scripts/gen-architecture.py`, commit `docs/KIEN-TRUC.md`. Nếu bảng module vẫn thiếu `:libretrodroid`/`:kirikiri` thì **không sửa script**: ghi `kẹt` và gửi thư | Haiku | — | `git diff` chỉ đụng `docs/KIEN-TRUC.md` | chờ |
 | H03 | `docs/TEST-MAY-THAT.md`: thêm mục "Kirikiri (0.7.3)" cho sếp thử: mở game `.xp3` → màn chuẩn bị tự tải gói → vào game → chạm, âm thanh, lưu/tải, tua nhanh, menu tiếng Việt, thoát. Máy 32-bit phải thấy thông báo chưa hỗ trợ. Nguồn: `docs/plan-kirikiri.md` + mục 4 của tài liệu bàn giao | Haiku | — | Chỉ đụng tài liệu; mỗi dòng là một thao tác sếp làm được | chờ |
 | O01 | Trả lời hộp thư; cập nhật bảng này sau mỗi mốc | Opus | — | `BANG-TIN.md` không còn thư `mở` quá 1 lượt kiểm tra | lặp lại |
 | O02 | Phương án câu 6 + 7 (kiểm thử không máy thật, crash log) | Opus | — | File `docs/opus/<ngày>-kiem-thu-chan-doan.md` | chờ |
+
+**Thứ tự cho Sonnet (03/10 11:55):** đóng V12 (chạy thêm API 30) → V14 → V07 → V16. V15 chỉ chạy CI: đẩy lúc chờ CI của việc khác. V17 làm sau V16, hoặc xen vào lúc chờ CI.
 
 Việc tiếp theo của từng khối (R2–R7, P2–P7, S0–S7) nằm sẵn trong file phương án. Khi một việc trên `xong`, PM thêm việc kế tiếp vào bảng; đội thi công không tự mở việc ngoài bảng.
 
