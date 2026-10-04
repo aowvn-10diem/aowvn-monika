@@ -8,7 +8,7 @@ mkdir -p "$OUT"
 trap 'adb logcat -d > "$OUT/logcat.txt"; adb exec-out screencap -p > "$OUT/final.png"' EXIT
 adb root
 adb wait-for-device
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/debug/app-universal-debug.apk
 adb reverse tcp:18443 tcp:18443
 adb shell run-as "$PKG" test ! -e files/packs/rgss
 adb push "$FIXTURE/Monika-V33.zip" /sdcard/Download/Monika-V33.zip
