@@ -91,6 +91,16 @@
             android:theme="@style/Theme.Monika.Fullscreen" />
 
         <activity
+            android:name=".runner.RenpyGameActivity"
+            android:process=":game"
+            android:taskAffinity="com.aow.monika.renpy"
+            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize|density|uiMode|layoutDirection"
+            android:screenOrientation="sensorLandscape"
+            android:windowSoftInputMode="adjustPan"
+            android:exported="false"
+            android:theme="@style/Theme.Monika.Fullscreen" />
+
+        <activity
             android:name=".runner.KirikiriGameActivity"
             android:process=":game"
             android:taskAffinity="com.aow.monika.kirikiri"

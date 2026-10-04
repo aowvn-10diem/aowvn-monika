@@ -48,6 +48,11 @@ object PackManager {
             supported = { AppGraph.packs.supported(RGSS) },
             ensure = { st -> AppGraph.packs.ensure(RGSS, RGSS_MAIN, st) },
         ),
+        RENPY8 to Installer(
+            ready = { AppGraph.packs.ready(RENPY8, RENPY8_LIB) },
+            supported = { AppGraph.packs.supported(RENPY8) },
+            ensure = { st -> AppGraph.packs.ensure(RENPY8, RENPY8_LIB, st) },
+        ),
         SEVENZIP to Installer(
             ready = { AppGraph.packs.ready(SEVENZIP, SEVENZIP_LIB) },
             supported = { AppGraph.packs.supported(SEVENZIP) },
@@ -61,6 +66,8 @@ object PackManager {
     const val KIRIKIRI_LIB = "libkrkr2yuri.so"
     const val RGSS = "rgss"
     const val RGSS_MAIN = "lib/libmkxp-z.so"
+    const val RENPY8 = "renpy8"
+    const val RENPY8_LIB = "librenpython.so"
     const val SEVENZIP = "sevenzip"
     const val SEVENZIP_LIB = "lib7-Zip-JBinding.so"
 

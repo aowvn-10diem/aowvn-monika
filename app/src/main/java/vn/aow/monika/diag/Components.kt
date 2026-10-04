@@ -22,6 +22,7 @@ object Components {
             has(t, "ru.playsoftware.j2meloader", "javax.microedition", "j2me", "dexlib") -> "engine:j2me"
             // RPG Maker (mkxp-z) và Kirikiri nhúng: nhận từ tên lớp/thư viện hoặc vệt "begin: <kind> · <lõi> · …" của tiến trình :game.
             session?.kind == "rgss" || has(t, "RgssGameActivity", "vn.aow.monika.rgss", "mkxp", "libruby") -> "engine:rgss"
+            session?.kind == "renpy" || has(t, "RenpyGameActivity", "org.renpy.android", "librenpython", "renpy.bootstrap") -> "engine:renpy"
             session?.kind == "kirikiri" || has(t, "KirikiriGameActivity", "org.tvp.kirikiri2", "krkr2yuri", "kirikiroid") -> "engine:kirikiri"
             session?.kind == "libretro" || has(t, "com.swordfish.libretrodroid", "libretrodroid", "_libretro_android") ->
                 "engine:libretro" + (session?.core?.takeIf { it.isNotBlank() }?.let { ":$it" } ?: "")

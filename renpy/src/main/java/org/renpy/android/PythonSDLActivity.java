@@ -225,21 +225,11 @@ public class PythonSDLActivity extends SDLActivity {
 
     public native void nativeSetEnv(String variable, String value);
 
-    public void preparePython() {
-        Log.v("python", "Starting preparePython.");
-
-        mActivity = this;
-
-        resourceManager = new ResourceManager(this);
-
-        File oldExternalStorage = new File(Environment.getExternalStorageDirectory(), getPackageName());
-        File externalStorage = getExternalFilesDir(null);
-        File path;
-
-        if (externalStorage == null) {
-            externalStorage = oldExternalStorage;
-        }
-
+    /**
+     * Aow Monika: tách ra từ preparePython(). Mặc định giữ đúng hành vi gốc của RAPT (giải nén asset "private" vào filesDir
+     * rồi đặt ANDROID_PRIVATE / ANDROID_PUBLIC / ANDROID_OLD_PUBLIC / ANDROID_APK).
+     */
+    protected void setupPythonEnvironment(File externalStorage, File oldExternalStorage) {
         unpackData("private", getFilesDir());
 
         nativeSetEnv("ANDROID_PRIVATE", getFilesDir().getAbsolutePath());
@@ -259,6 +249,25 @@ public class PythonSDLActivity extends SDLActivity {
         }
 
         nativeSetEnv("ANDROID_APK", apkFilePath);
+    }
+
+    public void preparePython() {
+        Log.v("python", "Starting preparePython.");
+
+        mActivity = this;
+
+        resourceManager = new ResourceManager(this);
+
+        File oldExternalStorage = new File(Environment.getExternalStorageDirectory(), getPackageName());
+        File externalStorage = getExternalFilesDir(null);
+        File path;
+
+        if (externalStorage == null) {
+            externalStorage = oldExternalStorage;
+        }
+
+        // Aow Monika: giải nén "private" + đặt biến môi trường nay nằm trong hàm có thể ghi đè (RenpyGameActivity dùng gói tải thêm).
+        setupPythonEnvironment(externalStorage, oldExternalStorage);
 
         if (!mAllPacksReady) {
             Log.i("python", "Waiting for all packs to become ready.");
