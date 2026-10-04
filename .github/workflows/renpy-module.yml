@@ -28,7 +28,7 @@ jobs:
           mkdir -p chk && cd chk && unzip -q ../rapt.zip 'rapt/prototype/renpyandroid/src/main/java/*'
           cp -r rapt/prototype/renpyandroid/src/main/java a
           find a \( -name '*.class' -o -name '*.orig' \) -delete
-          patch -p1 -s -d a < ../renpy/patches/0001-bo-play-asset-delivery.patch
+          for p in ../renpy/patches/*.patch; do patch -p1 -s -d a < "$p"; done
           diff -r a ../renpy/src/main/java && echo "Bản vá tái lập đúng"
       - name: Kiểm lớp trong APK
         run: |

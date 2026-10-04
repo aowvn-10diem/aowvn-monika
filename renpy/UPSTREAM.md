@@ -8,7 +8,9 @@
 ## Bản vá của Aow Monika (`patches/`, đã áp sẵn vào `src/`)
 `0001-bo-play-asset-delivery.patch` — `PythonSDLActivity`: bỏ Play Asset Delivery (`AssetPackManager`, `onStateUpdate`, `checkPack` luôn đúng), thêm `Constants.java` cố định (`store = "none"`, không asset pack; RAPT sinh file này theo từng game). Mã sửa đều có chú thích `Aow Monika:`.
 
-Kiểm bản vá tái lập: tải đúng zip trên, chép `rapt/prototype/renpyandroid/src/main/java` ra thư mục `a/`, bỏ `*.class`/`*.orig`, rồi `patch -p1 -d a < renpy/patches/0001-bo-play-asset-delivery.patch` phải ra đúng `renpy/src/main/java` (trừ `Constants.java` do patch tạo).
+`0002-tach-setup-moi-truong-python.patch` — `PythonSDLActivity.preparePython()`: phần giải nén `private` + đặt biến môi trường tách thành `protected setupPythonEnvironment(...)` (mặc định giữ nguyên hành vi RAPT) để `RenpyGameActivity` ghi đè bằng gói tải thêm.
+
+Kiểm bản vá tái lập: tải đúng zip trên, chép `rapt/prototype/renpyandroid/src/main/java` ra thư mục `a/`, bỏ `*.class`/`*.orig`, rồi áp lần lượt `renpy/patches/*.patch` (`patch -p1 -d a < …`) phải ra đúng `renpy/src/main/java` (trừ `Constants.java` do patch tạo).
 
 ## Đổi manifest
 `AndroidManifest.xml` bỏ thuộc tính `package` (dùng `namespace` trong `build.gradle`) và bỏ quyền `WRITE_EXTERNAL_STORAGE`. `compileSdk` hạ từ 36 về 35 (U8); `minSdk` 26 như app.
