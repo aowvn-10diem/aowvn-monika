@@ -40,8 +40,7 @@ import java.io.InputStream;
 
 // Aow Monika: bỏ Play Asset Delivery (Google Play); gói Ren'Py do PackManager của Monika tải.
 
-
-
+public class PythonSDLActivity extends SDLActivity {
     /**
      * This exists so python code can access this activity.
      */

@@ -1,6 +1,6 @@
 diff -ruN a/org/renpy/android/Constants.java b/org/renpy/android/Constants.java
 --- a/org/renpy/android/Constants.java	1970-01-01 00:00:00.000000000 +0000
-+++ b/org/renpy/android/Constants.java	2026-10-04 02:59:44.648416109 +0000
++++ b/org/renpy/android/Constants.java	2026-10-04 03:12:15.517075969 +0000
 @@ -0,0 +1,8 @@
 +package org.renpy.android;
 +
@@ -11,9 +11,9 @@ diff -ruN a/org/renpy/android/Constants.java b/org/renpy/android/Constants.java
 +    public static String assetPacks[ ] = { };
 +}
 diff -ruN a/org/renpy/android/PythonSDLActivity.java b/org/renpy/android/PythonSDLActivity.java
---- a/org/renpy/android/PythonSDLActivity.java	2026-10-04 02:59:44.644248186 +0000
-+++ b/org/renpy/android/PythonSDLActivity.java	2026-10-04 02:59:44.648020678 +0000
-@@ -37,14 +37,10 @@
+--- a/org/renpy/android/PythonSDLActivity.java	2026-10-04 03:12:15.510700636 +0000
++++ b/org/renpy/android/PythonSDLActivity.java	2026-10-04 03:12:15.516494789 +0000
+@@ -37,15 +37,10 @@
  import java.io.IOException;
  import java.io.InputStream;
  
@@ -23,14 +23,15 @@ diff -ruN a/org/renpy/android/PythonSDLActivity.java b/org/renpy/android/PythonS
 -import com.google.android.play.core.assetpacks.*;
 -import com.google.android.play.core.assetpacks.model.*;
 -import com.google.android.gms.tasks.*;
-+// Aow Monika: bỏ Play Asset Delivery (Google Play); gói Ren'Py do PackManager của Monika tải.
-+
- 
+-
 -public class PythonSDLActivity extends SDLActivity implements AssetPackStateUpdateListener {
++// Aow Monika: bỏ Play Asset Delivery (Google Play); gói Ren'Py do PackManager của Monika tải.
  
++public class PythonSDLActivity extends SDLActivity {
      /**
       * This exists so python code can access this activity.
-@@ -297,31 +293,14 @@
+      */
+@@ -297,31 +292,14 @@
      }
  
      boolean mAllPacksReady = false;
@@ -65,7 +66,7 @@ diff -ruN a/org/renpy/android/PythonSDLActivity.java b/org/renpy/android/PythonS
      }
  
      @Override
-@@ -338,20 +317,7 @@
+@@ -338,20 +316,7 @@
  
          boolean allPacksReady = true;
  
@@ -87,7 +88,7 @@ diff -ruN a/org/renpy/android/PythonSDLActivity.java b/org/renpy/android/PythonS
  
          mAllPacksReady = allPacksReady;
  
-@@ -474,92 +440,7 @@
+@@ -474,92 +439,7 @@
          }
      }
  
