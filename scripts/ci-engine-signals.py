@@ -21,16 +21,16 @@ subprocess.run(['ruby','-rzlib','-e','File.binwrite(ARGV[0], Marshal.dump([[1,"M
 (out/'game/Game.ini').write_text('[Game]\nTitle=Monika-V22\nScripts=Data\\Scripts.rxdata\nRTP1=\n')
 with zipfile.ZipFile(out/'web/rgss.zip') as z:z.extractall(out/'rgss-pack')
 control=out/'control';(control/'Data').mkdir(parents=True)
-(control/'Game.ini').write_text('[Game]\nTitle=Monika-V22-Control\nScripts=Data\\Scripts.rxdata\nRTP1=\n')
-code = """bitmap=Bitmap.new(640,360)
+(control/'Game.ini').write_text('[Game]\nTitle=Monika-V22-Control\nScripts=Data\\Scripts.rvdata\nRTP1=\n')
+code = """bitmap=Bitmap.new (640,360)
 bitmap.fill_rect(0,0,640,360,Color.new(242,140,40))
 sprite=Sprite.new
 sprite.bitmap=bitmap
-File.write("monika-ready.txt","RGSS-control")
+File.write("monika-ready.txt","RGSS-control-ruby18")
 loop do
   Graphics.update
   Input.update
 end
 """
-subprocess.run(['ruby','-rzlib','-e','File.binwrite(ARGV[0], Marshal.dump([[1,"Main",Zlib::Deflate.deflate(STDIN.read)]]))',str(control/'Data/Scripts.rxdata')],input=code.encode(),check=True)
+subprocess.run(['ruby','-rzlib','-e','File.binwrite(ARGV[0], Marshal.dump([[1,"Main",Zlib::Deflate.deflate(STDIN.read)]]))',str(control/'Data/Scripts.rvdata')],input=code.encode(),check=True)
 print('Đã tạo XP raise và RGSS control màu cam; K3 [CHƯA KIỂM] theo SOL-010 B.')

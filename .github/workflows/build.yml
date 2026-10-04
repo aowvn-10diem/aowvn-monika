@@ -22,6 +22,7 @@ jobs:
       - name: Kiểm bản giả Win32API (Ruby)
         run: |
           ruby scripts/test-rgss-compat.rb
+          ruby scripts/test-rgss-ruby18.rb
           ruby scripts/test-rgss-safe-marshal.rb
           ruby scripts/test-rgss-script-shape.rb
           python3 scripts/test-rgss-archive-script.py

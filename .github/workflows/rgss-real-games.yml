@@ -86,6 +86,8 @@ jobs:
           if len(files)!=1: raise RuntimeError('Scripts trùng')
           with Path('out/r6/vx-script-shape.txt').open('w') as output:
               subprocess.run(['ruby','scripts/rgss-script-shape.rb',str(files[0])],stdout=output,check=True,timeout=60)
+          with Path('out/r6/vx-ruby18-shape.txt').open('w') as output:
+              subprocess.run(['ruby','scripts/rgss-script-shape.rb',str(files[0]),'--ruby18'],stdout=output,check=True,timeout=60)
           PY
       - name: Build APK với config fixture (unit đã chạy trên config chuẩn)
         run: ./gradlew assembleDebug --console=plain

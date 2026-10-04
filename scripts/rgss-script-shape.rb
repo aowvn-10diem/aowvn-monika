@@ -9,6 +9,8 @@
 # chỉ chấp nhận Array / String / số nguyên nhỏ / nil / true / false; gặp kiểu khác → dừng. Vẫn nên chạy trong job KHÔNG có secret/quyền ghi.
 require 'zlib'
 require 'ripper'
+ruby18 = ARGV.delete('--ruby18')
+load File.expand_path('../app/src/main/assets/rgss/monika-ruby18.rb', __dir__) if ruby18
 
 KEYWORDS = %w[alias and begin break case class def defined? do else elsif end ensure false for if in module next nil not or redo rescue retry return self super then true undef unless until when while yield __method__ lambda proc].freeze
 KW = Regexp.union(KEYWORDS.map { |k| /\b#{Regexp.escape(k)}(?![\w?!])/ })
@@ -48,6 +50,7 @@ data.each_with_index do |entry, i|
   total += code.bytesize
   abort("tổng dữ liệu giải nén vượt #{SafeInflate::MAX_TOTAL_BYTES} byte") if total > SafeInflate::MAX_TOTAL_BYTES
   code = code.encode('UTF-8', 'Shift_JIS', invalid: :replace, undef: :replace) unless code.valid_encoding?
+  code = MonikaRuby18.repair(code) if ruby18
   begin
     RubyVM::InstructionSequence.compile(code, "script-#{i}")
   rescue SyntaxError => e
