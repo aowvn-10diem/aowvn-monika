@@ -22,7 +22,7 @@ class GameReportUiTest {
     @Test fun typeOptionalDescriptionAndDefaultImageReachSubmit() {
         val image=Diagnostics.ReportImage("image/jpeg","fixture",24,16)
         var submitted:Triple<String,String,Diagnostics.ReportImage?>?=null
-        rule.setContent { MonikaTheme { GameReportDialog(image,false,{}) { a,b,c -> submitted=Triple(a,b,c) } } }
+        rule.setContent { MonikaTheme { GameReportForm(image,false,{}) { a,b,c -> submitted=Triple(a,b,c) } } }
         rule.mainClock.advanceTimeBy(1000)
         rule.onNodeWithText("Không lên hình").performClick()
         rule.mainClock.advanceTimeBy(100)
@@ -34,7 +34,7 @@ class GameReportUiTest {
     @Test fun imageCanBeDisabledAndDescriptionIsOptional() {
         val image=Diagnostics.ReportImage("image/jpeg","fixture",24,16)
         var submitted:Triple<String,String,Diagnostics.ReportImage?>?=null
-        rule.setContent { MonikaTheme { GameReportDialog(image,false,{}) { a,b,c -> submitted=Triple(a,b,c) } } }
+        rule.setContent { MonikaTheme { GameReportForm(image,false,{}) { a,b,c -> submitted=Triple(a,b,c) } } }
         rule.mainClock.advanceTimeBy(1000)
         rule.onNode(isToggleable()).performClick()
         rule.mainClock.advanceTimeBy(100)

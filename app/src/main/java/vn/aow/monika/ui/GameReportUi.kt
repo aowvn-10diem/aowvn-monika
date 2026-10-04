@@ -60,21 +60,31 @@ fun gameReportAction(closeMenu: () -> Unit): SheetAction {
 @Composable
 internal fun GameReportDialog(image: Diagnostics.ReportImage?, busy: Boolean, onClose: () -> Unit,
                               onSend: (String, String, Diagnostics.ReportImage?) -> Unit) {
+    AlertDialog(onDismissRequest = { if (!busy) onClose() }, title = { Text("Báo lỗi game này") },
+        text = { GameReportForm(image, busy, onClose, onSend) }, confirmButton = {})
+}
+
+/** Nội dung dùng chung trong dialog thật và test Compose; emulator kiểm cửa sổ dialog. */
+@Composable
+internal fun GameReportForm(image: Diagnostics.ReportImage?, busy: Boolean, onClose: () -> Unit,
+                            onSend: (String, String, Diagnostics.ReportImage?) -> Unit) {
     val types = listOf("Không lên hình", "Không có tiếng", "Phím không hoạt động", "Game bị treo", "Lỗi khác")
     var type by remember { mutableStateOf("Lỗi khác") }
     var description by remember { mutableStateOf("") }
     var includeImage by remember { mutableStateOf(true) }
-    AlertDialog(onDismissRequest = { if (!busy) onClose() }, title = { Text("Báo lỗi game này") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Bạn gặp lỗi gì?")
-                types.forEach { choice -> FilterChip(selected = type == choice, enabled = !busy, onClick = { type = choice }, label = { Text(choice) }) }
-                OutlinedTextField(value = description, onValueChange = { description = it.take(2000) }, enabled = !busy,
-                    label = { Text("Mô tả thêm (tùy chọn)") }, modifier = Modifier.fillMaxWidth(), maxLines = 4)
-                Row { Checkbox(checked = includeImage && image != null, onCheckedChange = { includeImage = it }, enabled = image != null && !busy); Text("Kèm ảnh game") }
-                if (image == null) Text("Chưa chụp được ảnh; báo lỗi vẫn gửi được.")
-                Text("Kèm thông tin máy và nhật ký lỗi gần đây.")
+    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Bạn gặp lỗi gì?")
+        types.forEach { choice -> FilterChip(selected = type == choice, enabled = !busy, onClick = { type = choice }, label = { Text(choice) }) }
+        OutlinedTextField(value = description, onValueChange = { description = it.take(2000) }, enabled = !busy,
+            label = { Text("Mô tả thêm (tùy chọn)") }, modifier = Modifier.fillMaxWidth(), maxLines = 4)
+        Row { Checkbox(checked = includeImage && image != null, onCheckedChange = { includeImage = it }, enabled = image != null && !busy); Text("Kèm ảnh game") }
+        if (image == null) Text("Chưa chụp được ảnh; báo lỗi vẫn gửi được.")
+        Text("Kèm thông tin máy và nhật ký lỗi gần đây.")
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(enabled = !busy, onClick = onClose) { Text("Hủy") }
+            TextButton(enabled = !busy, onClick = { onSend(type, description, image.takeIf { includeImage }) }) {
+                Text(if (busy) "Đang gửi…" else "Gửi báo lỗi")
             }
-        }, confirmButton = { TextButton(enabled = !busy, onClick = { onSend(type, description, image.takeIf { includeImage }) }) { Text(if (busy) "Đang gửi…" else "Gửi báo lỗi") } },
-        dismissButton = { TextButton(enabled = !busy, onClick = onClose) { Text("Hủy") } })
+        }
+    }
 }

@@ -37,7 +37,7 @@ jobs:
       - name: Unit trên config chuẩn
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
-          ./gradlew testDebugUnitTest --console=plain
+          ./gradlew testDebugUnitTest --console=plain --info
       - name: Chỉ engine và fixture tự sinh
         run: python3 scripts/ci-user-report.py --scratch "$RUNNER_TEMP/user-report" --pack-file "$RUNNER_TEMP/user-report-engine/rgss.zip"
       - name: APK debug với fixture (unit đã chạy trên config chuẩn)
