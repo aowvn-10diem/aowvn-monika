@@ -135,6 +135,6 @@ class DiagnosticsTest {
     @Test fun scrubHidesPathsEmailsAndTokens() {
         val t = Diagnostics.scrub(app, "open /storage/emulated/0/Download/Vy.nds from /data/user/0/vn.aow.monika/files/x.so mail a.b@c.vn token=abc123&k=1 Authorization: Bearer zzz")
         assertTrue(!t.contains("/storage") && !t.contains("/data/user") && !t.contains("a.b@c.vn") && !t.contains("abc123"))
-        assertTrue(t.contains("Vy.nds"))
+        assertTrue(!t.contains("Vy.nds") && !t.contains("zzz"))
     }
 }
