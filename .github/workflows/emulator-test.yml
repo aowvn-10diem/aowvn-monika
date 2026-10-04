@@ -11,6 +11,11 @@ on:
         description: "Bản Android, cách nhau bằng dấu phẩy"
         required: false
         default: "30,34"
+      user_path_only:
+        description: "V33: chỉ đường Thư viện → SAF → tải gói → mở → phím, API 34; không tạo release tạm"
+        type: boolean
+        required: false
+        default: false
       rgss_tag:
         description: "Tag release (repo này) chứa rgss-arm64-v8a.zip để thử RPG Maker nhúng; để trống = bỏ qua ca RGSS"
         required: false
@@ -18,6 +23,7 @@ on:
 
 jobs:
   build:
+    if: ${{ !inputs.user_path_only }}
     runs-on: ubuntu-latest
     permissions: { contents: write }
     steps:
@@ -143,10 +149,57 @@ jobs:
 
   don-dep:
     needs: [build, emulator]
-    if: ${{ always() }}
+    if: ${{ always() && !inputs.user_path_only }}
     runs-on: ubuntu-latest
     permissions: { contents: write }
     steps:
       - name: Xóa release tạm ci-apk (V14)
         env: { GH_TOKEN: "${{ github.token }}", GH_REPO: "${{ github.repository }}" }
         run: gh release delete "ci-apk-${{ github.run_id }}" --yes --cleanup-tag || true
+
+  user-path:
+    if: ${{ inputs.user_path_only }}
+    runs-on: ubuntu-latest
+    # GitHub yêu cầu quyền ghi để đọc asset draft; job này chỉ dùng GET.
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Chuẩn bị game tự sinh và gói RGSS nháp (V33)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RGSS_TAG: ${{ inputs.rgss_tag }}
+        run: |
+          test -n "$RGSS_TAG" || { echo "::error::V33 cần rgss_tag là bản nháp"; exit 1; }
+          python3 scripts/ci-user-path.py prepare --out "$RUNNER_TEMP/v33-fixture" --rgss-tag "$RGSS_TAG"
+      - name: Cài NDK và build APK test với config/TLS fixture
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+          ./gradlew testDebugUnitTest assembleDebug --console=plain
+      - name: Bật KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Cài Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - name: Đường người dùng API 34 (V33)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
+          script: |
+            python3 scripts/ci-user-path.py serve --out "$RUNNER_TEMP/v33-fixture" > "$RUNNER_TEMP/v33-server.log" 2>&1 &
+            bash scripts/ci-user-path.sh out/user-path "$RUNNER_TEMP/v33-fixture"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v33-user-path-api-34
+          path: out/user-path/
+          retention-days: 3
