@@ -33,6 +33,14 @@ class MkxpConfigWriterTest {
         assertEquals(listOf("/rtp/ace"), (o["RTP"] as JsonArray).map { it.jsonPrimitive.content })
     }
 
+    @Test fun preloadGopVaGiuMucCuaGame() {
+        val o = obj(MkxpConfigWriter.build("""{"preloadScript": ["/game/patch.rb"]}""", 2, emptyList(), preload = listOf("/files/rgss-compat/monika-win32api.rb")))
+        assertEquals(listOf("/game/patch.rb", "/files/rgss-compat/monika-win32api.rb"), (o["preloadScript"] as JsonArray).map { it.jsonPrimitive.content })
+        val again = obj(MkxpConfigWriter.build(MkxpConfigWriter.build(null, 2, emptyList(), preload = listOf("/a.rb")), 2, emptyList(), preload = listOf("/a.rb")))
+        assertEquals(listOf("/a.rb"), (again["preloadScript"] as JsonArray).map { it.jsonPrimitive.content }) // không trùng khi ghi lại
+        assertEquals(null, obj(MkxpConfigWriter.build(null, 2, emptyList()))["preloadScript"]) // không có preload → không thêm khóa
+    }
+
     @Test fun giuKhoaLaVaChuThichCuaGame() {
         val old = """
             // chú thích nguyên dòng

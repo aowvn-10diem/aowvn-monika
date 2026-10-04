@@ -134,7 +134,9 @@ class RgssGameActivity : SDLActivity() {
         fun start(activity: Activity, entry: File?, title: String, key: String?) {
             val dir = entry?.let { if (it.isDirectory) it else it.parentFile } ?: return
             // mkxp.json do Monika sinh (phiên bản RGSS, RTP…), giữ khóa của game. Thư mục chỉ-đọc → bỏ qua, mkxp-z tự đoán.
-            runCatching { MkxpConfigWriter.write(dir, emptyList()) }
+            // Bản giả Win32API (xem assets/rgss/monika-win32api.rb) nạp trước script game: DLL Windows không có trên Android.
+            val preload = listOfNotNull(runCatching { RgssCompat.ensure(activity) }.getOrNull()?.absolutePath)
+            runCatching { MkxpConfigWriter.write(dir, emptyList(), preload = preload) }
             activity.startActivity(
                 Intent(activity, RgssGameActivity::class.java)
                     .putExtra(PlayClock.EXTRA_KEY, key).putExtra(EXTRA_TITLE, title).putExtra(EXTRA_GAME_PATH, dir.absolutePath)
