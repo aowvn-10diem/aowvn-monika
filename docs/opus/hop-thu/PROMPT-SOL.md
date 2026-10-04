@@ -64,12 +64,12 @@ Mỗi dòng việc ghi rõ phạm vi và tiêu chí "Đạt khi". Phát hiện m
 
 === CẤM ===
 - Đụng khóa ký, mật khẩu, token, GitHub Secrets.
-- Phát hành APK/release, đẩy tag, chạy workflow publish.
+- Phát hành APK/release, đẩy tag, chạy workflow publish. Ngoại lệ duy nhất (PM cấp 04/10, `tra-loi-sol-006-007.md`): chạy `publish-cores.yml` cho tag `cores-*` trong repo packs, sau khi PR chứa workflow đã có "PM duyệt".
 - Đẩy thẳng main.
 - Sửa j2me/ và dexlib/, trừ chỗ có chú thích "Aow Monika:".
 - Đổi phiên bản thư viện ngoài gradle/libs.versions.toml.
-- Mở engine mới (Ren'Py, Symbian đang đóng băng).
-- Tải game hoặc ROM, ghi link game vào repo.
+- Mở engine mới, trừ việc PM đã giao trong KE-HOACH. S0 (dựng thử Symbian chỉ trong CI) được phép: sếp trả lời Q1 ngày 04/10 là làm engine mới song song.
+- Tải game hoặc ROM, ghi link game vào repo. Ngoại lệ: game thử của V25 (sếp gửi, cổng G2) được tải lúc chạy trong CI từ đúng link đã ghi ở dòng V25; không commit, không đưa lên artifact, không thêm link mới.
 - Sửa dòng việc của người khác.
 - Đoán số liệu: ghi [CHƯA KIỂM].
 - Nhắn sếp. PM đọc tiến độ từ repo.
