@@ -43,6 +43,10 @@ Dir.mktmpdir('shape-fixture') do |dir|
   File.binwrite(input, Marshal.dump([[7, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
   out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
   check(status.success? && %w[constants sort downcase class_variables class_variable_get].all? { |word| out.include?(word) } && %w[private_field private_name PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect constants/classvariables chỉ giữ API công khai, che dữ liệu game')
+  source = "self.class.constants; self.superclass.constants; private_object.singleton_class\n"
+  File.binwrite(input, Marshal.dump([[8, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
+  out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
+  check(status.success? && %w[class superclass singleton_class].all? { |word| out.include?(word) } && %w[private_object PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect class receivers giữ API công khai, che identifier game')
   _, _, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:99999')
   check(!status.success?, 'inspect chặn dòng vượt giới hạn')
 
