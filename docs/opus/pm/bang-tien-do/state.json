@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-04T18:56:34.359703Z",
+  "updatedAt": "2026-10-04T19:44:34.082693Z",
   "mainSha": "3453741f954140432a82c2d449fa4991072bf8ff",
   "app": "App0.7.4 · config33",
   "nextCheck": "2026-10-04T19:06:36Z",
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Sol tiếp quản #50 head84aa079 (chẩn đoán Range957, CI mới chờ). R6@46bdfc4 run37224825296/art11311902924: XP266s/Ace294s PASS mức1, VX64s FAIL ArgumentError96:957; đã vượt setter934. Build37224825266/CodeQL37224825262 xanh, native37224825328/art11311497877 chứng minh getter/setter17/23 + eval-context + PixelCopy fixture. Không phải VX gameplay. Quyền R6/signals chỉ đọc, artifact RGSS7 ghimID/hash hết hạn06/10 thì failclosed. Local69 Ruby/13privacy PASS; Luna46b yêu cầu PM xem giả định accessor, PM cho tiếp kiểm RAM adapter hẹp, chưa duyệt merge; giữ expect_fail=vx."
+      "note": "Snapshot Sol #50 head8a7d3ca: Build37228347006/CodeQL37228346975 xanh. Signals37228346996 lần1 FAIL (XP Activity kết thúc trước report; chưa chạy control), rerun cùng head một lần, không hạ assert. R637228347002 đang chạy. CI-only Range observer ghi loại ẩn danh vào metadata riêng ngoài game, không sửa/nuốt lỗi; local69Ruby/15privacy/6probe PASS. Masked957: conditionalInteger, Rangebegin self.<ẩn>.pitch. Không coerce/patched Range mù. R6 hoàn tất gần nhất46b/run37224825296: XP266/Ace294 mức1 PASS, VX64 FAIL ArgumentError96:957; native46b fixture getter17/23/eval/PixelCopy PASS, không phải VX gameplay. Giữ expect_fail=vx, cần Luna fresh8a7 và CI/R6 đúng head trước merge."
     },
     {
       "code": "V45",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-04T19:44:34.082693Z",
+      "text": "#50 đã merge main345 giữparent; head8a7 chỉ diagnostic CI-only ngoài game, không appasset phát hành. Build/CodeQL xanh. Native lần1 đỏ thiếu XP report trước control, đã xem artifact11312638669, rerun nguyên assert cùng head. R6/probe chưa xong; không claim VX recovery. #70 đồng bộ snapshot thực tế, Gemini/SOL012 giữ cổng."
+    },
     {
       "t": "2026-10-04T18:56:34.359703Z",
       "text": "Đã đọc Luna18:51 và ảnh/log/verdict R6@46b: XP266/Ace294 đạt mức1, VX64 vẫn FAIL ArgumentError96:957 sau setter934. Native accessor17/23/eval/PixelCopy thật PASS. #50 head84aa chỉ thu Range masked/proof; PM70 sửa trạng thái theo Luna7e. Chưa merge50/70; không đổi expect_fail."
@@ -909,7 +913,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "Sol tiếp quản #50 head84aa079 (chẩn đoán Range957, CI mới chờ). R6@46bdfc4 run37224825296/art11311902924: XP266s/Ace294s PASS mức1, VX64s FAIL ArgumentError96:957; đã vượt setter934. Build37224825266/CodeQL37224825262 xanh, native37224825328/art11311497877 chứng minh getter/setter17/23 + eval-context + PixelCopy fixture. Không phải VX gameplay. Quyền R6/signals chỉ đọc, artifact RGSS7 ghimID/hash hết hạn06/10 thì failclosed. Local69 Ruby/13privacy PASS; Luna46b yêu cầu PM xem giả định accessor, PM cho tiếp kiểm RAM adapter hẹp, chưa duyệt merge; giữ expect_fail=vx. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
+      "note": "Snapshot Sol #50 head8a7d3ca: Build37228347006/CodeQL37228346975 xanh. Signals37228346996 lần1 FAIL (XP Activity kết thúc trước report; chưa chạy control), rerun cùng head một lần, không hạ assert. R637228347002 đang chạy. CI-only Range observer ghi loại ẩn danh vào metadata riêng ngoài game, không sửa/nuốt lỗi; local69Ruby/15privacy/6probe PASS. Masked957: conditionalInteger, Rangebegin self.<ẩn>.pitch. Không coerce/patched Range mù. R6 hoàn tất gần nhất46b/run37224825296: XP266/Ace294 mức1 PASS, VX64 FAIL ArgumentError96:957; native46b fixture getter17/23/eval/PixelCopy PASS, không phải VX gameplay. Giữ expect_fail=vx, cần Luna fresh8a7 và CI/R6 đúng head trước merge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
     },
     {
       "id": "web",
