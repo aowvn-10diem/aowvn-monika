@@ -86,6 +86,38 @@ class GitHubAPI:
             next_route = self._next_link(headers.get("Link"))
         return items
 
+    def list_recent(self, route: str, cutoff: datetime, time_field: str, field: str | None = None) -> list:
+        """Paginate a newest-first endpoint only until its records cross cutoff."""
+        items = []
+        next_route: str | None = route
+        while next_route:
+            data, headers = self._request_json(next_route)
+            if isinstance(data, list):
+                page = data
+            elif isinstance(data, dict) and field:
+                page = data.get(field, [])
+            else:
+                raise RuntimeError("GitHub API returned an unexpected list response.")
+            if not isinstance(page, list):
+                raise RuntimeError("GitHub API returned an unexpected list field.")
+            past_cutoff = False
+            for item in page:
+                at = parse_time(item.get(time_field))
+                if at and at < cutoff:
+                    past_cutoff = True
+                    break
+                items.append(item)
+            if past_cutoff:
+                break
+            next_route = self._next_link(headers.get("Link"))
+        return items
+
+    def fetch_commit(self, sha: str) -> dict:
+        data, _ = self._request_json(f"/commits/{urllib.parse.quote(sha, safe='')}")
+        if not isinstance(data, dict):
+            raise RuntimeError("GitHub API returned an unexpected commit response.")
+        return data
+
 
 def parse_time(value: str | None) -> datetime | None:
     if not isinstance(value, str) or not value:
@@ -197,7 +229,12 @@ def build_digest(api: GitHubAPI, repository: str, now: datetime | None = None) -
         })
 
     merged = []
-    for pr in api.list_all("/pulls?state=closed&per_page=100"):
+    closed_prs = api.list_recent(
+        "/pulls?state=closed&sort=updated&direction=desc&per_page=100",
+        cutoff,
+        "updated_at",
+    )
+    for pr in closed_prs:
         merged_at = pr.get("merged_at")
         parsed = parse_time(merged_at)
         if parsed and cutoff <= parsed <= now:
@@ -212,19 +249,28 @@ def build_digest(api: GitHubAPI, repository: str, now: datetime | None = None) -
     branches = []
     for branch in api.list_all("/branches?per_page=100"):
         name = branch.get("name", "")
-        if not name.startswith(("sol/", "luna/")):
+        if not name.startswith(("sol/", "sonnet/", "luna/")):
             continue
         commit = branch.get("commit") or {}
-        details = commit.get("commit") or {}
+        sha = commit.get("sha")
+        details = {}
+        if sha:
+            details = api.fetch_commit(sha).get("commit") or {}
         committer = details.get("committer") or details.get("author") or {}
         branches.append({
             "name": name,
-            "commit_sha": commit.get("sha"),
+            "commit_sha": sha,
             "last_commit_at": committer.get("date"),
         })
     branches.sort(key=lambda branch: timestamp(branch.get("last_commit_at")), reverse=True)
 
-    runs = api.list_all("/actions/runs?branch=main&per_page=100", "workflow_runs")
+    cutoff_text = cutoff.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    runs_query = urllib.parse.urlencode({
+        "branch": "main",
+        "per_page": 100,
+        "created": f">={cutoff_text}",
+    })
+    runs = api.list_all(f"/actions/runs?{runs_query}", "workflow_runs")
     failed_runs = []
     for run in runs:
         created = parse_time(run.get("created_at"))
@@ -318,7 +364,7 @@ def render_markdown(digest: dict) -> str:
     if len(merged) > 3:
         lines.append(f"- … {len(merged) - 3} more in digest.json")
 
-    lines.append(f"## Branches sol/* and luna/* ({len(branches)})")
+    lines.append(f"## Branches sol/*, sonnet/* and luna/* ({len(branches)})")
     for branch in branches[:4]:
         lines.append(f"- {one_line(branch.get('name'), 48)} @{one_line(str(branch.get('commit_sha') or '')[:7], 7)} ({one_line(branch.get('last_commit_at'))})")
     if len(branches) > 4:
