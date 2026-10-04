@@ -1,0 +1,73 @@
+{
+  "main": "d6d352dbf63a3ee87e6cc8673d33f11a76a300be",
+  "branch": "fa57d05",
+  "sol": {
+    "V30": "xong#25",
+    "V33": "xong#26 API34 PASS37170178145",
+    "V34": "xong#27",
+    "V35": "xong#30"
+  },
+  "haiku": {
+    "ccr-725394cf-n8mwms": "f26b8af"
+  },
+  "prs": {
+    "11": "H04 Luna duyệt",
+    "15": "H05 Luna duyệt",
+    "16": "H07 Luna duyệt",
+    "17": "L01 Luna duyệt",
+    "19": "H06 Luna duyệt",
+    "20": "L03 Luna duyệt",
+    "18": "L02 Luna (đã trả lời thư)",
+    "14": "SOL-003 (đã trả lời)",
+    "44": "gộpf96da6e, R6 mức1 xanh37197284896; VX/Ace fail đúng expected",
+    "46": "gộp5d352a7; Luna + CI xanh, K3 máy thật chưa kiểm",
+    "50": "76e8801, Build37207987027 xanh; R6/signals đang đo VXRAM + wininet",
+    "51": "gộp0e17edf,27test +5ZIP thật PASS; quota chưa đo",
+    "34": "PM duyệt; head 1c64c02 chỉ gộp main",
+    "55-57": "Dependabot → Sol (tra-loi-sol-009)",
+    "60": "gộp b65c315; LunaĐạt + Build/API34 xanh",
+    "61": "gộp8996b31; publication37196834615 SUCCESS",
+    "63": "gộp4e320e8; PMdigestMAIN37196924569 SUCCESS",
+    "57": "gộpa9cc79f, documentfile1.1.0",
+    "58": "gộp2d10ce0, coroutines1.9.0",
+    "66": "docs-only syncPM đangreview; đã kiểm tái sinh landing/assets/schema, sửa fallbackassets",
+    "67": "gộp7b45e57, config33 pinned12ABI, Cloudsync/ROM chưa kiểm",
+    "55": "gộpd6d352d; Luna+Build+PMmigrationreview, Cloud chưa kiểm",
+    "56": "gộpf5ddf2f; Luna+7jobđại diện+PMmigrationreview, ký/Cloud chưa kiểm",
+    "64": "đóng theo Luna; câu hỏi57 đã cũ, không tựmerge chung"
+  },
+  "idle": 0,
+  "cadence": 30,
+  "dashboard": "https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d",
+  "dashboard_state": "Nguồn GitHub: docs/opus/pm/bang-tien-do/state.json trên nhánh PM. Artifact Claude bên ngoài chưa cập nhật trong lượt tiếp quản.",
+  "dashboard_version": 58,
+  "rule": "Sol tiếp quản PM theo lệnh chủ dự án; code Sol cần Luna + CI; không nhắn sếp; giữ cổng phát hành/ký.",
+  "trigger": "trig_01Nk2NQXsfxm8hQLAZAo4ZsS",
+  "note": "Sol tiếp quản tạm PM/Sonnet theo issue65 tới05/10 15:00UTC; Luna review độc lập. Gemini F01/F02 chờ kích hoạt.",
+  "luna": {
+    "L05": "#29 duyệt",
+    "L06": "#31 duyệt"
+  },
+  "answers_seen": {
+    "Q1": "2026-10-04T02:53:28.505Z",
+    "Q2": "2026-10-04T02:53:38.730Z",
+    "Q5": "2026-10-04T02:53:57.703Z",
+    "Q6": "2026-10-04T02:54:25.587Z"
+  },
+  "public_page": "Landing tải app: https://aowvn-10diem.github.io/aowvn-monika/ (docs/index.html trên docs/opus-tra-loi; nguồn docs/opus/pm/landing/landing-body.html + build.py). Trang tiến độ công khai đã bỏ.",
+  "pages": "200 (bật 04/10 trước 14:31)",
+  "sonnet_v46_session": "session_012Mjdz7xMK4GT44oSdV47Gc",
+  "baseline_check_tokens": "~15M cache_read/lượt (22–26 lần gọi, ngữ cảnh 600–740k)",
+  "acting_pm": "Sol",
+  "takeover_until": "2026-10-05T15:00:00Z",
+  "takeover_issue": 65,
+  "updated_at": "2026-10-04T14:13:00Z",
+  "gemini": {
+    "status": "chờ chủ dự án kích hoạt",
+    "tasks": [
+      "F01",
+      "F02"
+    ],
+    "prompt": "docs/opus/hop-thu/PROMPT-GEMINI-FLASH.md"
+  }
+}

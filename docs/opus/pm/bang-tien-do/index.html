@@ -1,0 +1,593 @@
+<title>Bảng tiến độ Monika</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: một cột đọc trên điện thoại. Thứ tự: tóm tắt → câu sếp cần trả lời (điền ngay) → tiến độ theo module (game / chức năng app, mỗi module 4 bước) → việc của đội → cổng → nhật ký. */
+:root {
+  --bg: #FBF6EE;
+  --surface: #FFFDF9;
+  --fg: #24211F;
+  --muted: #6E6760;
+  --line: #E9E0D4;
+  --chip: #F1E9DE;
+  --g1: #FF8A3D; --g2: #FF4F8B; --g3: #8B5CF6;
+  --ok: #23885A; --ok-bg: #E2F3EA;
+  --run: #C2560F; --run-bg: #FFE9D8;
+  --wait: #6E6760; --wait-bg: #F1E9DE;
+  --stuck: #C23A3A; --stuck-bg: #FBE3E1;
+  --boss: #6D3FD6; --boss-bg: #EEE7FD; --boss-line: #D9CCFA;
+  --frost: #3F6E9C; --frost-bg: #E3EDF7;
+  --on-accent: #FFFFFF;
+  --font: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r-lg: 22px; --r-md: 14px; --r-sm: 999px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #181614; --surface: #221F1D; --fg: #F4EDE3; --muted: #A89F95; --line: #35302C; --chip: #2E2A27;
+    --ok: #5FD39B; --ok-bg: #173226; --run: #FFA866; --run-bg: #3A2617;
+    --wait: #B5ACA2; --wait-bg: #2E2A27; --stuck: #FF8A80; --stuck-bg: #3B1E1D;
+    --boss: #B79BFF; --boss-bg: #2A2142; --boss-line: #45366E;
+    --frost: #9DC0E6; --frost-bg: #1C2A38;
+    --on-accent: #1A1530;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #181614; --surface: #221F1D; --fg: #F4EDE3; --muted: #A89F95; --line: #35302C; --chip: #2E2A27;
+  --ok: #5FD39B; --ok-bg: #173226; --run: #FFA866; --run-bg: #3A2617;
+  --wait: #B5ACA2; --wait-bg: #2E2A27; --stuck: #FF8A80; --stuck-bg: #3B1E1D;
+  --boss: #B79BFF; --boss-bg: #2A2142; --boss-line: #45366E;
+  --frost: #9DC0E6; --frost-bg: #1C2A38;
+  --on-accent: #1A1530;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 860px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: grid; gap: 28px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.mono { font-family: var(--mono); font-size: 0.86em; }
+.num { font-variant-numeric: tabular-nums; }
+button { font: inherit; }
+button:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--g3); outline-offset: 2px; }
+
+/* Đầu trang */
+.top { display: grid; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.mark { width: 22px; height: 22px; border-radius: 8px; background: linear-gradient(135deg, var(--g1), var(--g2) 55%, var(--g3)); flex: none; }
+h1 { font-size: clamp(28px, 6vw, 40px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); font-size: 13px; }
+.meta b { color: var(--fg); font-weight: 600; }
+.fresh { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
+.dot.stale { background: var(--run); }
+.headline { font-size: 16px; font-weight: 500; max-width: 65ch; }
+
+/* Tóm tắt */
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
+.stat { padding: 12px 16px; display: grid; gap: 2px; border-left: 1px solid var(--line); min-width: 0; }
+.stat:first-child { border-left: 0; }
+.stat b { font-size: 24px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12.5px; color: var(--muted); }
+.stat.hot b { color: var(--boss); }
+.stat.warn b { color: var(--stuck); }
+
+/* Tiêu đề khối */
+.sec { display: grid; gap: 12px; min-width: 0; }
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.count { font-size: 13px; color: var(--muted); }
+.calm { color: var(--muted); font-size: 15px; }
+
+/* Câu sếp cần trả lời */
+.boss { background: var(--boss-bg); border-radius: var(--r-lg); padding: 18px; display: grid; gap: 14px; }
+.boss h2 { color: var(--boss); }
+.boss-intro { font-size: 14px; color: var(--muted); max-width: 65ch; }
+.qs { display: grid; gap: 12px; }
+.ask { background: var(--surface); border-radius: var(--r-md); padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.ask-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ask-q { font-weight: 700; font-size: 16px; line-height: 1.4; }
+.ask-r { color: var(--muted); font-size: 14px; }
+.ask-r b { color: var(--fg); font-weight: 600; }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt { display: inline-flex; align-items: center; gap: 8px; text-align: left; border: 1.5px solid var(--boss-line); background: var(--surface); color: var(--fg); border-radius: 12px; padding: 8px 12px; font-size: 14px; font-weight: 600; cursor: pointer; line-height: 1.3; }
+.opt::before { content: ""; width: 14px; height: 14px; flex: none; border: 2px solid var(--boss); border-radius: 50%; }
+.opt.many::before { border-radius: 4px; }
+.opt[aria-checked="true"] { background: var(--boss); border-color: var(--boss); color: var(--on-accent); }
+.opt[aria-checked="true"]::before { border-color: var(--on-accent); background: radial-gradient(circle, var(--on-accent) 0 3px, transparent 4px); }
+.opt.many[aria-checked="true"]::before { background: var(--on-accent); }
+.opt:hover { border-color: var(--boss); }
+.opt:disabled { opacity: .55; cursor: default; }
+.note-in { width: 100%; min-height: 64px; resize: vertical; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--bg); color: var(--fg); font: inherit; font-size: 14px; }
+.note-in::placeholder { color: var(--muted); }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.btn { border: 0; border-radius: var(--r-sm); padding: 9px 18px; font-weight: 700; font-size: 14px; cursor: pointer; background: var(--boss); color: var(--on-accent); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.ghost { background: transparent; color: var(--boss); padding: 6px 4px; }
+.msg { font-size: 13px; color: var(--muted); }
+.msg.err { color: var(--stuck); font-weight: 600; }
+.answered { display: grid; gap: 6px; background: var(--ok-bg); border-radius: 12px; padding: 10px 12px; }
+.answered-h { font-size: 13px; font-weight: 700; color: var(--ok); }
+.answered-a { font-weight: 700; }
+.answered-n { font-size: 14px; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.done-box { background: var(--surface); border-radius: var(--r-md); padding: 4px 16px; }
+.done-box summary { cursor: pointer; padding: 10px 0; font-weight: 700; font-size: 14px; color: var(--boss); }
+.dec { list-style: none; margin: 0; padding: 0 0 8px; display: grid; }
+.dec li { display: grid; gap: 2px; padding: 10px 0; border-top: 1px solid var(--line); }
+.dec .q { font-size: 14px; color: var(--muted); }
+.dec .a { font-weight: 600; }
+.dec .by { font-size: 12px; color: var(--muted); }
+
+/* Chip trạng thái */
+.chip { display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-sm); padding: 2px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.s-xong { color: var(--ok); background: var(--ok-bg); }
+.s-dang { color: var(--run); background: var(--run-bg); }
+.s-cho, .s-lap, .s-na { color: var(--wait); background: var(--wait-bg); }
+.s-ket, .s-loi { color: var(--stuck); background: var(--stuck-bg); }
+.s-sep { color: var(--boss); background: var(--boss-bg); }
+.s-bang { color: var(--frost); background: var(--frost-bg); }
+.code { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--muted); background: var(--chip); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+.urg { font-size: 12px; font-weight: 700; color: var(--boss); }
+
+/* Module */
+.seg { display: inline-flex; background: var(--chip); border-radius: var(--r-sm); padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { font-size: 13px; font-weight: 600; color: var(--muted); background: transparent; border: 0; border-radius: var(--r-sm); padding: 5px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 18px; height: 6px; border-radius: 3px; display: inline-block; }
+.mods { display: grid; gap: 10px; }
+.mod { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.mod.frozen { background: transparent; border-style: dashed; }
+.mod-top { display: flex; align-items: baseline; gap: 8px 12px; flex-wrap: wrap; }
+.mod-name { font-weight: 800; font-size: 16px; flex: 1 1 200px; min-width: 0; }
+.mod-score { font-size: 13px; color: var(--muted); font-weight: 600; }
+.mod-scope { font-size: 13px; color: var(--muted); margin-top: -6px; }
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.step { display: grid; gap: 4px; min-width: 0; }
+.step i { height: 6px; border-radius: 3px; background: var(--chip); display: block; }
+.step b { font-size: 12px; font-weight: 700; }
+.step span { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-xong i { background: var(--ok); } .st-xong span { color: var(--ok); }
+.st-dang i { background: repeating-linear-gradient(90deg, var(--run) 0 60%, var(--run-bg) 60% 100%); } .st-dang span { color: var(--run); }
+.st-loi i { background: var(--stuck); } .st-loi span { color: var(--stuck); font-weight: 700; }
+.st-sep i { background: var(--boss); } .st-sep span { color: var(--boss); }
+.st-bang i { background: repeating-linear-gradient(135deg, var(--frost) 0 4px, var(--frost-bg) 4px 8px); } .st-bang span { color: var(--frost); }
+.st-na i { background: transparent; border: 1px dashed var(--line); }
+.mod-note { font-size: 14px; max-width: 70ch; }
+.mod-tasks { list-style: none; margin: 0; padding: 0; display: grid; border-top: 1px solid var(--line); }
+.mod-tasks li { display: flex; align-items: baseline; gap: 6px 10px; flex-wrap: wrap; padding: 8px 0 0; font-size: 14px; }
+.mod-tasks .tt { flex: 1 1 180px; min-width: 0; }
+.mod-tasks .who { font-size: 12px; color: var(--muted); font-weight: 600; }
+.mod-done { font-size: 12.5px; color: var(--muted); }
+
+/* Việc */
+.list { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
+.list li { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: start; padding: 12px 16px; border-top: 1px solid var(--line); }
+.list li:first-child { border-top: 0; }
+.t-title { font-weight: 600; min-width: 0; }
+.t-note { grid-column: 2 / 4; color: var(--muted); font-size: 13px; min-width: 0; overflow-wrap: anywhere; }
+.t-mod { color: var(--muted); font-weight: 500; font-size: 13px; }
+.t-who { color: var(--muted); font-size: 12px; font-weight: 600; }
+.t-right { display: grid; justify-items: end; gap: 4px; }
+.empty { padding: 16px; color: var(--muted); }
+
+/* Nhật ký */
+.log { list-style: none; margin: 0; padding: 0; display: grid; }
+.log li { display: grid; grid-template-columns: 7.5em 1fr; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.log li:first-child { border-top: 0; }
+.log time { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; padding-top: 1px; }
+.foot { color: var(--muted); font-size: 12px; display: grid; gap: 4px; }
+
+@media (max-width: 520px) {
+  .stats { grid-template-columns: 1fr; }
+  .stat { border-left: 0; border-top: 1px solid var(--line); display: flex; align-items: baseline; gap: 10px; }
+  .stat:first-child { border-top: 0; }
+  .list li { grid-template-columns: 1fr auto; }
+  .list li .code { grid-column: 1 / 3; justify-self: start; }
+  .t-note { grid-column: 1 / 3; }
+  .log li { grid-template-columns: 1fr; gap: 2px; }
+  .opt { width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .opt, .btn { transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"></span>Aow Monika · điều phối dự án</div>
+    <h1>Bảng tiến độ</h1>
+    <p class="headline" id="headline">Đang tải dữ liệu tiến độ…</p>
+    <div class="meta" id="meta">
+      <span class="fresh"><span class="dot" id="fresh-dot"></span><span id="fresh-text">Chưa có lần cập nhật</span></span>
+    </div>
+  </header>
+
+  <div class="stats" id="stats" aria-label="Tóm tắt">
+    <div class="stat hot"><b id="st-q">–</b><span>câu hỏi chờ sếp trả lời</span></div>
+    <div class="stat"><b id="st-phone">–</b><span>module game đã thử trên điện thoại</span></div>
+    <div class="stat"><b id="st-open">–</b><span>việc đội đang làm</span></div>
+  </div>
+
+  <section class="boss sec" aria-labelledby="boss-h" id="hoi">
+    <div class="sec-h"><h2 id="boss-h">Câu sếp cần trả lời</h2><span class="count num" id="boss-count"></span></div>
+    <p class="boss-intro" id="boss-intro">Chọn câu trả lời, thêm ghi chú nếu cần, rồi bấm Gửi. PM đọc câu trả lời ở lượt kiểm hộp thư kế tiếp và chuyển câu đó xuống mục Đã chốt.</p>
+    <div class="qs" id="boss-list"><p class="calm">Câu hỏi sẽ hiện ở đây khi trang tải xong dữ liệu.</p></div>
+    <details class="done-box" id="dec-box" hidden>
+      <summary id="dec-sum">Đã chốt</summary>
+      <ul class="dec" id="dec-list"></ul>
+    </details>
+  </section>
+
+  <section class="sec" aria-labelledby="m-h" id="module">
+    <div class="sec-h">
+      <h2 id="m-h">Tiến độ theo module</h2>
+      <div class="seg" role="group" aria-label="Chọn nhóm module">
+        <button id="g-game" type="button" data-g="game" aria-pressed="true">Module game</button>
+        <button id="g-app" type="button" data-g="app" aria-pressed="false">Chức năng app</button>
+      </div>
+    </div>
+    <div class="legend" aria-label="Chú thích">
+      <span><i style="background:var(--ok)"></i>Xong</span>
+      <span><i style="background:repeating-linear-gradient(90deg,var(--run) 0 60%,var(--run-bg) 60% 100%)"></i>Đang làm</span>
+      <span><i style="background:var(--boss)"></i>Chờ sếp</span>
+      <span><i style="background:var(--stuck)"></i>Lỗi</span>
+      <span><i style="background:repeating-linear-gradient(135deg,var(--frost) 0 4px,var(--frost-bg) 4px 8px)"></i>Tạm dừng</span>
+      <span><i style="background:var(--chip)"></i>Chưa làm</span>
+    </div>
+    <div class="mods" id="mod-list"><p class="empty">Các module (máy chơi game cổ điển, Kirikiri, RPG Maker…) sẽ hiện ở đây, mỗi module 4 bước: Dựng, Tự kiểm, Máy thật, Phát hành.</p></div>
+  </section>
+
+  <section class="sec" aria-labelledby="t-h">
+    <div class="sec-h">
+      <h2 id="t-h">Việc của đội</h2>
+      <div class="seg" role="group" aria-label="Lọc việc">
+        <button id="f-open" type="button" data-f="open" aria-pressed="true">Đang chạy</button>
+        <button id="f-done" type="button" data-f="done" aria-pressed="false">Đã xong</button>
+        <button id="f-all" type="button" data-f="all" aria-pressed="false">Tất cả</button>
+      </div>
+    </div>
+    <ul class="list" id="t-list"><li class="empty">Việc của Sonnet, Sol, Luna và PM sẽ hiện ở đây.</li></ul>
+  </section>
+
+  <section class="sec" aria-labelledby="g-h">
+    <div class="sec-h"><h2 id="g-h">Cổng của sếp</h2><span class="count">Việc ngoài kỹ thuật, sếp làm hoặc chốt</span></div>
+    <ul class="list" id="g-list"><li class="empty">Các cổng G1–G10 sẽ hiện ở đây.</li></ul>
+  </section>
+
+  <section class="sec" aria-labelledby="l-h">
+    <div class="sec-h"><h2 id="l-h">Nhật ký</h2><span class="count">Giờ Việt Nam</span></div>
+    <ul class="log" id="l-list"><li><time>—</time><span class="calm">Các sự kiện mới nhất sẽ hiện ở đây.</span></li></ul>
+  </section>
+
+  <footer class="foot">
+    <span id="foot-note">PM (Opus) kiểm repo định kỳ và ghi lại trang này khi có thay đổi. Câu trả lời của sếp được lưu ngay khi bấm Gửi.</span>
+    <span>Nguồn gốc: <span class="mono">docs/opus/KE-HOACH.md</span> trong repo aowvn-monika.</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var LABEL = { xong: "Xong", dang: "Đang làm", cho: "Chờ", ket: "Kẹt", sep: "Chờ sếp", lap: "Lặp lại", loi: "Lỗi", bang: "Tạm dừng", na: "—" };
+  var STEP_WORD = { xong: "Xong", dang: "Đang làm", cho: "Chưa", loi: "Lỗi", sep: "Chờ sếp", bang: "Tạm dừng", na: "Không áp dụng" };
+  var STEPS = [["build", "Dựng"], ["auto", "Tự kiểm"], ["phone", "Máy thật"], ["release", "Phát hành"]];
+  var filter = "open", group = "game";
+  try { var f = localStorage.getItem("monika-filter"); if (f === "open" || f === "done" || f === "all") filter = f; } catch (e) {}
+  try { var g = localStorage.getItem("monika-group"); if (g === "game" || g === "app") group = g; } catch (e) {}
+
+  var embedded = (function () { var n = document.getElementById("embedded-state"); if (!n) return null; try { return JSON.parse(n.textContent); } catch (e) { return null; } })();
+  var PUBLIC = !!embedded;
+  var state = null, answers = {}, db = null, readOnly = false;
+  var drafts = {}, editing = {}, saving = {}, errors = {}, bossDirty = false;
+
+  var fmt = new Intl.DateTimeFormat("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+  function when(iso) { var d = new Date(iso); return isNaN(d) ? String(iso || "") : fmt.format(d); }
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function chip(s) { var k = LABEL[s] ? s : "cho"; return el("span", "chip s-" + k, LABEL[k]); }
+  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+  function arr(x) { return Array.isArray(x) ? x : []; }
+  function modName(id) { var m = arr(state && state.modules).find(function (x) { return x.id === id; }); return m ? m.name : ""; }
+
+  /* ---------- Đầu trang + tóm tắt ---------- */
+  function renderMeta(s) {
+    document.getElementById("headline").textContent = s.headline || "Dự án đang chạy theo kế hoạch.";
+    var meta = document.getElementById("meta"); clear(meta);
+    var fr = el("span", "fresh"), dot = el("span", "dot"); fr.appendChild(dot);
+    var age = s.updatedAt ? (Date.now() - new Date(s.updatedAt).getTime()) / 60000 : Infinity;
+    if (age > 120) dot.className = "dot stale";
+    fr.appendChild(el("span", null, s.updatedAt ? "Cập nhật " + when(s.updatedAt) + (age > 120 ? " (đã hơn 2 giờ)" : "") : "Chưa có lần cập nhật"));
+    meta.appendChild(fr);
+    if (s.mainSha) { var m = el("span"); m.appendChild(document.createTextNode("main @ ")); m.appendChild(el("b", "mono", s.mainSha)); meta.appendChild(m); }
+    if (s.app) meta.appendChild(el("span", null, s.app));
+    if (s.nextCheck) meta.appendChild(el("span", null, "Lượt kiểm tới " + when(s.nextCheck)));
+  }
+
+  function renderStats(s) {
+    var qs = arr(s.needsBoss);
+    var waiting = qs.filter(function (q) { return !answers[q.code]; }).length;
+    document.getElementById("st-q").textContent = String(waiting);
+    var games = arr(s.modules).filter(function (m) { return m.group === "game" && !m.frozen; });
+    var tried = games.filter(function (m) { return m.steps && m.steps.phone === "xong"; }).length;
+    var phone = document.getElementById("st-phone");
+    phone.textContent = tried + "/" + games.length;
+    phone.parentNode.className = "stat" + (tried === 0 && games.length ? " warn" : "");
+    document.getElementById("st-open").textContent = String(arr(s.tasks).filter(function (t) { return t.status === "dang"; }).length);
+  }
+
+  /* ---------- Câu hỏi ---------- */
+  function draftFor(q) {
+    if (!drafts[q.code]) {
+      var a = answers[q.code] || {};
+      drafts[q.code] = { choice: a.choice || "", choices: arr(a.choices).slice(), note: a.note || "" };
+    }
+    return drafts[q.code];
+  }
+  function answerText(q, a) {
+    if (q.kind === "many") { var c = arr(a.choices); return c.length ? c.join(" · ") : "Không chọn mục nào"; }
+    return a.choice || "Chỉ ghi chú";
+  }
+
+  function renderBoss(s) {
+    var box = document.getElementById("boss-list");
+    var active = document.activeElement;
+    if (active && active.tagName === "TEXTAREA" && box.contains(active)) { bossDirty = true; return; }
+    bossDirty = false;
+    clear(box);
+    var items = arr(s.needsBoss);
+    document.getElementById("boss-count").textContent = items.length ? items.length + " câu" : "";
+    if (!items.length) box.appendChild(el("p", "calm", "Không có câu nào cần sếp trả lời lúc này."));
+    items.forEach(function (q) { box.appendChild(questionCard(q)); });
+
+    var dec = arr(s.decisions), dbox = document.getElementById("dec-box"), dl = document.getElementById("dec-list");
+    dbox.hidden = !dec.length; clear(dl);
+    document.getElementById("dec-sum").textContent = "Đã chốt (" + dec.length + ")";
+    dec.forEach(function (d) {
+      var li = el("li");
+      var top = el("div", "q"); if (d.code && d.code !== "—") { top.appendChild(el("span", "code", d.code)); top.appendChild(document.createTextNode(" ")); }
+      top.appendChild(document.createTextNode(d.question || "")); li.appendChild(top);
+      li.appendChild(el("div", "a", d.answer || ""));
+      li.appendChild(el("div", "by", (d.by ? d.by + " · " : "") + (d.at ? when(d.at) : "")));
+      dl.appendChild(li);
+    });
+  }
+
+  function questionCard(q) {
+    var c = el("article", "ask"); c.id = "q-" + q.code;
+    var top = el("div", "ask-top");
+    if (q.code) top.appendChild(el("span", "code", q.code));
+    if (q.urgency) top.appendChild(el("span", "urg", q.urgency));
+    c.appendChild(top);
+    c.appendChild(el("h3", "ask-q", q.question || ""));
+    if (q.recommend) { var r = el("p", "ask-r"); r.appendChild(el("b", null, "PM đề xuất: ")); r.appendChild(document.createTextNode(q.recommend)); c.appendChild(r); }
+    if (q.how) { var h = el("p", "ask-r"); h.appendChild(el("b", null, "Cách làm: ")); h.appendChild(document.createTextNode(q.how)); c.appendChild(h); }
+
+    if (PUBLIC) { c.appendChild(el("p", "msg", "Đang chờ sếp trả lời.")); return c; }
+    var a = answers[q.code];
+    if (a && !editing[q.code]) {
+      var box = el("div", "answered");
+      box.appendChild(el("div", "answered-h", "Sếp đã trả lời" + (a.at ? " lúc " + when(a.at) : "") + " · PM xử lý ở lượt kiểm tới"));
+      box.appendChild(el("div", "answered-a", answerText(q, a)));
+      if (a.note) box.appendChild(el("div", "answered-n", a.note));
+      c.appendChild(box);
+      if (!readOnly) {
+        var edit = el("button", "btn ghost", "Sửa câu trả lời"); edit.type = "button"; edit.id = "edit-" + q.code;
+        edit.addEventListener("click", function () { editing[q.code] = true; drafts[q.code] = null; renderBoss(state); var f = document.getElementById("opt-" + q.code + "-0"); if (f) f.focus(); });
+        var row0 = el("div", "send-row"); row0.appendChild(edit); c.appendChild(row0);
+      }
+      return c;
+    }
+
+    var d = draftFor(q), many = q.kind === "many";
+    var opts = el("div", "opts"); opts.setAttribute("role", many ? "group" : "radiogroup"); opts.setAttribute("aria-label", "Câu trả lời cho " + q.code);
+    var sendBtn;
+    function canSend() { return !readOnly && db && !saving[q.code] && (many ? (d.choices.length > 0 || d.note.trim()) : (d.choice || d.note.trim())); }
+    function refresh() {
+      Array.prototype.forEach.call(opts.children, function (b) {
+        var v = b.dataset.v, on = many ? d.choices.indexOf(v) >= 0 : d.choice === v;
+        b.setAttribute("aria-checked", String(on));
+      });
+      sendBtn.disabled = !canSend();
+    }
+    arr(q.options).forEach(function (o, i) {
+      var b = el("button", "opt" + (many ? " many" : ""), o); b.type = "button"; b.dataset.v = o; b.id = "opt-" + q.code + "-" + i;
+      b.setAttribute("role", many ? "checkbox" : "radio");
+      b.disabled = readOnly || !db;
+      b.addEventListener("click", function () {
+        if (many) { var k = d.choices.indexOf(o); if (k >= 0) d.choices.splice(k, 1); else d.choices.push(o); }
+        else d.choice = d.choice === o ? "" : o;
+        errors[q.code] = ""; refresh();
+      });
+      opts.appendChild(b);
+    });
+    c.appendChild(opts);
+
+    var ta = el("textarea", "note-in"); ta.id = "note-" + q.code; ta.rows = 2; ta.value = d.note;
+    ta.placeholder = "Ghi chú thêm (không bắt buộc)"; ta.setAttribute("aria-label", "Ghi chú cho " + q.code);
+    ta.disabled = readOnly || !db;
+    ta.addEventListener("input", function () { d.note = ta.value; refresh(); });
+    ta.addEventListener("blur", function () { if (bossDirty) setTimeout(function () { renderBoss(state); }, 300); });
+    c.appendChild(ta);
+
+    var row = el("div", "send-row");
+    sendBtn = el("button", "btn", saving[q.code] ? "Đang gửi…" : "Gửi trả lời"); sendBtn.type = "button"; sendBtn.id = "send-" + q.code;
+    sendBtn.addEventListener("click", function () { submit(q, d); });
+    row.appendChild(sendBtn);
+    if (a && editing[q.code]) {
+      var cancel = el("button", "btn ghost", "Hủy sửa"); cancel.type = "button"; cancel.id = "cancel-" + q.code;
+      cancel.addEventListener("click", function () { editing[q.code] = false; drafts[q.code] = null; errors[q.code] = ""; renderBoss(state); });
+      row.appendChild(cancel);
+    }
+    var msg = errors[q.code] ? el("span", "msg err", errors[q.code]) : (!db ? el("span", "msg", "Mở trang trong claude.ai (đã đăng nhập) để gửi câu trả lời.") : (readOnly ? el("span", "msg", "Chỉ sếp gửi được câu trả lời.") : null));
+    if (msg) { msg.setAttribute("role", errors[q.code] ? "alert" : "status"); row.appendChild(msg); }
+    c.appendChild(row);
+    refresh();
+    return c;
+  }
+
+  function submit(q, d) {
+    if (!db || saving[q.code]) return;
+    saving[q.code] = true; errors[q.code] = ""; renderBoss(state);
+    var body = { code: q.code, question: q.question || "", kind: q.kind === "many" ? "many" : "one", note: d.note.trim(), at: new Date().toISOString() };
+    if (body.kind === "many") body.choices = d.choices.slice(); else body.choice = d.choice;
+    db.doc("answers/" + q.code).set(body).then(function () {
+      saving[q.code] = false; editing[q.code] = false; drafts[q.code] = null;
+      answers[q.code] = body; render();
+    }, function (e) {
+      saving[q.code] = false;
+      var code = e && e.code;
+      if (code === "invalid_argument") { readOnly = true; errors[q.code] = "Tài khoản này không có quyền trả lời. Hãy mở trang bằng tài khoản claude.ai của sếp."; }
+      else if (code === "quota_exceeded") errors[q.code] = "Kho dữ liệu của trang đã đầy. Báo PM để dọn.";
+      else errors[q.code] = "Chưa lưu được câu trả lời. Đợi ít phút rồi bấm Gửi lại.";
+      renderBoss(state);
+    });
+  }
+
+  /* ---------- Module ---------- */
+  function renderMods(s) {
+    var box = document.getElementById("mod-list"); clear(box);
+    var mods = arr(s.modules).filter(function (m) { return m.group === group; });
+    if (!mods.length) { box.appendChild(el("p", "empty", "Chưa có module nào trong nhóm này.")); return; }
+    var rank = function (m) { return m.frozen ? 2 : (m.steps && Object.keys(m.steps).some(function (k) { return m.steps[k] === "loi"; }) ? 0 : 1); };
+    mods.slice().sort(function (a, b) { return rank(a) - rank(b); }).forEach(function (m) { box.appendChild(modCard(m, s)); });
+  }
+
+  function modCard(m, s) {
+    var c = el("article", "mod" + (m.frozen ? " frozen" : ""));
+    var top = el("div", "mod-top");
+    top.appendChild(el("h3", "mod-name", m.name || m.id));
+    var st = m.steps || {}, applicable = STEPS.filter(function (x) { return st[x[0]] !== "na"; });
+    var done = applicable.filter(function (x) { return st[x[0]] === "xong"; }).length;
+    if (m.frozen) top.appendChild(chip("bang"));
+    top.appendChild(el("span", "mod-score num", done + "/" + applicable.length + " bước xong"));
+    c.appendChild(top);
+    if (m.scope) c.appendChild(el("p", "mod-scope", m.scope));
+
+    var steps = el("div", "steps"); steps.setAttribute("role", "list");
+    STEPS.forEach(function (x) {
+      var v = st[x[0]] || "cho";
+      var cell = el("div", "step st-" + v); cell.setAttribute("role", "listitem");
+      cell.setAttribute("aria-label", x[1] + ": " + (STEP_WORD[v] || v));
+      cell.appendChild(el("i")); cell.appendChild(el("b", null, x[1])); cell.appendChild(el("span", null, STEP_WORD[v] || v));
+      steps.appendChild(cell);
+    });
+    c.appendChild(steps);
+    if (m.note) c.appendChild(el("p", "mod-note", m.note));
+
+    var tasks = arr(s.tasks).filter(function (t) { return t.module === m.id; });
+    var open = tasks.filter(function (t) { return t.status !== "xong"; });
+    var closed = tasks.length - open.length;
+    if (open.length) {
+      var ul = el("ul", "mod-tasks");
+      open.forEach(function (t) {
+        var li = el("li");
+        li.appendChild(el("span", "code", t.code));
+        li.appendChild(el("span", "tt", t.title));
+        if (t.owner) li.appendChild(el("span", "who", t.owner));
+        li.appendChild(chip(t.status));
+        ul.appendChild(li);
+      });
+      c.appendChild(ul);
+    }
+    if (closed) c.appendChild(el("p", "mod-done", "Đã xong " + closed + " việc trong module này."));
+    return c;
+  }
+
+  /* ---------- Việc, cổng, nhật ký ---------- */
+  function row(code, title, note, status, who, mod) {
+    var li = el("li");
+    li.appendChild(el("span", "code", code || ""));
+    var tt = el("span", "t-title", title || "");
+    if (mod) { tt.appendChild(document.createTextNode(" ")); tt.appendChild(el("span", "t-mod", "· " + mod)); }
+    li.appendChild(tt);
+    var right = el("span", "t-right"); right.appendChild(chip(status)); if (who) right.appendChild(el("span", "t-who", who));
+    li.appendChild(right);
+    if (note) li.appendChild(el("span", "t-note", note));
+    return li;
+  }
+
+  function renderTasks(s) {
+    var box = document.getElementById("t-list"); clear(box);
+    var shown = arr(s.tasks).filter(function (t) {
+      if (filter === "done") return t.status === "xong";
+      if (filter === "open") return t.status !== "xong";
+      return true;
+    });
+    var order = { ket: 0, loi: 0, sep: 1, dang: 2, cho: 3, lap: 4, xong: 5 };
+    shown.sort(function (a, b) { return (order[a.status] ?? 9) - (order[b.status] ?? 9); });
+    if (!shown.length) { box.appendChild(el("li", "empty", filter === "done" ? "Chưa có việc nào xong." : "Không có việc nào đang chạy.")); return; }
+    shown.forEach(function (t) { box.appendChild(row(t.code, t.title, t.note, t.status, t.owner, modName(t.module))); });
+  }
+
+  function renderGates(s) {
+    var box = document.getElementById("g-list"); clear(box);
+    var g = arr(s.gates);
+    if (!g.length) { box.appendChild(el("li", "empty", "Không có cổng nào.")); return; }
+    g.forEach(function (x) { box.appendChild(row(x.code, x.title, x.note, x.status, x.when)); });
+  }
+
+  function renderLog(s) {
+    var box = document.getElementById("l-list"); clear(box);
+    var l = arr(s.log);
+    if (!l.length) { var li0 = el("li"); li0.appendChild(el("time", null, "—")); li0.appendChild(el("span", "calm", "Chưa có sự kiện.")); box.appendChild(li0); return; }
+    l.forEach(function (e) {
+      var li = el("li");
+      var t = el("time", null, when(e.t)); t.setAttribute("datetime", e.t || ""); li.appendChild(t);
+      li.appendChild(el("span", null, e.text || ""));
+      box.appendChild(li);
+    });
+  }
+
+  function render() {
+    if (!state) return;
+    renderMeta(state); renderStats(state); renderBoss(state); renderMods(state); renderTasks(state); renderGates(state); renderLog(state);
+  }
+
+  function setFilter(f) {
+    filter = f;
+    try { localStorage.setItem("monika-filter", f); } catch (e) {}
+    document.querySelectorAll("[data-f]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.f === f)); });
+    if (state) renderTasks(state);
+  }
+  function setGroup(gp) {
+    group = gp;
+    try { localStorage.setItem("monika-group", gp); } catch (e) {}
+    document.querySelectorAll("[data-g]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.g === gp)); });
+    if (state) renderMods(state);
+  }
+  document.querySelectorAll("[data-f]").forEach(function (b) { b.addEventListener("click", function () { setFilter(b.dataset.f); }); });
+  document.querySelectorAll("[data-g]").forEach(function (b) { b.addEventListener("click", function () { setGroup(b.dataset.g); }); });
+  setFilter(filter); setGroup(group);
+
+  function offline(msg) { document.getElementById("headline").textContent = msg; }
+
+  if (PUBLIC) {
+    document.getElementById("boss-intro").textContent = "Các câu PM đang chờ sếp quyết. Sếp trả lời trên trang nội bộ; câu đã trả lời chuyển xuống mục Đã chốt.";
+    document.getElementById("foot-note").textContent = "Bản công khai, ai có link đều xem được, không cần đăng nhập. PM cập nhật sau mỗi lượt kiểm repo (khoảng 30 phút một lần ban ngày).";
+    state = embedded; render(); return;
+  }
+  if (!window.claude || typeof window.claude.use !== "function") { offline("Trang này cần mở trong claude.ai (đã đăng nhập) để đọc dữ liệu tiến độ."); return; }
+  window.claude.use("db").then(function (d) {
+    if (!d) { offline("Không đọc được dữ liệu tiến độ. Hãy mở trang khi đã đăng nhập claude.ai."); return; }
+    db = d;
+    db.doc("board/state").onSnapshot(function (snap) {
+      if (!snap.exists) { offline("Chưa có dữ liệu. PM sẽ ghi lần cập nhật đầu tiên trong lượt kiểm tới."); return; }
+      state = snap.data() || {};
+      render();
+    }, function () { offline("Mất kết nối dữ liệu. Tải lại trang để xem bản mới nhất."); });
+    db.collection("answers").onSnapshot(function (qs) {
+      var next = {};
+      qs.docs.forEach(function (doc) { var v = doc.data(); if (v) next[doc.id] = v; });
+      answers = next;
+      if (state) { renderStats(state); renderBoss(state); }
+    }, function () {});
+  });
+  window.claude.use("user").then(function (u) {
+    if (!u || typeof u.can !== "function") return;
+    Promise.resolve(u.can("data.write")).then(function (ok) { if (ok === false) { readOnly = true; if (state) renderBoss(state); } }, function () {});
+  }, function () {});
+})();
+</script>

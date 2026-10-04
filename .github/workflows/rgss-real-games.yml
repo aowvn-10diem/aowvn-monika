@@ -103,6 +103,10 @@ jobs:
             out/r6/vx-ruby18-shape.txt
           if-no-files-found: error
           retention-days: 3
+      - name: V44 probe kiểu Range chỉ trong APK CI, không thay đổi lỗi
+        run: |
+          ruby scripts/test-rgss-range-probe.rb
+          cat scripts/rgss-range-probe.rb >> app/src/main/assets/rgss/monika-ruby18.rb
       - name: Build APK với config fixture (unit đã chạy trên config chuẩn)
         run: ./gradlew assembleDebug --console=plain
       - name: KVM
