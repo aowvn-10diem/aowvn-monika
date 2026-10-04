@@ -125,8 +125,14 @@ flowchart LR
 | Crash log theo thành phần (dedup, env, crumbs, ApplicationExitInfo) | Xong | Unit test |
 | Kirikiri (visual novel .xp3) nhúng trong Monika | Lõi dựng từ nguồn, lib nạp từ gói trong máy ảo không sập (API 30/34) | **[CHƯA KIỂM]** chơi game thật, âm thanh, chạm, lưu, tua nhanh |
 | Kirikiri tích hợp sâu (commit 92a65b2): màn chuẩn bị tự tải, menu Monika, Việt hóa 119 chuỗi | Mã xong, test xanh | Gói có bản dịch **đang dựng lại**; sau đó cập nhật `modules.kirikiri` + Emulator Test + phát hành 0.7.3 |
+| R0: Spike mkxp-z Android arm64 dựng được; APK thử chưa ký 11.298.693 byte | Xong | [Kết quả R0](opus/ket-qua/R0.md) |
+| R1: Gói `rgss` arm64-v8a 7,6 MiB và `armeabi-v7a` 7,1 MiB | Xong | [Kết quả R1](opus/ket-qua/R1.md); máy 32-bit thật **[CHƯA KIỂM]** |
+| R2: Module `:rgss` với 9 file Java SDL 2.26.3 đã đổi gói | Xong | [V08 trong bảng việc](opus/KE-HOACH.md#v08) |
+| R3: `RgssGameActivity` + Emulator Test đạt trên API 30 và 34 | Xong | [Kết quả R3](opus/ket-qua/R3.md) |
 | E0: EngineRoutes/EnginePrepActivity/`allowExternalApp` | Xong | Cơ sở cho nhúng engine mới |
 | R4: MkxpConfigWriter (tuy chọn lõi mkxp-z) | Xong | Chuẩn bị cho R2–R3 |
+| R5: Phím ảo và menu Monika cho RPG Maker; Emulator Test API 34 nhận phím Enter | Một phần | [Kết quả R5](opus/ket-qua/R5.md); chạm lớp phủ **[CHƯA KIỂM]** |
+| Repo mã nguồn | Công khai từ 03/10/2026 | [Cổng G5 trong bảng việc](opus/KE-HOACH.md#4-cổng-cần-sếp-quyết) |
 | ONScripter (web, Onsyuri), Ruffle, HTML5 | Có runner | **[CHƯA KIỂM]** máy thật |
 | Ren'Py, RPG Maker XP/VX/Ace, Symbian | Vẫn dùng app ngoài (JoiPlay, EKA2L1) | Chưa nhúng |
 
