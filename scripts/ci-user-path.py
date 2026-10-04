@@ -12,21 +12,27 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def prepare(out, tag):
-    # Chỉ đọc release nháp/gói engine, không tải game. Không in credential.
-    releases = json.loads(subprocess.check_output(['gh', 'api', '--paginate', '--slurp',
-        'repos/aowvn-10diem/aowvn-monika/releases?per_page=100']))
-    matches = [r for page in releases for r in page if r['tag_name'] == tag and r['draft']]
-    if len(matches) != 1:
-        raise RuntimeError('Cần đúng một release RGSS nháp')
-    assets = [a for a in matches[0]['assets'] if a['name'] == 'rgss-arm64-v8a.zip']
-    if len(assets) != 1:
-        raise RuntimeError('Thiếu gói RGSS arm64')
+def prepare(out, tag, pack_file=None):
     web = out / 'web'; web.mkdir(parents=True, exist_ok=True)
     pack = web / 'rgss.zip'
-    with pack.open('wb') as target:
-        subprocess.run(['gh', 'api', f"repos/aowvn-10diem/aowvn-monika/releases/assets/{assets[0]['id']}",
-            '-H', 'Accept: application/octet-stream'], stdout=target, check=True)
+    asset_id = None
+    if pack_file is not None:
+        # V25 tải bằng bước workflow cố định, không đưa token vào script PR.
+        shutil.copyfile(pack_file, pack)
+    else:
+        # Đường V33 giữ nguyên: chỉ đọc release nháp/gói engine, không tải game.
+        releases = json.loads(subprocess.check_output(['gh', 'api', '--paginate', '--slurp',
+            'repos/aowvn-10diem/aowvn-monika/releases?per_page=100']))
+        matches = [r for page in releases for r in page if r['tag_name'] == tag and r['draft']]
+        if len(matches) != 1:
+            raise RuntimeError('Cần đúng một release RGSS nháp')
+        assets = [a for a in matches[0]['assets'] if a['name'] == 'rgss-arm64-v8a.zip']
+        if len(assets) != 1:
+            raise RuntimeError('Thiếu gói RGSS arm64')
+        asset_id = assets[0]['id']
+        with pack.open('wb') as target:
+            subprocess.run(['gh', 'api', f"repos/aowvn-10diem/aowvn-monika/releases/assets/{asset_id}",
+                '-H', 'Accept: application/octet-stream'], stdout=target, check=True)
     with zipfile.ZipFile(pack) as z:
         assert 'lib/libmkxp-z.so' in z.namelist(), 'Gói sai cây thư mục'
         assert z.testzip() is None, 'ZIP hỏng'
@@ -71,7 +77,7 @@ end
     with zipfile.ZipFile(out / 'Monika-V33.zip', 'w') as z:
         z.writestr('Game.ini', '[Game]\r\nTitle=Monika-V33\r\nScripts=Data\\Scripts.rxdata\r\nRTP1=\r\n')
         z.write(game / 'Scripts.rxdata', 'Data/Scripts.rxdata')
-    (out / 'fixture.json').write_text(json.dumps({'tag': tag, 'asset': assets[0]['id'], 'sha256': cfg['modules']['rgss']['sha256']}))
+    (out / 'fixture.json').write_text(json.dumps({'tag': tag, 'asset': asset_id, 'sha256': cfg['modules']['rgss']['sha256']}))
 
 def serve(out):
     class Handler(http.server.SimpleHTTPRequestHandler):

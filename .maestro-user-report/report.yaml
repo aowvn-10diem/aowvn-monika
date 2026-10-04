@@ -1,0 +1,12 @@
+appId: com.aow.monika
+---
+- tapOn: "Menu"
+- scrollUntilVisible:
+    element: "Báo lỗi game này"
+    direction: DOWN
+- tapOn: "Báo lỗi game này"
+- scrollUntilVisible:
+    element: "Không có tiếng"
+    direction: DOWN
+- tapOn: "Không có tiếng"
+- tapOn: "Gửi báo lỗi"

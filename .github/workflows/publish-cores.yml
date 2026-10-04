@@ -55,12 +55,12 @@ jobs:
           if gh api "repos/$PACKS_REPO/releases/tags/$TAG" > release-check.json 2> release-check.err; then
             echo '::error::Release đã có; không sửa hoặc clobber snapshot'; exit 1
           else
-            rg -q 'HTTP 404' release-check.err || { echo '::error::Không xác minh được release chưa có'; exit 1; }
+            grep -q 'HTTP 404' release-check.err || { echo '::error::Không xác minh được release chưa có'; exit 1; }
           fi
           if gh api "repos/$PACKS_REPO/git/ref/tags/$TAG" > tag-check.json 2> tag-check.err; then
             echo '::error::Tag đã có; chọn số snapshot mới'; exit 1
           else
-            rg -q 'HTTP 404' tag-check.err || { echo '::error::Không xác minh được tag chưa có'; exit 1; }
+            grep -q 'HTTP 404' tag-check.err || { echo '::error::Không xác minh được tag chưa có'; exit 1; }
           fi
           gh release create "$TAG" snapshot/*.zip snapshot/manifest.json --repo "$PACKS_REPO" --draft --title "$TAG" --notes-file snapshot/notes.md
           gh release edit "$TAG" --repo "$PACKS_REPO" --draft=false --latest=false

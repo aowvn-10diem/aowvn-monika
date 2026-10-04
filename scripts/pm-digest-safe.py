@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import urllib.parse
 import urllib.error
 import urllib.request
 
@@ -14,6 +15,8 @@ spec = importlib.util.spec_from_file_location('digest', Path(__file__).with_name
 digest = importlib.util.module_from_spec(spec); spec.loader.exec_module(digest)
 BOT_REF = 'refs/heads/bot/trang-thai'
 REPOSITORY = 'aowvn-10diem/aowvn-monika'
+# Public repository ID measured from GitHub metadata/Link; never an input.
+REPOSITORY_ID = 1392088306
 SENSITIVE_KEYS = {'body', 'email', 'path', 'token', 'authorization', 'password', 'secret', 'author', 'login'}
 
 def safe_text(value):
@@ -38,6 +41,19 @@ def sanitize(value, field=''):
     return value
 
 class BoundedDigestAPI(digest.GitHubAPI):
+    def _url(self, route):
+        if route.startswith('https://'):
+            parsed = urllib.parse.urlsplit(route)
+            prefix = '/repositories/' + str(REPOSITORY_ID) + '/'
+            if parsed.netloc == 'api.github.com' and parsed.path.startswith(prefix):
+                suffix = parsed.path[len(prefix):]
+                # Không chấp nhận đường vượt repo hoặc thành phần URL bị che bằng encoding.
+                if parsed.fragment or '%' in parsed.path or any(p in {'.', '..'} for p in suffix.split('/')):
+                    raise RuntimeError('Pagination URL không hợp lệ')
+                route = 'https://api.github.com' + self.repository_path + '/' + suffix
+                if parsed.query: route += '?' + parsed.query
+        return super()._url(route)
+
     def list_all(self, route, field=None):
         # L10 cần chỉ 10 commit/release mới nhất; hai endpoint này không đi tiếp lịch sử.
         if route in {'/commits?sha=main&per_page=10', '/releases?per_page=10'}:

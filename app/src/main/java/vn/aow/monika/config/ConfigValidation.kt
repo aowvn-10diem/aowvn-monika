@@ -19,6 +19,13 @@ internal object ConfigValidation {
     }
 
     private fun visit(value: JsonElement, path: String, field: String = "", hashes: Boolean = false) {
+        if (field == "errorPatterns") {
+            require(value is JsonArray && value.size <= 32 && value.all {
+                it is JsonPrimitive && it.isString && it.content.isNotBlank() && it.content.length <= 160
+            }) { "$path: errorPatterns phải là mảng tối đa 32 chuỗi không rỗng, <=160 ký tự" }
+            // Mẫu là literal, không phải URL; không lặp quy tắc mảng trên từng chuỗi.
+            return
+        }
         when (value) {
             is JsonObject -> value.forEach { (key, child) ->
                 visit(child, "$path.$key", key, hashes || field == "sha256ByAbi")
