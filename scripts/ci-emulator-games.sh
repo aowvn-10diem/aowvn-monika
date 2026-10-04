@@ -311,7 +311,7 @@ PY
         python3 -c "
 import json,sys
 d=json.load(open(sys.argv[1])); t0=int(sys.argv[2]); pid=sys.argv[3]
-ok = 'native' in str(d.get('kind')).lower() and d.get('component')=='engine:rgss' and (d.get('crumbs') or []) and int(d.get('time') or d.get('id') or 0) >= t0 and (not pid or pid in json.dumps(d))
+ok = (str(d.get('kind')).lower() in ('native','killed') and ('11' in str(d.get('reason')) or 'SIGSEGV' in str(d.get('reason')) or 'native' in str(d.get('kind')).lower())) and d.get('component')=='engine:rgss' and (d.get('session') or {}).get('kind')=='rgss' and str((d.get('session') or {}).get('pid'))==pid and (d.get('crumbs') or []) and int(d.get('time') or d.get('id') or 0) >= t0 and (not pid or pid in json.dumps(d))
 sys.exit(0 if ok else 1)" "$OUT/games/k10-report.json" "$K10_T0" "$K10_PID" && note "K10 OK báo cáo native đúng kind/component/crumbs" || { note "K10 FAIL báo cáo thiếu kind/component/crumbs đúng (xem games/k10-report.json)"; result=K10_FAIL; }
       fi
     fi
