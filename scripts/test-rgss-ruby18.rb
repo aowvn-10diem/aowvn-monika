@@ -69,4 +69,9 @@ eval(fixed)
 check(ChildFixture.new.forward(1, 2, 3) == [1, [2, 3]], 'super giữ giá trị/thứ tự/splat khi chuyển tiếp đối số')
 source = "class ChildFixture < ParentFixture\n def forward(arg, *rest); super(arg, *rest); end\nend\n"
 check(MonikaRuby18.repair(source).equal?(source), 'super hợp lệ không bị normalize')
+source = "call ('a', 1)\n" * 80
+check(MonikaRuby18.error_line(MonikaRuby18.repair(source)).nil?, '80lời gọi lỗi vượt trần64 cũ vẫn dùng budget chung')
+source = "call ('a', 1)\n" * (MonikaRuby18::MAX_REPAIRS + 1)
+trace = []
+check(MonikaRuby18.repair(source, [512], ->(*args) { trace << args }).equal?(source) && trace.last[1] == -1, 'vượt128vòng giữ nguyên toàn source và ghi đúng lý do giới hạn')
 puts 'ALL OK'

@@ -5,7 +5,7 @@ module MonikaRuby18
   MAX_BYTES = 8 * 1024 * 1024
   MAX_LINES = 20_000
   MAX_TOTAL = 128 * 1024 * 1024
-  MAX_REPAIRS = 64
+  MAX_REPAIRS = 128
   MAX_CANDIDATES = 8
   MAX_COMPILES = 512
   MAX_COMPILE_BYTES = 64 * 1024 * 1024
@@ -75,6 +75,7 @@ module MonikaRuby18
       source, line = candidates.first
       return source if line.nil? # Chỉ nhận khi TOÀN script compile được.
     end
+    trace.call(line, -1, 0) if trace # -1: hết trần vòng sửa, không phải thiếu candidate.
     original
   end
 
