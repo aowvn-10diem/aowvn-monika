@@ -8,26 +8,32 @@ on:
       - app/src/main/java/vn/aow/monika/diag/Engine*
       - app/src/main/java/vn/aow/monika/runner/RgssGameActivity.kt
       - app/src/main/java/vn/aow/monika/runner/KirikiriGameActivity.kt
-permissions: {contents: read}
+permissions: {contents: read, actions: read}
 concurrency: {group: 'v22-${{ github.ref }}', cancel-in-progress: true}
 jobs:
   signals:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    permissions: {contents: write} # Chỉ job cần thấy draft; token không tới mã PR.
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - name: Chỉ đọc gói draft RGSS trước khi checkout mã PR
+      # Artifact của Build RGSS run 7 trên main (92746a3), cùng binary gói draft7.
+      # Không cần quyền ghi release; hết hạn artifact thì dừng, không rơi latest/draft.
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          artifact-ids: 11287384479
+          run-id: 37161839408
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/v22-engine
+      - name: Kiểm snapshot RGSS7 bất biến trước khi dùng
         env:
-          GH_TOKEN: ${{ github.token }}
           RGSS_TAG: engines-rgss-7
         run: |
           set -euo pipefail
-          [[ "$RGSS_TAG" =~ ^engines-rgss-[0-9]+$ ]]
-          mkdir -p "$RUNNER_TEMP/v22-engine"
-          asset_id=$(gh api --paginate --slurp 'repos/aowvn-10diem/aowvn-monika/releases?per_page=100' | jq -er --arg tag "$RGSS_TAG" '[.[][] | select(.draft == true and .tag_name == $tag)] | if length == 1 then .[0] else error("draft count") end | [.assets[] | select(.name == "rgss-arm64-v8a.zip")] | if length == 1 then .[0].id else error("asset count") end')
-          [[ "$asset_id" =~ ^[0-9]+$ ]]
-          gh api "repos/aowvn-10diem/aowvn-monika/releases/assets/$asset_id" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/v22-engine/rgss.zip"
+          [ "$RGSS_TAG" = engines-rgss-7 ]
+          cd "$RUNNER_TEMP/v22-engine"
+          echo '83e23f835b98fdcb6921e542c538b0fd10d5589efa74ef922233431c5142f419  rgss-arm64-v8a.zip' | sha256sum --check --strict
+          mv rgss-arm64-v8a.zip rgss.zip
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
       - uses: actions/setup-java@v4

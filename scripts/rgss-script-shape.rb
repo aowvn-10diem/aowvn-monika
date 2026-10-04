@@ -33,7 +33,7 @@ def shape(line)
     when :on_sp, :on_ignored_sp then ' '
     when :on_nl, :on_ignored_nl then "\n"
     when :on_kw then KEYWORDS.include?(token) ? token : 'id'
-    when :on_ident then %w[eval binding class_eval module_eval instance_eval].include?(token) ? token : 'id'
+    when :on_ident then %w[eval binding class_eval module_eval instance_eval attr_accessor instance_variables instance_variable_get instance_variable_set instance_methods].include?(token) ? token : 'id'
     when :on_int, :on_float, :on_rational, :on_imaginary, :on_CHAR then '0'
     when :on_tstring_beg, :on_tstring_end then '"'
     when :on_tstring_content then 's'

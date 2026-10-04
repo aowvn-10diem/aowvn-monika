@@ -16,31 +16,35 @@ on:
       - scripts/ci-rgss-real.*
       - .maestro-rgss-real/**
 permissions:
-  # Mặc định chỉ đọc; riêng R6 cần thấy draft (read không thấy ở run37184975441).
   contents: read
+  actions: read
 concurrency:
   group: v25-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   r6:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    permissions: {contents: write} # Draft yêu cầu ghi; token chỉ ở bước cố định trước checkout.
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Chỉ đọc gói draft RGSS trước khi checkout mã PR
+      # Artifact của Build RGSS run 7 trên main (92746a3), cùng binary gói draft7.
+      # Không cần quyền ghi release; hết hạn artifact thì dừng, không rơi latest/draft.
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          artifact-ids: 11287384479
+          run-id: 37161839408
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/v25-engine
+      - name: Kiểm snapshot RGSS7 bất biến trước khi dùng
         env:
-          GH_TOKEN: ${{ github.token }}
           RGSS_TAG: ${{ inputs.rgss_tag || 'engines-rgss-7' }}
         run: |
           set -euo pipefail
-          [[ "$RGSS_TAG" =~ ^engines-rgss-[0-9]+$ ]]
-          mkdir -p "$RUNNER_TEMP/v25-engine"
-          # HTTP lỗi dừng trước jq để không che lỗi quyền/hạn mức thành lỗi kiểu JSON.
-          gh api --paginate --slurp 'repos/aowvn-10diem/aowvn-monika/releases?per_page=100' > "$RUNNER_TEMP/v25-engine/releases.json"
-          asset_id=$(jq -er --arg tag "$RGSS_TAG" '[.[][] | select(.draft == true and .tag_name == $tag)] | if length == 1 then .[0] else error("draft count") end | [.assets[] | select(.name == "rgss-arm64-v8a.zip")] | if length == 1 then .[0].id else error("asset count") end' "$RUNNER_TEMP/v25-engine/releases.json")
-          [[ "$asset_id" =~ ^[0-9]+$ ]]
-          gh api "repos/aowvn-10diem/aowvn-monika/releases/assets/$asset_id" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/v25-engine/rgss.zip"
+          [ "$RGSS_TAG" = engines-rgss-7 ]
+          cd "$RUNNER_TEMP/v25-engine"
+          echo '83e23f835b98fdcb6921e542c538b0fd10d5589efa74ef922233431c5142f419  rgss-arm64-v8a.zip' | sha256sum --check --strict
+          mv rgss-arm64-v8a.zip rgss.zip
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
       - uses: actions/setup-java@v4
@@ -87,7 +91,7 @@ jobs:
           with Path('out/r6/vx-script-shape.txt').open('w') as output:
               subprocess.run(['ruby','scripts/rgss-script-shape.rb',str(files[0])],stdout=output,check=True,timeout=60)
           with Path('out/r6/vx-ruby18-shape.txt').open('w') as output:
-              subprocess.run(['ruby','scripts/rgss-script-shape.rb',str(files[0]),'--ruby18','--inspect=96:951'],stdout=output,check=True,timeout=60)
+              subprocess.run(['ruby','scripts/rgss-script-shape.rb',str(files[0]),'10','--ruby18','--inspect=96:934','--inspect=96:951'],stdout=output,check=True,timeout=60)
           PY
       - name: Thu diagnostic đã che trước bài game dài (V44)
         if: steps.vx_shape.outcome == 'success'

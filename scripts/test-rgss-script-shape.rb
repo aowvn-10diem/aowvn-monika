@@ -31,6 +31,10 @@ Dir.mktmpdir('shape-fixture') do |dir|
   File.binwrite(input, Marshal.dump([[4, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
   out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
   check(status.success? && out.include?('eval(') && out.include?('binding') && %w[hidden_literal private_comment PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect giữ API Ruby công khai, che source/literal/comment/title')
+  source = "attr_accessor :private_field; instance_variables; instance_variable_get(:private_field)\n"
+  File.binwrite(input, Marshal.dump([[5, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
+  out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
+  check(status.success? && out.include?('attr_accessor') && out.include?('instance_variables') && out.include?('instance_variable_get') && %w[private_field PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect chỉ giữ API thuộc tính Ruby công khai, che tên field/title')
   _, _, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:99999')
   check(!status.success?, 'inspect chặn dòng vượt giới hạn')
 
