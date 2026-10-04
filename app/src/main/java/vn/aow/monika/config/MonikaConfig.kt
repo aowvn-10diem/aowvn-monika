@@ -213,10 +213,15 @@ data class EngineRule(
     val entry: List<String> = emptyList(),
 )
 
+/** Ảnh chụp lõi cố định theo ABI. sha256 của ZIP, version là định danh ảnh chụp. */
+@Serializable
+data class CoreArtifact(val url: String, val sha256: String, val version: String)
+
 @Serializable
 data class CoreDef(
     val version: String,
     val url: String,
+    val artifacts: Map<String, CoreArtifact> = emptyMap(),
     val systemFiles: String? = null,
     /** Tỉ lệ khung hình (rộng/cao) để xếp màn chơi dọc. Null = dùng mặc định theo lõi. */
     val aspectRatio: Float? = null,
