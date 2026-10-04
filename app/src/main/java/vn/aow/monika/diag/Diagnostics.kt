@@ -9,7 +9,7 @@ import android.os.Build
 import android.os.Process
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -76,7 +76,7 @@ object Diagnostics {
         /** Vệt sự kiện ngay trước lỗi (mới nhất cuối). */
         val crumbs: List<String> = emptyList(),
     ) {
-        fun toText(): String = buildString {
+        fun toText(): String = scrub(null, buildString {
             appendLine("== Báo lỗi Aow Monika ==")
             appendLine(title)
             if (component.isNotBlank()) appendLine("Thành phần: $component${if (count > 1) " · lặp $count lần" else ""}")
@@ -95,7 +95,7 @@ object Diagnostics {
             if (detail.isNotBlank()) { appendLine(); appendLine(detail) }
             if (crumbs.isNotEmpty()) { appendLine(); appendLine("-- vệt sự kiện trước lỗi --"); crumbs.forEach(::appendLine) }
             if (log.isNotEmpty()) { appendLine(); appendLine("-- log --"); log.forEach(::appendLine) }
-        }
+        })
     }
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -150,7 +150,7 @@ object Diagnostics {
     private fun write(c: Context, s: Session) {
         runCatching {
             val tmp = File(dir(c), "active-session.tmp")
-            tmp.writeText(json.encodeToString(Session.serializer(), s))
+            tmp.writeText(scrubJson(c, json.encodeToJsonElement(Session.serializer(), s)).toString())
             tmp.renameTo(sessionFile(c))
         }
     }
@@ -352,7 +352,7 @@ object Diagnostics {
         if (!enabledByConfig || !enabledByUser || endpoint.isBlank() || r.sent) return
         Thread {
             val ok = runCatching {
-                http.newCall(Request.Builder().url(endpoint).post(json.encodeToString(Report.serializer(), r).toRequestBody("application/json".toMediaType())).build())
+                http.newCall(Request.Builder().url(endpoint).post(reportJson(c, r).toRequestBody("application/json".toMediaType())).build())
                     .execute().use { it.isSuccessful }
             }.getOrDefault(false)
             if (ok) save(c, r.copy(sent = true))
@@ -363,9 +363,10 @@ object Diagnostics {
 
     /** Lưu báo cáo mới; nếu cùng dấu vân tay với báo cáo trước (trong 30 báo cáo gần nhất) thì gộp: tăng đếm, giữ bản mới nhất. */
     private fun record(c: Context, r0: Report): Report {
-        val fp = fingerprint(r0)
+        val safe = sanitized(c, r0)
+        val fp = fingerprint(safe)
         val prev = list(c).firstOrNull { it.fingerprint == fp }
-        val r = r0.copy(fingerprint = fp, count = (prev?.count ?: 0) + 1, sent = false, seen = prev?.seen == true && prev.count >= 3)
+        val r = safe.copy(fingerprint = fp, count = (prev?.count ?: 0) + 1, sent = false, seen = prev?.seen == true && prev.count >= 3)
         prev?.let { File(reportsDir(c), "${it.id}.json").delete() }
         save(c, r)
         return r
@@ -381,15 +382,31 @@ object Diagnostics {
         return Integer.toHexString(key.hashCode())
     }
 
-    private val PATH_APP = Regex("""/(?:data/user/\d+|data/data|storage/emulated/\d+|sdcard)/[^\s:'")]+""")
+    private val PRIVATE_PATH = Regex("""(?i)(?:content|file)://[^\r\n"'<>]+|/(?:data/user/\d+|data/data|storage/emulated/\d+|sdcard)(?:/[^\r\n"'<>]*)?""")
     private val EMAIL = Regex("""[\w.+-]+@[\w-]+(?:\.[\w-]+)+""")
-    private val SECRET = Regex("""(?i)(token|key|password|passwd|authorization|secret)(["']?\s*[:=]\s*["']?)[^\s&"',}]+""")
+    private val AUTH = Regex("""(?i)(authorization["']?\s*[:=]\s*["']?)(?:Bearer|Basic)\s+[^\s"',}]+""")
+    private val SECRET = Regex("""(?i)(\b(?:token|key|password|passwd|authorization|secret|y))(["']?\s*[:=]\s*)(?:"[^"\r\n]*(?:"|(?=[\r\n])|$)|'[^'\r\n]*(?:'|(?=[\r\n])|$)|[^\s&"',}]+)""")
 
-    /** Bỏ đường dẫn thật (có thể chứa tên người dùng/tên file riêng tư), email, token khỏi nội dung báo cáo. */
+    /** Che trước khi cắt ngắn: đường dẫn có dấu cách/tiếng Việt và URI phải ẩn cả tên file. */
     internal fun scrub(c: Context?, text: String): String = text
-        .replace(PATH_APP) { m -> val v = m.value; "<" + (if (v.contains("/storage") || v.contains("sdcard")) "bộ-nhớ" else "app") + ">/" + v.substringAfterLast('/') }
+        .replace(PRIVATE_PATH, "<đường-dẫn>")
+        .replace(AUTH) { it.groupValues[1] + "<ẩn>" }
+        .replace(SECRET) { it.groupValues[1] + it.groupValues[2] + "<ẩn>" }
         .replace(EMAIL, "<email>")
-        .replace(SECRET) { m -> m.groupValues[1] + m.groupValues[2] + "<ẩn>" }
+
+    /** Duyệt mọi chuỗi trong JSON, kể cả trường lồng nhau và trường mới thêm về sau. */
+    private fun scrubJson(c: Context?, value: JsonElement): JsonElement = when (value) {
+        is JsonObject -> JsonObject(value.mapValues { scrubJson(c, it.value) })
+        is JsonArray -> JsonArray(value.map { scrubJson(c, it) })
+        is JsonPrimitive -> if (value.isString) JsonPrimitive(scrub(c, value.content)) else value
+    }
+
+    internal fun sanitized(c: Context?, r: Report): Report = json.decodeFromJsonElement(
+        Report.serializer(), scrubJson(c, json.encodeToJsonElement(Report.serializer(), r))
+    )
+
+    internal fun reportJson(c: Context?, r: Report): String =
+        scrubJson(c, json.encodeToJsonElement(Report.serializer(), r)).toString()
 
     /** RAM trống, heap, đĩa trống, mạng, pin — thường là nguyên nhân thật của lỗi tải/giải nén/hết bộ nhớ. */
     internal fun envLine(c: Context): String = runCatching {
@@ -461,7 +478,7 @@ object Diagnostics {
 
     fun save(c: Context, r: Report) {
         runCatching {
-            File(reportsDir(c), "${r.id}.json").writeText(json.encodeToString(Report.serializer(), r))
+            File(reportsDir(c), "${r.id}.json").writeText(reportJson(c, r))
             // Giữ 30 báo cáo mới nhất.
             reportsDir(c).listFiles()?.sortedByDescending { it.name }?.drop(30)?.forEach { it.delete() }
         }
@@ -470,7 +487,7 @@ object Diagnostics {
 
     fun list(c: Context): List<Report> = reportsDir(c).listFiles().orEmpty()
         .sortedByDescending { it.name }
-        .mapNotNull { f -> runCatching { json.decodeFromString(Report.serializer(), f.readText()) }.getOrNull() }
+        .mapNotNull { f -> runCatching { sanitized(c, json.decodeFromString(Report.serializer(), f.readText())) }.getOrNull() }
 
     fun markSeen(c: Context, r: Report) { save(c, r.copy(seen = true)); if (pending.value?.id == r.id) pending.value = null }
 
@@ -490,7 +507,7 @@ object Diagnostics {
             return false
         }
         val ok = runCatching {
-            http.newCall(Request.Builder().url(endpoint).post(json.encodeToString(Report.serializer(), r).toRequestBody("application/json".toMediaType())).build())
+            http.newCall(Request.Builder().url(endpoint).post(reportJson(c, r).toRequestBody("application/json".toMediaType())).build())
                 .execute().use { it.isSuccessful }
         }.getOrDefault(false)
         if (ok) save(c, r.copy(sent = true))
