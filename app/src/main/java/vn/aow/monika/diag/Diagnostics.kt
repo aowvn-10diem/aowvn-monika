@@ -385,13 +385,13 @@ object Diagnostics {
     private val PRIVATE_PATH = Regex("""(?i)(?:content|file)://[^\r\n"'<>]+|/(?:data/user/\d+|data/data|storage/emulated/\d+|sdcard)(?:/[^\r\n"'<>]*)?""")
     private val EMAIL = Regex("""[\w.+-]+@[\w-]+(?:\.[\w-]+)+""")
     private val AUTH = Regex("""(?i)(authorization["']?\s*[:=]\s*["']?)(?:Bearer|Basic)\s+[^\s"',}]+""")
-    private val SECRET = Regex("""(?i)(\b(?:token|key|password|passwd|authorization|secret|y))(["']?\s*[:=]\s*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s&"',}]+)""")
+    private val SECRET = Regex("""(?i)(\b(?:token|key|password|passwd|authorization|secret|y))(["']?\s*[:=]\s*)(?:"[^"\r\n]*(?:"|(?=[\r\n])|$)|'[^'\r\n]*(?:'|(?=[\r\n])|$)|[^\s&"',}]+)""")
 
     /** Che trước khi cắt ngắn: đường dẫn có dấu cách/tiếng Việt và URI phải ẩn cả tên file. */
     internal fun scrub(c: Context?, text: String): String = text
+        .replace(PRIVATE_PATH, "<đường-dẫn>")
         .replace(AUTH) { it.groupValues[1] + "<ẩn>" }
         .replace(SECRET) { it.groupValues[1] + it.groupValues[2] + "<ẩn>" }
-        .replace(PRIVATE_PATH, "<đường-dẫn>")
         .replace(EMAIL, "<email>")
 
     /** Duyệt mọi chuỗi trong JSON, kể cả trường lồng nhau và trường mới thêm về sau. */

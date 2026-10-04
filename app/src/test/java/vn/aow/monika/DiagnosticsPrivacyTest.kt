@@ -27,7 +27,9 @@ class DiagnosticsPrivacyTest {
         "Authorization: Bearer fakeBearer", "Authorization: Basic fakeBasic",
         "https://example.test/?y=fakeRa&key=fakeKey&token=fakeToken",
         "password=\"fake password có dấu\"", "a.b@example.test",
-        "content://docs/tree/Thư mục riêng/file.txt", "file:///sdcard/Tên riêng/file.txt",
+        "content://docs/tree/Thư mục riêng/file.txt",
+        "content://docs/tree/x?key=fakeKey&name=Tên riêng/file.txt",
+        "token=\"fakeToken", "file:///sdcard/Tên riêng/file.txt",
         "/storage/emulated/0/Thư mục riêng/game.nds", "/data/user/0/vn.aow.monika/files/Tên riêng"
     ).joinToString("\n")
     private val secrets = listOf("fakeBearer", "fakeBasic", "fakeRa", "fakeKey", "fakeToken",
