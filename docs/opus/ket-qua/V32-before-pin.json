@@ -1,0 +1,68 @@
+{
+  "configVersion": 32,
+  "cores": {
+    "gambatte": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/gambatte_libretro_android.so.zip",
+      "options": {
+        "gambatte_mix_frames": "mix",
+        "gambatte_audio_resampler": "sinc"
+      },
+      "shader": "sharp"
+    },
+    "mgba": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mgba_libretro_android.so.zip",
+      "options": {
+        "mgba_interframe_blending": "mix_smart",
+        "mgba_frameskip": "disabled"
+      },
+      "shader": "sharp",
+      "display": {
+        "native": [
+          240,
+          160
+        ],
+        "default": "lcd",
+        "styles": {
+          "lcd": {
+            "label": "LCD cổ điển",
+            "shader": "sharp",
+            "integer": true,
+            "grid": 0.3,
+            "options": {
+              "mgba_color_correction": "GBA",
+              "mgba_interframe_blending": "lcd_ghosting_fast"
+            }
+          },
+          "sharp": {
+            "label": "Sắc nét",
+            "shader": "sharp",
+            "integer": true,
+            "options": {
+              "mgba_color_correction": "OFF",
+              "mgba_interframe_blending": "mix_smart"
+            }
+          },
+          "smooth": {
+            "label": "Mượt, lấp đầy",
+            "options": {
+              "mgba_color_correction": "OFF",
+              "mgba_interframe_blending": "mix_smart"
+            }
+          }
+        }
+      }
+    },
+    "fceumm": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/fceumm_libretro_android.so.zip",
+      "aspectRatio": 1.3333,
+      "options": {
+        "fceumm_nospritelimit": "enabled",
+        "fceumm_sndquality": "Very High"
+      },
+      "shader": "sharp"
+    }
+  }
+}
