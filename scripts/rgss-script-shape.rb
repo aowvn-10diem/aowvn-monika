@@ -50,7 +50,10 @@ data.each_with_index do |entry, i|
   total += code.bytesize
   abort("tổng dữ liệu giải nén vượt #{SafeInflate::MAX_TOTAL_BYTES} byte") if total > SafeInflate::MAX_TOTAL_BYTES
   code = code.encode('UTF-8', 'Shift_JIS', invalid: :replace, undef: :replace) unless code.valid_encoding?
-  code = MonikaRuby18.repair(code) if ruby18
+  if ruby18
+    trace = ->(line, candidates, next_line) { puts "repair script=#{i} line=#{line} candidates=#{candidates} next=#{next_line.nil? ? 'valid' : next_line}" }
+    code = MonikaRuby18.repair(code, [MonikaRuby18::MAX_COMPILES], trace)
+  end
   begin
     RubyVM::InstructionSequence.compile(code, "script-#{i}")
   rescue SyntaxError => e

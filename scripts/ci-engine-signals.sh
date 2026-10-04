@@ -37,8 +37,7 @@ adb shell run-as "$PKG" sh -c "'cat files/diag/crumbs/*.log'" > "$OUT/control-cr
 adb logcat -d -s MonikaGame AndroidRuntime DEBUG mkxp > "$OUT/control-logcat.txt"
 python3 - "$OUT" <<'PY'
 import json,sys,struct,pathlib
-p=pathlib.Path(sys.argv[1]);assert (p/'control-ready.txt').read_text().strip()=='RGSS-control-ruby18','VX control chưa chạy script qua preload'
-assert 'MonikaRuby18 normalized scripts=1' in (p/'control-logcat.txt').read_text(),'Thiếu bằng chứng normalize trong mkxp-z thật'
+p=pathlib.Path(sys.argv[1]);assert (p/'control-ready.txt').read_text().strip()=='RGSS-control-ruby18:1','VX control chưa chạy script qua preload'
 r=[json.loads(l) for l in (p/'control-reports.jsonl').read_text().splitlines() if l.strip().startswith('{')]
 assert not any(x['component']=='engine:rgss' and x['reason']=='màn đen' for x in r),'RGSS control báo màn đen giả'
 d=(p/'control.raw').read_bytes();w,h=struct.unpack('<II',d[:8]);hdr=len(d)-w*h*4

@@ -26,6 +26,7 @@ Dir.mktmpdir('ruby18-fixture') do |dir|
   source = "File.write(#{path.inspect}, 'never')\ncall ('a', 1)\n"
   entries = [[1, 'synthetic', 'packed unchanged', source]]
   check(MonikaRuby18.apply(entries) == 1 && !File.exist?(path), 'chỉ compile, không eval hoặc ghi file')
+  check(MonikaRuby18.applied_count == 1, 'nativefixture đọc được số script sửa, không dựa stdout')
   check(entries[0][2] == 'packed unchanged' && source.include?('call ('), 'không sửa packed data và source gốc')
   check(MonikaRuby18.apply(entries) == 0, 'nạp lại idempotent')
 end

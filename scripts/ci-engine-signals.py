@@ -26,7 +26,7 @@ code = """bitmap=Bitmap.new (640,360)
 bitmap.fill_rect(0,0,640,360,Color.new(242,140,40))
 sprite=Sprite.new
 sprite.bitmap=bitmap
-File.write("monika-ready.txt","RGSS-control-ruby18")
+File.write("monika-ready.txt","RGSS-control-ruby18:#{MonikaRuby18.applied_count}")
 loop do
   Graphics.update
   Input.update

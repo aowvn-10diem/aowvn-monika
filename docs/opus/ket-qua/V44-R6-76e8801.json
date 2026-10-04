@@ -1,0 +1,65 @@
+{
+  "runId": 37207986975,
+  "headSha": "76e880165edd00b1ecd09b33cedd81cb81435fcd",
+  "artifactId": 11305148644,
+  "verdict": {
+    "level": 1,
+    "expectFail": [
+      "ace",
+      "vx"
+    ],
+    "matchesExpectation": false,
+    "games": [
+      {
+        "game": "xp",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "3272",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 34.339,
+        "threshold": 10,
+        "observedSeconds": 253,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "PASS_LEVEL_1",
+        "expected": "ĐẠT mức 1",
+        "matchesExpectation": true
+      },
+      {
+        "game": "vx",
+        "verdict": "HỎNG",
+        "verdictCode": "FAIL",
+        "process": "com.aow.monika:game",
+        "pid": "8762",
+        "alive": true,
+        "errorDialog": true,
+        "brightnessStddev": 45.082,
+        "threshold": 10,
+        "observedSeconds": 64,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "FAIL",
+        "expected": "HỎNG",
+        "matchesExpectation": true
+      },
+      {
+        "game": "ace",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "9034",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 65.047,
+        "threshold": 10,
+        "observedSeconds": 276,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "FAIL",
+        "expected": "HỎNG",
+        "matchesExpectation": false,
+        "note": "Game đã đạt; PM bỏ case này khỏi expect_fail sau khi kiểm bằng chứng"
+      }
+    ]
+  },
+  "review": "Sol đã xem ace-before-key.png (giới thiệu online/offline), ace-after-60s.png (gameplay/hội thoại trong phòng). Ace PASSmức1; VX SyntaxError còn nguyên; không audio/save/load/FPS. Jobđỏ vìAce tốt hơn kỳvọng FAIL cũ, actingPM chỉ bỏAce khỏiexpectfail sau kiểm ảnh/log/JSON."
+}

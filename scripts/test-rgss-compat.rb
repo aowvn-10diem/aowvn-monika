@@ -28,4 +28,16 @@ class MiniFFI; def initialize(*); end; def call(*a); 42; end; end
 check Win32API.new('user32', 'GetAsyncKeyState', 'i', 'i').call(1) == 42, 'MiniFFI chạy được thì dùng hàm thật'
 class MiniFFI; def initialize(d, *); raise 'dlopen failed' if d == 'user32'; end; end
 check Win32API.new('user32', 'GetAsyncKeyState', 'i', 'i').call(1) == 0, 'MiniFFI lỗi + DLL Windows → bản giả'
+class MiniFFI; def initialize(*); raise ArgumentError, 'bad import signature'; end; end
+begin
+  Win32API.new('user32', 'Foo', 'wrong', 'i'); check false, 'signature lỗi phải ném lại'
+rescue ArgumentError
+  check true, 'không che signature sai thành DLL fallback'
+end
+class MiniFFI; def initialize(*); raise NoMemoryError, 'synthetic'; end; end
+begin
+  Win32API.new('user32', 'Foo'); check false, 'lỗi VM phải ném lại'
+rescue NoMemoryError
+  check true, 'không che lỗi bộ nhớ VM thành DLL fallback'
+end
 puts 'ALL OK'

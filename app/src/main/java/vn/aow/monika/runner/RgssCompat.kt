@@ -18,6 +18,9 @@ object RgssCompat {
             if (vx) listOf(copy(context, "monika-ruby18.rb").absolutePath) else emptyList()
     }
 
+    fun inactivePreloads(context: Context, active: List<String>): List<String> =
+        listOf(File(context.filesDir, "rgss-compat/monika-ruby18.rb").absolutePath).filterNot { it in active }
+
     private fun copy(context: Context, name: String): File {
         val dir = File(context.filesDir, "rgss-compat").apply { mkdirs() }
         val out = File(dir, name)

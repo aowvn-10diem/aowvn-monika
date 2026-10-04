@@ -57,7 +57,7 @@ class Win32API
     begin
       raise LoadError, "MiniFFI không có" unless defined?(MiniFFI)
       @real = MiniFFI.new(dll, func, imports, exports)
-    rescue Exception
+    rescue LoadError, RuntimeError
       raise unless MonikaWin32.windows_dll?(@dll)
       @real = nil
     end

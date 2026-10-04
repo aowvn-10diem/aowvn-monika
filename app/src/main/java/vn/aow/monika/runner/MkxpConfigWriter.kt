@@ -44,13 +44,13 @@ object MkxpConfigWriter {
      * @param fontSub luật thay phông, dạng "Gốc>Thay" (vd. "MS Gothic>Noto Sans")
      * @param preload script Ruby nạp TRƯỚC script game (khóa `preloadScript`): bản giả Win32API của Monika. Gộp, giữ mục có sẵn của game.
      */
-    fun build(existing: String?, rgss: Int, rtp: List<String>, fontSub: List<String> = emptyList(), preload: List<String> = emptyList()): String {
+    fun build(existing: String?, rgss: Int, rtp: List<String>, fontSub: List<String> = emptyList(), preload: List<String> = emptyList(), removePreload: List<String> = emptyList()): String {
         val old = parseExisting(existing)
         val out = LinkedHashMap<String, JsonElement>(old)
         val oldVersion = old["rgssVersion"]?.jsonPrimitive?.runCatching { int }?.getOrNull() ?: 0
         if (oldVersion == 0 && rgss in 1..3) out["rgssVersion"] = JsonPrimitive(rgss)
         out["RTP"] = JsonArray(union(old["RTP"], rtp).map(::JsonPrimitive))
-        if (preload.isNotEmpty()) out["preloadScript"] = JsonArray(union(old["preloadScript"], preload).map(::JsonPrimitive))
+        if (preload.isNotEmpty() || removePreload.isNotEmpty()) out["preloadScript"] = JsonArray(union(old["preloadScript"], preload).filterNot { it in removePreload }.map(::JsonPrimitive))
         if (fontSub.isNotEmpty()) out["fontSub"] = JsonArray(union(old["fontSub"], fontSub).map(::JsonPrimitive))
         if ("pathCache" !in out) out["pathCache"] = JsonPrimitive(true)
         return pretty.encodeToString(JsonObject.serializer(), JsonObject(out))
@@ -61,9 +61,9 @@ object MkxpConfigWriter {
             .plus(extra).distinct()
 
     /** Ghi vào `<gameDir>/mkxp.json`. Trả đường dẫn tệp. */
-    fun write(gameDir: File, rtp: List<String>, fontSub: List<String> = emptyList(), preload: List<String> = emptyList()): File {
+    fun write(gameDir: File, rtp: List<String>, fontSub: List<String> = emptyList(), preload: List<String> = emptyList(), removePreload: List<String> = emptyList()): File {
         val f = File(gameDir, "mkxp.json")
-        f.writeText(build(f.takeIf { it.isFile }?.readText(), detectRgss(gameDir), rtp, fontSub, preload))
+        f.writeText(build(f.takeIf { it.isFile }?.readText(), detectRgss(gameDir), rtp, fontSub, preload, removePreload))
         return f
     }
 }

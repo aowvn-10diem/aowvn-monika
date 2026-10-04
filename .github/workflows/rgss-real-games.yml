@@ -8,7 +8,7 @@ on:
         required: true
       expect_fail:
         description: Case lỗi đã biết, bỏ từng case sau khi V44 sửa và PM kiểm
-        default: vx,ace
+        default: vx
         required: false
   pull_request:
     paths:
@@ -106,7 +106,7 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
-          script: bash scripts/ci-rgss-real.sh "$RUNNER_TEMP/v25" out/r6 "$(if [ "$EVENT_NAME" = workflow_dispatch ]; then printf %s "$EXPECT_FAIL"; else printf %s vx,ace; fi)"
+          script: bash scripts/ci-rgss-real.sh "$RUNNER_TEMP/v25" out/r6 "$(if [ "$EVENT_NAME" = workflow_dispatch ]; then printf %s "$EXPECT_FAIL"; else printf %s vx; fi)"
         env:
           EXPECT_FAIL: ${{ inputs.expect_fail }}
           EVENT_NAME: ${{ github.event_name }}

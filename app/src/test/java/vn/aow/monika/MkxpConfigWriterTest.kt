@@ -33,6 +33,14 @@ class MkxpConfigWriterTest {
         assertEquals(listOf("/rtp/ace"), (o["RTP"] as JsonArray).map { it.jsonPrimitive.content })
     }
 
+    @Test fun doiPhienBanBoPreloadMonikaCuVaGiuPreloadGame() {
+        val owned = "/files/rgss-compat/monika-ruby18.rb"
+        val old = """{"rgssVersion":3,"preloadScript":["/game/custom.rb","$owned"]}"""
+        val result = obj(MkxpConfigWriter.build(old, 3, emptyList(), preload = listOf("/files/rgss-compat/monika-win32api.rb"), removePreload = listOf(owned)))
+        assertEquals(listOf("/game/custom.rb", "/files/rgss-compat/monika-win32api.rb"), (result["preloadScript"] as JsonArray).map { it.jsonPrimitive.content })
+        assertEquals("3", result["rgssVersion"]!!.jsonPrimitive.content)
+    }
+
     @Test fun preloadGopVaGiuMucCuaGame() {
         val o = obj(MkxpConfigWriter.build("""{"preloadScript": ["/game/patch.rb"]}""", 2, emptyList(), preload = listOf("/files/rgss-compat/monika-win32api.rb")))
         assertEquals(listOf("/game/patch.rb", "/files/rgss-compat/monika-win32api.rb"), (o["preloadScript"] as JsonArray).map { it.jsonPrimitive.content })

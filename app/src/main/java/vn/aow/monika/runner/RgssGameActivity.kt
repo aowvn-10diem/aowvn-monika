@@ -73,7 +73,10 @@ class RgssGameActivity : SDLActivity() {
         // mkxp.json do Monika sinh (phiên bản RGSS, RTP…), giữ khóa của game; thêm preloadScript = bản giả Win32API (assets/rgss/monika-win32api.rb,
         // chỉ thay khi MiniFFI gốc lỗi với DLL Windows). Thư mục chỉ-đọc → bỏ qua, mkxp-z tự đoán.
         runCatching {
-            File(GAME_PATH).takeIf { it.isDirectory }?.let { MkxpConfigWriter.write(it, emptyList(), preload = RgssCompat.preloads(this, it)) }
+            File(GAME_PATH).takeIf { it.isDirectory }?.let {
+                val preloads = RgssCompat.preloads(this, it)
+                MkxpConfigWriter.write(it, emptyList(), preload = preloads, removePreload = RgssCompat.inactivePreloads(this, preloads))
+            }
         }
         val manifest = File(packDir(), "manifest.json").takeIf { it.isFile }?.readText().orEmpty()
         Diagnostics.begin(this, "rgss", "mkxp-z", manifest, intent.getStringExtra(EXTRA_TITLE).orEmpty(), "RPG Maker XP/VX/Ace")
