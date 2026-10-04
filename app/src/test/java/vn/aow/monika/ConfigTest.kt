@@ -5,6 +5,11 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.download.LinkResolver
 import vn.aow.monika.library.GameDetector
@@ -17,6 +22,75 @@ import java.nio.file.Files
  */
 class ConfigTest {
     private val cfg = ConfigRepository.parse(File("../config/monika-config.json").readText())
+
+    private fun configLiterals(element: JsonElement, path: String = ""): List<Pair<String, JsonElement>> = when (element) {
+        is JsonObject -> element.entries.flatMap { (key, value) ->
+            val childPath = if (path.isEmpty()) key else "$path.$key"
+            val isUrlKey = key.lowercase().let {
+                it == "url" || it.endsWith("url") || it.endsWith("uri") || it.endsWith("endpoint") || it.endsWith("link")
+            }
+            val urlValue = if (value is JsonPrimitive && value.isString && value.content.isNotBlank() &&
+                (isUrlKey || "://" in value.content)
+            ) listOf(childPath to value) else emptyList()
+            urlValue + configLiterals(value, childPath)
+        }
+        is JsonArray -> element.mapIndexed { index, value -> configLiterals(value, "$path[$index]") }.flatten()
+        else -> emptyList()
+    }
+
+    private fun sha256Values(element: JsonElement, path: String = ""): List<Pair<String, JsonElement>> = when (element) {
+        is JsonObject -> element.entries.flatMap { (key, value) ->
+            val childPath = if (path.isEmpty()) key else "$path.$key"
+            if (key.startsWith("sha256", ignoreCase = true)) leafValues(value, childPath)
+            else sha256Values(value, childPath)
+        }
+        is JsonArray -> element.mapIndexed { index, value -> sha256Values(value, "$path[$index]") }.flatten()
+        else -> emptyList()
+    }
+
+    private fun leafValues(element: JsonElement, path: String): List<Pair<String, JsonElement>> = when (element) {
+        is JsonObject -> element.entries.flatMap { (key, value) -> leafValues(value, "$path.$key") }
+        is JsonArray -> element.mapIndexed { index, value -> leafValues(value, "$path[$index]") }.flatten()
+        else -> listOf(path to element)
+    }
+
+    @Test
+    fun `url va sha256 trong config dung dinh dang`() {
+        val root = Json.parseToJsonElement(File("../config/monika-config.json").readText())
+        val urls = configLiterals(root)
+        val hashes = sha256Values(root)
+        assertTrue("Không tìm thấy URL trong config", urls.isNotEmpty())
+        assertTrue("Không tìm thấy sha256 trong config", hashes.isNotEmpty())
+        urls.forEach { (path, value) ->
+            val url = (value as JsonPrimitive).content
+            assertTrue("$path phải bắt đầu bằng https://: $url", url.startsWith("https://"))
+        }
+        hashes.forEach { (path, value) ->
+            assertTrue(
+                "$path phải là SHA-256 hex 64 ký tự",
+                value is JsonPrimitive && value.isString && Regex("^[0-9a-fA-F]{64}$").matches(value.content),
+            )
+        }
+    }
+
+    @Test
+    fun `abis cua core la tap con cua abi app build`() {
+        val gradle = File("build.gradle.kts").readText()
+        val include = Regex("include\\(([^)]*)\\)").find(gradle)?.groupValues?.get(1)
+            ?: error("Không tìm thấy include ABI trong app/build.gradle.kts")
+        val appAbis = Regex("\"([^\"]+)\"").findAll(include).map { it.groupValues[1] }.toSet()
+        val invalid = cfg.cores.flatMap { (id, core) -> core.abis.filterNot { it in appAbis }.map { "cores.$id.abis chứa $it" } }
+        assertTrue(invalid.joinToString("\n"), invalid.isEmpty())
+    }
+
+    @Test
+    fun `runner config nam trong nhanh cua GameLauncher`() {
+        val launcher = File("src/main/java/vn/aow/monika/runner/GameLauncher.kt").readText()
+        val known = Regex("(?m)^\\s*\"([^\"]+)\"\\s*->").findAll(launcher).map { it.groupValues[1] }.toSet()
+        assertTrue("Không tìm thấy runner nào trong GameLauncher", known.isNotEmpty())
+        val invalid = cfg.systems.filterNot { it.runner in known }.map { "${it.id}: ${it.runner}" }
+        assertTrue(invalid.joinToString("\n"), invalid.isEmpty())
+    }
 
     @Test
     fun `moi he may tro toi thanh phan co that`() {

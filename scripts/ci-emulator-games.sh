@@ -276,6 +276,7 @@ else
     echo "$keyres rgss phím Enter → Input::C" | tee -a "$OUT/games/summary.txt"
     [ "$keyres" = KEY_OK ] || result=KEY_FAIL
     adb exec-out screencap -p > "$OUT/games/rgss-after-key.png" 2>/dev/null || true
+    note() { echo "$*" | tee -a "$OUT/games/summary.txt"; }
     # V19 (K10): đường báo lỗi. Giết tiến trình :game bằng SIGSEGV rồi mở lại app: phải có báo cáo native trong files/diag/reports.
     if [ "$keyres" = KEY_OK ]; then
       RD="/data/data/$PKG/files/diag/reports"
