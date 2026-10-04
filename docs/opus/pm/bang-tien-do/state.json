@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T14:13:00Z",
-  "mainSha": "d6d352dbf63a3ee87e6cc8673d33f11a76a300be",
+  "updatedAt": "2026-10-04T21:43:00.578746Z",
+  "mainSha": "3453741f954140432a82c2d449fa4991072bf8ff",
   "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-04T15:13:00Z",
-  "headline": "Sol tiếp quản: ghim12core và các Dependabot đã gộp. V44 có bản sửa VXtrongRAM + wininet, Build xanh đang đo game. GeminiF01/F02 vẫn chờ kích hoạt.",
+  "nextCheck": "2026-10-04T19:06:36Z",
+  "headline": "VX đã qua slice!137:118, còn NoMethodError96:1633 width trênString sauNewGame. R6@00bfe XP372/Ace381 PASSmức1; cd0 sửaCI/privacy theoLuna và thu maskedlỗimới. ChờCI/Luna, Gemini standby.",
   "needsBoss": [
     {
       "code": "G7",
@@ -59,42 +59,42 @@
       "name": "Kirikiri 0.7.3 (menu tiếng Việt)",
       "status": "xong",
       "progress": 100,
-      "note": "Đã phát hành, APK đã gửi sếp. Chưa thử máy thật (G7)."
+      "note": "Đã phát hành, APK đã gửi sếp. Chưa thử máy thật (G7). Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "M1",
       "name": "RPG Maker XP/VX/Ace chơi trong app",
       "status": "dang",
       "progress": 68,
-      "note": "R0–R4 xong, R5 phần chính xong; còn R6 (5 game thử, cần G2) và R7 (phát hành, cần G8)."
+      "note": "R0–R5 mã xong; R6@00bfe XP372s/Ace381s PASSmức1, VXtitleđạt nhưng sauNewGame NoMethodError96:1633, chưaPASS60s. Đủ5/audio/save-load/FPS chưa kiểm; R7 chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "Q",
       "name": "Kiểm thử không máy thật + báo lỗi từ xa",
       "status": "cho",
       "progress": 15,
-      "note": "Phương án xong; thi công V18–V22."
+      "note": "V18–V22 mã/CI đã có bằng chứng; Worker chưa deploy và máy thật chưa kiểm. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "M2",
       "name": "Ren'Py 8 chơi trong app",
       "status": "dang",
       "progress": 25,
-      "note": "P0, P1 xong (gói 22,6 MB); P2 chờ sau R5."
+      "note": "Renpy8 P2/P3 đã gộp33/41; P4publication/config kẹtSOL012, chưa bật cho người dùng. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "M3",
       "name": "Ren'Py 7",
       "status": "cho",
       "progress": 0,
-      "note": "Sau M2."
+      "note": "Sau M2. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "M4",
       "name": "Symbian / N-Gage chơi trong app",
       "status": "sep",
       "progress": 5,
-      "note": "Có phương án; chờ sếp chốt A1, A2 (G4). Làm sau M2."
+      "note": "Có phương án; chờ sếp chốt A1, A2 (G4). Làm sau M2. Phần trăm là ước lượng PM cũ, chưa đo lại."
     }
   ],
   "tasks": [
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "Job mức1#44 đã gộp: XP PASS, VX/Ace lỗi đúng expected; R6 đủ5 và audio/save/load/FPS chưa kiểm. V44 đang xử lý.",
+      "note": "#44 đã gộp f96da6e. R6@00bfe run37233267939: XP372s/Ace381s PASSmức1, VX439s FAILNoMethodError96:1633 sauNewGame; titlecó, slice!137:118 đãqua. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếpV44, khôngR7.",
       "module": "rgss"
     },
     {
@@ -391,7 +391,7 @@
       "title": "Rà soát độc lập toàn dự án",
       "owner": "Tư vấn",
       "status": "xong",
-      "note": "Kết luận XA ĐÀ NẶNG, 23 phát hiện. PM đồng ý, đã chia việc V28–V33, L04, O04.",
+      "note": "Gộp#21/3453741 sau LunaĐạt d275. Audit lịch sử149dòng/19phát hiện/48đềxuất; BuildmiễnV11 docs-only, không bảnghiệntrạng.",
       "module": "ci"
     },
     {
@@ -544,7 +544,7 @@
       "owner": "Sol",
       "status": "xong",
       "module": "ci",
-      "note": "Sửa phân trang#63 đã gộp; PMdigestMAIN37196924569 xanh, bản tin bot đã hồi phục."
+      "note": "**xong** #48/#63; MAIN37196924569 xanh, bot6cdaf009 rootparents[]/đúnghai file verified. Không vòng lặpBuild; không suy từpreview."
     },
     {
       "code": "L10",
@@ -582,9 +582,9 @@
       "code": "V43",
       "title": "Phát hành APK ký trên GitHub thay vì build trong phiên",
       "owner": "Sol",
-      "status": "dang",
+      "status": "ket",
       "module": "ci",
-      "note": "Bước 1: Sol chạy thử ký trên GitHub, so đúng chứng thư (không phát hành). Bước 2: Sonnet phát hành thật."
+      "note": "SOL012: chỉ chuẩn bị mã để review; không đọc khóa/ký/dispatch/phát hành. Lệnh tiếp quản không cấp ngoại lệ."
     },
     {
       "code": "V44",
@@ -592,15 +592,15 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "#50 76e8801: Wininetofflinefallback + Ruby1.8 normalize bảnRAMVX. Unitlocal vàBuildxanh, nativefixture/R6đang chạy; không gọi VX/Ace phục hồi."
+      "note": "Snapshot Sol #50 headcd0b6db: sửaLuna probe/test paths+Buildprobe6checks, metadata recorded/empty/missing, bare audioidentifier che (20privacyPASS), CLIdefaultvx khớpworkflow/bash/Acephảiđạt. Local98Ruby18/20privacy/6probe/5verdict/YAML/bash/3metadata fixture PASS. R6@00bfe run37233267939/art11315118063 đã xem: XP372s/Ace381s PASSmức1, VX439s FAIL NoMethodError96:1633 width trênString sauNewGame; đãqua slice!137:118, titlecó nhưng chưa60sPASS. Build37233268036/CodeQL37233268048/native37233268139 SUCCESS đúng00bfe; native11314836860 marker1/orange/PixelCopy10–40s/Stringmutation/predicate/accessor/evalPASS. Diagnostic11314532751 157script0SyntaxError chỉcompile. Headmới thu masked96:1633 trước sửa tiếp; giữexpect_fail=vx/threshold/observation, khôngcoerce/gamefile/nativeedit. CầnLunafreshcd0 vàCI đúnghead trướcmerge."
     },
     {
       "code": "V45",
       "title": "Ren'Py 8: đăng gói và bật trong config (P4)",
       "owner": "Sol",
-      "status": "cho",
+      "status": "ket",
       "module": "renpy8",
-      "note": "Chỉ bật cho người dùng sau khi CI mở được game mẫu."
+      "note": "SOL012: chưa cấp ngoại lệ phát gói Renpy/bậtconfig, không publish."
     },
     {
       "code": "V46",
@@ -684,6 +684,54 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-04T21:43:00.578746Z",
+      "text": "R6@00bfe hoàn tất: XP372/Ace381 mức1PASS; VX439 FAILNoMethodError96:1633 (width/String) sauNewGame, đãqua slice137:118. Native11314836860 slice mutation+marker/orange/PixelCopyPASS; compile1570errorkhônggameplay. Headcd0 sửaLuna trigger/probe-missing/privacy20, thu masked1633; khôngđổiexpectfail/threshold."
+    },
+    {
+      "t": "2026-10-04T21:43:00.578746Z",
+      "text": "Head00bfe sửa slice! (/Regexp/) !=nil trongRAM: MRI1.8.7 so sánh kếtquả, MRI3.1.7 đưaBoolean vàoarg; proofmasked137:118 + synthetic thật. GuardmộtCALL/mộtline/literalRegexp/nilcomparison, commonbudgetgiữnguyên, nativefixtureStringmutation mới. Local98/19/6PASS; CI/R6/native pending, khôngđổiexpectfail."
+    },
+    {
+      "t": "2026-10-04T20:34:41.826757Z",
+      "text": "R6@808 đã xem ảnh/log/verdict11313582885: VX trướcphím cótitle, sauNewGame FAIL slice! TypeError137:118; XP370/Ace372 mức1PASS. Đã vượt Range957. Head131 guardconstants/proof/diagnostic mới, local87/18/6PASS; không đổiexpectfail. Bằng chứngClass.constants lexical1.8.7 đã chạy thật, khôngclaim1.8.1/fullSDK."
+    },
+    {
+      "t": "2026-10-04T20:17:40.250832Z",
+      "text": "808 Build37230428845/CodeQL37230428849/native37230428853 SUCCESS; native11312749848 kiểm predicate Integer/Range identity/exclusive+eval/accessor/orange/PixelCopy thật. R6pending. Fixture1.8.7 thật xác nhận Class.constants đọc constants lexical trongclassbody qua Module.singleton rb_mod_s_constants; 3.1.7 không, chưađo1.8.1. Guard Class.constants override đang chuẩn bị, không push hủy R6."
+    },
+    {
+      "t": "2026-10-04T20:02:06.172666Z",
+      "text": "#50 head808 sửa đúng khác biệt parser predicate-spacing Ruby1.8.7→3.1.7 trên RAM, local82Ruby18/18privacy/6probe PASS. Proof8a7: XP360/Ace373 mức1, VX65 FAIL957, native attempt2 đạt; attempt1 không có report, không claim sửa startup. Cần CI808/native/R6/Luna. Sửa headline/M1 PM cũ theo Luna4fb, giữ phần trăm chưa đo lại và lịch sử."
+    },
+    {
+      "t": "2026-10-04T19:44:34.082693Z",
+      "text": "#50 đã merge main345 giữparent; head8a7 chỉ diagnostic CI-only ngoài game, không appasset phát hành. Build/CodeQL xanh. Native lần1 đỏ thiếu XP report trước control, đã xem artifact11312638669, rerun nguyên assert cùng head. R6/probe chưa xong; không claim VX recovery. #70 đồng bộ snapshot thực tế, Gemini/SOL012 giữ cổng."
+    },
+    {
+      "t": "2026-10-04T18:56:34.359703Z",
+      "text": "Đã đọc Luna18:51 và ảnh/log/verdict R6@46b: XP266/Ace294 đạt mức1, VX64 vẫn FAIL ArgumentError96:957 sau setter934. Native accessor17/23/eval/PixelCopy thật PASS. #50 head84aa chỉ thu Range masked/proof; PM70 sửa trạng thái theo Luna7e. Chưa merge50/70; không đổi expect_fail."
+    },
+    {
+      "t": "2026-10-04T18:06:36Z",
+      "text": "Gộp#21/3453741 sau LunaĐạt đúngd275: giữaudit snapshotlịch sử, BuildmiễnV11docs-only ghiđúng. #50head94e chỉthêm maskedinspect895/915 tìm nguồn accessor; download/hash bằngreadtoken đãPASS@3554, cònCI/native/R6latest."
+    },
+    {
+      "t": "2026-10-04T17:56:53Z",
+      "text": "Đọc artifact11310460101/11309546982: XP358/Ace379PASSmức1, VX65FAIL NoMethodError96:934, nativeevalcontext+PixelCopyPASS. Xử lý Luna17:46: #50head3554 chỉreadtoken/artifactRGSS7ghimhash, CI đang chạy. #70 sửa trạngthái hoàn tất, cầnreview mới. #21 LunaĐạt snapshot, chưaBuild; SOL012/Gemini giữcổng."
+    },
+    {
+      "t": "2026-10-04T17:13:20Z",
+      "text": "Đãxemảnh/log/verdict635:VX runtimeeval96:951FAIL, khôngsuycompile0lỗi=gameplay. #50head7bf bọcđốisốeval tại callsite trongRAM/boundedAST+cache, 55testsPASSlocal; nativefixture/R6 đang chạy. Luna khôngcóreviewmới khi kiểm16:48, chưamerge50/70."
+    },
+    {
+      "t": "2026-10-04T16:10:35Z",
+      "text": "V446357e07: Build37215280550 xanh, diagnostic11308302026 xác nhận157scriptVX/0SyntaxError dưới sharedbudget512/64MiB. Runtime chưa xong, Luna cầnheadmới. Git/gh môi trường401; connector cònhoạt động, khôngđọc/sửa token."
+    },
+    {
+      "t": "2026-10-04T15:51:52Z",
+      "text": "Gộp#66 sau Luna+CI; R6 đúng9df XP/Ace PASSmức1, VXFAIL/còn1SyntaxError. #50 sửa shared64MiB bytebudget theo Luna, test28+privacy6 localPASS, CI mới đang chạy. Lịch kiểmtra60phút enabled/chốngtrùng; Gemini standby."
+    },
     {
       "t": "2026-10-04T14:13:00Z",
       "text": "Gộp#58coroutines/#67pins/#56setupjava/#55setupgcloud theoLuna+CI+PMreview riêng. #64đóng vì57đãgộp. V44 Buildmới xanh, runtimechờ. Tái sinh landing byte-identical/15assetverify, sửa generator thiếuassets ởcheckout sạch."
@@ -885,7 +933,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "V44 tiếp quản, chuẩn hóa lời gọi Ruby1.8 bảnRAM + Wininetofflinefallback đangđo. R6 trước: XP PASSmức1, VX/Ace lỗi; chưa âmthanh/save-load/FPS hoặc đủ5game."
+      "note": "Snapshot Sol #50 headcd0b6db: sửaLuna probe/test paths+Buildprobe6checks, metadata recorded/empty/missing, bare audioidentifier che (20privacyPASS), CLIdefaultvx khớpworkflow/bash/Acephảiđạt. Local98Ruby18/20privacy/6probe/5verdict/YAML/bash/3metadata fixture PASS. R6@00bfe run37233267939/art11315118063 đã xem: XP372s/Ace381s PASSmức1, VX439s FAIL NoMethodError96:1633 width trênString sauNewGame; đãqua slice!137:118, titlecó nhưng chưa60sPASS. Build37233268036/CodeQL37233268048/native37233268139 SUCCESS đúng00bfe; native11314836860 marker1/orange/PixelCopy10–40s/Stringmutation/predicate/accessor/evalPASS. Diagnostic11314532751 157script0SyntaxError chỉcompile. Headmới thu masked96:1633 trước sửa tiếp; giữexpect_fail=vx/threshold/observation, khôngcoerce/gamefile/nativeedit. CầnLunafreshcd0 vàCI đúnghead trướcmerge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
     },
     {
       "id": "web",
@@ -1155,5 +1203,6 @@
       "question": "Đội gặp sự cố, ai tiếp quản?",
       "answer": "Sol thay Opus/Sonnet, phối hợp Luna tới22:00 05/10 GMT+7; chuẩn bị Gemini Flash tối nay."
     }
-  ]
+  ],
+  "progressBasis": "Phần trăm mốc giữ ước lượng PM cũ, chưa đo lại trong lượt tiếp quản."
 }

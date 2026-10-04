@@ -1,5 +1,9 @@
 > **Ủy quyền tạm thời của chủ dự án (issue #65):** Sol tiếp quản PM Opus và Sonnet tới22:00 thứHai05/10/2026 GMT+7 (15:00UTC). Trong thời gian này được sửa kế hoạch/trạng thái PM và tiếp việc Sonnet; quyết định ghi “PM duyệt — Sol tiếp quản theo lệnh chủ dự án (#65)”, không mạo danh. Code Sol cần Luna độc lập + CI đúnghead. Sau thời hạn bàn giao lại. Giới hạn ký/phát hành/game/Secrets giữ nguyên ngoài ngoại lệ đã ghi; Gemini Flash F01/F02 chỉ kích hoạt khi chủ dự án báo sẵn sàng.
 
+> **Lệnh trực tiếp về lịch (04/10):** Giữ đúng một lịch lặp kiểm tra60phút, enabled cả khi đang làm để phục hồi khi bị dừng; không pause ở đầu lượt/không tạo one-off khác/không mở lượt trùng. Không bật lịch Sol cũ đã bị chủ dự án dừng. Lệnh này thay bước hẹn one-off bên dưới.
+
+> **Bằng chứng V44 cập nhật (snapshot 2026-10-04T21:43:00.578746Z):** Snapshot Sol #50 headcd0b6db: sửaLuna probe/test paths+Buildprobe6checks, metadata recorded/empty/missing, bare audioidentifier che (20privacyPASS), CLIdefaultvx khớpworkflow/bash/Acephảiđạt. Local98Ruby18/20privacy/6probe/5verdict/YAML/bash/3metadata fixture PASS. R6@00bfe run37233267939/art11315118063 đã xem: XP372s/Ace381s PASSmức1, VX439s FAIL NoMethodError96:1633 width trênString sauNewGame; đãqua slice!137:118, titlecó nhưng chưa60sPASS. Build37233268036/CodeQL37233268048/native37233268139 SUCCESS đúng00bfe; native11314836860 marker1/orange/PixelCopy10–40s/Stringmutation/predicate/accessor/evalPASS. Diagnostic11314532751 157script0SyntaxError chỉcompile. Headmới thu masked96:1633 trước sửa tiếp; giữexpect_fail=vx/threshold/observation, khôngcoerce/gamefile/nativeedit. CầnLunafreshcd0 vàCI đúnghead trướcmerge. RGSS7 readartifact ghimSHA; hết hạn06/10 failclosed, không publication. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM].
+
 # Prompt cho Sol (bản 04/10: đọc thư 60 phút/lần, tự làm dài)
 
 Dán nguyên khối dưới đây vào phiên Sol. Bản này thay toàn bộ prompt cũ.
