@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T19:44:34.082693Z",
+  "updatedAt": "2026-10-04T20:02:06.172666Z",
   "mainSha": "3453741f954140432a82c2d449fa4991072bf8ff",
   "app": "App0.7.4 · config33",
   "nextCheck": "2026-10-04T19:06:36Z",
-  "headline": "VX vượt eval nhưng còn thiếu setter; XP/Ace PASSmức1. Native AST/eval fixture PASS. #50 bỏ token ghi theo Luna; #70 đồng bộ verdict, chờreview mới. Gemini standby.",
+  "headline": "XP/Ace PASS mức1; VX còn ArgumentError96:957. Head808 sửa predicate spacing trong RAM theo đối chiếu MRI1.8.7/3.1.7, chờ CI/game thật/Luna. Gemini standby.",
   "needsBoss": [
     {
       "code": "G7",
@@ -66,7 +66,7 @@
       "name": "RPG Maker XP/VX/Ace chơi trong app",
       "status": "dang",
       "progress": 68,
-      "note": "R0–R5 mã xong, XP/Ace PASSmức1 trongCI; VX còn1SyntaxError. R6 đủ5/audio/save-load/FPS chưa kiểm; R7 giữ chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
+      "note": "R0–R5 mã xong; R6@8a7 XP360s/Ace373s PASS mức1, VX65s FAIL ArgumentError96:957. Bản predicate808 chờ runtime. Đủ5/audio/save-load/FPS chưa kiểm; R7 chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "Q",
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "#44 đã gộp f96da6e. R6@46bdfc4 run37224825296: XP266s/Ace294s PASS mức1, VX64s FAIL ArgumentError96:957. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếp V44, không R7.",
+      "note": "#44 đã gộp f96da6e. R6@8a7d3ca run37228347002: XP360s/Ace373s PASS mức1, VX65s FAIL ArgumentError96:957. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếp V44, không R7.",
       "module": "rgss"
     },
     {
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Snapshot Sol #50 head8a7d3ca: Build37228347006/CodeQL37228346975 xanh. Signals37228346996 lần1 FAIL (XP Activity kết thúc trước report; chưa chạy control), rerun cùng head một lần, không hạ assert. R637228347002 đang chạy. CI-only Range observer ghi loại ẩn danh vào metadata riêng ngoài game, không sửa/nuốt lỗi; local69Ruby/15privacy/6probe PASS. Masked957: conditionalInteger, Rangebegin self.<ẩn>.pitch. Không coerce/patched Range mù. R6 hoàn tất gần nhất46b/run37224825296: XP266/Ace294 mức1 PASS, VX64 FAIL ArgumentError96:957; native46b fixture getter17/23/eval/PixelCopy PASS, không phải VX gameplay. Giữ expect_fail=vx, cần Luna fresh8a7 và CI/R6 đúng head trước merge."
+      "note": "Snapshot Sol #50 head8082683: RAM predicate spacing đã tái hiện MRI1.8.7/3.1.7, chỉ CALL is_a?/kind_of? với CONST/ternary một dòng, cùng AST/common512compile/64MiB/64sites; không coerce Range/pitch/core override. Local82Ruby18/18privacy/6probe PASS, gồm @@/$/label theo Luna; native fixture Integer/Range identity/exclusive mới cần CI. Bằng chứng8a7/run37228347002/art11312813129: XP360s/Ace373s mức1 PASS, VX65s FAIL ArgumentError96:957; probe localRange/compoundString,Integer,Integer. Native8a7 run37228346996 attempt2/art11313104145 marker1/orange/PixelCopy PASS; attempt1 XP startup FAIL, retry không sửa code. Build/CodeQL8a7 xanh; CI/R6/native808 đang chờ, không gọi VX phục hồi. Giữ expect_fail=vx, cần Luna fresh808 trước merge."
     },
     {
       "code": "V45",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-04T20:02:06.172666Z",
+      "text": "#50 head808 sửa đúng khác biệt parser predicate-spacing Ruby1.8.7→3.1.7 trên RAM, local82Ruby18/18privacy/6probe PASS. Proof8a7: XP360/Ace373 mức1, VX65 FAIL957, native attempt2 đạt; attempt1 không có report, không claim sửa startup. Cần CI808/native/R6/Luna. Sửa headline/M1 PM cũ theo Luna4fb, giữ phần trăm chưa đo lại và lịch sử."
+    },
     {
       "t": "2026-10-04T19:44:34.082693Z",
       "text": "#50 đã merge main345 giữparent; head8a7 chỉ diagnostic CI-only ngoài game, không appasset phát hành. Build/CodeQL xanh. Native lần1 đỏ thiếu XP report trước control, đã xem artifact11312638669, rerun nguyên assert cùng head. R6/probe chưa xong; không claim VX recovery. #70 đồng bộ snapshot thực tế, Gemini/SOL012 giữ cổng."
@@ -913,7 +917,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "Snapshot Sol #50 head8a7d3ca: Build37228347006/CodeQL37228346975 xanh. Signals37228346996 lần1 FAIL (XP Activity kết thúc trước report; chưa chạy control), rerun cùng head một lần, không hạ assert. R637228347002 đang chạy. CI-only Range observer ghi loại ẩn danh vào metadata riêng ngoài game, không sửa/nuốt lỗi; local69Ruby/15privacy/6probe PASS. Masked957: conditionalInteger, Rangebegin self.<ẩn>.pitch. Không coerce/patched Range mù. R6 hoàn tất gần nhất46b/run37224825296: XP266/Ace294 mức1 PASS, VX64 FAIL ArgumentError96:957; native46b fixture getter17/23/eval/PixelCopy PASS, không phải VX gameplay. Giữ expect_fail=vx, cần Luna fresh8a7 và CI/R6 đúng head trước merge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
+      "note": "Snapshot Sol #50 head8082683: RAM predicate spacing đã tái hiện MRI1.8.7/3.1.7, chỉ CALL is_a?/kind_of? với CONST/ternary một dòng, cùng AST/common512compile/64MiB/64sites; không coerce Range/pitch/core override. Local82Ruby18/18privacy/6probe PASS, gồm @@/$/label theo Luna; native fixture Integer/Range identity/exclusive mới cần CI. Bằng chứng8a7/run37228347002/art11312813129: XP360s/Ace373s mức1 PASS, VX65s FAIL ArgumentError96:957; probe localRange/compoundString,Integer,Integer. Native8a7 run37228346996 attempt2/art11313104145 marker1/orange/PixelCopy PASS; attempt1 XP startup FAIL, retry không sửa code. Build/CodeQL8a7 xanh; CI/R6/native808 đang chờ, không gọi VX phục hồi. Giữ expect_fail=vx, cần Luna fresh808 trước merge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
     },
     {
       "id": "web",

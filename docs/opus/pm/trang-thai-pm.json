@@ -20,9 +20,9 @@
     "20": "L03 Luna duyệt",
     "18": "L02 Luna (đã trả lời thư)",
     "14": "SOL-003 (đã trả lời)",
-    "44": "#44 đã gộp f96da6e. R6@46bdfc4 run37224825296: XP266s/Ace294s PASS mức1, VX64s FAIL ArgumentError96:957. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếp V44, không R7.",
+    "44": "#44 đã gộp f96da6e. R6@8a7d3ca run37228347002: XP360s/Ace373s PASS mức1, VX65s FAIL ArgumentError96:957. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếp V44, không R7.",
     "46": "gộp5d352a7; Luna + CI xanh, K3 máy thật chưa kiểm",
-    "50": "Snapshot Sol #50 head8a7d3ca: Build37228347006/CodeQL37228346975 xanh. Signals37228346996 lần1 FAIL (XP Activity kết thúc trước report; chưa chạy control), rerun cùng head một lần, không hạ assert. R637228347002 đang chạy. CI-only Range observer ghi loại ẩn danh vào metadata riêng ngoài game, không sửa/nuốt lỗi; local69Ruby/15privacy/6probe PASS. Masked957: conditionalInteger, Rangebegin self.<ẩn>.pitch. Không coerce/patched Range mù. R6 hoàn tất gần nhất46b/run37224825296: XP266/Ace294 mức1 PASS, VX64 FAIL ArgumentError96:957; native46b fixture getter17/23/eval/PixelCopy PASS, không phải VX gameplay. Giữ expect_fail=vx, cần Luna fresh8a7 và CI/R6 đúng head trước merge.",
+    "50": "Snapshot Sol #50 head8082683: RAM predicate spacing đã tái hiện MRI1.8.7/3.1.7, chỉ CALL is_a?/kind_of? với CONST/ternary một dòng, cùng AST/common512compile/64MiB/64sites; không coerce Range/pitch/core override. Local82Ruby18/18privacy/6probe PASS, gồm @@/$/label theo Luna; native fixture Integer/Range identity/exclusive mới cần CI. Bằng chứng8a7/run37228347002/art11312813129: XP360s/Ace373s mức1 PASS, VX65s FAIL ArgumentError96:957; probe localRange/compoundString,Integer,Integer. Native8a7 run37228346996 attempt2/art11313104145 marker1/orange/PixelCopy PASS; attempt1 XP startup FAIL, retry không sửa code. Build/CodeQL8a7 xanh; CI/R6/native808 đang chờ, không gọi VX phục hồi. Giữ expect_fail=vx, cần Luna fresh808 trước merge.",
     "51": "gộp0e17edf,27test +5ZIP thật PASS; quota chưa đo",
     "34": "PM duyệt; head 1c64c02 chỉ gộp main",
     "55-57": "Dependabot → Sol (tra-loi-sol-009)",
@@ -37,7 +37,7 @@
     "56": "gộpf5ddf2f; Luna+7jobđại diện+PMmigrationreview, ký/Cloud chưa kiểm",
     "64": "đóng theo Luna; câu hỏi57 đã cũ, không tựmerge chung",
     "62": "SOL012 kẹt; Luna xác nhận14:55, ký/publish không được cấp ngoại lệ",
-    "70": "Đồng bộ snapshot8a7: Build/CodeQL xanh, native lần1 đỏ/rerun, R6/probe pending; JSON/generator PASS, cần Luna headPM mới. Docs-only không appunitPASS.",
+    "70": "Đồng bộ snapshot808 và bằng chứng R6/native8a7, sửa headline/M1 theo Luna4fb; JSON/generator PASS, cần Luna headPM mới. Docs-only không appunitPASS.",
     "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS."
   },
   "idle": 0,
@@ -65,7 +65,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-04T19:44:34.082693Z",
+  "updated_at": "2026-10-04T20:02:06.172666Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [
