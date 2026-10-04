@@ -27,6 +27,12 @@ Dir.mktmpdir('shape-fixture') do |dir|
   File.binwrite(input, Marshal.dump([[3, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
   out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--ruby18')
   check(status.success? && out.include?('blocked-shape') && %w[secret_literal private_method PrivateTitle].none? { |word| (out + err).include?(word) }, 'ngữ cảnh dòng kẹt chỉ in hình dạng đã che')
+  source = "eval(\"hidden_literal\", binding) # private_comment\n"
+  File.binwrite(input, Marshal.dump([[4, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
+  out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
+  check(status.success? && out.include?('eval(') && out.include?('binding') && %w[hidden_literal private_comment PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect giữ API Ruby công khai, che source/literal/comment/title')
+  _, _, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:99999')
+  check(!status.success?, 'inspect chặn dòng vượt giới hạn')
 
   File.open(input, 'wb') { |f| f.truncate(65 * 1024 * 1024) }
   _, _, status = Open3.capture3(RbConfig.ruby, script, input)

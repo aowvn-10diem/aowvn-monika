@@ -10,6 +10,15 @@
 require 'zlib'
 require 'ripper'
 ruby18 = ARGV.delete('--ruby18')
+inspections = ARGV.select { |arg| arg.start_with?('--inspect=') }.map do |arg|
+  ARGV.delete(arg)
+  value = arg.delete_prefix('--inspect=')
+  abort('inspect cần index:dòng') unless value.match?(/\A\d{1,5}:\d{1,5}\z/)
+  index, line = value.split(':').map(&:to_i)
+  abort('inspect vượt giới hạn') unless index < 10_000 && line.between?(1, 20_000)
+  [index, line]
+end
+abort('quá nhiều điểm inspect') if inspections.size > 4
 load File.expand_path('../app/src/main/assets/rgss/monika-ruby18.rb', __dir__) if ruby18
 
 KEYWORDS = %w[alias and begin break case class def defined? do else elsif end ensure false for if in module next nil not or redo rescue retry return self super then true undef unless until when while yield __method__ lambda proc].freeze
@@ -24,6 +33,7 @@ def shape(line)
     when :on_sp, :on_ignored_sp then ' '
     when :on_nl, :on_ignored_nl then "\n"
     when :on_kw then KEYWORDS.include?(token) ? token : 'id'
+    when :on_ident then %w[eval binding class_eval module_eval instance_eval].include?(token) ? token : 'id'
     when :on_int, :on_float, :on_rational, :on_imaginary, :on_CHAR then '0'
     when :on_tstring_beg, :on_tstring_end then '"'
     when :on_tstring_content then 's'
@@ -63,6 +73,12 @@ data.each_with_index do |entry, i|
       end
     end
     code = MonikaRuby18.repair(code, ruby18_budget, trace)
+  end
+  inspections.select { |index, _| index == i }.each do |_, line|
+    puts "inspect script=#{i} line=#{line}"
+    code.each_line.with_index(1) do |text, index|
+      puts format('inspect-shape %5d | %s', index, shape(text).rstrip) if (index - line).abs <= ctx
+    end
   end
   begin
     RubyVM::InstructionSequence.compile(code, "script-#{i}")
