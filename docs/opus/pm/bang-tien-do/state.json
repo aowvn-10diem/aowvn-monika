@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T17:13:20Z",
+  "updatedAt": "2026-10-04T17:56:53Z",
   "mainSha": "5a67e6f317f95f080af5bb0fff6b9f24df9fe440",
   "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-04T18:13:20Z",
-  "headline": "VX nguồnđã0lỗi nhưng runtimeeval cònFAIL; #50 cóbản sửa giữcallsite/Binding đangCI. XP/Ace PASSmức1. #70docs chờLuna, Gemini standby.",
+  "nextCheck": "2026-10-04T18:56:53Z",
+  "headline": "VX vượt eval nhưng còn thiếu setter; XP/Ace PASSmức1. Native AST/eval fixture PASS. #50 bỏ token ghi theo Luna; #70 đồng bộ verdict, chờreview mới. Gemini standby.",
   "needsBoss": [
     {
       "code": "G7",
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "#44 gộpf96da6e. R6 mới37210498789@9df: XP/Ace PASSmức1, VX FAILSyntaxError. Đủ5/audio/save-load/FPS còn kẹt; V44 đang sửa, không R7.",
+      "note": "#44 gộpf96da6e. R6 mới37219376261@7bf: XP/Ace PASSmức1, VX FAIL NoMethodError. Đủ5/audio/save-load/FPS còn kẹt; V44 đang sửa, không R7.",
       "module": "rgss"
     },
     {
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Sol tiếp quản#50 head7bf880a: nguồnVX157script/0SyntaxError@635 nhưng runtimeR637215280543 vẫnFAIL eval96:951 (XP374s/Ace383s PASSmức1). Thêm ASTbọcđốisốgiữcallsite/defaultBinding, bytebudget512/64MiB+AST256KiB/50knodes/cache32-64KiB. Local55Ruby/8privacyPASS; native/R6 mới đang chạy, cần Luna mới."
+      "note": "Sol tiếp quản#50 head3554dc8: R6@7bf37219376261 XP358s/Ace379s PASSmức1, VX65s FAIL NoMethodError96:934; eval951 đã qua. Native37219376256 marker1/ảnhcam/PixelCopy10–40s xác nhận AST+evalcontext. Bỏ write-token R6/signals, đọc artifactRGSS7 ghimID/hash (hết hạn06/10); privacy9PASS. CI3554 đang chạy, cần Luna mới."
     },
     {
       "code": "V45",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-04T17:56:53Z",
+      "text": "Đọc artifact11310460101/11309546982: XP358/Ace379PASSmức1, VX65FAIL NoMethodError96:934, nativeevalcontext+PixelCopyPASS. Xử lý Luna17:46: #50head3554 chỉreadtoken/artifactRGSS7ghimhash, CI đang chạy. #70 sửa trạngthái hoàn tất, cầnreview mới. #21 LunaĐạt snapshot, chưaBuild; SOL012/Gemini giữcổng."
+    },
     {
       "t": "2026-10-04T17:13:20Z",
       "text": "Đãxemảnh/log/verdict635:VX runtimeeval96:951FAIL, khôngsuycompile0lỗi=gameplay. #50head7bf bọcđốisốeval tại callsite trongRAM/boundedAST+cache, 55testsPASSlocal; nativefixture/R6 đang chạy. Luna khôngcóreviewmới khi kiểm16:48, chưamerge50/70."
@@ -897,7 +901,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "R637215280543@635: XP374s/Ace383s PASSmức1, VX65sFAIL runtimeeval96:951 dù nguồn157script0SyntaxError. Head7bf ASTadapter giữcallsite/lexicalBinding, local55PASS, CI/nativepending. Audio/save-load/FPS/đủ5/máythật chưa kiểm."
+      "note": "R637219376261@7bf: XP358s/Ace379s PASSmức1, VX65s FAIL NoMethodError96:934; nativeAST/evalcontext fixture đã qua. Head3554 bỏ quyềnghi R6/signals, artifactRGSS7ghimhash, CI đang chạy. Audio/save-load/FPS/đủ5/máythật [CHƯA KIỂM]."
     },
     {
       "id": "web",

@@ -2,6 +2,8 @@
 
 > **Lệnh trực tiếp về lịch (04/10):** Giữ đúng một lịch lặp kiểm tra60phút, enabled cả khi đang làm để phục hồi khi bị dừng; không pause ở đầu lượt/không tạo one-off khác/không mở lượt trùng. Không bật lịch Sol cũ đã bị chủ dự án dừng. Lệnh này thay bước hẹn one-off bên dưới.
 
+> **Bằng chứng V44 cập nhật 04/10 17:55UTC:** R6@7bf37219376261 XP/Ace PASSmức1, VX FAIL NoMethodError96:934; native37219376256 xác nhận AST/evalcontext/PixelCopy, không suy VX gameplay. #50 head3554 bỏ token ghi khỏi R6/signals, đọc artifactRGSS7ghimID/hash; artifact hết hạn06/10 thì dừng, không fallbackdraft/latest/write. Cần CI/Luna headmới trướcgộp; chỉ thu hìnhdạngmasked trước sửa tiếp.
+
 # Prompt cho Sol (bản 04/10: đọc thư 60 phút/lần, tự làm dài)
 
 Dán nguyên khối dưới đây vào phiên Sol. Bản này thay toàn bộ prompt cũ.
