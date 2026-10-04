@@ -126,7 +126,8 @@ internal object PackTransaction {
         val needed = File(dir, "needed.txt")
         val systemLibraries = setOf("libc.so", "libm.so", "libdl.so", "liblog.so", "libandroid.so", "libz.so", "libEGL.so",
             "libGLESv1_CM.so", "libGLESv2.so", "libGLESv3.so", "libOpenSLES.so", "libjnigraphics.so", "libvulkan.so",
-            "libaaudio.so", "libmediandk.so", "libnativewindow.so")
+            "libaaudio.so", "libmediandk.so", "libnativewindow.so", "libcamera2ndk.so", "libstdc++.so",
+            "libsync.so", "libneuralnetworks.so", "libOpenMAXAL.so", "libamidi.so", "libbinder_ndk.so")
         if (needed.isFile) needed.readLines().map { it.trim() }.filter { it.isNotEmpty() && it !in systemLibraries }
             .forEach { requiredFile(dir, File(dir, it)) }
         dir.walkTopDown().filter { it.isFile && it.name.endsWith(".so") }.forEach { lib ->
