@@ -2,6 +2,9 @@ package vn.aow.monika.runner
 
 import android.app.Activity
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.OnBackPressedDispatcherOwner
+import androidx.activity.setViewTreeOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -28,10 +31,12 @@ import vn.aow.monika.ui.theme.SheetAction
  * Đặt Compose lên màn hình game Kirikiri. Kirikiri/cocos2d-x là Activity thường (không phải ComponentActivity) nên phải tự
  * cấp "chủ vòng đời" cho cây View thì Compose mới chạy được. Gọi [Host.resume]/[Host.pause]/[Host.destroy] theo vòng đời Activity.
  */
-class ComposeHost(private val activity: Activity) : LifecycleOwner, SavedStateRegistryOwner, ViewModelStoreOwner {
+class ComposeHost(private val activity: Activity) : LifecycleOwner, SavedStateRegistryOwner, ViewModelStoreOwner, OnBackPressedDispatcherOwner {
     private val registry = LifecycleRegistry(this)
     private val saved = SavedStateRegistryController.create(this)
     private val store = ViewModelStore()
+    @Suppress("DEPRECATION")
+    override val onBackPressedDispatcher = OnBackPressedDispatcher { activity.onBackPressed() }
     override val lifecycle: Lifecycle get() = registry
     override val savedStateRegistry: SavedStateRegistry get() = saved.savedStateRegistry
     override val viewModelStore: ViewModelStore get() = store
@@ -40,6 +45,7 @@ class ComposeHost(private val activity: Activity) : LifecycleOwner, SavedStateRe
 
     fun attach(parent: ViewGroup, content: @Composable () -> Unit) {
         val decor = activity.window.decorView
+        decor.setViewTreeOnBackPressedDispatcherOwner(this)
         decor.setViewTreeLifecycleOwner(this); decor.setViewTreeSavedStateRegistryOwner(this); decor.setViewTreeViewModelStoreOwner(this)
         parent.addView(ComposeView(activity).apply { setContent(content) }, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
     }

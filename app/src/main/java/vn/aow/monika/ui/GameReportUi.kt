@@ -57,34 +57,54 @@ fun gameReportAction(closeMenu: () -> Unit): SheetAction {
     }
 }
 
+private class ReportDraft {
+    var type by mutableStateOf("Lỗi khác")
+    var description by mutableStateOf("")
+    var includeImage by mutableStateOf(true)
+}
+
 @Composable
 internal fun GameReportDialog(image: Diagnostics.ReportImage?, busy: Boolean, onClose: () -> Unit,
                               onSend: (String, String, Diagnostics.ReportImage?) -> Unit) {
+    val draft = remember { ReportDraft() }
     AlertDialog(onDismissRequest = { if (!busy) onClose() }, title = { Text("Báo lỗi game này") },
-        text = { GameReportForm(image, busy, onClose, onSend) }, confirmButton = {})
+        text = { GameReportFields(draft, image, busy) },
+        confirmButton = { GameReportSubmit(draft, image, busy, onSend) },
+        dismissButton = { TextButton(enabled = !busy, onClick = onClose) { Text("Hủy") } })
 }
 
-/** Nội dung dùng chung trong dialog thật và test Compose; emulator kiểm cửa sổ dialog. */
+/** Test cùng trường + nút gửi, không phụ thuộc cửa sổ Dialog của Robolectric. */
 @Composable
 internal fun GameReportForm(image: Diagnostics.ReportImage?, busy: Boolean, onClose: () -> Unit,
                             onSend: (String, String, Diagnostics.ReportImage?) -> Unit) {
-    val types = listOf("Không lên hình", "Không có tiếng", "Phím không hoạt động", "Game bị treo", "Lỗi khác")
-    var type by remember { mutableStateOf("Lỗi khác") }
-    var description by remember { mutableStateOf("") }
-    var includeImage by remember { mutableStateOf(true) }
-    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Bạn gặp lỗi gì?")
-        types.forEach { choice -> FilterChip(selected = type == choice, enabled = !busy, onClick = { type = choice }, label = { Text(choice) }) }
-        OutlinedTextField(value = description, onValueChange = { description = it.take(2000) }, enabled = !busy,
-            label = { Text("Mô tả thêm (tùy chọn)") }, modifier = Modifier.fillMaxWidth(), maxLines = 4)
-        Row { Checkbox(checked = includeImage && image != null, onCheckedChange = { includeImage = it }, enabled = image != null && !busy); Text("Kèm ảnh game") }
-        if (image == null) Text("Chưa chụp được ảnh; báo lỗi vẫn gửi được.")
-        Text("Kèm thông tin máy và nhật ký lỗi gần đây.")
+    val draft = remember { ReportDraft() }
+    Column {
+        GameReportFields(draft, image, busy)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(enabled = !busy, onClick = onClose) { Text("Hủy") }
-            TextButton(enabled = !busy, onClick = { onSend(type, description, image.takeIf { includeImage }) }) {
-                Text(if (busy) "Đang gửi…" else "Gửi báo lỗi")
-            }
+            GameReportSubmit(draft, image, busy, onSend)
         }
+    }
+}
+
+@Composable
+private fun GameReportFields(draft: ReportDraft, image: Diagnostics.ReportImage?, busy: Boolean) {
+    val types = listOf("Không lên hình", "Không có tiếng", "Phím không hoạt động", "Game bị treo", "Lỗi khác")
+    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Bạn gặp lỗi gì?")
+        types.forEach { choice -> FilterChip(selected = draft.type == choice, enabled = !busy, onClick = { draft.type = choice }, label = { Text(choice) }) }
+        OutlinedTextField(value = draft.description, onValueChange = { draft.description = it.take(2000) }, enabled = !busy,
+            label = { Text("Mô tả thêm (tùy chọn)") }, modifier = Modifier.fillMaxWidth(), maxLines = 4)
+        Row { Checkbox(checked = draft.includeImage && image != null, onCheckedChange = { draft.includeImage = it }, enabled = image != null && !busy); Text("Kèm ảnh game") }
+        if (image == null) Text("Chưa chụp được ảnh; báo lỗi vẫn gửi được.")
+        Text("Kèm thông tin máy và nhật ký lỗi gần đây.")
+    }
+}
+
+@Composable
+private fun GameReportSubmit(draft: ReportDraft, image: Diagnostics.ReportImage?, busy: Boolean,
+                             onSend: (String, String, Diagnostics.ReportImage?) -> Unit) {
+    TextButton(enabled = !busy, onClick = { onSend(draft.type, draft.description, image.takeIf { draft.includeImage }) }) {
+        Text(if (busy) "Đang gửi…" else "Gửi báo lỗi")
     }
 }
