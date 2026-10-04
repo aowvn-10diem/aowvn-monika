@@ -24,6 +24,8 @@ for package in tree:
             if archive.findtext('{*}host-os') == 'linux':
                 archives.append(dict(hostArch=archive.findtext('{*}host-arch'),
                                      url=archive.findtext('{*}complete/{*}url')))
+if not archives:
+    raise RuntimeError('Không đọc được danh sách emulator Linux; chưa đủ dữ kiện kết luận')
 report['sdkLinuxArchives'] = archives
 native = [a for a in archives if a['hostArch'] in ['aarch64', 'arm64'] or 'aarch64' in (a['url'] or '') or 'arm64' in (a['url'] or '')]
 report['directions'].append(dict(direction='Emulator Linux ARM64 chính thức', available=bool(native)))
