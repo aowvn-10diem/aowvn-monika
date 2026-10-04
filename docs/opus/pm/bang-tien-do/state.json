@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T20:45:36.704876Z",
+  "updatedAt": "2026-10-04T21:43:00.578746Z",
   "mainSha": "3453741f954140432a82c2d449fa4991072bf8ff",
   "app": "App0.7.4 · config33",
   "nextCheck": "2026-10-04T19:06:36Z",
-  "headline": "VX đã có title, R6@808 còn TypeError137:118 sauNewGame. Head00bfe sửa slice-comparison RAM theo proofMRI1.8.7/3.1.7, chờ CI/game thật/Luna. XP/Ace PASSmức1, Gemini standby.",
+  "headline": "VX đã qua slice!137:118, còn NoMethodError96:1633 width trênString sauNewGame. R6@00bfe XP372/Ace381 PASSmức1; cd0 sửaCI/privacy theoLuna và thu maskedlỗimới. ChờCI/Luna, Gemini standby.",
   "needsBoss": [
     {
       "code": "G7",
@@ -66,7 +66,7 @@
       "name": "RPG Maker XP/VX/Ace chơi trong app",
       "status": "dang",
       "progress": 68,
-      "note": "R0–R5 mã xong; R6@808 XP370s/Ace372s PASS mức1, VXtitle đạt nhưng sauNewGame TypeError137:118, chưaPASS60s. Đủ5/audio/save-load/FPS chưa kiểm; R7 chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
+      "note": "R0–R5 mã xong; R6@00bfe XP372s/Ace381s PASSmức1, VXtitleđạt nhưng sauNewGame NoMethodError96:1633, chưaPASS60s. Đủ5/audio/save-load/FPS chưa kiểm; R7 chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "Q",
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "#44 đã gộp f96da6e. R6@8082683 run37230428854: XP370s/Ace372s PASS mức1, VX436s FAIL137:118 sauNewGame; VX đã có màn tiêu đề. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếp V44, không R7.",
+      "note": "#44 đã gộp f96da6e. R6@00bfe run37233267939: XP372s/Ace381s PASSmức1, VX439s FAILNoMethodError96:1633 sauNewGame; titlecó, slice!137:118 đãqua. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếpV44, khôngR7.",
       "module": "rgss"
     },
     {
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Snapshot Sol #50 head00bfe2e: slice! Regexp ==/!=nil spacing RAM + guard Class/Module.constants custom override trước/sau preload, local98Ruby18/19privacy/6probe PASS; CI headmới chờ. R6@808 run37230428854/art11313582885: XP370s/Ace372s mức1 PASS; VX436s FAIL. Ảnh VX trướcphím đã có màn tiêu đề, sauNewGame TypeError script137:118 slice! nhậntrue; đã vượt Range96:957. Build/CodeQL/native808 xanh, native11312749848 xác nhận predicate Integer/Range và eval/accessor/orange/PixelCopy. MRI1.8.7/3.1.7 synthetic chứng minh khác parser-spacing và constantslexical (riêng1.8.7, khôngđo1.8.1). Diagnostic131/art11314263589 xác nhận137:118 CALLSPACE/Regexp/!=nil; synthetic1.8.7 đúng,3.1.7 argumentBoolean. Bảnmới chỉ CALL một dòng/literalRegexp/== hoặc !=nil, compiletoàncandidate, nativefixtureStringmutation mới cầnCI, không coerce slice!/Range; giữ expect_fail=vx. Cần Luna fresh00bfe và CI/R6/native đúnghead trước merge."
+      "note": "Snapshot Sol #50 headcd0b6db: sửaLuna probe/test paths+Buildprobe6checks, metadata recorded/empty/missing, bare audioidentifier che (20privacyPASS), CLIdefaultvx khớpworkflow/bash/Acephảiđạt. Local98Ruby18/20privacy/6probe/5verdict/YAML/bash/3metadata fixture PASS. R6@00bfe run37233267939/art11315118063 đã xem: XP372s/Ace381s PASSmức1, VX439s FAIL NoMethodError96:1633 width trênString sauNewGame; đãqua slice!137:118, titlecó nhưng chưa60sPASS. Build37233268036/CodeQL37233268048/native37233268139 SUCCESS đúng00bfe; native11314836860 marker1/orange/PixelCopy10–40s/Stringmutation/predicate/accessor/evalPASS. Diagnostic11314532751 157script0SyntaxError chỉcompile. Headmới thu masked96:1633 trước sửa tiếp; giữexpect_fail=vx/threshold/observation, khôngcoerce/gamefile/nativeedit. CầnLunafreshcd0 vàCI đúnghead trướcmerge."
     },
     {
       "code": "V45",
@@ -685,7 +685,11 @@
   ],
   "log": [
     {
-      "t": "2026-10-04T20:45:36.704876Z",
+      "t": "2026-10-04T21:43:00.578746Z",
+      "text": "R6@00bfe hoàn tất: XP372/Ace381 mức1PASS; VX439 FAILNoMethodError96:1633 (width/String) sauNewGame, đãqua slice137:118. Native11314836860 slice mutation+marker/orange/PixelCopyPASS; compile1570errorkhônggameplay. Headcd0 sửaLuna trigger/probe-missing/privacy20, thu masked1633; khôngđổiexpectfail/threshold."
+    },
+    {
+      "t": "2026-10-04T21:43:00.578746Z",
       "text": "Head00bfe sửa slice! (/Regexp/) !=nil trongRAM: MRI1.8.7 so sánh kếtquả, MRI3.1.7 đưaBoolean vàoarg; proofmasked137:118 + synthetic thật. GuardmộtCALL/mộtline/literalRegexp/nilcomparison, commonbudgetgiữnguyên, nativefixtureStringmutation mới. Local98/19/6PASS; CI/R6/native pending, khôngđổiexpectfail."
     },
     {
@@ -929,7 +933,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "Snapshot Sol #50 head00bfe2e: slice! Regexp ==/!=nil spacing RAM + guard Class/Module.constants custom override trước/sau preload, local98Ruby18/19privacy/6probe PASS; CI headmới chờ. R6@808 run37230428854/art11313582885: XP370s/Ace372s mức1 PASS; VX436s FAIL. Ảnh VX trướcphím đã có màn tiêu đề, sauNewGame TypeError script137:118 slice! nhậntrue; đã vượt Range96:957. Build/CodeQL/native808 xanh, native11312749848 xác nhận predicate Integer/Range và eval/accessor/orange/PixelCopy. MRI1.8.7/3.1.7 synthetic chứng minh khác parser-spacing và constantslexical (riêng1.8.7, khôngđo1.8.1). Diagnostic131/art11314263589 xác nhận137:118 CALLSPACE/Regexp/!=nil; synthetic1.8.7 đúng,3.1.7 argumentBoolean. Bảnmới chỉ CALL một dòng/literalRegexp/== hoặc !=nil, compiletoàncandidate, nativefixtureStringmutation mới cầnCI, không coerce slice!/Range; giữ expect_fail=vx. Cần Luna fresh00bfe và CI/R6/native đúnghead trước merge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
+      "note": "Snapshot Sol #50 headcd0b6db: sửaLuna probe/test paths+Buildprobe6checks, metadata recorded/empty/missing, bare audioidentifier che (20privacyPASS), CLIdefaultvx khớpworkflow/bash/Acephảiđạt. Local98Ruby18/20privacy/6probe/5verdict/YAML/bash/3metadata fixture PASS. R6@00bfe run37233267939/art11315118063 đã xem: XP372s/Ace381s PASSmức1, VX439s FAIL NoMethodError96:1633 width trênString sauNewGame; đãqua slice!137:118, titlecó nhưng chưa60sPASS. Build37233268036/CodeQL37233268048/native37233268139 SUCCESS đúng00bfe; native11314836860 marker1/orange/PixelCopy10–40s/Stringmutation/predicate/accessor/evalPASS. Diagnostic11314532751 157script0SyntaxError chỉcompile. Headmới thu masked96:1633 trước sửa tiếp; giữexpect_fail=vx/threshold/observation, khôngcoerce/gamefile/nativeedit. CầnLunafreshcd0 vàCI đúnghead trướcmerge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
     },
     {
       "id": "web",
