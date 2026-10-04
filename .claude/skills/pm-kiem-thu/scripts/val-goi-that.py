@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+# Kiểm gói thật (bản của PM, nhánh docs/opus-tra-loi).
+# Dùng: val-goi-that.py [file-chính-7zip] [file-chính-kirikiri]  (tùy chọn; mặc định lấy từ hằng số trong
+#   app/src/main/java/vn/aow/monika/pack/PackManager.kt: SEVENZIP_LIB="lib7-Zip-JBinding.so", KIRIKIRI_LIB="libkrkr2yuri.so").
+# Đặt cạnh script (hoặc PACK_DIR=thư-mục) các zip: sevenzip-arm64-v8a.zip, sevenzip-armeabi-v7a.zip, kirikiri-arm64.zip, onsyuri-web.zip, azahar-android-arm64.zip.
+import zipfile,os,sys,json,hashlib,tempfile,shutil
+SYS={"libc.so","libm.so","libdl.so","liblog.so","libandroid.so","libz.so","libEGL.so","libGLESv1_CM.so","libGLESv2.so","libGLESv3.so","libOpenSLES.so","libjnigraphics.so","libvulkan.so","libaaudio.so","libmediandk.so","libnativewindow.so","libcamera2ndk.so","libstdc++.so","libsync.so","libneuralnetworks.so","libOpenMAXAL.so","libamidi.so","libbinder_ndk.so"}
+MAX_ENTRY=int(os.environ.get("VAL_MAX_ENTRY",200*1024*1024))   # byte tối đa mỗi file trong gói (theo kích thước KHAI BÁO; zipfile không đọc quá số này)
+MAX_TOTAL=int(os.environ.get("VAL_MAX_TOTAL",500*1024*1024))   # tổng byte giải nén tối đa
+MAX_FILES=int(os.environ.get("VAL_MAX_FILES",5000))
+MAX_MANIFEST=int(os.environ.get("VAL_MAX_MANIFEST",1024*1024))   # byte tối đa của manifest.json
+MAX_NEEDED=int(os.environ.get("VAL_MAX_NEEDED",64*1024))        # byte tối đa của needed.txt
+MAX_ENTRIES=int(os.environ.get("VAL_MAX_ENTRIES",1000))         # số mục tối đa trong loadOrder / files / needed.txt
+def safe(base,name):
+    """Nối name vào base; trả None nếu name không phải chuỗi, tuyệt đối, hoặc thoát khỏi thư mục tạm (.. / symlink)."""
+    if not isinstance(name,str) or not name or os.path.isabs(name) or "\0" in name: return None
+    p=os.path.realpath(os.path.join(base,name))
+    return p if p.startswith(os.path.realpath(base)+os.sep) else None
+def sha256_file(p):
+    h=hashlib.sha256(); n=0
+    with open(p,'rb') as f:
+        for c in iter(lambda:f.read(1<<20),b''):
+            n+=len(c)
+            if n>MAX_ENTRY: return None
+            h.update(c)
+    return h.hexdigest()
+def run(zp,main,abi,flatten=False):
+    d=tempfile.mkdtemp(); root=os.path.realpath(d)
+    try:
+        written=set(); total=0
+        with zipfile.ZipFile(zp) as z:
+            infos=z.infolist()
+            if len(infos)>MAX_FILES: return f"FAIL quá nhiều file ({len(infos)} > {MAX_FILES})"
+            names=[e.filename.rstrip('/') for e in infos if e.filename.rstrip('/')]
+            first=names[0] if names else ''
+            zip_root=first.split('/',1)[0]
+            strip_root=(not flatten and zip_root and main not in names and
+                        f"{zip_root}/{main}" in names and
+                        all(name==zip_root or name.startswith(zip_root+'/') for name in names))
+            for e in infos:
+                if e.file_size>MAX_ENTRY: return f"FAIL file quá lớn {e.filename!r} ({e.file_size} > {MAX_ENTRY})"
+                total+=e.file_size
+                if total>MAX_TOTAL: return f"FAIL tổng giải nén quá lớn (> {MAX_TOTAL})"
+                orig=os.path.realpath(os.path.join(root,e.filename))
+                if not orig.startswith(root+os.sep): return f"FAIL zip vượt thư mục: {e.filename!r}"
+                if e.is_dir(): continue
+                relative=e.filename[len(zip_root)+1:] if strip_root and e.filename.startswith(zip_root+'/') else e.filename
+                dest=os.path.realpath(os.path.join(root,os.path.basename(relative))) if flatten else os.path.realpath(os.path.join(root,relative))
+                if dest in written: return f"FAIL trùng tên {e.filename}"
+                written.add(dest); os.makedirs(os.path.dirname(dest),exist_ok=True)
+                with z.open(e) as src, open(dest,'wb') as out: shutil.copyfileobj(src,out)
+        m=safe(root,main)
+        if m is None or not os.path.isfile(m) or os.path.getsize(m)==0: return f"FAIL không có {main}"
+        mf=os.path.join(root,'manifest.json'); md=os.path.dirname(m)
+        if os.path.isfile(mf):
+            if os.path.getsize(mf)>MAX_MANIFEST: return f"FAIL manifest.json quá lớn (> {MAX_MANIFEST} byte)"
+            try:
+                with open(mf,encoding='utf-8') as f: meta=json.load(f)
+            except (ValueError,OSError,RecursionError): return "FAIL manifest.json không đọc được"
+            if not isinstance(meta,dict): return "FAIL manifest.json sai dạng"
+            if 'abi' in meta and meta['abi']!=abi: return f"FAIL manifest abi {meta['abi']}"
+            lo=meta.get('loadOrder',[]); fl=meta.get('files') or {}
+            if not isinstance(lo,list) or not isinstance(fl,dict): return "FAIL manifest loadOrder/files sai dạng"
+            if len(lo)>MAX_ENTRIES or len(fl)>MAX_ENTRIES: return f"FAIL manifest quá nhiều mục (> {MAX_ENTRIES})"
+            for n in lo:
+                p=safe(md,n)
+                if p is None: return f"FAIL loadOrder đường dẫn không hợp lệ {n!r}"
+                if not os.path.isfile(p) or os.path.getsize(p)==0: return f"FAIL loadOrder thiếu {n}"
+            for n,info in fl.items():
+                p=safe(md,n)
+                if p is None: return f"FAIL files đường dẫn không hợp lệ {n!r}"
+                if not isinstance(info,dict): return f"FAIL files.{n} sai dạng"
+                if not os.path.isfile(p) or os.path.getsize(p)==0: return f"FAIL files thiếu {n}"
+                if 'size' in info and os.path.getsize(p)!=info['size']: return f"FAIL size {n}"
+                if 'sha256' in info:
+                    dig=sha256_file(p)
+                    if dig is None: return f"FAIL {n} quá lớn để băm"
+                    if dig!=str(info['sha256']).lower(): return f"FAIL sha {n}"
+        nd=os.path.join(root,'needed.txt')
+        if os.path.isfile(nd):
+            if os.path.getsize(nd)>MAX_NEEDED: return f"FAIL needed.txt quá lớn (> {MAX_NEEDED} byte)"
+            with open(nd,encoding='utf-8',errors='replace') as f: nl=f.read().splitlines()
+            if len(nl)>MAX_ENTRIES: return f"FAIL needed.txt quá nhiều dòng (> {MAX_ENTRIES})"
+            for l in nl:
+                l=l.strip()
+                if l and l not in SYS:
+                    p=safe(root,l)
+                    if p is None: return f"FAIL needed đường dẫn không hợp lệ {l!r}"
+                    if not os.path.isfile(p) or os.path.getsize(p)==0: return f"FAIL needed thiếu {l}"
+        exp={"arm64-v8a":183,"armeabi-v7a":40}[abi]; cls=2 if abi=="arm64-v8a" else 1
+        n=0
+        for dp,_,fs in os.walk(root):
+            for f in fs:
+                if f.endswith('.so'):
+                    h=open(os.path.join(dp,f),'rb').read(20); n+=1
+                    mach=h[18]|(h[19]<<8)
+                    if len(h)!=20 or h[:4]!=b'\x7fELF' or h[4]!=cls or h[5]!=1 or mach!=exp: return f"FAIL ELF {f} mach={mach}"
+        return f"OK ({len(written)} file, {n} .so, manifest={'có' if os.path.isfile(mf) else 'không'}, needed={'có' if os.path.isfile(nd) else 'không'})"
+    finally: shutil.rmtree(d)
+def main():
+    SEVENZIP_LIB=sys.argv[1] if len(sys.argv)>1 else "lib7-Zip-JBinding.so"
+    KIRIKIRI_LIB=sys.argv[2] if len(sys.argv)>2 else "libkrkr2yuri.so"
+    P=os.environ.get("PACK_DIR") or os.path.dirname(os.path.abspath(__file__))
+    failed=False
+    for zp,main,abi,fl in [("sevenzip-arm64-v8a.zip",SEVENZIP_LIB,"arm64-v8a",False),("sevenzip-armeabi-v7a.zip",SEVENZIP_LIB,"armeabi-v7a",False),("kirikiri-arm64.zip",KIRIKIRI_LIB,"arm64-v8a",False),("onsyuri-web.zip","onsyuri.wasm","arm64-v8a",False),("azahar-android-arm64.zip","libcitra-android.so","arm64-v8a",True)]:
+        result=run(os.path.join(P,zp),main,abi,fl)
+        print(zp, result)
+        failed |= not result.startswith("OK ")
+    if failed: sys.exit(1)
+if __name__=="__main__": main()
