@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T14:13:00Z",
-  "mainSha": "d6d352dbf63a3ee87e6cc8673d33f11a76a300be",
+  "updatedAt": "2026-10-04T15:51:52Z",
+  "mainSha": "5a67e6f317f95f080af5bb0fff6b9f24df9fe440",
   "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-04T15:13:00Z",
-  "headline": "Sol tiếp quản: ghim12core và các Dependabot đã gộp. V44 có bản sửa VXtrongRAM + wininet, Build xanh đang đo game. GeminiF01/F02 vẫn chờ kích hoạt.",
+  "nextCheck": "2026-10-04T16:51:52Z",
+  "headline": "Sol tiếp quản: #66 PM đã gộp; XP/Ace PASS mức1, VX còn1lỗi cú pháp. Sửa bytebudget theo Luna; CI/headmới đang chạy. Gemini vẫn chờ kích hoạt.",
   "needsBoss": [
     {
       "code": "G7",
@@ -59,42 +59,42 @@
       "name": "Kirikiri 0.7.3 (menu tiếng Việt)",
       "status": "xong",
       "progress": 100,
-      "note": "Đã phát hành, APK đã gửi sếp. Chưa thử máy thật (G7)."
+      "note": "Đã phát hành, APK đã gửi sếp. Chưa thử máy thật (G7). Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "M1",
       "name": "RPG Maker XP/VX/Ace chơi trong app",
       "status": "dang",
       "progress": 68,
-      "note": "R0–R4 xong, R5 phần chính xong; còn R6 (5 game thử, cần G2) và R7 (phát hành, cần G8)."
+      "note": "R0–R5 mã xong, XP/Ace PASSmức1 trongCI; VX còn1SyntaxError. R6 đủ5/audio/save-load/FPS chưa kiểm; R7 giữ chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "Q",
       "name": "Kiểm thử không máy thật + báo lỗi từ xa",
       "status": "cho",
       "progress": 15,
-      "note": "Phương án xong; thi công V18–V22."
+      "note": "V18–V22 mã/CI đã có bằng chứng; Worker chưa deploy và máy thật chưa kiểm. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "M2",
       "name": "Ren'Py 8 chơi trong app",
       "status": "dang",
       "progress": 25,
-      "note": "P0, P1 xong (gói 22,6 MB); P2 chờ sau R5."
+      "note": "Renpy8 P2/P3 đã gộp33/41; P4publication/config kẹtSOL012, chưa bật cho người dùng. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "M3",
       "name": "Ren'Py 7",
       "status": "cho",
       "progress": 0,
-      "note": "Sau M2."
+      "note": "Sau M2. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "M4",
       "name": "Symbian / N-Gage chơi trong app",
       "status": "sep",
       "progress": 5,
-      "note": "Có phương án; chờ sếp chốt A1, A2 (G4). Làm sau M2."
+      "note": "Có phương án; chờ sếp chốt A1, A2 (G4). Làm sau M2. Phần trăm là ước lượng PM cũ, chưa đo lại."
     }
   ],
   "tasks": [
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "Job mức1#44 đã gộp: XP PASS, VX/Ace lỗi đúng expected; R6 đủ5 và audio/save/load/FPS chưa kiểm. V44 đang xử lý.",
+      "note": "#44 gộpf96da6e. R6 mới37210498789@9df: XP/Ace PASSmức1, VX FAILSyntaxError. Đủ5/audio/save-load/FPS còn kẹt; V44 đang sửa, không R7.",
       "module": "rgss"
     },
     {
@@ -544,7 +544,7 @@
       "owner": "Sol",
       "status": "xong",
       "module": "ci",
-      "note": "Sửa phân trang#63 đã gộp; PMdigestMAIN37196924569 xanh, bản tin bot đã hồi phục."
+      "note": "**xong** #48/#63; MAIN37196924569 xanh, bot6cdaf009 rootparents[]/đúnghai file verified. Không vòng lặpBuild; không suy từpreview."
     },
     {
       "code": "L10",
@@ -582,9 +582,9 @@
       "code": "V43",
       "title": "Phát hành APK ký trên GitHub thay vì build trong phiên",
       "owner": "Sol",
-      "status": "dang",
+      "status": "ket",
       "module": "ci",
-      "note": "Bước 1: Sol chạy thử ký trên GitHub, so đúng chứng thư (không phát hành). Bước 2: Sonnet phát hành thật."
+      "note": "SOL012: chỉ chuẩn bị mã để review; không đọc khóa/ký/dispatch/phát hành. Lệnh tiếp quản không cấp ngoại lệ."
     },
     {
       "code": "V44",
@@ -592,15 +592,15 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "#50 76e8801: Wininetofflinefallback + Ruby1.8 normalize bảnRAMVX. Unitlocal vàBuildxanh, nativefixture/R6đang chạy; không gọi VX/Ace phục hồi."
+      "note": "Sol tiếp quản#50 heade5afa92: R637210498789@9df XP384s/Ace376s PASSmức1 thật; VX65s FAIL. Diagnostic còn1/157lỗi, #96kẹt1796; đã sửa bytebudget64MiB theo Luna, Ruby18local28/privacy6PASS. CI mới đang chạy, cần Luna mới; không gọi VX xong."
     },
     {
       "code": "V45",
       "title": "Ren'Py 8: đăng gói và bật trong config (P4)",
       "owner": "Sol",
-      "status": "cho",
+      "status": "ket",
       "module": "renpy8",
-      "note": "Chỉ bật cho người dùng sau khi CI mở được game mẫu."
+      "note": "SOL012: chưa cấp ngoại lệ phát gói Renpy/bậtconfig, không publish."
     },
     {
       "code": "V46",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-04T15:51:52Z",
+      "text": "Gộp#66 sau Luna+CI; R6 đúng9df XP/Ace PASSmức1, VXFAIL/còn1SyntaxError. #50 sửa shared64MiB bytebudget theo Luna, test28+privacy6 localPASS, CI mới đang chạy. Lịch kiểmtra60phút enabled/chốngtrùng; Gemini standby."
+    },
     {
       "t": "2026-10-04T14:13:00Z",
       "text": "Gộp#58coroutines/#67pins/#56setupjava/#55setupgcloud theoLuna+CI+PMreview riêng. #64đóng vì57đãgộp. V44 Buildmới xanh, runtimechờ. Tái sinh landing byte-identical/15assetverify, sửa generator thiếuassets ởcheckout sạch."
@@ -885,7 +889,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "V44 tiếp quản, chuẩn hóa lời gọi Ruby1.8 bảnRAM + Wininetofflinefallback đangđo. R6 trước: XP PASSmức1, VX/Ace lỗi; chưa âmthanh/save-load/FPS hoặc đủ5game."
+      "note": "R6 37210498789@9df: XP/Ace PASSmức1 qua phím; VX FAIL. Normalizer chỉ RAM, còn1SyntaxError/#96; bytebudget64MiB mới đang CI. Audio/save-load/FPS/đủ5/máythật chưa kiểm."
     },
     {
       "id": "web",
@@ -1155,5 +1159,6 @@
       "question": "Đội gặp sự cố, ai tiếp quản?",
       "answer": "Sol thay Opus/Sonnet, phối hợp Luna tới22:00 05/10 GMT+7; chuẩn bị Gemini Flash tối nay."
     }
-  ]
+  ],
+  "progressBasis": "Phần trăm mốc giữ ước lượng PM cũ, chưa đo lại trong lượt tiếp quản."
 }

@@ -1,5 +1,7 @@
 > **Ủy quyền tạm thời của chủ dự án (issue #65):** Sol tiếp quản PM Opus và Sonnet tới22:00 thứHai05/10/2026 GMT+7 (15:00UTC). Trong thời gian này được sửa kế hoạch/trạng thái PM và tiếp việc Sonnet; quyết định ghi “PM duyệt — Sol tiếp quản theo lệnh chủ dự án (#65)”, không mạo danh. Code Sol cần Luna độc lập + CI đúnghead. Sau thời hạn bàn giao lại. Giới hạn ký/phát hành/game/Secrets giữ nguyên ngoài ngoại lệ đã ghi; Gemini Flash F01/F02 chỉ kích hoạt khi chủ dự án báo sẵn sàng.
 
+> **Lệnh trực tiếp về lịch (04/10):** Giữ đúng một lịch lặp kiểm tra60phút, enabled cả khi đang làm để phục hồi khi bị dừng; không pause ở đầu lượt/không tạo one-off khác/không mở lượt trùng. Không bật lịch Sol cũ đã bị chủ dự án dừng. Lệnh này thay bước hẹn one-off bên dưới.
+
 # Prompt cho Sol (bản 04/10: đọc thư 60 phút/lần, tự làm dài)
 
 Dán nguyên khối dưới đây vào phiên Sol. Bản này thay toàn bộ prompt cũ.
