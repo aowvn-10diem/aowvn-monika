@@ -20,14 +20,16 @@ jobs:
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: 17}
       - uses: gradle/actions/setup-gradle@v4
-      - name: Chỉ engine và fixtures tự sinh
-        env: {GH_TOKEN: '${{ github.token }}'}
-        run: python3 scripts/ci-engine-signals.py --scratch "$RUNNER_TEMP/v22" --rgss-tag engines-rgss-7
-      - name: Unit và APK debug test
+      - name: Unit trên config chuẩn
         run: |
           python3 scripts/test-crash-report-groups.py
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
-          ./gradlew testDebugUnitTest assembleDebug --console=plain
+          ./gradlew testDebugUnitTest --console=plain
+      - name: Chỉ engine và fixtures tự sinh
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: python3 scripts/ci-engine-signals.py --scratch "$RUNNER_TEMP/v22" --rgss-tag engines-rgss-7
+      - name: APK debug với fixture (unit đã chạy trên config chuẩn)
+        run: ./gradlew assembleDebug --console=plain
       - name: Bật KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
