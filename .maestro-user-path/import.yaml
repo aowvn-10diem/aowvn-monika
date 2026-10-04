@@ -1,0 +1,18 @@
+appId: com.aow.monika
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Duyệt theo hệ máy"
+    timeout: 45000
+- tapOn: "Thư viện"
+- tapOn: "Thêm game từ máy"
+- tapOn:
+    text: "Show roots|Open navigation drawer"
+- tapOn: "Downloads"
+- takeScreenshot: 00-saf-picker
+- tapOn: "Monika-V33.zip"
+- extendedWaitUntil:
+    visible: "Monika-V33"
+    timeout: 60000
+- takeScreenshot: 01-saf-import
