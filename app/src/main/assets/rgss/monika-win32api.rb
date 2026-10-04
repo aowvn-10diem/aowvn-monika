@@ -1,7 +1,7 @@
 # Aow Monika: nạp TRƯỚC script của game (mkxp.json: preloadScript). Không sửa script game.
 # mkxp-z trên Android chỉ có MiniFFI (dlopen): các DLL Windows (user32, kernel32…) không tồn tại nên Win32API.new ném
 # "Failed loading user32: dlopen failed". Nhiều game (Debug Extension, mouse, đổi tiêu đề cửa sổ…) gọi Win32API chỉ để
-# đọc phím/chuột/cửa sổ. Ở đây Win32API là bản giả: DLL Windows → hàm giả trả giá trị an toàn; DLL khác → thử MiniFFI gốc.
+# đọc phím/chuột/cửa sổ. Ở đây Win32API thử MiniFFI gốc trước; chỉ khi lỗi và là DLL Windows mới dùng hàm giả trả giá trị an toàn.
 module MonikaWin32
   WINDOWS_DLLS = %w[user32 kernel32 gdi32 shell32 winmm advapi32 ole32 comdlg32 comctl32 msvcrt shlwapi imm32 dwmapi].freeze
 
@@ -45,16 +45,18 @@ end
 Object.send(:remove_const, :Win32API) if Object.const_defined?(:Win32API)
 
 class Win32API
+  # Thử MiniFFI gốc TRƯỚC (game đang chạy đúng thì giữ nguyên hành vi). Chỉ khi gốc báo lỗi VÀ là DLL Windows mới dùng bản giả;
+  # DLL khác lỗi → ném lại đúng lỗi gốc như trước.
   def initialize(dll, func, imports = '', exports = 'L')
     @dll = dll.to_s
     @func = func.to_s
     @real = nil
-    unless MonikaWin32.windows_dll?(@dll)
-      begin
-        @real = MiniFFI.new(dll, func, imports, exports) if defined?(MiniFFI)
-      rescue Exception
-        @real = nil
-      end
+    begin
+      raise LoadError, "MiniFFI không có" unless defined?(MiniFFI)
+      @real = MiniFFI.new(dll, func, imports, exports)
+    rescue Exception
+      raise unless MonikaWin32.windows_dll?(@dll)
+      @real = nil
     end
   end
 

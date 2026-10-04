@@ -69,6 +69,11 @@ class RgssGameActivity : SDLActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         GAME_PATH = intent.getStringExtra(EXTRA_GAME_PATH).orEmpty() // PHẢI đặt trước super.onCreate: luồng native đọc trường này
         Log.i("MonikaGame", "rgss game_path=$GAME_PATH")
+        // mkxp.json do Monika sinh (phiên bản RGSS, RTP…), giữ khóa của game; thêm preloadScript = bản giả Win32API (assets/rgss/monika-win32api.rb,
+        // chỉ thay khi MiniFFI gốc lỗi với DLL Windows). Thư mục chỉ-đọc → bỏ qua, mkxp-z tự đoán.
+        runCatching {
+            File(GAME_PATH).takeIf { it.isDirectory }?.let { MkxpConfigWriter.write(it, emptyList(), preload = listOf(RgssCompat.ensure(this).absolutePath)) }
+        }
         val manifest = File(packDir(), "manifest.json").takeIf { it.isFile }?.readText().orEmpty()
         Diagnostics.begin(this, "rgss", "mkxp-z", manifest, intent.getStringExtra(EXTRA_TITLE).orEmpty(), "RPG Maker XP/VX/Ace")
         clock = PlayClock(intent.getStringExtra(PlayClock.EXTRA_KEY))
@@ -133,10 +138,7 @@ class RgssGameActivity : SDLActivity() {
         /** [entry] = thư mục game, hoặc một file trong đó (Game.ini, Game.rgss3a…). */
         fun start(activity: Activity, entry: File?, title: String, key: String?) {
             val dir = entry?.let { if (it.isDirectory) it else it.parentFile } ?: return
-            // mkxp.json do Monika sinh (phiên bản RGSS, RTP…), giữ khóa của game. Thư mục chỉ-đọc → bỏ qua, mkxp-z tự đoán.
-            // Bản giả Win32API (xem assets/rgss/monika-win32api.rb) nạp trước script game: DLL Windows không có trên Android.
-            val preload = listOfNotNull(runCatching { RgssCompat.ensure(activity) }.getOrNull()?.absolutePath)
-            runCatching { MkxpConfigWriter.write(dir, emptyList(), preload = preload) }
+            // mkxp.json (+ bản giả Win32API) do onCreate của Activity ghi, để mọi đường mở game đều có.
             activity.startActivity(
                 Intent(activity, RgssGameActivity::class.java)
                     .putExtra(PlayClock.EXTRA_KEY, key).putExtra(EXTRA_TITLE, title).putExtra(EXTRA_GAME_PATH, dir.absolutePath)
