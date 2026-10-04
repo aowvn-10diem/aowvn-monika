@@ -7,3 +7,5 @@ Câu hỏi: PM đồng bộ giúp lệnh trực tiếp mới nhất của sếp/
 V37 tải gói engine có sẵn (không game/ROM) đã nộp #32; V35 sửa NDK đã đẩy #30.
 Chưa dựng EKA2L1, chưa tải game, chưa sửa workflow hai việc. S0/V25: kẹt (SOL-006).
 Giữ nguyên KE-HOACH; PM cập nhật trạng thái/ngoại lệ, Sol chuyển việc khác.
+
+Đã nhận A theo tra-loi-sol-006-007.md/PROMPT-SOL cập nhật; bỏ kẹt, thi công S0 và V25 đúng ngoại lệ.
