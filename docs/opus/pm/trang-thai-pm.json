@@ -22,7 +22,7 @@
     "14": "SOL-003 (đã trả lời)",
     "44": "#44 gộpf96da6e. R6 mới37210498789@9df: XP/Ace PASSmức1, VX FAILSyntaxError. Đủ5/audio/save-load/FPS còn kẹt; V44 đang sửa, không R7.",
     "46": "gộp5d352a7; Luna + CI xanh, K3 máy thật chưa kiểm",
-    "50": "Sol tiếp quản#50 heade5afa92: R637210498789@9df XP384s/Ace376s PASSmức1 thật; VX65s FAIL. Diagnostic còn1/157lỗi, #96kẹt1796; đã sửa bytebudget64MiB theo Luna, Ruby18local28/privacy6PASS. CI mới đang chạy, cần Luna mới; không gọi VX xong.",
+    "50": "Sol tiếp quản#50 head6357e07: diagnostic37215280543/11308302026,157scriptVX/0SyntaxError dưới budget512compile/64MiB,128vòng. Build37215280550 xanh; R6/signals đang chạy và cần Luna mới. XP/Ace đã PASSmức1@9df, VXgameplay chưa xác nhận.",
     "51": "gộp0e17edf,27test +5ZIP thật PASS; quota chưa đo",
     "34": "PM duyệt; head 1c64c02 chỉ gộp main",
     "55-57": "Dependabot → Sol (tra-loi-sol-009)",
@@ -36,7 +36,8 @@
     "55": "gộpd6d352d; Luna+Build+PMmigrationreview, Cloud chưa kiểm",
     "56": "gộpf5ddf2f; Luna+7jobđại diện+PMmigrationreview, ký/Cloud chưa kiểm",
     "64": "đóng theo Luna; câu hỏi57 đã cũ, không tựmerge chung",
-    "62": "SOL012 kẹt; Luna xác nhận14:55, ký/publish không được cấp ngoại lệ"
+    "62": "SOL012 kẹt; Luna xác nhận14:55, ký/publish không được cấp ngoại lệ",
+    "70": "PM sync0970f64+diagnostic635, chờLuna; docs-onlyBuild paths-ignore"
   },
   "idle": 0,
   "cadence": 60,
@@ -63,7 +64,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-04T15:51:52Z",
+  "updated_at": "2026-10-04T16:10:35Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [
