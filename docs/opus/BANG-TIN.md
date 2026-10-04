@@ -4,6 +4,7 @@ Trạng thái: `mở` (chờ người nhận) · `đã trả lời` (chờ bên 
 
 | # | Chủ đề | Bước plan | Hạn cần | Trạng thái | Cập nhật |
 |---|---|---|---|---|---|
+| SOL-010 | V22: K3 native sập trước PixelCopy ([thư hỏi](hop-thu/hoi-sol-010-v22-k3-native.md)) | V22 | trước đạt điều kiện K3 | kẹt (SOL-010), XP PASS/Build xanh | 04/10/2026 |
 | SOL-007 | Nơi lưu snapshot core ([thư hỏi](hop-thu/hoi-sol-007-core-snapshot-hosting.md)) | V32 | trước ghim config | đã trả lời — A: Sol làm workflow snapshot sau PM duyệt | 04/10/2026 |
 | LUNA-001 | L02: phụ thuộc V26 ([thư hỏi](hop-thu/hoi-luna-001-l02-phu-thuoc-v26.md)) | L02 | trước khi bắt đầu L02 | đã trả lời (`tra-loi-luna-001`: làm ngay, bỏ ý a) | 04/10/2026 |
 | SOL-003 | Sol hỏi PM: DEBUG API 30, chọn B theo tra-loi-sol-003 | V20/D1 phần 4 | kiểm K10 sau V19 | đã làm (nhận B; triển khai + unit test trong PR phần 4) | 04/10/2026 |
