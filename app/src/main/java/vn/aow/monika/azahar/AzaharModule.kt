@@ -9,7 +9,7 @@ import okhttp3.Request
 import vn.aow.monika.config.ConfigRepository
 import java.io.File
 import java.io.IOException
-import java.util.zip.ZipInputStream
+import vn.aow.monika.pack.PackTransaction
 
 /**
  * Engine 3DS (Azahar) dưới dạng module tải khi cần: gói .zip do workflow "Build engines" dựng,
@@ -36,58 +36,38 @@ class AzaharModule(
     /** Bản thử có thể đóng sẵn gói engine trong APK (assets/engines/azahar.zip): không cần link tải. */
     private fun bundled() = runCatching { context.assets.open(ASSET).close(); true }.getOrDefault(false)
 
-    fun ready(): Boolean = available() && File(dir, MAIN).exists() && versionFile.takeIf { it.exists() }?.readText() == def?.version
+    fun ready(): Boolean = runCatching { available() && File(dir, MAIN).isFile && versionFile.takeIf { it.isFile }?.readText() == def?.version }.getOrDefault(false)
 
     fun info(): String = runCatching { File(dir, "manifest.json").readText() }.getOrDefault("")
     fun delete() = dir.deleteRecursively()
 
     suspend fun ensure(onStatus: (String) -> Unit = {}) = withContext(Dispatchers.IO) {
-        val d = def?.takeIf { available() } ?: throw IOException("Engine 3DS chưa có cho máy này")
-        if (ready()) return@withContext
-        withContext(Dispatchers.Main) { onStatus("Đang tải engine 3DS (chỉ lần đầu)…") }
-        dir.deleteRecursively(); dir.mkdirs()
-        var lastPct = -1
-        if (bundled()) {
-            ZipInputStream(context.assets.open(ASSET).buffered()).use { z -> unzip(z) }
-        } else {
-            // Tải ra file tạm, kiểm SHA-256 rồi mới giải nén: gói sai/hỏng không bao giờ được nạp.
-            val tmp = File(context.cacheDir, "azahar-download.zip")
-            try {
-                val md = java.security.MessageDigest.getInstance("SHA-256")
-                http.newCall(Request.Builder().url(d.url).build()).execute().use { r ->
-                    if (!r.isSuccessful) throw IOException("Tải engine thất bại (HTTP ${r.code})")
-                    val body = r.body!!
-                    val total = body.contentLength()
-                    var read = 0L
-                    body.byteStream().use { input ->
-                        tmp.outputStream().use { out ->
-                            val buf = ByteArray(64 * 1024)
-                            while (true) {
-                                val n = input.read(buf)
-                                if (n < 0) break
-                                out.write(buf, 0, n); md.update(buf, 0, n); read += n
+        PackTransaction.locked(dir) {
+            val d = def?.takeIf { (it.url.isNotBlank() || bundled()) && (it.abis.isEmpty() || abi in it.abis) }
+                ?: throw IOException("Engine 3DS chưa có cho máy này")
+            if (File(dir, MAIN).isFile && versionFile.takeIf { it.isFile }?.readText() == d.version) return@locked
+            withContext(Dispatchers.Main) { onStatus("Đang tải engine 3DS (chỉ lần đầu)…") }
+            PackTransaction.install(dir) { archive, candidate ->
+                if (bundled()) {
+                    context.assets.open(ASSET).use { PackTransaction.download(it, archive, d.sha256.trim()) }
+                } else {
+                    var last = -1
+                    http.newCall(Request.Builder().url(d.url.replace("{abi}", abi)).build()).execute().use { response ->
+                        if (!response.isSuccessful) throw IOException("Tải engine thất bại (HTTP ${response.code})")
+                        val body = response.body ?: throw IOException("Gói không có nội dung")
+                        val total = body.contentLength()
+                        body.byteStream().use { input ->
+                            PackTransaction.download(input, archive, (d.sha256ByAbi[abi] ?: d.sha256).trim(), total) { read ->
                                 val pct = if (total > 0) (read * 100 / total).toInt().coerceIn(0, 100) else -1
-                                if (pct != lastPct && pct >= 0) { lastPct = pct; withContext(Dispatchers.Main) { onStatus("Đang tải engine 3DS (chỉ lần đầu)… $pct%") } }
+                                if (pct >= 0 && pct != last) { last = pct; withContext(Dispatchers.Main) { onStatus("Đang tải engine 3DS (chỉ lần đầu)… $pct%") } }
                             }
                         }
                     }
                 }
-                val got = md.digest().joinToString("") { "%02x".format(it) }
-                if (d.sha256.isNotBlank() && !got.equals(d.sha256.trim(), ignoreCase = true))
-                    throw IOException("Gói engine sai SHA-256 (nhận $got)")
-                ZipInputStream(tmp.inputStream().buffered()).use { z -> unzip(z) }
-            } finally { tmp.delete() }
-        }
-        if (!File(dir, MAIN).exists()) { dir.deleteRecursively(); throw IOException("Gói engine không có $MAIN") }
-        versionFile.writeText(d.version)
-    }
-
-    private fun unzip(z: ZipInputStream) {
-        while (true) {
-            val e = z.nextEntry ?: break
-            if (e.isDirectory) continue
-            val out = File(dir, File(e.name).name) // phẳng, chặn ../
-            out.outputStream().use { z.copyTo(it) }
+                PackTransaction.unzip(archive, candidate, flatten = true)
+                PackTransaction.validate(candidate, MAIN, abi)
+                File(candidate, "version").writeText(d.version)
+            }
         }
     }
 
