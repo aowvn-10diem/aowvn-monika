@@ -42,14 +42,13 @@ fun main(args: Array<String>) {
         val layout = layouts[args[1]] ?: error("Gói chưa có hợp đồng: ${args[1]}")
         val dir = Files.createTempDirectory("pack-check").toFile()
         try {
-            PackTransaction.unzip(File(args[3]), dir, layout.flatten)
+            PackTransaction.unzip(File(args[3]), dir, layout.flatten, mainFile = layout.main)
             PackTransaction.validate(dir, layout.main, args[2])
             println("PASS ${args[1]}/${args[2]}")
         } finally { dir.deleteRecursively() }
         return
     }
-    require(args.size in 2..3) { "<config.json> <out-dir> [--strict-known]" }
-    val strictKnown = args.getOrNull(2) == "--strict-known"
+    require(args.size == 2) { "<config.json> <out-dir>" }
     val config = Json.parseToJsonElement(File(args[0]).readText()).jsonObject
     val output = File(args[1]).apply { mkdirs() }
     val records = mutableListOf<JsonObject>()
@@ -72,16 +71,8 @@ fun main(args: Array<String>) {
                     ?: def["size"]?.jsonPrimitive?.longOrNull
                 if (expectedBytes != null && expectedBytes > 0 && zip.length() != expectedBytes) error("Sai size trong config")
                 val candidate = File(work, "candidate").apply { mkdirs() }
-                PackTransaction.unzip(zip, candidate, layout.flatten)
-                try { PackTransaction.validate(candidate, layout.main, abi) } catch (error: IOException) {
-                    // Chỉ lỗi bố cục đã xác nhận của đúng phiên bản ONS; mạng/hash/ABI không được miễn.
-                    val knownOns = id == "onsyuri" && def.text("version") == "08f744b" &&
-                        error.message == "Gói không có onsyuri.wasm" &&
-                        File(candidate, "onsyuri/onsyuri.wasm").let { it.isFile && it.length() > 0 }
-                    if (!knownOns || strictKnown) throw error
-                    status = "KNOWN_FAILURE"
-                    detail = "V36: onsyuri.wasm nằm trong onsyuri/, installer yêu cầu gốc"
-                }
+                PackTransaction.unzip(zip, candidate, layout.flatten, mainFile = layout.main)
+                PackTransaction.validate(candidate, layout.main, abi)
             } catch (error: Exception) {
                 status = "FAIL"; detail = "${error.javaClass.simpleName}: ${error.message}"
                 failures++

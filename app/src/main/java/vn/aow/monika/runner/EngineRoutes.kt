@@ -20,6 +20,7 @@ class EngineRoute(
 object EngineRoutes {
     val all: Map<String, EngineRoute> = mapOf(
         "kirikiri" to EngineRoute(PackManager.KIRIKIRI, "Kirikiri") { a, e, t, k -> KirikiriGameActivity.start(a, e?.takeIf { it.isFile }, t, k) },
+        "renpy" to EngineRoute(PackManager.RENPY8, "Ren'Py") { a, e, t, k -> RenpyGameActivity.start(a, e, t, k) },
         "rgss" to EngineRoute(PackManager.RGSS, "RPG Maker XP/VX/Ace") { a, e, t, k -> RgssGameActivity.start(a, e, t, k) },
     )
 

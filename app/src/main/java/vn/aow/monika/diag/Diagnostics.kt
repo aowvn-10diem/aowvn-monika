@@ -115,6 +115,8 @@ object Diagnostics {
 
     fun begin(c: Context, kind: String, core: String, coreInfo: String, game: String, system: String) {
         val now = System.currentTimeMillis()
+        // Một lần mỗi phiên; ghi qua scrub, không thay định dạng Session cũ.
+        runCatching { File(dir(c), "session-env.txt").writeText(GameEnvironment.capture(c)) }
         Breadcrumbs.add(c, "begin", "$kind · $core · $system")
         write(c, Session(Process.myPid(), now, kind, core, coreInfo, game, system, "start", now, now))
     }
@@ -142,7 +144,7 @@ object Diagnostics {
     }
 
     /** Thoát bình thường → xóa phiên, không tạo báo cáo. */
-    fun end(c: Context) { runCatching { sessionFile(c).delete() } }
+    fun end(c: Context) { runCatching { sessionFile(c).delete(); File(dir(c), "session-env.txt").delete() } }
 
     private fun read(c: Context): Session? =
         runCatching { json.decodeFromString(Session.serializer(), sessionFile(c).readText()) }.getOrNull()
@@ -436,7 +438,7 @@ object Diagnostics {
                 else -> "mạng khác"
             }
         }.getOrDefault("?")
-        "RAM trống ${mi.availMem / mb}/${mi.totalMem / mb} MB${if (mi.lowMemory) " (THẤP)" else ""} · heap ${(rt.totalMemory() - rt.freeMemory()) / mb}/${rt.maxMemory() / mb} MB · đĩa trống $disk MB · mạng $net"
+        "RAM trống ${mi.availMem / mb}/${mi.totalMem / mb} MB${if (mi.lowMemory) " (THẤP)" else ""} · heap ${(rt.totalMemory() - rt.freeMemory()) / mb}/${rt.maxMemory() / mb} MB · đĩa trống $disk MB · mạng $net · ${runCatching { File(dir(c), "session-env.txt").readText() }.getOrDefault("[CHƯA KIỂM]")} · ${GameEnvironment.current(c)}"
     }.getOrDefault("")
 
     /**

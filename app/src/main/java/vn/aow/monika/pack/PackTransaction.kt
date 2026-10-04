@@ -76,7 +76,15 @@ internal object PackTransaction {
         if (expectedHash.isNotEmpty() && !got.equals(expectedHash, ignoreCase = true)) throw IOException("Gói sai SHA-256")
     }
 
-    fun unzip(archive: File, dir: File, flatten: Boolean = false) {
+    fun unzip(archive: File, dir: File, flatten: Boolean = false, mainFile: String? = null) {
+        // Chỉ bỏ một gốc chung khi ZIP chưa có đúng mainFile và gốc đó chứa mainFile.
+        // Gói RGSS có lib/libmkxp-z.so đúng chỗ sẽ giữ nguyên lib/, không tự làm phẳng.
+        val stripRoot = if (!flatten && mainFile != null) java.util.zip.ZipFile(archive).use { zip ->
+            val entries = zip.entries().asSequence().map { it.name.trimEnd('/') }.filter { it.isNotEmpty() }.toList()
+            val root = entries.firstOrNull()?.substringBefore('/')
+            root?.takeIf { mainFile !in entries && "$it/$mainFile" in entries &&
+                entries.all { name -> name == it || name.startsWith("$it/") } }
+        } else null
         val written = HashSet<String>()
         ZipInputStream(archive.inputStream().buffered()).use { z ->
             while (true) {
@@ -84,7 +92,9 @@ internal object PackTransaction {
                 val original = File(dir, e.name).canonicalFile
                 if (!original.path.startsWith(dir.canonicalPath + File.separator)) throw IOException("Đường dẫn ZIP vượt thư mục gói")
                 if (e.isDirectory) continue
-                val dest = if (flatten) File(dir, File(e.name).name).canonicalFile else original
+                val relative = if (stripRoot != null) e.name.removePrefix("$stripRoot/") else e.name
+                val dest = if (flatten) File(dir, File(relative).name).canonicalFile else File(dir, relative).canonicalFile
+                if (!dest.path.startsWith(dir.canonicalPath + File.separator)) throw IOException("Đường dẫn ZIP vượt thư mục gói")
                 if (!written.add(dest.path)) throw IOException("ZIP có file trùng tên")
                 checkDir(dest.parentFile!!)
                 dest.outputStream().use { z.copyTo(it) }
