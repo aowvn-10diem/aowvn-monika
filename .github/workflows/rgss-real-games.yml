@@ -60,17 +60,30 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with: {ruby-version: '3.1'} # Cùng minor Ruby trong mkxp-z; không chạy script game.
       - name: V44 hình dạng cú pháp VX (không ghi nội dung game)
+        id: vx_shape
+        continue-on-error: true # Vẫn đo Ace/XP; cửa cuối giữ job đỏ nếu diagnostic thất bại.
         run: |
           python3 - "$RUNNER_TEMP/v25" <<'PY'
-          import json,subprocess,sys
+          import configparser,importlib.util,json,subprocess,sys
           from pathlib import Path
           root=Path(sys.argv[1]); cases=json.loads((root/'cases.json').read_text())
           case=next(c for c in cases if c['id']=='vx')
           if not case.get('prepared'): raise RuntimeError('VX không chuẩn bị được, không gọi chẩn đoán đạt')
           game=(root/case['localGameDir']).resolve()
           if not game.is_relative_to(root.resolve()): raise RuntimeError('Game dir vượt scratch')
-          files=[p for p in game.rglob('*') if p.name.lower()=='scripts.rvdata']
-          if len(files)!=1: raise RuntimeError('Cần đúng một Scripts.rvdata VX')
+          ini=configparser.ConfigParser(interpolation=None,strict=False)
+          ini.read_string((game/'Game.ini').read_bytes().decode('utf-8-sig',errors='replace'))
+          requested=ini.get('Game','Scripts',fallback='Data/Scripts.rvdata')
+          spec=importlib.util.spec_from_file_location('arc','scripts/rgss_archive_script.py')
+          arc=importlib.util.module_from_spec(spec);spec.loader.exec_module(arc)
+          wanted=arc.relative_name(requested)
+          files=[p for p in game.rglob('*') if p.is_file() and arc.relative_name(p.relative_to(game).as_posix())==wanted]
+          if not files:
+              archives=[p for p in game.iterdir() if p.suffix.lower() in ('.rgssad','.rgss2a','.rgss3a')]
+              if len(archives)!=1: raise RuntimeError('Cần đúng một archive RGSS hoặc Scripts rời')
+              scripts=root/'vx-scripts.rvdata' # Chỉ scratch, không artifact/filegame.
+              scripts.write_bytes(arc.extract_script(archives[0],requested)); files=[scripts]
+          if len(files)!=1: raise RuntimeError('Scripts trùng')
           with Path('out/r6/vx-script-shape.txt').open('w') as output:
               subprocess.run(['ruby','scripts/rgss-script-shape.rb',str(files[0])],stdout=output,check=True,timeout=60)
           PY
@@ -102,3 +115,8 @@ jobs:
           # Chỉ nguồn/số đo/log/ảnh; không scratch, ZIP, thư mục game hay APK.
           path: out/r6/
           retention-days: 3
+      - name: Diagnostic VX phải có bằng chứng
+        if: ${{ always() && steps.vx_shape.outcome != 'success' }}
+        run: |
+          echo '::error::Diagnostic VX chưa đạt; kết quả runtime riêng vẫn được thu, không bỏ cửa kiểm'
+          exit 1
