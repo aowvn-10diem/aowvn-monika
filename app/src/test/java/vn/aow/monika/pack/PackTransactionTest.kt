@@ -79,4 +79,69 @@ class PackTransactionTest {
         } finally { root.deleteRecursively() }
     }
 
+
+    @Test fun onsyuriRealFileListInstallsFromNestedOrFlatZipWithoutLosingAssets() {
+        val work = Files.createTempDirectory("onsyuri-layout").toFile()
+        try {
+            val names = checkNotNull(javaClass.getResource("/packs/onsyuri-files.txt")).readText().lineSequence().filter { it.isNotBlank() }.toList()
+            assertEquals(7, names.size)
+            for (prefix in listOf("onsyuri/", "different-root/", "")) {
+                val zip = File(work, "package.zip")
+                java.util.zip.ZipOutputStream(zip.outputStream()).use { output ->
+                    for (name in names) {
+                        output.putNextEntry(java.util.zip.ZipEntry(prefix + name))
+                        output.write((if (name == "manifest.json") "{}" else "file:$name").toByteArray())
+                        output.closeEntry()
+                    }
+                }
+                val candidate = File(work, "candidate").apply { mkdirs() }
+                PackTransaction.unzip(zip, candidate, mainFile = "onsyuri.wasm")
+                PackTransaction.validate(candidate, "onsyuri.wasm", "web")
+                for (name in names) assertTrue(name, File(candidate, name).isFile)
+                assertFalse(File(candidate, "onsyuri").exists()); assertFalse(File(candidate, "different-root").exists())
+                candidate.deleteRecursively()
+            }
+        } finally { work.deleteRecursively() }
+    }
+
+    @Test fun rootStrippingRejectsTraversalAndMixedRootDuplicates() {
+        val work = Files.createTempDirectory("onsyuri-safe").toFile()
+        try {
+            for (names in listOf(listOf("bundle/onsyuri.wasm", "bundle/../escaped"), listOf("bundle/onsyuri.wasm", "bundle/./onsyuri.wasm"))) {
+                val zip = File(work, "package.zip")
+                java.util.zip.ZipOutputStream(zip.outputStream()).use { output ->
+                    for (name in names) { output.putNextEntry(java.util.zip.ZipEntry(name)); output.write(1); output.closeEntry() }
+                }
+                val candidate = File(work, "candidate").apply { mkdirs() }
+                assertThrows(IOException::class.java) { PackTransaction.unzip(zip, candidate, mainFile = "onsyuri.wasm") }
+                assertFalse(File(work, "escaped").exists())
+                candidate.deleteRecursively()
+            }
+        } finally { work.deleteRecursively() }
+    }
+
+
+    @Test fun multipleRootsAreNotStrippedAndExpectedNestedMainKeepsLayout() {
+        val work = Files.createTempDirectory("pack-roots").toFile()
+        try {
+            val zip = File(work, "package.zip")
+            fun archive(names: List<String>) {
+                java.util.zip.ZipOutputStream(zip.outputStream()).use { output ->
+                    for (name in names) { output.putNextEntry(java.util.zip.ZipEntry(name)); output.write(1); output.closeEntry() }
+                }
+            }
+            val candidate = File(work, "candidate").apply { mkdirs() }
+            archive(listOf("bundle/onsyuri.wasm", "other/readme"))
+            PackTransaction.unzip(zip, candidate, mainFile = "onsyuri.wasm")
+            assertFalse(File(candidate, "onsyuri.wasm").exists())
+            assertTrue(File(candidate, "other/readme").isFile)
+            assertThrows(IOException::class.java) { PackTransaction.validate(candidate, "onsyuri.wasm", "web") }
+            candidate.deleteRecursively(); candidate.mkdirs()
+            archive(listOf("lib/main.bin", "lib/dependency.bin"))
+            PackTransaction.unzip(zip, candidate, mainFile = "lib/main.bin")
+            assertTrue(File(candidate, "lib/main.bin").isFile)
+            assertFalse(File(candidate, "main.bin").exists())
+        } finally { work.deleteRecursively() }
+    }
+
 }
