@@ -25,6 +25,50 @@ const json = (o, status = 200) => new Response(JSON.stringify(o), { status, head
 const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
 const s = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
 
+// Chỉ chấp nhận JPEG có cấu trúc/chiều ảnh khớp; giới hạn trước giải mã base64.
+export function reportImage(image, kind) {
+  if (image == null) return null;
+  if (kind !== "user" || !image || Array.isArray(image) || image.mime !== "image/jpeg"
+      || !Number.isInteger(image.width) || !Number.isInteger(image.height)
+      || image.width < 1 || image.height < 1 || Math.max(image.width, image.height) > 480
+      || typeof image.data !== "string" || image.data.length > 32768
+      || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(image.data)) throw new Error("bad_image");
+  const raw = atob(image.data);
+  if (raw.length < 4 || raw.length > 24 * 1024 || btoa(raw) !== image.data) throw new Error("bad_image");
+  const b = Uint8Array.from(raw, c => c.charCodeAt(0));
+  if (b[0] !== 255 || b[1] !== 216 || b[b.length-2] !== 255 || b[b.length-1] !== 217) throw new Error("bad_image");
+  let offset = 2, width = 0, height = 0, scan = false, ended = false;
+  while (offset < b.length) {
+    if (b[offset++] !== 255) throw new Error("bad_image");
+    while (b[offset] === 255) offset++;
+    const marker = b[offset++];
+    if (marker === 217) { ended = offset === b.length; break; }
+    if (marker === 0 || marker === 216 || (marker >= 208 && marker <= 215)) throw new Error("bad_image");
+    if (offset + 2 > b.length) throw new Error("bad_image");
+    const length = (b[offset] << 8) | b[offset+1];
+    if (length < 2 || offset + length > b.length) throw new Error("bad_image");
+    if ([192,193,194,195,197,198,199,201,202,203,205,206,207].includes(marker)) {
+      if (length < 8 || b[offset+2] !== 8) throw new Error("bad_image");
+      height = (b[offset+3] << 8) | b[offset+4]; width = (b[offset+5] << 8) | b[offset+6];
+      if (width !== image.width || height !== image.height) throw new Error("bad_image");
+    }
+    offset += length;
+    if (marker === 218) {
+      if (!width || length < 6) throw new Error("bad_image");
+      scan = true;
+      // Trong entropy: FF00 là escape, FFD0..D7 là restart; marker khác bắt đầu segment tiếp.
+      while (offset < b.length) {
+        if (b[offset] !== 255) { offset++; continue; }
+        const next = b[offset+1];
+        if (next === 0 || (next >= 208 && next <= 215)) { offset += 2; continue; }
+        break;
+      }
+    }
+  }
+  if (!scan || !ended) throw new Error("bad_image");
+  return { mime: "image/jpeg", data: image.data, width, height };
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -37,6 +81,8 @@ export default {
       try { r = JSON.parse(text); } catch { return json({ ok: false, error: "bad_json" }, 400); }
       if (!r || Array.isArray(r) || typeof r.kind !== "string" || typeof r.title !== "string" || typeof r.app !== "string") return json({ ok: false, error: "bad_report" }, 400);
 
+      let image;
+      try { image = reportImage(r.image, r.kind); } catch { return json({ ok: false, error: "bad_image" }, 400); }
       // Thêm trường, giữ tương thích với app cũ; không lưu cờ UI seen/sent.
       const ss = r.session && typeof r.session === "object" && !Array.isArray(r.session) ? r.session : null;
       const slim = {
@@ -50,7 +96,17 @@ export default {
           kind: s(ss.kind, 20), core: s(ss.core, 60), coreInfo: s(ss.coreInfo, 200), game: s(ss.game, 160), system: s(ss.system, 60), stage: s(ss.stage, 40),
         } : null,
       };
-      const stored = JSON.stringify(slim);
+      if (image) slim.image = image;
+      let stored = JSON.stringify(slim);
+      // Ưu tiên ảnh hợp lệ, bớt chữ nếu JSON chuẩn hóa thêm default vượt ngân sách.
+      while (image && bytes(stored) > MAX_BODY) {
+        if (slim.log.length) slim.log.shift();
+        else if (slim.crumbs.length) slim.crumbs.shift();
+        else if (slim.detail.length) slim.detail = slim.detail.slice(0, Math.floor(slim.detail.length / 2));
+        else if (slim.env.length) slim.env = slim.env.slice(0, Math.floor(slim.env.length / 2));
+        else break;
+        stored = JSON.stringify(slim);
+      }
       if (bytes(stored) > MAX_BODY) return json({ ok: false, error: "too_large" }, 413);
 
       // Chống spam: tối đa 20 báo cáo / giờ / IP (chỉ lưu băm IP, không lưu IP).

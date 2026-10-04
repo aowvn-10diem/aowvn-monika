@@ -51,6 +51,9 @@ object Diagnostics {
     )
 
     @Serializable
+    data class ReportImage(val mime: String, val data: String, val width: Int, val height: Int)
+
+    @Serializable
     data class Report(
         val id: Long,
         val time: Long,
@@ -75,6 +78,9 @@ object Diagnostics {
         val env: String = "",
         /** Vệt sự kiện ngay trước lỗi (mới nhất cuối). */
         val crumbs: List<String> = emptyList(),
+        @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+        @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+        val image: ReportImage? = null,
     ) {
         fun toText(): String = scrub(null, buildString {
             appendLine("== Báo lỗi Aow Monika ==")
@@ -403,12 +409,29 @@ object Diagnostics {
         is JsonPrimitive -> if (value.isString) JsonPrimitive(scrub(c, value.content)) else value
     }
 
-    internal fun sanitized(c: Context?, r: Report): Report = json.decodeFromJsonElement(
-        Report.serializer(), scrubJson(c, json.encodeToJsonElement(Report.serializer(), r))
-    )
+    internal fun sanitized(c: Context?, r: Report): Report {
+        val image = if (r.kind == "user") UserGameReport.valid(r.image) else null
+        val text = json.decodeFromJsonElement(Report.serializer(), scrubJson(c, json.encodeToJsonElement(Report.serializer(), r.copy(image = null))))
+        return text.copy(image = image)
+    }
 
-    internal fun reportJson(c: Context?, r: Report): String =
-        scrubJson(c, json.encodeToJsonElement(Report.serializer(), r)).toString()
+    internal fun reportJson(c: Context?, r: Report): String {
+        val safe = UserGameReport.bounded(sanitized(c, r)) { json.encodeToString(Report.serializer(), it) }
+        return json.encodeToString(Report.serializer(), safe)
+    }
+
+    /** Người chơi chủ động báo lỗi, không gộp làm mất mô tả/ảnh của lần gửi khác. */
+    fun recordUser(c: Context, type: String, description: String, image: ReportImage?): Report {
+        val now = System.currentTimeMillis()
+        val session = read(c)?.takeIf { it.pid == Process.myPid() }?.copy(lastAlive = now)
+        val report = Report(id = now, time = now, kind = "user", title = "Báo lỗi game: ${session?.game.orEmpty().ifBlank { "game" }}",
+            app = appLine(), device = deviceLine(), session = session, reason = type, detail = description,
+            log = UserGameReport.recentLog(Process.myPid()), fromGame = true,
+            component = session?.kind?.let { "engine:$it" }.orEmpty(), env = envLine(c),
+            crumbs = Breadcrumbs.read(c, Process.myPid()), image = image)
+        val safe = json.decodeFromString(Report.serializer(), reportJson(c, report))
+        save(c, safe); return safe
+    }
 
     /** RAM trống, heap, đĩa trống, mạng, pin — thường là nguyên nhân thật của lỗi tải/giải nén/hết bộ nhớ. */
     internal fun envLine(c: Context): String = runCatching {

@@ -252,6 +252,7 @@ private fun WebGameOverlay(title: String, system: String, cheats: vn.aow.monika.
                 vn.aow.monika.ui.theme.SheetAction("Cheat & tốc độ", vn.aow.monika.R.drawable.ic_fluent_document_24_regular) { cheats.show() },
                 vn.aow.monika.ui.theme.SheetAction("Hỏi nhóm FB", vn.aow.monika.R.drawable.ic_fluent_people_community_24_regular, onClick = onAsk),
                 vn.aow.monika.ui.theme.SheetAction("Tải lại game", vn.aow.monika.R.drawable.ic_fluent_arrow_clockwise_24_regular, onClick = onReload),
+                vn.aow.monika.ui.gameReportAction { open = false },
                 vn.aow.monika.ui.theme.SheetAction("Thoát game", vn.aow.monika.R.drawable.ic_fluent_door_arrow_left_24_regular, onClick = onExit),
             ),
         )
