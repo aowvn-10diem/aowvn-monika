@@ -2,19 +2,19 @@
 
 App Android "tất cả trong một" cho cộng đồng [aow.vn](https://www.aow.vn): đọc bài viết, nhận thông báo bài mới, tải game và chơi ngay trong app.
 
-## Tính năng (bản khung 0.1.0)
+## Tính năng
 
 | Mảng | Nội dung |
 |---|---|
 | Bài viết | Đọc feed Blogger của aow.vn, lọc theo nhãn, xem link tải trong bài |
 | Thông báo | App tự kiểm tra bài mới định kỳ (mặc định 60 phút), lọc theo nhãn user chọn |
 | Tải game | Host hỗ trợ tải thẳng (Pixeldrain) → tải nền rồi tự giải nén vào thư viện. Host khác → mở trình duyệt, rồi "Thêm game từ máy" |
-| Giải nén | .zip, .rar (cả RAR5), .7z bằng libarchive; hỗ trợ mật khẩu cho zip/rar, tự thử mật khẩu trong config |
-| Giả lập nhúng sẵn | NDS, GBA, GBC, PS1, PSP, RPG Maker 2000/2003 (lõi libretro tải khi cần) |
-| Chạy dạng web | Flash (Ruffle), RPG Maker MV/MZ, TyranoScript |
+| Giải nén | ZIP dùng zip4j; RAR, 7z và ZIP lạ dùng gói 7-Zip tải khi cần. Có hỗ trợ mật khẩu và thử các mật khẩu trong config |
+| Giả lập nhúng sẵn | NDS, GBA, GBC, PS1, PSP, RPG Maker 2000/2003 (lõi tải khi cần), Kirikiri (gói engine tải khi cần) |
+| Chạy dạng web | Flash (Ruffle), RPG Maker MV/MZ, TyranoScript, ONScripter |
 | APK | Mở trình cài đặt Android |
 | Java (J2ME) | J2ME Loader nhúng sẵn (Apache-2.0), phím ảo kiểu Monika — xem docs/J2ME-LOADER.md |
-| App ngoài | Kirikiroid2, JoiPlay (Ren'Py, RPG Maker XP/VX/Ace), ONScripter: kiểm tra đã cài, link tải, hướng dẫn cài |
+| App ngoài | Kirikiroid2 làm lựa chọn dự phòng cho Kirikiri; JoiPlay (Ren'Py, RPG Maker XP/VX/Ace): kiểm tra đã cài, link tải, hướng dẫn cài |
 
 ## Nguyên tắc: dễ cập nhật, dễ sửa
 
@@ -41,10 +41,10 @@ app/src/main/java/vn/aow/monika/
 
 ```bash
 ./gradlew testDebugUnitTest   # test cấu hình + logic
-./gradlew assembleDebug       # APK: app/build/outputs/apk/debug/
+./gradlew assembleDebug       # dựng APK debug
 ```
 
-Mỗi lần push, GitHub Actions build APK debug (xem tab Actions → Artifacts). Tag `v*` → build APK đã ký và đăng lên Releases, đồng thời up lên Pixeldrain nếu repo có secret `PIXELDRAIN_API_KEY` (link nằm ở trang tóm tắt của lượt chạy). Up tay: `PIXELDRAIN_API_KEY=... scripts/pixeldrain-upload.sh file.apk`.
+Mỗi lần push, GitHub Actions build APK debug (xem tab Actions → Artifacts). Tag `v*` kích hoạt workflow Release; ký APK chính thức trên CI cần GitHub Secrets chưa được cấu hình trong repo này. Quy trình build/ký APK chính thức xem `CLAUDE.md`. Nếu có secret `PIXELDRAIN_API_KEY`, workflow sẽ up APK lên Pixeldrain; up tay: `PIXELDRAIN_API_KEY=... scripts/pixeldrain-upload.sh file.apk`.
 
 ## Giấy phép
 
