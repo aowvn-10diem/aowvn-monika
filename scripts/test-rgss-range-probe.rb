@@ -32,6 +32,12 @@ end
 labels = MonikaCiRangeProbe.fields(PrivateNestedFixture.new)
 abort 'override/field privacy' unless labels == ['0:String']
 puts 'ok core reflection bypasses game overrides without exposing data'
+receiver = Object.new
+32.times { |i| receiver.instance_variable_set("@private_scalar_#{i}", 'hidden') }
+receiver.instance_variable_set(:@private_compound, PrivateNestedFixture.new)
+labels = MonikaCiRangeProbe.fields(receiver, true)
+abort 'compound behind scalars' unless labels == ['32:Other{0:String}']
+puts 'ok compound types remain visible behind scalar defaults, no names/values'
 probe = MonikaCiRangeProbe.start
 64.times { begin; raise 'unrelated'; rescue RuntimeError; end }
 abort 'exception event bound' if probe.enabled?

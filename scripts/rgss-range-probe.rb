@@ -25,13 +25,19 @@ module MonikaCiRangeProbe
   end
 
   def self.fields(value, nested = false)
-    names = IVARS.bind(value).call.take(8)
-    names.each_with_index.map do |name, index|
+    # At the failing receiver, retain only compound fields so scalar defaults
+    # cannot hide the object providing the Range endpoint. No field names.
+    names = IVARS.bind(value).call.take(nested ? 256 : 8)
+    rows = []
+    names.each_with_index do |name, index|
       item = IVAR_GET.bind(value).call(name)
       label = kind(item)
+      next if nested && label != 'Other' && label != 'Range' && !label.start_with?('Array[')
       label += '{' + fields(item).join(',') + '}' if nested && label == 'Other'
-      "#{index}:#{label}"
+      rows << "#{index}:#{label}"
+      break if rows.size >= 16
     end
+    rows
   end
 
   def self.start
