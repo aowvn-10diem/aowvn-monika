@@ -1,0 +1,29 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:23'
+      timezone: Etc/UTC
+    open-pull-requests-limit: 2
+    exclude-paths:
+      - 'j2me/**'
+      - 'dexlib/**'
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:23'
+      timezone: Etc/UTC
+    open-pull-requests-limit: 2
+  - package-ecosystem: npm
+    directory: '/cloudflare/crash-worker'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:23'
+      timezone: Etc/UTC
+    open-pull-requests-limit: 2
