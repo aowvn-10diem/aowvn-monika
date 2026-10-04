@@ -42,6 +42,11 @@ internal object ConfigValidation {
                 }
             }
         }
+        if (field == "errorPatterns") {
+            require(value is JsonArray && value.size <= 32 && value.all {
+                it is JsonPrimitive && it.isString && it.content.isNotBlank() && it.content.length <= 160
+            }) { "$path: errorPatterns phải là mảng tối đa 32 chuỗi không rỗng, <=160 ký tự" }
+        }
         if (field == "sha256ByAbi") require(value is JsonObject) { "$path: sha256ByAbi phải là object" }
     }
 }
