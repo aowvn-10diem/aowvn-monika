@@ -43,6 +43,7 @@ data = SafeMarshal.new(File.binread(path)).read
 abort('Scripts phải là mảng') unless data.is_a?(Array)
 total = 0
 bad = 0
+ruby18_budget = [MonikaRuby18::MAX_COMPILES, MonikaRuby18::MAX_COMPILE_BYTES] if ruby18
 data.each_with_index do |entry, i|
   id, title, packed = entry
   abort('Mục Scripts sai dạng') unless entry.is_a?(Array) && id.is_a?(Integer) && title.is_a?(String) && packed.is_a?(String)
@@ -61,7 +62,7 @@ data.each_with_index do |entry, i|
         end
       end
     end
-    code = MonikaRuby18.repair(code, [MonikaRuby18::MAX_COMPILES], trace)
+    code = MonikaRuby18.repair(code, ruby18_budget, trace)
   end
   begin
     RubyVM::InstructionSequence.compile(code, "script-#{i}")

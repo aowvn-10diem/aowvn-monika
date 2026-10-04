@@ -9,7 +9,9 @@ module MonikaRuby18
   MAX_CANDIDATES = 8
   MAX_COMPILES = 512
   MAX_COMPILE_BYTES = 64 * 1024 * 1024
-  KEYWORDS = %w[def class module if elsif unless while until for case when begin end return yield super rescue ensure not and or].freeze
+  # super là lời gọi với danh sách đối số; Ruby1.8 cho phép SPACE trước
+  # '(' + splat, Ruby3 cần super(...). Các từ khóa điều khiển vẫn bị loại.
+  KEYWORDS = %w[def class module if elsif unless while until for case when begin end return yield rescue ensure not and or].freeze
 
   def self.error_line(source, budget = nil)
     if budget

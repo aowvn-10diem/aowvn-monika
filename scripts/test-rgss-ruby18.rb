@@ -61,4 +61,12 @@ budget = [512, source.bytesize + fixed_size]
 fixed = MonikaRuby18.repair(source, budget)
 check(fixed == "call('a', 1)\n" && budget[1] == 0 && MonikaRuby18.repair(source, budget).equal?(source), 'byte budget dùng chung qua nhiều script, không reset sau sửa')
 check(MonikaRuby18.error_line('a' * (MonikaRuby18::MAX_COMPILE_BYTES + 1), [512]) == 0, 'compile chặn input vượt trần byte trước RubyVM')
+source = "class ParentFixture\n def forward(arg, *rest); [arg, rest]; end\nend\nclass ChildFixture < ParentFixture\n def forward(arg, *rest)\n  super (arg, *rest)\n end\nend\n"
+fixed = MonikaRuby18.repair(source)
+check(fixed.include?('super(arg, *rest)') && MonikaRuby18.error_line(fixed).nil?, 'super với danh sách/splat Ruby1.8 compile được')
+# Chỉ fixture tổng hợp trong test được thực thi; repair/app vẫn chỉ compile.
+eval(fixed)
+check(ChildFixture.new.forward(1, 2, 3) == [1, [2, 3]], 'super giữ giá trị/thứ tự/splat khi chuyển tiếp đối số')
+source = "class ChildFixture < ParentFixture\n def forward(arg, *rest); super(arg, *rest); end\nend\n"
+check(MonikaRuby18.repair(source).equal?(source), 'super hợp lệ không bị normalize')
 puts 'ALL OK'
