@@ -83,6 +83,7 @@ android {
         resources { excludes += listOf("META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.kotlin_module", "org/bouncycastle/pqc/**") }
     }
     // Bản cấu hình dự phòng đóng gói trong APK = đúng file config/ ở gốc repo (1 nguồn duy nhất).
+    sourceSets["test"].resources.srcDir("../cloudflare/crash-worker/fixtures")
     sourceSets["main"].assets.srcDirs("src/main/assets", "../config")
 }
 
