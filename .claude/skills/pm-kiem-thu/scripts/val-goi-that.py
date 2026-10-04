@@ -8,6 +8,19 @@ SYS={"libc.so","libm.so","libdl.so","liblog.so","libandroid.so","libz.so","libEG
 MAX_ENTRY=int(os.environ.get("VAL_MAX_ENTRY",200*1024*1024))   # byte tối đa mỗi file trong gói (theo kích thước KHAI BÁO; zipfile không đọc quá số này)
 MAX_TOTAL=int(os.environ.get("VAL_MAX_TOTAL",500*1024*1024))   # tổng byte giải nén tối đa
 MAX_FILES=int(os.environ.get("VAL_MAX_FILES",5000))
+def safe(base,name):
+    """Nối name vào base; trả None nếu name không phải chuỗi, tuyệt đối, hoặc thoát khỏi thư mục tạm (.. / symlink)."""
+    if not isinstance(name,str) or not name or os.path.isabs(name) or "\0" in name: return None
+    p=os.path.realpath(os.path.join(base,name))
+    return p if p.startswith(os.path.realpath(base)+os.sep) else None
+def sha256_file(p):
+    h=hashlib.sha256(); n=0
+    with open(p,'rb') as f:
+        for c in iter(lambda:f.read(1<<20),b''):
+            n+=len(c)
+            if n>MAX_ENTRY: return None
+            h.update(c)
+    return h.hexdigest()
 def run(zp,main,abi,flatten=False):
     d=tempfile.mkdtemp(); root=os.path.realpath(d)
     try:
@@ -26,26 +39,37 @@ def run(zp,main,abi,flatten=False):
                 if dest in written: return f"FAIL trùng tên {e.filename}"
                 written.add(dest); os.makedirs(os.path.dirname(dest),exist_ok=True)
                 with z.open(e) as src, open(dest,'wb') as out: shutil.copyfileobj(src,out)
-        m=os.path.join(root,main)
-        if not os.path.isfile(m) or os.path.getsize(m)==0: return f"FAIL không có {main}"
+        m=safe(root,main)
+        if m is None or not os.path.isfile(m) or os.path.getsize(m)==0: return f"FAIL không có {main}"
         mf=os.path.join(root,'manifest.json'); md=os.path.dirname(m)
         if os.path.isfile(mf):
-            meta=json.load(open(mf))
+            try: meta=json.load(open(mf,encoding='utf-8'))
+            except (ValueError,OSError): return "FAIL manifest.json không đọc được"
+            if not isinstance(meta,dict): return "FAIL manifest.json sai dạng"
             if 'abi' in meta and meta['abi']!=abi: return f"FAIL manifest abi {meta['abi']}"
-            for n in meta.get('loadOrder',[]):
-                p=os.path.join(md,n)
+            lo=meta.get('loadOrder',[]); fl=meta.get('files') or {}
+            if not isinstance(lo,list) or not isinstance(fl,dict): return "FAIL manifest loadOrder/files sai dạng"
+            for n in lo:
+                p=safe(md,n)
+                if p is None: return f"FAIL loadOrder đường dẫn không hợp lệ {n!r}"
                 if not os.path.isfile(p) or os.path.getsize(p)==0: return f"FAIL loadOrder thiếu {n}"
-            for n,info in (meta.get('files') or {}).items():
-                p=os.path.join(md,n)
+            for n,info in fl.items():
+                p=safe(md,n)
+                if p is None: return f"FAIL files đường dẫn không hợp lệ {n!r}"
+                if not isinstance(info,dict): return f"FAIL files.{n} sai dạng"
                 if not os.path.isfile(p) or os.path.getsize(p)==0: return f"FAIL files thiếu {n}"
                 if 'size' in info and os.path.getsize(p)!=info['size']: return f"FAIL size {n}"
-                if 'sha256' in info and hashlib.sha256(open(p,'rb').read()).hexdigest()!=info['sha256'].lower(): return f"FAIL sha {n}"
+                if 'sha256' in info:
+                    dig=sha256_file(p)
+                    if dig is None: return f"FAIL {n} quá lớn để băm"
+                    if dig!=str(info['sha256']).lower(): return f"FAIL sha {n}"
         nd=os.path.join(root,'needed.txt')
         if os.path.isfile(nd):
-            for l in open(nd).read().splitlines():
+            for l in open(nd,encoding='utf-8',errors='replace').read().splitlines():
                 l=l.strip()
                 if l and l not in SYS:
-                    p=os.path.join(root,l)
+                    p=safe(root,l)
+                    if p is None: return f"FAIL needed đường dẫn không hợp lệ {l!r}"
                     if not os.path.isfile(p) or os.path.getsize(p)==0: return f"FAIL needed thiếu {l}"
         exp={"arm64-v8a":183,"armeabi-v7a":40}[abi]; cls=2 if abi=="arm64-v8a" else 1
         n=0

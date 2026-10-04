@@ -32,6 +32,20 @@ zipof(z, {'libx.so': elf() + b'\0' * 5000}); v.MAX_ENTRY = 1000; r.append(ok('qu
 v.MAX_ENTRY = 10**9; v.MAX_TOTAL = 1000; r.append(ok('tổng giải nén' in v.run(z, 'libx.so', 'arm64-v8a'), 'giới hạn tổng'))
 v.MAX_TOTAL = 10**9; v.MAX_FILES = 1; zipof(z, {'libx.so': elf(), 'b': b'1'}); r.append(ok('quá nhiều file' in v.run(z, 'libx.so', 'arm64-v8a'), 'giới hạn số file'))
 
+# manifest/needed có đường dẫn thoát thư mục tạm
+secret = os.path.join(t, 'ngoai.txt'); open(secret, 'w').write('x')
+v.MAX_ENTRY = 10**9; v.MAX_TOTAL = 10**9; v.MAX_FILES = 5000
+mk = lambda man: zipof(z, {'libx.so': elf(), 'manifest.json': json.dumps(man)})
+mk({'loadOrder': ['../ngoai.txt']}); r.append(ok('không hợp lệ' in v.run(z, 'libx.so', 'arm64-v8a'), 'manifest loadOrder có ../ bị chặn'))
+mk({'files': {'../ngoai.txt': {'sha256': '0' * 64}}}); r.append(ok('không hợp lệ' in v.run(z, 'libx.so', 'arm64-v8a'), 'manifest files có ../ bị chặn (không băm file ngoài)'))
+mk({'loadOrder': [secret]}); r.append(ok('không hợp lệ' in v.run(z, 'libx.so', 'arm64-v8a'), 'manifest đường dẫn tuyệt đối bị chặn'))
+mk({'files': {'libx.so': 5}}); r.append(ok('sai dạng' in v.run(z, 'libx.so', 'arm64-v8a'), 'manifest files sai dạng bị từ chối'))
+zipof(z, {'libx.so': elf(), 'manifest.json': '{khong json'}); r.append(ok('không đọc được' in v.run(z, 'libx.so', 'arm64-v8a'), 'manifest hỏng bị từ chối'))
+zipof(z, {'libx.so': elf(), 'needed.txt': '../ngoai.txt\n'}); r.append(ok('không hợp lệ' in v.run(z, 'libx.so', 'arm64-v8a'), 'needed.txt có ../ bị chặn'))
+import hashlib
+mk({'loadOrder': ['libx.so'], 'files': {'libx.so': {'size': len(elf()), 'sha256': hashlib.sha256(elf()).hexdigest()}}}); r.append(ok(v.run(z, 'libx.so', 'arm64-v8a').startswith('OK'), 'manifest hợp lệ (size + sha256) vẫn đạt'))
+v.MAX_ENTRY = 10; r.append(ok('quá lớn' in v.run(z, 'libx.so', 'arm64-v8a'), 'file vượt giới hạn bị chặn trước khi băm')); v.MAX_ENTRY = 10**9
+
 st = os.path.join(t, 'state.json')
 json.dump({'updatedAt': 'x', 'tasks': [{'code': 'V1', 'title': 't', 'owner': 'o', 'status': 'cho', 'note': ''}],
            'modules': [{'id': 'm', 'steps': {'build': 'cho'}}], 'log': []}, open(st, 'w'))
