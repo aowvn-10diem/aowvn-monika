@@ -12,6 +12,7 @@ appId: com.aow.monika
 - tapOn: "Downloads"
 - takeScreenshot: 00-saf-picker
 - tapOn: "Monika-V33.zip"
+- tapOn: "Select"
 - extendedWaitUntil:
     visible: "Monika-V33"
     timeout: 60000
