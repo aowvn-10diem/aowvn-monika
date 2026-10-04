@@ -51,7 +51,7 @@ object CrashReporter {
 class CrashActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val text = runCatching { CrashReporter.file(this).readText() }.getOrDefault("Không đọc được nội dung lỗi.")
+        val text = runCatching { vn.aow.monika.diag.Diagnostics.scrub(this, CrashReporter.file(this).readText()) }.getOrDefault("Không đọc được nội dung lỗi.")
         val pad = (16 * resources.displayMetrics.density).toInt()
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad * 2, pad, pad); setBackgroundColor(0xFF202124.toInt()) }
         root.addView(TextView(this).apply {
