@@ -57,6 +57,8 @@ class ControlMeasure
 end
 control_width_result = ControlMeasure.new.text_size (" ").width
 raise "monika-width-context" unless control_width_result == 17
+control_segment_count = ('abc'.split (/a/).size) + 1
+raise "monika-regexp-size-context" unless control_segment_count == 3
 bitmap.fill_rect(0,0,640,360,Color.new(242,140,40))
 sprite=Sprite.new
 sprite.bitmap=bitmap

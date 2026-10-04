@@ -446,4 +446,60 @@ begin
 rescue NoMethodError => error
   check(error.name == :width && error.receiver == ' ', 'literal result không coerce hoặc che lỗi runtime khác')
 end
+source = "text='abc'; count=(text.split (/a/).size)+1; [count,text]\n"
+begin
+  eval(source)
+  abort('FAIL regexp size spacing phải tái hiện NoMethodError')
+rescue NoMethodError => error
+  check(error.name == :size && Regexp === error.receiver, 'regexp getter fixture tái hiện size trên Regexp argument')
+end
+fixed = MonikaRuby18.instrument_eval_calls(source,[512])
+check(fixed == source.sub('split (','split(') && eval(fixed) == [3,'abc'], 'regexp getter xóa chỉ SPACE, giữ outerparen/arithmetic/Stringinput')
+check(MonikaRuby18.instrument_eval_calls(fixed,[512]).equal?(fixed), 'regexp result normalization idempotent')
+source = "text='Abc'; text.split \t(%r{a}i).size\n"
+check(eval(MonikaRuby18.instrument_eval_calls(source,[512])) == 2, 'regexp result giữ literal percent/flags/SPACE-TAB')
+source = "tên='abc'; (tên.split (/a/).size) + 1 # keep (space)\n"
+fixed = MonikaRuby18.instrument_eval_calls(source,[512])
+check(eval(fixed) == 3 && fixed.end_with?("# keep (space)\n"), 'regexp getter byteoffsets giữ Unicode/comment/pattern')
+unsupported = [
+  'object.call(/a/).size', 'object.call (pattern).size',
+  'object.call (/a/,1).size', 'object.call ((/a/)).size',
+  'object.call (/a/).width', 'object.call ("a").size',
+  'object.call (/a/).size(1)', 'object.call (/a/).size()',
+  'object.call (/a/).size == 1', 'call (/a/).size',
+  "object.call (/a/)\n.size", 'object.call (/#{pattern}/).size'
+]
+check(unsupported.all? { |text| MonikaRuby18.instrument_eval_calls(text,[512]).equal?(text) }, 'regexp getter giữ unsupported/dynamic/multipleargs/getterargs/getterpairkhác/compare/multiline/FCALL')
+source = "object.call (/a/).size\n"
+budget = [512,source.bytesize]
+check(MonikaRuby18.instrument_eval_calls(source,budget).equal?(source) && budget == [511,0], 'regexp getter không refill work budget khi thiếu compile cuối')
+many = source*65
+check(MonikaRuby18.instrument_eval_calls(many,[512]).equal?(many), 'regexp getter quá64sites giữ nguyên')
+mixed = "object.call (\" \").width\n"*61 + source*4
+check(MonikaRuby18.instrument_eval_calls(mixed,[512]).equal?(mixed), 'STRwidth/RegexpSize dùng chung trần64sites không tách/refill')
+source = "text='abc'; count=(text.split (/a/).size)+1; eval('count')\n"
+fixed = MonikaRuby18.instrument_eval_calls(source,[512])
+check(eval(fixed) == 3 && fixed.include?('::MonikaRuby18.eval_source('), 'regexp result và eval giữ context trong một ASTpass')
+source = <<~'RUBY'
+  class RegexpOrderResultFixture
+    attr_reader :count
+    def initialize; @count=0; end
+    def size; @count+=1; 9; end
+  end
+  class RegexpOrderFixture
+    attr_reader :seen, :result
+    def take(pattern); @seen=pattern; @result=RegexpOrderResultFixture.new; end
+  end
+  count=0; object=RegexpOrderFixture.new; fetch=->{count+=1;object}
+  value=fetch.call.take (/a/i).size
+  [count,object.seen,object.result.count,value]
+RUBY
+check(eval(MonikaRuby18.instrument_eval_calls(source,[512])) == [1,/a/i,1,9], 'regexp result giữ receiver/patternflags/getter mỗi lần một call')
+source = "object=Object.new; def object.take(pattern); pattern; end; object.take (/a/).size\n"
+begin
+  eval(MonikaRuby18.instrument_eval_calls(source,[512]))
+  abort('FAIL không được coerce hoặc thêm Regexp#size')
+rescue NoMethodError => error
+  check(error.name == :size && Regexp === error.receiver, 'regexp result không coerce core hoặc che lỗi runtime khác')
+end
 puts 'ALL OK'

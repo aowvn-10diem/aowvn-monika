@@ -193,8 +193,9 @@ module MonikaRuby18
   end
 
   # Ruby1.8 x.foo ("s").width lấy width của KẾT QUẢ foo;
-  # Ruby3 đưa ("s").width vào foo. Chỉ đúng CALL một dòng, một STR
-  # literal rồi getter width không đối số. Không cần biết tên hàm của game,
+  # Ruby3 đưa ("s").width vào foo. Tương tự với (/regexp/).size.
+  # Chỉ hai cặp đã xác minh: STR→width, literal Regexp→size;
+  # CALL một dòng/getter không đối số. Không cần biết tên hàm của game,
   # không coerce String/Rect và không thay method toàn cục.
   def self.literal_result_spacing(node, lines)
     return nil unless node.type == :CALL && node.first_lineno == node.last_lineno
@@ -203,9 +204,12 @@ module MonikaRuby18
     return nil unless receiver && receiver.last_lineno == node.first_lineno &&
       args&.type == :LIST && args.children.size == 2 && args.children[1].nil?
     getter = args.children[0]
-    return nil unless getter&.type == :CALL && getter.children[1] == :width && getter.children[2].nil?
+    return nil unless getter&.type == :CALL && getter.children[2].nil?
     literal = getter.children[0]
-    return nil unless literal&.type == :STR && literal.first_lineno == literal.last_lineno
+    getter_method = getter.children[1]
+    pair = literal&.type == :STR && getter_method == :width ||
+      literal&.type == :LIT && Regexp === literal.children[0] && getter_method == :size
+    return nil unless pair && literal.first_lineno == literal.last_lineno
     text = lines[node.first_lineno - 1]
     gap = text.byteslice(receiver.last_column, getter.first_column - receiver.last_column)
     match = /\A[ \t]*\.[ \t]*#{Regexp.escape(method.to_s)}([ \t]+)\z/.match(gap.to_s)
@@ -213,7 +217,7 @@ module MonikaRuby18
     opening = text.byteslice(getter.first_column, literal.first_column - getter.first_column)
     return nil unless opening&.match?(/\A\([ \t]*\z/)
     tail = text.byteslice(literal.last_column, getter.last_column - literal.last_column)
-    return nil unless tail&.match?(/\A[ \t]*\)[ \t]*\.[ \t]*width\z/)
+    return nil unless tail&.match?(/\A[ \t]*\)[ \t]*\.[ \t]*#{Regexp.escape(getter_method.to_s)}\z/)
     [node.first_lineno, receiver.last_column + match.begin(1), receiver.last_column + match.end(1)]
   end
 
@@ -222,7 +226,7 @@ module MonikaRuby18
   # (override sẽ làm mất local variables/cref mặc định của người gọi).
   def self.instrument_eval_calls(source, budget)
     return source unless source.is_a?(String) && source.bytesize <= MAX_AST_BYTES && source.valid_encoding?
-    return source if source.count("\n") > MAX_LINES || !(source.include?('eval') || source.include?('constants') || source.include?('is_a?') || source.include?('kind_of?') || source.include?('slice!') || source.include?('width'))
+    return source if source.count("\n") > MAX_LINES || !(source.include?('eval') || source.include?('constants') || source.include?('is_a?') || source.include?('kind_of?') || source.include?('slice!') || source.include?('width') || source.match?(/\)[ \t]*\.[ \t]*size\b/))
     return source unless defined?(RubyVM::AbstractSyntaxTree)
     budget[1] ||= MAX_COMPILE_BYTES
     return source if budget[0] <= 0 || source.bytesize > budget[1]

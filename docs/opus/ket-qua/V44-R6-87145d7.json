@@ -91,5 +91,19 @@
     "vx": "missing: no Range type evidence; absent file does not prove absence of errors",
     "ace": "missing: no Range type evidence; absent file does not prove absence of errors"
   },
-  "limits": "audio/save-load/FPS/full5/machine-real/Clouddeploy [CHƯA KIỂM]"
+  "limits": "audio/save-load/FPS/full5/machine-real/Clouddeploy [CHƯA KIỂM]",
+  "syntheticRegexpResultGrammar": {
+    "source": "text.split (/a/).size",
+    "ruby187": "result2 from CALL result size",
+    "ruby317": "NoMethodError size on Regexp argument",
+    "attached": "bothversions result2",
+    "maskedDiagnostic": {
+      "head": "c4cee45a1ee6e37d87bddae44ee687fa6b88e24a",
+      "artifact": 11316849430,
+      "scriptIndex": 96,
+      "line": 2174,
+      "shape": "(receiver.method SPACE (RegexpLiteral).size) + number"
+    },
+    "limits": "Synthetic only; anonymous callee, no game local. NewRAMnormalizer needs native/R6 proof."
+  }
 }
