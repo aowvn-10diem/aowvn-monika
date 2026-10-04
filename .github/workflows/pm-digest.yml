@@ -1,0 +1,55 @@
+name: PM digest (V39)
+on:
+  schedule: [{cron: '7,37 * * * *'}]
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, closed, edited, ready_for_review]
+  issue_comment:
+    types: [created, edited]
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+  security-events: read
+concurrency:
+  group: pm-digest
+  cancel-in-progress: false
+jobs:
+  preview:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - name: Kiểm L10 và wrapper, chuẩn bị bản tin PR không đăng bot
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: |
+          python3 scripts/test-pm-digest.py
+          python3 scripts/test-pm-digest-safe.py
+          python3 scripts/pm-digest-safe.py --out out/preview
+      - uses: actions/upload-artifact@v4
+        with: {name: pm-digest-preview, path: out/preview/, retention-days: 3}
+  digest:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: read
+      security-events: read
+    steps:
+      # Luôn mã main: comment/fork/PR không được cấp code tùy ý chạy cùng token ghi.
+      - uses: actions/checkout@v4
+        with: {ref: main, persist-credentials: false}
+      - name: Chuẩn bị và đăng root commit bot/trang-thai
+        # PR đầu tiên chưa có wrapper trên main: chỉ preview ở job trên, không publish trước duyệt.
+        if: hashFiles('scripts/pm-digest-safe.py') != ''
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: python3 scripts/pm-digest-safe.py --out "$RUNNER_TEMP/pm-digest" --publish

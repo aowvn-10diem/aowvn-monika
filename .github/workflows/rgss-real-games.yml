@@ -1,0 +1,104 @@
+name: R6 game thật (V25)
+on:
+  workflow_dispatch:
+    inputs:
+      rgss_tag:
+        description: Release nháp RGSS đã duyệt
+        default: engines-rgss-7
+        required: true
+      expect_fail:
+        description: Case lỗi đã biết, bỏ từng case sau khi V44 sửa và PM kiểm
+        default: vx,ace
+        required: false
+  pull_request:
+    paths:
+      - .github/workflows/rgss-real-games.yml
+      - scripts/ci-rgss-real.*
+      - .maestro-rgss-real/**
+permissions:
+  # Mặc định chỉ đọc; riêng R6 cần thấy draft (read không thấy ở run37184975441).
+  contents: read
+concurrency:
+  group: v25-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  r6:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions: {contents: write} # Draft yêu cầu ghi; token chỉ ở bước cố định trước checkout.
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Chỉ đọc gói draft RGSS trước khi checkout mã PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RGSS_TAG: ${{ inputs.rgss_tag || 'engines-rgss-7' }}
+        run: |
+          set -euo pipefail
+          [[ "$RGSS_TAG" =~ ^engines-rgss-[0-9]+$ ]]
+          mkdir -p "$RUNNER_TEMP/v25-engine"
+          # HTTP lỗi dừng trước jq để không che lỗi quyền/hạn mức thành lỗi kiểu JSON.
+          gh api --paginate --slurp 'repos/aowvn-10diem/aowvn-monika/releases?per_page=100' > "$RUNNER_TEMP/v25-engine/releases.json"
+          asset_id=$(jq -er --arg tag "$RGSS_TAG" '[.[][] | select(.draft == true and .tag_name == $tag)] | if length == 1 then .[0] else error("draft count") end | [.assets[] | select(.name == "rgss-arm64-v8a.zip")] | if length == 1 then .[0].id else error("asset count") end' "$RUNNER_TEMP/v25-engine/releases.json")
+          [[ "$asset_id" =~ ^[0-9]+$ ]]
+          gh api "repos/aowvn-10diem/aowvn-monika/releases/assets/$asset_id" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/v25-engine/rgss.zip"
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: 17}
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit trên config chuẩn
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+          sudo apt-get install -y python3-pil
+          python3 scripts/test-rgss-real-verdict.py
+          ./gradlew testDebugUnitTest --console=plain
+          command -v 7z >/dev/null || sudo apt-get install -y p7zip-full
+      - name: Chuẩn bị đúng ba nguồn G2 trong CI
+        env:
+          RGSS_TAG: ${{ inputs.rgss_tag || 'engines-rgss-7' }}
+        run: python3 scripts/ci-rgss-real.py --scratch "$RUNNER_TEMP/v25" --report out/r6 --rgss-tag "$RGSS_TAG" --pack-file "$RUNNER_TEMP/v25-engine/rgss.zip"
+      - uses: ruby/setup-ruby@v1
+        with: {ruby-version: '3.1'} # Cùng minor Ruby trong mkxp-z; không chạy script game.
+      - name: V44 hình dạng cú pháp VX (không ghi nội dung game)
+        run: |
+          python3 - "$RUNNER_TEMP/v25" <<'PY'
+          import json,subprocess,sys
+          from pathlib import Path
+          root=Path(sys.argv[1]); cases=json.loads((root/'cases.json').read_text())
+          case=next(c for c in cases if c['id']=='vx')
+          if not case.get('prepared'): raise RuntimeError('VX không chuẩn bị được, không gọi chẩn đoán đạt')
+          game=(root/case['localGameDir']).resolve()
+          if not game.is_relative_to(root.resolve()): raise RuntimeError('Game dir vượt scratch')
+          files=[p for p in game.rglob('*') if p.name.lower()=='scripts.rvdata']
+          if len(files)!=1: raise RuntimeError('Cần đúng một Scripts.rvdata VX')
+          with Path('out/r6/vx-script-shape.txt').open('w') as output:
+              subprocess.run(['ruby','scripts/rgss-script-shape.rb',str(files[0])],stdout=output,check=True,timeout=60)
+          PY
+      - name: Build APK với config fixture (unit đã chạy trên config chuẩn)
+        run: ./gradlew assembleDebug --console=plain
+      - name: KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Maestro
+        run: |
+          curl -fsSL https://get.maestro.mobile.dev | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
+          script: bash scripts/ci-rgss-real.sh "$RUNNER_TEMP/v25" out/r6 "$(if [ "$EVENT_NAME" = workflow_dispatch ]; then printf %s "$EXPECT_FAIL"; else printf %s vx,ace; fi)"
+        env:
+          EXPECT_FAIL: ${{ inputs.expect_fail }}
+          EVENT_NAME: ${{ github.event_name }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r6-api34-evidence
+          # Chỉ nguồn/số đo/log/ảnh; không scratch, ZIP, thư mục game hay APK.
+          path: out/r6/
+          retention-days: 3

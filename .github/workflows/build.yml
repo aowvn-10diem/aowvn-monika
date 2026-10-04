@@ -23,6 +23,7 @@ jobs:
         run: |
           ruby scripts/test-rgss-compat.rb
           ruby scripts/test-rgss-safe-marshal.rb
+          ruby scripts/test-rgss-script-shape.rb
       - name: Kiểm tra cấu hình + test
         run: ./gradlew testDebugUnitTest --console=plain
       - uses: actions/upload-artifact@v4
