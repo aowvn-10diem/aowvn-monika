@@ -1,0 +1,10 @@
+libandroid.so
+libcamera2ndk.so
+libjnigraphics.so
+liblog.so
+libmediandk.so
+libEGL.so
+libOpenSLES.so
+libm.so
+libdl.so
+libc.so
