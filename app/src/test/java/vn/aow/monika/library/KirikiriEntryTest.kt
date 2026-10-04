@@ -2,6 +2,7 @@ package vn.aow.monika.library
 
 import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
@@ -71,6 +72,32 @@ class KirikiriEntryTest {
         val dir = tmp.newFolder("pe-overlay")
         file(dir, "game.exe", bytes = b)
         assertEquals("game.exe", GameDetector.detect(dir, cfg).entry?.name)
+    }
+
+    @Test fun thuMucRpgMakerKhongBiNhanLaKirikiri() {
+        val dir = tmp.newFolder("rpg-maker")
+        file(dir, "Game.exe", 1000)
+        file(dir, "Game.ini", 100)
+        file(dir, "Data/System.rvdata2", 100)
+
+        assertNotEquals("kirikiri", GameDetector.detect(dir, cfg).system?.id)
+    }
+
+    @Test fun thuMucRenPyKhongBiNhanLaKirikiri() {
+        val dir = tmp.newFolder("renpy-game")
+        file(dir, "renpy/renpy.exe", 1000)
+        file(dir, "game/script.rpyc", 100)
+        file(dir, "Game.exe", 1000)
+
+        assertNotEquals("kirikiri", GameDetector.detect(dir, cfg).system?.id)
+    }
+
+    @Test fun chiCoPatchXp3ThiKhongCoLoiVao() {
+        val dir = tmp.newFolder("patch-only")
+        file(dir, "patch.xp3", 1000)
+        file(dir, "patch2.xp3", 1200)
+
+        assertNull(GameDetector.detect(dir, cfg).entry)
     }
 
     @Test fun pairedExe_traVeExeDiKemKhoChinh() {
