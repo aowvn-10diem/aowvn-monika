@@ -26,15 +26,19 @@ KW = Regexp.union(KEYWORDS.map { |k| /\b#{Regexp.escape(k)}(?![\w?!])/ })
 
 def shape(line, names = nil)
   anonymous = ->(token) { names ? "id#{names[token] ||= names.size + 1}" : 'id' }
+  previous = nil
   # Lexer che cả identifier Unicode, chuỗi có '#' và literal nhiều dòng.
   # Không in raw SyntaxError: Ruby có thể đưa lại tên/chuỗi của game trong thông báo.
   Ripper.lex(line).map do |_, kind, token, _|
-    case kind
+    result = case kind
     when :on_comment then ''
     when :on_sp, :on_ignored_sp then ' '
     when :on_nl, :on_ignored_nl then "\n"
     when :on_kw then KEYWORDS.include?(token) ? token : 'id'
-    when :on_ident then %w[eval binding class_eval module_eval instance_eval attr_accessor instance_variables instance_variable_get instance_variable_set instance_methods public_instance_methods private_instance_methods protected_instance_methods include? keys each send to_s to_sym constants const_get class_variables class_variable_get sort downcase class superclass singleton_class is_a? kind_of? first last begin end min max rand size exclude_end? pitch volume name slice!].include?(token) ? token : anonymous.call(token)
+    when :on_ident
+      public_api = %w[eval binding class_eval module_eval instance_eval attr_accessor instance_variables instance_variable_get instance_variable_set instance_methods public_instance_methods private_instance_methods protected_instance_methods include? keys each send to_s to_sym constants const_get class_variables class_variable_get sort downcase class superclass singleton_class is_a? kind_of? first last begin end min max rand size exclude_end? slice!].include?(token)
+      audio_selector = %w[pitch volume name].include?(token) && (previous == [:on_period, '.'] || previous == [:on_op, '&.'])
+      public_api || audio_selector ? token : anonymous.call(token)
     when :on_ivar then '@' + anonymous.call(token)
     when :on_cvar then '@@' + anonymous.call(token)
     when :on_gvar then '$' + anonymous.call(token)
@@ -46,6 +50,8 @@ def shape(line, names = nil)
     when :on_op then (token == '..' || token == '...' || token.match?(/\A[+\-*\/%=!<>|&^~?:]+\z/)) ? token : 'id'
     else token.match?(/\A[(){}\[\],.;:]\z/) ? token : 'id'
     end
+    previous = [kind, token] unless %i[on_sp on_ignored_sp on_comment].include?(kind)
+    result
   end.join
 end
 

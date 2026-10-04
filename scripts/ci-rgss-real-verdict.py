@@ -50,7 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--dialog', type=Path)
     parser.add_argument('--out', type=Path)
     parser.add_argument('--cases', type=Path)
-    parser.add_argument('--expect-fail', default='vx,ace')
+    parser.add_argument('--expect-fail', default='vx')
     args = parser.parse_args()
     if args.dialog:
         raise SystemExit(0 if dialog_error(args.dialog) else 1)

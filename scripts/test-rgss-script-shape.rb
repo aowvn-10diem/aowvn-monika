@@ -71,6 +71,10 @@ Dir.mktmpdir('shape-fixture') do |dir|
   File.binwrite(input, Marshal.dump([[11, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
   out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
   check(status.success? && %w[pitch volume name].all? { |word| out.include?(word) } && %w[private_sound PrivateTitle private audio].none? { |word| (out + err).include?(word) }, 'inspect public audio getters giữ API, che đối tượng/tên file/literal')
+  source = "name = 'private_literal'; pitch = 1; volume = 2\ndef name(volume); pitch; end\n"
+  File.binwrite(input, Marshal.dump([[16, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
+  out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
+  check(status.success? && %w[name pitch volume private_literal PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect che audio identifier trần/parameter/def, chỉ giữ selector API')
   source = "@private_text.slice! (/private_pattern/) != nil\n"
   File.binwrite(input, Marshal.dump([[15, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
   out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')

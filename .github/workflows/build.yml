@@ -25,6 +25,7 @@ jobs:
           ruby scripts/test-rgss-ruby18.rb
           ruby scripts/test-rgss-safe-marshal.rb
           ruby scripts/test-rgss-script-shape.rb
+          ruby scripts/test-rgss-range-probe.rb
           python3 scripts/test-rgss-archive-script.py
       - name: Kiểm tra cấu hình + test
         run: ./gradlew testDebugUnitTest --console=plain

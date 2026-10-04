@@ -60,7 +60,17 @@ while IFS='|' read -r id relative <&3; do
   adb shell pidof "$PKG:game" > "$OUT/$id-pid.txt" || true
   adb shell dumpsys activity exit-info "$PKG" > "$OUT/$id-exit-info.txt"
   stop_logcat
-  adb shell cat "$BASE/rgss-compat/v44-ci-range-types.txt" > "$OUT/$id-range-types.txt" 2>/dev/null || true
+  # The observer only writes after a matching Range exception. An absent file
+  # is no diagnostic evidence, and must be explicit even when gameplay passes.
+  if adb shell cat "$BASE/rgss-compat/v44-ci-range-types.txt" > "$OUT/$id-range-types.txt" 2>/dev/null; then
+    if [ -s "$OUT/$id-range-types.txt" ]; then
+      printf '%s\n' 'recorded: matching Range exception types; not gameplay proof' > "$OUT/$id-range-probe-status.txt"
+    else
+      printf '%s\n' 'empty: no Range type evidence; observer activity not verified' > "$OUT/$id-range-probe-status.txt"
+    fi
+  else
+    printf '%s\n' 'missing: no Range type evidence; absent file does not prove absence of errors' > "$OUT/$id-range-probe-status.txt"
+  fi
   adb shell dumpsys media.audio_flinger > "$OUT/$id-audio-global.txt"
   # AudioFlinger là service toàn máy: chỉ trích dòng có PID game, không suy nghe được.
   python3 - "$OUT/$id-pid.txt" "$OUT/$id-audio-global.txt" "$OUT/$id-audio.txt" <<'PYAUDIO'
