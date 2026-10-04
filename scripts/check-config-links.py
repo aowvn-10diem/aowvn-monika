@@ -19,6 +19,7 @@ GRADLE_PATH = ROOT / "app/build.gradle.kts"
 REPORT_PATH = ROOT / "docs/opus/ket-qua/L01-lien-ket.md"
 TIMEOUT_SECONDS = 15
 USER_AGENT = "AowVN-Monika-config-link-check/1.0"
+CORE_URL_PATH = re.compile(r"^cores\.[^.]+\.url$")
 
 
 def supported_abis():
@@ -45,13 +46,28 @@ def collect_urls(value, abis, path="", parent=None):
         size_by_abi = parent.get("sizeByAbi", {}) if isinstance(parent, dict) else {}
         configured_size = parent.get("size") if isinstance(parent, dict) else None
         if "{abi}" in value:
+            declared_abis = None
+            if CORE_URL_PATH.fullmatch(path) and isinstance(parent, dict):
+                declared_abis = parent.get("abis")
+            if declared_abis is not None and (
+                not isinstance(declared_abis, list)
+                or not all(isinstance(abi, str) for abi in declared_abis)
+            ):
+                raise ValueError(f"{path.rsplit('.', 1)[0]}.abis phải là danh sách chuỗi")
+
             for abi in abis:
-                records.append({
+                record = {
                     "source": f"{path} [{abi}]",
                     "url": value.replace("{abi}", abi),
                     "configured_size": size_by_abi.get(abi, configured_size)
                     if isinstance(size_by_abi, dict) else configured_size,
-                })
+                }
+                if declared_abis is not None and abi not in declared_abis:
+                    record["skip_reason"] = (
+                        f"Bỏ qua: ABI {abi} không khai trong "
+                        f"{path.rsplit('.', 1)[0]}.abis"
+                    )
+                records.append(record)
         else:
             records.append({"source": path, "url": value, "configured_size": configured_size})
     return records
@@ -106,6 +122,9 @@ def request_head(url):
 def probe(record):
     url = record["url"]
     parsed = urlparse(url)
+    if record.get("skip_reason"):
+        return {**record, "status": None, "method": "—", "remote_size": None,
+                "note": record["skip_reason"], "checked": False}
     if is_aow_domain(url):
         return {**record, "status": None, "method": "—", "remote_size": None,
                 "note": "Không kiểm được từ máy ngoài VN; không coi là hỏng", "checked": False}
@@ -164,7 +183,7 @@ def main():
     lines = [
         "# L01 — Kiểm tra liên kết trong cấu hình",
         "",
-        f"Kiểm tra lúc {now}. Nguồn: `config/monika-config.json`; ABI lấy từ `app/build.gradle.kts`: {', '.join(abis)}.",
+        f"Kiểm tra lúc {now}. Nguồn: `config/monika-config.json`; ABI lấy từ `app/build.gradle.kts`: {', '.join(abis)}. Với `cores.<id>.abis`, chỉ kiểm ABI được khai; ABI còn lại được ghi là bỏ qua.",
         f"Tổng {len(results)} mục: {checked} đã gửi yêu cầu, {errors} phản hồi lỗi/kết nối, {skipped} mục không kiểm.",
         "",
         "URL `aow.vn` được bỏ qua vì máy chạy ngoài Việt Nam; không tính là hỏng. Chỉ gửi HEAD; nếu máy chủ từ chối HEAD (405/501), gửi GET `Range: bytes=0-0` và đọc tối đa 1 byte.",
