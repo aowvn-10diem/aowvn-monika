@@ -180,6 +180,7 @@ dependencies {
     sevenZipTestNatives(libs.sevenzip.jvm.natives)
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     // Test giao diện trên JVM (Robolectric): mở từng màn hình, bắt crash, chụp ảnh → app/build/screenshots/
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.compose.bom))
