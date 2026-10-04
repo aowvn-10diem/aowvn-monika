@@ -38,11 +38,12 @@
 
 - **Hạn mức lưu trữ Actions đã đầy một lần (03/10/2026, 14 GB artifact, chủ yếu APK debug 83 MB mỗi lần push):** đã xóa 370 artifact bằng `curl -X DELETE https://api.github.com/repos/aowvn-10diem/aowvn-monika/actions/artifacts/<id>` (proxy tự gắn quyền); GitHub tính lại hạn mức mỗi 6–12 giờ nên có thể còn chặn tải lên một lúc. Đã đặt retention ngắn + `continue-on-error` cho mọi `upload-artifact` — job không đỏ chỉ vì tải artifact lỗi. Workflow cần artifact ở job khác (hiện không có) sẽ phải dùng release.
 
-## 5. Trạng thái (cập nhật lần cuối 03/10/2026 ~10:00 GMT+7)
-- **Phát hành:** v0.7.3 (Kirikiri nhúng sâu, menu Việt hóa). `configVersion` 31, versionCode 38.
-- **Đã xong:** E0 (EngineRoutes/EnginePrepActivity/`allowExternalApp`), R0, R1 (gói `rgss-arm64-v8a.zip` 7,6 MiB), R4 (MkxpConfigWriter), P0, P1 (gói `renpy8` ≈ 22,6 MB, chưa publish), V09, V10, V11, V13.
-- **R2 xong và đã gộp main (6f0623e); đang làm R3:** V08 = R2 (module `:rgss`, 9 file Java SDL 2.26.3 đổi gói `vn.aow.monika.rgss.sdl`, script `engines/rgss/rename-sdl-java.py`) + V12 = R3 (`RgssGameActivity`, route `rgss`, `PackManager.RGSS`, Emulator Test game XP tối thiểu, `build-rgss.yml` `private_only`). Chưa biết CI xanh hay đỏ (không biên dịch cục bộ được). Việc kế: CI xanh → merge main → dựng gói rgss `publish=true, private_only=true` → `emulator-test.yml rgss_tag=<tag>` → ghi `ket-qua/R3.md`.
-- **Việc sau R3 (theo `docs/opus/2026-10-03-nhung-renpy-rgss.md`):** R5 (lớp phủ/phím + đăng ký config `modules.rgss`, tắt app ngoài cho `rgss`/`kirikiri` khi gói phát hành), R6 (5 game thử — hỏi sếp), R7 (RTP/save/chẩn đoán; cần armeabi-v7a), khối P (Ren'Py 8: P2–P7), P7 (Ren'Py 7), khối S (Symbian, phương án `2026-10-03-nhung-symbian-eka2l1.md`, làm sau).
+## 5. Trạng thái (cập nhật 04/10/2026)
+- **Phát hành:** v0.7.4. `configVersion` 32, versionCode 39.
+- **Đã xong:** E0, R0–R4, P0–P2, V09–V13. R2/R3 đã gộp main; kết quả thử R3 API 30/34 ở `docs/opus/ket-qua/R3.md`.
+- **Ren'Py 8:** P0/P1 đã có kết quả trong `docs/opus/ket-qua/P0.md`; P2 (module `:renpy`) đã gộp trong #33 và kết quả APK ở `docs/opus/ket-qua/P2.md`. P3 chưa gộp; chưa ghi nhận game Ren'Py chạy trong app.
+- **Libretro V32:** kiểm URL/hash/version theo ABI đã gộp trong #35. Workflow tạo snapshot còn ở PR #45; chưa xuất bản ứng viên hay đưa hash ứng viên vào config.
+- **Thứ tự việc còn lại:** lấy từ kế hoạch PM hiện hành; ghi chú thứ tự cũ bên dưới không thay thế kế hoạch đó.
 - **Cổng sếp (KE-HOACH mục 4):** G1 (1 game RPG Maker XP), G2 (5 game R6 + máy thật), G3 (2 game Ren'Py 7/8), G4 (Symbian A1/A2), G5/G8 (công khai mã nguồn + giấy phép build file bản port mkxp-z — **sếp tự làm**), G6 (nhắn RAdmin duyệt client "AowMonika"), G7 (thử Kirikiri 0.7.3 trên máy thật).
 - **Haiku (việc nhẹ, dòng `Giao: Haiku`):** H01 (sửa đầu `GIAO-TIEP-VOI-OPUS.md`), H02 (gen-architecture), H03 (mục thử Kirikiri trong `TEST-MAY-THAT.md`).
 
