@@ -10,5 +10,9 @@ full = ('<!doctype html>\n<html lang="vi">\n<head>\n<meta charset="utf-8">\n'
         + head + '</head>\n<body>\n' + rest + '\n</body>\n</html>\n')
 site = os.path.join(d, 'site'); os.makedirs(site, exist_ok=True)
 open(os.path.join(site, 'index.html'), 'w', encoding='utf-8').write(full)
-shutil.copytree(os.path.join(d, 'assets'), os.path.join(site, 'assets'), dirs_exist_ok=True)
+# Nguồn assets chuẩn được commit ở docs/assets; assets cạnh bản nháp chỉ dùng nếu có.
+assets = os.path.join(d, 'assets')
+if not os.path.isdir(assets):
+    assets = os.path.join(d, '..', '..', '..', 'assets')
+shutil.copytree(assets, os.path.join(site, 'assets'), dirs_exist_ok=True)
 print('site/index.html', len(full))

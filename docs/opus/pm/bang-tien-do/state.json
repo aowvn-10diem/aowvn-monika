@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T11:36:00Z",
-  "mainSha": "f96da6edd481863dfdd15a15d2359eabe5fcd8ad",
-  "app": "App 0.7.4 · config 32",
-  "nextCheck": "2026-10-04T12:36:00Z",
-  "headline": "Sol tiếp quản tạm PM/engine. Đã gộp D5/V22/R6 mức1/skill; bản tin hồi phục; snapshot12core công khai. V44 đang thử, Gemini F01/F02 chờ kích hoạt.",
+  "updatedAt": "2026-10-04T14:13:00Z",
+  "mainSha": "d6d352dbf63a3ee87e6cc8673d33f11a76a300be",
+  "app": "App0.7.4 · config33",
+  "nextCheck": "2026-10-04T15:13:00Z",
+  "headline": "Sol tiếp quản: ghim12core và các Dependabot đã gộp. V44 có bản sửa VXtrongRAM + wininet, Build xanh đang đo game. GeminiF01/F02 vẫn chờ kích hoạt.",
   "needsBoss": [
     {
       "code": "G7",
@@ -430,8 +430,8 @@
       "code": "V32",
       "title": "Ghim phiên bản lõi giả lập (GB/GBA/NES)",
       "owner": "Sol",
-      "status": "dang",
-      "note": "Snapshot cores-gb-gba-nes-1/12ZIP đã công khai đúng run37196834615; PR#67 ghim config33 đang chờ Luna/PM, CI xanh.",
+      "status": "xong",
+      "note": "#67 gộp7b45e57 sau Luna+CI; config33 ghim12ABI từ snapshotpublicđãđo. Game/ROM vàCloudsync chưa kiểm.",
       "module": "libretro"
     },
     {
@@ -568,7 +568,7 @@
       "owner": "Sol",
       "status": "xong",
       "module": "ci",
-      "note": "Quét/Dependabot đã gộp; documentfile#57 merged. Coroutines#58 sửa1.9.0 CI xanh chờ Luna; major#55/#56 chưa gộp."
+      "note": "#57/#58/#56/#55 đã gộp sau Luna/CI/PMreview riêng; Kotlin2.0.21 giữ nguyên, coroutines1.9.0. Cloud/ký chưa kiểm và không dispatch."
     },
     {
       "code": "V40",
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Sol tiếp quản#50 948c2c9; lấy script VX RGSSAD v1 và che nội dung xanh, Build/R6 đang chạy. Chưa có kết luận phục hồi Ace/VX."
+      "note": "#50 76e8801: Wininetofflinefallback + Ruby1.8 normalize bảnRAMVX. Unitlocal vàBuildxanh, nativefixture/R6đang chạy; không gọi VX/Ace phục hồi."
     },
     {
       "code": "V45",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-04T14:13:00Z",
+      "text": "Gộp#58coroutines/#67pins/#56setupjava/#55setupgcloud theoLuna+CI+PMreview riêng. #64đóng vì57đãgộp. V44 Buildmới xanh, runtimechờ. Tái sinh landing byte-identical/15assetverify, sửa generator thiếuassets ởcheckout sạch."
+    },
     {
       "t": "2026-10-04T11:36:00Z",
       "text": "Tiếp quản: gộp#63/#61/#60/#46/#57/#51/#44 sau Luna/CI. Snapshot12core công khai; PR#67 pinconfig và#58 coroutines1.9.0 CI xanh chờreview. V44 VXshape xanh, runtime đang chạy. GeminiF01/F02 chưa kích hoạt."
@@ -829,7 +833,7 @@
         "phone": "xong",
         "release": "xong"
       },
-      "note": "Chơi điện thoại theo chủ dự án; snapshot12coreGB/GBA/NES đã công khai, PR#67 ghimconfig33 chưa gộp; các core khác giữ legacy."
+      "note": "Ghim12coreGB/GBA/NES config33 đã gộp#67 từ snapshotcores-gb-gba-nes-1 đúngrunphát hành. Các core khác giữlegacy. ROM thật/syncCloudflare chưa kiểm."
     },
     {
       "id": "3ds",
@@ -881,7 +885,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "R6 mức1 XP PASS thật, VX/Ace lỗi script; V44 đang sửa trên CI. Audio/save-load/FPS và đủ5game chưa kiểm; gói vẫn draft."
+      "note": "V44 tiếp quản, chuẩn hóa lời gọi Ruby1.8 bảnRAM + Wininetofflinefallback đangđo. R6 trước: XP PASSmức1, VX/Ace lỗi; chưa âmthanh/save-load/FPS hoặc đủ5game."
     },
     {
       "id": "web",

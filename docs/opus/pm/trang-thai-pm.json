@@ -1,5 +1,5 @@
 {
-  "main": "f96da6edd481863dfdd15a15d2359eabe5fcd8ad",
+  "main": "d6d352dbf63a3ee87e6cc8673d33f11a76a300be",
   "branch": "fa57d05",
   "sol": {
     "V30": "xong#25",
@@ -21,7 +21,7 @@
     "14": "SOL-003 (đã trả lời)",
     "44": "gộpf96da6e, R6 mức1 xanh37197284896; VX/Ace fail đúng expected",
     "46": "gộp5d352a7; Luna + CI xanh, K3 máy thật chưa kiểm",
-    "50": "948c2c9, R6 VXshape xanh; đang Build/R6 37198897637/633",
+    "50": "76e8801, Build37207987027 xanh; R6/signals đang đo VXRAM + wininet",
     "51": "gộp0e17edf,27test +5ZIP thật PASS; quota chưa đo",
     "34": "PM duyệt; head 1c64c02 chỉ gộp main",
     "55-57": "Dependabot → Sol (tra-loi-sol-009)",
@@ -29,9 +29,12 @@
     "61": "gộp8996b31; publication37196834615 SUCCESS",
     "63": "gộp4e320e8; PMdigestMAIN37196924569 SUCCESS",
     "57": "gộpa9cc79f, documentfile1.1.0",
-    "58": "ea3650f sửa coroutines1.9.0, Build37198216723/real-packs37198216702 xanh, chờ Luna mới",
-    "66": "a3ae8f5, đồng bộ PM/Gemini chờ Luna; PR docs-only không tự giả Build",
-    "67": "2463be5 config33, Build37197486345/real-packs37197486314 xanh, chờ Luna"
+    "58": "gộp2d10ce0, coroutines1.9.0",
+    "66": "docs-only syncPM đangreview; đã kiểm tái sinh landing/assets/schema, sửa fallbackassets",
+    "67": "gộp7b45e57, config33 pinned12ABI, Cloudsync/ROM chưa kiểm",
+    "55": "gộpd6d352d; Luna+Build+PMmigrationreview, Cloud chưa kiểm",
+    "56": "gộpf5ddf2f; Luna+7jobđại diện+PMmigrationreview, ký/Cloud chưa kiểm",
+    "64": "đóng theo Luna; câu hỏi57 đã cũ, không tựmerge chung"
   },
   "idle": 0,
   "cadence": 30,
@@ -58,7 +61,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-04T11:36:00Z",
+  "updated_at": "2026-10-04T14:13:00Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [
