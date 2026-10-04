@@ -23,6 +23,17 @@ with zipfile.ZipFile(out/'web/rgss.zip') as z:z.extractall(out/'rgss-pack')
 control=out/'control';(control/'Data').mkdir(parents=True)
 (control/'Game.ini').write_text('[Game]\nTitle=Monika-V22-Control\nScripts=Data\\Scripts.rvdata\nRTP1=\n')
 code = """bitmap=Bitmap.new (640,360)
+class MonikaEvalNative
+  OFFSET = 7
+  eval("def forward(arg, *rest); collect (arg, *rest); end")
+  def collect(arg, *rest); [arg + OFFSET, rest]; end
+  def local_value
+    value = 4
+    eval("value + OFFSET")
+  end
+end
+control_eval = MonikaEvalNative.new
+raise "monika-eval-context" unless control_eval.forward(2,3,4) == [9,[3,4]] && control_eval.local_value == 11
 bitmap.fill_rect(0,0,640,360,Color.new(242,140,40))
 sprite=Sprite.new
 sprite.bitmap=bitmap

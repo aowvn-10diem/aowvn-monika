@@ -73,6 +73,9 @@ data.each_with_index do |entry, i|
       end
     end
     code = MonikaRuby18.repair(code, ruby18_budget, trace)
+    prepared = MonikaRuby18.instrument_eval_calls(code, ruby18_budget)
+    puts "eval-callsite script=#{i} wrapped=#{prepared.scan('::MonikaRuby18.eval_source(').size}" unless prepared.equal?(code)
+    code = prepared
   end
   inspections.select { |index, _| index == i }.each do |_, line|
     puts "inspect script=#{i} line=#{line}"
@@ -96,3 +99,4 @@ data.each_with_index do |entry, i|
   end
 end
 puts "Tổng số script: #{data.size}; lỗi cú pháp: #{bad}; Ruby #{RUBY_VERSION}"
+puts "Ruby18 budget remaining_compiles=#{ruby18_budget[0]} remaining_bytes=#{ruby18_budget[1]}" if ruby18

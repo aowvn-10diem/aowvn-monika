@@ -74,4 +74,105 @@ check(MonikaRuby18.error_line(MonikaRuby18.repair(source)).nil?, '80lời gọi 
 source = "call ('a', 1)\n" * (MonikaRuby18::MAX_REPAIRS + 1)
 trace = []
 check(MonikaRuby18.repair(source, [512], ->(*args) { trace << args }).equal?(source) && trace.last[1] == -1, 'vượt128vòng giữ nguyên toàn source và ghi đúng lý do giới hạn')
+kernel_eval = Kernel.instance_method(:eval)
+source = <<~'RUBY'
+  class CallsiteEvalFixture
+    OFFSET = 17
+    for name in ['first', 'second']
+      eval("def #{name}(arg, *rest); collect (arg, *rest); end")
+    end
+    def collect(arg, *rest); [arg + OFFSET, rest]; end
+    def local_value
+      value = 23
+      eval('value + OFFSET')
+    end
+    def explicit_context
+      value = 9
+      eval("value = add (value, 1); [__FILE__, __LINE__, value]", binding, 'fixture-context', 40)
+    end
+    def add(a, b); a + b; end
+  end
+RUBY
+entries = [[1, 'synthetic', 'packed', source]]
+check(MonikaRuby18.apply(entries) == 1 && entries[0][2] == 'packed', 'bọc đối số eval trong RAM, giữ packed data/source đầu vào')
+eval(entries[0][3]) # Chỉ fixture tổng hợp; preparer trong app không eval.
+fixture = CallsiteEvalFixture.new
+check(fixture.first(2, 3, 4) == [19, [3, 4]] && fixture.second(5) == [22, []], 'eval sinh method giữ lớp/constant/splat của caller')
+check(fixture.local_value == 40, 'eval mặc định giữ lexical locals và constant lookup')
+check(fixture.explicit_context == ['fixture-context', 40, 10], 'eval explicit Binding/filename/line giữ nguyên')
+check(Kernel.instance_method(:eval) == kernel_eval, 'không override Kernel.eval')
+check(MonikaRuby18.apply(entries) == 0, 'callsite đã bọc không bị bọc lặp')
+source = "đặt = 13; eval('đặt')\n"
+fixed = MonikaRuby18.instrument_eval_calls(source, [512])
+check(eval(fixed) == 13 && fixed.valid_encoding?, 'range AST theo byte giữ identifier UTF8 và local context')
+source = "text = 'eval(\"keep\")' # eval(keep)\nobject.eval(text)\n"
+check(MonikaRuby18.instrument_eval_calls(source, [512]).equal?(source), 'không sửa literal/comment/eval của receiver khác')
+source = "eval(\"call (1,\n2)\")\n"
+check(MonikaRuby18.instrument_eval_calls(source, [512]).equal?(source), 'đối số nhiều dòng/heredoc không bị đoán range')
+source = "eval(nil)\n"
+fixed = MonikaRuby18.instrument_eval_calls(source, [512])
+begin
+  eval(fixed)
+  abort('FAIL eval(nil) phải giữ TypeError')
+rescue TypeError
+  check(true, 'eval nonstring giữ TypeError, không che lỗi')
+end
+source = "eval('1')\n" * (MonikaRuby18::MAX_EVAL_SITES + 1)
+check(MonikaRuby18.instrument_eval_calls(source, [512]).equal?(source), 'quá64callsite giữ nguyên trước ghép candidate')
+source = "a=1+2+3+4+5+6\n" * 6000 + "eval('1')\n"
+check(MonikaRuby18.instrument_eval_calls(source, [512]).equal?(source), 'quá50nghìn ASTnode giữ nguyên trước ghép candidate')
+source = "eval('1')\n"
+budget = [512, 0]
+check(MonikaRuby18.instrument_eval_calls(source, budget).equal?(source) && budget == [512, 0], 'AST parse cũng bị chặn bởi byte budget chung')
+source = "eval('1')\n#" + ' ' * MonikaRuby18::MAX_AST_BYTES
+budget = [512, MonikaRuby18::MAX_COMPILE_BYTES]
+check(MonikaRuby18.instrument_eval_calls(source, budget).equal?(source) && budget[0] == 512, 'AST parse có trần256KiB trước tạo cây, không chỉ đếm node sau parse')
+Dir.mktmpdir('eval-fixture') do |dir|
+  path = File.join(dir, 'never')
+  source = "eval(#{"File.write(#{path.inspect}, 'never')".inspect})\n"
+  entries = [[1, 'synthetic', 'packed', source]]
+  check(MonikaRuby18.apply(entries) == 1 && !File.exist?(path), 'instrument chỉ parse/compile, không thực thi eval hay ghi file')
+end
+MonikaRuby18.apply([])
+source = "call ('cache', 1)\n"
+fixed = MonikaRuby18.eval_source(source)
+MonikaRuby18.instance_variable_set(:@eval_budget, [0, 0])
+cached = MonikaRuby18.eval_source(source.dup)
+check(cached == fixed && !cached.frozen?, 'cache sửa thành công tránh compile lại khi budget đã cạn')
+source.replace("call ('changed', 2)\n")
+check(MonikaRuby18.eval_source(source).equal?(source), 'cache key không đổi theo String caller mutate, không dùng bản stale')
+MonikaRuby18.apply([])
+40.times { |i| MonikaRuby18.eval_source("call ('#{i}', 1)\n") }
+check(MonikaRuby18.instance_variable_get(:@eval_cache).size == MonikaRuby18::MAX_EVAL_CACHE_ENTRIES && MonikaRuby18.instance_variable_get(:@eval_cache_bytes) <= MonikaRuby18::MAX_EVAL_CACHE_BYTES, 'cache runtime giữ trần32mục/64KiB')
+MonikaRuby18.apply([])
+source = "call ('a', 1) #" + ' ' * (MonikaRuby18::MAX_EVAL_CACHE_BYTES / 2)
+check(MonikaRuby18.eval_source(source) != source && MonikaRuby18.instance_variable_get(:@eval_cache).empty?, 'entry cache quá64KiB vẫn sửa nhưng không giữ RAM')
+MonikaRuby18.apply([])
+source = <<~'RUBY'
+  class EvalOrderFixture
+    def source_text; @order << :source; 'value'; end
+    def context(target); @order << :binding; target; end
+    def check_order
+      @order = []
+      value = 11
+      result = eval(source_text, context(binding))
+      [result, @order]
+    end
+    def add(a, b); a + b; end
+    def nested
+      eval(eval('"add (1, 2)"'))
+    end
+  end
+RUBY
+fixed = MonikaRuby18.instrument_eval_calls(source, [512])
+eval(fixed)
+check(fixed.include?('::MonikaRuby18.eval_source(source_text)') && EvalOrderFixture.new.check_order == [11, [:source, :binding]], 'đối số được tính đúng một lần/thứ tự, Binding caller giữ nguyên')
+check(EvalOrderFixture.new.nested == 3, 'eval lồng nhau giữ dấu ngoặc và ngữ cảnh caller')
+source = "eval('def broken(')\n"
+begin
+  eval(MonikaRuby18.instrument_eval_calls(source, [512]))
+  abort('FAIL eval lỗi khác phải ném SyntaxError')
+rescue SyntaxError
+  check(true, 'lỗi cú pháp runtime ngoài phạm vi vẫn ném nguyên lỗi')
+end
 puts 'ALL OK'

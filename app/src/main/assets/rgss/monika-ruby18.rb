@@ -9,6 +9,11 @@ module MonikaRuby18
   MAX_CANDIDATES = 8
   MAX_COMPILES = 512
   MAX_COMPILE_BYTES = 64 * 1024 * 1024
+  MAX_AST_NODES = 50_000
+  MAX_AST_BYTES = 256 * 1024
+  MAX_EVAL_SITES = 64
+  MAX_EVAL_CACHE_ENTRIES = 32
+  MAX_EVAL_CACHE_BYTES = 64 * 1024
   # super là lời gọi với danh sách đối số; Ruby1.8 cho phép SPACE trước
   # '(' + splat, Ruby3 cần super(...). Các từ khóa điều khiển vẫn bị loại.
   KEYWORDS = %w[def class module if elsif unless while until for case when begin end return yield rescue ensure not and or].freeze
@@ -81,15 +86,98 @@ module MonikaRuby18
 
   def self.applied_count; @applied_count.to_i; end
 
+  # Giữ eval ở callsite: chỉ bọc đối số đầu, không override Kernel#eval
+  # (override sẽ làm mất local variables/cref mặc định của người gọi).
+  def self.instrument_eval_calls(source, budget)
+    return source unless source.is_a?(String) && source.bytesize <= MAX_AST_BYTES && source.valid_encoding?
+    return source if source.count("\n") > MAX_LINES || !source.include?('eval')
+    return source unless defined?(RubyVM::AbstractSyntaxTree)
+    budget[1] ||= MAX_COMPILE_BYTES
+    return source if budget[0] <= 0 || source.bytesize > budget[1]
+    budget[0] -= 1
+    budget[1] -= source.bytesize # AST parse cũng dùng cùng work budget.
+    root = RubyVM::AbstractSyntaxTree.parse(source)
+    stack = [root]
+    sites = []
+    visited = 0
+    while (node = stack.pop)
+      visited += 1
+      return source if visited > MAX_AST_NODES
+      children = node.children
+      children.each { |child| stack << child if child.is_a?(RubyVM::AbstractSyntaxTree::Node) }
+      next unless node.type == :FCALL && children[0] == :eval
+      args = children[1]
+      next unless args && args.type == :LIST
+      arg = args.children[0]
+      next unless arg.is_a?(RubyVM::AbstractSyntaxTree::Node)
+      next unless arg.first_lineno == arg.last_lineno # Heredoc/multiline: không đoán range.
+      if arg.type == :CALL
+        receiver, method = arg.children
+        next if method == :eval_source && receiver&.type == :COLON3 && receiver.children == [:MonikaRuby18]
+      end
+      sites << [arg.first_lineno, arg.first_column, arg.last_column]
+      return source if sites.size > MAX_EVAL_SITES
+    end
+    return source if sites.empty?
+    offsets = [0]
+    source.each_line { |line| offsets << offsets.last + line.bytesize }
+    inserts = Hash.new { |hash, key| hash[key] = '' }
+    prefix = '::MonikaRuby18.eval_source('
+    sites.each do |line, first, last|
+      start = offsets[line - 1] + first
+      finish = offsets[line - 1] + last
+      return source unless finish > start && finish <= source.bytesize
+      inserts[start] += prefix
+      inserts[finish] = ')' + inserts[finish]
+    end
+    size = source.bytesize + inserts.values.sum(&:bytesize)
+    return source if size > MAX_BYTES || budget[0] <= 0 || size > budget[1]
+    # Ghép từng mảnh một lần, tránh insert/dup cả script ở mỗi callsite.
+    parts = []
+    last = 0
+    inserts.keys.sort.each do |offset|
+      parts << source.byteslice(last, offset - last)
+      parts << inserts[offset]
+      last = offset
+    end
+    parts << source.byteslice(last, source.bytesize - last)
+    fixed = parts.join.force_encoding(source.encoding)
+    error_line(fixed, budget).nil? ? fixed : source
+  rescue SyntaxError, ArgumentError
+    source
+  end
+
+  def self.eval_source(source)
+    return source unless source.is_a?(String)
+    @eval_cache ||= {}
+    return @eval_cache[source].dup if @eval_cache.key?(source)
+    @eval_budget ||= [MAX_COMPILES, MAX_COMPILE_BYTES]
+    fixed = repair(source, @eval_budget)
+    fixed = instrument_eval_calls(fixed, @eval_budget)
+    if !fixed.equal?(source) && @eval_cache.size < MAX_EVAL_CACHE_ENTRIES
+      bytes = source.bytesize + fixed.bytesize
+      @eval_cache_bytes ||= 0
+      if @eval_cache_bytes + bytes <= MAX_EVAL_CACHE_BYTES
+        @eval_cache[source.dup.freeze] = fixed.dup.freeze
+        @eval_cache_bytes += bytes
+      end
+    end
+    fixed
+  end
+
   def self.apply(scripts)
     return 0 unless scripts.is_a?(Array) && scripts.size <= 10_000
     total = scripts.sum { |entry| entry.is_a?(Array) && entry[3].is_a?(String) ? entry[3].bytesize : 0 }
     return 0 if total > MAX_TOTAL
     count = 0
     budget = [MAX_COMPILES]
+    @eval_budget = budget
+    @eval_cache = {}
+    @eval_cache_bytes = 0
     scripts.each do |entry|
       next unless entry.is_a?(Array) && !entry.frozen? && entry[3].is_a?(String)
       fixed = repair(entry[3], budget)
+      fixed = instrument_eval_calls(fixed, budget)
       next if fixed.equal?(entry[3])
       entry[3] = fixed
       count += 1
