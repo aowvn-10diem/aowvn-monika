@@ -23,6 +23,11 @@ Dir.mktmpdir('shape-fixture') do |dir|
   out, _, status = Open3.capture3(RbConfig.ruby, script, input)
   check(status.success? && out.include?('lỗi cú pháp: 0') && !out.include?('not_executed'), 'script hợp lệ chỉ compile, không eval/lộ chuỗi')
 
+  source = "call ('secret_literal', 1)\ndef private_method(\n"
+  File.binwrite(input, Marshal.dump([[3, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
+  out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--ruby18')
+  check(status.success? && out.include?('blocked-shape') && %w[secret_literal private_method PrivateTitle].none? { |word| (out + err).include?(word) }, 'ngữ cảnh dòng kẹt chỉ in hình dạng đã che')
+
   File.open(input, 'wb') { |f| f.truncate(65 * 1024 * 1024) }
   _, _, status = Open3.capture3(RbConfig.ruby, script, input)
   check(!status.success?, 'input quá lớn bị chặn trước đọc')

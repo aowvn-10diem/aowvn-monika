@@ -8,12 +8,15 @@ module MonikaRuby18
   MAX_REPAIRS = 64
   MAX_CANDIDATES = 8
   MAX_COMPILES = 512
+  MAX_COMPILE_BYTES = 64 * 1024 * 1024
   KEYWORDS = %w[def class module if elsif unless while until for case when begin end return yield super rescue ensure not and or].freeze
 
   def self.error_line(source, budget = nil)
     if budget
-      return 0 if budget[0] <= 0
+      budget[1] ||= MAX_COMPILE_BYTES
+      return 0 if budget[0] <= 0 || source.bytesize > budget[1]
       budget[0] -= 1
+      budget[1] -= source.bytesize
     end
     RubyVM::InstructionSequence.compile(source, 'monika-vx')
     nil
@@ -29,6 +32,7 @@ module MonikaRuby18
     return source if line.nil? || line == 0 # Source hợp lệ giữ nguyên từng byte.
     original = source
     MAX_REPAIRS.times do
+      return original if budget[0] <= 0 || budget[1] <= 0
       lines = source.lines
       text = lines[line - 1]
       return original unless text
@@ -49,7 +53,10 @@ module MonikaRuby18
       candidates = []
       1.upto(matches.size) do |size|
         matches.combination(size) do |edits|
-          return original if budget[0] <= 0
+          # Kiểm trước dup/join: cả nguồn compile lẫn candidate mới dùng
+          # chung trần byte, không chỉ giới hạn số lần compile.
+          candidate_bytes = source.bytesize - edits.sum { |start, finish| finish - start }
+          return original if budget[0] <= 0 || candidate_bytes > budget[1]
           changed = lines.dup
           changed_text = text.dup
           edits.reverse_each { |start, finish| changed_text[start...finish] = '' }

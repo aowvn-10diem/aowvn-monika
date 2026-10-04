@@ -49,4 +49,16 @@ budget = [3]
 check(MonikaRuby18.repair(source, budget).equal?(source) && budget[0] == 0, 'hết budget giữa tìm tổ hợp trả nguyên source')
 source = "result = first ('literal (space)', 1) + second ('b', 2)\ndef broken(\n"
 check(MonikaRuby18.repair(source).equal?(source), 'tổ hợp tiến triển nhưng lỗi khác vẫn trả nguyên toàn script')
+source = "result = first ('a', 1) + second ('b', 2)\n"
+budget = [512, source.bytesize]
+trace = []
+check(MonikaRuby18.repair(source, budget, ->(*args) { trace << args }).equal?(source) && budget == [511, 0] && trace.empty?, 'cạn byte ngay sau compile gốc chặn candidate trước cấp phát')
+budget = [512, source.bytesize * 3]
+check(MonikaRuby18.repair(source, budget).equal?(source) && budget[1] >= 0 && budget[0] == 509, 'cạn byte giữa tổ hợp giữ source, dù còn lượt compile')
+source = "call ('a', 1)\n"
+fixed_size = source.bytesize - 1
+budget = [512, source.bytesize + fixed_size]
+fixed = MonikaRuby18.repair(source, budget)
+check(fixed == "call('a', 1)\n" && budget[1] == 0 && MonikaRuby18.repair(source, budget).equal?(source), 'byte budget dùng chung qua nhiều script, không reset sau sửa')
+check(MonikaRuby18.error_line('a' * (MonikaRuby18::MAX_COMPILE_BYTES + 1), [512]) == 0, 'compile chặn input vượt trần byte trước RubyVM')
 puts 'ALL OK'

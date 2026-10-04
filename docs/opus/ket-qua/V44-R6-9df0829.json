@@ -1,0 +1,67 @@
+{
+  "run": 37210498789,
+  "head": "9df08296b307077d9e97d5dfe806b0a58848d7a4",
+  "artifact": 11306707413,
+  "verdict": {
+    "level": 1,
+    "expectFail": [
+      "vx"
+    ],
+    "matchesExpectation": true,
+    "games": [
+      {
+        "game": "xp",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "2949",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 34.361,
+        "threshold": 10,
+        "observedSeconds": 384,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "PASS_LEVEL_1",
+        "expected": "ĐẠT mức 1",
+        "matchesExpectation": true
+      },
+      {
+        "game": "vx",
+        "verdict": "HỎNG",
+        "verdictCode": "FAIL",
+        "process": "com.aow.monika:game",
+        "pid": "8703",
+        "alive": true,
+        "errorDialog": true,
+        "brightnessStddev": 45.09,
+        "threshold": 10,
+        "observedSeconds": 65,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "FAIL",
+        "expected": "HỎNG",
+        "matchesExpectation": true
+      },
+      {
+        "game": "ace",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "8929",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 65.04,
+        "threshold": 10,
+        "observedSeconds": 376,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "PASS_LEVEL_1",
+        "expected": "ĐẠT mức 1",
+        "matchesExpectation": true
+      }
+    ]
+  },
+  "manualReview": {
+    "ace": "Ảnh sau phím: scene trong phòng/hội thoại; ảnh trước phím không có hộp lỗi. Không suy audio/save-load/FPS.",
+    "vx": "Ảnh trước phím: hộp SyntaxError Message934/944; normalize toànscript96 không đạt nên giữ sourcegốc.",
+    "diagnostic": "157script còn1SyntaxError; script118 và102 compile được, script96 tiến tới1796 rồi0candidate. NativegameVX chưaPASS."
+  }
+}

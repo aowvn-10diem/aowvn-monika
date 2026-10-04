@@ -51,7 +51,16 @@ data.each_with_index do |entry, i|
   abort("tổng dữ liệu giải nén vượt #{SafeInflate::MAX_TOTAL_BYTES} byte") if total > SafeInflate::MAX_TOTAL_BYTES
   code = code.encode('UTF-8', 'Shift_JIS', invalid: :replace, undef: :replace) unless code.valid_encoding?
   if ruby18
-    trace = ->(line, candidates, next_line) { puts "repair script=#{i} line=#{line} candidates=#{candidates} next=#{next_line.nil? ? 'valid' : next_line}" }
+    shown = {}
+    trace = ->(line, candidates, next_line) do
+      puts "repair script=#{i} line=#{line} candidates=#{candidates} next=#{next_line.nil? ? 'valid' : next_line}"
+      if next_line == 0 && !shown[line]
+        shown[line] = true
+        code.lines.each_with_index do |text, index|
+          puts format('blocked-shape %5d | %s', index + 1, shape(text).rstrip) if (index + 1 - line).abs <= ctx
+        end
+      end
+    end
     code = MonikaRuby18.repair(code, [MonikaRuby18::MAX_COMPILES], trace)
   end
   begin
