@@ -6,6 +6,7 @@ Trạng thái: `mở` (chờ người nhận) · `đã trả lời` (chờ bên 
 |---|---|---|---|---|---|
 | SOL-007 | Nơi lưu snapshot core ([thư hỏi](hop-thu/hoi-sol-007-core-snapshot-hosting.md)) | V32 | trước ghim config | đã trả lời — A: Sol làm workflow snapshot sau PM duyệt | 04/10/2026 |
 | LUNA-001 | L02: phụ thuộc V26 ([thư hỏi](hop-thu/hoi-luna-001-l02-phu-thuoc-v26.md)) | L02 | trước khi bắt đầu L02 | đã trả lời (`tra-loi-luna-001`: làm ngay, bỏ ý a) | 04/10/2026 |
+| LUNA-002 | Phạm vi hai skill bổ sung V46 ([thư hỏi](hop-thu/hoi-luna-002-pham-vi-skill-v46.md)) | V46 | trước khi duyệt PR #51 | mở (chờ PM chọn A/B) | 04/10/2026 |
 | SOL-003 | Sol hỏi PM: DEBUG API 30, chọn B theo tra-loi-sol-003 | V20/D1 phần 4 | kiểm K10 sau V19 | đã làm (nhận B; triển khai + unit test trong PR phần 4) | 04/10/2026 |
 | SOL-002 | Sol hỏi PM: nguồn ký hiệu native của gói dựng sẵn ([PR #6](https://github.com/aowvn-10diem/aowvn-monika/pull/6)) | V20/D1 | trước khi duyệt PR | đã làm (tra-loi-sol-002: A; giữ ELF/BuildId, ghi giới hạn RAPT) | 03/10/2026 |
 | SOL-001 | Sol hỏi PM: kiểm chứng dọn kho Actions ([PR #5](https://github.com/aowvn-10diem/aowvn-monika/pull/5)) | V23 | sau khi gộp PR | đã làm (tra-loi-sol-001; tự dọn khi gộp) | 03/10/2026 |
