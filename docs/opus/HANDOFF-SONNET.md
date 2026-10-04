@@ -15,11 +15,11 @@
 ## 2. Môi trường & hạ tầng
 | Mục | Sự thật |
 |---|---|
-| Repo | `aowvn-10diem/aowvn-monika` (private). Clone: `git clone https://github.com/aowvn-10diem/aowvn-monika /home/user/aowvn-monika`; đặt `git config user.name Claude; user.email noreply@anthropic.com`. Repo packs công khai (asset release): `aowvn-10diem/aowvn-monika-packs`. |
+| Repo | `aowvn-10diem/aowvn-monika` (công khai). Clone: `git clone https://github.com/aowvn-10diem/aowvn-monika /home/user/aowvn-monika`; đặt `git config user.name Claude; user.email noreply@anthropic.com`. Repo packs công khai (asset release): `aowvn-10diem/aowvn-monika-packs`. |
 | Local | Container **không có Android SDK/Gradle cache** sau khi tái tạo → biên dịch/test bằng **CI** (đẩy nhánh → workflow `Build`). Nhánh làm việc: tạo `viec-<mã>` rồi merge `--no-ff` vào `main` khi xanh. |
 | Gradle test | `./gradlew testDebugUnitTest` (cần SDK; nếu có thể). `build.yml` bỏ qua commit chỉ sửa `docs/**`/`*.md`. |
-| Ký APK / phát hành | Workflow `Release` (dispatch, input `tag`) **ký bằng GitHub Secrets** (đã có) và đăng Releases — không cần khóa cục bộ. Tải APK: `curl -L -H "Accept: application/octet-stream" https://api.github.com/repos/aowvn-10diem/aowvn-monika/releases/assets/<id>` (cần token của phiên). Kiểm chữ ký: `apksigner verify --print-certs` → SHA-256 đúng là `c46902e9…d45ab20c`. |
-| Secrets | `PACKS_TOKEN` (đẩy lên repo packs), `PIXELDRAIN_API_KEY`, secret ký APK, `CLOUDFLARE_API_TOKEN` (sync-config hay đỏ vì thiếu). Giá trị do sếp giữ. |
+| Ký APK / phát hành | Workflow Release dừng trước khi dựng APK nếu thiếu cấu hình ký; sau khi dựng, workflow chặn APK có chứng chỉ Android Debug. APK chính thức được build và ký trên máy phiên bằng keystore trong `<scratchpad>/keystore/`; quy trình an toàn xem `CLAUDE.md`, mục “Phát hành APK”. Kiểm chữ ký bằng `apksigner verify --print-certs`; SHA-256 đúng là `c46902e9…d45ab20c`. |
+| Secrets | Các giá trị `PACKS_TOKEN`, `PIXELDRAIN_API_KEY`, `CLOUDFLARE_API_TOKEN` không ghi vào repo. Theo `CLAUDE.md`, `MONIKA_KEYSTORE_*` và `PIXELDRAIN_API_KEY` chưa được cấu hình GitHub Secrets. |
 | Opus | Phiên ngoài, trả lời trên **nhánh** `docs/opus-tra-loi` (không push được `main`) — gộp bằng `git pull --no-rebase origin docs/opus-tra-loi`. `BANG-TIN.md` xung đột thì giữ hàng của cả hai. |
 | Lịch tự kiểm | `mcp__Claude_Code_Remote__send_later` (15–20 phút, rảnh 4 lượt liền → 30, 23:00–06:00 GMT+7 → 60). Mỗi lượt: (1) `git ls-remote origin` so SHA nhánh Opus; (2) CI; (3) việc đang chờ. Vòng lặp nền trong container sẽ mất khi container bị thu hồi. |
 

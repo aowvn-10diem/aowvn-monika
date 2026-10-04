@@ -276,6 +276,7 @@ else
     echo "$keyres rgss phím Enter → Input::C" | tee -a "$OUT/games/summary.txt"
     [ "$keyres" = KEY_OK ] || result=KEY_FAIL
     adb exec-out screencap -p > "$OUT/games/rgss-after-key.png" 2>/dev/null || true
+    note() { echo "$*" | tee -a "$OUT/games/summary.txt"; }
     # V19 (K10): đường báo lỗi. Giết tiến trình :game bằng SIGSEGV rồi mở lại app: phải có báo cáo native trong files/diag/reports.
     if [ "$keyres" = KEY_OK ]; then
       RD="/data/data/$PKG/files/diag/reports"
@@ -311,7 +312,7 @@ PY
         python3 -c "
 import json,sys
 d=json.load(open(sys.argv[1])); t0=int(sys.argv[2]); pid=sys.argv[3]
-ok = 'native' in str(d.get('kind')).lower() and d.get('component')=='engine:rgss' and (d.get('crumbs') or []) and int(d.get('time') or d.get('id') or 0) >= t0 and (not pid or pid in json.dumps(d))
+ok = (str(d.get('kind')).lower() in ('native','killed') and ('11' in str(d.get('reason')) or 'SIGSEGV' in str(d.get('reason')) or 'native' in str(d.get('kind')).lower())) and d.get('component')=='engine:rgss' and (d.get('session') or {}).get('kind')=='rgss' and str((d.get('session') or {}).get('pid'))==pid and (d.get('crumbs') or []) and int(d.get('time') or d.get('id') or 0) >= t0 and (not pid or pid in json.dumps(d))
 sys.exit(0 if ok else 1)" "$OUT/games/k10-report.json" "$K10_T0" "$K10_PID" && note "K10 OK báo cáo native đúng kind/component/crumbs" || { note "K10 FAIL báo cáo thiếu kind/component/crumbs đúng (xem games/k10-report.json)"; result=K10_FAIL; }
       fi
     fi

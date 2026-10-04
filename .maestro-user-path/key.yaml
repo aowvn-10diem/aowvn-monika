@@ -1,0 +1,4 @@
+appId: com.aow.monika
+---
+- longPressOn: "A"
+- takeScreenshot: 03-virtual-key

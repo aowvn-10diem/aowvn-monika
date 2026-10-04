@@ -1,0 +1,13 @@
+appId: com.aow.monika
+---
+- assertVisible: "Monika-V33"
+- tapOn: "Chơi"
+- runFlow:
+    when:
+      visible: "Tải luôn bằng 4G"
+    commands:
+      - tapOn: "Tải luôn bằng 4G"
+- extendedWaitUntil:
+    visible: "A"
+    timeout: 120000
+- takeScreenshot: 02-open-after-pack
