@@ -39,7 +39,17 @@ jobs:
           for d in dex/classes*.dex; do "$BT/dexdump" -f "$d" 2>/dev/null | grep -E "Class descriptor *: *'Lorg/libsdl/app/SDLActivity;'|Class descriptor *: *'Lvn/aow/monika/rgss/sdl/SDLActivity;'|Class descriptor *: *'Lorg/renpy/android/PythonSDLActivity;'" || true; done | sort -u | tee dexdump.txt
           test "$(wc -l < dexdump.txt)" -eq 3 || { echo "Thiếu lớp (cần đủ 3 dòng)"; exit 1; }
           echo "Đủ SDLActivity của Ren'Py, SDLActivity của RGSS và PythonSDLActivity"
+      - name: Dựng baseline (origin/main) để tính mức APK tăng
+        run: |
+          set -euo pipefail
+          git fetch -q origin main
+          git worktree add ../base origin/main
+          (cd ../base && ./gradlew :app:assembleRelease --console=plain -q)
       - name: Mức APK tăng
         run: |
-          ls -l app/build/outputs/apk/release/*.apk | awk '{print $5, $9}'
-          ls -l renpy/build/outputs/aar/*.aar | awk '{print $5, $9}'
+          set -euo pipefail
+          for a in universal arm64-v8a armeabi-v7a; do
+            N=$(stat -c%s app/build/outputs/apk/release/app-$a-release.apk); B=$(stat -c%s ../base/app/build/outputs/apk/release/app-$a-release.apk)
+            echo "APK $a: main=$B nhánh=$N tăng=$((N-B)) byte"
+          done
+          ls -l renpy/build/outputs/aar/*.aar | awk '{print "AAR renpy:", $5, $9}'
