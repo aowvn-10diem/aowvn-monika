@@ -2,7 +2,7 @@
 
 > **Lệnh trực tiếp về lịch (04/10):** Giữ đúng một lịch lặp kiểm tra60phút, enabled cả khi đang làm để phục hồi khi bị dừng; không pause ở đầu lượt/không tạo one-off khác/không mở lượt trùng. Không bật lịch Sol cũ đã bị chủ dự án dừng. Lệnh này thay bước hẹn one-off bên dưới.
 
-> **Bằng chứng V44 cập nhật 04/10 17:55UTC:** R6@7bf37219376261 XP/Ace PASSmức1, VX FAIL NoMethodError96:934; native37219376256 xác nhận AST/evalcontext/PixelCopy, không suy VX gameplay. #50 head94e (chỉ thêm maskedinspect accessor sau3554) bỏ token ghi khỏi R6/signals, đọc artifactRGSS7ghimID/hash; artifact hết hạn06/10 thì dừng, không fallbackdraft/latest/write. Cần CI/Luna headmới trướcgộp; chỉ thu hìnhdạngmasked trước sửa tiếp.
+> **Bằng chứng V44 cập nhật 04/10 19:00UTC:** Sol tiếp quản #50 head84aa079 (chẩn đoán Range957, CI mới chờ). R6@46bdfc4 run37224825296/art11311902924: XP266s/Ace294s PASS mức1, VX64s FAIL ArgumentError96:957; đã vượt setter934. Build37224825266/CodeQL37224825262 xanh, native37224825328/art11311497877 chứng minh getter/setter17/23 + eval-context + PixelCopy fixture. Không phải VX gameplay. Quyền R6/signals chỉ đọc, artifact RGSS7 ghimID/hash hết hạn06/10 thì failclosed. Local69 Ruby/13privacy PASS; Luna46b yêu cầu PM xem giả định accessor, PM cho tiếp kiểm RAM adapter hẹp, chưa duyệt merge; giữ expect_fail=vx. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM].
 
 # Prompt cho Sol (bản 04/10: đọc thư 60 phút/lần, tự làm dài)
 

@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-04T18:06:36Z",
+  "updatedAt": "2026-10-04T18:56:34.359703Z",
   "mainSha": "3453741f954140432a82c2d449fa4991072bf8ff",
   "app": "App0.7.4 · config33",
   "nextCheck": "2026-10-04T19:06:36Z",
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "#44 gộpf96da6e. R6 mới37219376261@7bf: XP/Ace PASSmức1, VX FAIL NoMethodError. Đủ5/audio/save-load/FPS còn kẹt; V44 đang sửa, không R7.",
+      "note": "#44 đã gộp f96da6e. R6@46bdfc4 run37224825296: XP266s/Ace294s PASS mức1, VX64s FAIL ArgumentError96:957. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếp V44, không R7.",
       "module": "rgss"
     },
     {
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Sol tiếp quản#50 head94e7119: R6@7bf37219376261 XP358s/Ace379s PASSmức1, VX65s FAIL NoMethodError96:934; eval951 đã qua. Native37219376256 marker1/ảnhcam/PixelCopy10–40s xác nhận AST+evalcontext. Bỏ write-token R6/signals, đọc artifactRGSS7 ghimID/hash (hết hạn06/10); privacy10PASS. CI94e đang chạy, cần Luna mới."
+      "note": "Sol tiếp quản #50 head84aa079 (chẩn đoán Range957, CI mới chờ). R6@46bdfc4 run37224825296/art11311902924: XP266s/Ace294s PASS mức1, VX64s FAIL ArgumentError96:957; đã vượt setter934. Build37224825266/CodeQL37224825262 xanh, native37224825328/art11311497877 chứng minh getter/setter17/23 + eval-context + PixelCopy fixture. Không phải VX gameplay. Quyền R6/signals chỉ đọc, artifact RGSS7 ghimID/hash hết hạn06/10 thì failclosed. Local69 Ruby/13privacy PASS; Luna46b yêu cầu PM xem giả định accessor, PM cho tiếp kiểm RAM adapter hẹp, chưa duyệt merge; giữ expect_fail=vx."
     },
     {
       "code": "V45",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-04T18:56:34.359703Z",
+      "text": "Đã đọc Luna18:51 và ảnh/log/verdict R6@46b: XP266/Ace294 đạt mức1, VX64 vẫn FAIL ArgumentError96:957 sau setter934. Native accessor17/23/eval/PixelCopy thật PASS. #50 head84aa chỉ thu Range masked/proof; PM70 sửa trạng thái theo Luna7e. Chưa merge50/70; không đổi expect_fail."
+    },
     {
       "t": "2026-10-04T18:06:36Z",
       "text": "Gộp#21/3453741 sau LunaĐạt đúngd275: giữaudit snapshotlịch sử, BuildmiễnV11docs-only ghiđúng. #50head94e chỉthêm maskedinspect895/915 tìm nguồn accessor; download/hash bằngreadtoken đãPASS@3554, cònCI/native/R6latest."
@@ -905,7 +909,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "R637219376261@7bf: XP358s/Ace379s PASSmức1, VX65s FAIL NoMethodError96:934; nativeAST/evalcontext fixture đã qua. Head94e bỏ quyềnghi R6/signals, artifactRGSS7ghimhash, CI đang chạy. Audio/save-load/FPS/đủ5/máythật [CHƯA KIỂM]."
+      "note": "Sol tiếp quản #50 head84aa079 (chẩn đoán Range957, CI mới chờ). R6@46bdfc4 run37224825296/art11311902924: XP266s/Ace294s PASS mức1, VX64s FAIL ArgumentError96:957; đã vượt setter934. Build37224825266/CodeQL37224825262 xanh, native37224825328/art11311497877 chứng minh getter/setter17/23 + eval-context + PixelCopy fixture. Không phải VX gameplay. Quyền R6/signals chỉ đọc, artifact RGSS7 ghimID/hash hết hạn06/10 thì failclosed. Local69 Ruby/13privacy PASS; Luna46b yêu cầu PM xem giả định accessor, PM cho tiếp kiểm RAM adapter hẹp, chưa duyệt merge; giữ expect_fail=vx. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
     },
     {
       "id": "web",
