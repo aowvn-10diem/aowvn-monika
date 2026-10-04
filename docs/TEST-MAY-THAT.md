@@ -5,6 +5,25 @@ Ghi kết quả vào cột cuối: ✅ đạt · ❌ lỗi (ghi ngắn lỗi gì
 
 Thông tin máy: Hãng/đời máy: ______ · Android: ______ · RAM: ______
 
+## Thử nhanh theo module
+
+Dùng game hoặc tệp đã có trên máy. Một số module cần mạng để tải gói chạy trong lần mở đầu tiên.
+
+| Module | Cần chuẩn bị | Các bước | Đạt khi |
+|---|---|---|---|
+| Máy chơi game cổ điển | ROM của một hệ libretro có trong app | 1. Thư viện → Thêm game từ máy → chọn ROM.<br>2. Chờ lõi tải nếu app yêu cầu.<br>3. Mở game, bấm vài phím ảo.<br>4. Mở rồi thoát menu Monika. | Game vào được, phím điều khiển được và quay lại Thư viện không văng. |
+| 3DS | Tệp game 3DS đã có trên máy | 1. Thư viện → Thêm game từ máy → chọn tệp.<br>2. Chờ gói Azahar tải nếu được yêu cầu.<br>3. Mở game và thử phím ảo.<br>4. Thoát về Thư viện. | Game mở được, phím phản hồi và app quay lại Thư viện bình thường. |
+| Game Java | Tệp `.jar` đã có trên máy | 1. Thư viện → Thêm game từ máy → chọn `.jar`.<br>2. Chờ bước cài game nếu xuất hiện.<br>3. Mở game, bấm phím ảo.<br>4. Thoát rồi mở lại game. | Game mở được, phím phản hồi và app không văng khi mở lại. |
+| Kirikiri | Tệp `.xp3` hoặc thư mục game Kirikiri đã có trên máy | 1. Thư viện → Thêm game từ máy → chọn tệp.<br>2. Chờ gói Kirikiri tải nếu được yêu cầu.<br>3. Mở game, chạm một lựa chọn hoặc cảnh.<br>4. Thoát về Thư viện. | Game mở, thao tác chạm có phản hồi và app quay lại Thư viện bình thường. |
+| Ren'Py | Gói `.zip` game Ren'Py đã có trên máy và JoiPlay đã cài | 1. Thư viện → Thêm game từ máy → chọn `.zip`.<br>2. Chờ giải nén.<br>3. Mở game; làm theo thông báo để chọn thư mục trong JoiPlay.<br>4. Quay lại Monika. | Monika nhận ra game và mở JoiPlay hoặc báo cách khắc phục nếu app ngoài chưa sẵn sàng. |
+| RPG Maker XP/VX/Ace | Gói `.zip` game và JoiPlay đã cài | 1. Thư viện → Thêm game từ máy → chọn `.zip`.<br>2. Chờ giải nén.<br>3. Mở game; làm theo thông báo để chọn thư mục trong JoiPlay.<br>4. Thử phím điều khiển rồi quay lại Monika. | Monika nhận ra game và mở JoiPlay; game nhận thao tác điều khiển. |
+| Game web | Tệp `.swf` hoặc gói `.zip` game web đã có trên máy | 1. Thư viện → Thêm game từ máy → chọn tệp/gói.<br>2. Chờ giải nén nếu có.<br>3. Mở game từ Thư viện.<br>4. Thử thao tác trong game rồi thoát. | Game mở được, thao tác có phản hồi và app quay lại Thư viện bình thường. |
+| Game Android (APK) | APK của game và các tệp dữ liệu đi kèm nếu có | 1. Thư viện → Thêm game từ máy → chọn APK.<br>2. Làm theo hộp thoại cài đặt Android.<br>3. Mở game đã cài.<br>4. Dùng nút quay lại để trở về Monika. | Android cài được APK, game mở và Monika vẫn hoạt động sau khi quay lại. |
+| Vá Việt hóa ROM | ROM libretro trong Thư viện và bản vá IPS/BPS/UPS tương ứng đã có trên máy | 1. Mở menu của game trong Thư viện.<br>2. Chọn “Vá Việt hóa (IPS/BPS/UPS)”.<br>3. Chọn bản vá và đợi hoàn tất.<br>4. Mở game mới có hậu tố “(Việt hóa)”. | Tạo được game đã vá, ROM gốc còn nguyên và game mới có trong Thư viện. |
+| Đọc bài và thông báo | Kết nối mạng | 1. Mở Trang chủ, kéo xuống làm mới danh sách bài.<br>2. Mở một bài rồi quay lại.<br>3. Chọn nhãn nhận thông báo trong Cài đặt.<br>4. Thoát vào lại Cài đặt để kiểm tra. | Bài mở được; lựa chọn nhãn thông báo vẫn còn sau khi mở lại app. |
+| Thư viện và tải game | Kết nối mạng và một bài có tệp tải phù hợp để thử | 1. Mở bài có tệp tải.<br>2. Bấm Tải và theo dõi tiến độ.<br>3. Chờ tải, giải nén hoàn tất nếu có.<br>4. Mở Thư viện. | Tệp tải xong; game xuất hiện trong Thư viện và có thể mở. |
+| Trong lúc chơi | Một game nhúng có lớp phủ Monika | 1. Mở menu Monika.<br>2. Đổi độ mờ phím rồi tiếp tục chơi.<br>3. Xoay máy nếu game hỗ trợ xoay.<br>4. Dùng Back để đóng/mở menu.<br>5. Thoát game về Thư viện. | Phím và menu phản hồi; app không văng và trở lại Thư viện. |
+
 ## 1. Cài đặt & mở app
 
 | # | Thao tác | Kết quả mong đợi | KQ |
