@@ -1,6 +1,6 @@
 {
  "main": "92412b0",
- "branch": "8cc7fd1",
+ "branch": "fa57d05",
  "sol": {
   "V30": "30666b8 #25 duyệt",
   "V33": "ba68d0f #26 duyệt",
@@ -23,8 +23,8 @@
  "idle": 0,
  "cadence": 30,
  "dashboard": "https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d",
- "dashboard_state": "scratchpad/monika-tien-do/state.json",
- "dashboard_version": 54,
+ "dashboard_state": "docs/opus/pm/bang-tien-do/state.json (nhánh docs/opus-tra-loi); bản trên trang = ArtifactData board/state của artifact 7UC9kqrWqv3GNUhhtt4z5d",
+ "dashboard_version": 56,
  "rule": "chỉ nhắn sếp khi cần quyết; tiến độ ghi lên trang; Sol/Haiku không sửa KE-HOACH",
  "trigger": "trig_01Nk2NQXsfxm8hQLAZAo4ZsS",
  "note": "Sol cũ đã bàn giao (comment #22 08:11) và dừng — xong kiểm 2/2.",
@@ -38,6 +38,8 @@
   "Q5": "2026-10-04T02:53:57.703Z",
   "Q6": "2026-10-04T02:54:25.587Z"
  },
- "public_page": "Landing tải app: https://aowvn-10diem.github.io/aowvn-monika/ (docs/index.html trên docs/opus-tra-loi; nguồn scratchpad/landing/landing-body.html + build.py; xem trước https://claude.ai/artifact/9Rkvv3dhzNkc5PgGYvaVyb). Trang tiến độ công khai đã bỏ.",
- "pages": "200 (bật 04/10 trước 14:31)"
+ "public_page": "Landing tải app: https://aowvn-10diem.github.io/aowvn-monika/ (docs/index.html trên docs/opus-tra-loi; nguồn docs/opus/pm/landing/landing-body.html + build.py). Trang tiến độ công khai đã bỏ.",
+ "pages": "200 (bật 04/10 trước 14:31)",
+ "sonnet_v46_session": "session_012Mjdz7xMK4GT44oSdV47Gc",
+ "baseline_check_tokens": "~15M cache_read/lượt (22–26 lần gọi, ngữ cảnh 600–740k)"
 }

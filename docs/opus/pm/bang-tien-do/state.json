@@ -1,22 +1,10 @@
 {
- "updatedAt": "2026-10-04T07:36:00Z",
+ "updatedAt": "2026-10-04T07:41:00Z",
  "mainSha": "92412b0",
  "app": "App 0.7.4 · config 32",
  "nextCheck": "2026-10-04T08:06:00Z",
- "headline": "Landing page tải app đã chạy: aowvn-10diem.github.io/aowvn-monika. PM duyệt thêm 8 PR (GitHub tự kiểm, bản tin tự động, Symbian dựng thử, Ren'Py P3…). GẤP: không tìm thấy file khóa ký app — sếp xem câu KEY.",
+ "headline": "Landing page tải app đã chạy: aowvn-10diem.github.io/aowvn-monika. PM duyệt thêm 8 PR (GitHub tự kiểm, bản tin tự động, Symbian dựng thử, Ren'Py P3…). Khóa ký đã có trong GitHub Secrets: từ nay APK ký và phát hành trên GitHub.",
  "needsBoss": [
-  {
-   "code": "KEY",
-   "urgency": "Gấp",
-   "kind": "one",
-   "question": "File khóa ký app (aowvn-release.jks + mật khẩu) đang ở đâu? Phiên Sonnet và phiên PM đều không có, repo cố ý không lưu, GitHub Secrets chưa có.",
-   "recommend": "Nếu sếp giữ bản sao: thêm ngay 4 GitHub Secret MONIKA_KEYSTORE_BASE64, MONIKA_KEYSTORE_PASSWORD, MONIKA_KEY_ALIAS, MONIKA_KEY_PASSWORD theo docs/CAP-NHAT.md. Không gửi khóa qua chat. Nếu mất hẳn: bản sau phải ký khóa mới, người dùng phải gỡ app cũ rồi cài lại.",
-   "options": [
-    "Tôi giữ bản sao, sẽ thêm vào GitHub Secrets",
-    "Khóa ở phiên Claude khác, tôi sẽ lấy",
-    "Không còn bản nào"
-   ]
-  },
   {
    "code": "G7",
    "urgency": "Gấp",
@@ -546,9 +534,9 @@
    "code": "V38",
    "title": "Gửi file khóa ký cho sếp để sao lưu",
    "owner": "Sonnet",
-   "status": "ket",
+   "status": "xong",
    "module": "ci",
-   "note": "Phiên Sonnet và phiên PM đều không có file khóa ký. Chờ sếp cho biết ai giữ bản sao."
+   "note": "Khóa đã nằm an toàn trong GitHub Secrets."
   },
   {
    "code": "V39",
@@ -593,10 +581,10 @@
   {
    "code": "V43",
    "title": "Phát hành APK ký trên GitHub thay vì build trong phiên",
-   "owner": "Sonnet",
-   "status": "sep",
+   "owner": "Sol",
+   "status": "dang",
    "module": "ci",
-   "note": "Chờ sếp thêm GitHub Secrets khóa ký sau khi nhận file (V38)."
+   "note": "Bước 1: Sol chạy thử ký trên GitHub, so đúng chứng thư (không phát hành). Bước 2: Sonnet phát hành thật."
   },
   {
    "code": "V44",
@@ -613,6 +601,14 @@
    "status": "cho",
    "module": "renpy8",
    "note": "Chỉ bật cho người dùng sau khi CI mở được game mẫu."
+  },
+  {
+   "code": "V46",
+   "title": "Đúc skill để giảm 50% hạn mức (theo lệnh sếp)",
+   "owner": "Sonnet",
+   "status": "dang",
+   "module": "ci",
+   "note": "Phiên Sonnet mới riêng cho việc này. Đo thật: mỗi lượt kiểm của PM tốn ~15 triệu token đọc lại ngữ cảnh."
   }
  ],
  "gates": [
@@ -688,6 +684,14 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-04T07:41:00Z",
+   "text": "Sếp xác nhận khóa ký đã có trong GitHub Secrets → V38 xong. Giao Sol chạy thử ký trên GitHub và so chứng thư (V43 bước 1)."
+  },
+  {
+   "t": "2026-10-04T07:40:00Z",
+   "text": "Đo hạn mức thật: mỗi lượt kiểm của PM ~15 triệu token, gần hết là đọc lại ngữ cảnh dài. Giao Sonnet V46 (đúc skill, phiên mới) để chạy lượt kiểm trong phiên gọn, đích giảm ≥50%."
+  },
   {
    "t": "2026-10-04T07:36:00Z",
    "text": "GitHub Pages chạy (landing tải app). Gộp V36, L10, Ren'Py P2. PM duyệt 8 PR, trả lời 4 thư hỏi của Sol, giao Sonnet V44, Sol V45. V38 kẹt: không tìm thấy file khóa ký."
@@ -1043,6 +1047,13 @@
   }
  ],
  "decisions": [
+  {
+   "code": "KEY",
+   "question": "File khóa ký app đang ở đâu?",
+   "answer": "Đã có trong GitHub Secrets (MONIKA_KEYSTORE_*, MONIKA_KEY_*), thêm khoảng 5 ngày trước. Từ nay ký và phát hành trên GitHub.",
+   "at": "2026-10-04T07:41:00Z",
+   "by": "Sếp"
+  },
   {
    "code": "—",
    "question": "Trang công khai cho người dùng?",
