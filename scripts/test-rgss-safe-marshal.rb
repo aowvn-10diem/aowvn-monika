@@ -32,4 +32,18 @@ rejects deep, 'lồng 20 cấp'
 same = 'a'; rejects Marshal.dump([same, same]), "liên kết đối tượng '@' (không có trong Scripts.*data thật)"
 big = Marshal.dump(Array.new(250_000) { 0 })
 rejects big, '250.000 phần tử'
+# Giải nén có trần: dữ liệu hợp lệ qua, "bom nén" bị từ chối, dữ liệu hỏng báo lỗi.
+check SafeInflate.inflate(Zlib::Deflate.deflate('puts 1')) == 'puts 1'.b, 'giải nén hợp lệ'
+bomb = Zlib::Deflate.deflate("\0" * (20 * 1024 * 1024), Zlib::BEST_COMPRESSION)
+check bomb.bytesize < 100_000, "bom nén thử rất nhỏ (#{bomb.bytesize} byte → 20 MB)"
+begin
+  SafeInflate.inflate(bomb); check false, 'bom nén phải bị từ chối'
+rescue RuntimeError => e
+  check e.message.include?('vượt'), 'bom nén 20 MB bị từ chối (trần 8 MB/script)'
+end
+begin
+  SafeInflate.inflate('khong phai zlib'); check false, 'dữ liệu hỏng phải báo lỗi'
+rescue Zlib::Error
+  check true, 'dữ liệu nén hỏng báo lỗi Zlib'
+end
 puts 'ALL OK'

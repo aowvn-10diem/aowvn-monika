@@ -1,4 +1,5 @@
-# Bộ đọc Marshal 4.8 tối thiểu, an toàn cho Scripts.*data không tin cậy. Dùng bởi scripts/rgss-script-shape.rb.
+require 'zlib'
+# Bộ đọc Marshal 4.8 tối thiểu + giải nén có trần, an toàn cho Scripts.*data không tin cậy. Dùng bởi scripts/rgss-script-shape.rb.
 # Bộ đọc Marshal 4.8 tối thiểu cho Scripts.*data = [[id, tiêu đề, mã nén], …].
 class SafeMarshal
   MAX_DEPTH = 8          # Scripts.*data chỉ sâu 3: mảng → mảng → chuỗi (+ ivar)
@@ -66,3 +67,26 @@ class SafeMarshal
   end
 end
 
+
+# Giải nén zlib có trần đầu ra (chống "bom nén"): nạp từng mảnh nhỏ, vượt trần → dừng. Mỗi script RPG Maker thực tế vài chục KB.
+module SafeInflate
+  MAX_SCRIPT_BYTES = 8 * 1024 * 1024   # sau giải nén, mỗi script
+  MAX_TOTAL_BYTES  = 128 * 1024 * 1024 # sau giải nén, cả tệp
+  CHUNK = 1024
+
+  def self.inflate(data, limit = MAX_SCRIPT_BYTES)
+    z = Zlib::Inflate.new
+    out = +''.b
+    pos = 0
+    while pos < data.bytesize
+      out << z.inflate(data.byteslice(pos, CHUNK))
+      raise "dữ liệu giải nén vượt #{limit} byte" if out.bytesize > limit
+      pos += CHUNK
+    end
+    out << z.finish unless z.finished?
+    raise "dữ liệu giải nén vượt #{limit} byte" if out.bytesize > limit
+    out
+  ensure
+    z&.close
+  end
+end

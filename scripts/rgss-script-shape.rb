@@ -24,11 +24,16 @@ require_relative 'rgss_safe_marshal'
 
 path = ARGV[0] or abort('thiếu đường dẫn Scripts.*data')
 ctx = (ARGV[1] || 3).to_i
+MAX_FILE = 64 * 1024 * 1024 # Scripts.*data thực tế < 5 MB
+abort("tệp quá lớn (#{File.size(path)} byte, tối đa #{MAX_FILE})") if File.size(path) > MAX_FILE
 data = SafeMarshal.new(File.binread(path)).read
+total = 0
 bad = 0
 data.each_with_index do |entry, i|
   id, title, packed = entry
-  code = Zlib::Inflate.inflate(packed).force_encoding('UTF-8')
+  code = SafeInflate.inflate(packed).force_encoding('UTF-8')
+  total += code.bytesize
+  abort("tổng dữ liệu giải nén vượt #{SafeInflate::MAX_TOTAL_BYTES} byte") if total > SafeInflate::MAX_TOTAL_BYTES
   code = code.encode('UTF-8', 'Shift_JIS', invalid: :replace, undef: :replace) unless code.valid_encoding?
   begin
     RubyVM::InstructionSequence.compile(code, title.to_s)
