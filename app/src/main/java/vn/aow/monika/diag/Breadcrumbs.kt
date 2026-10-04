@@ -18,7 +18,7 @@ object Breadcrumbs {
 
     fun add(c: Context, tag: String, msg: String, pid: Int = android.os.Process.myPid()) {
         runCatching {
-            val line = "${java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.US).format(System.currentTimeMillis())} [$tag] ${msg.replace('\n', ' ').take(200)}\n"
+            val line = "${java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.US).format(System.currentTimeMillis())} [${Diagnostics.scrub(c, tag)}] ${Diagnostics.scrub(c, msg).replace('\n', ' ').take(200)}\n"
             synchronized(lock) {
                 val f = file(c, pid)
                 if (f.length() > MAX_BYTES) f.writeText(f.readLines().takeLast(KEEP_LINES).joinToString("\n", postfix = "\n"))
