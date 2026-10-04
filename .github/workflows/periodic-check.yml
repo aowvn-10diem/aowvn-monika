@@ -1,0 +1,66 @@
+name: Kiểm định kỳ (V42)
+on:
+  schedule:
+    - cron: '43 20 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/periodic-check.yml'
+      - '.github/workflows/check-packs.yml'
+      - 'scripts/periodic-issue.py'
+      - 'scripts/test-periodic-check.py'
+      - 'scripts/check-config-links.py'
+permissions:
+  contents: read
+concurrency:
+  group: periodic-check-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  cancel-in-progress: false
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/test-periodic-check.py
+      - run: python3 scripts/check-config-links.py --fail-on-error --report out/links.md --json-output out/links.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: periodic-links
+          path: out/
+          retention-days: 3
+  packs:
+    uses: ./.github/workflows/check-packs.yml
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Cài NDK cho J2ME Loader
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'ndk;22.1.7171670' 'cmake;3.22.1' > /dev/null
+      - run: ./gradlew testDebugUnitTest --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: periodic-unit
+          path: app/build/reports/tests/
+          retention-days: 3
+  issue:
+    needs: [links, packs, unit]
+    if: always() && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Duy trì đúng một issue và đóng khi xanh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        run: python3 scripts/periodic-issue.py
