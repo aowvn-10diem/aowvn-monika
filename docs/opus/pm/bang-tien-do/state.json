@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T10:55:29Z",
-  "mainSha": "b65c3157eabe4813e42f870c5e2ea7e19c356379",
+  "updatedAt": "2026-10-04T11:36:00Z",
+  "mainSha": "f96da6edd481863dfdd15a15d2359eabe5fcd8ad",
   "app": "App 0.7.4 · config 32",
-  "nextCheck": "2026-10-04T09:10:00Z",
-  "headline": "Sol tiếp quản PM và phần Sonnet tới22:00 05/10 GMT+7. Đã gộp báo lỗi kèm ảnh và sửa bản tin/guard snapshot; Gemini Flash chờ kích hoạt F01/F02.",
+  "nextCheck": "2026-10-04T12:36:00Z",
+  "headline": "Sol tiếp quản tạm PM/engine. Đã gộp D5/V22/R6 mức1/skill; bản tin hồi phục; snapshot12core công khai. V44 đang thử, Gemini F01/F02 chờ kích hoạt.",
   "needsBoss": [
     {
       "code": "G7",
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "PM đọc ảnh chụp: game XP vào gameplay sau 60 giây; VX, VX Ace hiện hộp lỗi script → V44. Sol đang cho job tự kết luận từng game.",
+      "note": "Job mức1#44 đã gộp: XP PASS, VX/Ace lỗi đúng expected; R6 đủ5 và audio/save/load/FPS chưa kiểm. V44 đang xử lý.",
       "module": "rgss"
     },
     {
@@ -166,16 +166,16 @@
       "code": "V21",
       "title": "Nút \"Báo lỗi game này\": ảnh mặc định, chọn loại lỗi bằng nút",
       "owner": "Sol",
-      "status": "dang",
-      "note": "D4 đã gộp (môi trường phiên trong báo cáo lỗi). Còn D5: ảnh chụp màn hình nhỏ trong báo cáo.",
+      "status": "xong",
+      "note": "D4+D5#60 đã gộp; ảnh JPEG480x222/2776B, JSON9465B fixture API34 xanh. Worker chưa deploy, engine khác/máy thật chưa kiểm.",
       "module": "diag"
     },
     {
       "code": "V22",
       "title": "Bắt lỗi script engine + phát hiện màn đen",
       "owner": "Sol",
-      "status": "dang",
-      "note": "Bắt lỗi + màn đen đạt test. PM yêu cầu bớt quyền token trong workflow rồi chạy lại máy ảo.",
+      "status": "xong",
+      "note": "#46 đã gộp sau Luna+Build/signals/real-packs xanh; K3 máy thật/màn đen chưa kiểm.",
       "module": "diag"
     },
     {
@@ -431,7 +431,7 @@
       "title": "Ghim phiên bản lõi giả lập (GB/GBA/NES)",
       "owner": "Sol",
       "status": "dang",
-      "note": "Workflow chụp lõi GB/GBA/NES đã gộp; Sol đang chạy để lấy bản chụp rồi ghim vào config.",
+      "note": "Snapshot cores-gb-gba-nes-1/12ZIP đã công khai đúng run37196834615; PR#67 ghim config33 đang chờ Luna/PM, CI xanh.",
       "module": "libretro"
     },
     {
@@ -526,9 +526,9 @@
       "code": "S0",
       "title": "Dựng thử engine Symbian trên CI",
       "owner": "Sol",
-      "status": "dang",
+      "status": "xong",
       "module": "symbian",
-      "note": "PM duyệt: dựng engine Symbian trên CI thành công (944 giây)."
+      "note": "Native EKA2L1 đúng cf6e5c5 PASS37184987946, chỉ spike CI; chưa nhúng/chơi game, cache nóng chưa kiểm."
     },
     {
       "code": "V38",
@@ -544,7 +544,7 @@
       "owner": "Sol",
       "status": "xong",
       "module": "ci",
-      "note": "Bản tin tự động trên nhánh bot/trang-thai đã chạy; PM đọc 1 file thay cho chục lần gọi."
+      "note": "Sửa phân trang#63 đã gộp; PMdigestMAIN37196924569 xanh, bản tin bot đã hồi phục."
     },
     {
       "code": "L10",
@@ -568,7 +568,7 @@
       "owner": "Sol",
       "status": "xong",
       "module": "ci",
-      "note": "Đã gộp: Dependabot hằng tuần + CodeQL. Sol xử lý PR nâng phiên bản theo luật mới; bản lớn chờ PM."
+      "note": "Quét/Dependabot đã gộp; documentfile#57 merged. Coroutines#58 sửa1.9.0 CI xanh chờ Luna; major#55/#56 chưa gộp."
     },
     {
       "code": "V40",
@@ -589,10 +589,10 @@
     {
       "code": "V44",
       "title": "Sửa tương thích RPG Maker VX/VX Ace (lỗi script khi mở game)",
-      "owner": "Sonnet",
+      "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "PR #50: chạy được build và test; còn cần giới hạn/test phần SafeMarshal và chạy 3 game thật (sau khi V25 gộp)."
+      "note": "Sol tiếp quản#50 948c2c9; lấy script VX RGSSAD v1 và che nội dung xanh, Build/R6 đang chạy. Chưa có kết luận phục hồi Ace/VX."
     },
     {
       "code": "V45",
@@ -605,10 +605,10 @@
     {
       "code": "V46",
       "title": "Đúc skill để giảm 50% hạn mức (theo lệnh sếp)",
-      "owner": "Sonnet",
-      "status": "dang",
+      "owner": "Sol (tiếp quản Sonnet)",
+      "status": "xong",
       "module": "ci",
-      "note": "PR #51 sẵn sàng: 9 skill + CLAUDE.md gọn từ 11,4 KB còn 2,6 KB. Đã sửa câu sai về khóa ký. Chờ Luna tiền duyệt."
+      "note": "#51 gộp sau Luna/Build,27test local và5ZIP thật PASS; mức giảm hạn mức/ngữ cảnh phiên mới chưa đo."
     }
   ],
   "gates": [
@@ -685,8 +685,12 @@
   ],
   "log": [
     {
-      "at": "2026-10-04T10:55:29Z",
-      "text": "Lệnh chủ dự án: Sol tiếp quản tạm PM/Sonnet; Luna tiếp L07/L09; Gemini Flash chuẩn bị F01/F02, chưa kích hoạt. Issue65."
+      "t": "2026-10-04T11:36:00Z",
+      "text": "Tiếp quản: gộp#63/#61/#60/#46/#57/#51/#44 sau Luna/CI. Snapshot12core công khai; PR#67 pinconfig và#58 coroutines1.9.0 CI xanh chờreview. V44 VXshape xanh, runtime đang chạy. GeminiF01/F02 chưa kích hoạt."
+    },
+    {
+      "text": "Lệnh chủ dự án: Sol tiếp quản tạm PM/Sonnet; Luna tiếp L07/L09; Gemini Flash chuẩn bị F01/F02, chưa kích hoạt. Issue65.",
+      "t": "2026-10-04T10:55:29Z"
     },
     {
       "t": "2026-10-04T08:40:00Z",
@@ -825,7 +829,7 @@
         "phone": "xong",
         "release": "xong"
       },
-      "note": "Sếp đã chơi được trên điện thoại (04/10). Lõi đang tải bản mới nhất từ buildbot, chưa ghim phiên bản (V32)."
+      "note": "Chơi điện thoại theo chủ dự án; snapshot12coreGB/GBA/NES đã công khai, PR#67 ghimconfig33 chưa gộp; các core khác giữ legacy."
     },
     {
       "id": "3ds",
@@ -873,11 +877,11 @@
       "scope": "mkxp-z nhúng, gói rgss 64-bit và 32-bit",
       "steps": {
         "build": "xong",
-        "auto": "xong",
+        "auto": "dang",
         "phone": "cho",
         "release": "sep"
       },
-      "note": "CI chạy 3 game thật: XP vào tới tiêu đề và hội thoại; VX và VX Ace lỗi script → Sonnet sửa (V44). Chưa phát hành gói: chờ giấy phép (G8)."
+      "note": "R6 mức1 XP PASS thật, VX/Ace lỗi script; V44 đang sửa trên CI. Audio/save-load/FPS và đủ5game chưa kiểm; gói vẫn draft."
     },
     {
       "id": "web",
@@ -963,12 +967,12 @@
       "name": "Symbian / N-Gage",
       "scope": "Game Nokia Symbian, N-Gage",
       "steps": {
-        "build": "dang",
+        "build": "xong",
         "auto": "cho",
         "phone": "cho",
         "release": "cho"
       },
-      "note": "Đã dựng thử engine EKA2L1 trên CI thành công (S0). Bước nhúng vào app chưa giao. Cách nhập firmware chờ sếp (G4A2)."
+      "note": "S0 nativeCI đúng head đã PASS. Chỉ spike, chưa nhúng vào app/chơi game; nhập firmware chờG4A2."
     },
     {
       "id": "feed",
@@ -1046,7 +1050,7 @@
         "phone": "cho",
         "release": "dang"
       },
-      "note": "Đã che token, khóa, đường dẫn riêng trước khi lưu và gửi (V28). Máy chủ báo lỗi bản mới chưa triển khai lên Cloudflare (cần secret, Q4)."
+      "note": "D4/D5/V22 đã gộp, fixtureAPI34+unit xanh. Worker chưa deploy; mànđenK3/máy thật/engine khác chưa kiểm."
     },
     {
       "id": "ci",
@@ -1059,7 +1063,7 @@
         "phone": "na",
         "release": "dang"
       },
-      "note": "Đã duyệt: bản tin tự động (V39), kiểm hằng ngày (V42), CodeQL + Dependabot (V41). Phát hành ký trên GitHub cần khóa ký vào Secrets (V38 đang kẹt). Landing page tải app đã chạy trên GitHub Pages."
+      "note": "V39/V42/V41 đã gộp, bot hồi phục; skillV46 qua5ZIP thật. Khóa ký được chủ dự án xác nhận có trong Secrets, không đọc giá trị. V43 ký/phát hành giữkẹtSOL012."
     }
   ],
   "decisions": [

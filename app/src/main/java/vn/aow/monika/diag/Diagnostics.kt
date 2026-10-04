@@ -355,6 +355,18 @@ object Diagnostics {
         return record(c, r)
     }
 
+    /** Engine báo lỗi nhưng tiến trình còn sống/thoát êm; luôn qua ranh giới scrub/save chung. */
+    internal fun recordEngineSignal(c: Context, engine: String, what: String, lines: List<String>): Report {
+        val now = System.currentTimeMillis()
+        val s = read(c)?.takeIf { it.pid == Process.myPid() }
+        Breadcrumbs.add(c, "engine-signal", "$engine: $what")
+        return record(c, Report(id = now, time = now, kind = "handled",
+            title = "Lỗi engine $engine: $what", app = appLine(), device = deviceLine(),
+            session = s, reason = what, detail = lines.joinToString("\n"), log = lines,
+            fromGame = true, component = "engine:$engine", env = envLine(c),
+            crumbs = Breadcrumbs.read(c, Process.myPid())))
+    }
+
     /** Gửi ngầm (không clipboard) nếu người chơi không tắt và config `crash.autoSend` bật. Chạy ở luồng nền. */
     fun autoSend(c: Context, http: OkHttpClient, r: Report, endpoint: String, enabledByConfig: Boolean, enabledByUser: Boolean) {
         if (!enabledByConfig || !enabledByUser || endpoint.isBlank() || r.sent) return

@@ -1,0 +1,52 @@
+{
+  "level": 1,
+  "expectFail": [
+    "ace",
+    "vx"
+  ],
+  "matchesExpectation": true,
+  "games": [
+    {
+      "game": "xp",
+      "verdict": "PASS_LEVEL_1",
+      "process": "com.aow.monika:game",
+      "pid": "3105",
+      "alive": true,
+      "errorDialog": false,
+      "brightnessStddev": 34.318,
+      "threshold": 10,
+      "observedSeconds": 388,
+      "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+      "expected": "PASS_LEVEL_1",
+      "matchesExpectation": true
+    },
+    {
+      "game": "vx",
+      "verdict": "FAIL",
+      "process": "com.aow.monika:game",
+      "pid": "9108",
+      "alive": true,
+      "errorDialog": true,
+      "brightnessStddev": 45.075,
+      "threshold": 10,
+      "observedSeconds": 66,
+      "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+      "expected": "FAIL",
+      "matchesExpectation": true
+    },
+    {
+      "game": "ace",
+      "verdict": "FAIL",
+      "process": "com.aow.monika:game",
+      "pid": "9274",
+      "alive": true,
+      "errorDialog": true,
+      "brightnessStddev": 39.487,
+      "threshold": 10,
+      "observedSeconds": 65,
+      "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+      "expected": "FAIL",
+      "matchesExpectation": true
+    }
+  ]
+}

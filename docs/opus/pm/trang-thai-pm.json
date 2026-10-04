@@ -1,11 +1,11 @@
 {
-  "main": "b65c3157eabe4813e42f870c5e2ea7e19c356379",
+  "main": "f96da6edd481863dfdd15a15d2359eabe5fcd8ad",
   "branch": "fa57d05",
   "sol": {
-    "V30": "30666b8 #25 duyệt",
-    "V33": "ba68d0f #26 duyệt",
-    "V34": "be5d962 #27 duyệt",
-    "V35": "71985444 #30 yêu cầu sửa"
+    "V30": "xong#25",
+    "V33": "xong#26 API34 PASS37170178145",
+    "V34": "xong#27",
+    "V35": "xong#30"
   },
   "haiku": {
     "ccr-725394cf-n8mwms": "f26b8af"
@@ -19,24 +19,28 @@
     "20": "L03 Luna duyệt",
     "18": "L02 Luna (đã trả lời thư)",
     "14": "SOL-003 (đã trả lời)",
-    "44": "Sol đã đẩy f86b81c, chờ CI + Luna",
-    "46": "Sol đã đẩy 9d7329a, chờ CI + Luna",
-    "50": "Luna: chờ R6 sau V25",
-    "51": "af8f09c chờ CI + Luna",
+    "44": "gộpf96da6e, R6 mức1 xanh37197284896; VX/Ace fail đúng expected",
+    "46": "gộp5d352a7; Luna + CI xanh, K3 máy thật chưa kiểm",
+    "50": "948c2c9, R6 VXshape xanh; đang Build/R6 37198897637/633",
+    "51": "gộp0e17edf,27test +5ZIP thật PASS; quota chưa đo",
     "34": "PM duyệt; head 1c64c02 chỉ gộp main",
     "55-57": "Dependabot → Sol (tra-loi-sol-009)",
     "60": "gộp b65c315; LunaĐạt + Build/API34 xanh",
-    "61": "gộp8996b31; publication37196834615 xanh, chờ manifest/config",
-    "63": "gộp4e320e8; chờ botMAIN"
+    "61": "gộp8996b31; publication37196834615 SUCCESS",
+    "63": "gộp4e320e8; PMdigestMAIN37196924569 SUCCESS",
+    "57": "gộpa9cc79f, documentfile1.1.0",
+    "58": "ea3650f sửa coroutines1.9.0, Build37198216723/real-packs37198216702 xanh, chờ Luna mới",
+    "66": "a3ae8f5, đồng bộ PM/Gemini chờ Luna; PR docs-only không tự giả Build",
+    "67": "2463be5 config33, Build37197486345/real-packs37197486314 xanh, chờ Luna"
   },
   "idle": 0,
   "cadence": 30,
   "dashboard": "https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d",
-  "dashboard_state": "docs/opus/pm/bang-tien-do/state.json (nhánh docs/opus-tra-loi); bản trên trang = ArtifactData board/state của artifact 7UC9kqrWqv3GNUhhtt4z5d",
+  "dashboard_state": "Nguồn GitHub: docs/opus/pm/bang-tien-do/state.json trên nhánh PM. Artifact Claude bên ngoài chưa cập nhật trong lượt tiếp quản.",
   "dashboard_version": 58,
-  "rule": "chỉ nhắn sếp khi cần quyết; tiến độ ghi lên trang; Sol/Haiku không sửa KE-HOACH",
+  "rule": "Sol tiếp quản PM theo lệnh chủ dự án; code Sol cần Luna + CI; không nhắn sếp; giữ cổng phát hành/ký.",
   "trigger": "trig_01Nk2NQXsfxm8hQLAZAo4ZsS",
-  "note": "Sol cũ đã bàn giao (comment #22 08:11) và dừng — xong kiểm 2/2.",
+  "note": "Sol tiếp quản tạm PM/Sonnet theo issue65 tới05/10 15:00UTC; Luna review độc lập. Gemini F01/F02 chờ kích hoạt.",
   "luna": {
     "L05": "#29 duyệt",
     "L06": "#31 duyệt"
@@ -54,7 +58,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-04T10:55:29Z",
+  "updated_at": "2026-10-04T11:36:00Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [
