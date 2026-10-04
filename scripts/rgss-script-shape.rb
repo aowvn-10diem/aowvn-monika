@@ -75,6 +75,7 @@ data.each_with_index do |entry, i|
     code = MonikaRuby18.repair(code, ruby18_budget, trace)
     prepared = MonikaRuby18.instrument_eval_calls(code, ruby18_budget)
     puts "eval-callsite script=#{i} wrapped=#{prepared.scan('::MonikaRuby18.eval_source(').size}" unless prepared.equal?(code)
+    puts "accessor-callsite script=#{i} wrapped=#{prepared.scan('::MonikaRuby18.accessor_constants(').size}" if prepared.include?('::MonikaRuby18.accessor_constants(')
     code = prepared
   end
   inspections.select { |index, _| index == i }.each do |_, line|

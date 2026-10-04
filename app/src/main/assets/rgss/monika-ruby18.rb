@@ -14,6 +14,9 @@ module MonikaRuby18
   MAX_EVAL_SITES = 64
   MAX_EVAL_CACHE_ENTRIES = 32
   MAX_EVAL_CACHE_BYTES = 64 * 1024
+  MAX_ACCESSOR_CONSTANTS = 256
+  BUILTIN_CLASS = Kernel.instance_method(:class)
+  BUILTIN_CONSTANTS = Module.instance_method(:constants)
   # super là lời gọi với danh sách đối số; Ruby1.8 cho phép SPACE trước
   # '(' + splat, Ruby3 cần super(...). Các từ khóa điều khiển vẫn bị loại.
   KEYWORDS = %w[def class module if elsif unless while until for case when begin end return yield rescue ensure not and or].freeze
@@ -86,25 +89,90 @@ module MonikaRuby18
 
   def self.applied_count; @applied_count.to_i; end
 
+  # Mẫu legacy ở class body: for name in self.class.constants;
+  # attr_accessor name.downcase.to_sym; end. self.class là Class, không phải
+  # lớp đang khai báo. Chỉ fallback khi API gốc chưa tạo collection nào;
+  # không sửa Class/Module toàn cục, không che NoMethodError ở chỗ khác.
+  def self.accessor_constants(owner, original)
+    return original unless Class === owner && original.is_a?(Array) && original.empty?
+    class_method = owner.method(:class)
+    constants_method = owner.method(:constants)
+    # Kernel#class là wrapper internal Ruby trên MRI3.1; Method#== với
+    # bind không ổn định như method C. So owner/source_location với bản
+    # chụp trước khi game chạy, không giả định source_location luôn nil.
+    return original unless class_method.owner == BUILTIN_CLASS.owner &&
+      class_method.source_location == BUILTIN_CLASS.source_location &&
+      constants_method == BUILTIN_CONSTANTS.bind(owner)
+    names = owner.constants
+    return original unless names.is_a?(Array) && names.size <= MAX_ACCESSOR_CONSTANTS
+    return original unless names.all? do |name|
+      (name.is_a?(Symbol) || name.is_a?(String)) && name.to_s.bytesize <= 128 &&
+        name.to_s.match?(/\A[A-Z][A-Za-z0-9_]*\z/)
+    end
+    names
+  end
+
+  # Nhận đúng vòng FOR một biến, chỉ một lời gọi attr_accessor(var.downcase.to_sym).
+  # Không nhận each/custom collection/receiver hay vòng có thêm tác dụng phụ.
+  def self.accessor_collection(node)
+    return nil unless node.type == :FOR
+    collection, scope = node.children
+    return nil unless collection&.type == :CALL && collection.children[1..2] == [:constants, nil]
+    klass = collection.children[0]
+    return nil unless klass&.type == :CALL && klass.children[1..2] == [:class, nil] && klass.children[0]&.type == :SELF
+    return nil unless scope&.type == :SCOPE
+    _, args, body = scope.children
+    return nil unless args&.type == :ARGS && args.children[0] == 1
+    assignment = args.children[1]
+    return nil unless assignment&.type == :LASGN && assignment.children[0].is_a?(Symbol)
+    return nil unless body&.type == :FCALL && body.children[0] == :attr_accessor
+    list = body.children[1]
+    return nil unless list&.type == :LIST && list.children.size == 2 && list.children[1].nil?
+    symbol = list.children[0]
+    return nil unless symbol&.type == :CALL && symbol.children[1..2] == [:to_sym, nil]
+    lower = symbol.children[0]
+    return nil unless lower&.type == :CALL && lower.children[1..2] == [:downcase, nil]
+    variable = lower.children[0]
+    return nil unless variable && [:LVAR, :DVAR].include?(variable.type) && variable.children[0] == assignment.children[0]
+    collection
+  end
+
+  # Cùng một AST pass bọc collection accessor hẹp ở CLASS body và đối số eval.
   # Giữ eval ở callsite: chỉ bọc đối số đầu, không override Kernel#eval
   # (override sẽ làm mất local variables/cref mặc định của người gọi).
   def self.instrument_eval_calls(source, budget)
     return source unless source.is_a?(String) && source.bytesize <= MAX_AST_BYTES && source.valid_encoding?
-    return source if source.count("\n") > MAX_LINES || !source.include?('eval')
+    return source if source.count("\n") > MAX_LINES || !(source.include?('eval') || source.include?('constants'))
     return source unless defined?(RubyVM::AbstractSyntaxTree)
     budget[1] ||= MAX_COMPILE_BYTES
     return source if budget[0] <= 0 || source.bytesize > budget[1]
     budget[0] -= 1
     budget[1] -= source.bytesize # AST parse cũng dùng cùng work budget.
     root = RubyVM::AbstractSyntaxTree.parse(source)
-    stack = [root]
+    stack = [[root, false]]
     sites = []
     visited = 0
-    while (node = stack.pop)
+    while (item = stack.pop)
+      node, class_body = item
       visited += 1
       return source if visited > MAX_AST_NODES
       children = node.children
-      children.each { |child| stack << child if child.is_a?(RubyVM::AbstractSyntaxTree::Node) }
+      children.each_with_index do |child, index|
+        next unless child.is_a?(RubyVM::AbstractSyntaxTree::Node)
+        context = case node.type
+                  when :CLASS then index == 2
+                  when :DEFN, :DEFS, :SCLASS, :MODULE then false
+                  else class_body
+                  end
+        stack << [child, context]
+      end
+      if class_body && (collection = accessor_collection(node))
+        if collection.first_lineno == collection.last_lineno
+          sites << [collection.first_lineno, collection.first_column, collection.last_column,
+                    '::MonikaRuby18.accessor_constants(self,']
+          return source if sites.size > MAX_EVAL_SITES
+        end
+      end
       next unless node.type == :FCALL && children[0] == :eval
       args = children[1]
       next unless args && args.type == :LIST
@@ -115,15 +183,14 @@ module MonikaRuby18
         receiver, method = arg.children
         next if method == :eval_source && receiver&.type == :COLON3 && receiver.children == [:MonikaRuby18]
       end
-      sites << [arg.first_lineno, arg.first_column, arg.last_column]
+      sites << [arg.first_lineno, arg.first_column, arg.last_column, '::MonikaRuby18.eval_source(']
       return source if sites.size > MAX_EVAL_SITES
     end
     return source if sites.empty?
     offsets = [0]
     source.each_line { |line| offsets << offsets.last + line.bytesize }
     inserts = Hash.new { |hash, key| hash[key] = '' }
-    prefix = '::MonikaRuby18.eval_source('
-    sites.each do |line, first, last|
+    sites.each do |line, first, last, prefix|
       start = offsets[line - 1] + first
       finish = offsets[line - 1] + last
       return source unless finish > start && finish <= source.bytesize

@@ -25,6 +25,10 @@ control=out/'control';(control/'Data').mkdir(parents=True)
 code = """bitmap=Bitmap.new (640,360)
 class MonikaEvalNative
   OFFSET = 7
+  CONTROL_WIDTH = 11
+  for name in self.class.constants
+    attr_accessor name.downcase.to_sym
+  end
   eval("def forward(arg, *rest); collect (arg, *rest); end")
   def collect(arg, *rest); [arg + OFFSET, rest]; end
   def local_value
@@ -34,6 +38,9 @@ class MonikaEvalNative
 end
 control_eval = MonikaEvalNative.new
 raise "monika-eval-context" unless control_eval.forward(2,3,4) == [9,[3,4]] && control_eval.local_value == 11
+control_eval.offset = 17
+control_eval.control_width = 23
+raise "monika-accessor-context" unless control_eval.offset == 17 && control_eval.control_width == 23
 bitmap.fill_rect(0,0,640,360,Color.new(242,140,40))
 sprite=Sprite.new
 sprite.bitmap=bitmap

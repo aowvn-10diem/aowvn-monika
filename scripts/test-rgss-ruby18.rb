@@ -175,4 +175,72 @@ begin
 rescue SyntaxError
   check(true, 'lỗi cú pháp runtime ngoài phạm vi vẫn ném nguyên lỗi')
 end
+# Accessor collection lỗi receiver trong class body; chỉ fixture tổng hợp.
+source = <<~'RUBY'
+  class AccessorCollectionFixture
+    VALUE = 7
+    LABEL = 'synthetic'
+    for name in self.class.constants
+      attr_accessor name.downcase.to_sym
+    end
+    def initialize
+      self.class.constants.each { |name| send("#{name.downcase}=", self.class.const_get(name)) }
+    end
+  end
+RUBY
+eval(source)
+begin
+  AccessorCollectionFixture.new
+  abort('FAIL fixture gốc phải thiếu setter')
+rescue NoMethodError
+  check(true, 'fixture gốc tái hiện setter thiếu do self.class.constants ở class body')
+end
+Object.send(:remove_const, :AccessorCollectionFixture)
+entries = [[1, 'synthetic', 'packed unchanged', source]]
+check(MonikaRuby18.apply(entries) == 1 && !Object.const_defined?(:AccessorCollectionFixture, false) && entries[0][3].include?('::MonikaRuby18.accessor_constants(self,self.class.constants)'), 'bọc đúng collection FOR/attr_accessor trong bản RAM')
+check(entries[0][2] == 'packed unchanged' && !source.include?('MonikaRuby18'), 'không sửa input/packed data của collection')
+eval(entries[0][3])
+fixture = AccessorCollectionFixture.new
+check(fixture.value == 7 && fixture.label == 'synthetic', 'accessor thật giữ giá trị constant và setter/getter, không stub lỗi')
+check(MonikaRuby18.apply(entries) == 0, 'accessor collection đã bọc không sửa lặp')
+Object.send(:remove_const, :AccessorCollectionFixture)
+unsupported = [
+  "class AccessorUnsupported; VALUE=1; for field in self.class.constants; attr_accessor field.downcase.to_sym; puts 'side effect'; end; end",
+  "class AccessorUnsupported; VALUE=1; def later; for field in self.class.constants; attr_accessor field.downcase.to_sym; end; end; end",
+  "class AccessorUnsupported; VALUE=1; for field in other.class.constants; attr_accessor field.downcase.to_sym; end; end",
+  "class AccessorUnsupported; VALUE=1; for field in self.class.constants; attr_accessor other.downcase.to_sym; end; end",
+  "module AccessorUnsupported; VALUE=1; for field in self.class.constants; attr_accessor field.downcase.to_sym; end; end",
+  "class AccessorUnsupported; VALUE=1; class << self; for field in self.class.constants; attr_accessor field.downcase.to_sym; end; end; end"
+]
+check(unsupported.all? { |text| MonikaRuby18.instrument_eval_calls(text, [512]).equal?(text) }, 'không sửa method/module/singleton/custom receiver/khác biến/vòng nhiều tác dụng phụ')
+original = []
+owner = Class.new
+owner.const_set(:VALUE, 7)
+check(MonikaRuby18.accessor_constants(owner, original) == [:VALUE], 'collection trống ở Class fallback constants của lớp đang khai báo')
+check(MonikaRuby18.accessor_constants(owner, [:EXISTING]) == [:EXISTING] && MonikaRuby18.accessor_constants(owner.new, original).equal?(original), 'collection không trống hoặc receiver instance giữ nguyên')
+custom = Class.new
+custom.const_set(:VALUE, 7)
+def custom.class; Class; end
+check(MonikaRuby18.accessor_constants(custom, original).equal?(original), 'không thay hành vi class getter do game override')
+custom = Class.new
+def custom.constants; [:VALUE]; end
+check(MonikaRuby18.accessor_constants(custom, original).equal?(original), 'không gọi constants getter do game override')
+huge = Class.new
+(MonikaRuby18::MAX_ACCESSOR_CONSTANTS + 1).times { |i| huge.const_set("FIELD_#{i}", i) }
+check(MonikaRuby18.accessor_constants(huge, original).equal?(original), 'quá256constants không cấp thêm collection accessor')
+long = Class.new
+long.const_set('A' * 129, 1)
+check(MonikaRuby18.accessor_constants(long, original).equal?(original), 'constant name quá128byte giữ nguyên collection')
+text = "class AccessorErrorFixture; VALUE=7; for name in self.class.constants; attr_accessor name.downcase.to_sym; end; def fail_unknown; absent_method(); end; end"
+eval(MonikaRuby18.instrument_eval_calls(text, [512]))
+begin
+  AccessorErrorFixture.new.fail_unknown
+  abort('FAIL NoMethodError khác phải giữ')
+rescue NoMethodError
+  check(true, 'NoMethodError khác vẫn ném, không global method_missing/Class.constants patch')
+end
+Object.send(:remove_const, :AccessorErrorFixture)
+text = source
+budget = [512, text.bytesize]
+check(MonikaRuby18.instrument_eval_calls(text, budget).equal?(text) && budget[1] == 0, 'collection dùng cùng AST/byte budget, cạn trước ghép giữ nguyên source')
 puts 'ALL OK'
