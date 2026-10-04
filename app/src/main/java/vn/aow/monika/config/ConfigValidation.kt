@@ -32,7 +32,7 @@ internal object ConfigValidation {
                     require(value.isString && value.content in runners) { "$path: runner chưa biết" }
                 }
                 val isUrl = field.lowercase().let { it.endsWith("url") || it in urlFields || it == "lists" }
-                if ((isUrl && value != JsonNull) || (value.isString && value.content.contains("://"))) {
+                if ((isUrl && value != JsonNull) || (value.isString && Regex("^[a-zA-Z][a-zA-Z0-9+.-]*://").containsMatchIn(value.content))) {
                     require(value.isString) { "$path: URL phải là chuỗi" }
                     val text = value.content
                     if (text.isNotEmpty()) {

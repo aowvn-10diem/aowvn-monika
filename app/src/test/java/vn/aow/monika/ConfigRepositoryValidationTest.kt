@@ -85,6 +85,7 @@ class ConfigRepositoryValidationTest {
         val c = ConfigValidation.parse("""{"configVersion":1,"modules":{"x":{"version":"1","url":"https://example.test/{abi}.zip","sha256":"${"AB".repeat(32)}"}},"systems":[{"id":"x","name":"X","runner":"j2me"}]}""", 1)
         assertEquals(1, c.configVersion)
         assertEquals(0, ConfigValidation.parse("{}", 0).configVersion)
+        ConfigValidation.parse("""{"downloadHosts":[{"name":"x","host":"x.test","mode":"direct","pattern":"^https?://x[.]test/(.+)","directUrl":"https://x.test/$1"}]}""", 0)
         ConfigValidation.parse(app.assets.open(ConfigRepository.ASSET_NAME).bufferedReader().use { it.readText() }, 0)
     }
 }
