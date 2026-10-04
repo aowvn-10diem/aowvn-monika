@@ -56,7 +56,7 @@ class SimpleModule(
                         }
                     }
                 }
-                PackTransaction.unzip(archive, candidate)
+                PackTransaction.unzip(archive, candidate, mainFile = mainFile)
                 PackTransaction.validate(candidate, mainFile, abi)
                 File(candidate, "version").writeText(d.version)
             }
