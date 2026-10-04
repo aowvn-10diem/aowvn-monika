@@ -1,0 +1,95 @@
+{
+  "head": "87145d7964b0351a6e6274d2907c5cecd0b508de",
+  "run": 37238060810,
+  "artifact": 11317650301,
+  "verdict": {
+    "level": 1,
+    "expectFail": [
+      "vx"
+    ],
+    "matchesExpectation": true,
+    "games": [
+      {
+        "game": "xp",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "2863",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 34.369,
+        "threshold": 10,
+        "observedSeconds": 388,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "PASS_LEVEL_1",
+        "expected": "ĐẠT mức 1",
+        "matchesExpectation": true
+      },
+      {
+        "game": "vx",
+        "verdict": "HỎNG",
+        "verdictCode": "FAIL",
+        "process": "com.aow.monika:game",
+        "pid": "8933",
+        "alive": true,
+        "errorDialog": true,
+        "brightnessStddev": 37.808,
+        "threshold": 10,
+        "observedSeconds": 367,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "FAIL",
+        "expected": "HỎNG",
+        "matchesExpectation": true
+      },
+      {
+        "game": "ace",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "11846",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 65.044,
+        "threshold": 10,
+        "observedSeconds": 381,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "PASS_LEVEL_1",
+        "expected": "ĐẠT mức 1",
+        "matchesExpectation": true
+      }
+    ]
+  },
+  "runtimeFailure": {
+    "scriptIndex": 96,
+    "line": 2174,
+    "type": "NoMethodError",
+    "publicRuntimeMethod": "size",
+    "receiverType": "Regexp",
+    "beforeKeyTitleObserved": true,
+    "afterNewGameErrorObserved": true,
+    "previousWidthErrorPassed": true,
+    "sourceUnmodified": true
+  },
+  "nativeControl": {
+    "run": 37238060798,
+    "artifact": 11316493179,
+    "marker": "RGSS-control-ruby18:1",
+    "checks": "Literal argument/result getter17 plus String.slice! mutation, predicateIntegerRange, accessor17/23, evalcontext; orange frame and PixelCopy10–40s black=false",
+    "conclusion": "PASS native synthetic fixture, not VX gameplay"
+  },
+  "diagnostic": {
+    "artifact": 11316243332,
+    "scriptCount": 157,
+    "syntaxErrors": 0,
+    "normalizedLine": 1633,
+    "remainingCompiles": 124,
+    "remainingBytes": 39362538,
+    "limits": "Compile only, not gameplay"
+  },
+  "rangeProbeStatus": {
+    "xp": "missing: no Range type evidence; absent file does not prove absence of errors",
+    "vx": "missing: no Range type evidence; absent file does not prove absence of errors",
+    "ace": "missing: no Range type evidence; absent file does not prove absence of errors"
+  },
+  "limits": "audio/save-load/FPS/full5/machine-real/Clouddeploy [CHƯA KIỂM]"
+}
