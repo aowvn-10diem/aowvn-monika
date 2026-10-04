@@ -43,13 +43,24 @@ module MonikaRuby18
       end
       trace.call(line, matches.size, 0) if trace && (matches.empty? || matches.size > MAX_CANDIDATES)
       return original if matches.empty? || matches.size > MAX_CANDIDATES
-      candidates = matches.filter_map do |start, finish|
-        changed = lines.dup
-        changed[line - 1] = text[0...start] + text[finish..-1]
-        candidate = changed.join
-        next_line = error_line(candidate, budget)
-        trace.call(line, matches.size, next_line) if trace
-        [candidate, next_line] if next_line.nil? || next_line > line
+      # Một dòng có thể chứa nhiều lời gọi cũ: thử tập nhỏ nhất làm parser
+      # tiến triển, chỉ nhận khi tập đó duy nhất. Tối đa 2^8-1 lần thử và
+      # vẫn dùng chung budget compile của cả phiên; không chọn khi hết budget.
+      candidates = []
+      1.upto(matches.size) do |size|
+        matches.combination(size) do |edits|
+          return original if budget[0] <= 0
+          changed = lines.dup
+          changed_text = text.dup
+          edits.reverse_each { |start, finish| changed_text[start...finish] = '' }
+          changed[line - 1] = changed_text
+          candidate = changed.join
+          next_line = error_line(candidate, budget)
+          trace.call(line, matches.size, next_line) if trace
+          candidates << [candidate, next_line] if next_line.nil? || next_line > line
+          return original if candidates.size > 1
+        end
+        break unless candidates.empty?
       end
       return original unless candidates.size == 1 # Mơ hồ/không tiến triển: không sửa.
       source, line = candidates.first

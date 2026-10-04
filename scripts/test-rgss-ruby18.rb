@@ -41,4 +41,12 @@ fixed = MonikaRuby18.repair(many)
 check(fixed != many && MonikaRuby18.error_line(fixed).nil?, '24lỗi cần hơn16vòng nhưng vẫn trong budget')
 lines = "\n" * (MonikaRuby18::MAX_LINES + 1) + 'call (1, 2)'
 check(MonikaRuby18.repair(lines).equal?(lines), 'quá20nghìndòng bị chặn trước tách lines')
+source = "result = first ('a', 1) + second ('b', 2)\n"
+check(MonikaRuby18.repair(source) == "result = first('a', 1) + second('b', 2)\n", 'hai lời gọi lỗi cùng dòng cần sửa cùng nhau')
+source = "result = first ('a', 1) + second ('b', 2) + third ('c', 3) # keep (space)\n"
+check(MonikaRuby18.repair(source) == "result = first('a', 1) + second('b', 2) + third('c', 3) # keep (space)\n", 'tập nhỏ nhất ba lời gọi giữ khoảng trắng trong comment')
+budget = [3]
+check(MonikaRuby18.repair(source, budget).equal?(source) && budget[0] == 0, 'hết budget giữa tìm tổ hợp trả nguyên source')
+source = "result = first ('literal (space)', 1) + second ('b', 2)\ndef broken(\n"
+check(MonikaRuby18.repair(source).equal?(source), 'tổ hợp tiến triển nhưng lỗi khác vẫn trả nguyên toàn script')
 puts 'ALL OK'
