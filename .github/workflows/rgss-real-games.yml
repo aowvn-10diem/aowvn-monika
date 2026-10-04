@@ -6,6 +6,10 @@ on:
         description: Release nháp RGSS đã duyệt
         default: engines-rgss-7
         required: true
+      expect_fail:
+        description: Case lỗi đã biết, bỏ từng case sau khi V44 sửa và PM kiểm
+        default: vx,ace
+        required: false
   pull_request:
     paths:
       - .github/workflows/rgss-real-games.yml
@@ -43,6 +47,8 @@ jobs:
       - name: Unit trên config chuẩn
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+          sudo apt-get install -y python3-pil
+          python3 scripts/test-rgss-real-verdict.py
           ./gradlew testDebugUnitTest --console=plain
           command -v 7z >/dev/null || sudo apt-get install -y p7zip-full
       - name: Chuẩn bị đúng ba nguồn G2 trong CI
@@ -66,7 +72,10 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
-          script: bash scripts/ci-rgss-real.sh "$RUNNER_TEMP/v25" out/r6
+          script: bash scripts/ci-rgss-real.sh "$RUNNER_TEMP/v25" out/r6 "$(if [ "$EVENT_NAME" = workflow_dispatch ]; then printf %s "$EXPECT_FAIL"; else printf %s vx,ace; fi)"
+        env:
+          EXPECT_FAIL: ${{ inputs.expect_fail }}
+          EVENT_NAME: ${{ github.event_name }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
