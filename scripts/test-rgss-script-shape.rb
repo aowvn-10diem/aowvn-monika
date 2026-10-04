@@ -39,6 +39,10 @@ Dir.mktmpdir('shape-fixture') do |dir|
   File.binwrite(input, Marshal.dump([[6, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
   out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
   check(status.success? && out.include?('public_instance_methods') && out.include?('include?') && out.include?('to_sym') && %w[private_field private_name PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect introspection chỉ giữ API công khai, che field/local/title')
+  source = "self.constants.sort.each { |private_name| attr_accessor private_name.downcase.to_sym }; class_variables; class_variable_get(:private_field)\n"
+  File.binwrite(input, Marshal.dump([[7, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
+  out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
+  check(status.success? && %w[constants sort downcase class_variables class_variable_get].all? { |word| out.include?(word) } && %w[private_field private_name PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect constants/classvariables chỉ giữ API công khai, che dữ liệu game')
   _, _, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:99999')
   check(!status.success?, 'inspect chặn dòng vượt giới hạn')
 
