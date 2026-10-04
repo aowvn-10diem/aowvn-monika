@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T20:34:41.826757Z",
+  "updatedAt": "2026-10-04T20:45:36.704876Z",
   "mainSha": "3453741f954140432a82c2d449fa4991072bf8ff",
   "app": "App0.7.4 · config33",
   "nextCheck": "2026-10-04T19:06:36Z",
-  "headline": "XP/Ace PASSmức1; VX đã vào title, sauNewGame TypeError137:118. Head131 thêm guardconstants, đang thu diagnostic mới; cần CI/Luna, Gemini standby.",
+  "headline": "VX đã có title, R6@808 còn TypeError137:118 sauNewGame. Head00bfe sửa slice-comparison RAM theo proofMRI1.8.7/3.1.7, chờ CI/game thật/Luna. XP/Ace PASSmức1, Gemini standby.",
   "needsBoss": [
     {
       "code": "G7",
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Snapshot Sol #50 head1312243: guard Class/Module.constants custom override trước/sau preload, local87Ruby18/18privacy/6probe PASS; CI headmới chờ. R6@808 run37230428854/art11313582885: XP370s/Ace372s mức1 PASS; VX436s FAIL. Ảnh VX trướcphím đã có màn tiêu đề, sauNewGame TypeError script137:118 slice! nhậntrue; đã vượt Range96:957. Build/CodeQL/native808 xanh, native11312749848 xác nhận predicate Integer/Range và eval/accessor/orange/PixelCopy. MRI1.8.7/3.1.7 synthetic chứng minh khác parser-spacing và constantslexical (riêng1.8.7, khôngđo1.8.1). Diagnostic137:118 mới cần xem trước sửa, không coerce slice!/Range; giữ expect_fail=vx. Cần Luna fresh131 và CI/R6/native đúnghead trước merge."
+      "note": "Snapshot Sol #50 head00bfe2e: slice! Regexp ==/!=nil spacing RAM + guard Class/Module.constants custom override trước/sau preload, local98Ruby18/19privacy/6probe PASS; CI headmới chờ. R6@808 run37230428854/art11313582885: XP370s/Ace372s mức1 PASS; VX436s FAIL. Ảnh VX trướcphím đã có màn tiêu đề, sauNewGame TypeError script137:118 slice! nhậntrue; đã vượt Range96:957. Build/CodeQL/native808 xanh, native11312749848 xác nhận predicate Integer/Range và eval/accessor/orange/PixelCopy. MRI1.8.7/3.1.7 synthetic chứng minh khác parser-spacing và constantslexical (riêng1.8.7, khôngđo1.8.1). Diagnostic131/art11314263589 xác nhận137:118 CALLSPACE/Regexp/!=nil; synthetic1.8.7 đúng,3.1.7 argumentBoolean. Bảnmới chỉ CALL một dòng/literalRegexp/== hoặc !=nil, compiletoàncandidate, nativefixtureStringmutation mới cầnCI, không coerce slice!/Range; giữ expect_fail=vx. Cần Luna fresh00bfe và CI/R6/native đúnghead trước merge."
     },
     {
       "code": "V45",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-04T20:45:36.704876Z",
+      "text": "Head00bfe sửa slice! (/Regexp/) !=nil trongRAM: MRI1.8.7 so sánh kếtquả, MRI3.1.7 đưaBoolean vàoarg; proofmasked137:118 + synthetic thật. GuardmộtCALL/mộtline/literalRegexp/nilcomparison, commonbudgetgiữnguyên, nativefixtureStringmutation mới. Local98/19/6PASS; CI/R6/native pending, khôngđổiexpectfail."
+    },
     {
       "t": "2026-10-04T20:34:41.826757Z",
       "text": "R6@808 đã xem ảnh/log/verdict11313582885: VX trướcphím cótitle, sauNewGame FAIL slice! TypeError137:118; XP370/Ace372 mức1PASS. Đã vượt Range957. Head131 guardconstants/proof/diagnostic mới, local87/18/6PASS; không đổiexpectfail. Bằng chứngClass.constants lexical1.8.7 đã chạy thật, khôngclaim1.8.1/fullSDK."
@@ -925,7 +929,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "Snapshot Sol #50 head1312243: guard Class/Module.constants custom override trước/sau preload, local87Ruby18/18privacy/6probe PASS; CI headmới chờ. R6@808 run37230428854/art11313582885: XP370s/Ace372s mức1 PASS; VX436s FAIL. Ảnh VX trướcphím đã có màn tiêu đề, sauNewGame TypeError script137:118 slice! nhậntrue; đã vượt Range96:957. Build/CodeQL/native808 xanh, native11312749848 xác nhận predicate Integer/Range và eval/accessor/orange/PixelCopy. MRI1.8.7/3.1.7 synthetic chứng minh khác parser-spacing và constantslexical (riêng1.8.7, khôngđo1.8.1). Diagnostic137:118 mới cần xem trước sửa, không coerce slice!/Range; giữ expect_fail=vx. Cần Luna fresh131 và CI/R6/native đúnghead trước merge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
+      "note": "Snapshot Sol #50 head00bfe2e: slice! Regexp ==/!=nil spacing RAM + guard Class/Module.constants custom override trước/sau preload, local98Ruby18/19privacy/6probe PASS; CI headmới chờ. R6@808 run37230428854/art11313582885: XP370s/Ace372s mức1 PASS; VX436s FAIL. Ảnh VX trướcphím đã có màn tiêu đề, sauNewGame TypeError script137:118 slice! nhậntrue; đã vượt Range96:957. Build/CodeQL/native808 xanh, native11312749848 xác nhận predicate Integer/Range và eval/accessor/orange/PixelCopy. MRI1.8.7/3.1.7 synthetic chứng minh khác parser-spacing và constantslexical (riêng1.8.7, khôngđo1.8.1). Diagnostic131/art11314263589 xác nhận137:118 CALLSPACE/Regexp/!=nil; synthetic1.8.7 đúng,3.1.7 argumentBoolean. Bảnmới chỉ CALL một dòng/literalRegexp/== hoặc !=nil, compiletoàncandidate, nativefixtureStringmutation mới cầnCI, không coerce slice!/Range; giữ expect_fail=vx. Cần Luna fresh00bfe và CI/R6/native đúnghead trước merge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
     },
     {
       "id": "web",
