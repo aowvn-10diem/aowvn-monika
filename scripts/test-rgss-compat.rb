@@ -15,6 +15,8 @@ check pt.unpack('l2') == [0, 0], 'GetCursorPos điền (0,0)'
 check Win32API.new('user32', 'GetSystemMetrics', 'i', 'i').call(1) == 480, 'GetSystemMetrics(SM_CYSCREEN)'
 check Win32API.new('kernel32', 'GetPrivateProfileString', 'pppplp', 'l').call('a', 'b', '', '', 0, 'x') == 0, 'hàm lạ = 0'
 check Win32API.new('winmm', 'timeGetTime', '', 'l').call.is_a?(Integer), 'timeGetTime là số nguyên'
+check Win32API.new('Wininet.dll', 'InternetOpenA', 'plppl', 'l').call('fixture', 0, nil, nil, 0) == 0, 'wininet mở kết nối = 0, không giả thành công'
+check Win32API.new('wininet', 'InternetReadFile', 'lpll', 'i').call(0, 'unchanged', 0, 0) == 0, 'wininet đọc mạng = thất bại'
 # DLL ngoài danh sách Windows mà MiniFFI không có/không mở được: ném lỗi như cũ (không che lỗi thật).
 begin
   Win32API.new('mylib', 'Foo', 'i', 'i'); check false, 'DLL lạ phải ném lỗi'

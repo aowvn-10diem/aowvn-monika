@@ -3,7 +3,7 @@
 # "Failed loading user32: dlopen failed". Nhiều game (Debug Extension, mouse, đổi tiêu đề cửa sổ…) gọi Win32API chỉ để
 # đọc phím/chuột/cửa sổ. Ở đây Win32API thử MiniFFI gốc trước; chỉ khi lỗi và là DLL Windows mới dùng hàm giả trả giá trị an toàn.
 module MonikaWin32
-  WINDOWS_DLLS = %w[user32 kernel32 gdi32 shell32 winmm advapi32 ole32 comdlg32 comctl32 msvcrt shlwapi imm32 dwmapi].freeze
+  WINDOWS_DLLS = %w[user32 kernel32 gdi32 shell32 winmm advapi32 ole32 comdlg32 comctl32 msvcrt shlwapi imm32 dwmapi wininet].freeze
 
   def self.windows_dll?(name)
     WINDOWS_DLLS.include?(name.to_s.downcase.sub(/\.dll\z/, ''))
@@ -15,6 +15,9 @@ module MonikaWin32
 
   # Trả giá trị giả theo tên hàm Windows API. Mặc định 0 (= thất bại/không có).
   def self.call_stub(func, args)
+    # Không giả kết nối thành công: Windows Internet API không có trên Android.
+    # Trả handle/BOOL thất bại, không tạo HTTP request hay sửa buffer của game.
+    return 0 if func.to_s.start_with?('Internet', 'Http', 'Ftp', 'Gopher')
     case func.to_s
     when 'GetAsyncKeyState', 'GetKeyState', 'GetKeyboardState', 'GetLastError', 'GetKeyboardLayout', 'GetTopWindow'
       0
