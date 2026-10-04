@@ -24,7 +24,8 @@ load File.expand_path('../app/src/main/assets/rgss/monika-ruby18.rb', __dir__) i
 KEYWORDS = %w[alias and begin break case class def defined? do else elsif end ensure false for if in module next nil not or redo rescue retry return self super then true undef unless until when while yield __method__ lambda proc].freeze
 KW = Regexp.union(KEYWORDS.map { |k| /\b#{Regexp.escape(k)}(?![\w?!])/ })
 
-def shape(line)
+def shape(line, names = nil)
+  anonymous = ->(token) { names ? "id#{names[token] ||= names.size + 1}" : 'id' }
   # Lexer che cả identifier Unicode, chuỗi có '#' và literal nhiều dòng.
   # Không in raw SyntaxError: Ruby có thể đưa lại tên/chuỗi của game trong thông báo.
   Ripper.lex(line).map do |_, kind, token, _|
@@ -33,8 +34,12 @@ def shape(line)
     when :on_sp, :on_ignored_sp then ' '
     when :on_nl, :on_ignored_nl then "\n"
     when :on_kw then KEYWORDS.include?(token) ? token : 'id'
-    when :on_ident then %w[eval binding class_eval module_eval instance_eval attr_accessor instance_variables instance_variable_get instance_variable_set instance_methods public_instance_methods private_instance_methods protected_instance_methods include? keys each send to_s to_sym constants const_get class_variables class_variable_get sort downcase class superclass singleton_class is_a? kind_of? first last begin end min max rand size exclude_end?].include?(token) ? token : 'id'
-    when :on_const then token == 'Range' ? token : 'id'
+    when :on_ident then %w[eval binding class_eval module_eval instance_eval attr_accessor instance_variables instance_variable_get instance_variable_set instance_methods public_instance_methods private_instance_methods protected_instance_methods include? keys each send to_s to_sym constants const_get class_variables class_variable_get sort downcase class superclass singleton_class is_a? kind_of? first last begin end min max rand size exclude_end?].include?(token) ? token : anonymous.call(token)
+    when :on_ivar then '@' + anonymous.call(token)
+    when :on_cvar then '@@' + anonymous.call(token)
+    when :on_gvar then '$' + anonymous.call(token)
+    when :on_label then anonymous.call(token.delete_suffix(':')) + ':'
+    when :on_const then %w[Range Array Hash String Integer Float Numeric].include?(token) ? token : anonymous.call(token)
     when :on_int, :on_float, :on_rational, :on_imaginary, :on_CHAR then '0'
     when :on_tstring_beg, :on_tstring_end then '"'
     when :on_tstring_content then 's'
@@ -81,8 +86,9 @@ data.each_with_index do |entry, i|
   end
   inspections.select { |index, _| index == i }.each do |_, line|
     puts "inspect script=#{i} line=#{line}"
+    names = {} # Chỉ số ẩn danh trong cửa sổ; không hash/in tên game.
     code.each_line.with_index(1) do |text, index|
-      puts format('inspect-shape %5d | %s', index, shape(text).rstrip) if (index - line).abs <= ctx
+      puts format('inspect-shape %5d | %s', index, shape(text, names).rstrip) if (index - line).abs <= ctx
     end
   end
   begin
