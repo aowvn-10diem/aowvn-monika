@@ -78,6 +78,8 @@ object Diagnostics {
         val env: String = "",
         /** Vệt sự kiện ngay trước lỗi (mới nhất cuối). */
         val crumbs: List<String> = emptyList(),
+        @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+        @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
         val image: ReportImage? = null,
     ) {
         fun toText(): String = scrub(null, buildString {
