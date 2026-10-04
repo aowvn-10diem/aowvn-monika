@@ -170,6 +170,7 @@ dependencies {
     implementation(libs.androidx.webkit)
     implementation(project(":libretrodroid")) // bản nhúng (docs/LIBRETRODROID.md)
     implementation(project(":kirikiri")) // Kirikiroid2Yuri nhúng: mã Java ở đây, lib native + tài nguyên là gói tải thêm
+    implementation(project(":renpy")) // Java của Ren'Py 8 (RAPT 8.5.3); lib native + Python là gói tải thêm
     implementation(project(":rgss")) // lớp SDL 2.26.3 đổi gói cho mkxp-z; lib native là gói tải thêm
     implementation(libs.zip4j) // Giải nén .zip (kể cả mật khẩu)
     implementation(libs.commons.compress) // 7z thuần Java (dự phòng khi 7-Zip native chưa tải được)
@@ -181,6 +182,7 @@ dependencies {
     sevenZipTestNatives(libs.sevenzip.jvm.natives)
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     // Test giao diện trên JVM (Robolectric): mở từng màn hình, bắt crash, chụp ảnh → app/build/screenshots/
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.compose.bom))

@@ -15,10 +15,10 @@
 ## 2. Môi trường & hạ tầng
 | Mục | Sự thật |
 |---|---|
-| Repo | `aowvn-10diem/aowvn-monika` (private). Clone: `git clone https://github.com/aowvn-10diem/aowvn-monika /home/user/aowvn-monika`; đặt `git config user.name Claude; user.email noreply@anthropic.com`. Repo packs công khai (asset release): `aowvn-10diem/aowvn-monika-packs`. |
+| Repo | `aowvn-10diem/aowvn-monika` (công khai). Clone: `git clone https://github.com/aowvn-10diem/aowvn-monika /home/user/aowvn-monika`; đặt `git config user.name Claude; user.email noreply@anthropic.com`. Repo packs công khai (asset release): `aowvn-10diem/aowvn-monika-packs`. |
 | Local | Container **không có Android SDK/Gradle cache** sau khi tái tạo → biên dịch/test bằng **CI** (đẩy nhánh → workflow `Build`). Nhánh làm việc: tạo `viec-<mã>` rồi merge `--no-ff` vào `main` khi xanh. |
 | Gradle test | `./gradlew testDebugUnitTest` (cần SDK; nếu có thể). `build.yml` bỏ qua commit chỉ sửa `docs/**`/`*.md`. |
-| Ký APK / phát hành | GitHub Secrets ký app (`MONIKA_KEYSTORE_*`) chưa có; CI không thể tạo APK ký bằng khóa chính thức. Khi chạy tay `workflow_dispatch` thiếu khóa, workflow chỉ tạo APK ký bằng khóa debug để thử. APK chính thức được build và ký trên máy phiên bằng keystore trong `<scratchpad>/keystore/`; quy trình an toàn xem `CLAUDE.md`, mục “Phát hành APK”. Kiểm chữ ký bằng `apksigner verify --print-certs`; SHA-256 đúng là `c46902e9…d45ab20c`. |
+| Ký APK / phát hành | Workflow Release dừng trước khi dựng APK nếu thiếu cấu hình ký; sau khi dựng, workflow chặn APK có chứng chỉ Android Debug. APK chính thức được build và ký trên máy phiên bằng keystore trong `<scratchpad>/keystore/`; quy trình an toàn xem `CLAUDE.md`, mục “Phát hành APK”. Kiểm chữ ký bằng `apksigner verify --print-certs`; SHA-256 đúng là `c46902e9…d45ab20c`. |
 | Secrets | Các giá trị `PACKS_TOKEN`, `PIXELDRAIN_API_KEY`, `CLOUDFLARE_API_TOKEN` không ghi vào repo. Theo `CLAUDE.md`, `MONIKA_KEYSTORE_*` và `PIXELDRAIN_API_KEY` chưa được cấu hình GitHub Secrets. |
 | Opus | Phiên ngoài, trả lời trên **nhánh** `docs/opus-tra-loi` (không push được `main`) — gộp bằng `git pull --no-rebase origin docs/opus-tra-loi`. `BANG-TIN.md` xung đột thì giữ hàng của cả hai. |
 | Lịch tự kiểm | `mcp__Claude_Code_Remote__send_later` (15–20 phút, rảnh 4 lượt liền → 30, 23:00–06:00 GMT+7 → 60). Mỗi lượt: (1) `git ls-remote origin` so SHA nhánh Opus; (2) CI; (3) việc đang chờ. Vòng lặp nền trong container sẽ mất khi container bị thu hồi. |
@@ -38,11 +38,12 @@
 
 - **Hạn mức lưu trữ Actions đã đầy một lần (03/10/2026, 14 GB artifact, chủ yếu APK debug 83 MB mỗi lần push):** đã xóa 370 artifact bằng `curl -X DELETE https://api.github.com/repos/aowvn-10diem/aowvn-monika/actions/artifacts/<id>` (proxy tự gắn quyền); GitHub tính lại hạn mức mỗi 6–12 giờ nên có thể còn chặn tải lên một lúc. Đã đặt retention ngắn + `continue-on-error` cho mọi `upload-artifact` — job không đỏ chỉ vì tải artifact lỗi. Workflow cần artifact ở job khác (hiện không có) sẽ phải dùng release.
 
-## 5. Trạng thái (cập nhật lần cuối 03/10/2026 ~10:00 GMT+7)
-- **Phát hành:** v0.7.3 (Kirikiri nhúng sâu, menu Việt hóa). `configVersion` 31, versionCode 38.
-- **Đã xong:** E0 (EngineRoutes/EnginePrepActivity/`allowExternalApp`), R0, R1 (gói `rgss-arm64-v8a.zip` 7,6 MiB), R4 (MkxpConfigWriter), P0, P1 (gói `renpy8` ≈ 22,6 MB, chưa publish), V09, V10, V11, V13.
-- **R2 xong và đã gộp main (6f0623e); đang làm R3:** V08 = R2 (module `:rgss`, 9 file Java SDL 2.26.3 đổi gói `vn.aow.monika.rgss.sdl`, script `engines/rgss/rename-sdl-java.py`) + V12 = R3 (`RgssGameActivity`, route `rgss`, `PackManager.RGSS`, Emulator Test game XP tối thiểu, `build-rgss.yml` `private_only`). Chưa biết CI xanh hay đỏ (không biên dịch cục bộ được). Việc kế: CI xanh → merge main → dựng gói rgss `publish=true, private_only=true` → `emulator-test.yml rgss_tag=<tag>` → ghi `ket-qua/R3.md`.
-- **Việc sau R3 (theo `docs/opus/2026-10-03-nhung-renpy-rgss.md`):** R5 (lớp phủ/phím + đăng ký config `modules.rgss`, tắt app ngoài cho `rgss`/`kirikiri` khi gói phát hành), R6 (5 game thử — hỏi sếp), R7 (RTP/save/chẩn đoán; cần armeabi-v7a), khối P (Ren'Py 8: P2–P7), P7 (Ren'Py 7), khối S (Symbian, phương án `2026-10-03-nhung-symbian-eka2l1.md`, làm sau).
+## 5. Trạng thái (cập nhật 04/10/2026)
+- **Phát hành:** v0.7.4. `configVersion` 32, versionCode 39.
+- **Đã xong:** E0, R0–R4, P0–P2, V09–V13. R2/R3 đã gộp main; kết quả thử R3 API 30/34 ở `docs/opus/ket-qua/R3.md`.
+- **Ren'Py 8:** P0/P1 đã có kết quả trong `docs/opus/ket-qua/P0.md`; P2 (module `:renpy`) đã gộp trong #33 và kết quả APK ở `docs/opus/ket-qua/P2.md`. P3 (#41) đã gộp: `RenpyGameActivity` chạy trong `:game`, gọi `RenpyBase.resolve(entry)`, dùng `EngineRoutes` → `PackManager.RENPY8` và `RenpyOverlay`. `config/monika-config.json` vẫn chọn `runner: external` + `joiplay`, nên route nhúng chưa bật; game Ren'Py thật [CHƯA KIỂM].
+- **Libretro V32:** kiểm URL/hash/version theo ABI đã gộp trong #35. Workflow tạo snapshot còn ở PR #45; chưa xuất bản ứng viên hay đưa hash ứng viên vào config.
+- **Thứ tự việc còn lại:** lấy từ kế hoạch PM hiện hành; ghi chú thứ tự cũ bên dưới không thay thế kế hoạch đó.
 - **Cổng sếp (KE-HOACH mục 4):** G1 (1 game RPG Maker XP), G2 (5 game R6 + máy thật), G3 (2 game Ren'Py 7/8), G4 (Symbian A1/A2), G5/G8 (công khai mã nguồn + giấy phép build file bản port mkxp-z — **sếp tự làm**), G6 (nhắn RAdmin duyệt client "AowMonika"), G7 (thử Kirikiri 0.7.3 trên máy thật).
 - **Haiku (việc nhẹ, dòng `Giao: Haiku`):** H01 (sửa đầu `GIAO-TIEP-VOI-OPUS.md`), H02 (gen-architecture), H03 (mục thử Kirikiri trong `TEST-MAY-THAT.md`).
 

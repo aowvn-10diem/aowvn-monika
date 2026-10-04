@@ -3,12 +3,13 @@ package vn.aow.monika.runner
 import android.content.Context
 import android.os.Build
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.library.Importer
+import vn.aow.monika.pack.PackTransaction
+import vn.aow.monika.config.CoreDef
 import java.io.File
 import java.io.IOException
 import java.util.zip.ZipInputStream
@@ -41,19 +42,19 @@ class CoreManager(
     fun info(id: String): String = runCatching { File(coreDir(id), "info.txt").readText() }.getOrDefault("")
     fun delete(id: String) = coreDir(id).deleteRecursively()
 
-    /** Mỗi lõi 1 khóa: tải sẵn ngầm và bấm Chơi cùng lúc không tải 2 lần. */
-    private val locks = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.sync.Mutex>()
+    private fun CoreDef.supportsAbi() = (abis.isEmpty() || abi in abis) && (artifacts.isEmpty() || abi in artifacts)
+    private fun CoreDef.wantedVersion() = artifacts[abi]?.version ?: version
 
     /** Lõi có chạy được trên kiến trúc CPU của app này không (vd. melondsds chỉ có bản arm64). */
     fun supports(id: String): Boolean {
         val def = configRepo.current.cores[id] ?: return false
-        return def.abis.isEmpty() || abi in def.abis
+        return def.supportsAbi()
     }
 
     fun isReady(id: String): Boolean {
         val def = configRepo.current.cores[id] ?: return false
-        return File(coreDir(id), "${id}_libretro_android.so").exists() && installedVersion(id) == def.version &&
-            (def.systemFiles == null || File(systemDir(), ".$id-${def.version}").exists())
+        return def.supportsAbi() && File(coreDir(id), "${id}_libretro_android.so").exists() && installedVersion(id) == def.wantedVersion() &&
+            (def.systemFiles == null || File(systemDir(), ".$id-${def.wantedVersion()}").exists())
     }
 
     /** Tải sẵn lõi cho các hệ máy đang có game (chạy ngầm) → bấm Chơi vào game ngay, không chờ tải. */
@@ -64,7 +65,7 @@ class CoreManager(
     /** Các lõi trong [ids] còn thiếu/lỗi thời (bỏ lõi không tồn tại trong config hoặc không hợp ABI máy này). */
     fun missing(ids: Collection<String>): List<String> = ids.distinct().filter { id ->
         val def = configRepo.current.cores[id] ?: return@filter false
-        (def.abis.isEmpty() || abi in def.abis) && !isReady(id)
+        def.supportsAbi() && !isReady(id)
     }
 
     /**
@@ -83,51 +84,80 @@ class CoreManager(
     }
 
     /** Khóa theo tiến trình (Mutex) rồi khóa theo file (giữa tiến trình chính và tiến trình :game) → không ghi đè lõi của nhau. */
-    suspend fun ensureCore(id: String, onStatus: (String) -> Unit = {}): File =
-        locks.getOrPut(id) { kotlinx.coroutines.sync.Mutex() }.withLock {
-            withContext(Dispatchers.IO) {
-                File(context.filesDir, "cores").mkdirs()
-                java.io.RandomAccessFile(File(context.filesDir, "cores/.$id.lock"), "rw").use { raf ->
-                    raf.channel.lock().use { ensureCoreLocked(id, onStatus) }
-                }
-            }
-        }
+    suspend fun ensureCore(id: String, onStatus: (String) -> Unit = {}): File = withContext(Dispatchers.IO) {
+        PackTransaction.locked(coreDir(id)) { ensureCoreLocked(id, onStatus) }
+    }
 
     private suspend fun ensureCoreLocked(id: String, onStatus: (String) -> Unit): File = withContext(Dispatchers.IO) {
         val def = configRepo.current.cores[id] ?: throw IOException("Cấu hình chưa có lõi '$id'")
-        if (def.abis.isNotEmpty() && abi !in def.abis) {
-            throw IOException("Lõi này chỉ chạy trên máy ${def.abis.joinToString(" / ")} (máy bạn: $abi).")
+        if (!def.supportsAbi()) {
+            val allowed = if (def.artifacts.isEmpty()) def.abis else def.artifacts.keys.filter { def.abis.isEmpty() || it in def.abis }
+            throw IOException("Lõi này chỉ chạy trên máy ${allowed.joinToString(" / ")} (máy bạn: $abi).")
         }
+        val wantedVersion = def.wantedVersion()
+        val artifact = def.artifacts[abi]
         val so = File(coreDir(id), "${id}_libretro_android.so")
-        if (!so.exists() || installedVersion(id) != def.version) {
+        if (!so.exists() || installedVersion(id) != wantedVersion) {
             withContext(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)…") }
-            coreDir(id).mkdirs()
-            val tmp = File(coreDir(id), "download.tmp").apply { delete() }
-            var lastPct = -1
-            var serverDate = ""
-            download(def.url.replace("{abi}", abi), { serverDate = it }, { pct ->
-                if (pct != lastPct) { lastPct = pct; kotlinx.coroutines.runBlocking(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)… $pct%") } }
-            }) { zip ->
-                while (true) {
-                    val entry = zip.nextEntry ?: throw IOException("Gói lõi không chứa file .so")
-                    if (entry.name.endsWith(".so")) {
-                        tmp.outputStream().use { zip.copyTo(it) }
-                        break
+            if (artifact == null) {
+                coreDir(id).mkdirs()
+                val tmp = File(coreDir(id), "download.tmp").apply { delete() }
+                var lastPct = -1
+                var serverDate = ""
+                download(def.url.replace("{abi}", abi), { serverDate = it }, { pct ->
+                    if (pct != lastPct) { lastPct = pct; kotlinx.coroutines.runBlocking(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)… $pct%") } }
+                }) { zip ->
+                    while (true) {
+                        val entry = zip.nextEntry ?: throw IOException("Gói lõi không chứa file .so")
+                        if (entry.name.endsWith(".so")) {
+                            tmp.outputStream().use { zip.copyTo(it) }
+                            break
+                        }
                     }
                 }
-            }
-            if (!tmp.renameTo(so)) throw IOException("Không lưu được lõi $id")
-            versionFile(id).writeText(def.version)
-            runCatching {
-                File(coreDir(id), "info.txt").writeText(
-                    "cfg v${def.version} · $abi · ${so.length() / 1024}KB · tải ${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.US).format(System.currentTimeMillis())}" +
-                        (if (serverDate.isNotBlank()) " · bản dựng $serverDate" else "")
-                )
+                if (!tmp.renameTo(so)) throw IOException("Không lưu được lõi $id")
+                versionFile(id).writeText(def.version)
+                runCatching {
+                    File(coreDir(id), "info.txt").writeText(
+                        "cfg v${def.version} · $abi · ${so.length() / 1024}KB · tải ${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.US).format(System.currentTimeMillis())}" +
+                            (if (serverDate.isNotBlank()) " · bản dựng $serverDate" else "")
+                    )
+                }
+            } else {
+                val url = artifact.url
+                val expectedHash = artifact.sha256
+                if (!expectedHash.matches(Regex("[a-fA-F0-9]{64}")) || wantedVersion.isBlank())
+                    throw IOException("Ảnh chụp lõi thiếu hash/version")
+                PackTransaction.install(coreDir(id)) { archive, candidate ->
+                    var serverDate = ""; var lastPct = -1
+                    http.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                        if (!response.isSuccessful) throw IOException("Tải lõi thất bại (HTTP ${response.code})")
+                        serverDate = response.header("Last-Modified").orEmpty()
+                        val body = response.body ?: throw IOException("Gói lõi không có nội dung")
+                        val total = body.contentLength()
+                        body.byteStream().use { input ->
+                            PackTransaction.download(input, archive, expectedHash, total) { read ->
+                                val pct = if (total > 0) (read * 100 / total).toInt().coerceIn(0, 100) else -1
+                                if (pct >= 0 && pct != lastPct) {
+                                    lastPct = pct
+                                    withContext(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)… $pct%") }
+                                }
+                            }
+                        }
+                    }
+                    PackTransaction.unzip(archive, candidate)
+                    PackTransaction.validate(candidate, so.name, abi)
+                    File(candidate, "version").writeText(wantedVersion)
+                    File(candidate, "info.txt").writeText(
+                        "cfg v$wantedVersion · $abi · ${File(candidate, so.name).length() / 1024}KB · tải ${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.US).format(System.currentTimeMillis())}" +
+                            (if (serverDate.isNotBlank()) " · bản dựng $serverDate" else "")
+                    )
+                }
             }
         }
         def.systemFiles?.let { url ->
             // Một số lõi (PPSSPP...) cần thêm file hệ thống: font, dữ liệu...
-            val marker = File(systemDir(), ".$id-${def.version}")
+            val marker = File(systemDir(), ".$id-$wantedVersion")
             if (!marker.exists()) {
                 withContext(Dispatchers.Main) { onStatus("Đang tải dữ liệu hệ thống cho $id…") }
                 download(url) { Importer.unzip(it, systemDir()) }

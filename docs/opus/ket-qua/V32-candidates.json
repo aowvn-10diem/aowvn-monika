@@ -1,0 +1,122 @@
+[
+  {
+    "core": "gambatte",
+    "abi": "arm64-v8a",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/gambatte_libretro_android.so.zip",
+    "file": "gambatte-arm64-v8a.zip",
+    "version": "sha256-e6e1c00c8e7920b7",
+    "sha256": "e6e1c00c8e7920b79663caf804118c1aca79f432e4ace71b6e0c4d0a9bd3f8a7",
+    "size": 433996,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  },
+  {
+    "core": "gambatte",
+    "abi": "armeabi-v7a",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/gambatte_libretro_android.so.zip",
+    "file": "gambatte-armeabi-v7a.zip",
+    "version": "sha256-a84b6f6756f1d288",
+    "sha256": "a84b6f6756f1d28884e85be26e70303f9bffc87e1ac9f063e85404ae64d61e06",
+    "size": 369326,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  },
+  {
+    "core": "gambatte",
+    "abi": "x86_64",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/x86_64/gambatte_libretro_android.so.zip",
+    "file": "gambatte-x86_64.zip",
+    "version": "sha256-0bfe8d3dd6a07eaa",
+    "sha256": "0bfe8d3dd6a07eaaf188e770b4bfb9c604281be08f904d3ab967747ec12e1a35",
+    "size": 435079,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  },
+  {
+    "core": "gambatte",
+    "abi": "x86",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/x86/gambatte_libretro_android.so.zip",
+    "file": "gambatte-x86.zip",
+    "version": "sha256-50fedcb6305e4241",
+    "sha256": "50fedcb6305e4241f9ff625bb8b6ef5fb4287a8ab3b8cf2ad728ad50369e0e5f",
+    "size": 425613,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  },
+  {
+    "core": "mgba",
+    "abi": "arm64-v8a",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/mgba_libretro_android.so.zip",
+    "file": "mgba-arm64-v8a.zip",
+    "version": "sha256-359b4bc58a6b2667",
+    "sha256": "359b4bc58a6b2667e195ff74981539c57464679f01fefb57142be414449e7a36",
+    "size": 419371,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  },
+  {
+    "core": "mgba",
+    "abi": "armeabi-v7a",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/mgba_libretro_android.so.zip",
+    "file": "mgba-armeabi-v7a.zip",
+    "version": "sha256-25c5d2da7f166b50",
+    "sha256": "25c5d2da7f166b5040f83127341089a8c284fb3db0de3ca42a6c9217994644b0",
+    "size": 383098,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  },
+  {
+    "core": "mgba",
+    "abi": "x86_64",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/x86_64/mgba_libretro_android.so.zip",
+    "file": "mgba-x86_64.zip",
+    "version": "sha256-93f6810dbfab77d6",
+    "sha256": "93f6810dbfab77d675c921877e5aac6d9bab11c9882f6ff7bfecf57f7a10b180",
+    "size": 420304,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  },
+  {
+    "core": "mgba",
+    "abi": "x86",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/x86/mgba_libretro_android.so.zip",
+    "file": "mgba-x86.zip",
+    "version": "sha256-72549728865dd929",
+    "sha256": "72549728865dd9297b73fdc92ae18c2553d88043a40e9fda46a0a8119d49526a",
+    "size": 422718,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  },
+  {
+    "core": "fceumm",
+    "abi": "arm64-v8a",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/fceumm_libretro_android.so.zip",
+    "file": "fceumm-arm64-v8a.zip",
+    "version": "sha256-b1fb1f953f32a894",
+    "sha256": "b1fb1f953f32a89422736c5728ec2cf3177ecd7eab45c26cd5ba9a002756b48e",
+    "size": 445577,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  },
+  {
+    "core": "fceumm",
+    "abi": "armeabi-v7a",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/armeabi-v7a/fceumm_libretro_android.so.zip",
+    "file": "fceumm-armeabi-v7a.zip",
+    "version": "sha256-bde3b58b4a8dd0ad",
+    "sha256": "bde3b58b4a8dd0ad6c95adf294f08a57cf948f93c9de285c24d7ae393756edd2",
+    "size": 348340,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  },
+  {
+    "core": "fceumm",
+    "abi": "x86_64",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/x86_64/fceumm_libretro_android.so.zip",
+    "file": "fceumm-x86_64.zip",
+    "version": "sha256-f2a1d67a23a15644",
+    "sha256": "f2a1d67a23a156446508e437b69b0406128af5e1bbc0ff45a14d2778c9357b70",
+    "size": 462850,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  },
+  {
+    "core": "fceumm",
+    "abi": "x86",
+    "sourceUrl": "https://buildbot.libretro.com/nightly/android/latest/x86/fceumm_libretro_android.so.zip",
+    "file": "fceumm-x86.zip",
+    "version": "sha256-296dbfe3bdfcf7da",
+    "sha256": "296dbfe3bdfcf7da824a10563cc26d63fcbf451b1424f2b65b2bf1623806f8c4",
+    "size": 449031,
+    "fixedUrl": "[CHƯA KIỂM — cần nơi lưu ảnh chụp bất biến]"
+  }
+]
