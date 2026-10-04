@@ -49,10 +49,12 @@ object J2meMenu : J2meRuntime.MenuPresenter {
                         picked?.let(onPick::accept)
                     }
                 }
+                // ComposeView còn sống khi báo lỗi mở; menu Java chưa tháo view.
+                val reportAction = vn.aow.monika.ui.gameReportAction {}.copy(keepOpen = true)
                 Box(Modifier.fillMaxSize()) {
                     MonikaMenuSheet(
                         open, dismiss, title = title, subtitle = subtitle,
-                        actions = ordered.map { e ->
+                        actions = listOf(reportAction) + ordered.map { e ->
                             SheetAction(e.title, iconFor(e.key), highlight = e.key == "monika_continue" || e.checked) { picked = e.id }
                         },
                     )

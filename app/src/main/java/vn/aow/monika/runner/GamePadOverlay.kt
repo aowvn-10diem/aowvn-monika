@@ -258,6 +258,7 @@ fun InGameOverlay(
                 SheetAction("Hỏi nhóm FB", R.drawable.ic_fluent_people_community_24_regular, onClick = onAsk),
             ) + extraActions + listOf(
                 SheetAction("Chơi tiếp", R.drawable.ic_fluent_play_24_regular) {},
+                vn.aow.monika.ui.gameReportAction { state.menuOpen = false },
                 SheetAction("Thoát game", R.drawable.ic_fluent_door_arrow_left_24_regular, onClick = onBack),
             ),
         )

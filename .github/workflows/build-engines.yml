@@ -14,13 +14,17 @@ on:
         description: "Chạy job nào"
         type: choice
         default: all
-        options: [all, onsyuri, azahar]
+        options: [all, onsyuri, azahar, symbian]
       azahar_repo:
         description: "Kho Azahar để dựng (AzaharPlus đọc được cả ROM mã hóa)"
         default: "AzaharPlus/AzaharPlus"
       azahar_ref:
         description: "Nhánh/tag Azahar"
         default: "master"
+
+      eka2l1_ref:
+        description: "Commit/nhánh EKA2L1 cho spike chỉ artifact"
+        default: "c396ac8"
 
 permissions:
   contents: write
@@ -214,3 +218,52 @@ jobs:
           gh release create "engine-azahar-${{ github.run_number }}" azahar-android-arm64.zip \
             --title "Engine 3DS (Azahar) arm64 #${{ github.run_number }}" \
             --notes "${{ inputs.azahar_repo }} @ $SRC_COMMIT (GPLv2+). Thư viện native cho Aow Monika."
+
+
+  symbian-android:
+    # Spike riêng: không đi vào mặc định all vì các job cũ có bước publish.
+    if: ${{ inputs.only == 'symbian' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    permissions:
+      contents: read
+    env:
+      EKA_REF: ${{ inputs.eka2l1_ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lấy EKA2L1 đúng ref và submodule
+        run: |
+          git clone --filter=blob:none --no-checkout https://github.com/EKA2L1/EKA2L1.git src
+          git -C src checkout --detach "$EKA_REF"
+          git -C src submodule update --init --recursive --jobs 8
+          echo "EKA_COMMIT=$(git -C src rev-parse HEAD)" >> "$GITHUB_ENV"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Cài công cụ đúng nguồn ghim
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libc6-dev
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'ndk;25.1.8937393' 'cmake;3.22.1' 'platforms;android-34'
+      - name: Cache FFmpeg như workflow nguồn
+        uses: actions/cache@v4
+        with:
+          path: src/src/emu/android/build/ffmpeg-cache
+          key: symbian-ffmpeg-${{ runner.os }}-${{ hashFiles('src/src/emu/android/app/build.gradle', 'src/src/external/ffmpeg/**') }}
+      - name: Dựng unsigned release của upstream để trích SO (không ký/phát hành)
+        working-directory: src/src/emu/android
+        run: |
+          started=$(date +%s)
+          ./gradlew assembleRelease -PciArg='-DCI=ON' --no-daemon --console=plain -Dorg.gradle.jvmargs=-Xmx4g
+          echo "EKA_BUILD_SECONDS=$(( $(date +%s) - started ))" >> "$GITHUB_ENV"
+      - name: Gói SO/tài nguyên và đo JNI/phụ thuộc
+        env:
+          EKA_APK: src/src/emu/android/app/build/outputs/apk/release/app-release-unsigned.apk
+        run: python3 scripts/pack-symbian-spike.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: s0-symbian-native
+          path: out/symbian/
+          retention-days: 3

@@ -36,6 +36,7 @@ fun RgssOverlay(
                     SheetAction(if (shiftHeld) "Chạy nhanh (giữ Shift): ĐANG BẬT" else "Chạy nhanh (giữ Shift): tắt", R.drawable.ic_fluent_top_speed_24_regular,
                         highlight = shiftHeld, keepOpen = true, onClick = onShift),
                     SheetAction("Độ mờ phím ${(state.opacity * 100).toInt()}%", R.drawable.ic_fluent_eye_24_regular, keepOpen = true, onClick = onOpacity),
+                    vn.aow.monika.ui.gameReportAction { state.menuOpen = false },
                     SheetAction("Thoát game", R.drawable.ic_fluent_door_arrow_left_24_regular, onClick = onExit),
                 ),
             )
