@@ -15,6 +15,29 @@
 4. **Lỗi/crash**: `diag/Diagnostics` (phiên chơi → báo cáo) · `RetroActivity.onCoreFailure` (lõi báo lỗi/không lên hình → hỏi đổi lõi) · `ui/CrashUi` (hộp thoại) · gửi về máy chủ báo lỗi (`crash.endpoint`, xem `scripts/crash-reports.sh`).
 5. **Phát hành**: Actions → Release (`workflow_dispatch`, nhập tag) → build ký → GitHub Release + Pixeldrain. Kiểm giả lập trên máy ảo: workflow Emulator Test.
 
+### B.1 Engine nhúng (Kirikiri, RPG Maker)
+
+```mermaid
+flowchart LR
+  GL["GameLauncher.launch"] --> ER["EngineRoutes.usable(system.engine)"] --> EPA["EnginePrepActivity"]
+  EPA -->|gói còn thiếu| PM["PackManager.needed / install"] --> OPEN["EngineRoute.open"]
+  EPA -->|gói đã sẵn| OPEN
+  OPEN --> KG["KirikiriGameActivity<br/>tiến trình :game"] --> KO["KirikiriOverlay"]
+  OPEN --> RG["RgssGameActivity<br/>tiến trình :game"] --> RO["RgssOverlay"]
+```
+
+`EnginePrepActivity` kiểm tra quyền đọc game và trạng thái gói; gói chưa có thì tải qua `PackManager`, xong mới mở Activity của engine. Hai Activity chạy trong tiến trình `:game`, khai báo ở `app/src/main/AndroidManifest.xml`; mỗi Activity hiển thị lớp phủ riêng.
+
+| Muốn sửa | Mở file |
+|---|---|
+| Chọn engine theo cấu hình và đăng ký route | `app/src/main/java/vn/aow/monika/runner/GameLauncher.kt`, `app/src/main/java/vn/aow/monika/runner/EngineRoutes.kt` |
+| Màn chuẩn bị, quyền đọc game, tải gói trước khi mở | `app/src/main/java/vn/aow/monika/runner/EnginePrepActivity.kt` |
+| Khai báo URL/kích thước gói hoặc thay đổi installer | `config/monika-config.json`, `app/src/main/java/vn/aow/monika/pack/PackManager.kt` |
+| Mở game Kirikiri hoặc sửa lớp phủ Kirikiri | `app/src/main/java/vn/aow/monika/runner/KirikiriGameActivity.kt`, `app/src/main/java/vn/aow/monika/runner/KirikiriOverlay.kt` |
+| Mở game RPG Maker hoặc sửa lớp phủ RPG Maker | `app/src/main/java/vn/aow/monika/runner/RgssGameActivity.kt`, `app/src/main/java/vn/aow/monika/runner/RgssOverlay.kt` |
+| Đổi tiến trình của Activity game | `app/src/main/AndroidManifest.xml` |
+
+
 ## C. Muốn sửa X thì mở file nào
 | Việc | Nơi sửa |
 |---|---|

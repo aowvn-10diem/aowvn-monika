@@ -98,8 +98,27 @@ Kirikiri nhúng sâu trong Monika (không phải app ngoài): màn chuẩn bị 
 | 6b.4 | Game có tiếng (BGM, hiệu ứng) | Âm thanh phát bình thường | |
 | 6b.5 | Lưu / Tải game trong menu game hoặc gọi menu Monika | Lưu được, tải đúng vị trí đã lưu, không mất tiến độ | |
 | 6b.6 | Menu Monika (… phím dưới cùng) → Tua nhanh (giữ Ctrl để bỏ qua thoại đã đọc) | Game tua nhanh bỏ qua thoại | |
-| 6b.7 | Menu Monika → Menu game | Menu Kirikiri hiện các tùy chọn (Lưu, Tải, Cầu hình, v.v.) | |
+| 6b.7 | Menu Monika → Menu game | Menu Kirikiri hiện các tùy chọn (Lưu, Tải, Cấu hình, v.v.) | |
 | 6b.8 | Thoát game (bấm menu, chọn Thoát hoặc bấm back) | Quay lại Thư viện, game vẫn có icon + tên | |
+| 6b.9 | Thư mục có `<tên>.xp3`, `<tên>.exe` cùng tên và các tệp `patch*.xp3` → thêm thư mục vào Thư viện | Mở đúng `<tên>.xp3`; không chọn tệp `patch*.xp3` làm lối vào | |
+
+## 6c. RPG Maker XP/VX/Ace (nhúng)
+
+Chỉ áp dụng khi bản app đã có gói `rgss` (sau R7).
+
+| # | Thao tác | Kết quả mong đợi | KQ |
+|---|---|---|---|
+| 6c.1 | Mở game RPG Maker XP/VX/Ace | Game vào được màn chơi, không văng | |
+| 6c.2 | Dùng D-pad di chuyển nhân vật | Nhân vật di chuyển theo hướng bấm | |
+| 6c.3 | Bấm A hoặc START để xác nhận trong game | Game nhận phím xác nhận | |
+| 6c.4 | Bấm B hoặc SELECT để hủy hoặc mở menu trong game | Game nhận phím hủy/menu | |
+| 6c.5 | Mở menu Monika | Có các mục “Chơi tiếp”, “Chạy nhanh (giữ Shift)”, “Độ mờ phím” và “Thoát game” | |
+| 6c.6 | Menu Monika → “Chơi tiếp” | Trở lại màn chơi | |
+| 6c.7 | Bấm nút Back để mở rồi đóng menu Monika | Back đổi trạng thái menu | |
+| 6c.8 | Menu Monika → “Chạy nhanh (giữ Shift)” | Trạng thái chạy nhanh bật/tắt theo lựa chọn | |
+| 6c.9 | Menu Monika → “Độ mờ phím” | Độ mờ phím thay đổi | |
+| 6c.10 | Trong menu của game, lưu rồi tải lại | Game trở về vị trí đã lưu | |
+| 6c.11 | Thử mở game trên máy Android 32-bit | Ghi lại nếu vào được hoặc thông báo lỗi; chạy trên máy 32-bit thật **[CHƯA KIỂM]** | |
 
 ## 7. Bộ nhớ & ổn định
 
