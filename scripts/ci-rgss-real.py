@@ -45,6 +45,7 @@ def prepare(scratch, report, tag):
             record['zipSha256'] = hashlib.sha256(archive.read_bytes()).hexdigest()
             target = scratch / 'games' / case; target.mkdir(parents=True, exist_ok=True)
             with zipfile.ZipFile(archive) as z:
+                record["archiveTopEntries"] = z.namelist()[:40]
                 if sum(e.file_size for e in z.infolist()) > 3 * 1024**3:
                     raise ValueError('ZIP giải nén vượt 3 GiB')
                 written = set()
