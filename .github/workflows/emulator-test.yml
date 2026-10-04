@@ -48,6 +48,8 @@ jobs:
   emulator:
     needs: build
     runs-on: ubuntu-latest
+    # Release nháp (gói RGSS, luật V24) chỉ thấy được với quyền ghi contents.
+    permissions: { contents: write }
     strategy:
       fail-fast: false
       matrix:
