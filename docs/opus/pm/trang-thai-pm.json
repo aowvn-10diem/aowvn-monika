@@ -1,5 +1,5 @@
 {
-  "main": "5a67e6f317f95f080af5bb0fff6b9f24df9fe440",
+  "main": "3453741f954140432a82c2d449fa4991072bf8ff",
   "branch": "fa57d05",
   "sol": {
     "V30": "xong#25",
@@ -22,7 +22,7 @@
     "14": "SOL-003 (đã trả lời)",
     "44": "#44 gộpf96da6e. R6 mới37219376261@7bf: XP/Ace PASSmức1, VX FAIL NoMethodError. Đủ5/audio/save-load/FPS còn kẹt; V44 đang sửa, không R7.",
     "46": "gộp5d352a7; Luna + CI xanh, K3 máy thật chưa kiểm",
-    "50": "Sol tiếp quản#50 head3554dc8: R6@7bf37219376261 XP358s/Ace379s PASSmức1, VX65s FAIL NoMethodError96:934; eval951 đã qua. Native37219376256 marker1/ảnhcam/PixelCopy10–40s xác nhận AST+evalcontext. Bỏ write-token R6/signals, đọc artifactRGSS7 ghimID/hash (hết hạn06/10); privacy9PASS. CI3554 đang chạy, cần Luna mới.",
+    "50": "Sol tiếp quản#50 head94e7119: R6@7bf37219376261 XP358s/Ace379s PASSmức1, VX65s FAIL NoMethodError96:934; eval951 đã qua. Native37219376256 marker1/ảnhcam/PixelCopy10–40s xác nhận AST+evalcontext. Bỏ write-token R6/signals, đọc artifactRGSS7 ghimID/hash (hết hạn06/10); privacy10PASS. CI94e đang chạy, cần Luna mới.",
     "51": "gộp0e17edf,27test +5ZIP thật PASS; quota chưa đo",
     "34": "PM duyệt; head 1c64c02 chỉ gộp main",
     "55-57": "Dependabot → Sol (tra-loi-sol-009)",
@@ -38,7 +38,7 @@
     "64": "đóng theo Luna; câu hỏi57 đã cũ, không tựmerge chung",
     "62": "SOL012 kẹt; Luna xác nhận14:55, ký/publish không được cấp ngoại lệ",
     "70": "PM docs đã đồng bộ R6@7bf/nativePASS và sửa quyền3554; cần Luna headmới (b0 Cần sửa trạng thái).",
-    "21": "O03 audit snapshotd275: LunaĐạt17:00, chưaBuild/checkrun; chỉ tư liệu lịch sử, không bảng hiệntrạng."
+    "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS."
   },
   "idle": 0,
   "cadence": 60,
@@ -65,7 +65,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-04T17:56:53Z",
+  "updated_at": "2026-10-04T18:06:36Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [

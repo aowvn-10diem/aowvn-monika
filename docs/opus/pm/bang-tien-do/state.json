@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-04T17:56:53Z",
-  "mainSha": "5a67e6f317f95f080af5bb0fff6b9f24df9fe440",
+  "updatedAt": "2026-10-04T18:06:36Z",
+  "mainSha": "3453741f954140432a82c2d449fa4991072bf8ff",
   "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-04T18:56:53Z",
+  "nextCheck": "2026-10-04T19:06:36Z",
   "headline": "VX vượt eval nhưng còn thiếu setter; XP/Ace PASSmức1. Native AST/eval fixture PASS. #50 bỏ token ghi theo Luna; #70 đồng bộ verdict, chờreview mới. Gemini standby.",
   "needsBoss": [
     {
@@ -391,7 +391,7 @@
       "title": "Rà soát độc lập toàn dự án",
       "owner": "Tư vấn",
       "status": "xong",
-      "note": "Kết luận XA ĐÀ NẶNG, 23 phát hiện. PM đồng ý, đã chia việc V28–V33, L04, O04.",
+      "note": "Gộp#21/3453741 sau LunaĐạt d275. Audit lịch sử149dòng/19phát hiện/48đềxuất; BuildmiễnV11 docs-only, không bảnghiệntrạng.",
       "module": "ci"
     },
     {
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Sol tiếp quản#50 head3554dc8: R6@7bf37219376261 XP358s/Ace379s PASSmức1, VX65s FAIL NoMethodError96:934; eval951 đã qua. Native37219376256 marker1/ảnhcam/PixelCopy10–40s xác nhận AST+evalcontext. Bỏ write-token R6/signals, đọc artifactRGSS7 ghimID/hash (hết hạn06/10); privacy9PASS. CI3554 đang chạy, cần Luna mới."
+      "note": "Sol tiếp quản#50 head94e7119: R6@7bf37219376261 XP358s/Ace379s PASSmức1, VX65s FAIL NoMethodError96:934; eval951 đã qua. Native37219376256 marker1/ảnhcam/PixelCopy10–40s xác nhận AST+evalcontext. Bỏ write-token R6/signals, đọc artifactRGSS7 ghimID/hash (hết hạn06/10); privacy10PASS. CI94e đang chạy, cần Luna mới."
     },
     {
       "code": "V45",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-04T18:06:36Z",
+      "text": "Gộp#21/3453741 sau LunaĐạt đúngd275: giữaudit snapshotlịch sử, BuildmiễnV11docs-only ghiđúng. #50head94e chỉthêm maskedinspect895/915 tìm nguồn accessor; download/hash bằngreadtoken đãPASS@3554, cònCI/native/R6latest."
+    },
     {
       "t": "2026-10-04T17:56:53Z",
       "text": "Đọc artifact11310460101/11309546982: XP358/Ace379PASSmức1, VX65FAIL NoMethodError96:934, nativeevalcontext+PixelCopyPASS. Xử lý Luna17:46: #50head3554 chỉreadtoken/artifactRGSS7ghimhash, CI đang chạy. #70 sửa trạngthái hoàn tất, cầnreview mới. #21 LunaĐạt snapshot, chưaBuild; SOL012/Gemini giữcổng."
@@ -901,7 +905,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "R637219376261@7bf: XP358s/Ace379s PASSmức1, VX65s FAIL NoMethodError96:934; nativeAST/evalcontext fixture đã qua. Head3554 bỏ quyềnghi R6/signals, artifactRGSS7ghimhash, CI đang chạy. Audio/save-load/FPS/đủ5/máythật [CHƯA KIỂM]."
+      "note": "R637219376261@7bf: XP358s/Ace379s PASSmức1, VX65s FAIL NoMethodError96:934; nativeAST/evalcontext fixture đã qua. Head94e bỏ quyềnghi R6/signals, artifactRGSS7ghimhash, CI đang chạy. Audio/save-load/FPS/đủ5/máythật [CHƯA KIỂM]."
     },
     {
       "id": "web",
