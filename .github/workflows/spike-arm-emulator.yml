@@ -1,0 +1,23 @@
+name: Spike ARM64 emulator (V40)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capability:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Đo khả năng host/SDK trước khi tải image
+        run: python3 scripts/probe-arm-emulator.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v40-arm-capability
+          path: out/arm-emulator/
+          retention-days: 3
