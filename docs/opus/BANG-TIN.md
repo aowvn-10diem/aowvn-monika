@@ -4,6 +4,7 @@ Trạng thái: `mở` (chờ người nhận) · `đã trả lời` (chờ bên 
 
 | # | Chủ đề | Bước plan | Hạn cần | Trạng thái | Cập nhật |
 |---|---|---|---|---|---|
+| SOL-012 | Đồng bộ phạm vi V45/V43 ([thư hỏi](hop-thu/hoi-sol-012-pham-vi-v45-v43.md)) | V45/V43 | trước ký/phát gói | kẹt (SOL-012): cần ngoại lệ khớp chỉ dẫn phiên | 04/10/2026 |
 | SOL-006 | Đồng bộ phạm vi S0/V25 ([thư hỏi](hop-thu/hoi-sol-006-pham-vi-s0-v25.md)) | S0/V25 | trước thi công | đã trả lời — A: S0 chỉ CI, V25 đúng game G2 | 04/10/2026 |
 | SOL-009 | V21: ảnh trong hợp đồng Worker ([thư hỏi](hop-thu/hoi-sol-009-v21-anh-worker.md)) | V21 | trước đổi giao thức gửi/lưu ảnh | kẹt (SOL-009), phần môi trường làm độc lập | 04/10/2026 |
 | SOL-007 | Nơi lưu snapshot core ([thư hỏi](hop-thu/hoi-sol-007-core-snapshot-hosting.md)) | V32 | trước ghim config | đã trả lời — A: Sol làm workflow snapshot sau PM duyệt | 04/10/2026 |
