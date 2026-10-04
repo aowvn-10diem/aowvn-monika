@@ -211,6 +211,8 @@ data class EngineRule(
     val system: String,
     val markers: List<String>,
     val entry: List<String> = emptyList(),
+    /** Mẫu chuỗi lỗi trong log engine, so khớp không phân biệt hoa thường. Config cũ mặc định tắt. */
+    val errorPatterns: List<String> = emptyList(),
 )
 
 /** Ảnh chụp lõi cố định theo ABI. sha256 của ZIP, version là định danh ảnh chụp. */

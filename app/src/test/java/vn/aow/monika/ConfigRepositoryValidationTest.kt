@@ -3,6 +3,8 @@ package vn.aow.monika
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.*
 import org.junit.Assert.*
 import org.junit.Before
@@ -65,6 +67,33 @@ class ConfigRepositoryValidationTest {
         }
         reply = "{"; assertTrue(r.refresh(true).isFailure)
         assertEquals(before, cache.readText())
+    }
+
+    @Test fun enginePatternBoundariesAcceptDefaultAndMaximumLiteralValues() {
+        fun config(patterns: String?) = """{"engines":[{"system":"rgss","markers":[]${patterns?.let { ",\"errorPatterns\":$it" }.orEmpty()}}]}"""
+        assertTrue(ConfigValidation.parse(config(null), 0).engines.single().errorPatterns.isEmpty())
+        assertTrue(ConfigValidation.parse(config("[]"), 0).engines.single().errorPatterns.isEmpty())
+        val maximum = List(32) { "x".repeat(160) }
+        assertEquals(maximum, ConfigValidation.parse(config(JsonArray(maximum.map(::JsonPrimitive)).toString()), 0).engines.single().errorPatterns)
+        // Dấu regex vẫn là literal; không bị diễn giải như biểu thức khi đọc config.
+        assertEquals(listOf("[.*]"), ConfigValidation.parse(config("[\"[.*]\"]"), 0).engines.single().errorPatterns)
+    }
+
+    @Test fun invalidEnginePatternBoundsAndTypesKeepPreviousRemoteConfig() = runBlocking {
+        val r = repo(); val version = bundled + 10
+        reply = valid(version); assertTrue(r.refresh(true).isSuccess)
+        val before = cache.readText()
+        val invalid = listOf(
+            JsonArray(List(33) { JsonPrimitive("valid") }).toString(),
+            JsonArray(listOf(JsonPrimitive("x".repeat(161)))).toString(),
+            "[\"\"]", "[\"   \"]", "[1]", "[null]", "null", "{}", "\"pattern\""
+        )
+        for (patterns in invalid) {
+            reply = """{"configVersion":${version + 1},"engines":[{"system":"rgss","markers":[],"errorPatterns":$patterns}]}"""
+            assertTrue(patterns, r.refresh(true).isFailure)
+            assertEquals(version, r.current.configVersion)
+            assertEquals(before, cache.readText())
+        }
     }
 
     @Test fun invalidCacheFallsBackToBundledAndRecordsHandledError() {
