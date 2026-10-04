@@ -70,7 +70,7 @@ class ConfigRepositoryValidationTest {
     }
 
     @Test fun enginePatternBoundariesAcceptDefaultAndMaximumLiteralValues() {
-        fun config(patterns: String?) = """{"engines":[{"id":"rgss"${patterns?.let { ",\"errorPatterns\":$it" }.orEmpty()}}]}"""
+        fun config(patterns: String?) = """{"engines":[{"system":"rgss","markers":[]${patterns?.let { ",\"errorPatterns\":$it" }.orEmpty()}}]}"""
         assertTrue(ConfigValidation.parse(config(null), 0).engines.single().errorPatterns.isEmpty())
         assertTrue(ConfigValidation.parse(config("[]"), 0).engines.single().errorPatterns.isEmpty())
         val maximum = List(32) { "x".repeat(160) }
@@ -89,7 +89,7 @@ class ConfigRepositoryValidationTest {
             "[\"\"]", "[\"   \"]", "[1]", "[null]", "null", "{}", "\"pattern\""
         )
         for (patterns in invalid) {
-            reply = """{"configVersion":${version + 1},"engines":[{"id":"rgss","errorPatterns":$patterns}]}"""
+            reply = """{"configVersion":${version + 1},"engines":[{"system":"rgss","markers":[],"errorPatterns":$patterns}]}"""
             assertTrue(patterns, r.refresh(true).isFailure)
             assertEquals(version, r.current.configVersion)
             assertEquals(before, cache.readText())
