@@ -70,6 +70,7 @@ fun KirikiriOverlay(
                     SheetAction("Menu game (lưu/tải/cài đặt)", R.drawable.ic_fluent_grid_24_regular, onClick = onGameMenu),
                     SheetAction(if (fastForward) "Tua nhanh thoại: ĐANG BẬT" else "Tua nhanh thoại: tắt", R.drawable.ic_fluent_arrow_clockwise_24_regular,
                         highlight = fastForward, keepOpen = true, onClick = onFastForward),
+                    vn.aow.monika.ui.gameReportAction { onOpen(false) },
                     SheetAction("Thoát game", R.drawable.ic_fluent_door_arrow_left_24_regular, onClick = onExit),
                 ),
             )

@@ -1,0 +1,63 @@
+name: Báo lỗi người dùng (V21 D5)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/user-report.yml
+      - scripts/ci-user-report.*
+      - .maestro-user-report/**
+      - app/src/main/java/vn/aow/monika/diag/UserGameReport.kt
+      - app/src/main/java/vn/aow/monika/diag/Diagnostics.kt
+      - app/src/main/java/vn/aow/monika/ui/GameReportUi.kt
+permissions: {contents: read}
+concurrency: {group: 'v21-d5-${{ github.ref }}', cancel-in-progress: true}
+jobs:
+  report:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions: {contents: write} # Chỉ job cần thấy draft; token không tới mã PR.
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Chỉ đọc gói draft RGSS trước khi checkout mã PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RGSS_TAG: engines-rgss-7
+        run: |
+          set -euo pipefail
+          [[ "$RGSS_TAG" =~ ^engines-rgss-[0-9]+$ ]]
+          mkdir -p "$RUNNER_TEMP/user-report-engine"
+          asset_id=$(gh api --paginate --slurp 'repos/aowvn-10diem/aowvn-monika/releases?per_page=100' | jq -er --arg tag "$RGSS_TAG" '[.[][] | select(.draft == true and .tag_name == $tag)] | if length == 1 then .[0] else error("draft count") end | [.assets[] | select(.name == "rgss-arm64-v8a.zip")] | if length == 1 then .[0].id else error("asset count") end')
+          [[ "$asset_id" =~ ^[0-9]+$ ]]
+          gh api "repos/aowvn-10diem/aowvn-monika/releases/assets/$asset_id" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/user-report-engine/rgss.zip"
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: 17}
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit trên config chuẩn
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+          ./gradlew testDebugUnitTest --console=plain
+      - name: Chỉ engine và fixture tự sinh
+        run: python3 scripts/ci-user-report.py --scratch "$RUNNER_TEMP/user-report" --pack-file "$RUNNER_TEMP/user-report-engine/rgss.zip"
+      - name: APK debug với fixture (unit đã chạy trên config chuẩn)
+        run: ./gradlew assembleDebug --console=plain
+      - name: Bật KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Maestro
+        run: |
+          curl -fsSL https://get.maestro.mobile.dev | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
+          script: bash scripts/ci-user-report.sh "$RUNNER_TEMP/user-report" out/user-report
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: user-report-api34, path: out/user-report/, retention-days: 3}

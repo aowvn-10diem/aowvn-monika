@@ -20,6 +20,7 @@ fun RenpyOverlay(title: String, open: Boolean, onOpen: (Boolean) -> Unit, onExit
                 open, { onOpen(false) }, title = title, subtitle = "Ren'Py (visual novel)",
                 actions = listOf(
                     SheetAction("Chơi tiếp", R.drawable.ic_fluent_play_24_regular, highlight = true) {},
+                    vn.aow.monika.ui.gameReportAction { onOpen(false) },
                     SheetAction("Thoát game", R.drawable.ic_fluent_door_arrow_left_24_regular, onClick = onExit),
                 ),
             )

@@ -1,0 +1,6 @@
+appId: com.aow.monika
+---
+- tapOn: "Menu"
+- tapOn: "Báo lỗi game này"
+- tapOn: "Không có tiếng"
+- tapOn: "Gửi báo lỗi"
