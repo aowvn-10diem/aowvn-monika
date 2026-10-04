@@ -46,6 +46,16 @@ import hashlib
 mk({'loadOrder': ['libx.so'], 'files': {'libx.so': {'size': len(elf()), 'sha256': hashlib.sha256(elf()).hexdigest()}}}); r.append(ok(v.run(z, 'libx.so', 'arm64-v8a').startswith('OK'), 'manifest hợp lệ (size + sha256) vẫn đạt'))
 v.MAX_ENTRY = 10; r.append(ok('quá lớn' in v.run(z, 'libx.so', 'arm64-v8a'), 'file vượt giới hạn bị chặn trước khi băm')); v.MAX_ENTRY = 10**9
 
+# giới hạn metadata
+big = lambda files: zipof(z, dict({'libx.so': elf()}, **files))
+big({'manifest.json': '{"loadOrder": [' + ','.join(['"a"'] * 10) + ']}'}); v.MAX_MANIFEST = 20
+r.append(ok('manifest.json quá lớn' in v.run(z, 'libx.so', 'arm64-v8a'), 'manifest.json vượt giới hạn byte')); v.MAX_MANIFEST = 1 << 20
+big({'manifest.json': json.dumps({'loadOrder': ['libx.so'] * 5})}); v.MAX_ENTRIES = 3
+r.append(ok('quá nhiều mục' in v.run(z, 'libx.so', 'arm64-v8a'), 'manifest vượt giới hạn số mục'))
+big({'needed.txt': 'libc.so\n' * 5}); r.append(ok('quá nhiều dòng' in v.run(z, 'libx.so', 'arm64-v8a'), 'needed.txt vượt giới hạn số dòng')); v.MAX_ENTRIES = 1000
+v.MAX_NEEDED = 10; r.append(ok('needed.txt quá lớn' in v.run(z, 'libx.so', 'arm64-v8a'), 'needed.txt vượt giới hạn byte')); v.MAX_NEEDED = 64 * 1024
+big({'manifest.json': '[' * 100000}); r.append(ok('không đọc được' in v.run(z, 'libx.so', 'arm64-v8a'), 'manifest lồng quá sâu bị từ chối, không sập'))
+
 st = os.path.join(t, 'state.json')
 json.dump({'updatedAt': 'x', 'tasks': [{'code': 'V1', 'title': 't', 'owner': 'o', 'status': 'cho', 'note': ''}],
            'modules': [{'id': 'm', 'steps': {'build': 'cho'}}], 'log': []}, open(st, 'w'))

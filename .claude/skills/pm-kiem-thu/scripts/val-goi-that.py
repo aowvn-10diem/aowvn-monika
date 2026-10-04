@@ -8,6 +8,9 @@ SYS={"libc.so","libm.so","libdl.so","liblog.so","libandroid.so","libz.so","libEG
 MAX_ENTRY=int(os.environ.get("VAL_MAX_ENTRY",200*1024*1024))   # byte tối đa mỗi file trong gói (theo kích thước KHAI BÁO; zipfile không đọc quá số này)
 MAX_TOTAL=int(os.environ.get("VAL_MAX_TOTAL",500*1024*1024))   # tổng byte giải nén tối đa
 MAX_FILES=int(os.environ.get("VAL_MAX_FILES",5000))
+MAX_MANIFEST=int(os.environ.get("VAL_MAX_MANIFEST",1024*1024))   # byte tối đa của manifest.json
+MAX_NEEDED=int(os.environ.get("VAL_MAX_NEEDED",64*1024))        # byte tối đa của needed.txt
+MAX_ENTRIES=int(os.environ.get("VAL_MAX_ENTRIES",1000))         # số mục tối đa trong loadOrder / files / needed.txt
 def safe(base,name):
     """Nối name vào base; trả None nếu name không phải chuỗi, tuyệt đối, hoặc thoát khỏi thư mục tạm (.. / symlink)."""
     if not isinstance(name,str) or not name or os.path.isabs(name) or "\0" in name: return None
@@ -43,12 +46,15 @@ def run(zp,main,abi,flatten=False):
         if m is None or not os.path.isfile(m) or os.path.getsize(m)==0: return f"FAIL không có {main}"
         mf=os.path.join(root,'manifest.json'); md=os.path.dirname(m)
         if os.path.isfile(mf):
-            try: meta=json.load(open(mf,encoding='utf-8'))
-            except (ValueError,OSError): return "FAIL manifest.json không đọc được"
+            if os.path.getsize(mf)>MAX_MANIFEST: return f"FAIL manifest.json quá lớn (> {MAX_MANIFEST} byte)"
+            try:
+                with open(mf,encoding='utf-8') as f: meta=json.load(f)
+            except (ValueError,OSError,RecursionError): return "FAIL manifest.json không đọc được"
             if not isinstance(meta,dict): return "FAIL manifest.json sai dạng"
             if 'abi' in meta and meta['abi']!=abi: return f"FAIL manifest abi {meta['abi']}"
             lo=meta.get('loadOrder',[]); fl=meta.get('files') or {}
             if not isinstance(lo,list) or not isinstance(fl,dict): return "FAIL manifest loadOrder/files sai dạng"
+            if len(lo)>MAX_ENTRIES or len(fl)>MAX_ENTRIES: return f"FAIL manifest quá nhiều mục (> {MAX_ENTRIES})"
             for n in lo:
                 p=safe(md,n)
                 if p is None: return f"FAIL loadOrder đường dẫn không hợp lệ {n!r}"
@@ -65,7 +71,10 @@ def run(zp,main,abi,flatten=False):
                     if dig!=str(info['sha256']).lower(): return f"FAIL sha {n}"
         nd=os.path.join(root,'needed.txt')
         if os.path.isfile(nd):
-            for l in open(nd,encoding='utf-8',errors='replace').read().splitlines():
+            if os.path.getsize(nd)>MAX_NEEDED: return f"FAIL needed.txt quá lớn (> {MAX_NEEDED} byte)"
+            with open(nd,encoding='utf-8',errors='replace') as f: nl=f.read().splitlines()
+            if len(nl)>MAX_ENTRIES: return f"FAIL needed.txt quá nhiều dòng (> {MAX_ENTRIES})"
+            for l in nl:
                 l=l.strip()
                 if l and l not in SYS:
                     p=safe(root,l)

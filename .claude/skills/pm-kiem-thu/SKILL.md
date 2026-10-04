@@ -45,7 +45,7 @@ Khóa gốc: `updatedAt`, `mainSha`, `app`, `nextCheck`, `headline`, `needsBoss[
 Chỉ nhắn sếp khi cần quyết (1–2 dòng). Không đẩy thẳng main, không phát hành, không chạm khóa/token/secret. Sol/Haiku không sửa KE-HOACH.
 
 ## Kiểm gói thật
-`$S/val-goi-that.py [file-chính-7zip] [file-chính-kirikiri]` (mặc định `lib7-Zip-JBinding.so`, `libkrkr2yuri.so` theo `pack/PackManager.kt`) đọc các zip gói (đặt cạnh script hoặc `PACK_DIR=…`) và kiểm bố cục, manifest, `needed.txt`, ELF/ABI. Có giới hạn giải nén (mỗi file 200 MB, tổng 500 MB, 5000 file; đổi bằng `VAL_MAX_ENTRY`/`VAL_MAX_TOTAL`/`VAL_MAX_FILES`). Test các script: `python3 .claude/skills/pm-kiem-thu/scripts/test-scripts.py`. CI cũng có job V37 (`check-packs.yml`) làm việc này với gói thật.
+`$S/val-goi-that.py [file-chính-7zip] [file-chính-kirikiri]` (mặc định `lib7-Zip-JBinding.so`, `libkrkr2yuri.so` theo `pack/PackManager.kt`) đọc các zip gói (đặt cạnh script hoặc `PACK_DIR=…`) và kiểm bố cục, manifest, `needed.txt`, ELF/ABI. Có giới hạn giải nén (mỗi file 200 MB, tổng 500 MB, 5000 file; `manifest.json` ≤ 1 MB, `needed.txt` ≤ 64 KB, ≤ 1000 mục; đổi bằng `VAL_MAX_*`). Test các script: `python3 .claude/skills/pm-kiem-thu/scripts/test-scripts.py`. CI cũng có job V37 (`check-packs.yml`) làm việc này với gói thật.
 
 ## Đo token (kiểm kết quả skill)
 Trường `usage` trong `~/.claude/projects/-home-user/<phiên>.jsonl`. Đích: ≤ 7,5 triệu token/lượt kiểm (kỳ vọng 1–2 triệu), ngữ cảnh mỗi lần gọi < 100 nghìn token.
