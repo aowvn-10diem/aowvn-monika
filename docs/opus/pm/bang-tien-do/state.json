@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-04T07:41:00Z",
- "mainSha": "92412b0",
+ "updatedAt": "2026-10-04T08:09:00Z",
+ "mainSha": "014ff52",
  "app": "App 0.7.4 · config 32",
- "nextCheck": "2026-10-04T08:06:00Z",
+ "nextCheck": "2026-10-04T08:39:00Z",
  "headline": "Landing page tải app đã chạy: aowvn-10diem.github.io/aowvn-monika. PM duyệt thêm 8 PR (GitHub tự kiểm, bản tin tự động, Symbian dựng thử, Ren'Py P3…). Khóa ký đã có trong GitHub Secrets: từ nay APK ký và phát hành trên GitHub.",
  "needsBoss": [
   {
@@ -103,7 +103,7 @@
    "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
    "owner": "Sol",
    "status": "dang",
-   "note": "3 game RPG Maker công khai: XP vào được; VX, VX Ace lỗi engine → Sonnet sửa (V44).",
+   "note": "PM đọc ảnh chụp: game XP vào gameplay sau 60 giây; VX, VX Ace hiện hộp lỗi script → V44. Sol đang cho job tự kết luận từng game.",
    "module": "rgss"
   },
   {
@@ -175,15 +175,15 @@
    "title": "Bắt lỗi script engine + phát hiện màn đen",
    "owner": "Sol",
    "status": "dang",
-   "note": "PM chốt: kiểm màn đen bằng RPG Maker; Kirikiri chờ máy ARM thật.",
+   "note": "Bắt lỗi + màn đen đạt test. PM yêu cầu bớt quyền token trong workflow rồi chạy lại máy ảo.",
    "module": "diag"
   },
   {
    "code": "V17",
-   "title": "P2: module :renpy (Ren'Py 8)",
+   "title": "P2–P3: module :renpy (Ren'Py 8)",
    "owner": "Sonnet",
-   "status": "dang",
-   "note": "P2 đã gộp; P3 (màn chơi Ren'Py) PM duyệt, Sonnet gộp.",
+   "status": "xong",
+   "note": "P2 và P3 (màn chơi Ren'Py) đã gộp vào main.",
    "module": "renpy8"
   },
   {
@@ -590,9 +590,9 @@
    "code": "V44",
    "title": "Sửa tương thích RPG Maker VX/VX Ace (lỗi script khi mở game)",
    "owner": "Sonnet",
-   "status": "cho",
+   "status": "dang",
    "module": "rgss",
-   "note": "Từ kết quả chạy 3 game thật (V25)."
+   "note": "PR #50: chạy được build và test; còn cần giới hạn/test phần SafeMarshal và chạy 3 game thật (sau khi V25 gộp)."
   },
   {
    "code": "V45",
@@ -608,7 +608,7 @@
    "owner": "Sonnet",
    "status": "dang",
    "module": "ci",
-   "note": "Phiên Sonnet mới riêng cho việc này. Đo thật: mỗi lượt kiểm của PM tốn ~15 triệu token đọc lại ngữ cảnh."
+   "note": "PR #51 sẵn sàng: 9 skill + CLAUDE.md gọn từ 11,4 KB còn 2,6 KB. Đã sửa câu sai về khóa ký. Chờ Luna tiền duyệt."
   }
  ],
  "gates": [
@@ -684,6 +684,14 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-04T08:09:00Z",
+   "text": "V46: phiên Sonnet bị bộ kiểm duyệt chặn sửa file skill; sếp đổi chế độ phiên, Sonnet đã sửa xong và chuyển PR #51 sang sẵn sàng."
+  },
+  {
+   "t": "2026-10-04T08:09:00Z",
+   "text": "PM xem bằng chứng 3 game RPG Maker thật trên máy ảo: XP chơi tới hội thoại; VX lỗi cú pháp Ruby 1.8; VX Ace thiếu user32 → V44. Yêu cầu Sol sửa job tự kết luận (#44) và bớt quyền token (#46)."
+  },
   {
    "t": "2026-10-04T07:41:00Z",
    "text": "Sếp xác nhận khóa ký đã có trong GitHub Secrets → V38 xong. Giao Sol chạy thử ký trên GitHub và so chứng thư (V43 bước 1)."

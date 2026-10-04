@@ -1,5 +1,5 @@
 {
- "main": "92412b0",
+ "main": "014ff52",
  "branch": "fa57d05",
  "sol": {
   "V30": "30666b8 #25 duyệt",
@@ -18,13 +18,17 @@
   "19": "H06 Luna duyệt",
   "20": "L03 Luna duyệt",
   "18": "L02 Luna (đã trả lời thư)",
-  "14": "SOL-003 (đã trả lời)"
+  "14": "SOL-003 (đã trả lời)",
+  "44": "PM yêu cầu sửa 15:10 (9a061d3)",
+  "46": "PM yêu cầu sửa 15:10 (304d5a8)",
+  "50": "chờ Luna head mới 58b6287",
+  "51": "ready 8f8393e, chờ Luna"
  },
  "idle": 0,
  "cadence": 30,
  "dashboard": "https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d",
  "dashboard_state": "docs/opus/pm/bang-tien-do/state.json (nhánh docs/opus-tra-loi); bản trên trang = ArtifactData board/state của artifact 7UC9kqrWqv3GNUhhtt4z5d",
- "dashboard_version": 56,
+ "dashboard_version": 57,
  "rule": "chỉ nhắn sếp khi cần quyết; tiến độ ghi lên trang; Sol/Haiku không sửa KE-HOACH",
  "trigger": "trig_01Nk2NQXsfxm8hQLAZAo4ZsS",
  "note": "Sol cũ đã bàn giao (comment #22 08:11) và dừng — xong kiểm 2/2.",
