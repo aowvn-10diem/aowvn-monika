@@ -46,6 +46,35 @@ class PeriodicTest(unittest.TestCase):
         self.assertTrue(any(data and data.get('state') == 'closed' for _, _, data in calls))
         self.assertIn('links: failure', stored[0]['body'])
 
+    def test_existing_duplicates_converge_to_one_owned_issue(self):
+        stored = [dict(number=11, state='open', body=issue.MARKER),
+                  dict(number=7, state='closed', body=issue.MARKER),
+                  dict(number=9, state='open', body=issue.MARKER),
+                  dict(number=12, state='closed', body=issue.MARKER),
+                  dict(number=13, state='open', body='Issue người dùng'),
+                  dict(number=14, state='open', body=issue.MARKER, pull_request={})]
+        calls = []
+        def api(method, path, data=None, paginate=False):
+            if method == 'GET':
+                return [stored[:2], stored[2:]]
+            self.assertEqual('PATCH', method)  # Không tạo thêm issue hay nhãn.
+            number = int(path.rsplit('/', 1)[-1])
+            calls.append(number)
+            item = next(i for i in stored if i['number'] == number)
+            item.update(data)
+            return item
+        red = {'links': {'result': 'failure'}}
+        green = {'links': {'result': 'success'}}
+        for status in [red, red, green, red]:
+            issue.reconcile(api, 'o/r', status, 'https://github.com/o/r/actions/runs/1', 'abc')
+            owned_open = [i['number'] for i in stored if i['state'] == 'open'
+                          and issue.MARKER in i['body'] and 'pull_request' not in i]
+            self.assertEqual([7] if status == red else [], owned_open)
+        self.assertNotIn(13, calls)
+        self.assertNotIn(14, calls)
+        self.assertNotIn(12, calls)  # Bản trùng đã đóng giữ nguyên.
+        self.assertIn('links: failure', next(i for i in stored if i['number'] == 7)['body'])
+
     def test_skipped_or_cancelled_verification_is_not_green(self):
         calls = []
         def api(method, path, data=None, paginate=False):

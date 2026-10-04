@@ -12,6 +12,8 @@ def reconcile(api, repo, jobs, run_url, sha):
     base = f'repos/{repo}'
     groups = api('GET', f'{base}/issues?labels={LABEL}&state=all&per_page=100', paginate=True)
     issues = [i for group in groups for i in group if 'pull_request' not in i and MARKER in i.get('body', '')]
+    # Giữ issue cũ nhất làm định danh ổn định, không phụ thuộc thứ tự API.
+    issues.sort(key=lambda item: item['number'])
     issue = issues[0] if issues else None
     failed = {name: job['result'] for name, job in jobs.items() if job['result'] != 'success'}
     if not failed:
@@ -24,6 +26,10 @@ def reconcile(api, repo, jobs, run_url, sha):
     data = {'title': 'Kiểm định kỳ đỏ', 'body': body, 'state': 'open'}
     if issue:
         api('PATCH', f"{base}/issues/{issue['number']}", data)
+        # Chỉ đóng bản trùng do bot sở hữu; không đụng issue khác cùng nhãn.
+        for duplicate in issues[1:]:
+            if duplicate['state'] == 'open':
+                api('PATCH', f"{base}/issues/{duplicate['number']}", {'state': 'closed', 'state_reason': 'not_planned'})
     else:
         labels = api('GET', f'{base}/labels?per_page=100', paginate=True)
         if not any(label['name'] == LABEL for group in labels for label in group):
