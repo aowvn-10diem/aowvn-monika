@@ -1,0 +1,43 @@
+{
+ "main": "92412b0",
+ "branch": "8cc7fd1",
+ "sol": {
+  "V30": "30666b8 #25 duyệt",
+  "V33": "ba68d0f #26 duyệt",
+  "V34": "be5d962 #27 duyệt",
+  "V35": "71985444 #30 yêu cầu sửa"
+ },
+ "haiku": {
+  "ccr-725394cf-n8mwms": "f26b8af"
+ },
+ "prs": {
+  "11": "H04 Luna duyệt",
+  "15": "H05 Luna duyệt",
+  "16": "H07 Luna duyệt",
+  "17": "L01 Luna duyệt",
+  "19": "H06 Luna duyệt",
+  "20": "L03 Luna duyệt",
+  "18": "L02 Luna (đã trả lời thư)",
+  "14": "SOL-003 (đã trả lời)"
+ },
+ "idle": 0,
+ "cadence": 30,
+ "dashboard": "https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d",
+ "dashboard_state": "scratchpad/monika-tien-do/state.json",
+ "dashboard_version": 54,
+ "rule": "chỉ nhắn sếp khi cần quyết; tiến độ ghi lên trang; Sol/Haiku không sửa KE-HOACH",
+ "trigger": "trig_01Nk2NQXsfxm8hQLAZAo4ZsS",
+ "note": "Sol cũ đã bàn giao (comment #22 08:11) và dừng — xong kiểm 2/2.",
+ "luna": {
+  "L05": "#29 duyệt",
+  "L06": "#31 duyệt"
+ },
+ "answers_seen": {
+  "Q1": "2026-10-04T02:53:28.505Z",
+  "Q2": "2026-10-04T02:53:38.730Z",
+  "Q5": "2026-10-04T02:53:57.703Z",
+  "Q6": "2026-10-04T02:54:25.587Z"
+ },
+ "public_page": "Landing tải app: https://aowvn-10diem.github.io/aowvn-monika/ (docs/index.html trên docs/opus-tra-loi; nguồn scratchpad/landing/landing-body.html + build.py; xem trước https://claude.ai/artifact/9Rkvv3dhzNkc5PgGYvaVyb). Trang tiến độ công khai đã bỏ.",
+ "pages": "200 (bật 04/10 trước 14:31)"
+}
