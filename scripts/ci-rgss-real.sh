@@ -4,6 +4,9 @@ set -euo pipefail
 SCRATCH="${1:?scratch game CI}"; OUT="${2:?report}"; EXPECT_FAIL="${3-vx,ace}"
 PKG=com.aow.monika
 mkdir -p "$OUT"
+LOGCAT_PID=
+stop_logcat() { if [ -n "$LOGCAT_PID" ]; then kill "$LOGCAT_PID" 2>/dev/null || true; wait "$LOGCAT_PID" 2>/dev/null || true; LOGCAT_PID=; fi; }
+trap stop_logcat EXIT
 # Ubuntu runner luôn có grep; không phụ thuộc ripgrep ngoài workflow.
 command -v grep >/dev/null
 adb root >/dev/null
@@ -23,9 +26,13 @@ while IFS='|' read -r id relative <&3; do
   adb shell "mkdir -p $BASE/games; cp -r /data/local/tmp/v25-$id $GAME; chown -R $APP_UID:$APP_UID $GAME; chmod -R 777 $GAME; restorecon -R $GAME"
   adb shell am force-stop "$PKG"
   adb logcat -c
+  # Thu ngay từ lúc mở game: bộ đệm logcat có thể mất lỗi khởi động khi máy ghi nhiều log.
+  adb logcat -v threadtime > "$OUT/$id-logcat.txt" & LOGCAT_PID=$!
   adb shell am start -W -f 0x10008000 -n "$PKG/vn.aow.monika.runner.RgssGameActivity" --es game_path "$GAME" --es title "R6-$id" > "$OUT/$id-start.txt"
   # Đợi native, chụp tiêu đề trước gửi phím; ảnh còn cần người đọc xác nhận.
+  adb shell pidof "$PKG:game" > "$OUT/$id-pid-start.txt" || true
   sleep 25
+  OBSERVE_START=$SECONDS
   adb exec-out screencap -p > "$OUT/$id-before-key.png"
   adb shell uiautomator dump /data/local/tmp/v25-ui.xml >/dev/null
   adb pull /data/local/tmp/v25-ui.xml "$OUT/$id-before-key.xml" >/dev/null
@@ -48,9 +55,10 @@ while IFS='|' read -r id relative <&3; do
   adb exec-out screencap -p > "$OUT/$id-after-60s.png"
   adb shell uiautomator dump /data/local/tmp/v25-ui.xml >/dev/null
   adb pull /data/local/tmp/v25-ui.xml "$OUT/$id-after-60s.xml" >/dev/null
+  printf '%s\n' "$((SECONDS - OBSERVE_START))" > "$OUT/$id-observed-seconds.txt"
   adb shell pidof "$PKG:game" > "$OUT/$id-pid.txt" || true
-  # Thu đầy đủ tag để không bỏ mất Ruby/native chỉ vì tag không khớp.
-  adb logcat -d -v threadtime > "$OUT/$id-logcat.txt"
+  adb shell dumpsys activity exit-info "$PKG" > "$OUT/$id-exit-info.txt"
+  stop_logcat
   adb shell dumpsys media.audio_flinger > "$OUT/$id-audio-global.txt"
   # AudioFlinger là service toàn máy: chỉ trích dòng có PID game, không suy nghe được.
   python3 - "$OUT/$id-pid.txt" "$OUT/$id-audio-global.txt" "$OUT/$id-audio.txt" <<'PYAUDIO'

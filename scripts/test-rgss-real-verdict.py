@@ -9,6 +9,7 @@ v = importlib.util.module_from_spec(spec); spec.loader.exec_module(v)
 
 class VerdictTest(unittest.TestCase):
     def fixture(self, out, case, error='', alive=True, black=False):
+        (out/f'{case}-observed-seconds.txt').write_text('60')
         (out/f'{case}-pid.txt').write_text('1234' if alive else '')
         for phase in ['before-key', 'after-60s']:
             (out/f'{case}-{phase}.xml').write_text(f'<hierarchy><node text="{error}"/></hierarchy>')
@@ -37,6 +38,12 @@ class VerdictTest(unittest.TestCase):
             p=Path(d);self.fixture(p,'vx')
             result=v.verdicts(p,[dict(id='vx',prepared=True)],{'vx'})
             self.assertFalse(result['matchesExpectation']);self.assertIn('expect_fail',result['games'][0]['note'])
+
+    def test_alive_but_short_observation_is_not_60_seconds(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d);self.fixture(p,'xp')
+            (p/'xp-observed-seconds.txt').write_text('59')
+            self.assertFalse(v.verdicts(p,[dict(id='xp',prepared=True)],set())['matchesExpectation'])
 
     def test_missing_evidence_and_unknown_expectation_never_pass(self):
         with tempfile.TemporaryDirectory() as d:

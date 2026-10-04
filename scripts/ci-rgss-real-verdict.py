@@ -20,10 +20,11 @@ def classify(out, case):
         error = any(dialog_error(out / f'{case}-{phase}.xml') for phase in ('before-key', 'after-60s'))
         with Image.open(out / f'{case}-after-60s.png') as image:
             deviation = ImageStat.Stat(image.convert('L')).stddev[0]
-        passed = alive and not error and deviation >= 10
+        seconds = int((out / f'{case}-observed-seconds.txt').read_text().strip())
+        passed = alive and not error and deviation >= 10 and seconds >= 60
         return dict(game=case, verdict='PASS_LEVEL_1' if passed else 'FAIL', process='com.aow.monika:game',
                     pid=pid, alive=alive, errorDialog=error, brightnessStddev=round(deviation, 3),
-                    threshold=10, limits='Không chứng minh âm thanh, lưu-tải hoặc FPS game')
+                    threshold=10, observedSeconds=seconds, limits='Không chứng minh âm thanh, lưu-tải hoặc FPS game')
     except Exception as error:
         return dict(game=case, verdict='EVIDENCE_ERROR', error=type(error).__name__)
 
