@@ -56,7 +56,7 @@ class SimpleModule(
                         }
                     }
                 }
-                PackTransaction.unzip(archive, candidate, stripRoot = if (id == "onsyuri") "onsyuri" else null)
+                PackTransaction.unzip(archive, candidate, mainFile = mainFile)
                 PackTransaction.validate(candidate, mainFile, abi)
                 File(candidate, "version").writeText(d.version)
             }

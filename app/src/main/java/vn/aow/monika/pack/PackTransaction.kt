@@ -76,7 +76,15 @@ internal object PackTransaction {
         if (expectedHash.isNotEmpty() && !got.equals(expectedHash, ignoreCase = true)) throw IOException("Gói sai SHA-256")
     }
 
-    fun unzip(archive: File, dir: File, flatten: Boolean = false, stripRoot: String? = null) {
+    fun unzip(archive: File, dir: File, flatten: Boolean = false, mainFile: String? = null) {
+        // Chỉ bỏ một gốc chung khi ZIP chưa có đúng mainFile và gốc đó chứa mainFile.
+        // Gói RGSS có lib/libmkxp-z.so đúng chỗ sẽ giữ nguyên lib/, không tự làm phẳng.
+        val stripRoot = if (!flatten && mainFile != null) java.util.zip.ZipFile(archive).use { zip ->
+            val entries = zip.entries().asSequence().map { it.name.trimEnd('/') }.filter { it.isNotEmpty() }.toList()
+            val root = entries.firstOrNull()?.substringBefore('/')
+            root?.takeIf { mainFile !in entries && "$it/$mainFile" in entries &&
+                entries.all { name -> name == it || name.startsWith("$it/") } }
+        } else null
         val written = HashSet<String>()
         ZipInputStream(archive.inputStream().buffered()).use { z ->
             while (true) {
