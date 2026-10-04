@@ -100,6 +100,7 @@ Kirikiri nhúng sâu trong Monika (không phải app ngoài): màn chuẩn bị 
 | 6b.6 | Menu Monika (… phím dưới cùng) → Tua nhanh (giữ Ctrl để bỏ qua thoại đã đọc) | Game tua nhanh bỏ qua thoại | |
 | 6b.7 | Menu Monika → Menu game | Menu Kirikiri hiện các tùy chọn (Lưu, Tải, Cấu hình, v.v.) | |
 | 6b.8 | Thoát game (bấm menu, chọn Thoát hoặc bấm back) | Quay lại Thư viện, game vẫn có icon + tên | |
+| 6b.9 | Thư mục có `<tên>.xp3`, `<tên>.exe` cùng tên và các tệp `patch*.xp3` → thêm thư mục vào Thư viện | Mở đúng `<tên>.xp3`; không chọn tệp `patch*.xp3` làm lối vào | |
 
 ## 6c. RPG Maker XP/VX/Ace (nhúng)
 
