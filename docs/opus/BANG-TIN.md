@@ -6,8 +6,11 @@ Trạng thái: `mở` (chờ người nhận) · `đã trả lời` (chờ bên 
 |---|---|---|---|---|---|
 | SOL-011 | R6 VX/Ace lỗi Ruby trước tiêu đề ([thư hỏi](hop-thu/hoi-sol-011-v25-ruby-vx-ace.md)) | V25/R6 | trước xong R6 | đã trả lời — A: PM chuyển Sonnet V44 (#50), chờ gói sửa | 04/10/2026 |
 | SOL-008 | Nguồn game V25 ([thư hỏi](hop-thu/hoi-sol-008-v25-nguon-game.md)) | V25/R6 | trước đủ5 game | đã trả lời — B: CI chỉ XP/VX/Ace; Reborn/game5 [CHƯA KIỂM] | 04/10/2026 |
+| SOL-006 | Đồng bộ phạm vi S0/V25 ([thư hỏi](hop-thu/hoi-sol-006-pham-vi-s0-v25.md)) | S0/V25 | trước thi công | đã trả lời — A: S0 chỉ CI, V25 đúng game G2 | 04/10/2026 |
+| SOL-009 | V21: ảnh trong hợp đồng Worker ([thư hỏi](hop-thu/hoi-sol-009-v21-anh-worker.md)) | V21 | trước đổi giao thức gửi/lưu ảnh | kẹt (SOL-009), phần môi trường làm độc lập | 04/10/2026 |
 | SOL-007 | Nơi lưu snapshot core ([thư hỏi](hop-thu/hoi-sol-007-core-snapshot-hosting.md)) | V32 | trước ghim config | đã trả lời — A: Sol làm workflow snapshot sau PM duyệt | 04/10/2026 |
 | LUNA-001 | L02: phụ thuộc V26 ([thư hỏi](hop-thu/hoi-luna-001-l02-phu-thuoc-v26.md)) | L02 | trước khi bắt đầu L02 | đã trả lời (`tra-loi-luna-001`: làm ngay, bỏ ý a) | 04/10/2026 |
+| LUNA-002 | Phạm vi hai skill bổ sung V46 ([thư hỏi](hop-thu/hoi-luna-002-pham-vi-skill-v46.md)) | V46 | trước khi duyệt PR #51 | đã trả lời (PM chọn A: giữ hai skill) | 04/10/2026 |
 | SOL-003 | Sol hỏi PM: DEBUG API 30, chọn B theo tra-loi-sol-003 | V20/D1 phần 4 | kiểm K10 sau V19 | đã làm (nhận B; triển khai + unit test trong PR phần 4) | 04/10/2026 |
 | SOL-002 | Sol hỏi PM: nguồn ký hiệu native của gói dựng sẵn ([PR #6](https://github.com/aowvn-10diem/aowvn-monika/pull/6)) | V20/D1 | trước khi duyệt PR | đã làm (tra-loi-sol-002: A; giữ ELF/BuildId, ghi giới hạn RAPT) | 03/10/2026 |
 | SOL-001 | Sol hỏi PM: kiểm chứng dọn kho Actions ([PR #5](https://github.com/aowvn-10diem/aowvn-monika/pull/5)) | V23 | sau khi gộp PR | đã làm (tra-loi-sol-001; tự dọn khi gộp) | 03/10/2026 |

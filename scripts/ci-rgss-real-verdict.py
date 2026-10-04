@@ -22,11 +22,11 @@ def classify(out, case):
             deviation = ImageStat.Stat(image.convert('L')).stddev[0]
         seconds = int((out / f'{case}-observed-seconds.txt').read_text().strip())
         passed = alive and not error and deviation >= 10 and seconds >= 60
-        return dict(game=case, verdict='PASS_LEVEL_1' if passed else 'FAIL', process='com.aow.monika:game',
+        return dict(game=case, verdict='ĐẠT mức 1' if passed else 'HỎNG', verdictCode='PASS_LEVEL_1' if passed else 'FAIL', process='com.aow.monika:game',
                     pid=pid, alive=alive, errorDialog=error, brightnessStddev=round(deviation, 3),
                     threshold=10, observedSeconds=seconds, limits='Không chứng minh âm thanh, lưu-tải hoặc FPS game')
     except Exception as error:
-        return dict(game=case, verdict='EVIDENCE_ERROR', error=type(error).__name__)
+        return dict(game=case, verdict='LỖI BẰNG CHỨNG', verdictCode='EVIDENCE_ERROR', error=type(error).__name__)
 
 
 def verdicts(out, cases, expect_fail):
@@ -35,10 +35,11 @@ def verdicts(out, cases, expect_fail):
         raise ValueError('expect_fail chứa case không khai báo')
     rows = []
     for case in cases:
-        row = classify(out, case['id']) if case['prepared'] else dict(game=case['id'], verdict='EVIDENCE_ERROR', error='not_prepared')
-        row['expected'] = 'FAIL' if case['id'] in expect_fail else 'PASS_LEVEL_1'
-        row['matchesExpectation'] = row['verdict'] == row['expected']
-        if row['verdict'] == 'PASS_LEVEL_1' and row['expected'] == 'FAIL':
+        row = classify(out, case['id']) if case['prepared'] else dict(game=case['id'], verdict='LỖI BẰNG CHỨNG', verdictCode='EVIDENCE_ERROR', error='not_prepared')
+        row['expectedCode'] = 'FAIL' if case['id'] in expect_fail else 'PASS_LEVEL_1'
+        row['expected'] = 'HỎNG' if case['id'] in expect_fail else 'ĐẠT mức 1'
+        row['matchesExpectation'] = row['verdictCode'] == row['expectedCode']
+        if row['verdictCode'] == 'PASS_LEVEL_1' and row['expectedCode'] == 'FAIL':
             row['note'] = 'Game đã đạt; PM bỏ case này khỏi expect_fail sau khi kiểm bằng chứng'
         rows.append(row)
     return dict(level=1, expectFail=sorted(expect_fail), matchesExpectation=all(row['matchesExpectation'] for row in rows), games=rows)

@@ -1,0 +1,56 @@
+diff -ruN a/org/renpy/android/PythonSDLActivity.java b/org/renpy/android/PythonSDLActivity.java
+--- a/org/renpy/android/PythonSDLActivity.java	2026-10-04 05:05:00.462077911 +0000
++++ b/org/renpy/android/PythonSDLActivity.java	2026-10-04 05:05:00.465512917 +0000
+@@ -225,21 +225,11 @@
+ 
+     public native void nativeSetEnv(String variable, String value);
+ 
+-    public void preparePython() {
+-        Log.v("python", "Starting preparePython.");
+-
+-        mActivity = this;
+-
+-        resourceManager = new ResourceManager(this);
+-
+-        File oldExternalStorage = new File(Environment.getExternalStorageDirectory(), getPackageName());
+-        File externalStorage = getExternalFilesDir(null);
+-        File path;
+-
+-        if (externalStorage == null) {
+-            externalStorage = oldExternalStorage;
+-        }
+-
++    /**
++     * Aow Monika: tách ra từ preparePython(). Mặc định giữ đúng hành vi gốc của RAPT (giải nén asset "private" vào filesDir
++     * rồi đặt ANDROID_PRIVATE / ANDROID_PUBLIC / ANDROID_OLD_PUBLIC / ANDROID_APK).
++     */
++    protected void setupPythonEnvironment(File externalStorage, File oldExternalStorage) {
+         unpackData("private", getFilesDir());
+ 
+         nativeSetEnv("ANDROID_PRIVATE", getFilesDir().getAbsolutePath());
+@@ -259,6 +249,25 @@
+         }
+ 
+         nativeSetEnv("ANDROID_APK", apkFilePath);
++    }
++
++    public void preparePython() {
++        Log.v("python", "Starting preparePython.");
++
++        mActivity = this;
++
++        resourceManager = new ResourceManager(this);
++
++        File oldExternalStorage = new File(Environment.getExternalStorageDirectory(), getPackageName());
++        File externalStorage = getExternalFilesDir(null);
++        File path;
++
++        if (externalStorage == null) {
++            externalStorage = oldExternalStorage;
++        }
++
++        // Aow Monika: giải nén "private" + đặt biến môi trường nay nằm trong hàm có thể ghi đè (RenpyGameActivity dùng gói tải thêm).
++        setupPythonEnvironment(externalStorage, oldExternalStorage);
+ 
+         if (!mAllPacksReady) {
+             Log.i("python", "Waiting for all packs to become ready.");

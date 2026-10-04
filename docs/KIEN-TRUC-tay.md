@@ -15,7 +15,7 @@
 4. **Lỗi/crash**: `diag/Diagnostics` (phiên chơi → báo cáo) · `RetroActivity.onCoreFailure` (lõi báo lỗi/không lên hình → hỏi đổi lõi) · `ui/CrashUi` (hộp thoại) · gửi về máy chủ báo lỗi (`crash.endpoint`, xem `scripts/crash-reports.sh`).
 5. **Phát hành**: Actions → Release (`workflow_dispatch`, nhập tag) → build ký → GitHub Release + Pixeldrain. Kiểm giả lập trên máy ảo: workflow Emulator Test.
 
-### B.1 Engine nhúng (Kirikiri, RPG Maker)
+### B.1 Engine nhúng (Kirikiri, RPG Maker, Ren'Py)
 
 ```mermaid
 flowchart LR
@@ -24,9 +24,10 @@ flowchart LR
   EPA -->|gói đã sẵn| OPEN
   OPEN --> KG["KirikiriGameActivity<br/>tiến trình :game"] --> KO["KirikiriOverlay"]
   OPEN --> RG["RgssGameActivity<br/>tiến trình :game"] --> RO["RgssOverlay"]
+  OPEN --> RP["RenpyGameActivity<br/>tiến trình :game"] --> RPO["RenpyOverlay"]
 ```
 
-`EnginePrepActivity` kiểm tra quyền đọc game và trạng thái gói; gói chưa có thì tải qua `PackManager`, xong mới mở Activity của engine. Hai Activity chạy trong tiến trình `:game`, khai báo ở `app/src/main/AndroidManifest.xml`; mỗi Activity hiển thị lớp phủ riêng.
+`EnginePrepActivity` kiểm tra quyền đọc game và trạng thái gói; gói chưa có thì tải qua `PackManager`, xong mới mở Activity của engine. Các Activity Kirikiri, RPG Maker và Ren'Py chạy trong tiến trình `:game`, khai báo ở `app/src/main/AndroidManifest.xml`; mỗi Activity hiển thị lớp phủ riêng. Route Ren'Py dùng `EngineRoutes` → `PackManager.RENPY8`, còn `RenpyBase.resolve` tìm thư mục chứa `game/`. Hiện `config/monika-config.json` vẫn chọn `runner: external` và `joiplay`, vì vậy đường nhúng chưa được chọn từ thư viện; game Ren'Py thật còn [CHƯA KIỂM].
 
 | Muốn sửa | Mở file |
 |---|---|
@@ -35,6 +36,7 @@ flowchart LR
 | Khai báo URL/kích thước gói hoặc thay đổi installer | `config/monika-config.json`, `app/src/main/java/vn/aow/monika/pack/PackManager.kt` |
 | Mở game Kirikiri hoặc sửa lớp phủ Kirikiri | `app/src/main/java/vn/aow/monika/runner/KirikiriGameActivity.kt`, `app/src/main/java/vn/aow/monika/runner/KirikiriOverlay.kt` |
 | Mở game RPG Maker hoặc sửa lớp phủ RPG Maker | `app/src/main/java/vn/aow/monika/runner/RgssGameActivity.kt`, `app/src/main/java/vn/aow/monika/runner/RgssOverlay.kt` |
+| Mở game Ren'Py hoặc sửa lớp phủ Ren'Py | `app/src/main/java/vn/aow/monika/runner/RenpyGameActivity.kt`, `app/src/main/java/vn/aow/monika/runner/RenpyOverlay.kt`, `app/src/main/java/vn/aow/monika/runner/RenpyBase.kt` |
 | Đổi tiến trình của Activity game | `app/src/main/AndroidManifest.xml` |
 
 

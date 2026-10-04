@@ -78,7 +78,7 @@ class KirikiriGameActivity : KR2Activity() {
     }
 
     override fun onStart() { super.onStart(); host?.pause() }
-    override fun onResume() { super.onResume(); host?.resume(); clock?.resume(); Diagnostics.stage(this, "playing") }
+    override fun onResume() { super.onResume(); host?.resume(); clock?.resume(); glSurfaceView?.queueEvent { vn.aow.monika.diag.GameEnvironment.cacheGl(this, "kirikiri") }; Diagnostics.stage(this, "playing") }
     override fun onPause() {
         if (fastForward) applyFastForward(false)
         host?.pause(); clock?.pause(); Diagnostics.heartbeat(this); super.onPause()

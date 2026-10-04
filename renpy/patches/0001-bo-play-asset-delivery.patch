@@ -1,0 +1,184 @@
+diff -ruN a/org/renpy/android/Constants.java b/org/renpy/android/Constants.java
+--- a/org/renpy/android/Constants.java	1970-01-01 00:00:00.000000000 +0000
++++ b/org/renpy/android/Constants.java	2026-10-04 03:12:15.517075969 +0000
+@@ -0,0 +1,8 @@
++package org.renpy.android;
++
++// Aow Monika: RAPT sinh file này từ rapt/templates/Constants.java theo cấu hình từng game. Monika cố định:
++// không có kho mua hàng trong app (store = "none") và không dùng asset pack của Google Play.
++public class Constants {
++    public static String store = "none";
++    public static String assetPacks[ ] = { };
++}
+diff -ruN a/org/renpy/android/PythonSDLActivity.java b/org/renpy/android/PythonSDLActivity.java
+--- a/org/renpy/android/PythonSDLActivity.java	2026-10-04 03:12:15.510700636 +0000
++++ b/org/renpy/android/PythonSDLActivity.java	2026-10-04 03:12:15.516494789 +0000
+@@ -37,15 +37,10 @@
+ import java.io.IOException;
+ import java.io.InputStream;
+ 
+-import java.util.Collections;
+-import java.util.HashMap;
+ 
+-import com.google.android.play.core.assetpacks.*;
+-import com.google.android.play.core.assetpacks.model.*;
+-import com.google.android.gms.tasks.*;
+-
+-public class PythonSDLActivity extends SDLActivity implements AssetPackStateUpdateListener {
++// Aow Monika: bỏ Play Asset Delivery (Google Play); gói Ren'Py do PackManager của Monika tải.
+ 
++public class PythonSDLActivity extends SDLActivity {
+     /**
+      * This exists so python code can access this activity.
+      */
+@@ -297,31 +292,14 @@
+     }
+ 
+     boolean mAllPacksReady = false;
+-    AssetPackManager mAssetPackManager = null;
++    // Aow Monika: không còn asset pack của Google Play; mọi thứ nằm trong gói Monika nên luôn "đã sẵn sàng".
++    // (Giữ mAllPacksReady vì mã phía trên còn dùng.)
+ 
+     // The pack download progress bar.
+     ProgressBar mProgressBar = null;
+ 
+-    /**
+-     * Given a pack name, return true if it's been downloaded and is
+-     * ready for use, or false otherwise. Returns true if the pack
+-     * doesn't exist at all.
+-     */
+     boolean checkPack(String name) {
+-        AssetPackLocation location = mAssetPackManager.getPackLocation(name);
+-        if (location != null) {
+-            if (location.assetsPath() != null) {
+-                nativeSetEnv("ANDROID_PACK_" + name.toUpperCase(), location.assetsPath());
+-            } else {
+-                AssetLocation loc = mAssetPackManager.getAssetLocation(name, "00_pack.txt");
+-                if (loc != null) {
+-                    nativeSetEnv("ANDROID_PACK_" + name.toUpperCase(), loc.path());
+-                }
+-            }
+-            return true;
+-        } else {
+-            return false;
+-        }
++        return true;
+     }
+ 
+     @Override
+@@ -338,20 +316,7 @@
+ 
+         boolean allPacksReady = true;
+ 
+-        if (Constants.assetPacks.length > 0) {
+-
+-            mAssetPackManager = AssetPackManagerFactory.getInstance(this);
+-            mAssetPackManager.registerListener(this);
+-
+-            for (String pack : Constants.assetPacks) {
+-                if (! checkPack(pack) ) {
+-                    Log.i("python", "fetching: " + pack);
+-                    mAssetPackManager.fetch(Collections.singletonList(pack));
+-                    allPacksReady = false;
+-                }
+-            }
+-
+-        }
++        // Aow Monika: bỏ khối tải asset pack của Google Play.
+ 
+         mAllPacksReady = allPacksReady;
+ 
+@@ -474,92 +439,7 @@
+         }
+     }
+ 
+-    HashMap<String, AssetPackState> assetPackStates = new HashMap<String, AssetPackState>();
+-
+-    long mOldProgress = 0;
+-
+-    public void onStateUpdate(AssetPackState assetPackState) {
+-        Log.i("packs", "onStateUpdate: " + assetPackState.toString());
+-
+-        assetPackStates.put(assetPackState.name(), assetPackState);
+-
+-        switch (assetPackState.status()) {
+-          case AssetPackStatus.PENDING:
+-            break;
+-
+-          case AssetPackStatus.DOWNLOADING:
+-            break;
+-
+-          case AssetPackStatus.TRANSFERRING:
+-            break;
+-
+-          case AssetPackStatus.COMPLETED:
+-            break;
+-
+-          case AssetPackStatus.FAILED:
+-            Toast.makeText(this, "Download of " + assetPackState.name() + " failed. Error " + assetPackState.errorCode(), Toast.LENGTH_LONG).show();
+-            Log.e("python", "error = " + assetPackState.errorCode());
+-
+-          case AssetPackStatus.CANCELED:
+-            mAssetPackManager.fetch(Collections.singletonList(assetPackState.name()));
+-            break;
+-
+-          case AssetPackStatus.WAITING_FOR_WIFI:
+-          case AssetPackStatus.REQUIRES_USER_CONFIRMATION:
+-            mAssetPackManager.showConfirmationDialog(this);
+-            break;
+-
+-          case AssetPackStatus.NOT_INSTALLED:
+-            break;
+-        }
+-
+-        // Check all the asset packs again.
+-        boolean allPacksReady = true;
+-
+-        long totalBytesToDownload = 0;
+-        long bytesDownloaded = 0;
+-
+-        if (Constants.assetPacks.length > 0) {
+-            for (String pack : Constants.assetPacks) {
+-                if (! checkPack(pack) ) {
+-                    allPacksReady = false;
+-                }
+-
+-                AssetPackState aps = assetPackStates.get(pack);
+-                if (aps != null) {
+-                    totalBytesToDownload += aps.totalBytesToDownload();
+-                    bytesDownloaded += aps.bytesDownloaded();
+-                }
+-            }
+-        }
+-
+-        Log.d("packs", "totalBytesToDownload=" + totalBytesToDownload + ", bytesDownloaded=" + bytesDownloaded);
+-
+-        // Protect against a DBZ.
+-        if (totalBytesToDownload == 0) {
+-            totalBytesToDownload = 1;
+-        }
+-
+-        final long newProgress = 100 * bytesDownloaded / totalBytesToDownload;
+-
+-        if (mOldProgress != newProgress) {
+-            mOldProgress = newProgress;
+-
+-            runOnUiThread(new Runnable() {
+-                @Override
+-                public void run() {
+-                    if (mProgressBar != null) {
+-                        mProgressBar.setProgress((int) newProgress);
+-                    }
+-                }
+-            });
+-        }
+-
+-        synchronized (this) {
+-            mAllPacksReady = allPacksReady;
+-            this.notifyAll();
+-        }
+-    }
++    // Aow Monika: bỏ onStateUpdate (Play Asset Delivery).
+ 
+ 
+     // Support public APIs. ////////////////////////////////////////////////////

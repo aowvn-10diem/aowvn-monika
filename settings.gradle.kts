@@ -21,6 +21,8 @@ include(":libretrodroid")
 include(":kirikiri")
 // Lớp Java SDL 2.26.3 đã đổi gói cho mkxp-z (RPG Maker XP/VX/Ace); native là gói tải thêm.
 include(":rgss")
+// Ren'Py 8 (RAPT 8.5.3, Java) nhúng: native + Python là gói tải thêm `renpy8`. Xem renpy/UPSTREAM.md
+include(":renpy")
 // J2ME Loader nhúng sẵn (Apache-2.0) để chạy game Java ngay trong app.
 include(":j2me", ":dexlib")
 // Bộ nạp data chạy trong game đã chỉnh (Java thuần → .dex nhúng vào assets của app).

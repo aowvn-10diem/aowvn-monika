@@ -1,0 +1,66 @@
+name: Snapshot GB GBA NES (V32)
+on:
+  workflow_dispatch:
+    inputs:
+      number:
+        description: Số snapshot mới, không được dùng lại (chạy sau PM duyệt)
+        default: '1'
+        required: true
+  pull_request:
+    paths:
+      - .github/workflows/publish-cores.yml
+      - scripts/core-snapshot.py
+      - scripts/test-core-snapshot.py
+permissions: {contents: read}
+concurrency:
+  group: v32-core-snapshot
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kiểm script và chuẩn bị ZIP/hash/commit nguồn thật
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SNAPSHOT_NUMBER: ${{ inputs.number || '1' }}
+        run: |
+          python3 scripts/test-core-snapshot.py
+          python3 scripts/core-snapshot.py --out out/snapshot --tag "cores-gb-gba-nes-$SNAPSHOT_NUMBER"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-snapshot
+          path: out/snapshot/
+          retention-days: 3
+  publish:
+    needs: prepare
+    # PR chỉ chuẩn bị; phát hành chỉ từ main sau khi PR được PM duyệt và gộp.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {name: core-snapshot, path: snapshot}
+      - name: Tạo release mới chỉ trong repo packs (ngoại lệ SOL-007 A)
+        env:
+          # Chỉ tham chiếu secret đã có, không đọc/tạo/thay giá trị.
+          GH_TOKEN: ${{ secrets.PACKS_TOKEN }}
+          SNAPSHOT_NUMBER: ${{ inputs.number }}
+          PACKS_REPO: aowvn-10diem/aowvn-monika-packs
+        run: |
+          set -euo pipefail
+          [[ "$SNAPSHOT_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          TAG="cores-gb-gba-nes-$SNAPSHOT_NUMBER"
+          test -n "$GH_TOKEN"
+          # Phân biệt 404 với lỗi quyền/mạng; không coi mọi lỗi GET là chưa có tag.
+          if gh api "repos/$PACKS_REPO/releases/tags/$TAG" > release-check.json 2> release-check.err; then
+            echo '::error::Release đã có; không sửa hoặc clobber snapshot'; exit 1
+          else
+            rg -q 'HTTP 404' release-check.err || { echo '::error::Không xác minh được release chưa có'; exit 1; }
+          fi
+          if gh api "repos/$PACKS_REPO/git/ref/tags/$TAG" > tag-check.json 2> tag-check.err; then
+            echo '::error::Tag đã có; chọn số snapshot mới'; exit 1
+          else
+            rg -q 'HTTP 404' tag-check.err || { echo '::error::Không xác minh được tag chưa có'; exit 1; }
+          fi
+          gh release create "$TAG" snapshot/*.zip snapshot/manifest.json --repo "$PACKS_REPO" --draft --title "$TAG" --notes-file snapshot/notes.md
+          gh release edit "$TAG" --repo "$PACKS_REPO" --draft=false --latest=false

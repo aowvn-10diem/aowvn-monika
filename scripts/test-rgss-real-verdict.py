@@ -24,7 +24,7 @@ class VerdictTest(unittest.TestCase):
             p=Path(d)
             for case,error in [('xp',''),('vx','Error occured'),('ace','RuntimeError')]:self.fixture(p,case,error)
             result=v.verdicts(p,[dict(id=c,prepared=True) for c in ['xp','vx','ace']],{'vx','ace'})
-            self.assertTrue(result['matchesExpectation']);self.assertEqual('PASS_LEVEL_1',result['games'][0]['verdict'])
+            self.assertTrue(result['matchesExpectation']);self.assertEqual('ĐẠT mức 1',result['games'][0]['verdict']);self.assertEqual('PASS_LEVEL_1',result['games'][0]['verdictCode']);self.assertEqual('HỎNG',result['games'][1]['verdict'])
 
     def test_dead_black_or_dialog_game_fails_without_exception(self):
         with tempfile.TemporaryDirectory() as d:

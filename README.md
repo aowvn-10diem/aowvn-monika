@@ -44,7 +44,7 @@ app/src/main/java/vn/aow/monika/
 ./gradlew assembleDebug       # dựng APK debug
 ```
 
-Mỗi lần push, GitHub Actions build APK debug (xem tab Actions → Artifacts). Tag `v*` kích hoạt workflow Release; ký APK chính thức trên CI cần GitHub Secrets chưa được cấu hình trong repo này. Quy trình build/ký APK chính thức xem `CLAUDE.md`. Nếu có secret `PIXELDRAIN_API_KEY`, workflow sẽ up APK lên Pixeldrain; up tay: `PIXELDRAIN_API_KEY=... scripts/pixeldrain-upload.sh file.apk`.
+Mỗi lần push, GitHub Actions build APK debug (xem tab Actions → Artifacts). Tag `v*` kích hoạt workflow Release; workflow build và ký APK chính thức trên CI bằng GitHub Secrets đã cấu hình. Job dừng nếu thiếu cấu hình ký và chặn APK có chứng chỉ Android Debug. Trạng thái hiện hành xem [docs/opus/HANDOFF-SONNET.md](docs/opus/HANDOFF-SONNET.md). Nếu có secret `PIXELDRAIN_API_KEY`, workflow sẽ up APK lên Pixeldrain; up tay: `PIXELDRAIN_API_KEY=... scripts/pixeldrain-upload.sh file.apk`.
 
 ## Giấy phép
 

@@ -36,7 +36,9 @@ jobs:
           set -euo pipefail
           [[ "$RGSS_TAG" =~ ^engines-rgss-[0-9]+$ ]]
           mkdir -p "$RUNNER_TEMP/v25-engine"
-          asset_id=$(gh api --paginate --slurp 'repos/aowvn-10diem/aowvn-monika/releases?per_page=100' | jq -er --arg tag "$RGSS_TAG" '[.[][] | select(.draft == true and .tag_name == $tag)] | if length == 1 then .[0] else error("draft count") end | [.assets[] | select(.name == "rgss-arm64-v8a.zip")] | if length == 1 then .[0].id else error("asset count") end')
+          # HTTP lỗi dừng trước jq để không che lỗi quyền/hạn mức thành lỗi kiểu JSON.
+          gh api --paginate --slurp 'repos/aowvn-10diem/aowvn-monika/releases?per_page=100' > "$RUNNER_TEMP/v25-engine/releases.json"
+          asset_id=$(jq -er --arg tag "$RGSS_TAG" '[.[][] | select(.draft == true and .tag_name == $tag)] | if length == 1 then .[0] else error("draft count") end | [.assets[] | select(.name == "rgss-arm64-v8a.zip")] | if length == 1 then .[0].id else error("asset count") end' "$RUNNER_TEMP/v25-engine/releases.json")
           [[ "$asset_id" =~ ^[0-9]+$ ]]
           gh api "repos/aowvn-10diem/aowvn-monika/releases/assets/$asset_id" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/v25-engine/rgss.zip"
       - uses: actions/checkout@v4

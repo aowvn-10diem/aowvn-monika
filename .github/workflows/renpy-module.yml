@@ -1,0 +1,55 @@
+name: Renpy module
+
+# V17 (P2): module :renpy biên dịch được, app gộp được, và APK có cả hai lớp SDLActivity (Ren'Py + RGSS).
+on:
+  push:
+    paths: ["renpy/**", "rgss/**", "app/build.gradle.kts", "settings.gradle.kts", ".github/workflows/renpy-module.yml"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Cài NDK cho J2ME Loader
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+      - name: Dựng :renpy (release) và APK app (release)
+        run: ./gradlew :renpy:assembleRelease :app:assembleRelease --console=plain
+      - name: Kiểm bản vá tái lập
+        run: |
+          set -euo pipefail
+          curl -sSL -o rapt.zip https://www.renpy.org/dl/8.5.3/renpy-8.5.3-rapt.zip
+          echo "8a12be34a2f5238d125ff6dd76a56772fd8e44838af864f81bca82c1059b00e6  rapt.zip" | sha256sum -c -
+          mkdir -p chk && cd chk && unzip -q ../rapt.zip 'rapt/prototype/renpyandroid/src/main/java/*'
+          cp -r rapt/prototype/renpyandroid/src/main/java a
+          find a \( -name '*.class' -o -name '*.orig' \) -delete
+          for p in ../renpy/patches/*.patch; do patch -p1 -s -d a < "$p"; done
+          diff -r a ../renpy/src/main/java && echo "Bản vá tái lập đúng"
+      - name: Kiểm lớp trong APK
+        run: |
+          set -euo pipefail
+          APK=$(ls app/build/outputs/apk/release/*universal*.apk | head -1); echo "APK: $APK ($(stat -c%s "$APK") byte)"
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          mkdir -p dex && cd dex && unzip -q -o "../$APK" 'classes*.dex' && cd ..
+          for d in dex/classes*.dex; do "$BT/dexdump" -f "$d" 2>/dev/null | grep -E "Class descriptor *: *'Lorg/libsdl/app/SDLActivity;'|Class descriptor *: *'Lvn/aow/monika/rgss/sdl/SDLActivity;'|Class descriptor *: *'Lorg/renpy/android/PythonSDLActivity;'" || true; done | sort -u | tee dexdump.txt
+          test "$(wc -l < dexdump.txt)" -eq 3 || { echo "Thiếu lớp (cần đủ 3 dòng)"; exit 1; }
+          echo "Đủ SDLActivity của Ren'Py, SDLActivity của RGSS và PythonSDLActivity"
+      - name: Dựng baseline (origin/main) để tính mức APK tăng
+        run: |
+          set -euo pipefail
+          git fetch -q origin main
+          git worktree add ../base origin/main
+          (cd ../base && ./gradlew :app:assembleRelease --console=plain -q)
+      - name: Mức APK tăng
+        run: |
+          set -euo pipefail
+          for a in universal arm64-v8a armeabi-v7a; do
+            N=$(stat -c%s app/build/outputs/apk/release/app-$a-release.apk); B=$(stat -c%s ../base/app/build/outputs/apk/release/app-$a-release.apk)
+            echo "APK $a: main=$B nhánh=$N tăng=$((N-B)) byte"
+          done
+          ls -l renpy/build/outputs/aar/*.aar | awk '{print "AAR renpy:", $5, $9}'
