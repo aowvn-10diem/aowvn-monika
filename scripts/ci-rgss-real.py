@@ -60,6 +60,15 @@ def prepare(scratch, report, tag):
                     with z.open(e) as src, dest.open('wb') as out:
                         while data := src.read(1024 * 1024): out.write(data)
             inis = [p for p in target.rglob('*') if p.name.lower() == 'game.ini']
+            if not inis:
+                # G2 Ace ZIP là self-extracting EXE. Chỉ giải nén dữ liệu trong CI, không chạy EXE.
+                installers = list(target.rglob('*.exe'))
+                if len(installers) == 1:
+                    extracted = target / 'installer-data'; extracted.mkdir()
+                    subprocess.run(['7z', 'x', '-y', str(installers[0]), '-o' + str(extracted)],
+                                   check=True, timeout=180, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    inis = [p for p in extracted.rglob('*') if p.name.lower() == 'game.ini']
+                    record['installerExtracted'] = True
             if len(inis) != 1:
                 raise ValueError('Cần đúng một Game.ini, nhận ' + str(len(inis)))
             directory = inis[0].parent

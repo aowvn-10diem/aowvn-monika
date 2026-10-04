@@ -31,6 +31,7 @@ jobs:
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
           ./gradlew testDebugUnitTest --console=plain
+          command -v 7z >/dev/null || sudo apt-get install -y p7zip-full
       - name: Chuẩn bị đúng ba nguồn G2 trong CI
         env:
           GH_TOKEN: ${{ github.token }}
