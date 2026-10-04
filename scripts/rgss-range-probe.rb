@@ -9,6 +9,7 @@ module MonikaCiRangeProbe
   LOCAL_GET = Binding.instance_method(:local_variable_get)
   SELF_GET = Binding.instance_method(:receiver)
   MESSAGE = Exception.instance_method(:message)
+  WRITE = File.method(:write)
   ARRAY_GET = Array.instance_method(:[])
   ARRAY_SIZE = Array.instance_method(:length)
   TYPES = [NilClass, TrueClass, FalseClass, Integer, Float, String, Symbol, Array, Hash, Range].freeze
@@ -40,7 +41,7 @@ module MonikaCiRangeProbe
     rows
   end
 
-  def self.start
+  def self.start(output_path = nil)
     seen = 0
     probe = TracePoint.new(:raise) do |event|
       begin
@@ -54,7 +55,8 @@ module MonikaCiRangeProbe
           "#{index}:#{kind(LOCAL_GET.bind(context).call(name))}"
         end
         owner = SELF_GET.bind(context).call
-        puts "MonikaCiRangeProbe bad-range line=#{event.lineno} locals=[#{locals.join(',')}] fields=[#{fields(owner, true).join(',')}]"
+        report = "MonikaCiRangeProbe bad-range line=#{event.lineno} locals=[#{locals.join(',')}] fields=[#{fields(owner, true).join(',')}]\n"
+        output_path ? WRITE.call(output_path, report) : puts(report)
       rescue Exception
         # Observer failure must not replace or suppress the original runtime exception.
         probe.disable
@@ -64,4 +66,3 @@ module MonikaCiRangeProbe
     probe
   end
 end
-MonikaCiRangeProbe.start

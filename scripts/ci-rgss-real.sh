@@ -25,6 +25,7 @@ while IFS='|' read -r id relative <&3; do
   adb push "$SCRATCH/$relative" "/data/local/tmp/v25-$id" >/dev/null
   adb shell "mkdir -p $BASE/games; cp -r /data/local/tmp/v25-$id $GAME; chown -R $APP_UID:$APP_UID $GAME; chmod -R 777 $GAME; restorecon -R $GAME"
   adb shell am force-stop "$PKG"
+  adb shell rm -f "$BASE/rgss-compat/v44-ci-range-types.txt" # Chỉ metadata của probe CI, không file game.
   adb logcat -c
   # Thu ngay từ lúc mở game: bộ đệm logcat có thể mất lỗi khởi động khi máy ghi nhiều log.
   adb logcat -v threadtime > "$OUT/$id-logcat.txt" & LOGCAT_PID=$!
@@ -59,6 +60,7 @@ while IFS='|' read -r id relative <&3; do
   adb shell pidof "$PKG:game" > "$OUT/$id-pid.txt" || true
   adb shell dumpsys activity exit-info "$PKG" > "$OUT/$id-exit-info.txt"
   stop_logcat
+  adb shell cat "$BASE/rgss-compat/v44-ci-range-types.txt" > "$OUT/$id-range-types.txt" 2>/dev/null || true
   adb shell dumpsys media.audio_flinger > "$OUT/$id-audio-global.txt"
   # AudioFlinger là service toàn máy: chỉ trích dòng có PID game, không suy nghe được.
   python3 - "$OUT/$id-pid.txt" "$OUT/$id-audio-global.txt" "$OUT/$id-audio.txt" <<'PYAUDIO'

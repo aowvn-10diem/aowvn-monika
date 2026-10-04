@@ -1,6 +1,8 @@
 require 'stringio'
+require 'tmpdir'
 load File.expand_path('rgss-range-probe.rb', __dir__)
-# Bootstrap observer records only the first synthetic Range failure.
+# Observer records only the first synthetic Range failure.
+MonikaCiRangeProbe.start
 class PrivateGameFixture
   def fail_range
     secret_local = 'private dialogue'
@@ -48,3 +50,11 @@ out = StringIO.new; $stdout = out
 $stdout = saved
 abort 'one probe event only' unless out.string.scan('MonikaCiRangeProbe bad-range').size == 1 && !probe.enabled?
 puts 'ok single bounded diagnostic and no exception suppression'
+
+Dir.mktmpdir('range-types') do |dir|
+  path = File.join(dir, 'types.txt')
+  probe = MonikaCiRangeProbe.start(path)
+  begin; (Object.new..17); rescue ArgumentError; end
+  abort 'file evidence missing/unsafe' unless File.read(path).start_with?('MonikaCiRangeProbe bad-range line=') && !probe.enabled?
+  puts 'ok bounded evidence file outside game data, original exception preserved'
+end
