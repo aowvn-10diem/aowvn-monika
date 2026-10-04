@@ -15,6 +15,7 @@ import java.io.File
  * ([vn.aow.monika.pack.PackManager.KIRIKIRI]) nên APK vẫn nhẹ. Cho phép mở thẳng game theo Intent (bản vá "aow_game_path").
  */
 class KirikiriGameActivity : KR2Activity() {
+    private var engineWatch: vn.aow.monika.diag.EngineWatch? = null
     private var clock: PlayClock? = null
     private var host: ComposeHost? = null
     private var menuOpen by androidx.compose.runtime.mutableStateOf(false)
@@ -46,6 +47,7 @@ class KirikiriGameActivity : KR2Activity() {
         clock = PlayClock(intent.getStringExtra(PlayClock.EXTRA_KEY))
         super.onCreate(savedInstanceState)
         Diagnostics.stage(this, "created")
+        engineWatch = vn.aow.monika.diag.EngineWatch(this, "kirikiri") { glSurfaceView }
         // Giao diện Monika đè lên game: nút menu + menu popup tiếng Việt (Back của máy cũng mở menu).
         host = ComposeHost(this).also { h ->
             h.attach(mFrameLayout) {
@@ -78,13 +80,14 @@ class KirikiriGameActivity : KR2Activity() {
     }
 
     override fun onStart() { super.onStart(); host?.pause() }
-    override fun onResume() { super.onResume(); host?.resume(); clock?.resume(); glSurfaceView?.queueEvent { vn.aow.monika.diag.GameEnvironment.cacheGl(this, "kirikiri") }; Diagnostics.stage(this, "playing") }
+    override fun onResume() { super.onResume(); host?.resume(); clock?.resume(); engineWatch?.resume(); glSurfaceView?.queueEvent { vn.aow.monika.diag.GameEnvironment.cacheGl(this, "kirikiri") }; Diagnostics.stage(this, "playing") }
     override fun onPause() {
         if (fastForward) applyFastForward(false)
-        host?.pause(); clock?.pause(); Diagnostics.heartbeat(this); super.onPause()
+        host?.pause(); clock?.pause(); engineWatch?.pause(); Diagnostics.heartbeat(this); super.onPause()
     }
 
     override fun onDestroy() {
+        engineWatch?.close()
         host?.destroy()
         Diagnostics.end(this) // thoát bình thường → không tạo báo cáo "chết bất thường"
         super.onDestroy() // KR2Activity gọi System.exit(0)

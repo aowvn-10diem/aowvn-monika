@@ -25,6 +25,7 @@ import java.util.Locale
  * vibrateStop, inMultiWindow — xem docs/opus/2026-10-03-nhung-renpy-rgss.md mục 3.3.
  */
 class RgssGameActivity : SDLActivity() {
+    private var engineWatch: vn.aow.monika.diag.EngineWatch? = null
     private var clock: PlayClock? = null
     private var host: ComposeHost? = null
     private val ui = InGameState()
@@ -74,6 +75,7 @@ class RgssGameActivity : SDLActivity() {
         clock = PlayClock(intent.getStringExtra(PlayClock.EXTRA_KEY))
         super.onCreate(savedInstanceState)
         Diagnostics.stage(this, "created")
+        engineWatch = vn.aow.monika.diag.EngineWatch(this, "rgss") { mSurface }
         ui.opacity = vn.aow.monika.AppGraph.prefs.padOpacity
         // Phím ảo + menu Monika đè lên màn game (SDL không phải ComponentActivity nên ComposeHost tự cấp vòng đời, như Kirikiri).
         host = ComposeHost(this).also { h ->
@@ -111,12 +113,14 @@ class RgssGameActivity : SDLActivity() {
         return super.dispatchKeyEvent(event)
     }
 
-    override fun onResume() { super.onResume(); host?.resume(); clock?.resume(); Diagnostics.stage(this, "playing") }
-    override fun onPause() { if (shiftHeld) setShift(false); host?.pause(); clock?.pause(); Diagnostics.heartbeat(this); super.onPause() }
+    override fun onResume() { super.onResume(); host?.resume(); clock?.resume(); engineWatch?.resume(); Diagnostics.stage(this, "playing") }
+    override fun onPause() { if (shiftHeld) setShift(false); host?.pause(); clock?.pause(); engineWatch?.pause(); Diagnostics.heartbeat(this); super.onPause() }
 
     override fun onDestroy() {
+        engineWatch?.pause()
         host?.destroy()
         super.onDestroy()
+        engineWatch?.close()
         Diagnostics.end(this) // thoát bình thường → không tạo báo cáo "chết bất thường"
         // Ruby không khởi tạo lại được trong cùng tiến trình (mkxp-z) → kết thúc tiến trình khi thoát.
         android.os.Process.killProcess(android.os.Process.myPid())

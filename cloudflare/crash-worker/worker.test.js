@@ -82,3 +82,29 @@ test("giới hạn từng trường, quyền đọc và rate limit vẫn có hi�
   for (let i = 1; i < 20; i++) assert.equal((await c.post(fixture)).status, 200);
   assert.equal((await c.post(fixture)).status, 429);
 });
+
+const jpeg = readFileSync(new URL("./fixtures/user-image.jpg", import.meta.url));
+const userImage = {mime:"image/jpeg", data:jpeg.toString("base64"), width:24, height:16};
+test("JPEG thật user → POST → KV → GET giữ nguyên byte/chiều ảnh và trường cũ", async () => {
+  const c=setup(), report={...fixture, kind:"user", image:userImage};
+  assert.equal((await c.post(report)).status,200);
+  const list=await (await c.read("/reports")).json();
+  const got=await (await c.read(`/reports/${list.reports[0].id}`)).json();
+  assert.deepEqual(got.image,userImage);
+  assert.deepEqual(Buffer.from(got.image.data,"base64"),jpeg);
+  assert.equal(got.env,fixture.env);assert.equal(got.component,fixture.component);
+});
+test("ảnh MIME/base64/byte/chiều/loại hoặc JPEG hỏng bị từ chối trước KV", async () => {
+  for (const image of [{...userImage,mime:"image/png"},{...userImage,data:"bad!?"},
+      {...userImage,width:481},{...userImage,width:23},{...userImage,height:0},
+      {...userImage,data:Buffer.alloc(24577).toString("base64")},
+      {...userImage,data:jpeg.subarray(0,jpeg.length-4).toString("base64")},
+      {...userImage,data:Buffer.from([255,216,255,217]).toString("base64")}]) {
+    const c=setup();assert.equal((await c.post({...fixture,kind:"user",image})).status,400);assert.equal(c.data.size,0);
+  }
+  const c=setup();assert.equal((await c.post({...fixture,kind:"handled",image:userImage})).status,400);assert.equal(c.data.size,0);
+});
+test("JSON ảnh và chữ quá 60000 byte vẫn bị 413, báo cáo không ảnh giữ tương thích", async () => {
+  const c=setup();assert.equal((await c.post({...fixture,kind:"user",image:userImage,detail:"đ".repeat(30000)})).status,413);
+  assert.equal(c.data.size,0);
+});

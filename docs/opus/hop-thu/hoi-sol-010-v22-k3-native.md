@@ -1,0 +1,11 @@
+# SOL-010 — V22: K3 sập native trước phép đo
+- Run37180855497, head e9dfe3c; XP raise monika-ci PASS engine:rgss; Build/gói thật xanh.
+- K3 mở root task NEW_TASK|CLEAR_TASK, nạp libkrkr2yuri.so rồi chết sau5giây, trước marker và PixelCopy10s.
+- k3-logcat: pid4816 tid4864 GLThread42, signal11 SIGSEGV, fault0x8, null pointer dereference; frame anonymous pc3befa7.
+- Link: https://github.com/aowvn-10diem/aowvn-monika/actions/runs/37180855497 (artifact k3-logcat/final-logcat/final.png).
+- Trước đó37180282865 cũng thiếu marker/launcher; đã sửa cờ mở task và giữ log, không sửa engine.
+- V40 đo runner ARM64 khôngKVM/emulatorARM64, không có đường CI khác trong hai hướng được giao.
+- V22 điều kiện K3 bình thường không báo đen kẹt (SOL-010); không gọi K3 PASS/copyfail PASS.
+- A: PM chuyển lỗi nội bộ cho Sonnet, chờ gói/đường thử K3 chạy được rồi kiểm lại.
+- B: PM chấp nhận thêm control RGSS màu cam+unit classifier cho D3 tạm thời, giữ K3 [CHƯA KIỂM] do engine.
+- PM chọn; Sol không tự hạ điều kiện hoặc sửa engine. Không liên hệ sếp.

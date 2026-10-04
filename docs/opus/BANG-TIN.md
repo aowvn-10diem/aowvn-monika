@@ -6,8 +6,9 @@ Trạng thái: `mở` (chờ người nhận) · `đã trả lời` (chờ bên 
 |---|---|---|---|---|---|
 | SOL-011 | R6 VX/Ace lỗi Ruby trước tiêu đề ([thư hỏi](hop-thu/hoi-sol-011-v25-ruby-vx-ace.md)) | V25/R6 | trước xong R6 | đã trả lời — A: PM chuyển Sonnet V44 (#50), chờ gói sửa | 04/10/2026 |
 | SOL-008 | Nguồn game V25 ([thư hỏi](hop-thu/hoi-sol-008-v25-nguon-game.md)) | V25/R6 | trước đủ5 game | đã trả lời — B: CI chỉ XP/VX/Ace; Reborn/game5 [CHƯA KIỂM] | 04/10/2026 |
+| SOL-010 | V22: K3 native sập trước PixelCopy ([thư hỏi](hop-thu/hoi-sol-010-v22-k3-native.md)) | V22 | trước đạt điều kiện K3 | kẹt (SOL-010), XP PASS/Build xanh | 04/10/2026 |
 | SOL-006 | Đồng bộ phạm vi S0/V25 ([thư hỏi](hop-thu/hoi-sol-006-pham-vi-s0-v25.md)) | S0/V25 | trước thi công | đã trả lời — A: S0 chỉ CI, V25 đúng game G2 | 04/10/2026 |
-| SOL-009 | V21: ảnh trong hợp đồng Worker ([thư hỏi](hop-thu/hoi-sol-009-v21-anh-worker.md)) | V21 | trước đổi giao thức gửi/lưu ảnh | kẹt (SOL-009), phần môi trường làm độc lập | 04/10/2026 |
+| SOL-009 | V21: ảnh trong hợp đồng Worker ([thư hỏi](hop-thu/hoi-sol-009-v21-anh-worker.md)) | V21 | trước đổi giao thức gửi/lưu ảnh | PM chốt A; D4 #47 đã gộp, D5 #60 thi công theo giới hạn ảnh | 04/10/2026 |
 | SOL-007 | Nơi lưu snapshot core ([thư hỏi](hop-thu/hoi-sol-007-core-snapshot-hosting.md)) | V32 | trước ghim config | đã trả lời — A: Sol làm workflow snapshot sau PM duyệt | 04/10/2026 |
 | LUNA-001 | L02: phụ thuộc V26 ([thư hỏi](hop-thu/hoi-luna-001-l02-phu-thuoc-v26.md)) | L02 | trước khi bắt đầu L02 | đã trả lời (`tra-loi-luna-001`: làm ngay, bỏ ý a) | 04/10/2026 |
 | LUNA-002 | Phạm vi hai skill bổ sung V46 ([thư hỏi](hop-thu/hoi-luna-002-pham-vi-skill-v46.md)) | V46 | trước khi duyệt PR #51 | đã trả lời (PM chọn A: giữ hai skill) | 04/10/2026 |

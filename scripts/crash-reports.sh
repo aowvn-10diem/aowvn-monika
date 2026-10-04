@@ -9,8 +9,10 @@ U="${CRASH_URL:-https://aowvn-monika-crash.aowvn-system.workers.dev}"
 REPORT_ID=""
 REPORT_FILE=""
 OPTIONS=()
+BY_FP=0
 while [ $# -gt 0 ]; do
   case "$1" in
+    --by-fp) BY_FP=1; shift ;;
     --file)
       [ $# -ge 2 ] || { echo "Thiếu đường dẫn sau --file" >&2; exit 2; }
       REPORT_FILE=$2; shift 2 ;;
@@ -25,10 +27,17 @@ while [ $# -gt 0 ]; do
 done
 if [ -n "$REPORT_FILE" ]; then
   [ -z "$REPORT_ID" ] || { echo "Chọn --file hoặc mã báo cáo" >&2; exit 2; }
+  if [ "$BY_FP" = 1 ]; then exec python3 "$SCRIPT_DIR/crash-report-groups.py" "$REPORT_FILE"; fi
   exec python3 "$SCRIPT_DIR/crash-report-detail.py" --file "$REPORT_FILE" "${OPTIONS[@]}"
 fi
+if [ "$BY_FP" = 1 ] && [ -n "$REPORT_ID" ]; then echo '--by-fp không nhận mã báo cáo riêng' >&2; exit 2; fi
 : "${CRASH_ADMIN_TOKEN:?Cần biến CRASH_ADMIN_TOKEN (mã quản trị)}"
 H=(-H "authorization: Bearer $CRASH_ADMIN_TOKEN")
+if [ "$BY_FP" = 1 ]; then
+  echo 'Phạm vi: tối đa 100 báo cáo gần nhất từ Worker; không suy lịch sử đã bị gộp/xóa.'
+  curl -fsS "${H[@]}" "$U/reports" | python3 "$SCRIPT_DIR/crash-report-groups.py"
+  exit
+fi
 if [ -n "$REPORT_ID" ]; then
   REPORT_FILE=$(mktemp)
   trap 'rm -f "$REPORT_FILE"' EXIT
