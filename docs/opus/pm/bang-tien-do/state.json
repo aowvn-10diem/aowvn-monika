@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T16:10:35Z",
+  "updatedAt": "2026-10-04T17:13:20Z",
   "mainSha": "5a67e6f317f95f080af5bb0fff6b9f24df9fe440",
   "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-04T16:51:52Z",
-  "headline": "Sol tiếp quản: VX157script/0lỗi cúpháp, Build xanh; bài game thật đang chạy. XP/Ace đã PASSmức1. #66 PM đãgộp, #70 cậpnhật chờLuna; Gemini standby.",
+  "nextCheck": "2026-10-04T18:13:20Z",
+  "headline": "VX nguồnđã0lỗi nhưng runtimeeval cònFAIL; #50 cóbản sửa giữcallsite/Binding đangCI. XP/Ace PASSmức1. #70docs chờLuna, Gemini standby.",
   "needsBoss": [
     {
       "code": "G7",
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Sol tiếp quản#50 head6357e07: diagnostic37215280543/11308302026,157scriptVX/0SyntaxError dưới budget512compile/64MiB,128vòng. Build37215280550 xanh; R6/signals đang chạy và cần Luna mới. XP/Ace đã PASSmức1@9df, VXgameplay chưa xác nhận."
+      "note": "Sol tiếp quản#50 head7bf880a: nguồnVX157script/0SyntaxError@635 nhưng runtimeR637215280543 vẫnFAIL eval96:951 (XP374s/Ace383s PASSmức1). Thêm ASTbọcđốisốgiữcallsite/defaultBinding, bytebudget512/64MiB+AST256KiB/50knodes/cache32-64KiB. Local55Ruby/8privacyPASS; native/R6 mới đang chạy, cần Luna mới."
     },
     {
       "code": "V45",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-04T17:13:20Z",
+      "text": "Đãxemảnh/log/verdict635:VX runtimeeval96:951FAIL, khôngsuycompile0lỗi=gameplay. #50head7bf bọcđốisốeval tại callsite trongRAM/boundedAST+cache, 55testsPASSlocal; nativefixture/R6 đang chạy. Luna khôngcóreviewmới khi kiểm16:48, chưamerge50/70."
+    },
     {
       "t": "2026-10-04T16:10:35Z",
       "text": "V446357e07: Build37215280550 xanh, diagnostic11308302026 xác nhận157scriptVX/0SyntaxError dưới sharedbudget512/64MiB. Runtime chưa xong, Luna cầnheadmới. Git/gh môi trường401; connector cònhoạt động, khôngđọc/sửa token."
@@ -893,7 +897,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "DiagnosticVX157script/0SyntaxError@6357e07; chưa suy runtimePASS. R6/signals cònchạy, chờLuna. XP/Ace PASSmức1@9df; audio/save-load/FPS/đủ5/máythật chưa kiểm."
+      "note": "R637215280543@635: XP374s/Ace383s PASSmức1, VX65sFAIL runtimeeval96:951 dù nguồn157script0SyntaxError. Head7bf ASTadapter giữcallsite/lexicalBinding, local55PASS, CI/nativepending. Audio/save-load/FPS/đủ5/máythật chưa kiểm."
     },
     {
       "id": "web",
