@@ -19,7 +19,7 @@ mlkit-ocr-gms-ja = "16.0.1"
 webkit = "1.12.1"
 junit = "4.13.2"
 robolectric = "4.16.1"
-coroutinesTest = "1.8.1" # test dispatcher, chỉ testImplementation
+coroutinesTest = "1.8.1" # cùng phiên bản cho test dispatcher và công cụ JVM kiểm gói
 zip4j = "2.11.5" # giải nén .zip (mật khẩu ZipCrypto/AES), Java thuần
 commonsCompress = "1.27.1" # chỉ dùng cho 7z có mật khẩu
 xz = "1.10"
@@ -65,7 +65,10 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutinesTest" }
+
 [plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

@@ -1,0 +1,44 @@
+name: Kiểm gói thật (V37)
+on:
+  pull_request:
+    paths:
+      - 'app/src/main/java/vn/aow/monika/pack/**'
+      - 'app/src/main/java/vn/aow/monika/azahar/**'
+      - 'app/src/main/java/vn/aow/monika/config/**'
+      - 'config/**'
+      - '**/engines/**'
+      - '.github/workflows/build-engines.yml'
+      - '.github/workflows/build-kirikiri.yml'
+      - '.github/workflows/build-rgss.yml'
+      - 'tools/pack-check/**'
+      - 'gradle/libs.versions.toml'
+      - '.github/workflows/check-packs.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-packs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Biên dịch chính PackTransaction của app (không cần SDK)
+        run: ./gradlew -p tools/pack-check test installDist --console=plain
+      - name: Tải từng gói/ABI và kiểm bằng mã Kotlin của app
+        run: tools/pack-check/build/install/monika-pack-check/bin/monika-pack-check config/monika-config.json out/pack-check
+      - name: Bảng kết quả
+        if: always()
+        run: |
+          if [ -f out/pack-check/summary.md ]; then cat out/pack-check/summary.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v37-real-packs
+          path: out/pack-check/
+          if-no-files-found: error
+          retention-days: 3
