@@ -192,12 +192,37 @@ module MonikaRuby18
     [node.first_lineno, receiver.last_column + match.begin(1), receiver.last_column + match.end(1)]
   end
 
+  # Ruby1.8 x.foo ("s").width lấy width của KẾT QUẢ foo;
+  # Ruby3 đưa ("s").width vào foo. Chỉ đúng CALL một dòng, một STR
+  # literal rồi getter width không đối số. Không cần biết tên hàm của game,
+  # không coerce String/Rect và không thay method toàn cục.
+  def self.literal_result_spacing(node, lines)
+    return nil unless node.type == :CALL && node.first_lineno == node.last_lineno
+    receiver, method, args = node.children
+    return nil unless method.to_s.match?(/\A[A-Za-z_][A-Za-z_0-9]*[!?]?\z/)
+    return nil unless receiver && receiver.last_lineno == node.first_lineno &&
+      args&.type == :LIST && args.children.size == 2 && args.children[1].nil?
+    getter = args.children[0]
+    return nil unless getter&.type == :CALL && getter.children[1] == :width && getter.children[2].nil?
+    literal = getter.children[0]
+    return nil unless literal&.type == :STR && literal.first_lineno == literal.last_lineno
+    text = lines[node.first_lineno - 1]
+    gap = text.byteslice(receiver.last_column, getter.first_column - receiver.last_column)
+    match = /\A[ \t]*\.[ \t]*#{Regexp.escape(method.to_s)}([ \t]+)\z/.match(gap.to_s)
+    return nil unless match
+    opening = text.byteslice(getter.first_column, literal.first_column - getter.first_column)
+    return nil unless opening&.match?(/\A\([ \t]*\z/)
+    tail = text.byteslice(literal.last_column, getter.last_column - literal.last_column)
+    return nil unless tail&.match?(/\A[ \t]*\)[ \t]*\.[ \t]*width\z/)
+    [node.first_lineno, receiver.last_column + match.begin(1), receiver.last_column + match.end(1)]
+  end
+
   # Một AST pass bọc collection accessor/eval và sửa predicate spacing hẹp.
   # Giữ eval ở callsite: chỉ bọc đối số đầu, không override Kernel#eval
   # (override sẽ làm mất local variables/cref mặc định của người gọi).
   def self.instrument_eval_calls(source, budget)
     return source unless source.is_a?(String) && source.bytesize <= MAX_AST_BYTES && source.valid_encoding?
-    return source if source.count("\n") > MAX_LINES || !(source.include?('eval') || source.include?('constants') || source.include?('is_a?') || source.include?('kind_of?') || source.include?('slice!'))
+    return source if source.count("\n") > MAX_LINES || !(source.include?('eval') || source.include?('constants') || source.include?('is_a?') || source.include?('kind_of?') || source.include?('slice!') || source.include?('width'))
     return source unless defined?(RubyVM::AbstractSyntaxTree)
     budget[1] ||= MAX_COMPILE_BYTES
     return source if budget[0] <= 0 || source.bytesize > budget[1]
@@ -221,6 +246,11 @@ module MonikaRuby18
       end
       if node.type == :CALL && children[1] == :slice!
         deletion = slice_comparison_spacing(node, lines ||= source.lines)
+        deletions << deletion if deletion
+        return source if sites.size + deletions.size > MAX_EVAL_SITES
+      end
+      if node.type == :CALL && children[2]&.type == :LIST
+        deletion = literal_result_spacing(node, lines ||= source.lines)
         deletions << deletion if deletion
         return source if sites.size + deletions.size > MAX_EVAL_SITES
       end

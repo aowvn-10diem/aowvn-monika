@@ -88,5 +88,19 @@
     "afterNewGameErrorObserved": true,
     "previousSliceErrorPassed": true,
     "sourceUnmodified": true
+  },
+  "syntheticLiteralResultGrammar": {
+    "source": "measure.call (\" \").width",
+    "ruby187": "returns getter value from call result",
+    "ruby317": "NoMethodError width on String argument",
+    "attached": "correct both versions",
+    "maskedDiagnostic": {
+      "head": "cd0b6db977697d1580cf0536f6302a31a463af35",
+      "artifact": 11316077466,
+      "scriptIndex": 96,
+      "line": 1633,
+      "shape": "receiver.method SPACE (StringLiteral).getter; runtime confirms getter width"
+    },
+    "limits": "Callee remains anonymous; grammar independent of name. No game local. NewRAMnormalization needs native/R6 proof."
   }
 }

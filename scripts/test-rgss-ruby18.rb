@@ -380,4 +380,70 @@ ensure
   Module.send(:define_method, :constants, original_method)
 end
 check(Module.instance_method(:constants) == original_method, 'test khôi phục Module constants gốc')
+# A literal argument followed by width binds to the CALL result in Ruby1.8.
+width_fixture = <<~'RUBY'
+  class LiteralWidthResultFixture
+    def width; 42; end
+  end
+  class LiteralMeasureFixture
+    def measure(text); LiteralWidthResultFixture.new; end
+  end
+RUBY
+source = width_fixture + "LiteralMeasureFixture.new.measure (\" \" ).width\n"
+begin
+  eval(source)
+  abort('FAIL literal width spacing phải tái hiện NoMethodError')
+rescue NoMethodError => error
+  check(error.name == :width && error.receiver == ' ', 'literal getter fixture tái hiện width gọi trên String argument')
+end
+fixed = MonikaRuby18.instrument_eval_calls(source,[512])
+check(fixed == source.sub('measure (','measure(') && eval(fixed) == 42, 'literal getter xóa chỉ SPACE, lấy width của kết quả CALL không hardcode method')
+check(MonikaRuby18.instrument_eval_calls(fixed,[512]).equal?(fixed), 'literal result normalization idempotent')
+source = width_fixture + "LiteralMeasureFixture.new.measure \t('literal').width\n"
+check(eval(MonikaRuby18.instrument_eval_calls(source,[512])) == 42, 'literal result giữ String đơn và SPACE/TAB')
+source = width_fixture + "đo=LiteralMeasureFixture.new; đo.measure (\"escaped\\nvalue\").width # unchanged\n"
+fixed = MonikaRuby18.instrument_eval_calls(source,[512])
+check(eval(fixed) == 42 && fixed.end_with?("# unchanged\n"), 'literal getter byteoffsets giữ UTF8/escapedliteral/comment')
+unsupported = [
+  'measure.call(" ").width', 'measure.call (value).width',
+  'measure.call ("#{value}").width', 'measure.call ((" ")).width',
+  'measure.call (" ",1).width', 'measure.call (" ").height',
+  'measure.call (" ").width == 42',
+  'measure.call (" ").width(1)', 'measure.call (" ").width()',
+  "measure.call (\" \" )\n.width", 'call (" ").width',
+  'measure.call (1).width', 'source="measure.call (space).width"'
+]
+check(unsupported.all? { |text| MonikaRuby18.instrument_eval_calls(text,[512]).equal?(text) }, 'literal getter giữ dynamic/multipleargs/nestedparen/methodargs/getterkhác/multiline/literal/FCALL')
+source = "measure.call (\" \" ).width\n"
+budget = [512,source.bytesize]
+check(MonikaRuby18.instrument_eval_calls(source,budget).equal?(source) && budget == [511,0], 'literal getter không refill budget, thiếu compile cuối giữ source')
+many = source*65
+check(MonikaRuby18.instrument_eval_calls(many,[512]).equal?(many), 'literal getter quá64sites giữ source')
+source = width_fixture + "value=LiteralMeasureFixture.new.measure (\" \" ).width; eval('value')\n"
+fixed = MonikaRuby18.instrument_eval_calls(source,[512])
+check(eval(fixed) == 42 && fixed.include?('::MonikaRuby18.eval_source('), 'literal getter và eval dùng cùng ASTpass/compile budget')
+source = width_fixture + "total=1; total += LiteralMeasureFixture.new.measure (\" \").width; total\n"
+check(eval(MonikaRuby18.instrument_eval_calls(source,[512])) == 43, 'literal getter trong compoundassignment đúng thứ tự/giá trị')
+source = <<~'RUBY'
+  class LiteralOrderResultFixture
+    attr_reader :count
+    def initialize; @count=0; end
+    def width; @count+=1; 17; end
+  end
+  class LiteralOrderFixture
+    attr_reader :seen, :result
+    def take(text); @seen=text; @result=LiteralOrderResultFixture.new; end
+  end
+  calls=0; object=LiteralOrderFixture.new; fetch=->{calls+=1;object}
+  value=fetch.call.take ("private synthetic").width
+  [calls,object.seen,object.result.count,value]
+RUBY
+check(eval(MonikaRuby18.instrument_eval_calls(source,[512])) == [1,'private synthetic',1,17], 'literal result giữ receiver/argument/getter order, mỗi lần một call')
+source = "object=Object.new; def object.take(text); text; end; object.take (\" \" ).width\n"
+begin
+  eval(MonikaRuby18.instrument_eval_calls(source,[512]))
+  abort('FAIL không được coerce String result')
+rescue NoMethodError => error
+  check(error.name == :width && error.receiver == ' ', 'literal result không coerce hoặc che lỗi runtime khác')
+end
 puts 'ALL OK'

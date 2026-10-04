@@ -49,6 +49,14 @@ raise "monika-predicate-context" unless control_eval.range_value(control_range).
 control_name = 'abc'
 raise "monika-slice-context" unless control_name.slice! (/a/) != nil
 raise "monika-slice-result" unless control_name == 'bc'
+class ControlWidthResult
+  def width; 17; end
+end
+class ControlMeasure
+  def text_size(text); ControlWidthResult.new; end
+end
+control_width_result = ControlMeasure.new.text_size (" ").width
+raise "monika-width-context" unless control_width_result == 17
 bitmap.fill_rect(0,0,640,360,Color.new(242,140,40))
 sprite=Sprite.new
 sprite.bitmap=bitmap
