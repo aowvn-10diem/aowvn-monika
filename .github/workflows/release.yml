@@ -41,7 +41,7 @@ jobs:
             if [ -z "${!name:-}" ]; then echo "::error::Thiếu cấu hình ký: $name"; exit 1; fi
           done
           test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/tags/$TAG^{commit}")" || { echo "::error::Checkout không đúng tag"; exit 1; }
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17

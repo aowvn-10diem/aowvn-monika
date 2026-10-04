@@ -120,7 +120,7 @@ jobs:
             https://github.com/${{ inputs.azahar_repo }}.git src
           echo "SRC_COMMIT=$(git -C src rev-parse HEAD)" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -237,7 +237,7 @@ jobs:
           git -C src checkout --detach "$EKA_REF"
           git -C src submodule update --init --recursive --jobs 8
           echo "EKA_COMMIT=$(git -C src rev-parse HEAD)" >> "$GITHUB_ENV"
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
