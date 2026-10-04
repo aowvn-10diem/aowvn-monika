@@ -1,6 +1,10 @@
 name: Spike ARM64 emulator (V40)
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/spike-arm-emulator.yml'
+      - 'scripts/probe-arm-emulator.py'
 permissions:
   contents: read
 jobs:
