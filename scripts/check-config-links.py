@@ -9,6 +9,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 import json
+import argparse
+import sys
 import re
 import socket
 
@@ -164,6 +166,11 @@ def sort_key(row):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--report', type=Path, default=REPORT_PATH)
+    parser.add_argument('--json-output', type=Path)
+    parser.add_argument('--fail-on-error', action='store_true')
+    args = parser.parse_args()
     config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     abis = supported_abis()
     records = collect_urls(config, abis)
@@ -210,9 +217,15 @@ def main():
             )) + " |"
         )
 
-    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"Đã ghi {REPORT_PATH.relative_to(ROOT)}: {len(results)} URL, {errors} phản hồi lỗi/kết nối, {skipped} mục không kiểm.")
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.report.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"Đã ghi {args.report}: {len(results)} URL, {errors} phản hồi lỗi/kết nối, {skipped} mục không kiểm.")
+
+    if args.json_output:
+        args.json_output.parent.mkdir(parents=True, exist_ok=True)
+        args.json_output.write_text(json.dumps(dict(checked=checked, errors=errors, skipped=skipped, results=results), ensure_ascii=False, indent=2) + "\n")
+    if args.fail_on_error and errors:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
