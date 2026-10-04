@@ -5,7 +5,7 @@ description: Build, ký, kiểm chữ ký và gửi APK Aow Monika (release R8, 
 
 # Phát hành APK — đọc hết trước khi báo "thiếu" bất cứ thứ gì
 
-Repo **chưa có** GitHub Secrets ký app (`MONIKA_KEYSTORE_*`) và cũng không có `PIXELDRAIN_API_KEY`, nên workflow Release trên CI đỏ ở bước ký. Từ trước tới nay APK luôn được **build và ký ngay trên máy phiên**, không qua CI. Không có biến môi trường ký cũng là bình thường. (Kế hoạch V43: khi sếp đã thêm Secrets, phát hành chuyển sang `release.yml`; sau V38 sao lưu khóa.)
+Phát hành mặc định qua `release.yml` trên CI (lần thật đầu là V43). GitHub Secrets ký app đã có (sếp xác nhận tự xem ở Settings → Secrets: 4 secret `MONIKA_KEYSTORE_*` / `MONIKA_KEY_*`, `PACKS_TOKEN`, `PIXELDRAIN_API_KEY`). `release.yml` chưa chép engine 3DS (bước 3 vẫn phải xử lý riêng). Bước 1 và 4 dưới đây là cách cũ (build/ký/upload trên máy phiên), chỉ dùng khi CI hỏng. Sau khi build xong, vẫn kiểm chứng thư bằng `scripts/verify-apk-cert.py` (bước 2).
 
 **Luật cứng:** không commit keystore/mật khẩu ký/token; không in chúng ra log hay chat. Mỗi phiên bản chỉ phát hành **1 APK: bản universal** (`AowVN-Monika-<tag>.apk`, quyết định của sếp). Bản chưa có kết quả máy thật luôn là prerelease.
 
