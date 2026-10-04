@@ -1,0 +1,25 @@
+// Mã Java của Ren'Py Android (RAPT 8.5.3: org.renpy.android, org.jnius, org.kamranzafar.jtar, org.libsdl.app = SDL 2.0.20) nhúng vào Aow Monika.
+// librenpython.so, thư viện Python và renpy/ KHÔNG nằm trong APK — Monika tải thành gói `renpy8` khi người chơi có game Ren'Py.
+// Bản vá của Aow Monika: thư mục patches/ (đã áp sẵn vào src/); chỉ sửa chỗ có chú thích "Aow Monika:". Xem UPSTREAM.md.
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace = "org.renpy.android"
+    compileSdk 35 // gốc RAPT là android-36; mã Java không dùng API 36 (U8)
+
+    defaultConfig {
+        minSdk 26
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.15.0' // RenPyFileProvider extends FileProvider
+}
