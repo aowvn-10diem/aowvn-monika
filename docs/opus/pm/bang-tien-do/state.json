@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T20:17:40.250832Z",
+  "updatedAt": "2026-10-04T20:34:41.826757Z",
   "mainSha": "3453741f954140432a82c2d449fa4991072bf8ff",
   "app": "App0.7.4 · config33",
   "nextCheck": "2026-10-04T19:06:36Z",
-  "headline": "XP/Ace PASS mức1; VX8a7 còn ArgumentError96:957. Head808 sửa predicate spacing trongRAM: Build/CodeQL/native đã xanh, R6/game thật còn chạy; cần Luna. Gemini standby.",
+  "headline": "XP/Ace PASSmức1; VX đã vào title, sauNewGame TypeError137:118. Head131 thêm guardconstants, đang thu diagnostic mới; cần CI/Luna, Gemini standby.",
   "needsBoss": [
     {
       "code": "G7",
@@ -66,7 +66,7 @@
       "name": "RPG Maker XP/VX/Ace chơi trong app",
       "status": "dang",
       "progress": 68,
-      "note": "R0–R5 mã xong; R6@8a7 XP360s/Ace373s PASS mức1, VX65s FAIL ArgumentError96:957. Bản predicate808 chờ runtime. Đủ5/audio/save-load/FPS chưa kiểm; R7 chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
+      "note": "R0–R5 mã xong; R6@808 XP370s/Ace372s PASS mức1, VXtitle đạt nhưng sauNewGame TypeError137:118, chưaPASS60s. Đủ5/audio/save-load/FPS chưa kiểm; R7 chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "Q",
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "#44 đã gộp f96da6e. R6@8a7d3ca run37228347002: XP360s/Ace373s PASS mức1, VX65s FAIL ArgumentError96:957. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếp V44, không R7.",
+      "note": "#44 đã gộp f96da6e. R6@8082683 run37230428854: XP370s/Ace372s PASS mức1, VX436s FAIL137:118 sauNewGame; VX đã có màn tiêu đề. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếp V44, không R7.",
       "module": "rgss"
     },
     {
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Snapshot Sol #50 head8082683: RAM predicate spacing đã tái hiện MRI1.8.7/3.1.7, chỉ CALL is_a?/kind_of? với CONST/ternary một dòng, cùng AST/common512compile/64MiB/64sites; không coerce Range/pitch/core override. Local82Ruby18/18privacy/6probe PASS, gồm @@/$/label theo Luna; native fixture Integer/Range identity/exclusive mới cần CI. Bằng chứng8a7/run37228347002/art11312813129: XP360s/Ace373s mức1 PASS, VX65s FAIL ArgumentError96:957; probe localRange/compoundString,Integer,Integer. Native8a7 run37228346996 attempt2/art11313104145 marker1/orange/PixelCopy PASS; attempt1 XP startup FAIL, retry không sửa code. 808 Build37230428845/CodeQL37230428849/signals37230428853 xanh; native11312749848 đã xem Range/Integer/orange/PixelCopy thật; R637230428854 còn chạy, không gọi VX phục hồi. Giữ expect_fail=vx, cần Luna fresh808 trước merge."
+      "note": "Snapshot Sol #50 head1312243: guard Class/Module.constants custom override trước/sau preload, local87Ruby18/18privacy/6probe PASS; CI headmới chờ. R6@808 run37230428854/art11313582885: XP370s/Ace372s mức1 PASS; VX436s FAIL. Ảnh VX trướcphím đã có màn tiêu đề, sauNewGame TypeError script137:118 slice! nhậntrue; đã vượt Range96:957. Build/CodeQL/native808 xanh, native11312749848 xác nhận predicate Integer/Range và eval/accessor/orange/PixelCopy. MRI1.8.7/3.1.7 synthetic chứng minh khác parser-spacing và constantslexical (riêng1.8.7, khôngđo1.8.1). Diagnostic137:118 mới cần xem trước sửa, không coerce slice!/Range; giữ expect_fail=vx. Cần Luna fresh131 và CI/R6/native đúnghead trước merge."
     },
     {
       "code": "V45",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-04T20:34:41.826757Z",
+      "text": "R6@808 đã xem ảnh/log/verdict11313582885: VX trướcphím cótitle, sauNewGame FAIL slice! TypeError137:118; XP370/Ace372 mức1PASS. Đã vượt Range957. Head131 guardconstants/proof/diagnostic mới, local87/18/6PASS; không đổiexpectfail. Bằng chứngClass.constants lexical1.8.7 đã chạy thật, khôngclaim1.8.1/fullSDK."
+    },
     {
       "t": "2026-10-04T20:17:40.250832Z",
       "text": "808 Build37230428845/CodeQL37230428849/native37230428853 SUCCESS; native11312749848 kiểm predicate Integer/Range identity/exclusive+eval/accessor/orange/PixelCopy thật. R6pending. Fixture1.8.7 thật xác nhận Class.constants đọc constants lexical trongclassbody qua Module.singleton rb_mod_s_constants; 3.1.7 không, chưađo1.8.1. Guard Class.constants override đang chuẩn bị, không push hủy R6."
@@ -921,7 +925,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "Snapshot Sol #50 head8082683: RAM predicate spacing đã tái hiện MRI1.8.7/3.1.7, chỉ CALL is_a?/kind_of? với CONST/ternary một dòng, cùng AST/common512compile/64MiB/64sites; không coerce Range/pitch/core override. Local82Ruby18/18privacy/6probe PASS, gồm @@/$/label theo Luna; native fixture Integer/Range identity/exclusive mới cần CI. Bằng chứng8a7/run37228347002/art11312813129: XP360s/Ace373s mức1 PASS, VX65s FAIL ArgumentError96:957; probe localRange/compoundString,Integer,Integer. Native8a7 run37228346996 attempt2/art11313104145 marker1/orange/PixelCopy PASS; attempt1 XP startup FAIL, retry không sửa code. 808 Build37230428845/CodeQL37230428849/signals37230428853 xanh; native11312749848 đã xem Range/Integer/orange/PixelCopy thật; R637230428854 còn chạy, không gọi VX phục hồi. Giữ expect_fail=vx, cần Luna fresh808 trước merge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
+      "note": "Snapshot Sol #50 head1312243: guard Class/Module.constants custom override trước/sau preload, local87Ruby18/18privacy/6probe PASS; CI headmới chờ. R6@808 run37230428854/art11313582885: XP370s/Ace372s mức1 PASS; VX436s FAIL. Ảnh VX trướcphím đã có màn tiêu đề, sauNewGame TypeError script137:118 slice! nhậntrue; đã vượt Range96:957. Build/CodeQL/native808 xanh, native11312749848 xác nhận predicate Integer/Range và eval/accessor/orange/PixelCopy. MRI1.8.7/3.1.7 synthetic chứng minh khác parser-spacing và constantslexical (riêng1.8.7, khôngđo1.8.1). Diagnostic137:118 mới cần xem trước sửa, không coerce slice!/Range; giữ expect_fail=vx. Cần Luna fresh131 và CI/R6/native đúnghead trước merge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
     },
     {
       "id": "web",
