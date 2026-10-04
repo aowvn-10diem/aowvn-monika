@@ -305,6 +305,7 @@ class RetroActivity : ComponentActivity() {
                 view.getGLRetroEvents().collect { e ->
                     if (e is GLRetroView.GLRetroEvents.FrameRendered && !firstFrame) {
                         firstFrame = true
+                        view.queueEvent { vn.aow.monika.diag.GameEnvironment.cacheGl(this@RetroActivity) }
                         Diagnostics.stage(this@RetroActivity, "first-frame")
                         if (!raWanted) cheats.applyAll() // lõi đã nạp game → áp các mã đang bật (hardcore: không áp cheat)
                     }
