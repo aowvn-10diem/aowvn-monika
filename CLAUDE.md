@@ -17,7 +17,7 @@ App Android (Kotlin, Jetpack Compose) của aow.vn: đọc bài (Blogger feed), 
 - Muốn báo "thiếu khóa/secret/công cụ" → đọc skill `phat-hanh-apk` trước.
 
 ## Lệnh
-- `./gradlew testDebugUnitTest` — chạy trước mọi push (gồm test config và test giao diện Robolectric).
+- `./gradlew testDebugUnitTest` — chạy trước mọi push (gồm test config và test giao diện Robolectric). Ngoại lệ: commit chỉ sửa `docs/**` hoặc `**/*.md` (CI cũng bỏ qua, V11).
 - `./gradlew assembleDebug` — build APK.
 
 ## Chỉ đường (nạp skill khi cần)

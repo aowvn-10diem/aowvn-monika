@@ -15,6 +15,8 @@ import argparse, collections, json, subprocess, sys
 
 DEFAULT = 'docs/opus/pm/bang-tien-do/state.json'
 STEPS = {'build', 'auto', 'phone', 'release'}
+TASK_STATUS = {'dang', 'xong', 'lap', 'cho', 'ket', 'sep'}      # giá trị đang dùng trong state.json
+STEP_STATUS = {'xong', 'dang', 'cho', 'sep', 'loi', 'na'}
 
 
 def utc(plus_min=0):
@@ -53,6 +55,8 @@ def main():
         print('việc theo trạng thái:', dict(c)); print('log mới nhất:', s['log'][0] if s['log'] else None)
         return
     if a.cmd == 'task':
+        if a.status is not None and a.status not in TASK_STATUS:
+            sys.exit(f'LỖI: --status phải thuộc {sorted(TASK_STATUS)}, nhận {a.status!r}; không ghi.')
         x = find(s['tasks'], 'code', a.code)
         if x is None:
             if not a.title:
@@ -65,6 +69,8 @@ def main():
     elif a.cmd == 'module':
         if a.step not in STEPS:
             sys.exit(f'LỖI: bước phải thuộc {sorted(STEPS)}')
+        if a.status not in STEP_STATUS:
+            sys.exit(f'LỖI: trạng thái bước phải thuộc {sorted(STEP_STATUS)}, nhận {a.status!r}; không ghi.')
         x = find(s['modules'], 'id', a.id)
         if x is None:
             sys.exit(f'LỖI: không có module {a.id}; có: ' + ', '.join(y['id'] for y in s['modules']))
