@@ -20,9 +20,9 @@
     "20": "L03 Luna duyệt",
     "18": "L02 Luna (đã trả lời thư)",
     "14": "SOL-003 (đã trả lời)",
-    "44": "#44 đã gộp f96da6e. R6@00bfe run37233267939: XP372s/Ace381s PASSmức1, VX439s FAILNoMethodError96:1633 sauNewGame; titlecó, slice!137:118 đãqua. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếpV44, khôngR7.",
+    "44": "#44 gộpf96da6e. R6@871 run37238060810: XP388s/Ace381s PASSmức1, VX367s FAILNoMethodError96:2174 sauNewGame; titlecó/width1633qua/chưa60sPASS. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếpV44, khôngR7.",
     "46": "gộp5d352a7; Luna + CI xanh, K3 máy thật chưa kiểm",
-    "50": "Snapshot Sol #50 head87145d7: literal-result spacing RAM theo maskedcd0/art11316077466 tại96:1633 và NoMethodErrorwidth/String. MRI1.8.7 receiver.method (StringLiteral).width lấygettercủakếtquảCALL,3.1.7 gọiwidthtrênStringargument; attachedđúngcả2. ChỉCALL mộtline/mộtSTRliteral/getterwidth khôngargs, xóaSPACE/TAB, calleeanonymized/khônghardcodegame, chungAST/budget/sites/compilefinal. Unsupported/dynamic/multiline/multipleargs/getterkhác giữsource. Local110Ruby18/20privacy/6probe PASS; nativefixture getter17 compile-onlyPASS, CẦNnative/R6/Luna đúngheadmới. R6@00bfe37233267939/art11315118063 đãxem: XP372s/Ace381s PASSmức1, VX439s FAIL96:1633 sauNewGame; titlecó, slice137:118 đãqua, chưa60sPASS. Build37237143667/native37237143653cd0 xanh, khôngproof choappmới; R6cd0 bịsupersededbởiappfix, khônggọigreen. Giữexpect_failvx/threshold/observation/noR7; no coerce/globalpatch/gamefile/nativeedit. CầnLunafresh871 +CIđúnghead trướcmerge.",
+    "50": "Snapshot Sol #50 headdd01de2: mở rộng literal_result_spacing đúng hai cặp STR→width và literalRegexp→size; chỉ CALL một dòng/getter không args, xóaSPACE/TAB/commonASTpass/budget/sites/compilefinal. Maskedc4/art11316849430 tại96:2174 (receiver.method SPACE (RegexpLiteral).size)+số và syntheticMRI1.8.7/3.1.7 xác nhận khácngữpháp, calleeẩn danh/khônghardcode/coerce/corepatch. Local122Ruby18/20privacy/6probe PASS; nativefixtureRegexp resultcount3 exactnormalized/packed-sourceunchangedcompile-onlyPASS, CẦNnative/R6/CI/Luna đúngdd01. Bằngchứnghoàntất871: R637238060810/art11317650301 đãxem XP388s/Ace381s mức1PASS; VX367s FAILNoMethodError96:2174 size/Regexp sauNewGame, width1633đãqua/titlecó/chưa60sPASS. Build37238060816/CodeQL37238060761/native37238060798 SUCCESS; native11316493179 marker1/orange/PixelCopy/getter17/allpriorcontrolsPASS. Diagnostic11316243332 1570SyntaxError/124compile39362538bytes chỉcompile. C4chỉdiagnostic2174, R6superseded bởiappfixmới/khônggọigreen. Giữexpect_failvx/threshold/observation/noR7. CầnLuna freshdd01 trướcmerge.",
     "51": "gộp0e17edf,27test +5ZIP thật PASS; quota chưa đo",
     "34": "PM duyệt; head 1c64c02 chỉ gộp main",
     "55-57": "Dependabot → Sol (tra-loi-sol-009)",
@@ -38,7 +38,8 @@
     "64": "đóng theo Luna; câu hỏi57 đã cũ, không tựmerge chung",
     "62": "SOL012 kẹt; Luna xác nhận14:55, ký/publish không được cấp ngoại lệ",
     "70": "Gộpf4ebd0b sauLuna Đạt đúngf40f89c+docCIchecksSUCCESS. V11docs-onlykhôngappunitPASS. BảnPMkế871appfixpending.",
-    "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS."
+    "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS.",
+    "71": "SửaLuna185Cầnsửa:4PMdocs cập nhật871R6hoàntất/VX367FAIL2174 vàdd01Regexp-sizeappfix pendingnative/R6/Luna. Docs-only khôngappunitPASS."
   },
   "idle": 0,
   "cadence": 60,
@@ -65,7 +66,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-04T21:57:17.877776Z",
+  "updated_at": "2026-10-04T22:57:08.399362Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [

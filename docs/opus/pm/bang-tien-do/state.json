@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T21:57:17.877776Z",
+  "updatedAt": "2026-10-04T22:57:08.399362Z",
   "mainSha": "f4ebd0b0e3eca307e6b99969125cfa06166981a5",
   "app": "App0.7.4 · config33",
   "nextCheck": "2026-10-04T19:06:36Z",
-  "headline": "VXtitle đạt, R6@00bfe cònNoMethod96:1633 sauNewGame. Head871 sửa literal-call/getter spacing RAM, local110Ruby18PASS; chờAndroid/R6/Luna. #70gộpLuna+docsCI, Gemini standby.",
+  "headline": "VX đã qua width1633, R6@871 cònNoMethodError96:2174 size/Regexp. XP388/Ace381 PASSmức1. Headdd01 sửaRegexp-result grammarRAM, local122Ruby18PASS; chờnative/R6/Luna. Gemini standby.",
   "needsBoss": [
     {
       "code": "G7",
@@ -66,7 +66,7 @@
       "name": "RPG Maker XP/VX/Ace chơi trong app",
       "status": "dang",
       "progress": 68,
-      "note": "R0–R5 mã xong; R6@00bfe XP372s/Ace381s PASSmức1, VXtitleđạt nhưng sauNewGame NoMethodError96:1633, chưaPASS60s. Đủ5/audio/save-load/FPS chưa kiểm; R7 chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
+      "note": "R0–R5 mã xong; R6@871 XP388s/Ace381s PASSmức1, VXtitleđạt nhưng367FAIL2174 size/Regexp sauNewGame, chưa60sPASS. Đủ5/audio/save-load/FPS chưa kiểm; R7 chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "Q",
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "#44 đã gộp f96da6e. R6@00bfe run37233267939: XP372s/Ace381s PASSmức1, VX439s FAILNoMethodError96:1633 sauNewGame; titlecó, slice!137:118 đãqua. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếpV44, khôngR7.",
+      "note": "#44 gộpf96da6e. R6@871 run37238060810: XP388s/Ace381s PASSmức1, VX367s FAILNoMethodError96:2174 sauNewGame; titlecó/width1633qua/chưa60sPASS. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếpV44, khôngR7.",
       "module": "rgss"
     },
     {
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Snapshot Sol #50 head87145d7: literal-result spacing RAM theo maskedcd0/art11316077466 tại96:1633 và NoMethodErrorwidth/String. MRI1.8.7 receiver.method (StringLiteral).width lấygettercủakếtquảCALL,3.1.7 gọiwidthtrênStringargument; attachedđúngcả2. ChỉCALL mộtline/mộtSTRliteral/getterwidth khôngargs, xóaSPACE/TAB, calleeanonymized/khônghardcodegame, chungAST/budget/sites/compilefinal. Unsupported/dynamic/multiline/multipleargs/getterkhác giữsource. Local110Ruby18/20privacy/6probe PASS; nativefixture getter17 compile-onlyPASS, CẦNnative/R6/Luna đúngheadmới. R6@00bfe37233267939/art11315118063 đãxem: XP372s/Ace381s PASSmức1, VX439s FAIL96:1633 sauNewGame; titlecó, slice137:118 đãqua, chưa60sPASS. Build37237143667/native37237143653cd0 xanh, khôngproof choappmới; R6cd0 bịsupersededbởiappfix, khônggọigreen. Giữexpect_failvx/threshold/observation/noR7; no coerce/globalpatch/gamefile/nativeedit. CầnLunafresh871 +CIđúnghead trướcmerge."
+      "note": "Snapshot Sol #50 headdd01de2: mở rộng literal_result_spacing đúng hai cặp STR→width và literalRegexp→size; chỉ CALL một dòng/getter không args, xóaSPACE/TAB/commonASTpass/budget/sites/compilefinal. Maskedc4/art11316849430 tại96:2174 (receiver.method SPACE (RegexpLiteral).size)+số và syntheticMRI1.8.7/3.1.7 xác nhận khácngữpháp, calleeẩn danh/khônghardcode/coerce/corepatch. Local122Ruby18/20privacy/6probe PASS; nativefixtureRegexp resultcount3 exactnormalized/packed-sourceunchangedcompile-onlyPASS, CẦNnative/R6/CI/Luna đúngdd01. Bằngchứnghoàntất871: R637238060810/art11317650301 đãxem XP388s/Ace381s mức1PASS; VX367s FAILNoMethodError96:2174 size/Regexp sauNewGame, width1633đãqua/titlecó/chưa60sPASS. Build37238060816/CodeQL37238060761/native37238060798 SUCCESS; native11316493179 marker1/orange/PixelCopy/getter17/allpriorcontrolsPASS. Diagnostic11316243332 1570SyntaxError/124compile39362538bytes chỉcompile. C4chỉdiagnostic2174, R6superseded bởiappfixmới/khônggọigreen. Giữexpect_failvx/threshold/observation/noR7. CầnLuna freshdd01 trướcmerge."
     },
     {
       "code": "V45",
@@ -685,15 +685,19 @@
   ],
   "log": [
     {
-      "t": "2026-10-04T21:57:17.877776Z",
+      "t": "2026-10-04T22:57:08.399362Z",
+      "text": "SửaLuna185 snapshotstale:871R6hoàntất XP388/Ace381 mức1,VX367FAILsize/Regexp2174, width1633qua. Native11316493179getter17+marker/orange/PixelCopyPASS. C4masked2174choRegexpLiteral/resultsize; dd01appfix chungSTRwidth/RegexpSize grammarbounded, local122/20/6PASS, nativefixturecompile-only. Neednative/R6/Lunafresh, khônggameplayclaim/expectationlowering."
+    },
+    {
+      "t": "2026-10-04T22:57:08.399362Z",
       "text": "#70gộpf4ebd0b sauLunaĐạt f40f89c+docschecks; V11BuildskipkhôngunitappPASS. #50head871 sửaCALL SPACE (StringLiteral).width theo maskedcd0+synthetic1.8.7/3.1.7, local110/20/6PASS/nativefixturecompile-only. Cầnnative/R6/Lunafresh, chưaclaimVXrecovery; R6cd0 supersededkhônggreen."
     },
     {
-      "t": "2026-10-04T21:57:17.877776Z",
+      "t": "2026-10-04T22:57:08.399362Z",
       "text": "R6@00bfe hoàn tất: XP372/Ace381 mức1PASS; VX439 FAILNoMethodError96:1633 (width/String) sauNewGame, đãqua slice137:118. Native11314836860 slice mutation+marker/orange/PixelCopyPASS; compile1570errorkhônggameplay. Headcd0 sửaLuna trigger/probe-missing/privacy20, thu masked1633; khôngđổiexpectfail/threshold."
     },
     {
-      "t": "2026-10-04T21:57:17.877776Z",
+      "t": "2026-10-04T22:57:08.399362Z",
       "text": "Head00bfe sửa slice! (/Regexp/) !=nil trongRAM: MRI1.8.7 so sánh kếtquả, MRI3.1.7 đưaBoolean vàoarg; proofmasked137:118 + synthetic thật. GuardmộtCALL/mộtline/literalRegexp/nilcomparison, commonbudgetgiữnguyên, nativefixtureStringmutation mới. Local98/19/6PASS; CI/R6/native pending, khôngđổiexpectfail."
     },
     {
@@ -937,7 +941,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "Snapshot Sol #50 head87145d7: literal-result spacing RAM theo maskedcd0/art11316077466 tại96:1633 và NoMethodErrorwidth/String. MRI1.8.7 receiver.method (StringLiteral).width lấygettercủakếtquảCALL,3.1.7 gọiwidthtrênStringargument; attachedđúngcả2. ChỉCALL mộtline/mộtSTRliteral/getterwidth khôngargs, xóaSPACE/TAB, calleeanonymized/khônghardcodegame, chungAST/budget/sites/compilefinal. Unsupported/dynamic/multiline/multipleargs/getterkhác giữsource. Local110Ruby18/20privacy/6probe PASS; nativefixture getter17 compile-onlyPASS, CẦNnative/R6/Luna đúngheadmới. R6@00bfe37233267939/art11315118063 đãxem: XP372s/Ace381s PASSmức1, VX439s FAIL96:1633 sauNewGame; titlecó, slice137:118 đãqua, chưa60sPASS. Build37237143667/native37237143653cd0 xanh, khôngproof choappmới; R6cd0 bịsupersededbởiappfix, khônggọigreen. Giữexpect_failvx/threshold/observation/noR7; no coerce/globalpatch/gamefile/nativeedit. CầnLunafresh871 +CIđúnghead trướcmerge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
+      "note": "Snapshot Sol #50 headdd01de2: mở rộng literal_result_spacing đúng hai cặp STR→width và literalRegexp→size; chỉ CALL một dòng/getter không args, xóaSPACE/TAB/commonASTpass/budget/sites/compilefinal. Maskedc4/art11316849430 tại96:2174 (receiver.method SPACE (RegexpLiteral).size)+số và syntheticMRI1.8.7/3.1.7 xác nhận khácngữpháp, calleeẩn danh/khônghardcode/coerce/corepatch. Local122Ruby18/20privacy/6probe PASS; nativefixtureRegexp resultcount3 exactnormalized/packed-sourceunchangedcompile-onlyPASS, CẦNnative/R6/CI/Luna đúngdd01. Bằngchứnghoàntất871: R637238060810/art11317650301 đãxem XP388s/Ace381s mức1PASS; VX367s FAILNoMethodError96:2174 size/Regexp sauNewGame, width1633đãqua/titlecó/chưa60sPASS. Build37238060816/CodeQL37238060761/native37238060798 SUCCESS; native11316493179 marker1/orange/PixelCopy/getter17/allpriorcontrolsPASS. Diagnostic11316243332 1570SyntaxError/124compile39362538bytes chỉcompile. C4chỉdiagnostic2174, R6superseded bởiappfixmới/khônggọigreen. Giữexpect_failvx/threshold/observation/noR7. CầnLuna freshdd01 trướcmerge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
     },
     {
       "id": "web",
