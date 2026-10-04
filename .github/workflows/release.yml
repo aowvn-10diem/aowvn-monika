@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tên bản phát hành, vd. v0.3.8 (tự tạo tag nếu chưa có)"
+        description: "Tên bản phát hành, vd. v0.3.8 (tag phải tồn tại)"
         required: true
       stable:
         description: "true = bản chính thức (CHỈ sau khi có kết quả máy thật); mặc định là prerelease"
@@ -24,6 +24,23 @@ jobs:
       TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
+      - name: Kiểm điều kiện ký và tag (V30)
+        id: release_guard
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MONIKA_KEYSTORE_BASE64 }}
+          MONIKA_KEYSTORE_PASSWORD: ${{ secrets.MONIKA_KEYSTORE_PASSWORD }}
+          MONIKA_KEY_ALIAS: ${{ secrets.MONIKA_KEY_ALIAS }}
+          MONIKA_KEY_PASSWORD: ${{ secrets.MONIKA_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] || { echo "::error::Tên tag không hợp lệ"; exit 1; }
+          for name in KEYSTORE_BASE64 MONIKA_KEYSTORE_PASSWORD MONIKA_KEY_ALIAS MONIKA_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then echo "::error::Thiếu cấu hình ký: $name"; exit 1; fi
+          done
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/tags/$TAG^{commit}")" || { echo "::error::Checkout không đúng tag"; exit 1; }
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -35,14 +52,9 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.MONIKA_KEYSTORE_BASE64 }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-              # Chạy tay để thử: chưa có khóa thì ký bằng khóa debug (APK chỉ để thử, cài đè bản chính thức sẽ phải gỡ trước).
-              echo "::warning::Thiếu secret MONIKA_KEYSTORE_BASE64 → ký bằng khóa debug (bản thử)."; exit 0
-            fi
-            echo "::error::Thiếu secret MONIKA_KEYSTORE_BASE64 (xem docs/CAP-NHAT.md)"; exit 1
-          fi
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/monika.jks"
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64" || { echo "::error::Thiếu cấu hình ký"; exit 1; }
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/monika.jks"
           echo "MONIKA_KEYSTORE=$RUNNER_TEMP/monika.jks" >> "$GITHUB_ENV"
       - name: Build APK release
         env:
@@ -50,6 +62,8 @@ jobs:
           MONIKA_KEY_ALIAS: ${{ secrets.MONIKA_KEY_ALIAS }}
           MONIKA_KEY_PASSWORD: ${{ secrets.MONIKA_KEY_PASSWORD }}
         run: |
+          set -euo pipefail
+          test -s "$MONIKA_KEYSTORE" || { echo "::error::Không có tệp ký hợp lệ"; exit 1; }
           ./gradlew testDebugUnitTest assembleRelease --console=plain
           # Chặn lỗi sập v0.4.5: thư viện đóng kèm bản sao lớp Android bị R8 đổi tên → không cho phát hành.
           python3 scripts/check-r8-mapping.py app/build/outputs/mapping/release/mapping.txt
@@ -58,12 +72,30 @@ jobs:
           cp app/build/outputs/mapping/release/mapping.txt "mapping-${TAG}.txt"
           # CHỈ phát hành bản chung (quyết định của sếp 02/10/2026): người dùng không phải chọn bản. Đừng thêm APK arm64/armv7 vào Release.
           ls -l AowVN-Monika-*.apk
+      - name: Chặn APK ký debug và ghi SHA-256 (V30)
+        id: apk_guard
+        run: |
+          set -euo pipefail
+          APK="AowVN-Monika-${TAG}.apk"
+          MAPPING="mapping-${TAG}.txt"
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          test -n "$APKSIGNER" || { echo "::error::Thiếu apksigner"; exit 1; }
+          "$APKSIGNER" verify --print-certs "$APK" > "$RUNNER_TEMP/release-cert.txt"
+          if grep -Eiq 'CN[[:space:]]*=[[:space:]]*Android Debug' "$RUNNER_TEMP/release-cert.txt"; then
+            echo "::error::APK ký debug bị chặn"; exit 1
+          fi
+          grep -q 'Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/release-cert.txt" || { echo "::error::Không đọc được chứng chỉ APK"; exit 1; }
+          test -s "$APK" && test -s "$MAPPING"
+          sha256sum "$APK" "$MAPPING" > "SHA256SUMS-${TAG}.txt"
+          { echo 'SHA-256 (APK và mapping):'; echo '```text'; cat "SHA256SUMS-${TAG}.txt"; echo '```'; } > "release-notes-${TAG}.md"
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             AowVN-Monika-*.apk
             mapping-${{ env.TAG }}.txt
+            SHA256SUMS-${{ env.TAG }}.txt
           tag_name: ${{ env.TAG }}
+          body_path: release-notes-${{ env.TAG }}.md
           generate_release_notes: true
           # Luật V31: bản chưa có kết quả thử trên máy thật luôn là prerelease.
           prerelease: ${{ inputs.stable != 'true' }}
