@@ -10,7 +10,7 @@ Game Java chạy bằng J2ME Loader nhúng ở module `j2me/` + `dexlib/` (Apach
 ## Luật
 - **Chỉ sửa chỗ có chú thích `Aow Monika:`** (tìm: `grep -rn "Aow Monika" j2me/`). Giữ sửa đổi ít nhất có thể để cập nhật upstream dễ.
 - Module giữ `build.gradle` riêng (Groovy) — **ngoại lệ** của quy tắc version catalog. Cần **NDK 22.1.7171670**.
-- Nguồn gốc: CLAUDE.md cũ ghi bản gốc commit `9b0fa48` (J2ME Loader); theo `docs/J2ME-LOADER.md` từ 0.5.1 lõi là **JL-Mod** (`woesss/JL-Mod`, commit `f723a19`, bản `0.87.1-monika`). Tin tài liệu J2ME-LOADER.md; [CHƯA KIỂM] khớp với mã hiện tại. Dữ liệu game từ lõi cũ: [CHƯA KIỂM] tương thích Room DB/thư mục làm việc.
+- Nguồn gốc: từ bản 0.5.1 lõi là **JL-Mod commit `f723a19`** (`woesss/JL-Mod`, fork của J2ME Loader; bản `0.87.1-monika`); bản gốc J2ME Loader trước đó là `9b0fa48` (xem `docs/J2ME-LOADER.md`, dòng 8 và 11). Dữ liệu game từ lõi cũ: [CHƯA KIỂM] tương thích Room DB/thư mục làm việc (tài liệu cũng ghi vậy).
 - Đã bỏ: Location API, màn quyên góp, ACRA (không gửi báo lỗi ra ngoài), DocumentProvider.
 
 ## Luồng chạy

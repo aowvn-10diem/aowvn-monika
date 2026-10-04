@@ -8,7 +8,7 @@ description: Một lượt kiểm hộp thư của PM (Opus) dự án Aow Monika
 Chạy trong phiên mới, gọn: không đọc lại lịch sử, chỉ dựa vào file trạng thái + script. Repo `aowvn-10diem/aowvn-monika`. Script nằm ở `.claude/skills/pm-kiem-thu/scripts/` (sau đây gọi `$S`); chạy từ gốc repo, trên nhánh PM `docs/opus-tra-loi`.
 
 ## Trạng thái nằm ở repo (không phải scratchpad)
-- `docs/opus/pm/trang-thai-pm.json` (nhánh `docs/opus-tra-loi`): `main`/`branch` (SHA đã thấy), `prs`, `sol`/`luna`/`haiku` (việc đã duyệt), `idle`, `cadence`, `answers_seen`, `dashboard` (URL artifact), `dashboard_version`, `trigger`, `rule`. Trường `dashboard_state` cũ trỏ scratchpad → [CHƯA KIỂM] sửa thành `docs/opus/pm/bang-tien-do/state.json` ở lượt đầu tiên.
+- `docs/opus/pm/trang-thai-pm.json` (nhánh `docs/opus-tra-loi`): `main`/`branch` (SHA đã thấy), `prs`, `sol`/`luna`/`haiku` (việc đã duyệt), `idle`, `cadence`, `answers_seen`, `dashboard` (URL artifact), `dashboard_version`, `trigger`, `rule`. `dashboard_state` trỏ tới `docs/opus/pm/bang-tien-do/state.json` (PM đã sửa, commit `788e6b3` trên nhánh PM).
 - Trang tiến độ: `docs/opus/pm/bang-tien-do/{state.json,index.html,build_public.py}`. Landing tải app: nguồn `docs/opus/pm/landing/` → `docs/index.html` + `docs/assets`.
 - Bảng việc (nguồn sự thật): `docs/opus/KE-HOACH.md`.
 
@@ -45,7 +45,7 @@ Khóa gốc: `updatedAt`, `mainSha`, `app`, `nextCheck`, `headline`, `needsBoss[
 Chỉ nhắn sếp khi cần quyết (1–2 dòng). Không đẩy thẳng main, không phát hành, không chạm khóa/token/secret. Sol/Haiku không sửa KE-HOACH.
 
 ## Kiểm gói thật
-`$S/val-goi-that.py <file-chính-7zip> <file-chính-kirikiri>` đọc các zip gói (đặt cạnh script hoặc `PACK_DIR=…`) và kiểm bố cục, manifest, `needed.txt`, ELF/ABI. CI cũng có job V37 (`check-packs.yml`) làm việc này với gói thật.
+`$S/val-goi-that.py [file-chính-7zip] [file-chính-kirikiri]` (mặc định `lib7-Zip-JBinding.so`, `libkrkr2yuri.so` theo `pack/PackManager.kt`) đọc các zip gói (đặt cạnh script hoặc `PACK_DIR=…`) và kiểm bố cục, manifest, `needed.txt`, ELF/ABI. CI cũng có job V37 (`check-packs.yml`) làm việc này với gói thật.
 
 ## Đo token (kiểm kết quả skill)
 Trường `usage` trong `~/.claude/projects/-home-user/<phiên>.jsonl`. Đích: ≤ 7,5 triệu token/lượt kiểm (kỳ vọng 1–2 triệu), ngữ cảnh mỗi lần gọi < 100 nghìn token.

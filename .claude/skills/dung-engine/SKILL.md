@@ -42,5 +42,5 @@ Workflow dựng giữ ELF tốt nhất cùng **BuildId** với ELF trong gói: `
 - `get_deps.sh` của bản port không có quyền thực thi → chạy `bash`; thiếu `make_xxd.sh` (README bỏ sót).
 - `list_workflow_runs` bỏ qua `per_page` → dùng `workflow_runs_filter`; log CI dùng `get_job_logs` với `tail_lines` 75–130; artifact/log qua `gh api` bị chặn redirect.
 - Hạn mức lưu trữ Actions từng đầy (artifact APK debug 83 MB): mọi `upload-artifact` có retention ngắn + `continue-on-error`.
-- Không phát hành gói GPL mới lên repo packs công khai khi sếp chưa báo xong cổng G5/G8 — [CHƯA KIỂM] luật này còn hiệu lực sau khi repo công khai; hỏi PM. Bản chưa có kết quả máy thật luôn là prerelease.
+- **Không phát hành gói GPL mới (`rgss`, `renpy`, `symbian`) lên repo packs công khai** khi cổng chưa xong — luật vẫn còn hiệu lực (KE-HOACH G5/G8): G5 repo đã công khai từ 03/10, còn chờ sếp chọn file LICENSE; G8 giấy phép script dựng mkxp-z còn chờ tác giả trả lời. Bản chưa có kết quả máy thật luôn là prerelease.
 - Game kiểm thử tự sinh (không cần máy thật): CI tự viết game mẫu + file dấu kiểm bằng adb (`scripts/ci-emulator-games.sh`, phương án `docs/opus/2026-10-03-kiem-thu-chan-doan.md`); máy ảo CI là x86_64 chạy `.so` arm64 qua native bridge nên không bắt lỗi riêng ARM thật.

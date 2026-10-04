@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-# Kiểm gói thật (bản của PM, nhánh docs/opus-tra-loi). Dùng: val-goi-that.py <tên-file-chính-7zip> <tên-file-chính-kirikiri>
-# Đặt cạnh script (hoặc đặt PACK_DIR=thư-mục) các zip: sevenzip-arm64-v8a.zip, sevenzip-armeabi-v7a.zip, kirikiri-arm64.zip, onsyuri-web.zip, azahar-android-arm64.zip.
-# [CHƯA KIỂM] tên file chính đúng của gói 7zip/kirikiri: đọc trong gói/config `modules.*`.
+# Kiểm gói thật (bản của PM, nhánh docs/opus-tra-loi).
+# Dùng: val-goi-that.py [file-chính-7zip] [file-chính-kirikiri]  (tùy chọn; mặc định lấy từ hằng số trong
+#   app/src/main/java/vn/aow/monika/pack/PackManager.kt: SEVENZIP_LIB="lib7-Zip-JBinding.so", KIRIKIRI_LIB="libkrkr2yuri.so").
+# Đặt cạnh script (hoặc PACK_DIR=thư-mục) các zip: sevenzip-arm64-v8a.zip, sevenzip-armeabi-v7a.zip, kirikiri-arm64.zip, onsyuri-web.zip, azahar-android-arm64.zip.
 import zipfile,os,sys,json,hashlib,tempfile,shutil
 SYS={"libc.so","libm.so","libdl.so","liblog.so","libandroid.so","libz.so","libEGL.so","libGLESv1_CM.so","libGLESv2.so","libGLESv3.so","libOpenSLES.so","libjnigraphics.so","libvulkan.so","libaaudio.so","libmediandk.so","libnativewindow.so","libcamera2ndk.so","libstdc++.so","libsync.so","libneuralnetworks.so","libOpenMAXAL.so","libamidi.so","libbinder_ndk.so"}
 def run(zp,main,abi,flatten=False):
@@ -48,6 +49,8 @@ def run(zp,main,abi,flatten=False):
                     if len(h)!=20 or h[:4]!=b'\x7fELF' or h[4]!=cls or h[5]!=1 or mach!=exp: return f"FAIL ELF {f} mach={mach}"
         return f"OK ({len(written)} file, {n} .so, manifest={'có' if os.path.isfile(mf) else 'không'}, needed={'có' if os.path.isfile(nd) else 'không'})"
     finally: shutil.rmtree(d)
+SEVENZIP_LIB=sys.argv[1] if len(sys.argv)>1 else "lib7-Zip-JBinding.so"
+KIRIKIRI_LIB=sys.argv[2] if len(sys.argv)>2 else "libkrkr2yuri.so"
 P=os.environ.get("PACK_DIR") or os.path.dirname(os.path.abspath(__file__))
-for zp,main,abi,fl in [("sevenzip-arm64-v8a.zip",sys.argv[1],"arm64-v8a",False),("sevenzip-armeabi-v7a.zip",sys.argv[1],"armeabi-v7a",False),("kirikiri-arm64.zip",sys.argv[2],"arm64-v8a",False),("onsyuri-web.zip","onsyuri.wasm","arm64-v8a",False),("azahar-android-arm64.zip","libcitra-android.so","arm64-v8a",True)]:
+for zp,main,abi,fl in [("sevenzip-arm64-v8a.zip",SEVENZIP_LIB,"arm64-v8a",False),("sevenzip-armeabi-v7a.zip",SEVENZIP_LIB,"armeabi-v7a",False),("kirikiri-arm64.zip",KIRIKIRI_LIB,"arm64-v8a",False),("onsyuri-web.zip","onsyuri.wasm","arm64-v8a",False),("azahar-android-arm64.zip","libcitra-android.so","arm64-v8a",True)]:
     print(zp, run(os.path.join(P,zp),main,abi,fl))
