@@ -1,6 +1,7 @@
 appId: com.aow.monika
 ---
-- tapOn: "Monika-V33"
+- assertVisible: "Monika-V33"
+- tapOn: "Chơi"
 - runFlow:
     when:
       visible: "Tải luôn bằng 4G"

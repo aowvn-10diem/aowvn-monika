@@ -16,7 +16,7 @@ adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:
 adb logcat -c
 maestro test .maestro-user-path/import.yaml --test-output-dir "$OUT/import"
 # SAF phải trả content URI và app thật sự giải nén Game.ini; marker chưa có trước mở.
-adb shell find /sdcard/Download /sdcard/Android/data/com.aow.monika -name Game.ini > "$OUT/imported.txt"
+adb shell find /sdcard/Download /sdcard/Android/data/com.aow.monika -name Game.ini > "$OUT/imported.txt" 2>/dev/null || true
 grep -q 'Monika-V33/Game.ini' "$OUT/imported.txt"
 maestro test .maestro-user-path/open.yaml --test-output-dir "$OUT/open"
 wait_marker() {
