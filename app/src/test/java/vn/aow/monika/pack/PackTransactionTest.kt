@@ -79,4 +79,45 @@ class PackTransactionTest {
         } finally { root.deleteRecursively() }
     }
 
+
+    @Test fun onsyuriRealFileListInstallsFromNestedOrFlatZipWithoutLosingAssets() {
+        val work = Files.createTempDirectory("onsyuri-layout").toFile()
+        try {
+            val names = checkNotNull(javaClass.getResource("/packs/onsyuri-files.txt")).readText().lineSequence().filter { it.isNotBlank() }.toList()
+            assertEquals(7, names.size)
+            for (prefix in listOf("onsyuri/", "")) {
+                val zip = File(work, "package.zip")
+                java.util.zip.ZipOutputStream(zip.outputStream()).use { output ->
+                    for (name in names) {
+                        output.putNextEntry(java.util.zip.ZipEntry(prefix + name))
+                        output.write((if (name == "manifest.json") "{}" else "file:$name").toByteArray())
+                        output.closeEntry()
+                    }
+                }
+                val candidate = File(work, "candidate").apply { mkdirs() }
+                PackTransaction.unzip(zip, candidate, stripRoot = "onsyuri")
+                PackTransaction.validate(candidate, "onsyuri.wasm", "web")
+                for (name in names) assertTrue(name, File(candidate, name).isFile)
+                assertFalse(File(candidate, "onsyuri").exists())
+                candidate.deleteRecursively()
+            }
+        } finally { work.deleteRecursively() }
+    }
+
+    @Test fun rootStrippingRejectsTraversalAndMixedRootDuplicates() {
+        val work = Files.createTempDirectory("onsyuri-safe").toFile()
+        try {
+            for (names in listOf(listOf("onsyuri/../escaped"), listOf("onsyuri/onsyuri.wasm", "onsyuri.wasm"))) {
+                val zip = File(work, "package.zip")
+                java.util.zip.ZipOutputStream(zip.outputStream()).use { output ->
+                    for (name in names) { output.putNextEntry(java.util.zip.ZipEntry(name)); output.write(1); output.closeEntry() }
+                }
+                val candidate = File(work, "candidate").apply { mkdirs() }
+                assertThrows(IOException::class.java) { PackTransaction.unzip(zip, candidate, stripRoot = "onsyuri") }
+                assertFalse(File(work, "escaped").exists())
+                candidate.deleteRecursively()
+            }
+        } finally { work.deleteRecursively() }
+    }
+
 }

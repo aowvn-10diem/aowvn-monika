@@ -11,13 +11,13 @@ import java.net.URI
 import java.nio.file.Files
 import kotlin.system.exitProcess
 
-private data class Layout(val main: String, val flatten: Boolean = false)
+private data class Layout(val main: String, val flatten: Boolean = false, val stripRoot: String? = null)
 // Cùng main/flatten với PackManager và AzaharModule. ID mới phải có hợp đồng tường minh.
 private val layouts = mapOf(
     "azahar" to Layout("libcitra-android.so", true),
     "sevenzip" to Layout("lib7-Zip-JBinding.so"),
     "kirikiri" to Layout("libkrkr2yuri.so"),
-    "onsyuri" to Layout("onsyuri.wasm"),
+    "onsyuri" to Layout("onsyuri.wasm", stripRoot = "onsyuri"),
     "rgss" to Layout("lib/libmkxp-z.so"),
 )
 private fun JsonObject.text(key: String) = this[key]?.jsonPrimitive?.contentOrNull.orEmpty()
@@ -42,7 +42,7 @@ fun main(args: Array<String>) {
         val layout = layouts[args[1]] ?: error("Gói chưa có hợp đồng: ${args[1]}")
         val dir = Files.createTempDirectory("pack-check").toFile()
         try {
-            PackTransaction.unzip(File(args[3]), dir, layout.flatten)
+            PackTransaction.unzip(File(args[3]), dir, layout.flatten, layout.stripRoot)
             PackTransaction.validate(dir, layout.main, args[2])
             println("PASS ${args[1]}/${args[2]}")
         } finally { dir.deleteRecursively() }
@@ -72,7 +72,7 @@ fun main(args: Array<String>) {
                     ?: def["size"]?.jsonPrimitive?.longOrNull
                 if (expectedBytes != null && expectedBytes > 0 && zip.length() != expectedBytes) error("Sai size trong config")
                 val candidate = File(work, "candidate").apply { mkdirs() }
-                PackTransaction.unzip(zip, candidate, layout.flatten)
+                PackTransaction.unzip(zip, candidate, layout.flatten, layout.stripRoot)
                 try { PackTransaction.validate(candidate, layout.main, abi) } catch (error: IOException) {
                     // Chỉ lỗi bố cục đã xác nhận của đúng phiên bản ONS; mạng/hash/ABI không được miễn.
                     val knownOns = id == "onsyuri" && def.text("version") == "08f744b" &&
