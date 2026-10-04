@@ -6,7 +6,8 @@
 1. checkout đúng tag hoặc ref, dựng `assembleRelease` và ký bằng Secrets, giữ nguyên các cửa chặn V30;
 2. chạy `python3 scripts/verify-apk-cert.py <apk>`; SHA-256 khác `c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c` thì job đỏ;
 3. **không** tạo release, không đẩy tag, không upload APK; chỉ in SHA-256 chứng thư và SHA-256 của APK ra log.
+4. **Engine 3DS (thêm 04/10 15:05):** hiện `release.yml` chưa chép engine 3DS, nên APK dựng trên CI sẽ thiếu 3DS. Trước bước dựng, tải asset `azahar-android-arm64.zip` của release `engine-azahar-*` mới nhất trong repo này vào `app/src/main/assets/engines/azahar.zip`. Tải bằng API với `GITHUB_TOKEN` và header `Accept: application/octet-stream`. Link `browser_download_url` không kèm token sẽ trả "Not Found". Không tìm thấy release đó thì job đỏ. Sau khi dựng, kiểm APK có `assets/engines/azahar.zip` (`unzip -l`). Bước này chạy cả khi phát hành thật, không riêng `dry_run`.
 
-**Đạt khi:** PR được PM duyệt và gộp; Sol chạy `release.yml` với `dry_run=true` trên `main` một lần; log in đúng `c46902e9…d45ab20c`; ghi link run vào `ket-qua/V43.md`.
+**Đạt khi:** PR được PM duyệt và gộp; Sol chạy `release.yml` với `dry_run=true` trên `main` một lần; log in đúng `c46902e9…d45ab20c` và APK có `assets/engines/azahar.zip`; ghi link run vào `ket-qua/V43.md`.
 
 Ngoại lệ được cấp: bấm chạy `release.yml` **chỉ với `dry_run=true`**. Phát hành thật vẫn cấm Sol; Sonnet làm khi PM báo. Không in, không lưu giá trị secret.
