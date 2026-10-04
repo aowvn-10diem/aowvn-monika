@@ -33,6 +33,27 @@ class SafeDigestTest(unittest.TestCase):
         api._request_json=request
         self.assertEqual(api.list_all('/commits?sha=main&per_page=10'),list(range(10)))
         self.assertEqual(len(calls),1)
+    def test_numeric_pagination_is_rewritten_only_for_this_repository(self):
+        api=m.BoundedDigestAPI(m.REPOSITORY,'')
+        self.assertEqual(api._url('https://api.github.com/repositories/1392088306/actions/runs?per_page=100&page=2'),
+                         'https://api.github.com/repos/'+m.REPOSITORY+'/actions/runs?per_page=100&page=2')
+        for bad in ['https://api.github.com/repositories/1/actions/runs?page=2',
+                    'https://api.github.com/repositories/13920883060/actions/runs',
+                    'https://evil.test/repositories/1392088306/actions/runs',
+                    'https://user@api.github.com/repositories/1392088306/actions/runs',
+                    'https://api.github.com/repositories/1392088306/../1/actions/runs',
+                    'https://api.github.com/repositories/1392088306/%2e%2e/actions/runs',
+                    'https://api.github.com/repositories/1392088306/actions/runs#x']:
+            with self.assertRaises(RuntimeError):api._url(bad)
+    def test_numeric_second_page_keeps_run_records(self):
+        api=m.BoundedDigestAPI(m.REPOSITORY,'');urls=[]
+        def request(route):
+            url=api._url(route);urls.append(url)
+            return ({'workflow_runs':[{'id':len(urls)}]},
+                    {'Link':'<https://api.github.com/repositories/1392088306/actions/runs?page=2>; rel="next"'} if len(urls)==1 else {})
+        api._request_json=request
+        self.assertEqual(api.list_all('/actions/runs?per_page=100','workflow_runs'),[{'id':1},{'id':2}])
+        self.assertEqual(len(urls),2)
     def test_creates_only_bot_ref_when_missing(self):
         api=FakeDB(False);m.publish(api,{'main':{}})
         self.assertEqual(api.calls[-1][2]['ref'],m.BOT_REF)
