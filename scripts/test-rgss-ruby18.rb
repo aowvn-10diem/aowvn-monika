@@ -306,6 +306,51 @@ begin
 rescue NoMethodError
   check(true, 'predicate normalization không che runtime error khác')
 end
+# Comparison sau slice! là kết quả, không phải argBoolean (Ruby1.8 vs3.1).
+source = "text='abc'; result=text.slice! (/a/) != nil; [result,text]\n"
+begin
+  eval(source)
+  abort('FAIL spaced slice comparison phải tái hiện TypeError')
+rescue TypeError => error
+  check(error.message == 'no implicit conversion of true into Integer', 'slice fixture tái hiện Boolean bị đưa vào argument')
+end
+fixed = MonikaRuby18.instrument_eval_calls(source, [512])
+check(fixed == source.sub('slice! (', 'slice!(') && eval(fixed) == [true,'bc'], 'slice Regexp so sánh nil đúng kết quả và mutation của caller')
+check(MonikaRuby18.instrument_eval_calls(fixed, [512]).equal?(fixed), 'slice comparison idempotent')
+source = "text='abc'; result=text.slice! \t(/z/i) == nil; [result,text]\n"
+check(eval(MonikaRuby18.instrument_eval_calls(source, [512])) == [true,'abc'], 'slice không match/regexpflags/SPACE-TAB và ==nil giữ text')
+source = "text='abc'; result=text.slice! (%r{a}) != nil; [result,text]\n"
+check(eval(MonikaRuby18.instrument_eval_calls(source, [512])) == [true,'bc'], 'Regexp literal percent giữ nội dung và delimiter')
+source = "tên='abc'; result=tên.slice! (/a/) != nil; [result,tên] # keep (space)\n"
+fixed = MonikaRuby18.instrument_eval_calls(source, [512])
+check(eval(fixed) == [true,'bc'] && fixed.end_with?("# keep (space)\n"), 'slice byteoffsets giữ Unicode/comment/literal')
+unsupported = [
+  "text.slice!(/a/) != nil", "text.slice! (/a/)",
+  "text.slice! (pattern) != nil", "text.slice! ('a') != nil",
+  "text.slice! (/a/) != false", "text.slice! ((/a/)) != nil",
+  "text.other! (/a/) != nil", "text.slice! (/a/, 1) != nil",
+  "text.slice! (/a/) !=\n nil", "text='slice! (/a/) != nil'"
+]
+check(unsupported.all? { |text| MonikaRuby18.instrument_eval_calls(text,[512]).equal?(text) }, 'slice không sửa dynamic/multiplearg/methodkhác/khôngnil/multiline/literal/đã đúng')
+source = "text.slice! (/a/) != nil\n"
+budget=[512,source.bytesize]
+check(MonikaRuby18.instrument_eval_calls(source,budget).equal?(source) && budget==[511,0], 'slice dùng chung bytebudget, thiếu compile cuối giữ source')
+many=source*65
+check(MonikaRuby18.instrument_eval_calls(many,[512]).equal?(many), 'slice quá64sites giữ nguyên')
+source="text='abc'; result=text.slice! (/a/) != nil; eval('text')\n"
+fixed=MonikaRuby18.instrument_eval_calls(source,[512])
+check(eval(fixed)=='bc' && fixed.include?('::MonikaRuby18.eval_source('), 'slice và eval cùng ASTpass giữ thứ tự/tác dụng phụ')
+source=<<~'RUBY'
+  class SliceOrderFixture
+    attr_reader :seen
+    def slice!(pattern); @seen=pattern; :ok; end
+  end
+  count=0; obj=SliceOrderFixture.new; take=->{count+=1;obj}
+  result=take.call.slice! (/a/) != nil
+  [count,obj.seen,result]
+RUBY
+result=eval(MonikaRuby18.instrument_eval_calls(source,[512]))
+check(result[0]==1 && result[1]==/a/ && result[2]==true, 'slice custommethod nhận Regexp/một lần, không gọi wrappercoerce')
 # Class.constants của collection gốc cũng phải là method core chưa bị game thay.
 singleton = Class.singleton_class
 original_method = Class.method(:constants)

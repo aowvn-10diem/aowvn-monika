@@ -71,6 +71,10 @@ Dir.mktmpdir('shape-fixture') do |dir|
   File.binwrite(input, Marshal.dump([[11, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
   out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
   check(status.success? && %w[pitch volume name].all? { |word| out.include?(word) } && %w[private_sound PrivateTitle private audio].none? { |word| (out + err).include?(word) }, 'inspect public audio getters giữ API, che đối tượng/tên file/literal')
+  source = "@private_text.slice! (/private_pattern/) != nil\n"
+  File.binwrite(input, Marshal.dump([[15, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
+  out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
+  check(status.success? && out.include?('slice!') && out.include?('!= nil') && %w[private_text private_pattern PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect slice publicAPI, che receiver/regexp/title')
   _, _, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:99999')
   check(!status.success?, 'inspect chặn dòng vượt giới hạn')
 

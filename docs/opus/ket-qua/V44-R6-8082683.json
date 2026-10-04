@@ -96,5 +96,19 @@
     "ruby317": "owner constant absent from self.class.constants inside class body, accessor setter absent",
     "sourceReference": "ruby1.8.7-p374/eval.c rb_mod_s_constants2035–2050 uses ruby_cref; Module.singleton.constants registered8301",
     "limits": "Specific1.8.7 synthetic proof, not measured1.8.1; fallback intentionally onlyowner constants, not all lexical constants."
+  },
+  "syntheticSliceGrammarComparison": {
+    "source": "text='abc'; text.slice! (/a/) != nil",
+    "ruby187": "result true, text mutated to bc",
+    "ruby317": "TypeError no implicit conversion of true into Integer, original text abc",
+    "attachedParentheses": "both Ruby versions result true, text bc",
+    "maskedDiagnostic": {
+      "head": "1312243d46f8a30a63eaaaab871a84651b9082ec",
+      "artifact": 11314263589,
+      "scriptIndex": 137,
+      "line": 118,
+      "shape": "CALL SPACE + literalRegexp + !=nil"
+    },
+    "limits": "Synthetic grammar proof only; new slice normalization not yet verified in native/game runtime."
   }
 }

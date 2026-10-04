@@ -34,7 +34,7 @@ def shape(line, names = nil)
     when :on_sp, :on_ignored_sp then ' '
     when :on_nl, :on_ignored_nl then "\n"
     when :on_kw then KEYWORDS.include?(token) ? token : 'id'
-    when :on_ident then %w[eval binding class_eval module_eval instance_eval attr_accessor instance_variables instance_variable_get instance_variable_set instance_methods public_instance_methods private_instance_methods protected_instance_methods include? keys each send to_s to_sym constants const_get class_variables class_variable_get sort downcase class superclass singleton_class is_a? kind_of? first last begin end min max rand size exclude_end? pitch volume name].include?(token) ? token : anonymous.call(token)
+    when :on_ident then %w[eval binding class_eval module_eval instance_eval attr_accessor instance_variables instance_variable_get instance_variable_set instance_methods public_instance_methods private_instance_methods protected_instance_methods include? keys each send to_s to_sym constants const_get class_variables class_variable_get sort downcase class superclass singleton_class is_a? kind_of? first last begin end min max rand size exclude_end? pitch volume name slice!].include?(token) ? token : anonymous.call(token)
     when :on_ivar then '@' + anonymous.call(token)
     when :on_cvar then '@@' + anonymous.call(token)
     when :on_gvar then '$' + anonymous.call(token)

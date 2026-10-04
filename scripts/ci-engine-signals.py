@@ -46,6 +46,9 @@ control_eval.control_width = 23
 raise "monika-accessor-context" unless control_eval.offset == 17 && control_eval.control_width == 23
 control_range = (100...120)
 raise "monika-predicate-context" unless control_eval.range_value(control_range).equal?(control_range) && control_eval.range_value(120) == (100..120)
+control_name = 'abc'
+raise "monika-slice-context" unless control_name.slice! (/a/) != nil
+raise "monika-slice-result" unless control_name == 'bc'
 bitmap.fill_rect(0,0,640,360,Color.new(242,140,40))
 sprite=Sprite.new
 sprite.bitmap=bitmap
