@@ -1,0 +1,100 @@
+{
+  "head": "8082683fe0474d8c34c7d30500186bd6e6e1fff7",
+  "run": 37230428854,
+  "artifact": 11313582885,
+  "verdict": {
+    "level": 1,
+    "expectFail": [
+      "vx"
+    ],
+    "matchesExpectation": true,
+    "games": [
+      {
+        "game": "xp",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "2787",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 32.75,
+        "threshold": 10,
+        "observedSeconds": 370,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "PASS_LEVEL_1",
+        "expected": "ĐẠT mức 1",
+        "matchesExpectation": true
+      },
+      {
+        "game": "vx",
+        "verdict": "HỎNG",
+        "verdictCode": "FAIL",
+        "process": "com.aow.monika:game",
+        "pid": "8814",
+        "alive": true,
+        "errorDialog": true,
+        "brightnessStddev": 38.625,
+        "threshold": 10,
+        "observedSeconds": 436,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "FAIL",
+        "expected": "HỎNG",
+        "matchesExpectation": true
+      },
+      {
+        "game": "ace",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "11911",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 65.067,
+        "threshold": 10,
+        "observedSeconds": 372,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "PASS_LEVEL_1",
+        "expected": "ĐẠT mức 1",
+        "matchesExpectation": true
+      }
+    ]
+  },
+  "runtimeFailure": {
+    "scriptIndex": 137,
+    "line": 118,
+    "type": "TypeError",
+    "publicRuntimeMessage": "no implicit conversion of true into Integer",
+    "publicRuntimeMethod": "slice!",
+    "sourceUnmodified": true,
+    "beforeKeyTitleObserved": true,
+    "afterNewGameErrorObserved": true
+  },
+  "nativeControl": {
+    "run": 37230428853,
+    "artifact": 11312749848,
+    "marker": "RGSS-control-ruby18:1",
+    "checks": "XP engine:rgss report; dynamic eval/local/constant/splat, accessor17/23, predicate Integer/Range identity/exclusive, orange frame/PixelCopy10–40s",
+    "conclusion": "PASS synthetic fixture only, not VX gameplay"
+  },
+  "limits": "audio/save-load/FPS/full5/machine-real/Clouddeploy [CHƯA KIỂM]",
+  "syntheticGrammarComparison": {
+    "source": "value.is_a? (Integer) ? 100..value : value",
+    "inputTypes": [
+      "Integer",
+      "Range"
+    ],
+    "ruby187": "both return Range; warns about SPACE before argument parentheses",
+    "ruby317": "Integer throws TypeError class or module required; Range throws ArgumentError bad value for range",
+    "attachedParentheses": "both Ruby versions return Range for both inputs",
+    "ruby187Source": "https://cache.ruby-lang.org/pub/ruby/1.8/ruby-1.8.7-p374.tar.gz",
+    "ruby187TarSha256": "876eeeaaeeab10cbf4767833547d66d86d6717ef48fd3d89e27db8926a65276c",
+    "limits": "Synthetic only, no game executed locally. Local tool, no app dependency/native change."
+  },
+  "accessorVersionComparison": {
+    "syntheticSource": "class VersionAccessorFixture; VALUE=7; for field in self.class.constants; attr_accessor field.downcase.to_sym; end; end",
+    "ruby187": "owner constant visible inside class body, accessor setter exists; Class.constants outside does not include owner constant",
+    "ruby317": "owner constant absent from self.class.constants inside class body, accessor setter absent",
+    "sourceReference": "ruby1.8.7-p374/eval.c rb_mod_s_constants2035–2050 uses ruby_cref; Module.singleton.constants registered8301",
+    "limits": "Specific1.8.7 synthetic proof, not measured1.8.1; fallback intentionally onlyowner constants, not all lexical constants."
+  }
+}

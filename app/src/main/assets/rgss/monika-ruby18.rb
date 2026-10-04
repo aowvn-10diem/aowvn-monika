@@ -17,6 +17,7 @@ module MonikaRuby18
   MAX_ACCESSOR_CONSTANTS = 256
   BUILTIN_CLASS = Kernel.instance_method(:class)
   BUILTIN_CONSTANTS = Module.instance_method(:constants)
+  BUILTIN_CLASS_CONSTANTS = Class.method(:constants)
   # super là lời gọi với danh sách đối số; Ruby1.8 cho phép SPACE trước
   # '(' + splat, Ruby3 cần super(...). Các từ khóa điều khiển vẫn bị loại.
   KEYWORDS = %w[def class module if elsif unless while until for case when begin end return yield rescue ensure not and or].freeze
@@ -91,10 +92,14 @@ module MonikaRuby18
 
   # Mẫu legacy ở class body: for name in self.class.constants;
   # attr_accessor name.downcase.to_sym; end. self.class là Class, không phải
-  # lớp đang khai báo. Chỉ fallback khi API gốc chưa tạo collection nào;
+  # lớp đang khai báo. Fixture MRI1.8.7: Class.constants kế thừa singleton
+  # Module.constants đọc lexical CREF, nên thấy constants của class body;
+  # MRI3.1 không còn hành vi đó. Chỉ fallback owner khi collection gốc rỗng;
   # không sửa Class/Module toàn cục, không che NoMethodError ở chỗ khác.
   def self.accessor_constants(owner, original)
     return original unless Class === owner && original.is_a?(Array) && original.empty?
+    return original unless BUILTIN_CLASS_CONSTANTS.source_location.nil? &&
+      Class.method(:constants) == BUILTIN_CLASS_CONSTANTS
     class_method = owner.method(:class)
     constants_method = owner.method(:constants)
     # Kernel#class là wrapper internal Ruby trên MRI3.1; Method#== với
@@ -102,7 +107,7 @@ module MonikaRuby18
     # chụp trước khi game chạy, không giả định source_location luôn nil.
     return original unless class_method.owner == BUILTIN_CLASS.owner &&
       class_method.source_location == BUILTIN_CLASS.source_location &&
-      constants_method == BUILTIN_CONSTANTS.bind(owner)
+      BUILTIN_CONSTANTS.source_location.nil? && constants_method == BUILTIN_CONSTANTS.bind(owner)
     names = owner.constants
     return original unless names.is_a?(Array) && names.size <= MAX_ACCESSOR_CONSTANTS
     return original unless names.all? do |name|

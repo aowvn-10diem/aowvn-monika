@@ -306,4 +306,33 @@ begin
 rescue NoMethodError
   check(true, 'predicate normalization không che runtime error khác')
 end
+# Class.constants của collection gốc cũng phải là method core chưa bị game thay.
+singleton = Class.singleton_class
+original_method = Class.method(:constants)
+own_method = singleton.instance_methods(false).include?(:constants)
+begin
+  singleton.send(:define_method, :constants) { [] }
+  owner = Class.new
+  owner.const_set(:VALUE, 7)
+  original = []
+  check(MonikaRuby18.accessor_constants(owner, original).equal?(original), 'collection gốc Class.constants custom override giữ nguyên, không fallback')
+  isolated = Module.new
+  isolated.module_eval(File.read(File.expand_path('../app/src/main/assets/rgss/monika-ruby18.rb', __dir__)))
+  check(isolated.const_get(:MonikaRuby18).accessor_constants(owner, original).equal?(original), 'Class.constants override trước preload cũng không được coi là core')
+ensure
+  singleton.send(:remove_method, :constants)
+  singleton.send(:define_method, :constants, original_method) if own_method
+end
+check(Class.method(:constants) == original_method, 'test khôi phục method Class.constants gốc')
+original_method = Module.instance_method(:constants)
+begin
+  Module.send(:define_method, :constants) { [:CUSTOM] }
+  isolated = Module.new
+  isolated.module_eval(File.read(File.expand_path('../app/src/main/assets/rgss/monika-ruby18.rb', __dir__)))
+  original = []
+  check(isolated.const_get(:MonikaRuby18).accessor_constants(Class.new, original).equal?(original), 'Module constants override trước preload giữ collection gốc')
+ensure
+  Module.send(:define_method, :constants, original_method)
+end
+check(Module.instance_method(:constants) == original_method, 'test khôi phục Module constants gốc')
 puts 'ALL OK'
