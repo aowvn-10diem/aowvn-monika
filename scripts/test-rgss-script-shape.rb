@@ -47,6 +47,10 @@ Dir.mktmpdir('shape-fixture') do |dir|
   File.binwrite(input, Marshal.dump([[8, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
   out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
   check(status.success? && %w[class superclass singleton_class].all? { |word| out.include?(word) } && %w[private_object PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect class receivers giữ API công khai, che identifier game')
+  source = "private_value.is_a?(Range) ? rand(private_value.first..private_value.last) : PrivateType\n"
+  File.binwrite(input, Marshal.dump([[9, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
+  out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
+  check(status.success? && %w[is_a? Range rand first last].all? { |word| out.include?(word) } && out.include?('..') && %w[private_value PrivateType PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect range giữ API/toán tử công khai, che biến/constant game')
   _, _, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:99999')
   check(!status.success?, 'inspect chặn dòng vượt giới hạn')
 
