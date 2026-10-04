@@ -12,7 +12,7 @@ on:
       - scripts/ci-rgss-real.*
       - .maestro-rgss-real/**
 permissions:
-  # Thử quyền đọc tối thiểu; nếu draft bị từ chối, ghi bằng chứng trước đổi.
+  # Mặc định chỉ đọc; riêng R6 cần thấy draft (read không thấy ở run37184975441).
   contents: read
 concurrency:
   group: v25-${{ github.ref }}
@@ -20,10 +20,23 @@ concurrency:
 jobs:
   r6:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions: {contents: write} # Draft yêu cầu ghi; token chỉ ở bước cố định trước checkout.
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Chỉ đọc gói draft RGSS trước khi checkout mã PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RGSS_TAG: ${{ inputs.rgss_tag || 'engines-rgss-7' }}
+        run: |
+          set -euo pipefail
+          [[ "$RGSS_TAG" =~ ^engines-rgss-[0-9]+$ ]]
+          mkdir -p "$RUNNER_TEMP/v25-engine"
+          asset_id=$(gh api --paginate --slurp 'repos/aowvn-10diem/aowvn-monika/releases?per_page=100' | jq -er --arg tag "$RGSS_TAG" '[.[][] | select(.draft == true and .tag_name == $tag)] | if length == 1 then .[0] else error("draft count") end | [.assets[] | select(.name == "rgss-arm64-v8a.zip")] | if length == 1 then .[0].id else error("asset count") end')
+          [[ "$asset_id" =~ ^[0-9]+$ ]]
+          gh api "repos/aowvn-10diem/aowvn-monika/releases/assets/$asset_id" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/v25-engine/rgss.zip"
       - uses: actions/checkout@v4
+        with: {persist-credentials: false}
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: 17}
       - uses: gradle/actions/setup-gradle@v4
@@ -34,9 +47,8 @@ jobs:
           command -v 7z >/dev/null || sudo apt-get install -y p7zip-full
       - name: Chuẩn bị đúng ba nguồn G2 trong CI
         env:
-          GH_TOKEN: ${{ github.token }}
           RGSS_TAG: ${{ inputs.rgss_tag || 'engines-rgss-7' }}
-        run: python3 scripts/ci-rgss-real.py --scratch "$RUNNER_TEMP/v25" --report out/r6 --rgss-tag "$RGSS_TAG"
+        run: python3 scripts/ci-rgss-real.py --scratch "$RUNNER_TEMP/v25" --report out/r6 --rgss-tag "$RGSS_TAG" --pack-file "$RUNNER_TEMP/v25-engine/rgss.zip"
       - name: Build APK với config fixture (unit đã chạy trên config chuẩn)
         run: ./gradlew assembleDebug --console=plain
       - name: KVM

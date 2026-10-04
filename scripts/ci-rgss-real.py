@@ -17,7 +17,7 @@ CASES = [('xp', 'The Reconstruction', 'the-reconstruction.zip', 1),
          ('vx', 'Star Stealing Prince', 'star-stealing-prince.zip', 2),
          ('ace', 'In Search of Immortality', 'in-search-of-immortality.zip', 3)]
 
-def prepare(scratch, report, tag):
+def prepare(scratch, report, tag, pack_file):
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise RuntimeError('Game chỉ được tải trong GitHub Actions')
     # URL chuẩn đã có trong hàng V25, không nhận URL tùy ý từ input.
@@ -29,7 +29,7 @@ def prepare(scratch, report, tag):
     base = source.group().rsplit('/', 1)[0]
     spec = importlib.util.spec_from_file_location('v33', ROOT / 'scripts/ci-user-path.py')
     module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
-    module.prepare(scratch, tag)  # Chỉ engine/TLS/config test; fixture XP tự sinh không dùng R6.
+    module.prepare(scratch, tag, pack_file=pack_file)  # Chỉ engine/TLS/config test; fixture XP tự sinh không dùng R6.
     report.mkdir(parents=True, exist_ok=True)
     records = []
     for case, title, filename, version in CASES:
@@ -94,5 +94,6 @@ def prepare(scratch, report, tag):
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(); p.add_argument('--scratch', type=Path, required=True)
+    p.add_argument('--pack-file', type=Path, required=True)
     p.add_argument('--report', type=Path, required=True); p.add_argument('--rgss-tag', required=True)
-    args = p.parse_args(); prepare(args.scratch.resolve(), args.report.resolve(), args.rgss_tag)
+    args = p.parse_args(); prepare(args.scratch.resolve(), args.report.resolve(), args.rgss_tag, args.pack_file.resolve())
