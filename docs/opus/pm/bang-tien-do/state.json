@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-04T08:09:00Z",
- "mainSha": "014ff52",
+ "updatedAt": "2026-10-04T08:40:00Z",
+ "mainSha": "afcb356",
  "app": "App 0.7.4 · config 32",
- "nextCheck": "2026-10-04T08:39:00Z",
+ "nextCheck": "2026-10-04T09:10:00Z",
  "headline": "Landing page tải app đã chạy: aowvn-10diem.github.io/aowvn-monika. PM duyệt thêm 8 PR (GitHub tự kiểm, bản tin tự động, Symbian dựng thử, Ren'Py P3…). Khóa ký đã có trong GitHub Secrets: từ nay APK ký và phát hành trên GitHub.",
  "needsBoss": [
   {
@@ -167,7 +167,7 @@
    "title": "Nút \"Báo lỗi game này\": ảnh mặc định, chọn loại lỗi bằng nút",
    "owner": "Sol",
    "status": "dang",
-   "note": "Phần thông tin môi trường đã duyệt; phần ảnh: PM chốt cách gửi (JPEG ≤24 KiB).",
+   "note": "D4 đã gộp (môi trường phiên trong báo cáo lỗi). Còn D5: ảnh chụp màn hình nhỏ trong báo cáo.",
    "module": "diag"
   },
   {
@@ -431,7 +431,7 @@
    "title": "Ghim phiên bản lõi giả lập (GB/GBA/NES)",
    "owner": "Sol",
    "status": "dang",
-   "note": "Workflow đăng lõi đã duyệt; Sol chạy đăng rồi ghim vào config.",
+   "note": "Workflow chụp lõi GB/GBA/NES đã gộp; Sol đang chạy để lấy bản chụp rồi ghim vào config.",
    "module": "libretro"
   },
   {
@@ -542,9 +542,9 @@
    "code": "V39",
    "title": "Bản tin trạng thái tự động chạy trên GitHub (PM đọc 1 file mỗi lượt)",
    "owner": "Sol",
-   "status": "dang",
+   "status": "xong",
    "module": "ci",
-   "note": "PM duyệt, chờ gộp."
+   "note": "Bản tin tự động trên nhánh bot/trang-thai đã chạy; PM đọc 1 file thay cho chục lần gọi."
   },
   {
    "code": "L10",
@@ -558,17 +558,17 @@
    "code": "V42",
    "title": "GitHub tự kiểm hằng ngày (link, gói, test), lỗi thì mở issue",
    "owner": "Sol",
-   "status": "dang",
+   "status": "xong",
    "module": "ci",
-   "note": "PM duyệt, chờ gộp."
+   "note": "Đã gộp: kiểm định kỳ hằng ngày, tự mở/đóng issue khi đỏ/xanh."
   },
   {
    "code": "V41",
    "title": "GitHub tự quét lỗi bảo mật và thư viện cũ (CodeQL, Dependabot)",
    "owner": "Sol",
-   "status": "dang",
+   "status": "xong",
    "module": "ci",
-   "note": "PM duyệt, chờ gộp."
+   "note": "Đã gộp: Dependabot hằng tuần + CodeQL. Sol xử lý PR nâng phiên bản theo luật mới; bản lớn chờ PM."
   },
   {
    "code": "V40",
@@ -576,7 +576,7 @@
    "owner": "Sol",
    "status": "xong",
    "module": "kirikiri",
-   "note": "Kết luận: không chạy được máy ảo ARM trên GitHub. Đường còn lại: Firebase Test Lab (G9)."
+   "note": "Đã gộp. Kết luận: không có đường máy ảo ARM trên GitHub; máy ARM thật chỉ còn Firebase Test Lab (G9)."
   },
   {
    "code": "V43",
@@ -684,6 +684,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-04T08:40:00Z",
+   "text": "Sol gộp 6 PR đã duyệt: V39 bản tin tự động, V40, V41 Dependabot + CodeQL, V42 kiểm định kỳ, V32 workflow chụp lõi, V21 D4. Dependabot mở 3 PR đầu tiên → giao Sol xử lý theo luật (bản lớn chờ PM)."
+  },
   {
    "t": "2026-10-04T08:09:00Z",
    "text": "V46: phiên Sonnet bị bộ kiểm duyệt chặn sửa file skill; sếp đổi chế độ phiên, Sonnet đã sửa xong và chuyển PR #51 sang sẵn sàng."
