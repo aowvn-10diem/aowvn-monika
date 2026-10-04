@@ -137,12 +137,37 @@ module MonikaRuby18
     collection
   end
 
-  # Cùng một AST pass bọc collection accessor hẹp ở CLASS body và đối số eval.
+  # Ruby1.8: x.is_a? (Integer) ? a : b là ternary ngoài lời gọi.
+  # Ruby3: cả (Integer) ? a : b thành đối số của is_a?. Chỉ nhận CALL
+  # một dòng, một IF argument, CONST đơn và đúng dấu ngoặc/ternary này.
+  # Không coerce dữ liệu, không thay core predicate hay operator Range.
+  def self.predicate_spacing(node, lines)
+    return nil unless node.type == :CALL && [:is_a?, :kind_of?].include?(node.children[1])
+    return nil unless node.first_lineno == node.last_lineno
+    receiver, method, args = node.children
+    return nil unless receiver && args&.type == :LIST && args.children.size == 2 && args.children[1].nil?
+    conditional = args.children[0]
+    return nil unless conditional&.type == :IF && conditional.children.all? { |child| child.is_a?(RubyVM::AbstractSyntaxTree::Node) }
+    condition = conditional.children[0]
+    return nil unless condition.type == :CONST && condition.first_lineno == node.first_lineno
+    return nil unless receiver.last_lineno == node.first_lineno
+    text = lines[node.first_lineno - 1]
+    gap = text.byteslice(receiver.last_column, conditional.first_column - receiver.last_column)
+    match = /\A[ \t]*\.[ \t]*#{Regexp.escape(method.to_s)}([ \t]+)\z/.match(gap.to_s)
+    return nil unless match
+    opening = text.byteslice(conditional.first_column, condition.last_column - conditional.first_column)
+    return nil unless opening&.match?(/\A\([ \t]*[A-Z][A-Za-z0-9_]*\z/)
+    tail = text.byteslice(condition.last_column, text.bytesize - condition.last_column)
+    return nil unless tail&.match?(/\A[ \t]*\)[ \t]*\?/)
+    [node.first_lineno, receiver.last_column + match.begin(1), receiver.last_column + match.end(1)]
+  end
+
+  # Một AST pass bọc collection accessor/eval và sửa predicate spacing hẹp.
   # Giữ eval ở callsite: chỉ bọc đối số đầu, không override Kernel#eval
   # (override sẽ làm mất local variables/cref mặc định của người gọi).
   def self.instrument_eval_calls(source, budget)
     return source unless source.is_a?(String) && source.bytesize <= MAX_AST_BYTES && source.valid_encoding?
-    return source if source.count("\n") > MAX_LINES || !(source.include?('eval') || source.include?('constants'))
+    return source if source.count("\n") > MAX_LINES || !(source.include?('eval') || source.include?('constants') || source.include?('is_a?') || source.include?('kind_of?'))
     return source unless defined?(RubyVM::AbstractSyntaxTree)
     budget[1] ||= MAX_COMPILE_BYTES
     return source if budget[0] <= 0 || source.bytesize > budget[1]
@@ -151,12 +176,19 @@ module MonikaRuby18
     root = RubyVM::AbstractSyntaxTree.parse(source)
     stack = [[root, false]]
     sites = []
+    deletions = []
+    lines = nil
     visited = 0
     while (item = stack.pop)
       node, class_body = item
       visited += 1
       return source if visited > MAX_AST_NODES
       children = node.children
+      if node.type == :CALL && [:is_a?, :kind_of?].include?(children[1])
+        deletion = predicate_spacing(node, lines ||= source.lines)
+        deletions << deletion if deletion
+        return source if sites.size + deletions.size > MAX_EVAL_SITES
+      end
       children.each_with_index do |child, index|
         next unless child.is_a?(RubyVM::AbstractSyntaxTree::Node)
         context = case node.type
@@ -170,7 +202,7 @@ module MonikaRuby18
         if collection.first_lineno == collection.last_lineno
           sites << [collection.first_lineno, collection.first_column, collection.last_column,
                     '::MonikaRuby18.accessor_constants(self,']
-          return source if sites.size > MAX_EVAL_SITES
+          return source if sites.size + deletions.size > MAX_EVAL_SITES
         end
       end
       next unless node.type == :FCALL && children[0] == :eval
@@ -184,9 +216,9 @@ module MonikaRuby18
         next if method == :eval_source && receiver&.type == :COLON3 && receiver.children == [:MonikaRuby18]
       end
       sites << [arg.first_lineno, arg.first_column, arg.last_column, '::MonikaRuby18.eval_source(']
-      return source if sites.size > MAX_EVAL_SITES
+      return source if sites.size + deletions.size > MAX_EVAL_SITES
     end
-    return source if sites.empty?
+    return source if sites.empty? && deletions.empty?
     offsets = [0]
     source.each_line { |line| offsets << offsets.last + line.bytesize }
     inserts = Hash.new { |hash, key| hash[key] = '' }
@@ -197,15 +229,23 @@ module MonikaRuby18
       inserts[start] += prefix
       inserts[finish] = ')' + inserts[finish]
     end
-    size = source.bytesize + inserts.values.sum(&:bytesize)
+    edits = inserts.map { |offset, value| [offset, offset, value] }
+    deletions.each do |line, first, finish|
+      start = offsets[line - 1] + first
+      stop = offsets[line - 1] + finish
+      return source unless stop > start && stop <= source.bytesize
+      edits << [start, stop, '']
+    end
+    size = source.bytesize + inserts.values.sum(&:bytesize) - deletions.sum { |_, first, finish| finish - first }
     return source if size > MAX_BYTES || budget[0] <= 0 || size > budget[1]
     # Ghép từng mảnh một lần, tránh insert/dup cả script ở mỗi callsite.
     parts = []
     last = 0
-    inserts.keys.sort.each do |offset|
-      parts << source.byteslice(last, offset - last)
-      parts << inserts[offset]
-      last = offset
+    edits.sort_by { |first, finish, _| [first, finish] }.each do |first, finish, value|
+      return source if first < last # Không đoán khi edit overlap.
+      parts << source.byteslice(last, first - last)
+      parts << value
+      last = finish
     end
     parts << source.byteslice(last, source.bytesize - last)
     fixed = parts.join.force_encoding(source.encoding)

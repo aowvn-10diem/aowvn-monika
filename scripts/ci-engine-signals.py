@@ -35,12 +35,17 @@ class MonikaEvalNative
     value = 4
     eval("value + OFFSET")
   end
+  def range_value(value)
+    value.is_a? (Integer) ? 100..value : value
+  end
 end
 control_eval = MonikaEvalNative.new
 raise "monika-eval-context" unless control_eval.forward(2,3,4) == [9,[3,4]] && control_eval.local_value == 11
 control_eval.offset = 17
 control_eval.control_width = 23
 raise "monika-accessor-context" unless control_eval.offset == 17 && control_eval.control_width == 23
+control_range = (100...120)
+raise "monika-predicate-context" unless control_eval.range_value(control_range).equal?(control_range) && control_eval.range_value(120) == (100..120)
 bitmap.fill_rect(0,0,640,360,Color.new(242,140,40))
 sprite=Sprite.new
 sprite.bitmap=bitmap

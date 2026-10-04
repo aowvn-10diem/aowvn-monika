@@ -55,6 +55,18 @@ Dir.mktmpdir('shape-fixture') do |dir|
   File.binwrite(input, Marshal.dump([[10, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
   out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
   check(status.success? && out.include?('@id1 = id2.is_a?(Array) ? self.id3.id2..id2 : id2') && %w[private_field private_value private_helper PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect phân biệt vai trò cùng biến bằng số ẩn danh, không lộ tên/literal')
+  source = "@@private_class = @@private_class\n"
+  File.binwrite(input, Marshal.dump([[12, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
+  out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
+  check(status.success? && out.include?('@@id1 = @@id1') && %w[private_class PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect che class variable, giữ prefix và quan hệ lặp')
+  source = "$private_global = $private_global\n"
+  File.binwrite(input, Marshal.dump([[13, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
+  out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
+  check(status.success? && out.include?('$id1 = $id1') && %w[private_global PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect che global variable, giữ prefix và quan hệ lặp')
+  source = "{ private_label: 1, nhãn_riêng: 'private_literal' }\n"
+  File.binwrite(input, Marshal.dump([[14, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
+  out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')
+  check(status.success? && out.include?('id1: 0') && out.include?('id2: "s"') && %w[private_label nhãn_riêng private_literal PrivateTitle].none? { |word| (out + err).include?(word) }, 'inspect che label ASCII/Unicode và literal, giữ dấu hai chấm')
   source = "@private_sound.pitch; @private_sound.volume; @private_sound.name = 'private audio name'\n"
   File.binwrite(input, Marshal.dump([[11, 'PrivateTitle', Zlib::Deflate.deflate(source)]]))
   out, err, status = Open3.capture3(RbConfig.ruby, script, input, '--inspect=0:1')

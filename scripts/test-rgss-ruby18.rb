@@ -243,4 +243,67 @@ Object.send(:remove_const, :AccessorErrorFixture)
 text = source
 budget = [512, text.bytesize]
 check(MonikaRuby18.instrument_eval_calls(text, budget).equal?(text) && budget[1] == 0, 'collection dùng cùng AST/byte budget, cạn trước ghép giữ nguyên source')
+# Valid Ruby3 source nhưng ternary bị nuốt vào predicate argument khác Ruby1.8.
+# Chỉ dữ liệu tổng hợp; không đọc/chạy script game.
+source = "def predicate_fixture(value); value.is_a? (Integer) ? 100..value : value; end\n"
+eval(source)
+original_range = (100..120)
+begin
+  predicate_fixture(original_range)
+  abort('FAIL fixture spaced phải tái hiện bad Range')
+rescue ArgumentError => error
+  check(error.message == 'bad value for range', 'fixture valid cú pháp tái hiện Range bị đưa vào predicate argument')
+end
+fixed = MonikaRuby18.instrument_eval_calls(source, [512])
+check(fixed == source.sub('is_a? (', 'is_a?('), 'chỉ xóa spacing của CALL/predicate/CONST/ternary đã nhận bằng AST')
+eval(fixed)
+check(predicate_fixture(original_range).equal?(original_range) && predicate_fixture(120) == (100..120), 'Range caller giữ object, Integer tạo Range đúng kiểu; không coerce')
+check(MonikaRuby18.instrument_eval_calls(fixed, [512]).equal?(fixed), 'predicate normalization idempotent')
+source = "value = (100...120); value.kind_of? \t(Integer) ? 100..value : value\n"
+fixed = MonikaRuby18.instrument_eval_calls(source, [512])
+result = eval(fixed)
+check(fixed.include?('kind_of?(Integer)') && result == (100...120) && result.exclude_end?, 'kind_of? và SPACE/TAB giữ Range exclusive')
+source = "tên = 120; tên.is_a? (Integer) ? 100..tên : tên # keep (space)\n"
+fixed = MonikaRuby18.instrument_eval_calls(source, [512])
+check(fixed.include?('tên.is_a?(Integer)') && fixed.end_with?("# keep (space)\n") && eval(fixed) == (100..120), 'byte offsets giữ UTF8/literal/comment của predicate')
+source = "value=120; value.is_a? (Integer) ? eval('100..value') : value\n"
+fixed = MonikaRuby18.instrument_eval_calls(source, [512])
+check(fixed.include?('is_a?(Integer)') && fixed.include?('::MonikaRuby18.eval_source(') && eval(fixed) == (100..120), 'spacing và eval edit dùng chung một AST pass, không overlap')
+unsupported = [
+  "value.is_a?(Integer) ? 100..value : value",
+  "value.is_a? (Integer)",
+  "value.other? (Integer) ? 100..value : value",
+  "value.is_a? (custom) ? 100..value : value",
+  "value.is_a? (true) ? 100..value : value",
+  "value.is_a? (::Integer) ? 100..value : value",
+  "value.is_a? ((Integer)) ? 100..value : value",
+  "value.is_a? (Integer) ?\n 100..value : value",
+  "text='value.is_a? (Integer) ? a : b' # value.is_a? (Integer) ? a : b"
+]
+check(unsupported.all? { |text| MonikaRuby18.instrument_eval_calls(text, [512]).equal?(text) }, 'predicate không sửa method khác/constant phức tạp/multiline/đã đúng/literal/comment')
+source = "value.is_a? (Integer) ? 100..value : value\n"
+budget = [512, source.bytesize]
+check(MonikaRuby18.instrument_eval_calls(source, budget).equal?(source) && budget == [511, 0], 'predicate không refill byte budget và giữ source khi thiếu lượt compile cuối')
+many = source * (MonikaRuby18::MAX_EVAL_SITES + 1)
+check(MonikaRuby18.instrument_eval_calls(many, [512]).equal?(many), 'quá64predicate sites giữ nguyên toàn script')
+source = "def invalid_predicate(; value.is_a? (Integer) ? a : b; end\n"
+check(MonikaRuby18.instrument_eval_calls(source, [512]).equal?(source), 'predicate với lỗi parser khác không sửa dở hoặc nuốt SyntaxError')
+source = <<~'RUBY'
+  class PredicateOrderFixture
+    attr_reader :seen
+    def is_a?(type); @seen = type; false; end
+  end
+  calls=0; object=PredicateOrderFixture.new
+  take = -> { calls += 1; object }
+  result = take.call.is_a? (Integer) ? :wrong : :kept
+  [calls, object.seen, result]
+RUBY
+check(eval(MonikaRuby18.instrument_eval_calls(source, [512])) == [1, Integer, :kept], 'predicate caller/core override giữ đúng đối số/thứ tự/một lần và nhánh false')
+source = "value=120; value.is_a? (Integer) ? absent_method() : value\n"
+begin
+  eval(MonikaRuby18.instrument_eval_calls(source, [512]))
+  abort('FAIL lỗi khác phải giữ')
+rescue NoMethodError
+  check(true, 'predicate normalization không che runtime error khác')
+end
 puts 'ALL OK'
