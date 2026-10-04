@@ -56,6 +56,20 @@ big({'needed.txt': 'libc.so\n' * 5}); r.append(ok('quá nhiều dòng' in v.run(
 v.MAX_NEEDED = 10; r.append(ok('needed.txt quá lớn' in v.run(z, 'libx.so', 'arm64-v8a'), 'needed.txt vượt giới hạn byte')); v.MAX_NEEDED = 64 * 1024
 big({'manifest.json': '[' * 100000}); r.append(ok('không đọc được' in v.run(z, 'libx.so', 'arm64-v8a'), 'manifest lồng quá sâu bị từ chối, không sập'))
 
+# ONS package has one common root; mirror PackTransaction.unzip only when its main file is under that root.
+zipof(z, {'onsyuri/': b'', 'onsyuri/onsyuri.wasm': b'wasm'})
+r.append(ok(v.run(z, 'onsyuri.wasm', 'arm64-v8a').startswith('OK'), 'bỏ đúng thư mục gốc ONS'))
+# CLI reports failure via exit status when one package has no main file.
+cli_dir = os.path.join(t, 'cli'); os.makedirs(cli_dir)
+zipof(os.path.join(cli_dir, 'sevenzip-arm64-v8a.zip'), {'lib7-Zip-JBinding.so': elf()})
+zipof(os.path.join(cli_dir, 'sevenzip-armeabi-v7a.zip'), {'lib7-Zip-JBinding.so': elf(40, 1)})
+zipof(os.path.join(cli_dir, 'kirikiri-arm64.zip'), {'libkrkr2yuri.so': elf()})
+zipof(os.path.join(cli_dir, 'onsyuri-web.zip'), {'wrong.wasm': b'wasm'})
+zipof(os.path.join(cli_dir, 'azahar-android-arm64.zip'), {'libcitra-android.so': elf()})
+env = os.environ.copy(); env['PACK_DIR'] = cli_dir
+cli = subprocess.run([sys.executable, os.path.join(D, 'val-goi-that.py')], env=env, capture_output=True, text=True)
+r.append(ok(cli.returncode == 1 and 'FAIL không có onsyuri.wasm' in cli.stdout, 'CLI thoát mã 1 nếu có dòng FAIL'))
+
 st = os.path.join(t, 'state.json')
 json.dump({'updatedAt': 'x', 'tasks': [{'code': 'V1', 'title': 't', 'owner': 'o', 'status': 'cho', 'note': ''}],
            'modules': [{'id': 'm', 'steps': {'build': 'cho'}}], 'log': []}, open(st, 'w'))

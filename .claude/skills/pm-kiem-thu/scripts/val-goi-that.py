@@ -31,6 +31,12 @@ def run(zp,main,abi,flatten=False):
         with zipfile.ZipFile(zp) as z:
             infos=z.infolist()
             if len(infos)>MAX_FILES: return f"FAIL quá nhiều file ({len(infos)} > {MAX_FILES})"
+            names=[e.filename.rstrip('/') for e in infos if e.filename.rstrip('/')]
+            first=names[0] if names else ''
+            zip_root=first.split('/',1)[0]
+            strip_root=(not flatten and zip_root and main not in names and
+                        f"{zip_root}/{main}" in names and
+                        all(name==zip_root or name.startswith(zip_root+'/') for name in names))
             for e in infos:
                 if e.file_size>MAX_ENTRY: return f"FAIL file quá lớn {e.filename!r} ({e.file_size} > {MAX_ENTRY})"
                 total+=e.file_size
@@ -38,7 +44,8 @@ def run(zp,main,abi,flatten=False):
                 orig=os.path.realpath(os.path.join(root,e.filename))
                 if not orig.startswith(root+os.sep): return f"FAIL zip vượt thư mục: {e.filename!r}"
                 if e.is_dir(): continue
-                dest=os.path.realpath(os.path.join(root,os.path.basename(e.filename))) if flatten else orig
+                relative=e.filename[len(zip_root)+1:] if strip_root and e.filename.startswith(zip_root+'/') else e.filename
+                dest=os.path.realpath(os.path.join(root,os.path.basename(relative))) if flatten else os.path.realpath(os.path.join(root,relative))
                 if dest in written: return f"FAIL trùng tên {e.filename}"
                 written.add(dest); os.makedirs(os.path.dirname(dest),exist_ok=True)
                 with z.open(e) as src, open(dest,'wb') as out: shutil.copyfileobj(src,out)
@@ -94,6 +101,10 @@ def main():
     SEVENZIP_LIB=sys.argv[1] if len(sys.argv)>1 else "lib7-Zip-JBinding.so"
     KIRIKIRI_LIB=sys.argv[2] if len(sys.argv)>2 else "libkrkr2yuri.so"
     P=os.environ.get("PACK_DIR") or os.path.dirname(os.path.abspath(__file__))
+    failed=False
     for zp,main,abi,fl in [("sevenzip-arm64-v8a.zip",SEVENZIP_LIB,"arm64-v8a",False),("sevenzip-armeabi-v7a.zip",SEVENZIP_LIB,"armeabi-v7a",False),("kirikiri-arm64.zip",KIRIKIRI_LIB,"arm64-v8a",False),("onsyuri-web.zip","onsyuri.wasm","arm64-v8a",False),("azahar-android-arm64.zip","libcitra-android.so","arm64-v8a",True)]:
-        print(zp, run(os.path.join(P,zp),main,abi,fl))
+        result=run(os.path.join(P,zp),main,abi,fl)
+        print(zp, result)
+        failed |= not result.startswith("OK ")
+    if failed: sys.exit(1)
 if __name__=="__main__": main()
