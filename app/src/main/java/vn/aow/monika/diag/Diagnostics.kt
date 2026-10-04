@@ -181,8 +181,8 @@ object Diagnostics {
             else -> "killed"
         }
         val trace = exit?.let { traceStrings(it) }.orEmpty()
-        val log = logcat(s.pid)
         val whenDied = exit?.timestamp ?: s.lastAlive.takeIf { it > 0 } ?: System.currentTimeMillis()
+        val log = logcat(s.pid, nativeDeathAt = whenDied.takeIf { kind == "native" })
         val detail = scrub(c, trace.joinToString("\n"))
         val crumbs = Breadcrumbs.read(c, s.pid)
         val r = record(c, Report(
@@ -276,10 +276,16 @@ object Diagnostics {
     }
 
     /** Log của tiến trình [pid] (kể cả đã chết, còn trong bộ đệm logcat của máy): gồm log lõi + dòng "Fatal signal" của libc. */
-    fun logcat(pid: Int, max: Int = 220): List<String> = runCatching {
-        val p = ProcessBuilder("logcat", "-d", "-v", "threadtime", "-t", "4000").redirectErrorStream(true).start()
+    fun logcat(pid: Int, max: Int = 220, nativeDeathAt: Long? = null): List<String> = runCatching {
+        // API 30: crash_dump ghi DEBUG bằng PID khác; epoch tránh đoán năm/múi giờ khi lọc ±5 giây.
+        val debugAt = nativeDeathAt?.takeIf { Build.VERSION.SDK_INT == 30 }
+        val p = ProcessBuilder("logcat", "-d", "-v", if (debugAt != null) "epoch" else "threadtime", "-t", "4000")
+            .redirectErrorStream(true).start()
         val re = Regex("""^\S+\s+\S+\s+$pid\s""")
-        val lines = p.inputStream.bufferedReader().useLines { seq -> seq.filter { re.containsMatchIn(it) }.toList() }
+        val lines = p.inputStream.bufferedReader().useLines { seq ->
+            if (debugAt != null) NativeCrashLogcat.select(seq, pid, debugAt, max)
+            else seq.filter { re.containsMatchIn(it) }.toList()
+        }
         runCatching { p.destroy() }
         lines.takeLast(max).map { it.take(300) }
     }.getOrDefault(emptyList())
@@ -441,7 +447,9 @@ object Diagnostics {
                     else -> "App bị tắt: ${describeReason(e)} (tiến trình $proc)"
                 },
                 app = appLine(), device = deviceLine(), reason = describeReason(e), detail = trace,
-                log = emptyList(), component = comp, env = envLine(c), crumbs = crumbs,
+                log = if (kind == "native" && Build.VERSION.SDK_INT == 30)
+                    logcat(e.pid, nativeDeathAt = e.timestamp).map { scrub(c, it) } else emptyList(),
+                component = comp, env = envLine(c), crumbs = crumbs,
             ))
             Breadcrumbs.drop(c, e.pid)
         }
