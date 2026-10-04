@@ -3,6 +3,7 @@
 # Không đọc/ghi Scripts.*data; không eval, không in source hoặc tiêu đề game.
 module MonikaRuby18
   MAX_BYTES = 8 * 1024 * 1024
+  MAX_LINES = 20_000
   MAX_TOTAL = 128 * 1024 * 1024
   MAX_REPAIRS = 64
   MAX_CANDIDATES = 8
@@ -22,6 +23,7 @@ module MonikaRuby18
 
   def self.repair(source, budget = [MAX_COMPILES], trace = nil)
     return source unless source.is_a?(String) && source.bytesize <= MAX_BYTES && source.valid_encoding?
+    return source if source.count("\n") > MAX_LINES
     return source unless defined?(RubyVM::InstructionSequence)
     line = error_line(source, budget)
     return source if line.nil? || line == 0 # Source hợp lệ giữ nguyên từng byte.
@@ -37,8 +39,9 @@ module MonikaRuby18
         match = Regexp.last_match
         next if KEYWORDS.include?(match[1])
         matches << [match.begin(2), match.end(2)]
+        break if matches.size > MAX_CANDIDATES
       end
-      trace.call(line, matches.size, nil) if trace && (matches.empty? || matches.size > MAX_CANDIDATES)
+      trace.call(line, matches.size, 0) if trace && (matches.empty? || matches.size > MAX_CANDIDATES)
       return original if matches.empty? || matches.size > MAX_CANDIDATES
       candidates = matches.filter_map do |start, finish|
         changed = lines.dup

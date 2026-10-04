@@ -36,4 +36,9 @@ source = 'call (1, 2)'
 check(MonikaRuby18.repair(source, budget).equal?(source), 'budget hết giữ nguyên, không compile thêm')
 invalid = "\xFF".force_encoding('UTF-8')
 check(MonikaRuby18.repair(invalid).equal?(invalid), 'encoding hỏng giữ nguyên, không gây lỗi preload')
+many = ("call ('a', 1)\n" * 24)
+fixed = MonikaRuby18.repair(many)
+check(fixed != many && MonikaRuby18.error_line(fixed).nil?, '24lỗi cần hơn16vòng nhưng vẫn trong budget')
+lines = "\n" * (MonikaRuby18::MAX_LINES + 1) + 'call (1, 2)'
+check(MonikaRuby18.repair(lines).equal?(lines), 'quá20nghìndòng bị chặn trước tách lines')
 puts 'ALL OK'
