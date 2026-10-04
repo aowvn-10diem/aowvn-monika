@@ -12,8 +12,8 @@ on:
       - scripts/ci-rgss-real.*
       - .maestro-rgss-real/**
 permissions:
-  # GET asset nháp đòi contents:write; không có bước phát hành.
-  contents: write
+  # Thử quyền đọc tối thiểu; nếu draft bị từ chối, ghi bằng chứng trước đổi.
+  contents: read
 concurrency:
   group: v25-${{ github.ref }}
   cancel-in-progress: true
