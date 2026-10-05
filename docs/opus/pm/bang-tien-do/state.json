@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T21:43:00.578746Z",
-  "mainSha": "3453741f954140432a82c2d449fa4991072bf8ff",
-  "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-04T19:06:36Z",
-  "headline": "VX đã qua slice!137:118, còn NoMethodError96:1633 width trênString sauNewGame. R6@00bfe XP372/Ace381 PASSmức1; cd0 sửaCI/privacy theoLuna và thu maskedlỗimới. ChờCI/Luna, Gemini standby.",
+  "updatedAt": "2026-10-05T04:08:32Z",
+  "mainSha": "2493ec00d99f0c0cea86e5d90f81eed7a3802583",
+  "app": "App0.7.4 · config34",
+  "nextCheck": "2026-10-05T04:40:00Z",
+  "headline": "V16 đã gộp #73 (ef6b8c0), config34 ghim RGSS arm64. V43 dry-run duy nhất 37261174377 SUCCESS; chứng thư đạt, job release skip, không có artifact. G7 còn chờ thử 0.7.4.",
   "needsBoss": [
     {
       "code": "G7",
@@ -66,7 +66,7 @@
       "name": "RPG Maker XP/VX/Ace chơi trong app",
       "status": "dang",
       "progress": 68,
-      "note": "R0–R5 mã xong; R6@00bfe XP372s/Ace381s PASSmức1, VXtitleđạt nhưng sauNewGame NoMethodError96:1633, chưaPASS60s. Đủ5/audio/save-load/FPS chưa kiểm; R7 chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
+      "note": "R0–R5 mãxong; V44#50gộpca8 sauLuna+CI. R6f740 XP369/VX339/Ace382sPASSmức1/titleNewGame/scenehội thoại; signalsretrycùngcodePASS, lầnđầurunnerOOMkhôngappfix. Đủ5/audio/save-load/FPS chưakiểm; R7chờ. PhầntrămPMcũ chưađolại."
     },
     {
       "code": "Q",
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "#44 đã gộp f96da6e. R6@00bfe run37233267939: XP372s/Ace381s PASSmức1, VX439s FAILNoMethodError96:1633 sauNewGame; titlecó, slice!137:118 đãqua. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếpV44, khôngR7.",
+      "note": "#44gộpf96da6e; #50compatgộpca8e825. R6f740 XP369/VX339/Ace382s PASSmức1, tấtcảexpectedPASS. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; khôngR7.",
       "module": "rgss"
     },
     {
@@ -111,7 +111,7 @@
       "title": "Kirikiri không mở được game trên máy thật",
       "owner": "Sonnet",
       "status": "dang",
-      "note": "0.7.4 đã phát hành và gửi sếp. Chờ sếp thử Kara no Shoujo.",
+      "note": "0.7.4 đã phát hành. Ảnh chủ dự án ngày 05/10 cho thấy lỗi startup.tjs trên 0.7.3; chưa xác nhận thử 0.7.4. G7 còn mở.",
       "module": "kirikiri"
     },
     {
@@ -134,8 +134,8 @@
       "code": "V16",
       "title": "R5: phím ảo + menu Monika cho RPG Maker, đăng ký gói vào config",
       "owner": "Sonnet",
-      "status": "dang",
-      "note": "Phím ảo + menu xong, CI Android 14 nhận phím. Phần đăng ký config hoãn tới khi phát hành gói (cần G8).",
+      "status": "xong",
+      "note": "#73 merged 2026-10-05 bằng merge commit ef6b8c0; configVersion34 ghim engines-rgss-6 công khai cho arm64-v8a, giữ Joiplay fallback. Build37254516080, real-packs37254516114, CodeQL37254516059 SUCCESS trên f52400b. Không phát hành/tag; máy 32-bit thật, audio/save/FPS [CHƯA KIỂM].",
       "module": "rgss"
     },
     {
@@ -582,9 +582,9 @@
       "code": "V43",
       "title": "Phát hành APK ký trên GitHub thay vì build trong phiên",
       "owner": "Sol",
-      "status": "ket",
+      "status": "xong",
       "module": "ci",
-      "note": "SOL012: chỉ chuẩn bị mã để review; không đọc khóa/ký/dispatch/phát hành. Lệnh tiếp quản không cấp ngoại lệ."
+      "note": "Chỉ hoàn tất dry-run được chủ dự án duyệt: #72 merged 2493ec0; run37261174377 trên main dry_run=true, tag rỗng, stable=false SUCCESS. Check cấu hình ký/chống debug/signature script PASS; release job skipped, không có artifact. Không đọc Secret value và không chạy phát hành thật."
     },
     {
       "code": "V44",
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Snapshot Sol #50 headcd0b6db: sửaLuna probe/test paths+Buildprobe6checks, metadata recorded/empty/missing, bare audioidentifier che (20privacyPASS), CLIdefaultvx khớpworkflow/bash/Acephảiđạt. Local98Ruby18/20privacy/6probe/5verdict/YAML/bash/3metadata fixture PASS. R6@00bfe run37233267939/art11315118063 đã xem: XP372s/Ace381s PASSmức1, VX439s FAIL NoMethodError96:1633 width trênString sauNewGame; đãqua slice!137:118, titlecó nhưng chưa60sPASS. Build37233268036/CodeQL37233268048/native37233268139 SUCCESS đúng00bfe; native11314836860 marker1/orange/PixelCopy10–40s/Stringmutation/predicate/accessor/evalPASS. Diagnostic11314532751 157script0SyntaxError chỉcompile. Headmới thu masked96:1633 trước sửa tiếp; giữexpect_fail=vx/threshold/observation, khôngcoerce/gamefile/nativeedit. CầnLunafreshcd0 vàCI đúnghead trướcmerge."
+      "note": "#50 gộp mergecommit ca8e82550ddcb881a5ce6c468751ef50c241eb60 sauLuna5986720042 đúngf740+PMreview5986819733. Build37249066676/R637249066599/CodeQL37249066606 SUCCESS; signals37249066540 attempt2 SUCCESS/art11322086200 đãxemmarker1/orange/PixelCopy10–40s blackfalse. Attempt1runnerforkOOMtrướcgame, retrycùngcode/assertionskhôngclaimappfix. R6art11320593801đãxem XP369/VX339/Ace382s PASSmức1, VXtitle→NewGame/A→scene+hội thoạiSnow/noerror. ExpectFail=[]cả3bắtbuộcPASS, giữthreshold10/60s/process/error. Audio/save-load/FPS/full5/máythật/deploy [CHƯA KIỂM], khôngR7."
     },
     {
       "code": "V45",
@@ -637,8 +637,8 @@
       "code": "G8",
       "title": "Giấy phép file dựng của bản port mkxp-z",
       "when": "Trước R7",
-      "status": "dang",
-      "note": "Sếp đã hỏi tác giả (03/10), chờ trả lời. Tới R7 chưa có thì đội viết lại script dựng."
+      "status": "xong",
+      "note": "Chủ dự án xác nhận G8 đã OK ngày05/10; đã gỡ điều kiện chờ trả lời giấy phép. Không mở rộng sang quyền phát hành engine ngoài phạm vi."
     },
     {
       "code": "G4",
@@ -649,10 +649,10 @@
     },
     {
       "code": "G7",
-      "title": "Thử Kirikiri 0.7.3 trên máy thật",
+      "title": "Thử lại Kirikiri 0.7.4 trên máy thật",
       "when": "Gấp",
       "status": "dang",
-      "note": "Đã thử 03/10: không văng, không mở được game → V26. Thử lại sau bản vá."
+      "note": "Ảnh chủ dự án 05/10 hiển thị app v0.7.3 với lỗi “Cannot find storage startup.tjs”. V26 đã phát hành 0.7.4 nhưng chưa có xác nhận thử lại Kara no Shoujo bằng 0.7.4; G7 tiếp tục mở."
     },
     {
       "code": "G6",
@@ -685,11 +685,51 @@
   ],
   "log": [
     {
-      "t": "2026-10-04T21:43:00.578746Z",
+      "t": "2026-10-05T04:08:32Z",
+      "text": "V43 authorized single dry-run37261174377 SUCCESS on main2493ec0: signing_dry_run and verify-apk-cert passed; release job skipped; artifact list empty. No release/tag/APK upload."
+    },
+    {
+      "t": "2026-10-05T03:56:05Z",
+      "text": "#73 V16 merged ef6b8c0 after Luna+exact CI; config34 RGSS pin. #72 V43 merged 2493ec0; exactly one owner-authorized main dry-run dispatched as run37261174377, signing_dry_run still in progress and release job skipped at 03:56Z. No release/tag/APK upload."
+    },
+    {
+      "t": "2026-10-05T02:23:04Z",
+      "text": "Owner approved exactly one V43 main dry_run after PR72 Luna+merge; Build37253552086 SUCCESS. V16 PR73 exact f524 Build37254516080/realpacks37254516114/CodeQL37254516059 SUCCESS, Luna pending. G8 confirmed; G7 screenshot is 0.7.3 startup.tjs, 0.7.4 retest unconfirmed."
+    },
+    {
+      "t": "2026-10-05T02:14:12.883060Z",
+      "text": "Owner05/10 confirms V43 approve exact one main dry_run after Luna/merge; G8OK; G7 screenshot0.7.3 startup.tjs failure. V16 sees public engines-rgss-6 source/hash/size/HEAD200; PR73 config34 ARM64 keepJoiplay, CI/Luna pending. No engine publication."
+    },
+    {
+      "t": "2026-10-05T02:06:39.070087Z",
+      "text": "Owner05/10 approvedV43 dry-runonly; #72 Build37253552086green/Lunapending, then one main dry_run=true no publish. G8owner reports OK; V16 still verify public RGSS URL/V12 beforeconfig. G7 newreport+image is v0.7.3 Cannot find storage startup.tjs;0.7.4 testunconfirmed."
+    },
+    {
+      "t": "2026-10-05T02:00:35.545091Z",
+      "text": "#50mergecommitca8 sauLuna f740 vàactingPMduyệt5986819733; Build/R6/CodeQL/signalsattempt2SUCCESS, actualcontrolmarker/orange/PixelCopyproof. Ownerkeyexistsconfirmed; #72V43chuẩnbịdry_runmain-only,nopublish;9fakeguardsPASS,actualdispatchownerngoạilệvẫnSOL012. PMdocsheadmớicầnLuna, khôngfakeaudio/full5."
+    },
+    {
+      "t": "2026-10-05T01:50:37.500648Z",
+      "text": "SửaLunac55 snapshotCI:Build/R6/CodeQLf740SUCCESS; R6artifact11320593801đãxemXP369/VX339/Ace382sPASSmức1. Signalsattempt1forkOOMexit126trướcgame/control, singlejobretrycùnghead/assertions đangchạy; khônggọicảCIxanh. Lunas5986720042expectationkhớpproof nhưngcầnxửlýsignals; docsheadmớicầnLuna trướcmerge."
+    },
+    {
+      "t": "2026-10-05T00:51:51.623670Z",
+      "text": "Đãxem R6@dd01/art11316984731 XP306/VX274/Ace298s PASSmức1; VXNewGame→scene+hội thoại, noerror. Native11318190058 regexp-result3+marker/orange/PixelCopyPASS. JobFAIL vìexpectvx cũ; actingPMchốtremoveVX vàpushf740, giữmọingưỡng/assertions. CầnCIheadmới/Lunafresh; full5/audio/save-load/FPS/máythật chưakiểm."
+    },
+    {
+      "t": "2026-10-04T22:57:08.399362Z",
+      "text": "SửaLuna185 snapshotstale:871R6hoàntất XP388/Ace381 mức1,VX367FAILsize/Regexp2174, width1633qua. Native11316493179getter17+marker/orange/PixelCopyPASS. C4masked2174choRegexpLiteral/resultsize; dd01appfix chungSTRwidth/RegexpSize grammarbounded, local122/20/6PASS, nativefixturecompile-only. Neednative/R6/Lunafresh, khônggameplayclaim/expectationlowering."
+    },
+    {
+      "t": "2026-10-04T22:57:08.399362Z",
+      "text": "#70gộpf4ebd0b sauLunaĐạt f40f89c+docschecks; V11BuildskipkhôngunitappPASS. #50head871 sửaCALL SPACE (StringLiteral).width theo maskedcd0+synthetic1.8.7/3.1.7, local110/20/6PASS/nativefixturecompile-only. Cầnnative/R6/Lunafresh, chưaclaimVXrecovery; R6cd0 supersededkhônggreen."
+    },
+    {
+      "t": "2026-10-04T22:57:08.399362Z",
       "text": "R6@00bfe hoàn tất: XP372/Ace381 mức1PASS; VX439 FAILNoMethodError96:1633 (width/String) sauNewGame, đãqua slice137:118. Native11314836860 slice mutation+marker/orange/PixelCopyPASS; compile1570errorkhônggameplay. Headcd0 sửaLuna trigger/probe-missing/privacy20, thu masked1633; khôngđổiexpectfail/threshold."
     },
     {
-      "t": "2026-10-04T21:43:00.578746Z",
+      "t": "2026-10-04T22:57:08.399362Z",
       "text": "Head00bfe sửa slice! (/Regexp/) !=nil trongRAM: MRI1.8.7 so sánh kếtquả, MRI3.1.7 đưaBoolean vàoarg; proofmasked137:118 + synthetic thật. GuardmộtCALL/mộtline/literalRegexp/nilcomparison, commonbudgetgiữnguyên, nativefixtureStringmutation mới. Local98/19/6PASS; CI/R6/native pending, khôngđổiexpectfail."
     },
     {
@@ -933,7 +973,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "Snapshot Sol #50 headcd0b6db: sửaLuna probe/test paths+Buildprobe6checks, metadata recorded/empty/missing, bare audioidentifier che (20privacyPASS), CLIdefaultvx khớpworkflow/bash/Acephảiđạt. Local98Ruby18/20privacy/6probe/5verdict/YAML/bash/3metadata fixture PASS. R6@00bfe run37233267939/art11315118063 đã xem: XP372s/Ace381s PASSmức1, VX439s FAIL NoMethodError96:1633 width trênString sauNewGame; đãqua slice!137:118, titlecó nhưng chưa60sPASS. Build37233268036/CodeQL37233268048/native37233268139 SUCCESS đúng00bfe; native11314836860 marker1/orange/PixelCopy10–40s/Stringmutation/predicate/accessor/evalPASS. Diagnostic11314532751 157script0SyntaxError chỉcompile. Headmới thu masked96:1633 trước sửa tiếp; giữexpect_fail=vx/threshold/observation, khôngcoerce/gamefile/nativeedit. CầnLunafreshcd0 vàCI đúnghead trướcmerge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
+      "note": "#50 gộp mergecommit ca8e82550ddcb881a5ce6c468751ef50c241eb60 sauLuna5986720042 đúngf740+PMreview5986819733. Build37249066676/R637249066599/CodeQL37249066606 SUCCESS; signals37249066540 attempt2 SUCCESS/art11322086200 đãxemmarker1/orange/PixelCopy10–40s blackfalse. Attempt1runnerforkOOMtrướcgame, retrycùngcode/assertionskhôngclaimappfix. R6art11320593801đãxem XP369/VX339/Ace382s PASSmức1, VXtitle→NewGame/A→scene+hội thoạiSnow/noerror. ExpectFail=[]cả3bắtbuộcPASS, giữthreshold10/60s/process/error. Audio/save-load/FPS/full5/máythật/deploy [CHƯA KIỂM], khôngR7. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
     },
     {
       "id": "web",

@@ -1,5 +1,5 @@
 {
-  "main": "3453741f954140432a82c2d449fa4991072bf8ff",
+  "main": "2493ec00d99f0c0cea86e5d90f81eed7a3802583",
   "branch": "fa57d05",
   "sol": {
     "V30": "xong#25",
@@ -14,15 +14,15 @@
   "prs": {
     "11": "H04 Luna duyệt",
     "15": "H05 Luna duyệt",
-    "16": "H07 Luna duyệt",
+    "16": "#73 V16 merged ef6b8c0 after Luna L07 + Build/real-packs/CodeQL green exact f524; config34 pins public engines-rgss-6 arm64 and retains JoiPlay fallback; no release/tag.",
     "17": "L01 Luna duyệt",
     "19": "H06 Luna duyệt",
     "20": "L03 Luna duyệt",
     "18": "L02 Luna (đã trả lời thư)",
     "14": "SOL-003 (đã trả lời)",
-    "44": "#44 đã gộp f96da6e. R6@00bfe run37233267939: XP372s/Ace381s PASSmức1, VX439s FAILNoMethodError96:1633 sauNewGame; titlecó, slice!137:118 đãqua. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếpV44, khôngR7.",
+    "44": "#50 V44 đãgộp; R6 f740 XP369/VX339/Ace382s PASSmức1, full5/audio/save-load/FPS/máythật chưa kiểm.",
     "46": "gộp5d352a7; Luna + CI xanh, K3 máy thật chưa kiểm",
-    "50": "Snapshot Sol #50 headcd0b6db: sửaLuna probe/test paths+Buildprobe6checks, metadata recorded/empty/missing, bare audioidentifier che (20privacyPASS), CLIdefaultvx khớpworkflow/bash/Acephảiđạt. Local98Ruby18/20privacy/6probe/5verdict/YAML/bash/3metadata fixture PASS. R6@00bfe run37233267939/art11315118063 đã xem: XP372s/Ace381s PASSmức1, VX439s FAIL NoMethodError96:1633 width trênString sauNewGame; đãqua slice!137:118, titlecó nhưng chưa60sPASS. Build37233268036/CodeQL37233268048/native37233268139 SUCCESS đúng00bfe; native11314836860 marker1/orange/PixelCopy10–40s/Stringmutation/predicate/accessor/evalPASS. Diagnostic11314532751 157script0SyntaxError chỉcompile. Headmới thu masked96:1633 trước sửa tiếp; giữexpect_fail=vx/threshold/observation, khôngcoerce/gamefile/nativeedit. CầnLunafreshcd0 vàCI đúnghead trướcmerge.",
+    "50": "#50 gộp ca8e825 sauLuna+CI đầyđủ, XP/VX/Ace đều PASSmức1.",
     "51": "gộp0e17edf,27test +5ZIP thật PASS; quota chưa đo",
     "34": "PM duyệt; head 1c64c02 chỉ gộp main",
     "55-57": "Dependabot → Sol (tra-loi-sol-009)",
@@ -37,17 +37,20 @@
     "56": "gộpf5ddf2f; Luna+7jobđại diện+PMmigrationreview, ký/Cloud chưa kiểm",
     "64": "đóng theo Luna; câu hỏi57 đã cũ, không tựmerge chung",
     "62": "SOL012 kẹt; Luna xác nhận14:55, ký/publish không được cấp ngoại lệ",
-    "70": "Đồng bộcd0/R6@00bfe/titlecó nhưng NoMethod96:1633 sauNewGame; cầnLunaPMheadmới. Docs-only không appunitPASS.",
-    "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS."
+    "70": "Gộpf4ebd0b sauLuna Đạt đúngf40f89c+docCIchecksSUCCESS. V11docs-onlykhôngappunitPASS. BảnPMkế871appfixpending.",
+    "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS.",
+    "71": "PM docs branch was refreshed from main after #73/#72 merges; updated docs head needs fresh docs CI and Luna review. Docs-only Build skip is not app unit PASS.",
+    "72": "V43 #72 merged 2493ec0 after Luna L07/Build. The single authorized run37261174377 on main dry_run=true, tag empty, stable=false SUCCESS; signing/certificate check passed, release job skipped, no artifact/release/tag/APK upload.",
+    "73": "#73 V16 merged ef6b8c0 after Luna L07 + Build/real-packs/CodeQL green exact f524; config34 pins public engines-rgss-6 arm64 and retains JoiPlay fallback; no release/tag."
   },
   "idle": 0,
   "cadence": 60,
   "dashboard": "https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d",
   "dashboard_state": "Nguồn GitHub: docs/opus/pm/bang-tien-do/state.json trên nhánh PM. Artifact Claude bên ngoài chưa cập nhật trong lượt tiếp quản.",
-  "dashboard_version": 59,
+  "dashboard_version": 60,
   "rule": "Sol tiếp quản PM theo lệnh chủ dự án; code Sol cần Luna + CI; không nhắn sếp; giữ cổng phát hành/ký.",
   "trigger": "trig_01Nk2NQXsfxm8hQLAZAo4ZsS",
-  "note": "Sol tiếp quản tạm PM/Sonnet theo issue65 tới05/10 15:00UTC; Luna review độc lập. Gemini F01/F02 chờ kích hoạt.",
+  "note": "Sol tiếp quản tạm PM/Sonnet theo issue65 tới05/10 15:00UTC; Luna review độc lập. Gemini F01/F02 chờ kích hoạt. V43 authorized dry-run run37261174377 SUCCESS; không dispatch lần hai.",
   "luna": {
     "L05": "#29 duyệt",
     "L06": "#31 duyệt"
@@ -65,7 +68,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-04T21:43:00.578746Z",
+  "updated_at": "2026-10-05T04:08:32.000000Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [
