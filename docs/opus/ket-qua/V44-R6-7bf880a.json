@@ -1,0 +1,76 @@
+{
+  "head": "7bf880a65412c2b4d47dfa89057d8ff591957dba",
+  "run": 37219376261,
+  "artifact": 11310460101,
+  "verdict": {
+    "level": 1,
+    "expectFail": [
+      "vx"
+    ],
+    "matchesExpectation": true,
+    "games": [
+      {
+        "game": "xp",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "3328",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 32.736,
+        "threshold": 10,
+        "observedSeconds": 358,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "PASS_LEVEL_1",
+        "expected": "ĐẠT mức 1",
+        "matchesExpectation": true
+      },
+      {
+        "game": "vx",
+        "verdict": "HỎNG",
+        "verdictCode": "FAIL",
+        "process": "com.aow.monika:game",
+        "pid": "8783",
+        "alive": true,
+        "errorDialog": true,
+        "brightnessStddev": 40.163,
+        "threshold": 10,
+        "observedSeconds": 65,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "FAIL",
+        "expected": "HỎNG",
+        "matchesExpectation": true
+      },
+      {
+        "game": "ace",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "8971",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 65.036,
+        "threshold": 10,
+        "observedSeconds": 379,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "PASS_LEVEL_1",
+        "expected": "ĐẠT mức 1",
+        "matchesExpectation": true
+      }
+    ]
+  },
+  "runtimeFailure": {
+    "scriptIndex": 96,
+    "line": 934,
+    "type": "NoMethodError",
+    "publicRuntimeMessage": "undefined setter",
+    "sourceUnmodified": true
+  },
+  "nativeControl": {
+    "run": 37219376256,
+    "artifact": 11309546982,
+    "marker": "RGSS-control-ruby18:1",
+    "checks": "dynamic method/default locals/constant/splat, orange frame, PixelCopy nonblack at 10/20/30/40s"
+  },
+  "limits": "audio/save-load/FPS/full5/machine-real [CHƯA KIỂM]"
+}

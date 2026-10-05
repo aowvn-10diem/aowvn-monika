@@ -34,10 +34,10 @@ adb exec-out screencap > "$OUT/control.raw"
 adb shell run-as "$PKG" cat files/games/v22-control/monika-ready.txt > "$OUT/control-ready.txt" || true
 adb shell run-as "$PKG" sh -c "'for f in files/diag/reports/*.json; do cat \"\$f\"; echo; done'" > "$OUT/control-reports.jsonl"
 adb shell run-as "$PKG" sh -c "'cat files/diag/crumbs/*.log'" > "$OUT/control-crumbs.txt" || true
-adb logcat -d -s MonikaGame AndroidRuntime DEBUG > "$OUT/control-logcat.txt"
+adb logcat -d -s MonikaGame AndroidRuntime DEBUG mkxp > "$OUT/control-logcat.txt"
 python3 - "$OUT" <<'PY'
 import json,sys,struct,pathlib
-p=pathlib.Path(sys.argv[1]);assert (p/'control-ready.txt').read_text().strip(),'RGSS control chưa chạy script'
+p=pathlib.Path(sys.argv[1]);assert (p/'control-ready.txt').read_text().strip()=='RGSS-control-ruby18:1','VX control chưa chạy script qua preload'
 r=[json.loads(l) for l in (p/'control-reports.jsonl').read_text().splitlines() if l.strip().startswith('{')]
 assert not any(x['component']=='engine:rgss' and x['reason']=='màn đen' for x in r),'RGSS control báo màn đen giả'
 d=(p/'control.raw').read_bytes();w,h=struct.unpack('<II',d[:8]);hdr=len(d)-w*h*4

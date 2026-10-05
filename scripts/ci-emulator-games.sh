@@ -241,7 +241,7 @@ if [ -z "${RGSS_PACK_ZIP:-}" ] || [ ! -f "$RGSS_PACK_ZIP" ]; then
 else
   rm -rf "$OUT/rpack" "$OUT/rgame" && mkdir -p "$OUT/rpack" "$OUT/rgame/Data" && unzip -q "$RGSS_PACK_ZIP" -d "$OUT/rpack"
   printf '[Game]\r\nTitle=Monika RGSS CI\r\nScripts=Data\\Scripts.rxdata\r\nRTP1=\r\n' > "$OUT/rgame/Game.ini"
-  ruby -rzlib -e 'code = "File.open(%q(monika-ok.txt), %q(w)) { |f| f.write(%q(ok)) }\nloop do\n  Graphics.update\n  Input.update\n  if Input.trigger?(Input::C)\n    Process.kill(11, Process.pid) if File.exist?(%q(crash-on-key.txt))\n    File.open(%q(monika-key.txt), %q(w)) { |f| f.write(%q(enter)) }\n    exit\n  end\nend\n"; File.binwrite(ARGV[0], Marshal.dump([[1, "Main", Zlib::Deflate.deflate(code)]]))' "$OUT/rgame/Data/Scripts.rxdata"
+  ruby -rzlib -e 'code = "begin\n  v = Win32API.new(%q(user32), %q(GetAsyncKeyState), %q(i), %q(i)).call(1)\n  File.open(%q(monika-win32.txt), %q(w)) { |f| f.write(%q(ok ) + v.to_s) }\nrescue Exception => e\n  File.open(%q(monika-win32.txt), %q(w)) { |f| f.write(%q(err ) + e.class.to_s) }\nend\nFile.open(%q(monika-ok.txt), %q(w)) { |f| f.write(%q(ok)) }\nloop do\n  Graphics.update\n  Input.update\n  if Input.trigger?(Input::C)\n    Process.kill(11, Process.pid) if File.exist?(%q(crash-on-key.txt))\n    File.open(%q(monika-key.txt), %q(w)) { |f| f.write(%q(enter)) }\n    exit\n  end\nend\n"; File.binwrite(ARGV[0], Marshal.dump([[1, "Main", Zlib::Deflate.deflate(code)]]))' "$OUT/rgame/Data/Scripts.rxdata"
   ls -l "$OUT/rgame" "$OUT/rgame/Data"
   adb shell rm -rf /data/local/tmp/rpack /data/local/tmp/rgame
   adb push "$OUT/rpack" /data/local/tmp/rpack >/dev/null
@@ -264,6 +264,12 @@ else
   adb exec-out screencap -p > "$OUT/games/rgss.png" 2>/dev/null || true
   adb logcat -d > "$OUT/games/rgss.logcat.txt" 2>/dev/null
   echo "$result rgss (nhúng)" | tee -a "$OUT/games/summary.txt"
+  # V44: Win32API('user32') phải chạy được nhờ bản giả (preloadScript) — game thử gọi ngay đầu script và ghi kết quả.
+  if [ "$result" = OK ]; then
+    w32=$(adb shell "cat $P/games/rgss-ci/monika-win32.txt" 2>/dev/null | tr -d '\r')
+    echo "WIN32 rgss Win32API(user32): ${w32:-không có tệp}" | tee -a "$OUT/games/summary.txt"
+    case "$w32" in ok*) ;; *) result=WIN32_FAIL ;; esac
+  fi
   # Phím: game chờ Input::C; gửi Enter qua hệ thống (đi đường SDL → mkxp-z, cùng đường lớp phủ Monika gọi onNativeKeyDown).
   if [ "$result" = OK ]; then
     keyres=KEY_TIMEOUT

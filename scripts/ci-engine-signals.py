@@ -21,16 +21,52 @@ subprocess.run(['ruby','-rzlib','-e','File.binwrite(ARGV[0], Marshal.dump([[1,"M
 (out/'game/Game.ini').write_text('[Game]\nTitle=Monika-V22\nScripts=Data\\Scripts.rxdata\nRTP1=\n')
 with zipfile.ZipFile(out/'web/rgss.zip') as z:z.extractall(out/'rgss-pack')
 control=out/'control';(control/'Data').mkdir(parents=True)
-(control/'Game.ini').write_text('[Game]\nTitle=Monika-V22-Control\nScripts=Data\\Scripts.rxdata\nRTP1=\n')
-code = """bitmap=Bitmap.new(640,360)
+(control/'Game.ini').write_text('[Game]\nTitle=Monika-V22-Control\nScripts=Data\\Scripts.rvdata\nRTP1=\n')
+code = """bitmap=Bitmap.new (640,360)
+class MonikaEvalNative
+  OFFSET = 7
+  CONTROL_WIDTH = 11
+  for name in self.class.constants
+    attr_accessor name.downcase.to_sym
+  end
+  eval("def forward(arg, *rest); collect (arg, *rest); end")
+  def collect(arg, *rest); [arg + OFFSET, rest]; end
+  def local_value
+    value = 4
+    eval("value + OFFSET")
+  end
+  def range_value(value)
+    value.is_a? (Integer) ? 100..value : value
+  end
+end
+control_eval = MonikaEvalNative.new
+raise "monika-eval-context" unless control_eval.forward(2,3,4) == [9,[3,4]] && control_eval.local_value == 11
+control_eval.offset = 17
+control_eval.control_width = 23
+raise "monika-accessor-context" unless control_eval.offset == 17 && control_eval.control_width == 23
+control_range = (100...120)
+raise "monika-predicate-context" unless control_eval.range_value(control_range).equal?(control_range) && control_eval.range_value(120) == (100..120)
+control_name = 'abc'
+raise "monika-slice-context" unless control_name.slice! (/a/) != nil
+raise "monika-slice-result" unless control_name == 'bc'
+class ControlWidthResult
+  def width; 17; end
+end
+class ControlMeasure
+  def text_size(text); ControlWidthResult.new; end
+end
+control_width_result = ControlMeasure.new.text_size (" ").width
+raise "monika-width-context" unless control_width_result == 17
+control_segment_count = ('abc'.split (/a/).size) + 1
+raise "monika-regexp-size-context" unless control_segment_count == 3
 bitmap.fill_rect(0,0,640,360,Color.new(242,140,40))
 sprite=Sprite.new
 sprite.bitmap=bitmap
-File.write("monika-ready.txt","RGSS-control")
+File.write("monika-ready.txt","RGSS-control-ruby18:#{MonikaRuby18.applied_count}")
 loop do
   Graphics.update
   Input.update
 end
 """
-subprocess.run(['ruby','-rzlib','-e','File.binwrite(ARGV[0], Marshal.dump([[1,"Main",Zlib::Deflate.deflate(STDIN.read)]]))',str(control/'Data/Scripts.rxdata')],input=code.encode(),check=True)
+subprocess.run(['ruby','-rzlib','-e','File.binwrite(ARGV[0], Marshal.dump([[1,"Main",Zlib::Deflate.deflate(STDIN.read)]]))',str(control/'Data/Scripts.rvdata')],input=code.encode(),check=True)
 print('Đã tạo XP raise và RGSS control màu cam; K3 [CHƯA KIỂM] theo SOL-010 B.')

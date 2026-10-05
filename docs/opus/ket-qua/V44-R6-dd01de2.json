@@ -1,0 +1,101 @@
+{
+  "head": "dd01de25059fa000e0f623df75ce272490b4590c",
+  "run": 37241841378,
+  "artifact": 11316984731,
+  "runConclusion": "failure",
+  "failureReason": "VX recovered; old expectFail=[vx] mismatches PASS_LEVEL_1",
+  "verdict": {
+    "level": 1,
+    "expectFail": [
+      "vx"
+    ],
+    "matchesExpectation": false,
+    "games": [
+      {
+        "game": "xp",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "2881",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 34.31,
+        "threshold": 10,
+        "observedSeconds": 306,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "PASS_LEVEL_1",
+        "expected": "ĐẠT mức 1",
+        "matchesExpectation": true
+      },
+      {
+        "game": "vx",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "8836",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 68.117,
+        "threshold": 10,
+        "observedSeconds": 274,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "FAIL",
+        "expected": "HỎNG",
+        "matchesExpectation": false,
+        "note": "Game đã đạt; PM bỏ case này khỏi expect_fail sau khi kiểm bằng chứng"
+      },
+      {
+        "game": "ace",
+        "verdict": "ĐẠT mức 1",
+        "verdictCode": "PASS_LEVEL_1",
+        "process": "com.aow.monika:game",
+        "pid": "11778",
+        "alive": true,
+        "errorDialog": false,
+        "brightnessStddev": 65.028,
+        "threshold": 10,
+        "observedSeconds": 298,
+        "limits": "Không chứng minh âm thanh, lưu-tải hoặc FPS game",
+        "expectedCode": "PASS_LEVEL_1",
+        "expected": "ĐẠT mức 1",
+        "matchesExpectation": true
+      }
+    ]
+  },
+  "visualReview": {
+    "xp": "after-A dialogue visible",
+    "vx": "title before A, scene and EliteGuard dialogue after NewGame/A, no error overlay",
+    "ace": "after-A room scene/dialogue visible"
+  },
+  "nativeControl": {
+    "run": 37241841375,
+    "artifact": 11318190058,
+    "marker": "RGSS-control-ruby18:1",
+    "fixture": "regexp result size arithmetic ==3 plus width17, slice mutation, predicate, accessor and eval assertions before marker",
+    "pixelCopySeconds": [
+      10,
+      20,
+      30,
+      40
+    ],
+    "black": false,
+    "image": "orange Surface control, reviewed",
+    "limits": "Synthetic fixture only; not VX gameplay"
+  },
+  "diagnostic": {
+    "artifact": 11317867918,
+    "scriptCount": 157,
+    "syntaxErrors": 0,
+    "normalizedLine": 2174,
+    "remainingCompiles": 124,
+    "remainingBytes": 39362540,
+    "limits": "Compile only"
+  },
+  "rangeProbeStatus": {
+    "xp": "missing: no Range type evidence; absent file does not prove absence of errors",
+    "vx": "missing: no Range type evidence; absent file does not prove absence of errors",
+    "ace": "missing: no Range type evidence; absent file does not prove absence of errors"
+  },
+  "actingPmDecision": "After reading images/log/verdict, remove VX from expect_fail; all3 must PASS with original thresholds/observation/error checks unchanged. Freshhead CI/Luna before merge.",
+  "limits": "Audio/save-load/FPS/full5/machine-real/Clouddeploy [CHƯA KIỂM]"
+}
