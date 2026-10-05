@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-05T16:47:05Z",
+ "updatedAt": "2026-10-05T16:51:04Z",
  "mainSha": "2c4ddd3e79de736202c57196c39453a6af5d0411",
  "app": "App 0.7.4 → 0.7.5 đang phát hành · config 34",
  "nextCheck": "2026-10-05T16:10:39Z",
@@ -657,6 +657,41 @@
    "owner": "",
    "status": "cho",
    "note": "Sau khi phát hành 0.7.5."
+  },
+  {
+   "code": "N03",
+   "title": "Nova: test EngineRoutes",
+   "owner": "",
+   "status": "cho",
+   "note": "Thư nova-001."
+  },
+  {
+   "code": "N04",
+   "title": "Nova: test cho script chưa có test",
+   "owner": "",
+   "status": "cho",
+   "note": "verify-apk-cert, prepare-core-pins, gen-architecture, crash-report-detail, cheats-index."
+  },
+  {
+   "code": "N05",
+   "title": "Nova: trang Thử nhanh 0.7.5 cho sếp",
+   "owner": "",
+   "status": "cho",
+   "note": "4 bài thử trên điện thoại."
+  },
+  {
+   "code": "N06",
+   "title": "Nova: đồng bộ tài liệu dự phòng",
+   "owner": "",
+   "status": "cho",
+   "note": "Thay L09 khi Luna vắng quá 2 giờ."
+  },
+  {
+   "code": "N07",
+   "title": "Nova: rà thông tin cũ trong tài liệu",
+   "owner": "",
+   "status": "cho",
+   "note": "Phiên bản, configVersion, gói, phân vai."
   }
  ],
  "gates": [
@@ -732,6 +767,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-05T16:51:04Z",
+   "text": "Sếp chốt A6: Nova Đạt = Luna Đạt khi Luna vắng >2 giờ. Giao Nova thêm N03–N07 (thư nova-001)."
+  },
   {
    "t": "2026-10-05T16:47:05Z",
    "text": "Sếp bổ sung thành viên Nova (Sonnet 5.5 medium): tiền duyệt dự phòng N00, việc N01 tài liệu RGSS, N02 CHANGELOG. Prompt: hop-thu/PROMPT-NOVA.md."
@@ -1243,6 +1282,13 @@
   }
  ],
  "decisions": [
+  {
+   "code": "A6",
+   "question": "Nova \"Đạt\" có tính như Luna \"Đạt\" để PM gộp?",
+   "answer": "Có (khi Luna chưa duyệt đúng head sau 2 giờ); tăng việc cho Nova",
+   "at": "2026-10-05T16:55:00Z",
+   "by": "Sếp"
+  },
   {
    "code": "Q4",
    "question": "Thêm secret CLOUDFLARE_API_TOKEN",
