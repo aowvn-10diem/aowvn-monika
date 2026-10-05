@@ -1,21 +1,19 @@
 {
- "updatedAt": "2026-10-05T16:51:04Z",
- "mainSha": "2c4ddd3e79de736202c57196c39453a6af5d0411",
+ "updatedAt": "2026-10-05T20:28:45Z",
+ "mainSha": "df60ccc",
  "app": "App 0.7.4 → 0.7.5 đang phát hành · config 34",
  "nextCheck": "2026-10-05T16:10:39Z",
- "headline": "Đang phát hành bản thử 0.7.5 (sếp đồng ý 05/10), ký trên GitHub. Cả 3 game RPG Maker thật (XP, VX, VX Ace) đã chạy tới hội thoại trên máy ảo. PM (Opus) nhận lại điều phối; Sol về phần việc riêng.",
+ "headline": "0.7.5: build và ký xanh nhưng bước kiểm chứng thư lỗi, đang sửa (#88). Kara no Shoujo 0.7.4 chưa vào được game, Sonnet điều tra.",
  "needsBoss": [
   {
-   "code": "G7",
+   "code": "A8",
    "urgency": "Gấp",
    "kind": "one",
-   "question": "Sếp đã thử Kara no Shoujo bằng bản 0.7.4 chưa? Kết quả thế nào?",
-   "recommend": "Cài đè 0.7.4, mở lại game từ Thư viện.",
+   "question": "Bản 0.7.5 build xong nhưng bước kiểm chứng thư báo lỗi (run 37345874546), chưa có APK. PR #88 sửa bước kiểm. Sau khi #88 gộp, cho chạy release.yml thêm 1 lần (tag v0.7.5, bản thử) để hoàn tất?",
+   "recommend": "Đồng ý: mã app không đổi, tag giữ nguyên ở 1eb266d.",
    "options": [
-    "Vào được game, có chữ Việt",
-    "Vào được game, không có chữ Việt",
-    "Không vào được game",
-    "Chưa thử"
+    "Đồng ý chạy lại 1 lần",
+    "Chưa, chờ"
    ]
   },
   {
@@ -110,7 +108,7 @@
    "title": "Kirikiri không mở được game trên máy thật",
    "owner": "Sonnet",
    "status": "dang",
-   "note": "0.7.4 đã phát hành. Ảnh chủ dự án ngày 05/10 cho thấy lỗi startup.tjs trên 0.7.3; chưa xác nhận thử 0.7.4. G7 còn mở.",
+   "note": "G7: sếp thử 0.7.4 → Không vào được game (05/10 15:46Z). Giao Sonnet điều tra (bằng chứng trước).",
    "module": "kirikiri"
   },
   {
@@ -583,7 +581,7 @@
    "owner": "Sol",
    "status": "dang",
    "module": "ci",
-   "note": "Chạy thử ký trên GitHub đã đạt (05/10). Sếp đồng ý phát hành 0.7.5 bản thử: Sonnet gộp PR #81 rồi chạy phát hành, kiểm chứng thư."
+   "note": "#81 gộp 1eb266d; sếp tạo tag v0.7.5; run 37345874546 build+ký xanh nhưng đỏ ở bước kiểm chứng thư (grep apksigner). #88 sửa dùng verify-apk-cert.py, CI xanh; chờ duyệt + A8 chạy lại 1 lần."
   },
   {
    "code": "V44",
@@ -613,15 +611,15 @@
    "code": "V47",
    "title": "Sync config lên Cloudflare đỏ (thiếu secret)",
    "owner": "",
-   "status": "dang",
-   "note": "PR #82 (cảnh báo config từ xa chưa đồng bộ), CI xanh; chờ Luna."
+   "status": "xong",
+   "note": "#82 gộp df60ccc. Sếp thêm CLOUDFLARE_API_TOKEN, sync xanh 15:56Z. Đo lại configVersion KV: [CHƯA KIỂM] (Sol)."
   },
   {
    "code": "V48",
    "title": "Bản tin: nhận mẫu review Luna mới",
    "owner": "",
-   "status": "dang",
-   "note": "PR #83, CI xanh; chờ Luna."
+   "status": "xong",
+   "note": "#83 gộp 73313e2. Còn: nhận mẫu Nova."
   },
   {
    "code": "V49",
@@ -767,6 +765,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-05T20:28:45Z",
+   "text": "20:28Z: gộp #83, #82 (Luna Đạt + CI). Release v0.7.5 đỏ ở bước kiểm chứng thư → #88 sửa, chờ duyệt + A8. G7: 0.7.4 không vào được game → Sonnet V26."
+  },
   {
    "t": "2026-10-05T16:51:04Z",
    "text": "Sếp chốt A6: Nova Đạt = Luna Đạt khi Luna vắng >2 giờ. Giao Nova thêm N03–N07 (thư nova-001)."
@@ -1282,6 +1284,13 @@
   }
  ],
  "decisions": [
+  {
+   "code": "G7",
+   "question": "Thử Kara no Shoujo bằng 0.7.4?",
+   "answer": "Không vào được game",
+   "at": "2026-10-05T15:46:16.623Z",
+   "by": "Sếp"
+  },
   {
    "code": "A6",
    "question": "Nova \"Đạt\" có tính như Luna \"Đạt\" để PM gộp?",
