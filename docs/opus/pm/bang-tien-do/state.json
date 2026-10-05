@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-04T22:57:08.399362Z",
+  "updatedAt": "2026-10-05T00:51:51.623670Z",
   "mainSha": "f4ebd0b0e3eca307e6b99969125cfa06166981a5",
   "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-04T19:06:36Z",
-  "headline": "VX đã qua width1633, R6@871 cònNoMethodError96:2174 size/Regexp. XP388/Ace381 PASSmức1. Headdd01 sửaRegexp-result grammarRAM, local122Ruby18PASS; chờnative/R6/Luna. Gemini standby.",
+  "nextCheck": "2026-10-05T01:51:51.623670Z",
+  "headline": "XP/VX/Ace đạt mức1 trên API34: dd01 XP306/VX274/Ace298s, VX scene+hội thoại sauNewGame/A. Headf740 yêu cầu cả3PASS; chờCI/Luna. Gemini standby.",
   "needsBoss": [
     {
       "code": "G7",
@@ -66,7 +66,7 @@
       "name": "RPG Maker XP/VX/Ace chơi trong app",
       "status": "dang",
       "progress": 68,
-      "note": "R0–R5 mã xong; R6@871 XP388s/Ace381s PASSmức1, VXtitleđạt nhưng367FAIL2174 size/Regexp sauNewGame, chưa60sPASS. Đủ5/audio/save-load/FPS chưa kiểm; R7 chờ. Phần trăm là ước lượng PM cũ, chưa đo lại."
+      "note": "R0–R5 mã xong; R6@dd01 XP306/VX274/Ace298s PASSmức1, VX title/NewGame/scene+hội thoại, khônghộplỗi. F740đòicả3PASS chờCI/Luna. Đủ5/audio/save-load/FPS chưakiểm; R7chờ. PhầntrămPMcũ chưađolại."
     },
     {
       "code": "Q",
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "#44 gộpf96da6e. R6@871 run37238060810: XP388s/Ace381s PASSmức1, VX367s FAILNoMethodError96:2174 sauNewGame; titlecó/width1633qua/chưa60sPASS. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; tiếpV44, khôngR7.",
+      "note": "#44gộpf96da6e. R6@dd01 run37241841378: XP306/VX274/Ace298s PASSmức1 sauAảo, VXscene/hội thoại khônghộplỗi. Jobđỏ vìVX tốt hơnexpectation cũ; f740đòicả3PASS, chờCI/Luna. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; khôngR7.",
       "module": "rgss"
     },
     {
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Snapshot Sol #50 headdd01de2: mở rộng literal_result_spacing đúng hai cặp STR→width và literalRegexp→size; chỉ CALL một dòng/getter không args, xóaSPACE/TAB/commonASTpass/budget/sites/compilefinal. Maskedc4/art11316849430 tại96:2174 (receiver.method SPACE (RegexpLiteral).size)+số và syntheticMRI1.8.7/3.1.7 xác nhận khácngữpháp, calleeẩn danh/khônghardcode/coerce/corepatch. Local122Ruby18/20privacy/6probe PASS; nativefixtureRegexp resultcount3 exactnormalized/packed-sourceunchangedcompile-onlyPASS, CẦNnative/R6/CI/Luna đúngdd01. Bằngchứnghoàntất871: R637238060810/art11317650301 đãxem XP388s/Ace381s mức1PASS; VX367s FAILNoMethodError96:2174 size/Regexp sauNewGame, width1633đãqua/titlecó/chưa60sPASS. Build37238060816/CodeQL37238060761/native37238060798 SUCCESS; native11316493179 marker1/orange/PixelCopy/getter17/allpriorcontrolsPASS. Diagnostic11316243332 1570SyntaxError/124compile39362538bytes chỉcompile. C4chỉdiagnostic2174, R6superseded bởiappfixmới/khônggọigreen. Giữexpect_failvx/threshold/observation/noR7. CầnLuna freshdd01 trướcmerge."
+      "note": "Snapshot Sol #50 headf740ad8: R6@dd01 run37241841378/art11316984731 đã xemảnh/log/verdict XP306s/VX274s/Ace298s PASS_LEVEL_1. VXquaNewGame/A cóscene+hội thoạiEliteGuard, khônghộplỗi; size/Regexp2174 đãqua. JobFAIL doVXunexpectedrecovery đúnggate, PMtạmthời kiểmproofrồi bỏVX khỏiexpect_fail cảworkflow/shell/CLI. Giữthreshold10/quan sát60s/process/errorchecks, cả3phảiPASS. Build37241841382/CodeQL37241841390/signals37241841375 SUCCESSdd01; native11318190058marker1/orange/PixelCopy10–40s/Regexp-sizearithmetic3+allpriorcontrolsPASS. Diagnostic11317867918 1570SyntaxError/2174attached/124compile39362540byte chỉcompile. Local122Ruby18/20privacy/6probe+5verdictPASS; rootSDKmissing. ProofV44-R6-dd01de2.json; CẦNCIđúngf740/Lunafresh trướcmerge, khôngR7."
     },
     {
       "code": "V45",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-05T00:51:51.623670Z",
+      "text": "Đãxem R6@dd01/art11316984731 XP306/VX274/Ace298s PASSmức1; VXNewGame→scene+hội thoại, noerror. Native11318190058 regexp-result3+marker/orange/PixelCopyPASS. JobFAIL vìexpectvx cũ; actingPMchốtremoveVX vàpushf740, giữmọingưỡng/assertions. CầnCIheadmới/Lunafresh; full5/audio/save-load/FPS/máythật chưakiểm."
+    },
     {
       "t": "2026-10-04T22:57:08.399362Z",
       "text": "SửaLuna185 snapshotstale:871R6hoàntất XP388/Ace381 mức1,VX367FAILsize/Regexp2174, width1633qua. Native11316493179getter17+marker/orange/PixelCopyPASS. C4masked2174choRegexpLiteral/resultsize; dd01appfix chungSTRwidth/RegexpSize grammarbounded, local122/20/6PASS, nativefixturecompile-only. Neednative/R6/Lunafresh, khônggameplayclaim/expectationlowering."
@@ -941,7 +945,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "Snapshot Sol #50 headdd01de2: mở rộng literal_result_spacing đúng hai cặp STR→width và literalRegexp→size; chỉ CALL một dòng/getter không args, xóaSPACE/TAB/commonASTpass/budget/sites/compilefinal. Maskedc4/art11316849430 tại96:2174 (receiver.method SPACE (RegexpLiteral).size)+số và syntheticMRI1.8.7/3.1.7 xác nhận khácngữpháp, calleeẩn danh/khônghardcode/coerce/corepatch. Local122Ruby18/20privacy/6probe PASS; nativefixtureRegexp resultcount3 exactnormalized/packed-sourceunchangedcompile-onlyPASS, CẦNnative/R6/CI/Luna đúngdd01. Bằngchứnghoàntất871: R637238060810/art11317650301 đãxem XP388s/Ace381s mức1PASS; VX367s FAILNoMethodError96:2174 size/Regexp sauNewGame, width1633đãqua/titlecó/chưa60sPASS. Build37238060816/CodeQL37238060761/native37238060798 SUCCESS; native11316493179 marker1/orange/PixelCopy/getter17/allpriorcontrolsPASS. Diagnostic11316243332 1570SyntaxError/124compile39362538bytes chỉcompile. C4chỉdiagnostic2174, R6superseded bởiappfixmới/khônggọigreen. Giữexpect_failvx/threshold/observation/noR7. CầnLuna freshdd01 trướcmerge. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
+      "note": "Snapshot Sol #50 headf740ad8: R6@dd01 run37241841378/art11316984731 đã xemảnh/log/verdict XP306s/VX274s/Ace298s PASS_LEVEL_1. VXquaNewGame/A cóscene+hội thoạiEliteGuard, khônghộplỗi; size/Regexp2174 đãqua. JobFAIL doVXunexpectedrecovery đúnggate, PMtạmthời kiểmproofrồi bỏVX khỏiexpect_fail cảworkflow/shell/CLI. Giữthreshold10/quan sát60s/process/errorchecks, cả3phảiPASS. Build37241841382/CodeQL37241841390/signals37241841375 SUCCESSdd01; native11318190058marker1/orange/PixelCopy10–40s/Regexp-sizearithmetic3+allpriorcontrolsPASS. Diagnostic11317867918 1570SyntaxError/2174attached/124compile39362540byte chỉcompile. Local122Ruby18/20privacy/6probe+5verdictPASS; rootSDKmissing. ProofV44-R6-dd01de2.json; CẦNCIđúngf740/Lunafresh trướcmerge, khôngR7. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
     },
     {
       "id": "web",
