@@ -143,9 +143,12 @@ def classify_comment(comment: dict) -> dict:
         result["type"] = "pm_duyet"
     elif text.startswith("PM yêu cầu sửa"):
         result["type"] = "pm_sua"
-    elif text.startswith("Luna tiền duyệt"):
+    elif text.startswith("Luna tiền duyệt") or text.startswith("Luna review L07"):
         result["type"] = "luna_tien_duyet"
-        sha = re.search(r"\bcommit\s+([0-9a-f]{7,40})\b", text, re.IGNORECASE)
+        # Read the review header only: later prose may mention an older commit.
+        header = text.splitlines()[0]
+        label = "commit" if text.startswith("Luna tiền duyệt") else "head"
+        sha = re.search(rf"\b{label}\s+`?([0-9a-f]{{7,40}})\b(?![0-9a-f])", header, re.IGNORECASE)
         verdict = re.search(r"^Kết luận:\s*(Đạt|Cần sửa|Cần PM xem)", body, re.MULTILINE | re.IGNORECASE)
         if sha:
             result["sha"] = sha.group(1).lower()

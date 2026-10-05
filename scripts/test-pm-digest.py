@@ -115,6 +115,26 @@ class DigestTests(unittest.TestCase):
                 self.assertEqual(result["type"], expected)
                 self.assertNotIn("body", result)
 
+    def test_l07_head_and_conclusion_with_legacy_compatibility(self):
+        # Retained public review header + verdict only; no free-form review body.
+        cases = (
+            ("Luna review L07 — head `791a02d711fd61064c7e49bf25df46331ace6b0d`\nKết luận: Cần PM xem", "791a02d711fd61064c7e49bf25df46331ace6b0d", "Cần PM xem"),
+            ("Luna review L07 — head `d1b0cc2651a3e2a7c29ec553b707862b449d82ac`\nKết luận: Đạt", "d1b0cc2651a3e2a7c29ec553b707862b449d82ac", "Đạt"),
+            ("Luna review L07 — head `2ad4f37737b30b3545a43473f611e0d0a6a60ab4`\nKết luận: Cần PM xem", "2ad4f37737b30b3545a43473f611e0d0a6a60ab4", "Cần PM xem"),
+            ("Luna tiền duyệt (commit b123456)\nKết luận: Cần sửa", "b123456", "Cần sửa"),
+        )
+        for body, sha, verdict in cases:
+            with self.subTest(sha=sha):
+                result = pm_digest.classify_comment({"body": body})
+                self.assertEqual(result, {"type": "luna_tien_duyet", "sha": sha, "conclusion": verdict})
+
+    def test_l07_never_uses_sha_from_followup_prose(self):
+        result = pm_digest.classify_comment({"body": "Luna review L07 — head chưa xác nhận\nSo với commit b123456\nKết luận: Cần sửa"})
+        self.assertNotIn("sha", result)
+        self.assertEqual(result["conclusion"], "Cần sửa")
+        for header in ["Luna review L07 — head " + "a" * 41, "Luna review L08 — head abcdef0"]:
+            self.assertNotIn("sha", pm_digest.classify_comment({"body": header}))
+
     def test_missing_code_scanning_permission_is_null(self):
         route = "/code-scanning/alerts?state=open&per_page=100"
         self.fixture["responses"][route] = {"_error": 403}
