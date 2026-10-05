@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-05T20:28:45Z",
- "mainSha": "df60ccc",
+ "updatedAt": "2026-10-05T23:15:25Z",
+ "mainSha": "52be109",
  "app": "App 0.7.4 → 0.7.5 đang phát hành · config 34",
- "nextCheck": "2026-10-05T16:10:39Z",
+ "nextCheck": "2026-10-05T23:45:25Z",
  "headline": "0.7.5: build và ký xanh nhưng bước kiểm chứng thư lỗi, đang sửa (#88). Kara no Shoujo 0.7.4 chưa vào được game, Sonnet điều tra.",
  "needsBoss": [
   {
@@ -563,9 +563,9 @@
    "code": "V41",
    "title": "Dependabot/nâng thư viện",
    "owner": "Sol",
-   "status": "dang",
+   "status": "xong",
    "module": "ci",
-   "note": "Dependabot: PM duyệt #77 BOM 2025.03.01, #76 upload-artifact v7, #78 setup-gradle v6 (basic). Gộp sau v0.7.5 theo thứ tự #77→#76→#78. #75 browser đóng (cần SDK36)."
+   "note": "Gộp #77 cd1963d (BOM 2025.03.01), #76 0fbe86d (upload-artifact v7), #78 52be109 (setup-gradle v6 basic) 06/10 23:1xZ. #75 chờ Sol đóng."
   },
   {
    "code": "V40",
@@ -597,7 +597,7 @@
    "owner": "Sol",
    "status": "dang",
    "module": "renpy8",
-   "note": "PR #85 kiểm Ren'Py 2 ABI + menu synthetic trên CI: pack xanh, job menu đỏ; Sol đang xử lý. Không phát hành."
+   "note": "#85: CI xanh hết gồm menu synthetic (menu→Start→60s) trên máy ảo API34. PM duyệt, chờ Luna/Nova Đạt. Không phát hành."
   },
   {
    "code": "V46",
@@ -626,7 +626,7 @@
    "title": "Phân loại 26 cảnh báo CodeQL",
    "owner": "",
    "status": "dang",
-   "note": "PR #84 (inventory CodeQL) và #86 (PendingIntent implicit), CI đang chạy; chờ Luna."
+   "note": "#84 PM yêu cầu bỏ job dismiss (quyền ghi security-events). #86 Luna Cần sửa."
   },
   {
    "code": "V50",
@@ -765,6 +765,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-05T23:15:25Z",
+   "text": "23:14Z: gộp #77, #76, #78 (Dependabot). #85 Ren'Py menu synthetic xanh, PM duyệt chờ Luna. #84 yêu cầu bỏ quyền ghi."
+  },
   {
    "t": "2026-10-05T20:28:45Z",
    "text": "20:28Z: gộp #83, #82 (Luna Đạt + CI). Release v0.7.5 đỏ ở bước kiểm chứng thư → #88 sửa, chờ duyệt + A8. G7: 0.7.4 không vào được game → Sonnet V26."
