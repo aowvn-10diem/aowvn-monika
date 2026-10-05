@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-05T15:57:01Z",
+ "updatedAt": "2026-10-05T16:28:31Z",
  "mainSha": "2c4ddd3e79de736202c57196c39453a6af5d0411",
  "app": "App 0.7.4 → 0.7.5 đang phát hành · config 34",
  "nextCheck": "2026-10-05T16:10:39Z",
@@ -597,9 +597,9 @@
    "code": "V45",
    "title": "Ren'Py 8: đăng gói và bật trong config (P4)",
    "owner": "Sol",
-   "status": "ket",
+   "status": "dang",
    "module": "renpy8",
-   "note": "SOL-012 đã trả lời (B, 05/10): Sol dựng+kiểm gói Ren'Py trên CI, không phát hành/bật config; phát hành cần sếp duyệt từng lần."
+   "note": "PR #85 kiểm Ren'Py 2 ABI + menu synthetic trên CI: pack xanh, job menu đỏ; Sol đang xử lý. Không phát hành."
   },
   {
    "code": "V46",
@@ -613,22 +613,22 @@
    "code": "V47",
    "title": "Sync config lên Cloudflare đỏ (thiếu secret)",
    "owner": "",
-   "status": "cho",
-   "note": "Thư sol-011, ưu tiên 1: xác minh nguồn config từ xa và configVersion đang phục vụ; báo PM nếu KV cũ."
+   "status": "dang",
+   "note": "PR #82 (cảnh báo config từ xa chưa đồng bộ), CI xanh; chờ Luna."
   },
   {
    "code": "V48",
    "title": "Bản tin: nhận mẫu review Luna mới",
    "owner": "",
-   "status": "cho",
-   "note": "Thư sol-011, ưu tiên 3."
+   "status": "dang",
+   "note": "PR #83, CI xanh; chờ Luna."
   },
   {
    "code": "V49",
    "title": "Phân loại 26 cảnh báo CodeQL",
    "owner": "",
-   "status": "cho",
-   "note": "Thư sol-011, ưu tiên 4."
+   "status": "dang",
+   "note": "PR #84 (inventory CodeQL) và #86 (PendingIntent implicit), CI đang chạy; chờ Luna."
   },
   {
    "code": "V50",
@@ -711,6 +711,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-05T16:28:31Z",
+   "text": "16:28Z: Sol mở #82–#86 (V47, V48, V49×2, V45). Chưa có Luna review. #81 xanh từ 15:45Z nhưng Sonnet chưa gộp/phát hành (phiên Sonnet idle từ 15:38Z)."
+  },
   {
    "t": "2026-10-05T15:57:01Z",
    "text": "Sếp thêm CLOUDFLARE_API_TOKEN; Sync config lên Cloudflare xanh (run 37261093978 lần 2). Bỏ mục xóa engines-rgss-6 khỏi Q4 vì config 34 đang dùng gói này."
