@@ -95,5 +95,32 @@ class Guards(unittest.TestCase):
         self.assertIn('body_path: release-notes-${{ env.TAG }}.md', TEXT)
         self.assertNotIn('ký bằng khóa debug (bản thử)', TEXT)
 
+    def test_dry_run_accepts_only_dispatch_main_exact_sha(self):
+        self.repo()
+        sha=self.git('rev-parse','HEAD').stdout.strip()
+        self.env.update(DISPATCH_EVENT='workflow_dispatch',DISPATCH_REF='refs/heads/main',DISPATCH_SHA=sha)
+        self.assertEqual(self.run_guard('dry_guard').returncode,0)
+        for key,bad in [('DISPATCH_EVENT','push'),('DISPATCH_REF','refs/heads/sol/V43'),('DISPATCH_SHA','0'*40),('DISPATCH_SHA','bad; echo bad')]:
+            old=self.env[key];self.env[key]=bad
+            self.assertNotEqual(self.run_guard('dry_guard').returncode,0)
+            self.env[key]=old
+
+    def test_dry_run_missing_signing_field_never_prints_values(self):
+        for key in ('KEYSTORE_BASE64','MONIKA_KEYSTORE_PASSWORD','MONIKA_KEY_ALIAS','MONIKA_KEY_PASSWORD'):
+            old=self.env.pop(key);r=self.run_guard('dry_signing_guard');self.env[key]=old
+            self.assertNotEqual(r.returncode,0)
+            self.assertIn('Thiếu cấu hình ký',r.stdout)
+            self.assertNotIn('fixture-only',r.stdout+r.stderr)
+
+    def test_dry_run_has_no_publish_or_upload_path(self):
+        dry=TEXT.split('  signing_dry_run:',1)[1]
+        self.assertIn('permissions: {contents: read}',dry)
+        for token in ['softprops/action-gh-release','actions/upload-artifact','pixeldrain','gh release','git push']:
+            self.assertNotIn(token,dry)
+        self.assertIn("if: github.event_name != 'workflow_dispatch' || inputs.dry_run != true",TEXT)
+        self.assertIn("if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true",dry)
+        self.assertIn('python3 scripts/verify-apk-cert.py',dry)
+        self.assertLess(dry.index('id: dry_guard'),dry.index('secrets.MONIKA_KEYSTORE_BASE64'))
+
 if __name__ == '__main__':
     unittest.main()
