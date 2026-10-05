@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # V25 dùng Activity thật, game chỉ ở runner/emulator; OUT chỉ log/ảnh/số đo.
 set -euo pipefail
-SCRATCH="${1:?scratch game CI}"; OUT="${2:?report}"; EXPECT_FAIL="${3-vx}"
+SCRATCH="${1:?scratch game CI}"; OUT="${2:?report}"; EXPECT_FAIL="${3-}"
 PKG=com.aow.monika
 mkdir -p "$OUT"
 LOGCAT_PID=
