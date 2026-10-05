@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-05T02:06:39.070087Z",
+  "updatedAt": "2026-10-05T02:14:12.883060Z",
   "mainSha": "ca8e82550ddcb881a5ce6c468751ef50c241eb60",
   "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-05T03:06:39.070087Z",
-  "headline": "V44 #50 merged. V43 owner-approved dry-run PR72 Build green, Luna pending. G8 owner confirmed okay; G7 screenshot remains v0.7.3 startup.tjs error, 0.7.4 retest pending.",
+  "nextCheck": "2026-10-05T03:14:12.883060Z",
+  "headline": "Owner approved one V43 main dry-run after PR72 merge/Luna; Build green. G8 confirmed; PR73 pins existing public RGSS-6, Build/realpacks/Luna pending. G7 remains open from 0.7.3 screenshot.",
   "needsBoss": [
     {
       "code": "G7",
@@ -135,7 +135,7 @@
       "title": "R5: phím ảo + menu Monika cho RPG Maker, đăng ký gói vào config",
       "owner": "Sonnet",
       "status": "dang",
-      "note": "G8 đã OK theo owner05/10; V16 config chỉ triển khai sau khi kiểm URL công khai hợp lệ cho gói RGSS và V12, không giả định gói draft là public. Config chưa đổi.",
+      "note": "G8 ownerconfirmedOK. Public release engines-rgss-6 source b668e08 + sidecar SHA/size/URL HTTP200 verified. PR#73 f524 pins config34 arm64, keeps Joiplay fallback. Build/realpacks/Luna pending, not merged; no release/tag created.",
       "module": "rgss"
     },
     {
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-05T02:14:12.883060Z",
+      "text": "Owner05/10 confirms V43 approve exact one main dry_run after Luna/merge; G8OK; G7 screenshot0.7.3 startup.tjs failure. V16 sees public engines-rgss-6 source/hash/size/HEAD200; PR73 config34 ARM64 keepJoiplay, CI/Luna pending. No engine publication."
+    },
     {
       "t": "2026-10-05T02:06:39.070087Z",
       "text": "Owner05/10 approvedV43 dry-runonly; #72 Build37253552086green/Lunapending, then one main dry_run=true no publish. G8owner reports OK; V16 still verify public RGSS URL/V12 beforeconfig. G7 newreport+image is v0.7.3 Cannot find storage startup.tjs;0.7.4 testunconfirmed."

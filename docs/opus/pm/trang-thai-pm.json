@@ -14,7 +14,7 @@
   "prs": {
     "11": "H04 Luna duyệt",
     "15": "H05 Luna duyệt",
-    "16": "H07 Luna duyệt",
+    "16": "#73 sol/V16 headf52400b: config34 ghim engines-rgss-6 URL/SHA3135ef8.../size7922296/arm64, sourceb668e08/GPL-2.0-or-later release public; HEAD200 no token. G8 ownerconfirmedOK. ConfigTest exact metadata/rgss engine+RPG pad/Joiplay fallback. Build37254516080, realpacks37254516114, CodeQL37254516059 running. Luna review requested; local Gradle SDKmissing.",
     "17": "L01 Luna duyệt",
     "19": "H06 Luna duyệt",
     "20": "L03 Luna duyệt",
@@ -40,7 +40,8 @@
     "70": "Gộpf4ebd0b sauLuna Đạt đúngf40f89c+docCIchecksSUCCESS. V11docs-onlykhôngappunitPASS. BảnPMkế871appfixpending.",
     "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS.",
     "71": "PM head013ad49 ghi #50 merged, G8 owner confirmed okay, G7 0.7.3 startup.tjs failure as screenshot and re-test0.7.4 pending, PR72 V43 owner-approved dryrun with Build green and fresh Luna pending. 4 docs; needs fresh Luna.",
-    "72": "Owner05/10xácnhậnkeyđãSecrets vàtrảlờiV43duyệt. PR#72 sol/V43 74521303: main-only dry_run, no release/tag/APKupload, 9fakeguardPASS. Build37253552086SUCCESS, chờLunađộc lập; sauLuna+checkexacthead, authorized one dispatch main dry_run=true, no release. ActualV43 dryrunngoạilệđãsigned CI: ownerđãduyệt, chưa dispatch tớiPRmerge+freshLuna. Chưađọcdùngkeyvalue."
+    "72": "Owner approved V43 dry_run true once on main after merge; Build37253552086 SUCCESS, Luna independent review exact745 pending at last mailbox. No secret value read, no dispatch yet.",
+    "73": "#73 sol/V16 headf52400b: config34 ghim engines-rgss-6 URL/SHA3135ef8.../size7922296/arm64, sourceb668e08/GPL-2.0-or-later release public; HEAD200 no token. G8 ownerconfirmedOK. ConfigTest exact metadata/rgss engine+RPG pad/Joiplay fallback. Build37254516080, realpacks37254516114, CodeQL37254516059 running. Luna review requested; local Gradle SDKmissing."
   },
   "idle": 0,
   "cadence": 60,
@@ -67,7 +68,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-05T02:06:39.070087Z",
+  "updated_at": "2026-10-05T02:14:12.883060Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [
