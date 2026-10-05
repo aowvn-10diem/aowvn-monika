@@ -45,6 +45,12 @@ class FixtureAPI:
         self.calls.append(route)
         return self.responses.get(route, {})
 
+    def latest_completed_workflow_run(self, workflow):
+        value = self.responses.get("latest_sync", None)
+        if isinstance(value, dict) and "_error" in value:
+            raise pm_digest.GitHubAPIError(value["_error"])
+        return value
+
 
 class PagedGitHubAPI(pm_digest.GitHubAPI):
     def __init__(self, responses):
@@ -120,6 +126,30 @@ class DigestTests(unittest.TestCase):
         self.fixture["responses"][route] = {"_error": 403}
         self.assertIsNone(self.digest()["code_scanning_open"])
 
+    def test_old_failed_sync_remains_visible_until_success(self):
+        self.fixture["responses"]["latest_sync"] = {
+            "conclusion": "failure", "updated_at": "2026-10-01T01:00:00Z",
+            "html_url": "https://github.com/aowvn-10diem/aowvn-monika/actions/runs/37",
+        }
+        failed = self.digest()
+        self.assertIn("CẢNH BÁO: sync-config", pm_digest.render_markdown(failed))
+        self.assertEqual(failed["sync_config"]["conclusion"], "failure")
+        self.fixture["responses"]["latest_sync"]["conclusion"] = "success"
+        self.assertNotIn("CẢNH BÁO", pm_digest.render_markdown(self.digest()))
+
+    def test_sync_fetch_never_paginates_history(self):
+        route = "/actions/workflows/sync-config.yml/runs?branch=main&status=completed&per_page=1"
+        api = PagedGitHubAPI({route: ({"workflow_runs": [{"conclusion": "failure"}]},
+                                      {"Link": '<https://api.github.com/repos/owner/repo/actions/runs?page=2>; rel="next"'})})
+        self.assertEqual(api.latest_completed_workflow_run("sync-config.yml")["conclusion"], "failure")
+        self.assertEqual(api.calls, [route])
+
+    def test_sync_permission_missing_is_unknown(self):
+        self.fixture["responses"]["latest_sync"] = {"_error": 403}
+        result = self.digest()
+        self.assertIsNone(result["sync_config"]["conclusion"])
+        self.assertNotIn("CẢNH BÁO", pm_digest.render_markdown(result))
+
     def test_markdown_never_exceeds_40_lines(self):
         digest = self.digest()
         digest["open_prs"] *= 30
@@ -127,6 +157,7 @@ class DigestTests(unittest.TestCase):
         digest["branches"] *= 30
         digest["failed_runs_24h"] *= 30
         digest["releases"] *= 30
+        digest["sync_config"] = {"conclusion": "failure", "url": "https://github.com/aowvn-10diem/aowvn-monika/actions/runs/37"}
         rendered = pm_digest.render_markdown(digest)
         self.assertLessEqual(len(rendered.splitlines()), 40)
         self.assertIn("Open code scanning alerts", rendered)

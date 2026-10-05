@@ -118,6 +118,15 @@ class GitHubAPI:
             raise RuntimeError("GitHub API returned an unexpected commit response.")
         return data
 
+    def latest_completed_workflow_run(self, workflow: str) -> dict | None:
+        # One record only: keep a failed sync visible even after the 24h window.
+        route = f"/actions/workflows/{urllib.parse.quote(workflow, safe='')}/runs?branch=main&status=completed&per_page=1"
+        data, _ = self._request_json(route)
+        if not isinstance(data, dict) or not isinstance(data.get("workflow_runs"), list):
+            raise RuntimeError("GitHub API returned an unexpected workflow response.")
+        runs = data["workflow_runs"]
+        return runs[0] if runs else None
+
 
 def parse_time(value: str | None) -> datetime | None:
     if not isinstance(value, str) or not value:
@@ -299,6 +308,18 @@ def build_digest(api: GitHubAPI, repository: str, now: datetime | None = None) -
             raise
         code_scanning_open = None
 
+    try:
+        sync_run = api.latest_completed_workflow_run("sync-config.yml")
+    except GitHubAPIError as error:
+        if error.status_code not in (403, 404):
+            raise
+        sync_run = None
+    sync_config = {
+        "conclusion": sync_run.get("conclusion") if sync_run else None,
+        "url": sync_run.get("html_url") if sync_run else None,
+        "at": sync_run.get("updated_at") if sync_run else None,
+    }
+
     return {
         "generated_at": now.isoformat().replace("+00:00", "Z"),
         "repository": repository,
@@ -312,6 +333,7 @@ def build_digest(api: GitHubAPI, repository: str, now: datetime | None = None) -
         "failed_runs_24h": failed_runs,
         "releases": releases,
         "code_scanning_open": code_scanning_open,
+        "sync_config": sync_config,
     }
 
 
@@ -334,8 +356,11 @@ def render_markdown(digest: dict) -> str:
     lines = [
         f"# Repo digest: {one_line(digest.get('repository'))}",
         f"Generated: {one_line(digest.get('generated_at'))}",
-        f"## Main `{one_line(main.get('sha') or 'unknown', 40)}`",
     ]
+    sync_config = digest.get("sync_config") or {}
+    if sync_config.get("conclusion") in RED_CONCLUSIONS:
+        lines.append(f"- CẢNH BÁO: sync-config thất bại; config từ xa có thể cũ. {one_line(sync_config.get('url'), 120)}")
+    lines.append(f"## Main `{one_line(main.get('sha') or 'unknown', 40)}`")
     for commit in commits[:3]:
         lines.append(f"- `{one_line(commit.get('sha'), 7)}` {one_line(commit.get('title'))} ({one_line(commit.get('at'))})")
     if len(commits) > 3:
