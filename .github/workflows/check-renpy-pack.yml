@@ -1,0 +1,76 @@
+name: RenPy pack CI (V45 B, no publish)
+on:
+  pull_request:
+    paths: ['scripts/ci-renpy-pack.sh', 'scripts/ci-renpy-menu.sh', '.github/workflows/check-renpy-pack.yml', 'tools/pack-check/**']
+permissions: {contents: read}
+concurrency: {group: 'v45-${{ github.ref }}', cancel-in-progress: true}
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix: {abi: [arm64-v8a, armeabi-v7a]}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@v6
+        with: {distribution: temurin, java-version: 17}
+      - uses: gradle/actions/setup-gradle@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb >/dev/null
+      - name: Official pinned engine only, no publish or signing
+        run: bash scripts/ci-renpy-pack.sh "$RUNNER_TEMP/v45-pack" '${{ matrix.abi }}'
+      - name: Validate actual ZIP with app PackTransaction
+        run: |
+          ./gradlew -p tools/pack-check test installDist --console=plain
+          tools/pack-check/build/install/monika-pack-check/bin/monika-pack-check --archive renpy8 '${{ matrix.abi }}' "$RUNNER_TEMP/v45-pack/renpy8-${{ matrix.abi }}.zip" | tee "$RUNNER_TEMP/v45-pack/evidence/kotlin-check.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v45-renpy8-${{ matrix.abi }}
+          path: ${{ runner.temp }}/v45-pack/renpy8-${{ matrix.abi }}.zip
+          if-no-files-found: error
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v45-pack-evidence-${{ matrix.abi }}
+          path: ${{ runner.temp }}/v45-pack/evidence/
+          if-no-files-found: warn
+          retention-days: 3
+  menu:
+    needs: pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/download-artifact@v4
+        with:
+          name: v45-renpy8-arm64-v8a
+          path: ${{ runner.temp }}/v45-engine
+      - uses: actions/setup-java@v6
+        with: {distribution: temurin, java-version: 17}
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Units on production config, debug APK stays on runner
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'ndk;22.1.7171670' 'cmake;3.22.1' > /dev/null
+          ./gradlew testDebugUnitTest assembleDebug --console=plain
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
+          script: bash scripts/ci-renpy-menu.sh "$RUNNER_TEMP/v45-engine/renpy8-arm64-v8a.zip" out/renpy-menu
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v45-renpy-menu-api34
+          path: out/renpy-menu/
+          if-no-files-found: warn
+          retention-days: 3

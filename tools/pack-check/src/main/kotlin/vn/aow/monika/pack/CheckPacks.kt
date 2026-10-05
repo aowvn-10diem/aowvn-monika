@@ -19,6 +19,7 @@ private val layouts = mapOf(
     "kirikiri" to Layout("libkrkr2yuri.so"),
     "onsyuri" to Layout("onsyuri.wasm"),
     "rgss" to Layout("lib/libmkxp-z.so"),
+    "renpy8" to Layout("librenpython.so"),
 )
 private fun JsonObject.text(key: String) = this[key]?.jsonPrimitive?.contentOrNull.orEmpty()
 
