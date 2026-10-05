@@ -1,5 +1,5 @@
 {
-  "main": "f4ebd0b0e3eca307e6b99969125cfa06166981a5",
+  "main": "ca8e82550ddcb881a5ce6c468751ef50c241eb60",
   "branch": "fa57d05",
   "sol": {
     "V30": "xong#25",
@@ -20,9 +20,9 @@
     "20": "L03 Luna duyệt",
     "18": "L02 Luna (đã trả lời thư)",
     "14": "SOL-003 (đã trả lời)",
-    "44": "#44gộpf96da6e. R6@f740 run37249066599 SUCCESS/art11320593801 XP369/VX339/Ace382s PASSmức1 sauAảo. SignalsOOMtrướcgameđangretry, khônggọicảCIxanh. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; khôngR7.",
+    "44": "#44gộpf96da6e; #50compatgộpca8e825. R6f740 XP369/VX339/Ace382s PASSmức1, tấtcảexpectedPASS. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; khôngR7.",
     "46": "gộp5d352a7; Luna + CI xanh, K3 máy thật chưa kiểm",
-    "50": "Snapshot Sol #50 headf740ad8: Build37249066676/R637249066599/CodeQL37249066606 SUCCESS. R6artifact11320593801 đãxemảnh/log/verdict XP369/VX339/Ace382s PASS_LEVEL_1, expectFail=[]/matchesExpectationtrue; VXtitle→NewGame/A→scene+hội thoạiSnow, khônghộplỗi. Signals37249066540 attempt1 FAILrunner fork failed Out of memory/exit126 trướcgamestart; artifact11320432134 chỉfinal/log, khôngnativeproof. Đãrerun duy nhất failedjob111572762902 cùnghead/code/assertions, attempt2 đangchạy; KHÔNGcoicảCIxanh/khôngclaimfixapp. Nativeappdd01 trướcđó PASS11318190058, khôngthaygateheadmới. Luna5986720042 reviewf740 choexpectationskhớpproof, yêu cầu xửlý/phânloạisignals trướcCIhoàntất; CẦNretrySUCCESStrướcPMmerge. ChỉbỏVXkhỏiexpect_fail cảworkflow/shell/CLI, giữthreshold10/quan sát60s/process/errorchecks. Proofdd01đãcommit; f740proofquaPRcomment5986715217 đểgiữheadreview. Audio/save-load/FPS/full5/máythật/Clouddeploy [CHƯA KIỂM], khôngR7.",
+    "50": "#50 gộp mergecommit ca8e82550ddcb881a5ce6c468751ef50c241eb60 sauLuna5986720042 đúngf740+PMreview5986819733. Build37249066676/R637249066599/CodeQL37249066606 SUCCESS; signals37249066540 attempt2 SUCCESS/art11322086200 đãxemmarker1/orange/PixelCopy10–40s blackfalse. Attempt1runnerforkOOMtrướcgame, retrycùngcode/assertionskhôngclaimappfix. R6art11320593801đãxem XP369/VX339/Ace382s PASSmức1, VXtitle→NewGame/A→scene+hội thoạiSnow/noerror. ExpectFail=[]cả3bắtbuộcPASS, giữthreshold10/60s/process/error. Audio/save-load/FPS/full5/máythật/deploy [CHƯA KIỂM], khôngR7.",
     "51": "gộp0e17edf,27test +5ZIP thật PASS; quota chưa đo",
     "34": "PM duyệt; head 1c64c02 chỉ gộp main",
     "55-57": "Dependabot → Sol (tra-loi-sol-009)",
@@ -39,7 +39,8 @@
     "62": "SOL012 kẹt; Luna xác nhận14:55, ký/publish không được cấp ngoại lệ",
     "70": "Gộpf4ebd0b sauLuna Đạt đúngf40f89c+docCIchecksSUCCESS. V11docs-onlykhôngappunitPASS. BảnPMkế871appfixpending.",
     "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS.",
-    "71": "SửaLunac55Cầnsửa:4PMdocs ghiBuild/R6/CodeQLf740xanh, R6XP369/VX339/Ace382PASS, signalsattempt1runnerOOM/attempt2pending. KhôngcoicảCIxanh; docsCI/freshLunaheadmới trướcmerge."
+    "71": "4PMdocs cập nhật50mergedca8/allCIheadf740PASS và72V43prepnotdispatched; freshdocLuna/CIbeforemerge.",
+    "72": "Chủdựán05/10xácnhậnkeyđãtảilênSecrets. ChuẩnbịPR#72 sol/V43 head74521303: dry_runmain-only/checkoutSHA/readpermission/norelease-upload-tag,9fakeguardPASS/rootSDKmissing. CầnLuna+Build+PMtrướcmerge; actualsigneddispatchvẫnkẹtSOL012cầnownerngoạilệ, chưađọcdùngSecretvalues/chưaký."
   },
   "idle": 0,
   "cadence": 60,
@@ -66,7 +67,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-05T01:50:37.500648Z",
+  "updated_at": "2026-10-05T02:00:35.545091Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [

@@ -8,39 +8,45 @@ on:
         required: true
       expect_fail:
         description: Case lỗi đã biết, bỏ từng case sau khi V44 sửa và PM kiểm
-        default: vx,ace
+        default: ""
         required: false
   pull_request:
     paths:
       - .github/workflows/rgss-real-games.yml
       - scripts/ci-rgss-real.*
+      - scripts/rgss-range-probe.rb
+      - scripts/test-rgss-range-probe.rb
       - .maestro-rgss-real/**
 permissions:
-  # Mặc định chỉ đọc; riêng R6 cần thấy draft (read không thấy ở run37184975441).
   contents: read
+  actions: read
 concurrency:
   group: v25-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   r6:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    permissions: {contents: write} # Draft yêu cầu ghi; token chỉ ở bước cố định trước checkout.
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Chỉ đọc gói draft RGSS trước khi checkout mã PR
+      # Artifact của Build RGSS run 7 trên main (92746a3), cùng binary gói draft7.
+      # Không cần quyền ghi release; hết hạn artifact thì dừng, không rơi latest/draft.
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          artifact-ids: 11287384479
+          run-id: 37161839408
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/v25-engine
+      - name: Kiểm snapshot RGSS7 bất biến trước khi dùng
         env:
-          GH_TOKEN: ${{ github.token }}
           RGSS_TAG: ${{ inputs.rgss_tag || 'engines-rgss-7' }}
         run: |
           set -euo pipefail
-          [[ "$RGSS_TAG" =~ ^engines-rgss-[0-9]+$ ]]
-          mkdir -p "$RUNNER_TEMP/v25-engine"
-          # HTTP lỗi dừng trước jq để không che lỗi quyền/hạn mức thành lỗi kiểu JSON.
-          gh api --paginate --slurp 'repos/aowvn-10diem/aowvn-monika/releases?per_page=100' > "$RUNNER_TEMP/v25-engine/releases.json"
-          asset_id=$(jq -er --arg tag "$RGSS_TAG" '[.[][] | select(.draft == true and .tag_name == $tag)] | if length == 1 then .[0] else error("draft count") end | [.assets[] | select(.name == "rgss-arm64-v8a.zip")] | if length == 1 then .[0].id else error("asset count") end' "$RUNNER_TEMP/v25-engine/releases.json")
-          [[ "$asset_id" =~ ^[0-9]+$ ]]
-          gh api "repos/aowvn-10diem/aowvn-monika/releases/assets/$asset_id" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/v25-engine/rgss.zip"
+          [ "$RGSS_TAG" = engines-rgss-7 ]
+          cd "$RUNNER_TEMP/v25-engine"
+          echo '83e23f835b98fdcb6921e542c538b0fd10d5589efa74ef922233431c5142f419  rgss-arm64-v8a.zip' | sha256sum --check --strict
+          mv rgss-arm64-v8a.zip rgss.zip
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
       - uses: actions/setup-java@v4
@@ -57,6 +63,53 @@ jobs:
         env:
           RGSS_TAG: ${{ inputs.rgss_tag || 'engines-rgss-7' }}
         run: python3 scripts/ci-rgss-real.py --scratch "$RUNNER_TEMP/v25" --report out/r6 --rgss-tag "$RGSS_TAG" --pack-file "$RUNNER_TEMP/v25-engine/rgss.zip"
+      - uses: ruby/setup-ruby@v1
+        with: {ruby-version: '3.1'} # Cùng minor Ruby trong mkxp-z; không chạy script game.
+      - name: V44 hình dạng cú pháp VX (không ghi nội dung game)
+        id: vx_shape
+        continue-on-error: true # Vẫn đo Ace/XP; cửa cuối giữ job đỏ nếu diagnostic thất bại.
+        run: |
+          python3 - "$RUNNER_TEMP/v25" <<'PY'
+          import configparser,importlib.util,json,subprocess,sys
+          from pathlib import Path
+          root=Path(sys.argv[1]); cases=json.loads((root/'cases.json').read_text())
+          case=next(c for c in cases if c['id']=='vx')
+          if not case.get('prepared'): raise RuntimeError('VX không chuẩn bị được, không gọi chẩn đoán đạt')
+          game=(root/case['localGameDir']).resolve()
+          if not game.is_relative_to(root.resolve()): raise RuntimeError('Game dir vượt scratch')
+          ini=configparser.ConfigParser(interpolation=None,strict=False)
+          ini.read_string((game/'Game.ini').read_bytes().decode('utf-8-sig',errors='replace'))
+          requested=ini.get('Game','Scripts',fallback='Data/Scripts.rvdata')
+          spec=importlib.util.spec_from_file_location('arc','scripts/rgss_archive_script.py')
+          arc=importlib.util.module_from_spec(spec);spec.loader.exec_module(arc)
+          wanted=arc.relative_name(requested)
+          files=[p for p in game.rglob('*') if p.is_file() and arc.relative_name(p.relative_to(game).as_posix())==wanted]
+          if not files:
+              archives=[p for p in game.iterdir() if p.suffix.lower() in ('.rgssad','.rgss2a','.rgss3a')]
+              if len(archives)!=1: raise RuntimeError('Cần đúng một archive RGSS hoặc Scripts rời')
+              scripts=root/'vx-scripts.rvdata' # Chỉ scratch, không artifact/filegame.
+              scripts.write_bytes(arc.extract_script(archives[0],requested)); files=[scripts]
+          if len(files)!=1: raise RuntimeError('Scripts trùng')
+          with Path('out/r6/vx-script-shape.txt').open('w') as output:
+              subprocess.run(['ruby','scripts/rgss-script-shape.rb',str(files[0])],stdout=output,check=True,timeout=60)
+          with Path('out/r6/vx-ruby18-shape.txt').open('w') as output:
+              subprocess.run(['ruby','scripts/rgss-script-shape.rb',str(files[0]),'10','--ruby18','--inspect=96:957','--inspect=137:118','--inspect=96:1633','--inspect=96:2174'],stdout=output,check=True,timeout=60)
+          PY
+      - name: Thu diagnostic đã che trước bài game dài (V44)
+        if: steps.vx_shape.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: v44-vx-diagnostic
+          path: |
+            out/r6/vx-script-shape.txt
+            out/r6/vx-ruby18-shape.txt
+          if-no-files-found: error
+          retention-days: 3
+      - name: V44 probe kiểu Range chỉ trong APK CI, không thay đổi lỗi
+        run: |
+          ruby scripts/test-rgss-range-probe.rb
+          cat scripts/rgss-range-probe.rb >> app/src/main/assets/rgss/monika-ruby18.rb
+          printf '\nMonikaCiRangeProbe.start("/data/data/com.aow.monika/files/rgss-compat/v44-ci-range-types.txt")\n' >> app/src/main/assets/rgss/monika-ruby18.rb
       - name: Build APK với config fixture (unit đã chạy trên config chuẩn)
         run: ./gradlew assembleDebug --console=plain
       - name: KVM
@@ -74,7 +127,7 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
-          script: bash scripts/ci-rgss-real.sh "$RUNNER_TEMP/v25" out/r6 "$(if [ "$EVENT_NAME" = workflow_dispatch ]; then printf %s "$EXPECT_FAIL"; else printf %s vx,ace; fi)"
+          script: bash scripts/ci-rgss-real.sh "$RUNNER_TEMP/v25" out/r6 "$(if [ "$EVENT_NAME" = workflow_dispatch ]; then printf %s "$EXPECT_FAIL"; else printf %s ""; fi)"
         env:
           EXPECT_FAIL: ${{ inputs.expect_fail }}
           EVENT_NAME: ${{ github.event_name }}
@@ -85,3 +138,8 @@ jobs:
           # Chỉ nguồn/số đo/log/ảnh; không scratch, ZIP, thư mục game hay APK.
           path: out/r6/
           retention-days: 3
+      - name: Diagnostic VX phải có bằng chứng
+        if: ${{ always() && steps.vx_shape.outcome != 'success' }}
+        run: |
+          echo '::error::Diagnostic VX chưa đạt; kết quả runtime riêng vẫn được thu, không bỏ cửa kiểm'
+          exit 1

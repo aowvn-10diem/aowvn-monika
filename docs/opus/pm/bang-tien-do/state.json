@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-05T01:50:37.500648Z",
-  "mainSha": "f4ebd0b0e3eca307e6b99969125cfa06166981a5",
+  "updatedAt": "2026-10-05T02:00:35.545091Z",
+  "mainSha": "ca8e82550ddcb881a5ce6c468751ef50c241eb60",
   "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-05T02:50:37.500648Z",
-  "headline": "R6@f740 XP369/VX339/Ace382s PASSmức1; Build/CodeQLxanh. SignalsrunnerOOMtrướcgame đangretry, chưa đủCIđểmerge. Gemini standby.",
+  "nextCheck": "2026-10-05T03:00:35.545091Z",
+  "headline": "V44 #50 đãgộpca8 sauLuna+CI: XP369/VX339/Ace382s PASSmức1. V43#72chuẩn bịkýthửkhôngphát hành, chưa dùngSecrets/chưa dispatch. Gemini standby.",
   "needsBoss": [
     {
       "code": "G7",
@@ -66,7 +66,7 @@
       "name": "RPG Maker XP/VX/Ace chơi trong app",
       "status": "dang",
       "progress": 68,
-      "note": "R0–R5 mãxong; R6@f740 XP369/VX339/Ace382s PASSmức1, VXtitle/NewGame/scene+hội thoại, khônghộplỗi. Build/CodeQLxanh; signalsrunnerOOMtrướcgame đangretry, chưađủCIđểmerge. Đủ5/audio/save-load/FPS chưakiểm; R7chờ. PhầntrămPMcũ chưađolại."
+      "note": "R0–R5 mãxong; V44#50gộpca8 sauLuna+CI. R6f740 XP369/VX339/Ace382sPASSmức1/titleNewGame/scenehội thoại; signalsretrycùngcodePASS, lầnđầurunnerOOMkhôngappfix. Đủ5/audio/save-load/FPS chưakiểm; R7chờ. PhầntrămPMcũ chưađolại."
     },
     {
       "code": "Q",
@@ -103,7 +103,7 @@
       "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
       "owner": "Sol",
       "status": "dang",
-      "note": "#44gộpf96da6e. R6@f740 run37249066599 SUCCESS/art11320593801 XP369/VX339/Ace382s PASSmức1 sauAảo. SignalsOOMtrướcgameđangretry, khônggọicảCIxanh. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; khôngR7.",
+      "note": "#44gộpf96da6e; #50compatgộpca8e825. R6f740 XP369/VX339/Ace382s PASSmức1, tấtcảexpectedPASS. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; khôngR7.",
       "module": "rgss"
     },
     {
@@ -592,7 +592,7 @@
       "owner": "Sol (tiếp quản Sonnet)",
       "status": "dang",
       "module": "rgss",
-      "note": "Snapshot Sol #50 headf740ad8: Build37249066676/R637249066599/CodeQL37249066606 SUCCESS. R6artifact11320593801 đãxemảnh/log/verdict XP369/VX339/Ace382s PASS_LEVEL_1, expectFail=[]/matchesExpectationtrue; VXtitle→NewGame/A→scene+hội thoạiSnow, khônghộplỗi. Signals37249066540 attempt1 FAILrunner fork failed Out of memory/exit126 trướcgamestart; artifact11320432134 chỉfinal/log, khôngnativeproof. Đãrerun duy nhất failedjob111572762902 cùnghead/code/assertions, attempt2 đangchạy; KHÔNGcoicảCIxanh/khôngclaimfixapp. Nativeappdd01 trướcđó PASS11318190058, khôngthaygateheadmới. Luna5986720042 reviewf740 choexpectationskhớpproof, yêu cầu xửlý/phânloạisignals trướcCIhoàntất; CẦNretrySUCCESStrướcPMmerge. ChỉbỏVXkhỏiexpect_fail cảworkflow/shell/CLI, giữthreshold10/quan sát60s/process/errorchecks. Proofdd01đãcommit; f740proofquaPRcomment5986715217 đểgiữheadreview. Audio/save-load/FPS/full5/máythật/Clouddeploy [CHƯA KIỂM], khôngR7."
+      "note": "#50 gộp mergecommit ca8e82550ddcb881a5ce6c468751ef50c241eb60 sauLuna5986720042 đúngf740+PMreview5986819733. Build37249066676/R637249066599/CodeQL37249066606 SUCCESS; signals37249066540 attempt2 SUCCESS/art11322086200 đãxemmarker1/orange/PixelCopy10–40s blackfalse. Attempt1runnerforkOOMtrướcgame, retrycùngcode/assertionskhôngclaimappfix. R6art11320593801đãxem XP369/VX339/Ace382s PASSmức1, VXtitle→NewGame/A→scene+hội thoạiSnow/noerror. ExpectFail=[]cả3bắtbuộcPASS, giữthreshold10/60s/process/error. Audio/save-load/FPS/full5/máythật/deploy [CHƯA KIỂM], khôngR7."
     },
     {
       "code": "V45",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-05T02:00:35.545091Z",
+      "text": "#50mergecommitca8 sauLuna f740 vàactingPMduyệt5986819733; Build/R6/CodeQL/signalsattempt2SUCCESS, actualcontrolmarker/orange/PixelCopyproof. Ownerkeyexistsconfirmed; #72V43chuẩnbịdry_runmain-only,nopublish;9fakeguardsPASS,actualdispatchownerngoạilệvẫnSOL012. PMdocsheadmớicầnLuna, khôngfakeaudio/full5."
+    },
     {
       "t": "2026-10-05T01:50:37.500648Z",
       "text": "SửaLunac55 snapshotCI:Build/R6/CodeQLf740SUCCESS; R6artifact11320593801đãxemXP369/VX339/Ace382sPASSmức1. Signalsattempt1forkOOMexit126trướcgame/control, singlejobretrycùnghead/assertions đangchạy; khônggọicảCIxanh. Lunas5986720042expectationkhớpproof nhưngcầnxửlýsignals; docsheadmớicầnLuna trướcmerge."
@@ -949,7 +953,7 @@
         "phone": "cho",
         "release": "sep"
       },
-      "note": "Snapshot Sol #50 headf740ad8: Build37249066676/R637249066599/CodeQL37249066606 SUCCESS. R6artifact11320593801 đãxemảnh/log/verdict XP369/VX339/Ace382s PASS_LEVEL_1, expectFail=[]/matchesExpectationtrue; VXtitle→NewGame/A→scene+hội thoạiSnow, khônghộplỗi. Signals37249066540 attempt1 FAILrunner fork failed Out of memory/exit126 trướcgamestart; artifact11320432134 chỉfinal/log, khôngnativeproof. Đãrerun duy nhất failedjob111572762902 cùnghead/code/assertions, attempt2 đangchạy; KHÔNGcoicảCIxanh/khôngclaimfixapp. Nativeappdd01 trướcđó PASS11318190058, khôngthaygateheadmới. Luna5986720042 reviewf740 choexpectationskhớpproof, yêu cầu xửlý/phânloạisignals trướcCIhoàntất; CẦNretrySUCCESStrướcPMmerge. ChỉbỏVXkhỏiexpect_fail cảworkflow/shell/CLI, giữthreshold10/quan sát60s/process/errorchecks. Proofdd01đãcommit; f740proofquaPRcomment5986715217 đểgiữheadreview. Audio/save-load/FPS/full5/máythật/Clouddeploy [CHƯA KIỂM], khôngR7. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
+      "note": "#50 gộp mergecommit ca8e82550ddcb881a5ce6c468751ef50c241eb60 sauLuna5986720042 đúngf740+PMreview5986819733. Build37249066676/R637249066599/CodeQL37249066606 SUCCESS; signals37249066540 attempt2 SUCCESS/art11322086200 đãxemmarker1/orange/PixelCopy10–40s blackfalse. Attempt1runnerforkOOMtrướcgame, retrycùngcode/assertionskhôngclaimappfix. R6art11320593801đãxem XP369/VX339/Ace382s PASSmức1, VXtitle→NewGame/A→scene+hội thoạiSnow/noerror. ExpectFail=[]cả3bắtbuộcPASS, giữthreshold10/60s/process/error. Audio/save-load/FPS/full5/máythật/deploy [CHƯA KIỂM], khôngR7. Audio/save-load/FPS/đủ5/máy thật/Clouddeploy [CHƯA KIỂM]."
     },
     {
       "id": "web",

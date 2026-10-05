@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # V25 dùng Activity thật, game chỉ ở runner/emulator; OUT chỉ log/ảnh/số đo.
 set -euo pipefail
-SCRATCH="${1:?scratch game CI}"; OUT="${2:?report}"; EXPECT_FAIL="${3-vx,ace}"
+SCRATCH="${1:?scratch game CI}"; OUT="${2:?report}"; EXPECT_FAIL="${3-}"
 PKG=com.aow.monika
 mkdir -p "$OUT"
 LOGCAT_PID=
@@ -25,6 +25,7 @@ while IFS='|' read -r id relative <&3; do
   adb push "$SCRATCH/$relative" "/data/local/tmp/v25-$id" >/dev/null
   adb shell "mkdir -p $BASE/games; cp -r /data/local/tmp/v25-$id $GAME; chown -R $APP_UID:$APP_UID $GAME; chmod -R 777 $GAME; restorecon -R $GAME"
   adb shell am force-stop "$PKG"
+  adb shell rm -f "$BASE/rgss-compat/v44-ci-range-types.txt" # Chỉ metadata của probe CI, không file game.
   adb logcat -c
   # Thu ngay từ lúc mở game: bộ đệm logcat có thể mất lỗi khởi động khi máy ghi nhiều log.
   adb logcat -v threadtime > "$OUT/$id-logcat.txt" & LOGCAT_PID=$!
@@ -59,6 +60,17 @@ while IFS='|' read -r id relative <&3; do
   adb shell pidof "$PKG:game" > "$OUT/$id-pid.txt" || true
   adb shell dumpsys activity exit-info "$PKG" > "$OUT/$id-exit-info.txt"
   stop_logcat
+  # The observer only writes after a matching Range exception. An absent file
+  # is no diagnostic evidence, and must be explicit even when gameplay passes.
+  if adb shell cat "$BASE/rgss-compat/v44-ci-range-types.txt" > "$OUT/$id-range-types.txt" 2>/dev/null; then
+    if [ -s "$OUT/$id-range-types.txt" ]; then
+      printf '%s\n' 'recorded: matching Range exception types; not gameplay proof' > "$OUT/$id-range-probe-status.txt"
+    else
+      printf '%s\n' 'empty: no Range type evidence; observer activity not verified' > "$OUT/$id-range-probe-status.txt"
+    fi
+  else
+    printf '%s\n' 'missing: no Range type evidence; absent file does not prove absence of errors' > "$OUT/$id-range-probe-status.txt"
+  fi
   adb shell dumpsys media.audio_flinger > "$OUT/$id-audio-global.txt"
   # AudioFlinger là service toàn máy: chỉ trích dòng có PID game, không suy nghe được.
   python3 - "$OUT/$id-pid.txt" "$OUT/$id-audio-global.txt" "$OUT/$id-audio.txt" <<'PYAUDIO'
