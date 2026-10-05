@@ -1,0 +1,27 @@
+name: CodeQL inventory (V49, read only)
+on:
+  pull_request:
+    paths: ['scripts/codeql-inventory.py', 'scripts/test-codeql-inventory.py', '.github/workflows/codeql-inventory.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  security-events: read
+jobs:
+  inventory:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - name: Test metadata and pagination
+        run: python3 scripts/test-codeql-inventory.py
+      - name: Read open alert locations without snippets or mutations
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: python3 scripts/codeql-inventory.py --out out/codeql-inventory
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v49-codeql-inventory
+          path: out/codeql-inventory/
+          if-no-files-found: error
+          retention-days: 3
