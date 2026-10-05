@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-05T02:14:12.883060Z",
+  "updatedAt": "2026-10-05T02:23:04Z",
   "mainSha": "ca8e82550ddcb881a5ce6c468751ef50c241eb60",
   "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-05T03:14:12.883060Z",
-  "headline": "Owner approved one V43 main dry-run after PR72 merge/Luna; Build green. G8 confirmed; PR73 pins existing public RGSS-6, Build/realpacks/Luna pending. G7 remains open from 0.7.3 screenshot.",
+  "nextCheck": "2026-10-05T03:23:04Z",
+  "headline": "V43 đã được duyệt đúng một main dry-run sau Luna + merge; Build xanh, chờ Luna. V16: Build/real-packs/CodeQL xanh đúng head f524, chờ Luna. G8 OK; G7 còn chờ thử 0.7.4.",
   "needsBoss": [
     {
       "code": "G7",
@@ -111,7 +111,7 @@
       "title": "Kirikiri không mở được game trên máy thật",
       "owner": "Sonnet",
       "status": "dang",
-      "note": "0.7.4 đã phát hành và gửi sếp. Chờ sếp thử Kara no Shoujo.",
+      "note": "0.7.4 đã phát hành. Ảnh chủ dự án ngày 05/10 cho thấy lỗi startup.tjs trên 0.7.3; chưa xác nhận thử 0.7.4. G7 còn mở.",
       "module": "kirikiri"
     },
     {
@@ -135,7 +135,7 @@
       "title": "R5: phím ảo + menu Monika cho RPG Maker, đăng ký gói vào config",
       "owner": "Sonnet",
       "status": "dang",
-      "note": "G8 ownerconfirmedOK. Public release engines-rgss-6 source b668e08 + sidecar SHA/size/URL HTTP200 verified. PR#73 f524 pins config34 arm64, keeps Joiplay fallback. Build/realpacks/Luna pending, not merged; no release/tag created.",
+      "note": "G8 ownerconfirmedOK. Public engines-rgss-6 source b668e08 + sidecar SHA/size/URL HTTP200 verified. PR#73 f524 pins config34 arm64, keeps Joiplay fallback. Build37254516080, realpacks37254516114, CodeQL37254516059 all SUCCESS; Luna pending, not merged; no release/tag.",
       "module": "rgss"
     },
     {
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-05T02:23:04Z",
+      "text": "Owner approved exactly one V43 main dry_run after PR72 Luna+merge; Build37253552086 SUCCESS. V16 PR73 exact f524 Build37254516080/realpacks37254516114/CodeQL37254516059 SUCCESS, Luna pending. G8 confirmed; G7 screenshot is 0.7.3 startup.tjs, 0.7.4 retest unconfirmed."
+    },
     {
       "t": "2026-10-05T02:14:12.883060Z",
       "text": "Owner05/10 confirms V43 approve exact one main dry_run after Luna/merge; G8OK; G7 screenshot0.7.3 startup.tjs failure. V16 sees public engines-rgss-6 source/hash/size/HEAD200; PR73 config34 ARM64 keepJoiplay, CI/Luna pending. No engine publication."

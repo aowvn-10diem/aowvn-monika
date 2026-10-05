@@ -14,7 +14,7 @@
   "prs": {
     "11": "H04 Luna duyệt",
     "15": "H05 Luna duyệt",
-    "16": "#73 sol/V16 headf52400b: config34 ghim engines-rgss-6 URL/SHA3135ef8.../size7922296/arm64, sourceb668e08/GPL-2.0-or-later release public; HEAD200 no token. G8 ownerconfirmedOK. ConfigTest exact metadata/rgss engine+RPG pad/Joiplay fallback. Build37254516080, realpacks37254516114, CodeQL37254516059 running. Luna review requested; local Gradle SDKmissing.",
+    "16": "#73 sol/V16 headf52400b: config34 ghim engines-rgss-6 public, sourceb668e08/GPL-2.0-or-later; sidecar SHA/size/ABI arm64 và HEAD200. G8 owner xác nhận OK. Build37254516080, realpacks37254516114, CodeQL37254516059 SUCCESS đúng head; Luna pending; chưa merge/đổi remote config.",
     "17": "L01 Luna duyệt",
     "19": "H06 Luna duyệt",
     "20": "L03 Luna duyệt",
@@ -39,15 +39,15 @@
     "62": "SOL012 kẹt; Luna xác nhận14:55, ký/publish không được cấp ngoại lệ",
     "70": "Gộpf4ebd0b sauLuna Đạt đúngf40f89c+docCIchecksSUCCESS. V11docs-onlykhôngappunitPASS. BảnPMkế871appfixpending.",
     "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS.",
-    "71": "PM head013ad49 ghi #50 merged, G8 owner confirmed okay, G7 0.7.3 startup.tjs failure as screenshot and re-test0.7.4 pending, PR72 V43 owner-approved dryrun with Build green and fresh Luna pending. 4 docs; needs fresh Luna.",
-    "72": "Owner approved V43 dry_run true once on main after merge; Build37253552086 SUCCESS, Luna independent review exact745 pending at last mailbox. No secret value read, no dispatch yet.",
-    "73": "#73 sol/V16 headf52400b: config34 ghim engines-rgss-6 URL/SHA3135ef8.../size7922296/arm64, sourceb668e08/GPL-2.0-or-later release public; HEAD200 no token. G8 ownerconfirmedOK. ConfigTest exact metadata/rgss engine+RPG pad/Joiplay fallback. Build37254516080, realpacks37254516114, CodeQL37254516059 running. Luna review requested; local Gradle SDKmissing."
+    "71": "Bốn tài liệu PM ghi V44 đã gộp, V43 owner duyệt một dry-run, V16 CI xanh chờ Luna, G8 OK và G7 ảnh 0.7.3 startup.tjs; chờ owner thử 0.7.4. Checks tài liệu/Pages trên head trước đó xanh; head mới cần CI + Luna.",
+    "72": "Owner approved exactly one release.yml main workflow_dispatch dry_run=true after PR72 merge/Luna. Build37253552086 SUCCESS; PR body updated, Luna independent review pending; no dispatch/secret value read.",
+    "73": "#73 sol/V16 headf52400b: ghim config34 tới engines-rgss-6 public; G8 owner OK. Build37254516080, realpacks37254516114, CodeQL37254516059 đều SUCCESS đúng head. Luna pending; chưa merge, không tạo release/tag."
   },
   "idle": 0,
   "cadence": 60,
   "dashboard": "https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d",
   "dashboard_state": "Nguồn GitHub: docs/opus/pm/bang-tien-do/state.json trên nhánh PM. Artifact Claude bên ngoài chưa cập nhật trong lượt tiếp quản.",
-  "dashboard_version": 59,
+  "dashboard_version": 60,
   "rule": "Sol tiếp quản PM theo lệnh chủ dự án; code Sol cần Luna + CI; không nhắn sếp; giữ cổng phát hành/ký.",
   "trigger": "trig_01Nk2NQXsfxm8hQLAZAo4ZsS",
   "note": "Sol tiếp quản tạm PM/Sonnet theo issue65 tới05/10 15:00UTC; Luna review độc lập. Gemini F01/F02 chờ kích hoạt.",
@@ -68,7 +68,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-05T02:14:12.883060Z",
+  "updated_at": "2026-10-05T02:23:04.000000Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [
