@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-05T15:47:30Z",
+ "updatedAt": "2026-10-05T15:57:01Z",
  "mainSha": "2c4ddd3e79de736202c57196c39453a6af5d0411",
  "app": "App 0.7.4 → 0.7.5 đang phát hành · config 34",
  "nextCheck": "2026-10-05T16:10:39Z",
@@ -33,12 +33,11 @@
    "code": "Q4",
    "urgency": "Gấp",
    "kind": "many",
-   "question": "Ba việc chỉ sếp làm được trên GitHub. Sếp đã làm việc nào?",
-   "how": "Releases → engines-rgss-6 → Delete. Releases → v0.7.4 → Edit → tick “Set as a pre-release” → Update. Settings → Secrets and variables → Actions → New secret: CLOUDFLARE_API_TOKEN.",
+   "question": "Còn 1 việc chỉ sếp làm được trên GitHub: đặt v0.7.4 là pre-release.",
+   "how": "Releases → v0.7.4 → Edit → tick “Set as a pre-release” → Update. KHÔNG xóa engines-rgss-6: config 34 đang dùng gói này.",
    "options": [
-    "Đã xóa release engines-rgss-6",
     "Đã đặt v0.7.4 là pre-release",
-    "Đã thêm secret CLOUDFLARE_API_TOKEN"
+    "Để sau"
    ]
   },
   {
@@ -713,6 +712,10 @@
  ],
  "log": [
   {
+   "t": "2026-10-05T15:57:01Z",
+   "text": "Sếp thêm CLOUDFLARE_API_TOKEN; Sync config lên Cloudflare xanh (run 37261093978 lần 2). Bỏ mục xóa engines-rgss-6 khỏi Q4 vì config 34 đang dùng gói này."
+  },
+  {
    "t": "2026-10-05T15:47:30Z",
    "text": "Theo lệnh sếp tăng việc cho Sol: thư sol-011 giao V47 (sync Cloudflare đỏ do thiếu secret), V31(3) sau 0.7.5, V48 parser bản tin, V49 CodeQL 26 cảnh báo, V45 kiểm trên CI, V50 nâng action."
   },
@@ -1211,6 +1214,13 @@
   }
  ],
  "decisions": [
+  {
+   "code": "Q4",
+   "question": "Thêm secret CLOUDFLARE_API_TOKEN",
+   "answer": "Sếp đã thêm; Sync config chạy lại xanh (run 37261093978 lần 2, 15:56Z)",
+   "at": "2026-10-05T15:56:26Z",
+   "by": "Sếp"
+  },
   {
    "code": "KEY",
    "question": "File khóa ký app đang ở đâu?",
