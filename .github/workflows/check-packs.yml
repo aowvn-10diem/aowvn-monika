@@ -27,7 +27,8 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
+        with: {cache-provider: basic}
       - name: Biên dịch chính PackTransaction của app (không cần SDK)
         run: ./gradlew -p tools/pack-check test installDist --console=plain
       - name: Tải từng gói/ABI và kiểm bằng mã Kotlin của app
