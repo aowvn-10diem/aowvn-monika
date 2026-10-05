@@ -55,8 +55,12 @@ object Notifier {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) return
+        // Implicit file-view/install intents are dispatched by our unexported
+        // activity after the user taps; PendingIntent itself always names a component.
+        val target = if (intent.component != null) Intent(intent)
+            else NotificationOpenActivity.intent(context, intent)
         val pi = PendingIntent.getActivity(
-            context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            context, id, target, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val n = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_stat_monika)

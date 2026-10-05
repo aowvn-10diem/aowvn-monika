@@ -81,6 +81,12 @@
             android:theme="@style/Theme.Monika.Fullscreen" />
 
         <activity
+            android:name=".notify.NotificationOpenActivity"
+            android:exported="false"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay" />
+
+        <activity
             android:name=".runner.RgssGameActivity"
             android:process=":game"
             android:taskAffinity="com.aow.monika.rgss"
