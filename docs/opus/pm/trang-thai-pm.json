@@ -20,9 +20,9 @@
     "20": "L03 Luna duyệt",
     "18": "L02 Luna (đã trả lời thư)",
     "14": "SOL-003 (đã trả lời)",
-    "44": "#44gộpf96da6e; #50compatgộpca8e825. R6f740 XP369/VX339/Ace382s PASSmức1, tấtcảexpectedPASS. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; khôngR7.",
+    "44": "#50 V44 đãgộp; R6 f740 XP369/VX339/Ace382s PASSmức1, full5/audio/save-load/FPS/máythật chưa kiểm.",
     "46": "gộp5d352a7; Luna + CI xanh, K3 máy thật chưa kiểm",
-    "50": "#50 gộp mergecommit ca8e82550ddcb881a5ce6c468751ef50c241eb60 sauLuna5986720042 đúngf740+PMreview5986819733. Build37249066676/R637249066599/CodeQL37249066606 SUCCESS; signals37249066540 attempt2 SUCCESS/art11322086200 đãxemmarker1/orange/PixelCopy10–40s blackfalse. Attempt1runnerforkOOMtrướcgame, retrycùngcode/assertionskhôngclaimappfix. R6art11320593801đãxem XP369/VX339/Ace382s PASSmức1, VXtitle→NewGame/A→scene+hội thoạiSnow/noerror. ExpectFail=[]cả3bắtbuộcPASS, giữthreshold10/60s/process/error. Audio/save-load/FPS/full5/máythật/deploy [CHƯA KIỂM], khôngR7.",
+    "50": "#50 gộp ca8e825 sauLuna+CI đầyđủ, XP/VX/Ace đều PASSmức1.",
     "51": "gộp0e17edf,27test +5ZIP thật PASS; quota chưa đo",
     "34": "PM duyệt; head 1c64c02 chỉ gộp main",
     "55-57": "Dependabot → Sol (tra-loi-sol-009)",
@@ -39,8 +39,8 @@
     "62": "SOL012 kẹt; Luna xác nhận14:55, ký/publish không được cấp ngoại lệ",
     "70": "Gộpf4ebd0b sauLuna Đạt đúngf40f89c+docCIchecksSUCCESS. V11docs-onlykhôngappunitPASS. BảnPMkế871appfixpending.",
     "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS.",
-    "71": "4PMdocs cập nhật50mergedca8/allCIheadf740PASS và72V43prepnotdispatched; freshdocLuna/CIbeforemerge.",
-    "72": "Chủdựán05/10xácnhậnkeyđãtảilênSecrets. ChuẩnbịPR#72 sol/V43 head74521303: dry_runmain-only/checkoutSHA/readpermission/norelease-upload-tag,9fakeguardPASS/rootSDKmissing. CầnLuna+Build+PMtrướcmerge; actualsigneddispatchvẫnkẹtSOL012cầnownerngoạilệ, chưađọcdùngSecretvalues/chưaký."
+    "71": "PM head013ad49 ghi #50 merged, G8 owner confirmed okay, G7 0.7.3 startup.tjs failure as screenshot and re-test0.7.4 pending, PR72 V43 owner-approved dryrun with Build green and fresh Luna pending. 4 docs; needs fresh Luna.",
+    "72": "Owner05/10xácnhậnkeyđãSecrets vàtrảlờiV43duyệt. PR#72 sol/V43 74521303: main-only dry_run, no release/tag/APKupload, 9fakeguardPASS. Build37253552086SUCCESS, chờLunađộc lập; sauLuna+checkexacthead, authorized one dispatch main dry_run=true, no release. ActualV43 dryrunngoạilệđãsigned CI: ownerđãduyệt, chưa dispatch tớiPRmerge+freshLuna. Chưađọcdùngkeyvalue."
   },
   "idle": 0,
   "cadence": 60,
@@ -67,7 +67,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-05T02:00:35.545091Z",
+  "updated_at": "2026-10-05T02:06:39.070087Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [

@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-05T02:00:35.545091Z",
+  "updatedAt": "2026-10-05T02:06:39.070087Z",
   "mainSha": "ca8e82550ddcb881a5ce6c468751ef50c241eb60",
   "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-05T03:00:35.545091Z",
-  "headline": "V44 #50 đãgộpca8 sauLuna+CI: XP369/VX339/Ace382s PASSmức1. V43#72chuẩn bịkýthửkhôngphát hành, chưa dùngSecrets/chưa dispatch. Gemini standby.",
+  "nextCheck": "2026-10-05T03:06:39.070087Z",
+  "headline": "V44 #50 merged. V43 owner-approved dry-run PR72 Build green, Luna pending. G8 owner confirmed okay; G7 screenshot remains v0.7.3 startup.tjs error, 0.7.4 retest pending.",
   "needsBoss": [
     {
       "code": "G7",
@@ -135,7 +135,7 @@
       "title": "R5: phím ảo + menu Monika cho RPG Maker, đăng ký gói vào config",
       "owner": "Sonnet",
       "status": "dang",
-      "note": "Phím ảo + menu xong, CI Android 14 nhận phím. Phần đăng ký config hoãn tới khi phát hành gói (cần G8).",
+      "note": "G8 đã OK theo owner05/10; V16 config chỉ triển khai sau khi kiểm URL công khai hợp lệ cho gói RGSS và V12, không giả định gói draft là public. Config chưa đổi.",
       "module": "rgss"
     },
     {
@@ -582,9 +582,9 @@
       "code": "V43",
       "title": "Phát hành APK ký trên GitHub thay vì build trong phiên",
       "owner": "Sol",
-      "status": "ket",
+      "status": "dang",
       "module": "ci",
-      "note": "SOL012: chỉ chuẩn bị mã để review; không đọc khóa/ký/dispatch/phát hành. Lệnh tiếp quản không cấp ngoại lệ."
+      "note": "Owner duyệt V43 dry-run05/10. PR#72 Build37253552086 xanh, fresh Luna review đúnghead chờ. Sau merge được đúng một dispatch trên main dry_run=true, không release/tag/APK upload; không đọc Secret value."
     },
     {
       "code": "V44",
@@ -637,8 +637,8 @@
       "code": "G8",
       "title": "Giấy phép file dựng của bản port mkxp-z",
       "when": "Trước R7",
-      "status": "dang",
-      "note": "Sếp đã hỏi tác giả (03/10), chờ trả lời. Tới R7 chưa có thì đội viết lại script dựng."
+      "status": "xong",
+      "note": "Chủ dự án xác nhận G8 đã OK ngày05/10; đã gỡ điều kiện chờ trả lời giấy phép. Không mở rộng sang quyền phát hành engine ngoài phạm vi."
     },
     {
       "code": "G4",
@@ -652,7 +652,7 @@
       "title": "Thử Kirikiri 0.7.3 trên máy thật",
       "when": "Gấp",
       "status": "dang",
-      "note": "Đã thử 03/10: không văng, không mở được game → V26. Thử lại sau bản vá."
+      "note": "Chủ dự án05/10 báo app vẫn lỗi; ảnh hiển thị v0.7.3 “Cannot find storage startup.tjs”. V26/0.7.4 đã có nhưng xác nhận chạy0.7.4 còn thiếu; G7 tiếp tục mở."
     },
     {
       "code": "G6",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-05T02:06:39.070087Z",
+      "text": "Owner05/10 approvedV43 dry-runonly; #72 Build37253552086green/Lunapending, then one main dry_run=true no publish. G8owner reports OK; V16 still verify public RGSS URL/V12 beforeconfig. G7 newreport+image is v0.7.3 Cannot find storage startup.tjs;0.7.4 testunconfirmed."
+    },
     {
       "t": "2026-10-05T02:00:35.545091Z",
       "text": "#50mergecommitca8 sauLuna f740 vàactingPMduyệt5986819733; Build/R6/CodeQL/signalsattempt2SUCCESS, actualcontrolmarker/orange/PixelCopyproof. Ownerkeyexistsconfirmed; #72V43chuẩnbịdry_runmain-only,nopublish;9fakeguardsPASS,actualdispatchownerngoạilệvẫnSOL012. PMdocsheadmớicầnLuna, khôngfakeaudio/full5."
