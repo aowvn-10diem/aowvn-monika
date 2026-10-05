@@ -7,8 +7,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tên bản phát hành, vd. v0.3.8 (tag phải tồn tại)"
-        required: true
+        description: "Tên bản phát hành (tag phải tồn tại; bỏ trống khi dry_run=true)"
+        required: false
+      dry_run:
+        description: "Chỉ kiểm ký trên main; không tạo release, tag hay upload APK"
+        type: boolean
+        default: false
       stable:
         description: "true = bản chính thức (CHỈ sau khi có kết quả máy thật); mặc định là prerelease"
         required: false
@@ -19,6 +23,7 @@ permissions:
 
 jobs:
   release:
+    if: github.event_name != 'workflow_dispatch' || inputs.dry_run != true
     runs-on: ubuntu-latest
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
@@ -105,3 +110,75 @@ jobs:
         run: |
           if [ -z "$PIXELDRAIN_API_KEY" ]; then echo "Bỏ qua: chưa có secret PIXELDRAIN_API_KEY"; exit 0; fi
           for f in AowVN-Monika-*.apk; do echo "== $f ($(stat -c%s "$f") byte)"; scripts/pixeldrain-upload.sh "$f"; done
+
+  signing_dry_run:
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
+    permissions: {contents: read}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Chỉ kiểm ký tại commit main đã chọn (V43)
+        id: dry_guard
+        env:
+          DISPATCH_EVENT: ${{ github.event_name }}
+          DISPATCH_REF: ${{ github.ref }}
+          DISPATCH_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [ "$DISPATCH_EVENT" = workflow_dispatch ]
+          [ "$DISPATCH_REF" = refs/heads/main ] || { echo "::error::Dry-run chỉ được chạy trên main"; exit 1; }
+          [[ "$DISPATCH_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [ "$(git rev-parse HEAD)" = "$DISPATCH_SHA" ] || { echo "::error::Checkout không đúng commit main"; exit 1; }
+      - name: Kiểm đủ cấu hình ký, không in giá trị (V30)
+        id: dry_signing_guard
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MONIKA_KEYSTORE_BASE64 }}
+          MONIKA_KEYSTORE_PASSWORD: ${{ secrets.MONIKA_KEYSTORE_PASSWORD }}
+          MONIKA_KEY_ALIAS: ${{ secrets.MONIKA_KEY_ALIAS }}
+          MONIKA_KEY_PASSWORD: ${{ secrets.MONIKA_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in KEYSTORE_BASE64 MONIKA_KEYSTORE_PASSWORD MONIKA_KEY_ALIAS MONIKA_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then echo "::error::Thiếu cấu hình ký: $name"; exit 1; fi
+          done
+      - uses: actions/setup-java@v6
+        with: {distribution: temurin, java-version: 17}
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Cài NDK cho J2ME Loader
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+      - name: Dựng và kiểm APK đã ký, chỉ giữ trong runner
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MONIKA_KEYSTORE_BASE64 }}
+          MONIKA_KEYSTORE_PASSWORD: ${{ secrets.MONIKA_KEYSTORE_PASSWORD }}
+          MONIKA_KEY_ALIAS: ${{ secrets.MONIKA_KEY_ALIAS }}
+          MONIKA_KEY_PASSWORD: ${{ secrets.MONIKA_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          export MONIKA_KEYSTORE="$RUNNER_TEMP/monika-dry-run.jks"
+          trap 'rm -f "$MONIKA_KEYSTORE"' EXIT
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$MONIKA_KEYSTORE"
+          test -s "$MONIKA_KEYSTORE"
+          ./gradlew testDebugUnitTest assembleRelease --console=plain
+          python3 scripts/check-r8-mapping.py app/build/outputs/mapping/release/mapping.txt
+          APK=app/build/outputs/apk/release/app-universal-release.apk
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --print-certs "$APK" > "$RUNNER_TEMP/dry-run-cert.txt"
+          if grep -Eiq 'CN[[:space:]]*=[[:space:]]*Android Debug' "$RUNNER_TEMP/dry-run-cert.txt"; then
+            echo "::error::APK ký debug bị chặn"; exit 1
+          fi
+          python3 scripts/verify-apk-cert.py "$APK"
+          sha256sum "$APK"
+      - name: Link engine 3DS công khai phải trả HTTP 200
+        run: |
+          set -euo pipefail
+          URL=$(python3 -c 'import json; print(json.load(open("config/monika-config.json"))["modules"]["azahar"]["url"])')
+          [[ "$URL" == https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/engine-azahar-1/* ]]
+          CODE=$(curl --disable --silent --show-error --head --location --max-time 60 --output /dev/null --write-out '%{http_code}' "$URL")
+          echo "Engine 3DS HTTP cuối: $CODE"
+          [ "$CODE" = 200 ]

@@ -102,7 +102,7 @@ jobs:
             echo '```'; ls -la out; echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v4
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         if: always()
         with:
@@ -133,7 +133,7 @@ jobs:
           (cd embed && tar czf ../kirikiri-embed-inputs.tgz .)
           ls -la kirikiri-embed-inputs.tgz
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v4
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         with:
           retention-days: 3
@@ -162,7 +162,7 @@ jobs:
             echo '```'; cat kirikiri-arm64.zip.sha256; stat -c 'size=%s' kirikiri-arm64.zip; echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v4
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         with:
           retention-days: 3
@@ -178,7 +178,7 @@ jobs:
           python3 self/scripts/package-native-symbols.py --pack pack --source-root src --source-root /build_android \
             --readelf "$ANDROID_HOME/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" --abi arm64-v8a \
             --output "symbols-kirikiri-${{ github.run_number }}-arm64-v8a.zip"
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
           name: symbols-kirikiri-${{ github.run_number }}-arm64-v8a
