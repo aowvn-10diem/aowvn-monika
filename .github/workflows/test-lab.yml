@@ -65,7 +65,7 @@ jobs:
           bucket=$(grep -oE 'storage/browser/[^/ ]+' result.txt | head -1 | cut -d/ -f3)
           if [ -n "$bucket" ]; then gsutil -m cp -r "gs://$bucket/monika-${GITHUB_RUN_ID}" ./testlab || true; fi
           grep -oE 'https://console.firebase.google.com[^ ]+' result.txt | head -1 | sed 's/^/Kết quả: /' >> "$GITHUB_STEP_SUMMARY" || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           retention-days: 3
