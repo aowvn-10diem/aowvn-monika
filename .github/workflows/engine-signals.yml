@@ -38,7 +38,7 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: 17}
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Unit trên config chuẩn
         run: |
           python3 scripts/test-crash-report-groups.py
