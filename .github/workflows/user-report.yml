@@ -34,6 +34,7 @@ jobs:
       - uses: actions/setup-java@v6
         with: {distribution: temurin, java-version: 17}
       - uses: gradle/actions/setup-gradle@v6
+        with: {cache-provider: basic}
       - name: Unit trên config chuẩn
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
