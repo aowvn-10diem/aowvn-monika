@@ -58,6 +58,6 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
           script: bash scripts/ci-user-report.sh "$RUNNER_TEMP/user-report" out/user-report
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with: {name: user-report-api34, path: out/user-report/, retention-days: 3}

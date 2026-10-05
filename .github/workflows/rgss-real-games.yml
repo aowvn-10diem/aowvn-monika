@@ -97,7 +97,7 @@ jobs:
           PY
       - name: Thu diagnostic đã che trước bài game dài (V44)
         if: steps.vx_shape.outcome == 'success'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: v44-vx-diagnostic
           path: |
@@ -131,7 +131,7 @@ jobs:
         env:
           EXPECT_FAIL: ${{ inputs.expect_fail }}
           EVENT_NAME: ${{ github.event_name }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: r6-api34-evidence

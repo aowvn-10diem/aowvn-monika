@@ -33,7 +33,7 @@ jobs:
           python3 scripts/test-pm-digest.py
           python3 scripts/test-pm-digest-safe.py
           python3 scripts/pm-digest-safe.py --out out/preview
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: {name: pm-digest-preview, path: out/preview/, retention-days: 3}
   digest:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
