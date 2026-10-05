@@ -23,6 +23,9 @@ screen main_menu():
     text "Monika CI RenPy" xalign 0.5 yalign 0.3
     textbutton "Start CI" xalign 0.5 yalign 0.6 action Start()
     timer 1.0 action Function(monika_ci_mark, "menu")
+label main_menu:
+    call screen main_menu
+    return
 label start:
     $ monika_ci_mark("start")
     scene expression Solid("#F28C28")
