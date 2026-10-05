@@ -1,5 +1,5 @@
 {
-  "main": "ca8e82550ddcb881a5ce6c468751ef50c241eb60",
+  "main": "2493ec00d99f0c0cea86e5d90f81eed7a3802583",
   "branch": "fa57d05",
   "sol": {
     "V30": "xong#25",
@@ -14,7 +14,7 @@
   "prs": {
     "11": "H04 Luna duyệt",
     "15": "H05 Luna duyệt",
-    "16": "#73 sol/V16 headf52400b: config34 ghim engines-rgss-6 public, sourceb668e08/GPL-2.0-or-later; sidecar SHA/size/ABI arm64 và HEAD200. G8 owner xác nhận OK. Build37254516080, realpacks37254516114, CodeQL37254516059 SUCCESS đúng head; Luna pending; chưa merge/đổi remote config.",
+    "16": "#73 V16 merged ef6b8c0 after Luna L07 + Build/real-packs/CodeQL green exact f524; config34 pins public engines-rgss-6 arm64 and retains JoiPlay fallback; no release/tag.",
     "17": "L01 Luna duyệt",
     "19": "H06 Luna duyệt",
     "20": "L03 Luna duyệt",
@@ -39,9 +39,9 @@
     "62": "SOL012 kẹt; Luna xác nhận14:55, ký/publish không được cấp ngoại lệ",
     "70": "Gộpf4ebd0b sauLuna Đạt đúngf40f89c+docCIchecksSUCCESS. V11docs-onlykhôngappunitPASS. BảnPMkế871appfixpending.",
     "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS.",
-    "71": "Bốn tài liệu PM ghi V44 đã gộp, V43 owner duyệt một dry-run, V16 CI xanh chờ Luna, G8 OK và G7 ảnh 0.7.3 startup.tjs; chờ owner thử 0.7.4. Checks tài liệu/Pages trên head trước đó xanh; head mới cần CI + Luna.",
-    "72": "Owner approved exactly one release.yml main workflow_dispatch dry_run=true after PR72 merge/Luna. Build37253552086 SUCCESS; PR body updated, Luna independent review pending; no dispatch/secret value read.",
-    "73": "#73 sol/V16 headf52400b: ghim config34 tới engines-rgss-6 public; G8 owner OK. Build37254516080, realpacks37254516114, CodeQL37254516059 đều SUCCESS đúng head. Luna pending; chưa merge, không tạo release/tag."
+    "71": "PM docs branch was refreshed from main after #73/#72 merges; updated docs head needs fresh docs CI and Luna review. Docs-only Build skip is not app unit PASS.",
+    "72": "V43 #72 merged 2493ec0 after Luna L07/Build. The single authorized run37261174377 on main dry_run=true, tag empty, stable=false SUCCESS; signing/certificate check passed, release job skipped, no artifact/release/tag/APK upload.",
+    "73": "#73 V16 merged ef6b8c0 after Luna L07 + Build/real-packs/CodeQL green exact f524; config34 pins public engines-rgss-6 arm64 and retains JoiPlay fallback; no release/tag."
   },
   "idle": 0,
   "cadence": 60,
@@ -50,7 +50,7 @@
   "dashboard_version": 60,
   "rule": "Sol tiếp quản PM theo lệnh chủ dự án; code Sol cần Luna + CI; không nhắn sếp; giữ cổng phát hành/ký.",
   "trigger": "trig_01Nk2NQXsfxm8hQLAZAo4ZsS",
-  "note": "Sol tiếp quản tạm PM/Sonnet theo issue65 tới05/10 15:00UTC; Luna review độc lập. Gemini F01/F02 chờ kích hoạt.",
+  "note": "Sol tiếp quản tạm PM/Sonnet theo issue65 tới05/10 15:00UTC; Luna review độc lập. Gemini F01/F02 chờ kích hoạt. V43 authorized dry-run run37261174377 SUCCESS; không dispatch lần hai.",
   "luna": {
     "L05": "#29 duyệt",
     "L06": "#31 duyệt"
@@ -68,7 +68,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-05T02:23:04.000000Z",
+  "updated_at": "2026-10-05T04:08:32.000000Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [

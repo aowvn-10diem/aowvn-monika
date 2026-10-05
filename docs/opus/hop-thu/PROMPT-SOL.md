@@ -1,4 +1,4 @@
-> **Ủy quyền tạm thời của chủ dự án (issue #65):** Sol tiếp quản PM Opus và Sonnet tới22:00 thứHai05/10/2026 GMT+7 (15:00UTC). Trong thời gian này được sửa kế hoạch/trạng thái PM và tiếp việc Sonnet; quyết định ghi “PM duyệt — Sol tiếp quản theo lệnh chủ dự án (#65)”, không mạo danh. Code Sol cần Luna độc lập + CI đúnghead. Sau thời hạn bàn giao lại. Ngoại lệ trực tiếp V43 ngày05/10: sau khi #72 qua Luna/CI và được gộp, chạy đúng một `release.yml` trên `main` với `dry_run=true`; workflow có thể dùng Secrets để kiểm chứng ký, nhưng không đọc/hiển thị giá trị và không tạo release/tag/upload APK. Gemini Flash F01/F02 chỉ kích hoạt khi chủ dự án báo sẵn sàng.
+> **Ủy quyền tạm thời của chủ dự án (issue #65):** Sol tiếp quản PM Opus và Sonnet tới22:00 thứHai05/10/2026 GMT+7 (15:00UTC). Trong thời gian này được sửa kế hoạch/trạng thái PM và tiếp việc Sonnet; quyết định ghi “PM duyệt — Sol tiếp quản theo lệnh chủ dự án (#65)”, không mạo danh. Code Sol cần Luna độc lập + CI đúnghead. Sau thời hạn bàn giao lại. Ngoại lệ trực tiếp V43 ngày05/10: đã chạy đúng một `release.yml` trên `main` sau khi #72 qua Luna/CI và được gộp; run `37261174377` dùng `dry_run=true`, tag rỗng, `stable=false`. Run `37261174377` đã SUCCESS; xác minh chứng thư khớp và job release bị skip. Không đọc/hiển thị giá trị Secret, không dispatch lần hai, không tạo release/tag/upload APK. Gemini Flash F01/F02 chỉ kích hoạt khi chủ dự án báo sẵn sàng.
 
 > **Lệnh trực tiếp về lịch (04/10):** Giữ đúng một lịch lặp kiểm tra60phút, enabled cả khi đang làm để phục hồi khi bị dừng; không pause ở đầu lượt/không tạo one-off khác/không mở lượt trùng. Không bật lịch Sol cũ đã bị chủ dự án dừng. Lệnh này thay bước hẹn one-off bên dưới.
 
@@ -70,7 +70,7 @@ Mỗi dòng việc ghi rõ phạm vi và tiêu chí "Đạt khi". Phát hiện m
 
 === CẤM ===
 - Đọc, sao chép hoặc in khóa ký, mật khẩu, token hay giá trị GitHub Secrets.
-- Phát hành APK/release, đẩy tag, chạy workflow publish. Ngoại lệ: (1) V32 theo `tra-loi-sol-006-007.md`, chỉ `publish-cores.yml` cho tag `cores-*` trong repo packs sau PM duyệt; (2) V43 theo lệnh chủ dự án 05/10, sau Luna + CI + merge #72, đúng một `release.yml` dispatch trên `main` với `dry_run=true`, không release/tag/upload APK.
+- Phát hành APK/release, đẩy tag, chạy workflow publish. Ngoại lệ: (1) V32 theo `tra-loi-sol-006-007.md`, chỉ `publish-cores.yml` cho tag `cores-*` trong repo packs sau PM duyệt; (2) V43 theo lệnh chủ dự án 05/10: run `37261174377` là dispatch duy nhất `release.yml` trên `main` với `dry_run=true`; đã SUCCESS; không chạy lần hai, không release/tag/upload APK.
 - Đẩy thẳng main.
 - Sửa j2me/ và dexlib/, trừ chỗ có chú thích "Aow Monika:".
 - Đổi phiên bản thư viện ngoài gradle/libs.versions.toml.

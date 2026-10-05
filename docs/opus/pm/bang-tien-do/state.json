@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-05T02:23:04Z",
-  "mainSha": "ca8e82550ddcb881a5ce6c468751ef50c241eb60",
-  "app": "App0.7.4 · config33",
-  "nextCheck": "2026-10-05T03:23:04Z",
-  "headline": "V43 đã được duyệt đúng một main dry-run sau Luna + merge; Build xanh, chờ Luna. V16: Build/real-packs/CodeQL xanh đúng head f524, chờ Luna. G8 OK; G7 còn chờ thử 0.7.4.",
+  "updatedAt": "2026-10-05T04:08:32Z",
+  "mainSha": "2493ec00d99f0c0cea86e5d90f81eed7a3802583",
+  "app": "App0.7.4 · config34",
+  "nextCheck": "2026-10-05T04:40:00Z",
+  "headline": "V16 đã gộp #73 (ef6b8c0), config34 ghim RGSS arm64. V43 dry-run duy nhất 37261174377 SUCCESS; chứng thư đạt, job release skip, không có artifact. G7 còn chờ thử 0.7.4.",
   "needsBoss": [
     {
       "code": "G7",
@@ -134,8 +134,8 @@
       "code": "V16",
       "title": "R5: phím ảo + menu Monika cho RPG Maker, đăng ký gói vào config",
       "owner": "Sonnet",
-      "status": "dang",
-      "note": "G8 ownerconfirmedOK. Public engines-rgss-6 source b668e08 + sidecar SHA/size/URL HTTP200 verified. PR#73 f524 pins config34 arm64, keeps Joiplay fallback. Build37254516080, realpacks37254516114, CodeQL37254516059 all SUCCESS; Luna pending, not merged; no release/tag.",
+      "status": "xong",
+      "note": "#73 merged 2026-10-05 bằng merge commit ef6b8c0; configVersion34 ghim engines-rgss-6 công khai cho arm64-v8a, giữ Joiplay fallback. Build37254516080, real-packs37254516114, CodeQL37254516059 SUCCESS trên f52400b. Không phát hành/tag; máy 32-bit thật, audio/save/FPS [CHƯA KIỂM].",
       "module": "rgss"
     },
     {
@@ -582,9 +582,9 @@
       "code": "V43",
       "title": "Phát hành APK ký trên GitHub thay vì build trong phiên",
       "owner": "Sol",
-      "status": "dang",
+      "status": "xong",
       "module": "ci",
-      "note": "Owner duyệt V43 dry-run05/10. PR#72 Build37253552086 xanh, fresh Luna review đúnghead chờ. Sau merge được đúng một dispatch trên main dry_run=true, không release/tag/APK upload; không đọc Secret value."
+      "note": "Chỉ hoàn tất dry-run được chủ dự án duyệt: #72 merged 2493ec0; run37261174377 trên main dry_run=true, tag rỗng, stable=false SUCCESS. Check cấu hình ký/chống debug/signature script PASS; release job skipped, không có artifact. Không đọc Secret value và không chạy phát hành thật."
     },
     {
       "code": "V44",
@@ -649,10 +649,10 @@
     },
     {
       "code": "G7",
-      "title": "Thử Kirikiri 0.7.3 trên máy thật",
+      "title": "Thử lại Kirikiri 0.7.4 trên máy thật",
       "when": "Gấp",
       "status": "dang",
-      "note": "Chủ dự án05/10 báo app vẫn lỗi; ảnh hiển thị v0.7.3 “Cannot find storage startup.tjs”. V26/0.7.4 đã có nhưng xác nhận chạy0.7.4 còn thiếu; G7 tiếp tục mở."
+      "note": "Ảnh chủ dự án 05/10 hiển thị app v0.7.3 với lỗi “Cannot find storage startup.tjs”. V26 đã phát hành 0.7.4 nhưng chưa có xác nhận thử lại Kara no Shoujo bằng 0.7.4; G7 tiếp tục mở."
     },
     {
       "code": "G6",
@@ -684,6 +684,14 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-05T04:08:32Z",
+      "text": "V43 authorized single dry-run37261174377 SUCCESS on main2493ec0: signing_dry_run and verify-apk-cert passed; release job skipped; artifact list empty. No release/tag/APK upload."
+    },
+    {
+      "t": "2026-10-05T03:56:05Z",
+      "text": "#73 V16 merged ef6b8c0 after Luna+exact CI; config34 RGSS pin. #72 V43 merged 2493ec0; exactly one owner-authorized main dry-run dispatched as run37261174377, signing_dry_run still in progress and release job skipped at 03:56Z. No release/tag/APK upload."
+    },
     {
       "t": "2026-10-05T02:23:04Z",
       "text": "Owner approved exactly one V43 main dry_run after PR72 Luna+merge; Build37253552086 SUCCESS. V16 PR73 exact f524 Build37254516080/realpacks37254516114/CodeQL37254516059 SUCCESS, Luna pending. G8 confirmed; G7 screenshot is 0.7.3 startup.tjs, 0.7.4 retest unconfirmed."
