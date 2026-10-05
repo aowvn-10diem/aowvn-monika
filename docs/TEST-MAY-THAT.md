@@ -123,7 +123,7 @@ Kirikiri nhúng sâu trong Monika (không phải app ngoài): màn chuẩn bị 
 
 ## 6c. RPG Maker XP/VX/Ace (nhúng)
 
-Chỉ áp dụng khi bản app đã có gói `rgss` (sau R7).
+Config 34 (`systems.rgss`: `engine: "rgss"`, `allowExternalApp: true`) chọn **engine RGSS nhúng** của Monika. Gói `engines-rgss-6` hiện chỉ có bản `arm64-v8a`; máy hỗ trợ ABI này tải gói rồi chạy trong Monika. Máy không có gói phù hợp mới dùng JoiPlay dự phòng. Chưa có bằng chứng engine chạy trên máy thật **[CHƯA KIỂM]**.
 
 | # | Thao tác | Kết quả mong đợi | KQ |
 |---|---|---|---|
