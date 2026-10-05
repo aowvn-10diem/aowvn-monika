@@ -23,7 +23,7 @@ Phiên PM cũ: `session_01CqoeMJCn5kiXUbTjrJGUde`. Phiên này **dừng kiểm t
 
 | # | Việc | Trạng thái và việc PM cần làm |
 |---|---|---|
-| 1 | **Hỏi sếp: phát hành 0.7.5 bản thử?** | Đã hỏi, **chưa có trả lời**. Sonnet đang làm PR nâng phiên bản (`sonnet/V43-075`, versionCode 40). "Có" thì báo Sonnet chạy `release.yml` (`tag=v0.7.5`, `stable=false`) sau khi PR được gộp. Kiểm SHA chứng thư `c46902e9…d45ab20c` |
+| 1 | **Hỏi sếp: phát hành 0.7.5 bản thử?** | Đã hỏi, **chưa có trả lời**. Sonnet đã mở **PR #81** (`sonnet/V43-075`, versionCode 40, versionName 0.7.5), chờ CI → Luna → PM duyệt. "Có" thì báo Sonnet chạy `release.yml` (`tag=v0.7.5`, `stable=false`) sau khi PR được gộp. Kiểm SHA chứng thư `c46902e9…d45ab20c` |
 | 2 | v0.7.4 trên GitHub đang là bản chính thức, không phải prerelease | Đã báo sếp. Chỉ sếp bấm tay được |
 | 3 | Issue #65 (Sol tiếp quản) | Chờ comment bàn giao cuối của Sol, rồi PM đóng issue |
 | 4 | Dependabot: #75 (bản phụ, Sol tự gộp), #76 `upload-artifact` 4→7, #78 `gradle/actions` 4→6, #77 Compose BOM 2025.03.01 | #76, #77, #78 chờ Luna tiền duyệt, rồi **PM duyệt** theo `tra-loi-sol-009` |
@@ -32,6 +32,8 @@ Phiên PM cũ: `session_01CqoeMJCn5kiXUbTjrJGUde`. Phiên này **dừng kiểm t
 | 7 | G9 Firebase Test Lab (máy ARM thật), Q4, G4A2 | Còn trên trang tiến độ, chờ sếp |
 | 8 | Trang tiến độ (artifact `7UC9kqrWqv3GNUhhtt4z5d`) | Trong lúc tiếp quản, Sol chỉ cập nhật bản trong repo. Phiên mới cần đẩy `bang-tien-do/state.json` lên ArtifactData `board/state` (lấy `if_version` bằng `get`) |
 | 9 | Trigger kiểm thư cũ `trig_01Nk2NQXsfxm8hQLAZAo4ZsS` đang bắn vào **phiên cũ** | Phiên mới **tắt** trigger này (`update_trigger enabled=false`), rồi tạo lịch mới. Kế hoạch V46/S1: mỗi lượt chạy một phiên mới với skill `pm-kiem-thu` (`create_new_session_on_fire`) |
+
+| 10 | Phiên Sonnet mới **không có Android SDK** ("SDK location not found") | Sonnet không chạy được `./gradlew` tại máy, nên chỉ dựa vào CI. Việc lõi cần build tại máy thì phải cài SDK bằng setup script của môi trường (đọc `read_documentation` topic `environment.setup_script`) hoặc báo sếp |
 
 ## Bài học (đừng lặp lại)
 - Viết mọi số liệu và trạng thái dựa trên bằng chứng (API, log, ảnh chụp), không dựa vào trí nhớ hay tài liệu cũ. Ví dụ: câu "Secrets chưa có" và "repo private" trong tài liệu cũ đều đã sai.
