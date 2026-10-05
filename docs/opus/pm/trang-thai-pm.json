@@ -20,9 +20,9 @@
     "20": "L03 Luna duyệt",
     "18": "L02 Luna (đã trả lời thư)",
     "14": "SOL-003 (đã trả lời)",
-    "44": "#44gộpf96da6e. R6@dd01 run37241841378: XP306/VX274/Ace298s PASSmức1 sauAảo, VXscene/hội thoại khônghộplỗi. Jobđỏ vìVX tốt hơnexpectation cũ; f740đòicả3PASS, chờCI/Luna. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; khôngR7.",
+    "44": "#44gộpf96da6e. R6@f740 run37249066599 SUCCESS/art11320593801 XP369/VX339/Ace382s PASSmức1 sauAảo. SignalsOOMtrướcgameđangretry, khônggọicảCIxanh. Đủ5/audio/save-load/FPS [CHƯA KIỂM]; khôngR7.",
     "46": "gộp5d352a7; Luna + CI xanh, K3 máy thật chưa kiểm",
-    "50": "Snapshot Sol #50 headf740ad8: R6@dd01 run37241841378/art11316984731 đã xemảnh/log/verdict XP306s/VX274s/Ace298s PASS_LEVEL_1. VXquaNewGame/A cóscene+hội thoạiEliteGuard, khônghộplỗi; size/Regexp2174 đãqua. JobFAIL doVXunexpectedrecovery đúnggate, PMtạmthời kiểmproofrồi bỏVX khỏiexpect_fail cảworkflow/shell/CLI. Giữthreshold10/quan sát60s/process/errorchecks, cả3phảiPASS. Build37241841382/CodeQL37241841390/signals37241841375 SUCCESSdd01; native11318190058marker1/orange/PixelCopy10–40s/Regexp-sizearithmetic3+allpriorcontrolsPASS. Diagnostic11317867918 1570SyntaxError/2174attached/124compile39362540byte chỉcompile. Local122Ruby18/20privacy/6probe+5verdictPASS; rootSDKmissing. ProofV44-R6-dd01de2.json; CẦNCIđúngf740/Lunafresh trướcmerge, khôngR7.",
+    "50": "Snapshot Sol #50 headf740ad8: Build37249066676/R637249066599/CodeQL37249066606 SUCCESS. R6artifact11320593801 đãxemảnh/log/verdict XP369/VX339/Ace382s PASS_LEVEL_1, expectFail=[]/matchesExpectationtrue; VXtitle→NewGame/A→scene+hội thoạiSnow, khônghộplỗi. Signals37249066540 attempt1 FAILrunner fork failed Out of memory/exit126 trướcgamestart; artifact11320432134 chỉfinal/log, khôngnativeproof. Đãrerun duy nhất failedjob111572762902 cùnghead/code/assertions, attempt2 đangchạy; KHÔNGcoicảCIxanh/khôngclaimfixapp. Nativeappdd01 trướcđó PASS11318190058, khôngthaygateheadmới. Luna5986720042 reviewf740 choexpectationskhớpproof, yêu cầu xửlý/phânloạisignals trướcCIhoàntất; CẦNretrySUCCESStrướcPMmerge. ChỉbỏVXkhỏiexpect_fail cảworkflow/shell/CLI, giữthreshold10/quan sát60s/process/errorchecks. Proofdd01đãcommit; f740proofquaPRcomment5986715217 đểgiữheadreview. Audio/save-load/FPS/full5/máythật/Clouddeploy [CHƯA KIỂM], khôngR7.",
     "51": "gộp0e17edf,27test +5ZIP thật PASS; quota chưa đo",
     "34": "PM duyệt; head 1c64c02 chỉ gộp main",
     "55-57": "Dependabot → Sol (tra-loi-sol-009)",
@@ -39,7 +39,7 @@
     "62": "SOL012 kẹt; Luna xác nhận14:55, ký/publish không được cấp ngoại lệ",
     "70": "Gộpf4ebd0b sauLuna Đạt đúngf40f89c+docCIchecksSUCCESS. V11docs-onlykhôngappunitPASS. BảnPMkế871appfixpending.",
     "21": "gộp3453741 sau LunaĐạt d275, audit149dòng/19phát hiện/48đềxuất lịch sử. V11 docs-only Buildskipped, khôngunitappPASS.",
-    "71": "4PMdocs cập nhậtdd01 R6cả3PASSmức1/nativePASS, f740expect_failrỗngpendingCI/Luna. V11docs-onlykhôngappunitPASS; freshLuna trướcmerge."
+    "71": "SửaLunac55Cầnsửa:4PMdocs ghiBuild/R6/CodeQLf740xanh, R6XP369/VX339/Ace382PASS, signalsattempt1runnerOOM/attempt2pending. KhôngcoicảCIxanh; docsCI/freshLunaheadmới trướcmerge."
   },
   "idle": 0,
   "cadence": 60,
@@ -66,7 +66,7 @@
   "acting_pm": "Sol",
   "takeover_until": "2026-10-05T15:00:00Z",
   "takeover_issue": 65,
-  "updated_at": "2026-10-05T00:51:51.623670Z",
+  "updated_at": "2026-10-05T01:50:37.500648Z",
   "gemini": {
     "status": "chờ chủ dự án kích hoạt",
     "tasks": [
