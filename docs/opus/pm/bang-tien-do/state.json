@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-05T15:35:00Z",
+ "updatedAt": "2026-10-05T15:40:39Z",
  "mainSha": "2c4ddd3e79de736202c57196c39453a6af5d0411",
  "app": "App 0.7.4 → 0.7.5 đang phát hành · config 34",
- "nextCheck": "2026-10-05T06:54:40Z",
+ "nextCheck": "2026-10-05T16:10:39Z",
  "headline": "Đang phát hành bản thử 0.7.5 (sếp đồng ý 05/10), ký trên GitHub. Cả 3 game RPG Maker thật (XP, VX, VX Ace) đã chạy tới hội thoại trên máy ảo. PM (Opus) nhận lại điều phối; Sol về phần việc riêng.",
  "needsBoss": [
   {
@@ -564,11 +564,11 @@
   },
   {
    "code": "V41",
-   "title": "GitHub tự quét lỗi bảo mật và thư viện cũ (CodeQL, Dependabot)",
+   "title": "Dependabot/nâng thư viện",
    "owner": "Sol",
-   "status": "xong",
+   "status": "dang",
    "module": "ci",
-   "note": "#57/#58/#56/#55 đã gộp sau Luna/CI/PMreview riêng; Kotlin2.0.21 giữ nguyên, coroutines1.9.0. Cloud/ký chưa kiểm và không dispatch."
+   "note": "Dependabot: PM duyệt #77 BOM 2025.03.01, #76 upload-artifact v7, #78 setup-gradle v6 (basic). Gộp sau v0.7.5 theo thứ tự #77→#76→#78. #75 browser đóng (cần SDK36)."
   },
   {
    "code": "V40",
@@ -600,7 +600,7 @@
    "owner": "Sol",
    "status": "ket",
    "module": "renpy8",
-   "note": "SOL012: chưa cấp ngoại lệ phát gói Renpy/bậtconfig, không publish."
+   "note": "SOL-012 đã trả lời (B, 05/10): Sol dựng+kiểm gói Ren'Py trên CI, không phát hành/bật config; phát hành cần sếp duyệt từng lần."
   },
   {
    "code": "V46",
@@ -684,6 +684,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-05T15:40:39Z",
+   "text": "PM mới (phiên session_01EAtBeD…) nhận việc 15:40Z. Lịch kiểm thư mới (ngày 30', đêm 60'). PM duyệt #76/#77/#78, đồng ý đóng #75, trả lời SOL-012 (#62). #81 0.7.5 đang chờ build."
+  },
   {
    "t": "2026-10-05T15:35:00Z",
    "text": "Sếp đồng ý phát hành 0.7.5 bản thử. Sonnet (phiên mới) mở PR #81 nâng phiên bản; PM duyệt; sau khi CI xanh Sonnet gộp, chạy phát hành trên GitHub và kiểm chứng thư ký."
