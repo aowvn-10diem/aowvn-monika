@@ -33,6 +33,10 @@ find pack/private \( -name '*.rpy' -o -name '*.pyo' -o -name '*.pyx' -o -name '*
 find pack/private -name '.*' -prune -exec rm -rf {} +
 rm -rf pack/private/include
 cp "$REPO/packs/renpy/environment.txt" pack/private/environment.txt
+# RAPT's private runtime is source-free. PEP3147 __pycache__ files alone are
+# not imported without .py sources; use the legacy sourceless .pyc layout.
+python3 "$REPO/scripts/renpy-bytecode-layout.py" pack/private
+test -s pack/private/renpy/bootstrap.pyc
 python3 - "$WORK" "$SDK" "$ABI" "$SDK_SHA" "$RAPT_SHA" <<'PY'
 import hashlib,json,re,shutil,subprocess,sys,zipfile
 from pathlib import Path

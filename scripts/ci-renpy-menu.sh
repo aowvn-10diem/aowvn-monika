@@ -36,6 +36,7 @@ APK=$(find app/build/outputs/apk/debug -name '*universal*.apk' -print -quit)
 if [ -z "$APK" ]; then APK=$(find app/build/outputs/apk/debug -name '*.apk' -print -quit); fi
 test -n "$APK"
 adb install -r "$APK" >/dev/null
+adb shell pm grant "$PKG" android.permission.POST_NOTIFICATIONS
 adb shell "am start -W -n $PKG/vn.aow.monika.ui.MainActivity" >/dev/null
 APP_UID=$(adb shell stat -c %u "/data/data/$PKG" | tr -d '\r')
 ROOT="/data/data/$PKG/files"
