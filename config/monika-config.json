@@ -1,5 +1,5 @@
 {
-  "configVersion": 33,
+  "configVersion": 34,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 2,
@@ -416,7 +416,10 @@
       "extensions": [],
       "labels": [
         "RPGmaker Việt Hoá"
-      ]
+      ],
+      "engine": "rgss",
+      "pad": "rpg",
+      "allowExternalApp": true
     },
     {
       "id": "onscripter",
@@ -1224,6 +1227,15 @@
       "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/engines-onsyuri-2/onsyuri-web.zip",
       "sha256": "e46e7b5341859e94d9bb002fa15a42b3e19fe5113c7d314cd950ff51a70f4cff",
       "size": 1789894
+    },
+    "rgss": {
+      "version": "engines-rgss-6",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/engines-rgss-6/rgss-arm64-v8a.zip",
+      "sha256": "3135ef8ae95281051178cb343f44bac79a0462323083bd17798faed65f00864b",
+      "size": 7922296,
+      "abis": [
+        "arm64-v8a"
+      ]
     }
   },
   "prefetchCores": [

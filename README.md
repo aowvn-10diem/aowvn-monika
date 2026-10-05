@@ -10,11 +10,11 @@ App Android "tất cả trong một" cho cộng đồng [aow.vn](https://www.aow
 | Thông báo | App tự kiểm tra bài mới định kỳ (mặc định 60 phút), lọc theo nhãn user chọn |
 | Tải game | Host hỗ trợ tải thẳng (Pixeldrain) → tải nền rồi tự giải nén vào thư viện. Host khác → mở trình duyệt, rồi "Thêm game từ máy" |
 | Giải nén | ZIP dùng zip4j; RAR, 7z và ZIP lạ dùng gói 7-Zip tải khi cần. Có hỗ trợ mật khẩu và thử các mật khẩu trong config |
-| Giả lập nhúng sẵn | NDS, GBA, GBC, PS1, PSP, RPG Maker 2000/2003 (lõi tải khi cần), Kirikiri (gói engine tải khi cần) |
+| Giả lập nhúng sẵn | NDS, GBA, GBC, PS1, PSP, RPG Maker 2000/2003 (lõi tải khi cần), RPG Maker XP/VX/Ace (RGSS nhúng trên arm64-v8a, gói tải khi cần), Kirikiri (gói engine tải khi cần) |
 | Chạy dạng web | Flash (Ruffle), RPG Maker MV/MZ, TyranoScript, ONScripter |
 | APK | Mở trình cài đặt Android |
 | Java (J2ME) | J2ME Loader nhúng sẵn (Apache-2.0), phím ảo kiểu Monika — xem docs/J2ME-LOADER.md |
-| App ngoài | Kirikiroid2 làm lựa chọn dự phòng cho Kirikiri; JoiPlay (Ren'Py, RPG Maker XP/VX/Ace): kiểm tra đã cài, link tải, hướng dẫn cài |
+| App ngoài | Kirikiroid2 làm lựa chọn dự phòng cho Kirikiri; JoiPlay cho Ren'Py và dự phòng cho RPG Maker XP/VX/Ace khi thiết bị không hỗ trợ ABI RGSS hiện có (arm64-v8a): kiểm tra đã cài, link tải, hướng dẫn cài |
 
 ## Nguyên tắc: dễ cập nhật, dễ sửa
 

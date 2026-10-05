@@ -27,7 +27,7 @@ flowchart LR
   OPEN --> RP["RenpyGameActivity<br/>tiến trình :game"] --> RPO["RenpyOverlay"]
 ```
 
-`EnginePrepActivity` kiểm tra quyền đọc game và trạng thái gói; gói chưa có thì tải qua `PackManager`, xong mới mở Activity của engine. Các Activity Kirikiri, RPG Maker và Ren'Py chạy trong tiến trình `:game`, khai báo ở `app/src/main/AndroidManifest.xml`; mỗi Activity hiển thị lớp phủ riêng. Route Ren'Py dùng `EngineRoutes` → `PackManager.RENPY8`, còn `RenpyBase.resolve` tìm thư mục chứa `game/`. Hiện `config/monika-config.json` vẫn chọn `runner: external` và `joiplay`, vì vậy đường nhúng chưa được chọn từ thư viện; game Ren'Py thật còn [CHƯA KIỂM].
+`EnginePrepActivity` kiểm tra quyền đọc game và trạng thái gói; gói chưa có thì tải qua `PackManager` trước khi mở Activity. Các Activity Kirikiri, RPG Maker và Ren'Py chạy trong tiến trình `:game`, khai báo ở `app/src/main/AndroidManifest.xml`; mỗi Activity hiển thị lớp phủ riêng. `GameLauncher` gọi `EngineRoutes.usable(system.engine)`: cấu hình `systems.rgss.engine="rgss"` bật route RGSS và ghim gói `engines-rgss-6` cho ABI `arm64-v8a`. Khi thiết bị hỗ trợ ABI đó, game dùng route nhúng; nếu không, `allowExternalApp: true` cho phép mở JoiPlay. Nếu tải gói lỗi, màn chuẩn bị báo lỗi để thử lại, không tự chuyển sang app ngoài. Ren'Py vẫn cấu hình `runner: external` + `joiplay`, nên route nhúng chưa được chọn; game Ren'Py thật [CHƯA KIỂM].
 
 | Muốn sửa | Mở file |
 |---|---|
