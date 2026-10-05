@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-05T15:40:39Z",
+ "updatedAt": "2026-10-05T15:47:30Z",
  "mainSha": "2c4ddd3e79de736202c57196c39453a6af5d0411",
  "app": "App 0.7.4 → 0.7.5 đang phát hành · config 34",
  "nextCheck": "2026-10-05T16:10:39Z",
@@ -609,6 +609,34 @@
    "status": "xong",
    "module": "ci",
    "note": "Đã gộp (#51): 9 skill + CLAUDE.md gọn. Bước tiếp: lượt kiểm PM chạy phiên mới gọn."
+  },
+  {
+   "code": "V47",
+   "title": "Sync config lên Cloudflare đỏ (thiếu secret)",
+   "owner": "",
+   "status": "cho",
+   "note": "Thư sol-011, ưu tiên 1: xác minh nguồn config từ xa và configVersion đang phục vụ; báo PM nếu KV cũ."
+  },
+  {
+   "code": "V48",
+   "title": "Bản tin: nhận mẫu review Luna mới",
+   "owner": "",
+   "status": "cho",
+   "note": "Thư sol-011, ưu tiên 3."
+  },
+  {
+   "code": "V49",
+   "title": "Phân loại 26 cảnh báo CodeQL",
+   "owner": "",
+   "status": "cho",
+   "note": "Thư sol-011, ưu tiên 4."
+  },
+  {
+   "code": "V50",
+   "title": "Nâng nốt action v7/v6 cho workflow còn lại",
+   "owner": "",
+   "status": "cho",
+   "note": "Thư sol-011, ưu tiên 6, sau khi gộp #76/#78."
   }
  ],
  "gates": [
@@ -684,6 +712,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-05T15:47:30Z",
+   "text": "Theo lệnh sếp tăng việc cho Sol: thư sol-011 giao V47 (sync Cloudflare đỏ do thiếu secret), V31(3) sau 0.7.5, V48 parser bản tin, V49 CodeQL 26 cảnh báo, V45 kiểm trên CI, V50 nâng action."
+  },
   {
    "t": "2026-10-05T15:40:39Z",
    "text": "PM mới (phiên session_01EAtBeD…) nhận việc 15:40Z. Lịch kiểm thư mới (ngày 30', đêm 60'). PM duyệt #76/#77/#78, đồng ý đóng #75, trả lời SOL-012 (#62). #81 0.7.5 đang chờ build."
