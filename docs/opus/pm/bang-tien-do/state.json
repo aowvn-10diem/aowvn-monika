@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-05T04:08:32Z",
-  "mainSha": "2493ec00d99f0c0cea86e5d90f81eed7a3802583",
+  "updatedAt": "2026-10-05T05:54:40Z",
+  "mainSha": "2c4ddd3e79de736202c57196c39453a6af5d0411",
   "app": "App0.7.4 · config34",
-  "nextCheck": "2026-10-05T04:40:00Z",
-  "headline": "V16 đã gộp #73 (ef6b8c0), config34 ghim RGSS arm64. V43 dry-run duy nhất 37261174377 SUCCESS; chứng thư đạt, job release skip, không có artifact. G7 còn chờ thử 0.7.4.",
+  "nextCheck": "2026-10-05T06:54:40Z",
+  "headline": "V16 #73 đã gộp, config34 ghim RGSS arm64. V43 dry-run duy nhất 37261174377 SUCCESS, không artifact/release. PM docs #71 đã gộp sau Luna + CI. G7 còn chờ thử 0.7.4.",
   "needsBoss": [
     {
       "code": "G7",
@@ -684,6 +684,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-05T05:54:40Z",
+      "text": "PM docs #71 merged 2c4ddd3 after Luna review5988269621 and exact-head Build37262788942/docs checks37263165134 green. Main now includes #79 L09 docs update4b2aa8f. V43 single dry-run37261174377 SUCCESS, release skipped/no artifacts; G7 0.7.4 retest pending. Audit findings remain recorded in issue65."
+    },
     {
       "t": "2026-10-05T04:08:32Z",
       "text": "V43 authorized single dry-run37261174377 SUCCESS on main2493ec0: signing_dry_run and verify-apk-cert passed; release job skipped; artifact list empty. No release/tag/APK upload."
