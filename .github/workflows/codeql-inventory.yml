@@ -1,8 +1,13 @@
-name: CodeQL inventory (V49, read only)
+name: CodeQL inventory (V49)
 on:
   pull_request:
     paths: ['scripts/codeql-inventory.py', 'scripts/test-codeql-inventory.py', '.github/workflows/codeql-inventory.yml']
   workflow_dispatch:
+    inputs:
+      dismiss_reviewed_22:
+        description: 'Đóng riêng false positive 22 đã review; chỉ main sau Luna/PM duyệt'
+        type: boolean
+        default: false
 permissions:
   contents: read
   security-events: read
@@ -23,5 +28,23 @@ jobs:
         with:
           name: v49-codeql-inventory
           path: out/codeql-inventory/
+          if-no-files-found: error
+          retention-days: 3
+  dismiss-reviewed:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dismiss_reviewed_22
+    permissions: {contents: read, security-events: write}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, persist-credentials: false}
+      - run: python3 scripts/test-codeql-inventory.py
+      - name: Dismiss only reviewed alert 22, record counts before and after
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: python3 scripts/codeql-inventory.py --dismiss-reviewed-22 --out out/codeql-dismissal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v49-codeql-dismissal
+          path: out/codeql-dismissal/
           if-no-files-found: error
           retention-days: 3

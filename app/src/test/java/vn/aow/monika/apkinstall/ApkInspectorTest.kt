@@ -54,6 +54,21 @@ class ApkInspectorTest {
         assertEquals(2, r.parts.size)
     }
 
+    @Test fun apkEntriesCannotEscapePrivateWorkDirectory() {
+        val apks = ApkFixture.zip(f("traversal.apks"), mapOf(
+            "../../escaped.apk" to ApkFixture.apkBytes("com.fixture.safe"),
+            "/absolute.apk" to ApkFixture.apkBytes("com.fixture.safe", split = "absolute"),
+            "nested/../other.apk" to ApkFixture.apkBytes("com.fixture.safe", split = "other"),
+            "back\\..\\windows.apk" to ApkFixture.apkBytes("com.fixture.safe", split = "windows"),
+        ))
+        val result = inspector().inspect(apks)
+        assertEquals(4, result.parts.size)
+        val work = result.workDir!!.canonicalFile
+        assertTrue(result.parts.all { it.file.canonicalFile.parentFile == work })
+        assertFalse(f("escaped.apk").exists())
+        assertFalse(f("absolute.apk").exists())
+    }
+
     @Test fun xapkWithObbAndData() {
         val xapk = ApkFixture.zip(f("g.xapk"), mapOf(
             "manifest.json" to """{"package_name":"com.foo.game","split_apks":[{"file":"base.apk","id":"base"}]}""".toByteArray(),
