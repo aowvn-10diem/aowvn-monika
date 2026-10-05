@@ -78,5 +78,7 @@
   "prompt": "docs/opus/hop-thu/PROMPT-GEMINI-FLASH.md"
  },
  "monitor": "Một lịch lặp60phút, enabled khi làm; nếu bị dừng tiếp tục plan, không lượt trùng.",
- "takeover_until_ended": "2026-10-05T15:00:00Z"
+ "takeover_until_ended": "2026-10-05T15:00:00Z",
+ "sonnet_session": "session_01HaU9f6SbsYY2fjxpeYbEs1 (mở 05/10 15:27Z, phiên chính mới)",
+ "sonnet_task": "V43 bước 2: PR nâng 0.7.5 (versionCode 40); chờ sếp OK mới chạy release.yml (tag v0.7.5, stable=false)"
 }
