@@ -126,6 +126,22 @@ class ConfigTest {
     }
 
     @Test
+    fun `rgss ghim goi cong khai va van giu Joiplay du phong`() {
+        assertEquals(34, cfg.configVersion)
+        val module = cfg.modules["rgss"] ?: error("modules.rgss thiếu")
+        assertEquals("engines-rgss-6", module.version)
+        assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/engines-rgss-6/rgss-arm64-v8a.zip", module.url)
+        assertEquals("3135ef8ae95281051178cb343f44bac79a0462323083bd17798faed65f00864b", module.sha256)
+        assertEquals(7_922_296L, module.size)
+        assertEquals(listOf("arm64-v8a"), module.abis)
+        val system = cfg.system("rgss") ?: error("systems.rgss thiếu")
+        assertEquals("rgss", system.engine)
+        assertEquals("rpg", system.pad)
+        assertTrue(system.allowExternalApp)
+        assertEquals("joiplay", system.externalApp)
+    }
+
+    @Test
     fun `allowExternalApp mac dinh true va doc duoc false`() {
         assertTrue(cfg.systems.all { it.allowExternalApp }) // config hiện tại chưa tắt hệ nào
         val c = ConfigRepository.parse("""{"configVersion":1,"systems":[{"id":"x","name":"X","runner":"external","allowExternalApp":false},{"id":"y","name":"Y","runner":"external"}]}""")
