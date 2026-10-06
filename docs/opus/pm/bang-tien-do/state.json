@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-06T09:14:23Z",
- "mainSha": "438a79d",
+ "updatedAt": "2026-10-06T10:15:16Z",
+ "mainSha": "0171920",
  "app": "App 0.7.6 (bản thử) · config 36",
- "nextCheck": "2026-10-06T10:14:23Z",
+ "nextCheck": "2026-10-06T11:15:16Z",
  "headline": "0.7.6 vẫn lỗi Kara no Shoujo; Sonnet đang đọc báo cáo sếp gửi. Sếp chốt R1 (app nhận link), R2 (tách repo riêng).",
  "needsBoss": [
   {
@@ -629,8 +629,8 @@
    "code": "V49",
    "title": "Phân loại 26 cảnh báo CodeQL",
    "owner": "Sonnet: #84, #86",
-   "status": "dang",
-   "note": "#84 inventory gộp (1d33db1). #86 chờ CodeQL + duyệt",
+   "status": "cho",
+   "note": "#86 gộp 0171920 (MediaStore/SAF). Chờ thử máy ở bản phát hành sau",
    "links": [
     {
      "label": "#86",
@@ -834,6 +834,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T10:15:16Z",
+   "text": "PM gộp #86 (0171920, thông báo V49) và #105 (34620c3, release.yml setup-gradle v6) — Haiku Đạt, CI xanh"
+  },
   {
    "t": "2026-10-06T09:14:23Z",
    "text": "Gộp #103 (độ phủ test, Kover). #86 và #105 chờ duyệt."
