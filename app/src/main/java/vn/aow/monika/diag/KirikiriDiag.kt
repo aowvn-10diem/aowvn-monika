@@ -13,11 +13,26 @@ object KirikiriDiag {
     private const val TAG = "kirikiri-entry"
     private const val MAX_FILES = 12
 
-    /** Chạy ở luồng nền (chỉ mục XP3 có thể vài MB); mọi lỗi bị nuốt, không bao giờ làm hỏng việc mở game. */
+    /** Giới hạn thời gian cho cả lượt chẩn đoán; quá hạn thì chỉ ghi một dòng và bỏ, không chờ thêm. */
+    private const val TIMEOUT_MS = 8_000L
+
+    /** Chạy ở luồng nền (chỉ mục XP3 có thể vài MB), có timeout; mọi lỗi bị nuốt, không bao giờ làm hỏng việc mở game. */
     fun logEntryAsync(c: Context, entryPath: String?) {
         val app = c.applicationContext
-        Thread({ runCatching { for (line in describe(entryPath)) Diagnostics.crumb(app, TAG, line) } }, "kirikiri-diag")
-            .apply { isDaemon = true }.start()
+        val task = java.util.concurrent.FutureTask { describe(entryPath) }
+        Thread(task, "kirikiri-diag").apply { isDaemon = true }.start()
+        Thread({
+            runCatching {
+                val lines = try {
+                    task.get(TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
+                } catch (e: java.util.concurrent.TimeoutException) {
+                    task.cancel(true); listOf("quá ${TIMEOUT_MS / 1000}s khi đọc thư mục/chỉ mục, bỏ qua")
+                } catch (e: Exception) {
+                    listOf("không rõ (${e.javaClass.simpleName})")
+                }
+                for (line in lines) Diagnostics.crumb(app, TAG, line)
+            }
+        }, "kirikiri-diag-log").apply { isDaemon = true }.start()
     }
 
     /** Tách riêng để kiểm thử: trả về các dòng vệt cho một đường dẫn lối vào. */
