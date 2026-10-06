@@ -1,10 +1,22 @@
 {
- "updatedAt": "2026-10-06T07:14:10Z",
+ "updatedAt": "2026-10-06T07:14:50Z",
  "mainSha": "1d33db1",
  "app": "App 0.7.6 (bản thử) · config 35",
  "nextCheck": "2026-10-06T07:28:27Z",
  "headline": "0.7.6 vẫn lỗi Kara no Shoujo; Sonnet đang đọc báo cáo sếp gửi. Sếp chốt R1 (app nhận link), R2 (tách repo riêng).",
  "needsBoss": [
+  {
+   "code": "TOK",
+   "urgency": "Gấp",
+   "kind": "one",
+   "question": "Cho Sonnet đọc được báo cáo lỗi Kara no Shoujo sếp vừa gửi",
+   "how": "Trong phiên Sonnet: bấm tên môi trường cloud trên thanh tiêu đề → Edit → thêm biến môi trường CRASH_ADMIN_TOKEN = token quản trị Worker báo lỗi (token tạo lúc làm V29, sếp giữ). Lưu lại. Phiên Sonnet mới sẽ đọc được. KHÔNG dán token vào chat.",
+   "recommend": "Đây là cách duy nhất để đội tự đọc báo cáo. Nếu không tìm thấy token, chọn “Không có token”, PM sẽ giao Sonnet làm lối đọc báo cáo khác.",
+   "options": [
+    "Đã thêm CRASH_ADMIN_TOKEN",
+    "Không có token"
+   ]
+  },
   {
    "code": "G9",
    "urgency": "Nên làm",
@@ -823,6 +835,10 @@
  ],
  "log": [
   {
+   "t": "2026-10-06T07:14:50Z",
+   "text": "Sonnet thiếu CRASH_ADMIN_TOKEN nên chưa đọc được báo cáo G7B. Hỏi sếp (câu TOK)."
+  },
+  {
    "t": "2026-10-06T07:14:10Z",
    "text": "G7B: 0.7.6 vẫn lỗi startup.tjs, sếp đã gửi báo cáo. R1, R2 đã chốt. Haiku duyệt dự phòng PR Sonnet (Nova vắng)."
   },
@@ -1596,9 +1612,9 @@
  "blockers": [
   {
    "code": "V26",
-   "status": "ket",
+   "status": "sep",
    "title": "0.7.6 vẫn lỗi Kara no Shoujo (startup.tjs)",
-   "who": "Sonnet đọc báo cáo sếp gửi từ nút Báo lỗi",
+   "who": "Sếp thêm CRASH_ADMIN_TOKEN vào môi trường cloud → Sonnet đọc báo cáo",
    "next": "Từ vệt chẩn đoán xem xp3 nào có startup.tjs, resolver chọn gì; sửa rồi phát hành bản kế tiếp (cần sếp đồng ý).",
    "links": [
     {
@@ -1606,7 +1622,8 @@
      "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.6/AowVN-Monika-v0.7.6.apk",
      "kind": "tai"
     }
-   ]
+   ],
+   "ask": "TOK"
   },
   {
    "code": "V47",
