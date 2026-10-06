@@ -46,11 +46,19 @@ class NotificationOpenActivity : Activity() {
                 .putExtra(EXTRA_FLAGS, target.flags)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-        /** Dựng Intent MỚI từ các trường đã kiểm; null nếu không khớp thứ app tự tạo (VIEW + content:// của FileProvider của app). */
+        /**
+         * Authority app tự phát ra: FileProvider của app, MediaStore (`media`) và SAF (`*.documents`, ví dụ
+         * `com.android.providers.downloads.documents`) cho thông báo "Đã tải xong" của BrowserDownloads.
+         */
+        private fun allowedAuthority(context: Context, authority: String?): Boolean =
+            authority != null && (authority == "${context.packageName}.files" || authority == "media" ||
+                authority.endsWith(".documents"))
+
+        /** Dựng Intent MỚI từ các trường đã kiểm; null nếu không khớp thứ app tự tạo (VIEW + content:// của FileProvider của app, MediaStore hoặc SAF). */
         internal fun buildTarget(context: Context, action: String?, data: String?, type: String?, flags: Int): Intent? {
             if (action != Intent.ACTION_VIEW || data.isNullOrEmpty()) return null
             val uri = Uri.parse(data)
-            if (uri.scheme != "content" || uri.authority != "${context.packageName}.files") return null
+            if (uri.scheme != "content" || !allowedAuthority(context, uri.authority)) return null
             return Intent(Intent.ACTION_VIEW)
                 .setDataAndType(uri, type)
                 .addFlags((flags and ALLOWED_FLAGS) or Intent.FLAG_GRANT_READ_URI_PERMISSION)

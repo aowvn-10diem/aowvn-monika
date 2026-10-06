@@ -12,3 +12,6 @@ Regression Robolectric API28/34 kiểm PendingIntent explicit, manifest không e
 
 ## Sửa theo Luna "Cần sửa" (06/10, Sonnet tiếp quản)
 CodeQL báo `java/android/intent-redirection` ở `NotificationOpenActivity.onCreate` (đọc `Intent` từ extra rồi `startActivity`). Sửa: extras chỉ mang chuỗi/số (action, data, type, flags); activity **dựng Intent mới** sau khi kiểm: action = `VIEW`, `content://` với authority `"<package>.files"` (FileProvider của app), cờ chỉ giữ `GRANT_READ_URI_PERMISSION | NEW_TASK`. Intent nhét vào extra bị bỏ qua. Test Robolectric thêm: không chuyển tiếp Intent trong extra, từ chối authority/action lạ, che cờ ghi/CLEAR_TASK. **[CHƯA KIỂM]** CodeQL có hết cảnh báo hay không (chờ CI trên head mới) và thao tác thông báo trên máy thật.
+
+## Nova "Cần sửa" ở 6541b18 — URI MediaStore/SAF
+`buildTarget` trước chỉ cho authority `<pkg>.files` nên thông báo "Đã tải xong" của `BrowserDownloads` (URI MediaStore/SAF) không mở được. Nay cho thêm `media` và `*.documents`; scheme vẫn phải `content`, action VIEW, cờ vẫn che còn GRANT_READ|NEW_TASK, Intent vẫn dựng mới. Test `trampolineAllowsMediaStoreAndSafUrisButNotLookalikes` (3 URI hợp lệ qua; `media.evil`, `evil.documentsx`, `other.app` bị chặn). [CHƯA KIỂM] trên máy thật.
