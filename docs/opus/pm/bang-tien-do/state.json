@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-06T08:14:41Z",
- "mainSha": "ea2125f",
+ "updatedAt": "2026-10-06T09:14:23Z",
+ "mainSha": "438a79d",
  "app": "App 0.7.6 (bản thử) · config 36",
- "nextCheck": "2026-10-06T09:14:41Z",
+ "nextCheck": "2026-10-06T10:14:23Z",
  "headline": "0.7.6 vẫn lỗi Kara no Shoujo; Sonnet đang đọc báo cáo sếp gửi. Sếp chốt R1 (app nhận link), R2 (tách repo riêng).",
  "needsBoss": [
   {
@@ -725,8 +725,8 @@
    "code": "V51",
    "title": "Độ phủ test: Kover trong CI, báo % theo module",
    "owner": "Sonnet",
-   "status": "dang",
-   "note": "Mở 06/10 theo lệnh sếp",
+   "status": "xong",
+   "note": "#103 gộp 438a79d. Mốc: dòng 47,1% · nhánh 31,2%",
    "module": ""
   },
   {
@@ -834,6 +834,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T09:14:23Z",
+   "text": "Gộp #103 (độ phủ test, Kover). #86 và #105 chờ duyệt."
+  },
   {
    "t": "2026-10-06T08:14:35Z",
    "text": "Gộp #104 (config 0.7.6), #100 (action v6), #99 (V47), #96 (timeout). #86 chờ sửa theo Nova."
