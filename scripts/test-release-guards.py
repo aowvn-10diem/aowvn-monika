@@ -61,12 +61,16 @@ class Guards(unittest.TestCase):
         self.env['TAG'] = 'main; echo bad'
         self.assertNotEqual(self.run_guard('release_guard').returncode, 0)
 
-    def signer(self, output, exit_code=0):
+    def signer(self, output, exit_code=0, verify_code=0):
         signer = self.cwd / 'sdk/build-tools/35.0.0/apksigner'
         signer.parent.mkdir(parents=True, exist_ok=True)
         signer.write_text('#!/bin/sh\nprintf "%s\\n" "$SIM_CERT"\nexit '+str(exit_code)+'\n')
         signer.chmod(0o755)
         self.env['SIM_CERT'] = output
+        # APK giả không có khối chữ ký thật: thay verify-apk-cert.py bằng bản giả trả mã theo ca thử.
+        stub = self.cwd / 'scripts/verify-apk-cert.py'
+        stub.parent.mkdir(parents=True, exist_ok=True)
+        stub.write_text('import sys\nsys.exit('+str(verify_code)+')\n')
         (self.cwd / 'AowVN-Monika-v1.2.3.apk').write_bytes(b'fixture APK, not Android')
         (self.cwd / 'mapping-v1.2.3.txt').write_text('fixture mapping')
 
@@ -76,9 +80,11 @@ class Guards(unittest.TestCase):
         self.assertFalse((self.cwd / 'release-notes-v1.2.3.md').exists())
 
     def test_unsigned_or_unreadable_certificate_stops(self):
-        for code in (0, 1):
-            self.signer('unreadable fixture', code)
-            self.assertNotEqual(self.run_guard('apk_guard').returncode, 0)
+        for code, verify in ((0, 1), (1, 0), (1, 1)):
+            self.signer('unreadable fixture', code, verify)
+            result = self.run_guard('apk_guard')
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('unreadable fixture', result.stdout)
 
     def test_notes_contain_both_real_file_hashes(self):
         self.signer('Signer #1 certificate DN: CN=Fixture\nSigner #1 certificate SHA-256 digest: fake')
