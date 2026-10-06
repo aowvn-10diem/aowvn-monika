@@ -33,7 +33,8 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-java@v6
         with: {distribution: temurin, java-version: 17}
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
+        with: {cache-provider: basic}
       - name: Unit trên config chuẩn
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
@@ -58,6 +59,6 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
           script: bash scripts/ci-user-report.sh "$RUNNER_TEMP/user-report" out/user-report
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with: {name: user-report-api34, path: out/user-report/, retention-days: 3}

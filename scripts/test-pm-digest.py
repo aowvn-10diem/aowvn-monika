@@ -45,6 +45,12 @@ class FixtureAPI:
         self.calls.append(route)
         return self.responses.get(route, {})
 
+    def latest_completed_workflow_run(self, workflow):
+        value = self.responses.get("latest_sync", None)
+        if isinstance(value, dict) and "_error" in value:
+            raise pm_digest.GitHubAPIError(value["_error"])
+        return value
+
 
 class PagedGitHubAPI(pm_digest.GitHubAPI):
     def __init__(self, responses):
@@ -115,10 +121,54 @@ class DigestTests(unittest.TestCase):
                 self.assertEqual(result["type"], expected)
                 self.assertNotIn("body", result)
 
+    def test_l07_head_and_conclusion_with_legacy_compatibility(self):
+        # Retained public review header + verdict only; no free-form review body.
+        cases = (
+            ("Luna review L07 — head `791a02d711fd61064c7e49bf25df46331ace6b0d`\nKết luận: Cần PM xem", "791a02d711fd61064c7e49bf25df46331ace6b0d", "Cần PM xem"),
+            ("Luna review L07 — head `d1b0cc2651a3e2a7c29ec553b707862b449d82ac`\nKết luận: Đạt", "d1b0cc2651a3e2a7c29ec553b707862b449d82ac", "Đạt"),
+            ("Luna review L07 — head `2ad4f37737b30b3545a43473f611e0d0a6a60ab4`\nKết luận: Cần PM xem", "2ad4f37737b30b3545a43473f611e0d0a6a60ab4", "Cần PM xem"),
+            ("Luna tiền duyệt (commit b123456)\nKết luận: Cần sửa", "b123456", "Cần sửa"),
+        )
+        for body, sha, verdict in cases:
+            with self.subTest(sha=sha):
+                result = pm_digest.classify_comment({"body": body})
+                self.assertEqual(result, {"type": "luna_tien_duyet", "sha": sha, "conclusion": verdict})
+
+    def test_l07_never_uses_sha_from_followup_prose(self):
+        result = pm_digest.classify_comment({"body": "Luna review L07 — head chưa xác nhận\nSo với commit b123456\nKết luận: Cần sửa"})
+        self.assertNotIn("sha", result)
+        self.assertEqual(result["conclusion"], "Cần sửa")
+        for header in ["Luna review L07 — head " + "a" * 41, "Luna review L08 — head abcdef0"]:
+            self.assertNotIn("sha", pm_digest.classify_comment({"body": header}))
+
     def test_missing_code_scanning_permission_is_null(self):
         route = "/code-scanning/alerts?state=open&per_page=100"
         self.fixture["responses"][route] = {"_error": 403}
         self.assertIsNone(self.digest()["code_scanning_open"])
+
+    def test_old_failed_sync_remains_visible_until_success(self):
+        self.fixture["responses"]["latest_sync"] = {
+            "conclusion": "failure", "updated_at": "2026-10-01T01:00:00Z",
+            "html_url": "https://github.com/aowvn-10diem/aowvn-monika/actions/runs/37",
+        }
+        failed = self.digest()
+        self.assertIn("CẢNH BÁO: sync-config", pm_digest.render_markdown(failed))
+        self.assertEqual(failed["sync_config"]["conclusion"], "failure")
+        self.fixture["responses"]["latest_sync"]["conclusion"] = "success"
+        self.assertNotIn("CẢNH BÁO", pm_digest.render_markdown(self.digest()))
+
+    def test_sync_fetch_never_paginates_history(self):
+        route = "/actions/workflows/sync-config.yml/runs?branch=main&status=completed&per_page=1"
+        api = PagedGitHubAPI({route: ({"workflow_runs": [{"conclusion": "failure"}]},
+                                      {"Link": '<https://api.github.com/repos/owner/repo/actions/runs?page=2>; rel="next"'})})
+        self.assertEqual(api.latest_completed_workflow_run("sync-config.yml")["conclusion"], "failure")
+        self.assertEqual(api.calls, [route])
+
+    def test_sync_permission_missing_is_unknown(self):
+        self.fixture["responses"]["latest_sync"] = {"_error": 403}
+        result = self.digest()
+        self.assertIsNone(result["sync_config"]["conclusion"])
+        self.assertNotIn("CẢNH BÁO", pm_digest.render_markdown(result))
 
     def test_markdown_never_exceeds_40_lines(self):
         digest = self.digest()
@@ -127,6 +177,7 @@ class DigestTests(unittest.TestCase):
         digest["branches"] *= 30
         digest["failed_runs_24h"] *= 30
         digest["releases"] *= 30
+        digest["sync_config"] = {"conclusion": "failure", "url": "https://github.com/aowvn-10diem/aowvn-monika/actions/runs/37"}
         rendered = pm_digest.render_markdown(digest)
         self.assertLessEqual(len(rendered.splitlines()), 40)
         self.assertIn("Open code scanning alerts", rendered)

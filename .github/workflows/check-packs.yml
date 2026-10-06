@@ -27,7 +27,8 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
+        with: {cache-provider: basic}
       - name: Biên dịch chính PackTransaction của app (không cần SDK)
         run: ./gradlew -p tools/pack-check test installDist --console=plain
       - name: Tải từng gói/ABI và kiểm bằng mã Kotlin của app
@@ -36,7 +37,7 @@ jobs:
         if: always()
         run: |
           if [ -f out/pack-check/summary.md ]; then cat out/pack-check/summary.md >> "$GITHUB_STEP_SUMMARY"; fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: v37-real-packs

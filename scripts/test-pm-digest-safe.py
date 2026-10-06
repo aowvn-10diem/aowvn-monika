@@ -11,6 +11,15 @@ class FakeDB:
         if method=='GET':return {'ref':m.BOT_REF} if self.exists else None
         return {'sha':'a'*40}
 class SafeDigestTest(unittest.TestCase):
+    def test_sync_warning_preserves_only_public_run_url(self):
+        run='https://github.com/aowvn-10diem/aowvn-monika/actions/runs/37261093978'
+        data={'sync_config':{'conclusion':'failure','url':run}}
+        self.assertIn(run,m.digest.render_markdown(m.sanitize(data)))
+        data['sync_config']['url']=run+'?token=private-value'
+        text=m.digest.render_markdown(m.sanitize(data))
+        self.assertNotIn('private-value',text)
+        self.assertNotIn('?token=',text)
+        self.assertIn('CẢNH BÁO: sync-config',text)
     def test_scrubs_before_json_and_markdown(self):
         data={'repository':m.REPOSITORY,'open_prs':[{'number':1,'branch':'sol/V39','title':'x test@example.test token=secret123 /home/alice/file.txt','body':'không được sao chép','comments':[]}], 'main':{'commits':[{'title':'github_pat_testSecret'}]}, 'failed_runs_24h':[{'url':'https://github.com/aowvn-10diem/aowvn-monika/actions/runs/123'}]}
         safe=m.sanitize(data);text=json.dumps(safe)+m.digest.render_markdown(safe)

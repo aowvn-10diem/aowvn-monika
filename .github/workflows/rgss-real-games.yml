@@ -51,7 +51,8 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: 17}
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
+        with: {cache-provider: basic}
       - name: Unit trên config chuẩn
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
@@ -97,7 +98,7 @@ jobs:
           PY
       - name: Thu diagnostic đã che trước bài game dài (V44)
         if: steps.vx_shape.outcome == 'success'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: v44-vx-diagnostic
           path: |
@@ -131,7 +132,7 @@ jobs:
         env:
           EXPECT_FAIL: ${{ inputs.expect_fail }}
           EVENT_NAME: ${{ github.event_name }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: r6-api34-evidence

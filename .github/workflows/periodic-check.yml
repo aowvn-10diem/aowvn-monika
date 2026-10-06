@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: python3 scripts/test-periodic-check.py
       - run: python3 scripts/check-config-links.py --fail-on-error --report out/links.md --json-output out/links.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: periodic-links
@@ -40,11 +40,12 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
+        with: {cache-provider: basic}
       - name: Cài NDK cho J2ME Loader
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'ndk;22.1.7171670' 'cmake;3.22.1' > /dev/null
       - run: ./gradlew testDebugUnitTest --console=plain
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: periodic-unit

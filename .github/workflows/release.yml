@@ -85,11 +85,12 @@ jobs:
           MAPPING="mapping-${TAG}.txt"
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
           test -n "$APKSIGNER" || { echo "::error::Thiếu apksigner"; exit 1; }
-          "$APKSIGNER" verify --print-certs "$APK" > "$RUNNER_TEMP/release-cert.txt"
+          # Lỗi thì in thông tin chứng thư (công khai, không có bí mật) ra log để biết nguyên nhân.
+          "$APKSIGNER" verify --print-certs "$APK" > "$RUNNER_TEMP/release-cert.txt" 2>&1 || { echo "::error::apksigner verify lỗi"; cat "$RUNNER_TEMP/release-cert.txt"; exit 1; }
           if grep -Eiq 'CN[[:space:]]*=[[:space:]]*Android Debug' "$RUNNER_TEMP/release-cert.txt"; then
             echo "::error::APK ký debug bị chặn"; exit 1
           fi
-          grep -q 'Signer #1 certificate SHA-256 digest:' "$RUNNER_TEMP/release-cert.txt" || { echo "::error::Không đọc được chứng chỉ APK"; exit 1; }
+          python3 scripts/verify-apk-cert.py "$APK" || { echo "::error::Không đọc được chứng chỉ APK hoặc SHA-256 chứng thư sai"; cat "$RUNNER_TEMP/release-cert.txt"; exit 1; }
           test -s "$APK" && test -s "$MAPPING"
           sha256sum "$APK" "$MAPPING" > "SHA256SUMS-${TAG}.txt"
           { echo 'SHA-256 (APK và mapping):'; echo '```text'; cat "SHA256SUMS-${TAG}.txt"; echo '```'; } > "release-notes-${TAG}.md"

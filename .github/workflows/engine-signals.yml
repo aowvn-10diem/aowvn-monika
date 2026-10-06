@@ -38,7 +38,8 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-java@v4
         with: {distribution: temurin, java-version: 17}
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
+        with: {cache-provider: basic}
       - name: Unit trên config chuẩn
         run: |
           python3 scripts/test-crash-report-groups.py
@@ -60,6 +61,6 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
           script: bash scripts/ci-engine-signals.sh "$RUNNER_TEMP/v22" out/signals
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with: {name: v22-signals-api34, path: out/signals/, retention-days: 3}
