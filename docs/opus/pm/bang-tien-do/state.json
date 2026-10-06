@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-06T10:15:16Z",
- "mainSha": "0171920",
+ "updatedAt": "2026-10-06T16:28:34Z",
+ "mainSha": "16260ad",
  "app": "App 0.7.6 (bản thử) · config 36",
- "nextCheck": "2026-10-06T11:15:16Z",
+ "nextCheck": "2026-10-06T17:28:34Z",
  "headline": "0.7.6 vẫn lỗi Kara no Shoujo; Sonnet đang đọc báo cáo sếp gửi. Sếp chốt R1 (app nhận link), R2 (tách repo riêng).",
  "needsBoss": [
   {
@@ -662,8 +662,8 @@
    "code": "N01",
    "title": "Nova: sửa TEST-MAY-THAT mục RGSS",
    "owner": "Nova",
-   "status": "cho",
-   "note": "Phát hiện audit Luna 2.",
+   "status": "xong",
+   "note": "#87 gộp 16260ad (Haiku Đạt)",
    "links": [
     {
      "label": "#87",
@@ -683,8 +683,8 @@
    "code": "N03",
    "title": "Nova: test EngineRoutes",
    "owner": "Nova",
-   "status": "cho",
-   "note": "Thư nova-001.",
+   "status": "xong",
+   "note": "#92 gộp d1abfa5 (Haiku Đạt)",
    "links": [
     {
      "label": "#92",
@@ -734,7 +734,7 @@
    "title": "Checklist cho tester ngoài + mẫu báo lỗi GitHub + bảng Google Sheet",
    "owner": "Haiku soạn · Nova duyệt",
    "status": "dang",
-   "note": "Mở 06/10, sếp tuyển người test",
+   "note": "#106 chờ Nova duyệt",
    "module": "",
    "links": [
     {
@@ -834,6 +834,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T16:28:34Z",
+   "text": "Haiku chạy lại. PM gộp #92 (N03, d1abfa5) và #87 (N01, 16260ad). #98 Haiku đã sửa (21114ad), #106 N08 chờ Nova"
+  },
   {
    "t": "2026-10-06T10:15:16Z",
    "text": "PM gộp #86 (0171920, thông báo V49) và #105 (34620c3, release.yml setup-gradle v6) — Haiku Đạt, CI xanh"
