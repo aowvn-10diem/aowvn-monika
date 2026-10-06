@@ -26,11 +26,11 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import vn.aow.monika.AppGraph
 import vn.aow.monika.R
 import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.library.EntryResolution
+import vn.aow.monika.library.TimedCall
 import vn.aow.monika.pack.PackAction
 import vn.aow.monika.pack.PackChoice
 import vn.aow.monika.pack.PackManager
@@ -144,8 +144,9 @@ class EnginePrepActivity : ComponentActivity() {
         // V26: kiểm/chọn lại lối vào ở luồng nền, có timeout; lỗi hoặc quá hạn → giữ nguyên lối vào cũ.
         status = getString(R.string.engine_prep_checking_entry)
         lifecycleScope.launch {
+            // TimedCall (FutureTask) thay withTimeoutOrNull: coroutine không cắt được một lần đọc đĩa treo.
             val r = withContext(Dispatchers.IO) {
-                withTimeoutOrNull(ENTRY_CHECK_TIMEOUT_MS) { runCatching { resolver(entry) }.getOrNull() }
+                TimedCall.run(ENTRY_CHECK_TIMEOUT_MS, "engine-entry-resolve") { resolver(entry) }
             }
             when (r) {
                 is EntryResolution.Use -> { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "chọn ${r.entry.name}: ${r.why}"); open(r.entry) }

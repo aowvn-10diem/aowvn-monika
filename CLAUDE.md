@@ -16,6 +16,15 @@ App Android (Kotlin, Jetpack Compose) của aow.vn: đọc bài (Blogger feed), 
 - Không đẩy thẳng `main` khi chưa được duyệt, không phát hành khi PM chưa báo.
 - Muốn báo "thiếu khóa/secret/công cụ" → đọc skill `phat-hanh-apk` trước.
 
+## Báo động ngân sách (từ 06/10, sếp chốt)
+Hạn mức là tài nguyên hiếm nhất. Mọi agent:
+- Làm, ít nói. Báo cáo gộp theo lô, tối đa 3–5 dòng. Không trả lời "đã nhận", không báo sự kiện CI xanh.
+- Lượt định kỳ không có gì mới thì dừng ngay, không ghi, không báo.
+- Đọc rẻ trước: bản tin `bot/trang-thai`, `grep`, `git log -1`. Không đọc cả file lớn hay log dài khi grep được.
+- Không đọc lại thứ đã chốt. Không tự mở việc ngoài bảng.
+- Việc lặp lại ≥ 2 lần thì viết thành skill hoặc script, lượt sau chỉ gọi lại.
+- Mỗi lượt chạy định kỳ có skill riêng (bảng dưới), làm đúng skill, không tự nghĩ lại quy trình.
+
 ## Lệnh
 - `./gradlew testDebugUnitTest` — chạy trước mọi push (gồm test config và test giao diện Robolectric). Ngoại lệ: commit chỉ sửa `docs/**` hoặc `**/*.md` (CI cũng bỏ qua, V11).
 - `./gradlew assembleDebug` — build APK.
@@ -32,5 +41,7 @@ App Android (Kotlin, Jetpack Compose) của aow.vn: đọc bài (Blogger feed), 
 | Màn hình, theme, animation, test UI | `giao-dien-monika` |
 | Feed/Cloudflare/Pixeldrain, vá ROM, backlog | `tham-khao-du-an` |
 | PM kiểm hộp thư, bảng tiến độ | `pm-kiem-thu` |
+| Lượt tiền duyệt định kỳ (Nova, Haiku) | `tien-duyet` |
+| Kiểm bản vừa phát hành (chứng thư, link tải) | `kiem-phat-hanh` |
 
 Phiên mất/mới? Đọc `docs/opus/HANDOFF-SONNET.md` trước. Tiến độ: `docs/opus/KE-HOACH.md`. Bàn giao Opus: `docs/GIAO-TIEP-VOI-OPUS.md`.
