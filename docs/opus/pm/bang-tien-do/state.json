@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-06T01:52:01Z",
- "mainSha": "ac7a843",
+ "updatedAt": "2026-10-06T01:57:19Z",
+ "mainSha": "c3489f3",
  "app": "App 0.7.5 (bản thử) · config 34",
- "nextCheck": "2026-10-06T02:21:55Z",
- "headline": "Sol và Luna nghỉ tới 10/10 (hết hạn mức). Sonnet, Nova, Haiku tiếp quản. Điểm nghẽn số 1: bản sửa Kara no Shoujo (#93) chờ Nova duyệt; sếp chốt A13 để phát hành 0.7.6 ngay sau đó.",
+ "nextCheck": "2026-10-06T02:27:19Z",
+ "headline": "Bản sửa Kara no Shoujo đã gộp (#93). Chờ sếp chốt A13 để phát hành 0.7.6 cho sếp thử. Sol, Luna nghỉ tới 10/10; Sonnet, Nova, Haiku tiếp quản.",
  "needsBoss": [
   {
    "code": "A13",
@@ -84,29 +84,6 @@
      "kind": "trang"
     }
    ]
-  },
-  {
-   "code": "Q4",
-   "urgency": "Gấp",
-   "kind": "many",
-   "question": "Còn 1 việc chỉ sếp làm được trên GitHub: đặt v0.7.4 là pre-release.",
-   "how": "Mở link Sửa release v0.7.4 → tick “Set as a pre-release” → Update release. KHÔNG xóa engines-rgss-6: config 34 đang dùng gói này.",
-   "options": [
-    "Đã đặt v0.7.4 là pre-release",
-    "Để sau"
-   ],
-   "links": [
-    {
-     "label": "Sửa release v0.7.4",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/edit/v0.7.4",
-     "kind": "trang"
-    },
-    {
-     "label": "Xem release v0.7.4",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.4",
-     "kind": "trang"
-    }
-   ]
   }
  ],
  "milestones": [
@@ -167,7 +144,7 @@
    "title": "Kirikiri không mở được game trên máy thật",
    "owner": "Sonnet",
    "status": "dang",
-   "note": "#91 chẩn đoán gộp ac7a843; #93 chọn xp3 đúng chờ duyệt",
+   "note": "#91 + #93 đã gộp (c3489f3). Chờ phát hành 0.7.6 và sếp thử trên máy thật.",
    "module": "kirikiri",
    "links": [
     {
@@ -858,6 +835,10 @@
  ],
  "log": [
   {
+   "t": "2026-10-06T01:57:19Z",
+   "text": "01:57Z: gộp #93 (Nova Đạt + PM duyệt) → c3489f3. Sếp đã đặt v0.7.4 là pre-release (Q4). Sonnet: #95 config 0.7.5, #86, #84 đã đẩy, chờ CI + Nova."
+  },
+  {
    "t": "2026-10-06T01:51:55Z",
    "text": "01:52Z: Sol, Luna nghỉ tới 10/10. Chia việc: Sonnet (V31(3), #84, #86, V47, V50), Nova (tiền duyệt, V48), Haiku (tiền duyệt PR Nova, L09, N02, N07). Trang thêm mục Điểm nghẽn và link kèm mỗi câu hỏi."
   },
@@ -1409,6 +1390,13 @@
  ],
  "decisions": [
   {
+   "code": "Q4",
+   "question": "Đặt v0.7.4 là pre-release",
+   "answer": "Đã đặt (kiểm qua API: prerelease=true, 01:56Z 06/10)",
+   "at": "2026-10-06T01:56:46.214Z",
+   "by": "Sếp"
+  },
+  {
    "code": "G4A2",
    "question": "Symbian: bản đầu có làm đủ 3 cách nhập firmware không?",
    "answer": "Chỉ zip cấu hình sẵn trước. Sếp định tự lưu firmware cũ lên GitHub, người dùng có nhu cầu mới tải về. Đội không đưa firmware hay link firmware vào repo công khai/config khi sếp chưa chốt nơi lưu.",
@@ -1539,21 +1527,16 @@
  "blockers": [
   {
    "code": "V26",
-   "status": "dang",
-   "title": "Kara no Shoujo báo \"Cannot find storage startup.tjs\" (bản sửa #93)",
-   "who": "Nova tiền duyệt #93 → PM duyệt và gộp → xin sếp phát hành 0.7.6",
-   "next": "Nova duyệt đúng commit 5fe1a1f (CI đã xanh 7/7). Sếp chốt trước câu A13 để không phải chờ thêm một vòng.",
+   "status": "sep",
+   "title": "Bản sửa Kara no Shoujo đã gộp (#93), chờ phát hành 0.7.6 để sếp thử",
+   "who": "Sếp chốt A13 → Sonnet mở PR tăng phiên bản 0.7.6 → Nova duyệt → PM gộp → chạy phát hành 1 lần",
+   "next": "Sếp trả lời A13. PR tăng phiên bản đang được Sonnet chuẩn bị song song, nên đồng ý xong là chạy được ngay.",
    "ask": "A13",
    "links": [
     {
-     "label": "#93 chọn đúng xp3",
+     "label": "#93 đã gộp",
      "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/93",
      "kind": "pr"
-    },
-    {
-     "label": "Kết quả đọc mã V26",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/sonnet/V26-kirikiri/docs/opus/ket-qua/V26.md",
-     "kind": "doc"
     }
    ]
   },
@@ -1607,21 +1590,6 @@
      "label": "#84",
      "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/84",
      "kind": "pr"
-    }
-   ]
-  },
-  {
-   "code": "Q4",
-   "status": "sep",
-   "title": "v0.7.4 (bản lỗi Kirikiri) vẫn đang là bản chính thức mới nhất trên GitHub",
-   "who": "Chỉ sếp bấm được (phiên AI bị chặn quyền sửa release)",
-   "next": "Đặt v0.7.4 là pre-release. Mất khoảng 1 phút.",
-   "ask": "Q4",
-   "links": [
-    {
-     "label": "Sửa release v0.7.4",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/edit/v0.7.4",
-     "kind": "trang"
     }
    ]
   }
