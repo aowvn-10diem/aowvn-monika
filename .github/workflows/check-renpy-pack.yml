@@ -16,7 +16,7 @@ jobs:
         with: {persist-credentials: false}
       - uses: actions/setup-java@v6
         with: {distribution: temurin, java-version: 17}
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb >/dev/null
       - run: python3 scripts/test-renpy-bytecode-layout.py
       - name: Official pinned engine only, no publish or signing
@@ -51,7 +51,7 @@ jobs:
           path: ${{ runner.temp }}/v45-engine
       - uses: actions/setup-java@v6
         with: {distribution: temurin, java-version: 17}
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Units on production config, debug APK stays on runner
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'ndk;22.1.7171670' 'cmake;3.22.1' > /dev/null
