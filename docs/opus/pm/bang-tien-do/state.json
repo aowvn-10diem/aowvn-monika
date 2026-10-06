@@ -1,10 +1,35 @@
 {
- "updatedAt": "2026-10-06T05:42:54Z",
+ "updatedAt": "2026-10-06T06:28:27Z",
  "mainSha": "1d33db1",
- "app": "App 0.7.5 (bản thử) · config 34",
- "nextCheck": "2026-10-06T06:10:35Z",
- "headline": "v0.7.6 đang dựng (sếp đã tạo release). Mở việc tăng độ phủ test và checklist tester ngoài. Chờ sếp chốt R1, R2.",
+ "app": "App 0.7.6 (bản thử) · config 35",
+ "nextCheck": "2026-10-06T07:28:27Z",
+ "headline": "0.7.6 đã phát hành (có bản sửa Kara no Shoujo). Sếp thử ở câu G7B, link tải ngay trong câu.",
  "needsBoss": [
+  {
+   "code": "G7B",
+   "urgency": "Gấp",
+   "kind": "one",
+   "question": "Thử Kara no Shoujo trên bản 0.7.6 (có bản sửa lỗi startup.tjs)",
+   "how": "Tải APK ở nút dưới, cài đè lên bản cũ (giữ dữ liệu). Mở Kara no Shoujo. Nếu vẫn lỗi: trong game mở menu → bấm “Báo lỗi game này” rồi chọn kết quả bên dưới.",
+   "recommend": "Bản thử, chứng thư khớp khóa phát hành, SHA-256 0f3926a5…ffcf2, 19.116.957 byte.",
+   "options": [
+    "Vào được game",
+    "Vẫn lỗi startup.tjs (đã bấm Báo lỗi)",
+    "Lỗi khác (ghi chú)"
+   ],
+   "links": [
+    {
+     "label": "Tải APK 0.7.6",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.6/AowVN-Monika-v0.7.6.apk",
+     "kind": "tai"
+    },
+    {
+     "label": "Trang release",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.6",
+     "kind": "trang"
+    }
+   ]
+  },
   {
    "code": "R1",
    "urgency": "Nên chốt sớm",
@@ -115,8 +140,8 @@
    "code": "V26",
    "title": "Kirikiri không mở được game trên máy thật",
    "owner": "Sonnet",
-   "status": "dang",
-   "note": "#91 + #93 đã gộp (c3489f3). Chờ phát hành 0.7.6 và sếp thử trên máy thật.",
+   "status": "sep",
+   "note": "0.7.6 phát hành 06/10 (run 37419192387), chờ sếp thử",
    "module": "kirikiri",
    "links": [
     {
@@ -837,6 +862,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T06:28:27Z",
+   "text": "v0.7.6 phát hành: run 37419192387 xanh, prerelease, chứng thư khớp, SHA 0f3926a5…ffcf2. Chờ sếp thử Kara no Shoujo (G7B)."
+  },
   {
    "t": "2026-10-06T05:42:54Z",
    "text": "Báo động ngân sách (lệnh sếp): #102 gộp, thêm luật chung + skill tien-duyet, kiem-phat-hanh. PM kiểm thư giảm xuống 60 phút/lần."
@@ -1582,22 +1611,18 @@
  "blockers": [
   {
    "code": "V26",
-   "status": "dang",
-   "title": "Đang dựng APK 0.7.6 (có bản sửa Kara no Shoujo)",
-   "who": "CI release.yml → Sonnet kiểm chứng thư",
-   "next": "Có link tải là PM đưa lên đây để sếp thử Kara no Shoujo.",
+   "status": "sep",
+   "title": "0.7.6 đã phát hành, chờ sếp thử Kara no Shoujo",
+   "who": "Sếp thử trên điện thoại",
+   "next": "Vào được game thì đóng G7. Vẫn lỗi thì báo cáo từ nút “Báo lỗi game này” cho Sonnet biết xp3 nào đang được chọn.",
    "links": [
     {
-     "label": "Release v0.7.6",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.6",
-     "kind": "trang"
-    },
-    {
-     "label": "Lượt dựng",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/actions/workflows/release.yml",
-     "kind": "run"
+     "label": "Tải APK 0.7.6",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.6/AowVN-Monika-v0.7.6.apk",
+     "kind": "tai"
     }
-   ]
+   ],
+   "ask": "G7B"
   },
   {
    "code": "V47",
