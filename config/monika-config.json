@@ -1,12 +1,12 @@
 {
-  "configVersion": 34,
+  "configVersion": 35,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
-    "latestVersionCode": 2,
-    "latestVersionName": "0.2.0",
+    "latestVersionCode": 40,
+    "latestVersionName": "0.7.5",
     "minVersionCode": 1,
-    "apkUrl": "",
-    "changelog": "Giao diện mới, menu nổi, lưu trạng thái game, ảnh bìa game, chỉnh vị trí phím."
+    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.5/AowVN-Monika-v0.7.5.apk",
+    "changelog": "Bản thử 0.7.5: thêm nút “Báo lỗi game này”, cải thiện chẩn đoán lỗi và nhiều sửa lỗi nội bộ."
   },
   "feed": {
     "url": "https://www.aow.vn/feeds/posts/default",
