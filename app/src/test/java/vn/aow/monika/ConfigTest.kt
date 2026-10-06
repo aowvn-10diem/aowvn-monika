@@ -127,7 +127,7 @@ class ConfigTest {
 
     @Test
     fun `rgss ghim goi cong khai va van giu Joiplay du phong`() {
-        assertEquals(34, cfg.configVersion)
+        assertEquals(35, cfg.configVersion)
         val module = cfg.modules["rgss"] ?: error("modules.rgss thiếu")
         assertEquals("engines-rgss-6", module.version)
         assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/engines-rgss-6/rgss-arm64-v8a.zip", module.url)
