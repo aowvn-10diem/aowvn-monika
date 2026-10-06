@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-06T02:13:23Z",
- "mainSha": "c3489f3",
+ "updatedAt": "2026-10-06T03:13:21Z",
+ "mainSha": "4a1486e",
  "app": "App 0.7.5 (bản thử) · config 34",
- "nextCheck": "2026-10-06T02:43:23Z",
- "headline": "Sếp đã đồng ý phát hành 0.7.6 (A13). Chờ Nova duyệt #97 (tăng phiên bản) rồi chạy phát hành. Haiku đã vào đội.",
+ "nextCheck": "2026-10-06T03:43:21Z",
+ "headline": "Đang phát hành 0.7.6 (bản sửa Kara no Shoujo). Có link tải là PM đưa lên trang để sếp thử.",
  "needsBoss": [
   {
    "code": "G9",
@@ -784,6 +784,10 @@
  ],
  "log": [
   {
+   "t": "2026-10-06T03:13:21Z",
+   "text": "Gộp #97 (0.7.6, Haiku Đạt + PM duyệt) → 4a1486e. Giao Sonnet tag v0.7.6 và chạy phát hành 1 lần (A13)."
+  },
+  {
    "t": "2026-10-06T02:13:23Z",
    "text": "Sếp chốt A13 (phát hành 0.7.6), H1 (Haiku đã vào), T1 (đã tắt lịch trùng). G9: PM gửi prompt cho Claude in Chrome."
   },
@@ -1502,19 +1506,19 @@
   {
    "code": "V26",
    "status": "dang",
-   "title": "Bản sửa Kara no Shoujo đã gộp; sếp đã đồng ý phát hành 0.7.6 (A13)",
-   "who": "Nova duyệt #97 (tăng phiên bản 0.7.6) → PM gộp → Sonnet chạy phát hành 1 lần",
+   "title": "Đang phát hành 0.7.6 (có bản sửa Kara no Shoujo)",
+   "who": "Sonnet tạo tag v0.7.6 và chạy phát hành 1 lần (A13)",
    "next": "Phát hành xong, PM đưa link tải APK lên trang để sếp thử Kara no Shoujo.",
    "links": [
     {
-     "label": "#97 phiên bản 0.7.6",
+     "label": "#97 đã gộp",
      "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/97",
      "kind": "pr"
     },
     {
-     "label": "#93 đã gộp",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/93",
-     "kind": "pr"
+     "label": "Các lượt phát hành",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/actions/workflows/release.yml",
+     "kind": "run"
     }
    ]
   },
