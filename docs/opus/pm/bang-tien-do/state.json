@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-06T00:43:41Z",
- "mainSha": "52be109",
- "app": "App 0.7.4 → 0.7.5 đang phát hành · config 34",
- "nextCheck": "2026-10-05T23:45:25Z",
- "headline": "Chờ duyệt #88 để chạy lại phát hành 0.7.5 (sếp đã đồng ý). Ảnh lỗi Kara no Shoujo cho thấy máy sếp còn bản 0.7.3.",
+ "updatedAt": "2026-10-06T00:59:16Z",
+ "mainSha": "35ba442",
+ "app": "App 0.7.5 (bản thử) · config 34",
+ "nextCheck": "2026-10-06T01:44:16Z",
+ "headline": "v0.7.5 đã phát hành dạng bản thử, chứng thư khớp. Bản này CHƯA sửa lỗi Kara no Shoujo (startup.tjs); bản sửa #91/#93 đang chờ Nova duyệt.",
  "needsBoss": [
   {
    "code": "G9",
@@ -409,7 +409,7 @@
    "title": "0.7.4 thành bản thử; sửa thông tin cập nhật app; K10 chặt",
    "owner": "Sol",
    "status": "dang",
-   "note": "Phần còn lại (mục app trong config) chuyển Sol, làm sau khi sếp trả lời G7.",
+   "note": "(3) v0.7.5 xong 06/10 → Sol cập nhật mục app trong config (thư sol-012)",
    "module": "ci"
   },
   {
@@ -568,9 +568,9 @@
    "code": "V43",
    "title": "Phát hành APK ký trên GitHub thay vì build trong phiên",
    "owner": "Sol",
-   "status": "dang",
+   "status": "xong",
    "module": "ci",
-   "note": "#88 gộp d4357ea (Nova Đạt + PM). Theo A8: Sonnet chạy release.yml 1 lần (tag v0.7.5, prerelease) 06/10 00:4xZ. Chờ kết quả + SHA chứng thư."
+   "note": "v0.7.5 phát hành 06/10 run 37395509233 xanh, prerelease, chứng thư khớp"
   },
   {
    "code": "V44",
@@ -642,8 +642,8 @@
    "code": "N02",
    "title": "Nova: CHANGELOG v0.7.5",
    "owner": "",
-   "status": "cho",
-   "note": "Sau khi phát hành 0.7.5."
+   "status": "dang",
+   "note": "Mở 06/10: viết CHANGELOG v0.7.5 (issue #90)"
   },
   {
    "code": "N03",
@@ -754,6 +754,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T00:59:16Z",
+   "text": "00:58Z: v0.7.5 phát hành xanh (run 37395509233), prerelease, chứng thư khớp. Mở V31(3) Sol, N02 Nova."
+  },
   {
    "t": "2026-10-06T00:43:41Z",
    "text": "00:45Z: Nova duyệt Đạt #88, #85 → PM gộp. Báo Sonnet chạy lại release v0.7.5 (A8)."
@@ -1088,9 +1092,9 @@
     "build": "xong",
     "auto": "dang",
     "phone": "sep",
-    "release": "xong"
+    "release": "cho"
    },
-   "note": "0.7.3 không vào được game trên máy sếp; 0.7.4 sửa chọn đúng file .xp3 chính, chờ sếp thử (G7). Máy ảo CI không chạy được Kirikiri nên chỉ có test chọn file."
+   "note": "0.7.5 chưa có sửa startup.tjs; chờ #91/#93"
   },
   {
    "id": "rgss",
