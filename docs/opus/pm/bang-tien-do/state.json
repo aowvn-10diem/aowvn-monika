@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-06T05:40:35Z",
+ "updatedAt": "2026-10-06T05:42:54Z",
  "mainSha": "1d33db1",
  "app": "App 0.7.5 (bản thử) · config 34",
  "nextCheck": "2026-10-06T06:10:35Z",
@@ -837,6 +837,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T05:42:54Z",
+   "text": "Báo động ngân sách (lệnh sếp): #102 gộp, thêm luật chung + skill tien-duyet, kiem-phat-hanh. PM kiểm thư giảm xuống 60 phút/lần."
+  },
   {
    "t": "2026-10-06T05:40:35Z",
    "text": "Sếp: tăng độ phủ test, tuyển tester ngoài (V51, N08, N09). Hỏi sếp R1 (nơi để firmware/ROM) và R2 (tách repo riêng/công khai). Release v0.7.6 đang chạy."

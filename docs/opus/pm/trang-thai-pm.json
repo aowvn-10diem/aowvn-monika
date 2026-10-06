@@ -59,7 +59,9 @@
   "93": "gộp c3489f3 06/10 (Nova Đạt, PM duyệt)",
   "92": "Nova N03, build đỏ head 6d6d830, Nova tự sửa",
   "97": "gộp 4a1486e 06/10 (Haiku Đạt, PM duyệt); giao Sonnet phát hành 0.7.6",
-  "95": "gộp e124ada (Haiku Đạt, PM duyệt)"
+  "95": "gộp e124ada (Haiku Đạt, PM duyệt)",
+  "102": "gộp e5e057d (lệnh sếp, docs/skill)",
+  "101": "gộp 3a2a783 (lệnh sếp); không gỡ được chặn Production Deploy"
  },
  "idle": 0,
  "cadence": 60,
@@ -125,5 +127,6 @@
   "sol": "nghỉ",
   "luna": "nghỉ"
  },
- "a13": "Sếp đồng ý 06/10 01:58Z: phát hành 0.7.6 (stable=false) MỘT lần sau khi #93 gộp; cần #97 gộp trước"
+ "a13": "Sếp đồng ý 06/10 01:58Z: phát hành 0.7.6 (stable=false) MỘT lần sau khi #93 gộp; cần #97 gộp trước",
+ "ngan_sach": "Báo động ngân sách từ 06/10 (sếp chốt). #102 gộp e5e057d: CLAUDE.md + skill tien-duyet, kiem-phat-hanh; pm-kiem-thu bước 0 dừng sớm. PM kiểm thư 60 phút: tắt trig_016SSxE2JNERoMQ8s2ZwzHGc (:42), giữ :12 ngày và :27 đêm."
 }
