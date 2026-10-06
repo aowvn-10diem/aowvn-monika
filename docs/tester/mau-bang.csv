@@ -1,0 +1,4 @@
+Thiết bị,Phiên bản Android,Bản app,Hệ máy,Tên game,Các bước tái hiện,Kết quả mong muốn,Kết quả thực tế,Nhật ký lỗi,Ảnh chụp,Thông tin thêm
+Samsung Galaxy A12,Android 12,v0.7.5,Kirikiki,Ví dụ game 1,Bước 1. Bước 2. Bước 3,Game tải bình thường,Game bị tắt ở cảnh 2,App báo lỗi tệp startup.tjs,Có,Chỉ lỗi trên thiết bị này
+OnePlus 9,Android 11,v0.7.5,RPG Maker,Ví dụ game 2,Bước 1. Bước 2. Bước 3,Menu tương tác bình thường,Menu bị lag nặng,Không có nhật ký,Có,
+Pixel 5,Android 13,v0.7.5,GBA,Ví dụ game 3,Bước 1. Bước 2. Bước 3,Emulator chạy mượt,Emulator báo lỗi âm thanh,Lỗi codec audio,Không,Lỗi âm thanh trên ROM cụ thể
