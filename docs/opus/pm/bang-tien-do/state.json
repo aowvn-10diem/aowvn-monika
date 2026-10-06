@@ -1,32 +1,31 @@
 {
- "updatedAt": "2026-10-06T05:13:49Z",
+ "updatedAt": "2026-10-06T05:40:35Z",
  "mainSha": "1d33db1",
  "app": "App 0.7.5 (bản thử) · config 34",
- "nextCheck": "2026-10-06T05:43:49Z",
- "headline": "Đang phát hành 0.7.6 (bản sửa Kara no Shoujo). Có link tải là PM đưa lên trang để sếp thử.",
+ "nextCheck": "2026-10-06T06:10:35Z",
+ "headline": "v0.7.6 đang dựng (sếp đã tạo release). Mở việc tăng độ phủ test và checklist tester ngoài. Chờ sếp chốt R1, R2.",
  "needsBoss": [
   {
-   "code": "TAG",
-   "urgency": "Gấp",
+   "code": "R1",
+   "urgency": "Nên chốt sớm",
    "kind": "one",
-   "question": "Tạo tag v0.7.6 để chạy phát hành (phiên AI bị chặn quyền đẩy tag)",
-   "how": "Mở link Tạo release v0.7.6. Kiểm 3 ô: Tag = v0.7.6, Target = commit 4a1486e, ô “Set as a pre-release” đã tick. Bấm Publish release. Release sẽ tự chạy khoảng 15–20 phút. Không cần đính kèm file.",
-   "recommend": "Làm giống lần v0.7.5. PM sẽ kiểm chứng thư và gửi link tải APK lên trang này.",
+   "question": "Firmware, ROM, link game: để ở đâu?",
+   "recommend": "Không để trong repo hay release công khai, kể cả khi đã nén RAR có mật khẩu và đặt tên ngẫu nhiên. Mật khẩu aow.vn ai cũng biết, còn mã app công khai thì để lộ luôn cách app tìm file. Cách đó không giảm được rủi ro bị gỡ, nên PM không dựng. Đề xuất: (a) người dùng tự nhập firmware hoặc game từ máy mình (app đã có luồng nhập), hoặc (b) sếp giữ ở kho riêng (repo private hoặc ổ của sếp), app chỉ nhận link qua config từ xa.",
    "options": [
-    "Đã tạo release v0.7.6",
-    "Để sau"
-   ],
-   "links": [
-    {
-     "label": "Tạo release v0.7.6",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/new?tag=v0.7.6&target=4a1486e90d23ce7aa113255aa7f56da750148520&title=v0.7.6&prerelease=1",
-     "kind": "trang"
-    },
-    {
-     "label": "Commit 4a1486e",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/commit/4a1486e90d23ce7aa113255aa7f56da750148520",
-     "kind": "trang"
-    }
+    "Theo đề xuất: không để trong repo công khai",
+    "Bàn thêm"
+   ]
+  },
+  {
+   "code": "R2",
+   "urgency": "Nên chốt sớm",
+   "kind": "one",
+   "question": "Repo công khai: muốn người khác clone về không dựng lại được app. Chọn cách nào?",
+   "recommend": "Hiện người ngoài đã không ký được APK giống bản của sếp (khóa ký nằm trong GitHub Secrets) và không có Worker hay config riêng. Muốn chặt hơn: tách phần riêng (Worker, script phát hành, config gốc) sang repo private, repo công khai giữ phần mã engine. Lưu ý: app dùng engine giấy phép GPL (mkxp-z, ONScripter, Azahar, lõi libretro). Phát APK thì phải công bố mã của các phần GPL. Đóng hết mã có thể vi phạm giấy phép, cần kiểm trước khi chuyển private toàn bộ [CHƯA KIỂM].",
+   "options": [
+    "Tách phần riêng sang repo private, giữ phần GPL công khai",
+    "Chuyển cả repo sang private (PM kiểm nghĩa vụ GPL trước)",
+    "Giữ như hiện tại"
    ]
   },
   {
@@ -732,6 +731,37 @@
    "owner": "Haiku",
    "status": "cho",
    "note": "Phiên bản, configVersion, gói, phân vai."
+  },
+  {
+   "code": "V51",
+   "title": "Độ phủ test: Kover trong CI, báo % theo module",
+   "owner": "Sonnet",
+   "status": "dang",
+   "note": "Mở 06/10 theo lệnh sếp",
+   "module": ""
+  },
+  {
+   "code": "N08",
+   "title": "Checklist cho tester ngoài + mẫu báo lỗi GitHub + bảng Google Sheet",
+   "owner": "Haiku soạn · Nova duyệt",
+   "status": "dang",
+   "note": "Mở 06/10, sếp tuyển người test",
+   "module": "",
+   "links": [
+    {
+     "label": "Hộp thư Haiku #94",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/issues/94",
+     "kind": "trang"
+    }
+   ]
+  },
+  {
+   "code": "N09",
+   "title": "Thêm test theo báo cáo độ phủ",
+   "owner": "Nova",
+   "status": "cho",
+   "note": "Sau V51",
+   "module": ""
   }
  ],
  "gates": [
@@ -807,6 +837,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T05:40:35Z",
+   "text": "Sếp: tăng độ phủ test, tuyển tester ngoài (V51, N08, N09). Hỏi sếp R1 (nơi để firmware/ROM) và R2 (tách repo riêng/công khai). Release v0.7.6 đang chạy."
+  },
   {
    "t": "2026-10-06T05:13:49Z",
    "text": "Gộp #95 (config app 0.7.5, configVersion 35) và #84 (CodeQL inventory chỉ đọc), Haiku Đạt + PM duyệt. v0.7.6 vẫn chờ sếp tạo tag."
@@ -1379,6 +1413,13 @@
  ],
  "decisions": [
   {
+   "code": "TAG",
+   "question": "Tạo release v0.7.6",
+   "answer": "Sếp đã tạo 05:34Z (prerelease, đúng commit 4a1486e)",
+   "at": "2026-10-06T05:34:12Z",
+   "by": "Sếp"
+  },
+  {
    "code": "T1",
    "question": "Tắt lịch \"[PM kiểm thư] ngày B (:42)\" bị trùng (mỗi giờ mở một phiên trống, tốn hạn mức)?",
    "answer": "Đã tắt (kiểm: enabled=false)",
@@ -1537,23 +1578,22 @@
  "blockers": [
   {
    "code": "V26",
-   "status": "sep",
-   "title": "Phát hành 0.7.6 chờ sếp tạo tag (phiên AI bị chặn đẩy tag)",
-   "who": "Sếp tạo release v0.7.6 trên web → CI tự build → Sonnet kiểm chứng thư",
-   "next": "Phát hành xong, PM đưa link tải APK lên trang để sếp thử Kara no Shoujo.",
+   "status": "dang",
+   "title": "Đang dựng APK 0.7.6 (có bản sửa Kara no Shoujo)",
+   "who": "CI release.yml → Sonnet kiểm chứng thư",
+   "next": "Có link tải là PM đưa lên đây để sếp thử Kara no Shoujo.",
    "links": [
     {
-     "label": "#97 đã gộp",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/97",
-     "kind": "pr"
+     "label": "Release v0.7.6",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.6",
+     "kind": "trang"
     },
     {
-     "label": "Các lượt phát hành",
+     "label": "Lượt dựng",
      "url": "https://github.com/aowvn-10diem/aowvn-monika/actions/workflows/release.yml",
      "kind": "run"
     }
-   ],
-   "ask": "TAG"
+   ]
   },
   {
    "code": "V47",
