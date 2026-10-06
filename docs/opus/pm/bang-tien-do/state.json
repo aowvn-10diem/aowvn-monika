@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-06T01:14:39Z",
+ "updatedAt": "2026-10-06T01:43:16Z",
  "mainSha": "ac7a843",
  "app": "App 0.7.5 (bản thử) · config 34",
- "nextCheck": "2026-10-06T01:44:39Z",
+ "nextCheck": "2026-10-06T02:13:16Z",
  "headline": "v0.7.5 (bản thử) đã phát hành, chưa có sửa Kara no Shoujo. Bước 1 chẩn đoán Kirikiri đã gộp (#91); bước 2 (#93) chờ Nova duyệt.",
  "needsBoss": [
   {
@@ -25,17 +25,6 @@
    "options": [
     "Đã đặt v0.7.4 là pre-release",
     "Để sau"
-   ]
-  },
-  {
-   "code": "G4A2",
-   "urgency": "Khi tiện",
-   "kind": "one",
-   "question": "Symbian: bản đầu có làm đủ 3 cách nhập firmware không (zip cấu hình sẵn → ROM + RPKG → VPL)?",
-   "recommend": "Đủ 3, làm zip trước vì dễ kiểm nhất. Chỉ cần chốt trước bước S2; bước dựng thử S0 đang chạy song song.",
-   "options": [
-    "Đủ 3 cách",
-    "Chỉ zip cấu hình sẵn trước"
    ]
   }
  ],
@@ -755,6 +744,10 @@
  ],
  "log": [
   {
+   "t": "2026-10-06T01:43:16Z",
+   "text": "01:45Z: sếp chốt G4A2 = chỉ zip cấu hình sẵn trước. #93 chờ Nova duyệt (head 5fe1a1f, CI xanh)."
+  },
+  {
    "t": "2026-10-06T01:14:39Z",
    "text": "01:15Z: gộp #91 (Nova Đạt + PM duyệt) → ac7a843; #93 đổi base main, Sonnet gộp main + ghi basename; #92 Nova CI đỏ."
   },
@@ -1297,6 +1290,13 @@
   }
  ],
  "decisions": [
+  {
+   "code": "G4A2",
+   "question": "Symbian: bản đầu có làm đủ 3 cách nhập firmware không?",
+   "answer": "Chỉ zip cấu hình sẵn trước. Sếp định tự lưu firmware cũ lên GitHub, người dùng có nhu cầu mới tải về. Đội không đưa firmware hay link firmware vào repo công khai/config khi sếp chưa chốt nơi lưu.",
+   "at": "2026-10-06T01:43:11.035Z",
+   "by": "Sếp"
+  },
   {
    "code": "G7-ảnh",
    "question": "Ảnh lỗi Kara no Shoujo",

@@ -63,7 +63,7 @@
  "cadence": 60,
  "dashboard": "https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d",
  "dashboard_state": "Nguồn GitHub: docs/opus/pm/bang-tien-do/state.json trên nhánh PM. Artifact Claude bên ngoài chưa cập nhật trong lượt tiếp quản.",
- "dashboard_version": 75,
+ "dashboard_version": 76,
  "rule": "Opus là PM (nhận lại 05/10 15:25Z theo lệnh sếp). Sol về phạm vi riêng (app/CI/config/gói/chẩn đoán/workflow), không duyệt/gộp PR người khác, không sửa docs/opus/pm.",
  "trigger": "trig_01Nk2NQXsfxm8hQLAZAo4ZsS tắt. Lịch mới bắn vào phiên PM: trig_015WwbYtSvWe2Cm48yXemN6n (ngày :12), trig_016SSxE2JNERoMQ8s2ZwzHGc (ngày :42), trig_01Q7BiVvi3bbBTyHDf6NU38j (đêm :27), giờ GMT+7. Chế độ phiên mới mỗi lượt KHÔNG dùng được: trigger tạo qua MCP không gắn repo/connector; cron tối thiểu 1 giờ nên ngày dùng 2 trigger lệch 30 phút. trig_01AYyFD6nwW3b3BBhQDipzqd (phiên mới, :42) chưa tắt được, chờ sếp tắt; trig_01LJqv…/trig_01D37a… đã tắt.",
  "note": "Tiếp quản của Sol (issue #65) kết thúc 05/10 15:25Z theo lệnh sếp; thư tra-loi-sol-010. Ghi chú của Sol lúc tiếp quản: Sol tạm tiếp quản PM/Sonnet theo issue65 tới 05/10 15:00Z. #71 PM docs đã merge 2c4ddd3 sau Luna+CI; #72/V43 single dry-run37261174377 SUCCESS/no artifact; #73/V16 merged config34. #79 L09 docs đã merged; checklist TEST-MAY-THAT RGSS và lỗi parser digest đã ghi issue65, chưa mở việc sửa riêng. G7 0.7.4 retest pending. Gemini F01/F02 standby.",
@@ -76,7 +76,8 @@
   "Q2": "2026-10-04T02:53:38.730Z",
   "Q5": "2026-10-04T02:53:57.703Z",
   "Q6": "2026-10-04T02:54:25.587Z",
-  "G7": "2026-10-05T15:46:16.623Z"
+  "G7": "2026-10-05T15:46:16.623Z",
+  "G4A2": "2026-10-06T01:43:11.035Z"
  },
  "public_page": "Landing tải app: https://aowvn-10diem.github.io/aowvn-monika/ (docs/index.html trên docs/opus-tra-loi; nguồn docs/opus/pm/landing/landing-body.html + build.py). Trang tiến độ công khai đã bỏ.",
  "pages": "200 (bật 04/10 trước 14:31)",

@@ -137,7 +137,7 @@ Sonnet hỏi sếp khi tới bước cần; mỗi lần một câu.
 | G1 | 1 game RPG Maker XP để chạy thử (R3) | Ngay (V01 đã xong) | Sonnet hỏi sếp |
 | G2 | 5 game cho R6 (XP, VX, VX Ace `.rgss3a`, Pokémon Essentials, game Việt hóa có dấu) + thử máy thật, hoặc chấp nhận kết quả "chỉ máy ảo" | R6 | **sếp đã gửi (03/10 20:05)**, xem V25. Phần "thử máy thật hay chấp nhận kết quả chỉ máy ảo" hỏi lại sếp khi có `ket-qua/R6.md` |
 | G3 | 2 game Ren'Py (một bản 7, một bản 8) | P6 | chờ |
-| G4 | Symbian: A1 (chạy S0 sớm?), A2 (đủ 3 đường nhập firmware?) — mục 8 của phương án Symbian | Bất kỳ lúc nào | A1: coi như **đồng ý** theo Q1 (S0 chỉ CI, giao Sol). A2: hỏi trên trang tiến độ |
+| G4 | Symbian: A1 (chạy S0 sớm?), A2 (đủ 3 đường nhập firmware?) — mục 8 của phương án Symbian | Bất kỳ lúc nào | A1: coi như **đồng ý** theo Q1 (S0 chỉ CI, giao Sol). A2: sếp chốt 06/10 **chỉ zip cấu hình sẵn trước**; firmware sếp tự lưu, đội không đưa firmware/link firmware vào repo công khai hay config |
 | G5 | Công khai mã nguồn Monika trước khi phát hành gói GPL mới (`rgss`, `renpy`, `symbian`) | Trước khi phát hành bản app có gói GPL mới | **repo đã công khai (03/10)**. Còn: sếp chọn file LICENSE |
 | G6 | Nhắn RAdmin duyệt client "AowMonika" (hardcore) | Bất kỳ lúc nào | chờ sếp |
 | G7 | Thử lại Kirikiri 0.7.4 trên máy thật theo `TEST-MAY-THAT.md` (H03) | Sau V05 + H03 | **gấp (03/10 20:20)**: CI thấy Kirikiri sập khi mở game trên máy ảo (thư 008). Bản 0.7.3 báo “Cannot find storage startup.tjs”; ảnh chủ dự án 05/10 vẫn là 0.7.3. V26 đã phát hành 0.7.4 nhưng chưa có xác nhận chủ dự án đã thử lại Kara no Shoujo bằng 0.7.4. G7 còn mở. |
