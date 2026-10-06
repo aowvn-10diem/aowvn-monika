@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-06T00:13:38Z",
+ "updatedAt": "2026-10-06T00:43:41Z",
  "mainSha": "52be109",
  "app": "App 0.7.4 → 0.7.5 đang phát hành · config 34",
  "nextCheck": "2026-10-05T23:45:25Z",
@@ -570,7 +570,7 @@
    "owner": "Sol",
    "status": "dang",
    "module": "ci",
-   "note": "#81 gộp 1eb266d; sếp tạo tag v0.7.5; run 37345874546 build+ký xanh nhưng đỏ ở bước kiểm chứng thư (grep apksigner). #88 sửa dùng verify-apk-cert.py, CI xanh; chờ duyệt + A8 chạy lại 1 lần."
+   "note": "#88 gộp d4357ea (Nova Đạt + PM). Theo A8: Sonnet chạy release.yml 1 lần (tag v0.7.5, prerelease) 06/10 00:4xZ. Chờ kết quả + SHA chứng thư."
   },
   {
    "code": "V44",
@@ -586,7 +586,7 @@
    "owner": "Sol",
    "status": "dang",
    "module": "renpy8",
-   "note": "#85: CI xanh hết gồm menu synthetic (menu→Start→60s) trên máy ảo API34. PM duyệt, chờ Luna/Nova Đạt. Không phát hành."
+   "note": "#85 gộp 35ba442 (Nova Đạt + PM): gói Ren'Py kiểm trên CI, menu synthetic đạt trên máy ảo. Phát hành gói cần sếp duyệt riêng."
   },
   {
    "code": "V46",
@@ -754,6 +754,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T00:43:41Z",
+   "text": "00:45Z: Nova duyệt Đạt #88, #85 → PM gộp. Báo Sonnet chạy lại release v0.7.5 (A8)."
+  },
   {
    "t": "2026-10-06T00:13:38Z",
    "text": "06/10: G7 0.7.4 vẫn lỗi startup.tjs (ảnh sếp). Sếp chỉ định Nova duyệt #88. Mở issue #90 hộp thư PM↔Nova + prompt kiểm thư Nova."
