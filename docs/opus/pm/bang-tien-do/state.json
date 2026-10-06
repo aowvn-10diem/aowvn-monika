@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-06T07:14:50Z",
- "mainSha": "1d33db1",
- "app": "App 0.7.6 (bản thử) · config 35",
- "nextCheck": "2026-10-06T07:28:27Z",
+ "updatedAt": "2026-10-06T08:14:41Z",
+ "mainSha": "ea2125f",
+ "app": "App 0.7.6 (bản thử) · config 36",
+ "nextCheck": "2026-10-06T09:14:41Z",
  "headline": "0.7.6 vẫn lỗi Kara no Shoujo; Sonnet đang đọc báo cáo sếp gửi. Sếp chốt R1 (app nhận link), R2 (tách repo riêng).",
  "needsBoss": [
   {
@@ -616,7 +616,7 @@
    "title": "Sync config lên Cloudflare đỏ (thiếu secret)",
    "owner": "Sonnet (thay Sol)",
    "status": "xong",
-   "note": "#82 gộp df60ccc. Sếp thêm CLOUDFLARE_API_TOKEN, sync xanh 15:56Z. Đo lại configVersion KV: [CHƯA KIỂM] (Sol)."
+   "note": "KV = configVersion 35 (#99). #104 đưa lên 36"
   },
   {
    "code": "V48",
@@ -648,8 +648,8 @@
    "code": "V50",
    "title": "Nâng nốt action v7/v6 cho workflow còn lại",
    "owner": "Sonnet (thay Sol)",
-   "status": "cho",
-   "note": "Thư sol-011, ưu tiên 6, sau khi gộp #76/#78."
+   "status": "xong",
+   "note": "#100 gộp ea2125f"
   },
   {
    "code": "N00",
@@ -834,6 +834,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T08:14:35Z",
+   "text": "Gộp #104 (config 0.7.6), #100 (action v6), #99 (V47), #96 (timeout). #86 chờ sửa theo Nova."
+  },
   {
    "t": "2026-10-06T07:14:50Z",
    "text": "Sonnet thiếu CRASH_ADMIN_TOKEN nên chưa đọc được báo cáo G7B. Hỏi sếp (câu TOK)."
