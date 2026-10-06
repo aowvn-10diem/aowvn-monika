@@ -1,21 +1,10 @@
 {
- "updatedAt": "2026-10-05T23:15:25Z",
+ "updatedAt": "2026-10-06T00:08:51Z",
  "mainSha": "52be109",
  "app": "App 0.7.4 → 0.7.5 đang phát hành · config 34",
  "nextCheck": "2026-10-05T23:45:25Z",
- "headline": "0.7.5: build và ký xanh nhưng bước kiểm chứng thư lỗi, đang sửa (#88). Kara no Shoujo 0.7.4 chưa vào được game, Sonnet điều tra.",
+ "headline": "Chờ duyệt #88 để chạy lại phát hành 0.7.5 (sếp đã đồng ý). Ảnh lỗi Kara no Shoujo cho thấy máy sếp còn bản 0.7.3.",
  "needsBoss": [
-  {
-   "code": "A8",
-   "urgency": "Gấp",
-   "kind": "one",
-   "question": "Bản 0.7.5 build xong nhưng bước kiểm chứng thư báo lỗi (run 37345874546), chưa có APK. PR #88 sửa bước kiểm. Sau khi #88 gộp, cho chạy release.yml thêm 1 lần (tag v0.7.5, bản thử) để hoàn tất?",
-   "recommend": "Đồng ý: mã app không đổi, tag giữ nguyên ở 1eb266d.",
-   "options": [
-    "Đồng ý chạy lại 1 lần",
-    "Chưa, chờ"
-   ]
-  },
   {
    "code": "G9",
    "urgency": "Nên làm",
@@ -107,8 +96,8 @@
    "code": "V26",
    "title": "Kirikiri không mở được game trên máy thật",
    "owner": "Sonnet",
-   "status": "dang",
-   "note": "G7: sếp thử 0.7.4 → Không vào được game (05/10 15:46Z). Giao Sonnet điều tra (bằng chứng trước).",
+   "status": "cho",
+   "note": "Ảnh lỗi sếp gửi 06/10: tiêu đề '0.7.3 Kirikiri' (lấy từ versionName) ⇒ máy vẫn chạy 0.7.3; bản sửa 0.7.4 chưa thử thật. Chờ sếp cài 0.7.5 rồi thử lại.",
    "module": "kirikiri"
   },
   {
@@ -766,6 +755,10 @@
  ],
  "log": [
   {
+   "t": "2026-10-06T00:08:51Z",
+   "text": "06/10: sếp đồng ý A8 (chạy lại release 0.7.5 sau #88). Ảnh lỗi G7 cho thấy máy đang chạy 0.7.3, chưa phải 0.7.4."
+  },
+  {
    "t": "2026-10-05T23:15:25Z",
    "text": "23:14Z: gộp #77, #76, #78 (Dependabot). #85 Ren'Py menu synthetic xanh, PM duyệt chờ Luna. #84 yêu cầu bỏ quyền ghi."
   },
@@ -1288,6 +1281,20 @@
   }
  ],
  "decisions": [
+  {
+   "code": "G7-ảnh",
+   "question": "Ảnh lỗi Kara no Shoujo",
+   "answer": "Hộp thoại \"0.7.3 Kirikiri — Cannot find storage startup.tjs\". Tiêu đề lấy từ versionName ⇒ máy đang chạy 0.7.3, bản sửa 0.7.4 chưa được thử",
+   "at": "2026-10-06T00:10:00Z",
+   "by": "Sếp"
+  },
+  {
+   "code": "A8",
+   "question": "Chạy lại release.yml 1 lần cho v0.7.5 sau khi #88 gộp?",
+   "answer": "Đồng ý",
+   "at": "2026-10-06T00:10:00Z",
+   "by": "Sếp"
+  },
   {
    "code": "G7",
    "question": "Thử Kara no Shoujo bằng 0.7.4?",
