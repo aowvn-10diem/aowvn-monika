@@ -1,89 +1,38 @@
 {
- "updatedAt": "2026-10-06T01:57:19Z",
+ "updatedAt": "2026-10-06T02:13:23Z",
  "mainSha": "c3489f3",
  "app": "App 0.7.5 (bản thử) · config 34",
- "nextCheck": "2026-10-06T02:27:19Z",
- "headline": "Bản sửa Kara no Shoujo đã gộp (#93). Chờ sếp chốt A13 để phát hành 0.7.6 cho sếp thử. Sol, Luna nghỉ tới 10/10; Sonnet, Nova, Haiku tiếp quản.",
+ "nextCheck": "2026-10-06T02:43:23Z",
+ "headline": "Sếp đã đồng ý phát hành 0.7.6 (A13). Chờ Nova duyệt #97 (tăng phiên bản) rồi chạy phát hành. Haiku đã vào đội.",
  "needsBoss": [
-  {
-   "code": "A13",
-   "urgency": "Gấp",
-   "kind": "one",
-   "question": "Đồng ý phát hành 0.7.6 (bản thử, pre-release) ngay khi #93 (sửa lỗi Kara no Shoujo) được duyệt và gộp?",
-   "recommend": "Đồng ý. Phát hành chạy trên CI, ký bằng khóa hiện có, chỉ chạy release.yml một lần. Xong PM gửi link tải APK lên trang này để sếp thử Kara no Shoujo và bấm \"Báo lỗi game này\" nếu còn lỗi.",
-   "options": [
-    "Đồng ý, phát hành 1 lần sau khi #93 gộp",
-    "Chờ tôi xem #93 trước"
-   ],
-   "links": [
-    {
-     "label": "#93 chọn đúng xp3",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/93",
-     "kind": "pr"
-    },
-    {
-     "label": "Bản 0.7.5 hiện tại",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.5",
-     "kind": "trang"
-    }
-   ]
-  },
-  {
-   "code": "H1",
-   "urgency": "Gấp",
-   "kind": "one",
-   "question": "Sếp mở phiên Haiku 4.6 để thay Luna tới 10/10?",
-   "recommend": "Mở một phiên Claude Code (Haiku 4.6) trên repo aowvn-monika, dán nguyên nội dung prompt bên dưới. Haiku tự báo vào issue #94.",
-   "options": [
-    "Đã mở phiên Haiku",
-    "Không dùng Haiku, để Sonnet duyệt thay"
-   ],
-   "links": [
-    {
-     "label": "Prompt Haiku",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/PROMPT-HAIKU-TIEP-QUAN.md",
-     "kind": "doc"
-    },
-    {
-     "label": "Hộp thư Haiku #94",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/issues/94",
-     "kind": "trang"
-    }
-   ]
-  },
-  {
-   "code": "T1",
-   "urgency": "Khi tiện",
-   "kind": "one",
-   "question": "Tắt lịch \"[PM kiểm thư] ngày B (:42)\" bị trùng (mỗi giờ mở một phiên trống, tốn hạn mức)?",
-   "how": "claude.ai → Code → Routines → \"[PM kiểm thư] ngày B (:42)\" → tắt (Disable). Giữ lịch \"[PM kiểm thư] ngày :42 (phiên PM)\". Phiên PM bị chặn quyền tắt lịch này.",
-   "options": [
-    "Đã tắt",
-    "Để sau"
-   ]
-  },
   {
    "code": "G9",
    "urgency": "Nên làm",
    "kind": "one",
-   "question": "Bật Firebase Test Lab (miễn phí, máy Android thật của Google) để đội tự thử Kirikiri, RPG Maker trên máy ARM thật mà không cần điện thoại của sếp?",
-   "recommend": "Làm theo docs/TEST-LAB.md (khoảng 20 phút, nên làm trên máy tính): tạo project Firebase gói Spark miễn phí, rồi thêm 2 GitHub Secret GCP_SA_KEY và GCP_PROJECT_ID. Không gửi file khóa JSON qua chat.",
+   "question": "Firebase Test Lab: giao Claude in Chrome làm theo prompt bên dưới",
+   "recommend": "Dán prompt cho Claude in Chrome. Chrome tự làm bước A, B và thêm secret GCP_PROJECT_ID. Riêng GCP_SA_KEY sếp tự dán (khoảng 1 phút), vì PM không cho agent đọc khóa JSON.",
    "options": [
-    "Đã làm xong",
+    "Đã xong, Test Lab chạy được",
     "Để sau"
    ],
    "links": [
     {
-     "label": "Hướng dẫn TEST-LAB",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/TEST-LAB.md",
+     "label": "Prompt Chrome",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/PROMPT-CHROME-TEST-LAB.md",
      "kind": "doc"
     },
     {
-     "label": "Thêm GitHub Secret",
+     "label": "Trang GitHub Secrets",
      "url": "https://github.com/aowvn-10diem/aowvn-monika/settings/secrets/actions",
      "kind": "trang"
+    },
+    {
+     "label": "Hướng dẫn TEST-LAB",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/main/docs/TEST-LAB.md",
+     "kind": "doc"
     }
-   ]
+   ],
+   "how": "Mở link Prompt Chrome → chép toàn bộ → dán cho Claude in Chrome. Khi Chrome báo dừng ở GCP_SA_KEY: mở trang Secrets, tạo GCP_SA_KEY, dán nội dung file .json vừa tải, rồi xóa file."
   }
  ],
  "milestones": [
@@ -835,6 +784,10 @@
  ],
  "log": [
   {
+   "t": "2026-10-06T02:13:23Z",
+   "text": "Sếp chốt A13 (phát hành 0.7.6), H1 (Haiku đã vào), T1 (đã tắt lịch trùng). G9: PM gửi prompt cho Claude in Chrome."
+  },
+  {
    "t": "2026-10-06T01:57:19Z",
    "text": "01:57Z: gộp #93 (Nova Đạt + PM duyệt) → c3489f3. Sếp đã đặt v0.7.4 là pre-release (Q4). Sonnet: #95 config 0.7.5, #86, #84 đã đẩy, chờ CI + Nova."
   },
@@ -1390,6 +1343,27 @@
  ],
  "decisions": [
   {
+   "code": "T1",
+   "question": "Tắt lịch \"[PM kiểm thư] ngày B (:42)\" bị trùng (mỗi giờ mở một phiên trống, tốn hạn mức)?",
+   "answer": "Đã tắt (kiểm: enabled=false)",
+   "at": "2026-10-06T02:00:55.867Z",
+   "by": "Sếp"
+  },
+  {
+   "code": "H1",
+   "question": "Sếp mở phiên Haiku 4.6 để thay Luna tới 10/10?",
+   "answer": "Đã mở phiên Haiku",
+   "at": "2026-10-06T01:58:29.555Z",
+   "by": "Sếp"
+  },
+  {
+   "code": "A13",
+   "question": "Đồng ý phát hành 0.7.6 (bản thử, pre-release) ngay khi #93 (sửa lỗi Kara no Shoujo) được duyệt và gộp?",
+   "answer": "Đồng ý phát hành 0.7.6 (bản thử) 1 lần sau khi #93 gộp",
+   "at": "2026-10-06T01:58:26.581Z",
+   "by": "Sếp"
+  },
+  {
    "code": "Q4",
    "question": "Đặt v0.7.4 là pre-release",
    "answer": "Đã đặt (kiểm qua API: prerelease=true, 01:56Z 06/10)",
@@ -1527,36 +1501,20 @@
  "blockers": [
   {
    "code": "V26",
-   "status": "sep",
-   "title": "Bản sửa Kara no Shoujo đã gộp (#93), chờ phát hành 0.7.6 để sếp thử",
-   "who": "Sếp chốt A13 → Sonnet mở PR tăng phiên bản 0.7.6 → Nova duyệt → PM gộp → chạy phát hành 1 lần",
-   "next": "Sếp trả lời A13. PR tăng phiên bản đang được Sonnet chuẩn bị song song, nên đồng ý xong là chạy được ngay.",
-   "ask": "A13",
+   "status": "dang",
+   "title": "Bản sửa Kara no Shoujo đã gộp; sếp đã đồng ý phát hành 0.7.6 (A13)",
+   "who": "Nova duyệt #97 (tăng phiên bản 0.7.6) → PM gộp → Sonnet chạy phát hành 1 lần",
+   "next": "Phát hành xong, PM đưa link tải APK lên trang để sếp thử Kara no Shoujo.",
    "links": [
+    {
+     "label": "#97 phiên bản 0.7.6",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/97",
+     "kind": "pr"
+    },
     {
      "label": "#93 đã gộp",
      "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/93",
      "kind": "pr"
-    }
-   ]
-  },
-  {
-   "code": "ĐỘI",
-   "status": "sep",
-   "title": "Đội Haiku 4.6 chưa có phiên làm việc",
-   "who": "Sếp mở phiên Haiku bằng prompt có sẵn",
-   "next": "Không có Haiku thì PR của Nova (#87, #92) không có người tiền duyệt; Sonnet sẽ duyệt thay nhưng chậm việc của Sonnet.",
-   "ask": "H1",
-   "links": [
-    {
-     "label": "Prompt Haiku",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/PROMPT-HAIKU-TIEP-QUAN.md",
-     "kind": "doc"
-    },
-    {
-     "label": "Bảng phân việc",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/tiep-quan-sol-luna-0610.md",
-     "kind": "doc"
     }
    ]
   },
