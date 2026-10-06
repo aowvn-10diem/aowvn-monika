@@ -1,5 +1,5 @@
 {
- "main": "52be109d1ac0830e517f40a93d17a8651badadc1",
+ "main": "35ba44249dc5e2052643a9f8d17292783caeca1f",
  "branch": "2c4ddd3",
  "sol": {
   "V30": "xong#25",
@@ -83,7 +83,7 @@
  "baseline_check_tokens": "~15M cache_read/lượt (22–26 lần gọi, ngữ cảnh 600–740k)",
  "acting_pm": "Opus",
  "takeover_issue": 65,
- "updated_at": "2026-10-06T00:46:00Z",
+ "updated_at": "2026-10-06T00:58:17Z",
  "gemini": {
   "status": "chờ chủ dự án kích hoạt",
   "tasks": [
@@ -106,5 +106,5 @@
   "mailbox": "issue #90"
  },
  "merge_rule": "PM gộp khi: (Luna Đạt hoặc Nova Đạt nếu Luna chưa duyệt đúng head sau 2 giờ — sếp chốt A6 05/10) + CI xanh đúng head + PM duyệt; merge commit",
- "a8": "Sếp đồng ý 06/10: chạy lại release.yml 1 lần sau khi #88 gộp"
+ "a8": "Sếp đồng ý 06/10: chạy lại release.yml 1 lần sau khi #88 gộp. ĐÃ DÙNG: run 37395509233 xanh 00:53Z 06/10, v0.7.5 prerelease, APK sha256 10fc3f99…7c64, chứng thư khớp. Không chạy thêm."
 }
