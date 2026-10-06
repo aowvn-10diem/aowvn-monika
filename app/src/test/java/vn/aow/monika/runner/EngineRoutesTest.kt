@@ -34,6 +34,7 @@ class EngineRoutesTest {
 
     // `AppGraph.packs` là `by lazy` (field static final): không gán lại field, chỉ đổi trạng thái bên trong đối tượng Lazy.
     @Before fun saveGraph() {
+        app.applicationInfo.nativeLibraryDir = "/fake/arm64" // SimpleModule đọc thư mục thư viện native khi khởi tạo; mặc định của Robolectric là null
         AppGraph.packs // ép khởi tạo để Lazy có `_value`/`initializer` đúng chỗ
         lazyPacks = ReflectionHelpers.getStaticField(AppGraph::class.java, delegateField)
         savedValue = ReflectionHelpers.getField(lazyPacks, "_value")
