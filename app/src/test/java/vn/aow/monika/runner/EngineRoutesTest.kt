@@ -28,15 +28,22 @@ import java.io.File
 class EngineRoutesTest {
     private val app get() = ApplicationProvider.getApplicationContext<Application>()
     private val delegateField = "packs\$delegate"
-    private lateinit var originalDelegate: Any
+    private lateinit var lazyPacks: Any
+    private var savedValue: Any? = null
+    private var savedInitializer: Any? = null
 
+    // `AppGraph.packs` là `by lazy` (field static final): không gán lại field, chỉ đổi trạng thái bên trong đối tượng Lazy.
     @Before fun saveGraph() {
-        originalDelegate = ReflectionHelpers.getStaticField(AppGraph::class.java, delegateField)
+        AppGraph.packs // ép khởi tạo để Lazy có `_value`/`initializer` đúng chỗ
+        lazyPacks = ReflectionHelpers.getStaticField(AppGraph::class.java, delegateField)
+        savedValue = ReflectionHelpers.getField(lazyPacks, "_value")
+        savedInitializer = ReflectionHelpers.getField(lazyPacks, "initializer")
         File(app.filesDir, ConfigRepository.ASSET_NAME).delete()
     }
 
     @After fun restoreGraph() {
-        ReflectionHelpers.setStaticField(AppGraph::class.java, delegateField, originalDelegate)
+        ReflectionHelpers.setField(lazyPacks, "_value", savedValue)
+        ReflectionHelpers.setField(lazyPacks, "initializer", savedInitializer)
         File(app.filesDir, ConfigRepository.ASSET_NAME).delete()
     }
 
@@ -51,7 +58,8 @@ class EngineRoutesTest {
         app.applicationInfo.nativeLibraryDir = "/fake/$abi"
         ReflectionHelpers.setStaticField(Build::class.java, "SUPPORTED_ABIS", arrayOf(if (abi == "arm64") "arm64-v8a" else "armeabi-v7a"))
         val packs = SimpleModule(app, OkHttpClient(), ConfigRepository(app, OkHttpClient()))
-        ReflectionHelpers.setStaticField(AppGraph::class.java, delegateField, lazyOf(packs))
+        ReflectionHelpers.setField(lazyPacks, "_value", packs)
+        ReflectionHelpers.setField(lazyPacks, "initializer", null)
     }
 
     @Test fun routeTableCoversThreeEmbeddedEngines() {
