@@ -57,8 +57,14 @@ object Notifier {
         ) return
         // Implicit file-view/install intents are dispatched by our unexported
         // activity after the user taps; PendingIntent itself always names a component.
-        val target = if (intent.component != null) Intent(intent)
-            else NotificationOpenActivity.intent(context, intent)
+        val component = intent.component
+        val target = if (component != null) {
+            // Explicit by construction: the copy gets its component set before it can reach the PendingIntent
+            // (CodeQL java/android/implicit-pendingintents barrier).
+            val explicit = Intent(intent)
+            explicit.setComponent(component)
+            explicit
+        } else NotificationOpenActivity.intent(context, intent)
         val pi = PendingIntent.getActivity(
             context, id, target, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
