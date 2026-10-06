@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-06T00:08:51Z",
+ "updatedAt": "2026-10-06T00:13:38Z",
  "mainSha": "52be109",
  "app": "App 0.7.4 → 0.7.5 đang phát hành · config 34",
  "nextCheck": "2026-10-05T23:45:25Z",
@@ -96,8 +96,8 @@
    "code": "V26",
    "title": "Kirikiri không mở được game trên máy thật",
    "owner": "Sonnet",
-   "status": "cho",
-   "note": "Ảnh lỗi sếp gửi 06/10: tiêu đề '0.7.3 Kirikiri' (lấy từ versionName) ⇒ máy vẫn chạy 0.7.3; bản sửa 0.7.4 chưa thử thật. Chờ sếp cài 0.7.5 rồi thử lại.",
+   "status": "dang",
+   "note": "Ảnh lỗi 06/10 bản 0.7.4: vẫn 'Cannot find storage startup.tjs' → lỗi thật của 0.7.4. Sonnet: chẩn đoán + chọn xp3 có startup.tjs ở gốc (kế hoạch trước khi code).",
    "module": "kirikiri"
   },
   {
@@ -754,6 +754,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T00:13:38Z",
+   "text": "06/10: G7 0.7.4 vẫn lỗi startup.tjs (ảnh sếp). Sếp chỉ định Nova duyệt #88. Mở issue #90 hộp thư PM↔Nova + prompt kiểm thư Nova."
+  },
   {
    "t": "2026-10-06T00:08:51Z",
    "text": "06/10: sếp đồng ý A8 (chạy lại release 0.7.5 sau #88). Ảnh lỗi G7 cho thấy máy đang chạy 0.7.3, chưa phải 0.7.4."
