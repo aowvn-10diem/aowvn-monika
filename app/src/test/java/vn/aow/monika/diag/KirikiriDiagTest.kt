@@ -21,7 +21,8 @@ class KirikiriDiagTest {
         File(dir, "Uninstall.exe").writeBytes(ByteArray(200) { 1 })
         val lines = KirikiriDiag.describe(File(dir, "karanoshojo.xp3").path)
 
-        assertTrue(lines.first().startsWith("truyền "))
+        assertTrue(lines.first().startsWith("truyền karanoshojo.xp3 thư mục=Kara no Shoujo - AowVN.org "))
+        assertFalse(lines.any { it.contains(tmp.root.path) || it.contains("/") }) // chỉ tên, không có đường dẫn đầy đủ
         assertTrue(lines.any { it.contains("2 xp3, 2 exe") && it.contains("startup.tjs rời=false") })
         assertTrue(lines.any { it.startsWith("xp3 karanoshojo.xp3") && it.contains("startup.tjs@gốc=false") })
         assertTrue(lines.any { it.startsWith("xp3 patch.xp3") && it.contains("startup.tjs@gốc=true") })

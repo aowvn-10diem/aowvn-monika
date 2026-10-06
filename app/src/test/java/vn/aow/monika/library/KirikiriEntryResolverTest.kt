@@ -1,0 +1,87 @@
+package vn.aow.monika.library
+
+import java.io.File
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
+
+/** V26: chọn xp3 có startup.tjs ở gốc bằng chỉ mục XP3 tự sinh (không dùng file game thật). */
+class KirikiriEntryResolverTest {
+    @get:Rule val tmp = TemporaryFolder()
+
+    private fun put(dir: File, name: String, names: List<String>, compressed: Boolean = true, v2: Boolean = false, pad: Int = 0): File {
+        val f = Xp3Fixture.xp3(dir, names, compressed, v2, filler = 100 + pad)
+        return File(dir, name).also { f.renameTo(it) }
+    }
+
+    @Test fun xp3DangChonDaCoStartup_giuNguyen() {
+        val dir = tmp.newFolder("a")
+        val main = put(dir, "karanoshojo.xp3", listOf("startup.tjs", "x.ks"))
+        put(dir, "patch.xp3", listOf("startup.tjs"))
+        assertTrue(KirikiriEntryResolver.resolve(main) is EntryResolution.Keep)
+    }
+
+    @Test fun xp3ChonSaiKhongCoStartup_doiSangKhoThuongCoStartup() {
+        val dir = tmp.newFolder("Kara no Shoujo - AowVN.org")
+        val wrong = put(dir, "extra.xp3", listOf("img/a.png"))
+        val good = put(dir, "karanoshojo.xp3", listOf("Startup.TJS", "scn/a.ks"), pad = 4000)
+        put(dir, "patch.xp3", listOf("startup.tjs"))
+        val r = KirikiriEntryResolver.resolve(wrong) as EntryResolution.Use
+        assertEquals(good.name, r.entry.name)
+    }
+
+    @Test fun banVaChiDuocChonKhiLaKhoDuyNhatLoStartup() {
+        val dir = tmp.newFolder("b")
+        val main = put(dir, "game.xp3", listOf("image/a.png"))
+        val patch = put(dir, "patch.xp3", listOf("startup.tjs"))
+        val r = KirikiriEntryResolver.resolve(main) as EntryResolution.Use
+        assertEquals(patch.name, r.entry.name)
+        assertTrue(r.why.contains("bản vá"))
+    }
+
+    @Test fun nhieuBanVaCungCoStartup_khongTuChon() {
+        val dir = tmp.newFolder("c")
+        val main = put(dir, "game.xp3", listOf("image/a.png"))
+        put(dir, "patch.xp3", listOf("startup.tjs")); put(dir, "patch2.xp3", listOf("startup.tjs"))
+        assertTrue(KirikiriEntryResolver.resolve(main) is EntryResolution.Keep)
+    }
+
+    @Test fun khongXp3NaoCoStartup_coStartupRoiThiDungThuMuc() {
+        val dir = tmp.newFolder("d")
+        val main = put(dir, "game.xp3", listOf("image/a.png"))
+        File(dir, "startup.tjs").writeText("//")
+        val r = KirikiriEntryResolver.resolve(main) as EntryResolution.Use
+        assertEquals(dir, r.entry)
+    }
+
+    @Test fun docDuocMoiXp3MaKhongCoStartup_baoNotFound() {
+        val dir = tmp.newFolder("Game thieu")
+        val main = put(dir, "game.xp3", listOf("image/a.png"), v2 = true)
+        put(dir, "patch.xp3", listOf("scn/b.ks"), compressed = false)
+        val r = KirikiriEntryResolver.resolve(main) as EntryResolution.NotFound
+        assertEquals("Game thieu", r.dirName)
+    }
+
+    @Test fun coXp3KhongDocDuoc_giuNguyenKhongChanGame() {
+        val dir = tmp.newFolder("e")
+        val main = File(dir, "data.xp3").also { it.writeBytes(ByteArray(500) { 3 }) } // mã hóa/định dạng lạ
+        put(dir, "patch.xp3", listOf("scn/b.ks"))
+        assertTrue(KirikiriEntryResolver.resolve(main) is EntryResolution.Keep)
+    }
+
+    @Test fun exeVaKhongCoLoiVao_giuNguyen() {
+        val dir = tmp.newFolder("f")
+        val exe = File(dir, "game.exe").also { it.writeBytes(ByteArray(100) { 1 }) }
+        assertTrue(KirikiriEntryResolver.resolve(exe) is EntryResolution.Keep)
+        assertTrue(KirikiriEntryResolver.resolve(null) is EntryResolution.Keep)
+    }
+
+    @Test fun thuMucLoiVao_coXp3CoStartupThiChonXp3() {
+        val dir = tmp.newFolder("g")
+        val good = put(dir, "data.xp3", listOf("startup.tjs"))
+        val r = KirikiriEntryResolver.resolve(dir) as EntryResolution.Use
+        assertEquals(good.name, r.entry.name)
+    }
+}

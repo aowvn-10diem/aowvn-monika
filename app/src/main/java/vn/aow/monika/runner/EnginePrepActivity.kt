@@ -23,9 +23,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import vn.aow.monika.AppGraph
+import vn.aow.monika.R
 import vn.aow.monika.diag.Diagnostics
+import vn.aow.monika.library.EntryResolution
 import vn.aow.monika.pack.PackAction
 import vn.aow.monika.pack.PackChoice
 import vn.aow.monika.pack.PackManager
@@ -134,11 +139,35 @@ class EnginePrepActivity : ComponentActivity() {
     private fun play() {
         if (started) return
         started = true
+        val resolver = route?.resolve
+        if (resolver == null) return open(entry)
+        // V26: kiểm/chọn lại lối vào ở luồng nền, có timeout; lỗi hoặc quá hạn → giữ nguyên lối vào cũ.
+        status = getString(R.string.engine_prep_checking_entry)
+        lifecycleScope.launch {
+            val r = withContext(Dispatchers.IO) {
+                withTimeoutOrNull(ENTRY_CHECK_TIMEOUT_MS) { runCatching { resolver(entry) }.getOrNull() }
+            }
+            when (r) {
+                is EntryResolution.Use -> { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "chọn ${r.entry.name}: ${r.why}"); open(r.entry) }
+                is EntryResolution.NotFound -> {
+                    Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "không tìm thấy lối vào: ${r.why}")
+                    Diagnostics.recordHandled(this@EnginePrepActivity, "engine:$engine", "không có startup.tjs trong ${r.dirName}: ${r.why}")
+                    status = getString(R.string.engine_entry_not_found, r.dirName)
+                    started = false
+                }
+                is EntryResolution.Keep -> { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "giữ nguyên: ${r.why}"); open(entry) }
+                null -> { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "kiểm lối vào lỗi hoặc quá hạn, giữ nguyên"); open(entry) }
+            }
+        }
+    }
+
+    private fun open(entry: File?) {
         route?.open?.invoke(this, entry, title, intent.getStringExtra(EXTRA_KEY))
         finish()
     }
 
     companion object {
+        private const val ENTRY_CHECK_TIMEOUT_MS = 8_000L
         private const val EXTRA_ENGINE = "engine"
         private const val EXTRA_ENTRY = "entry"
         private const val EXTRA_TITLE = "title"

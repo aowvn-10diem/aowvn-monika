@@ -6,7 +6,7 @@ import java.io.File
 
 /**
  * V26: ghi vệt (breadcrumb) về lối vào game Kirikiri lúc mở, để báo cáo lỗi "Cannot find storage startup.tjs" có đủ dữ kiện:
- * đường dẫn truyền cho engine, tên + dung lượng mỗi .xp3/.exe trong thư mục game, và xp3 nào có `startup.tjs` ở gốc.
+ * lối vào truyền cho engine (chỉ tên file + tên thư mục game, không ghi đường dẫn đầy đủ), tên + dung lượng mỗi .xp3/.exe trong thư mục game, và xp3 nào có `startup.tjs` ở gốc.
  * Chỉ ghi tên file/dung lượng/kết quả kiểm, KHÔNG ghi nội dung game. Mỗi dòng ≤ 200 ký tự (giới hạn của Breadcrumbs).
  */
 object KirikiriDiag {
@@ -40,7 +40,8 @@ object KirikiriDiag {
         if (entryPath.isNullOrBlank()) return listOf("không có đường dẫn (vào trình duyệt file của Kirikiri)")
         val entry = File(entryPath)
         val out = ArrayList<String>()
-        out += "truyền ${entry.path} file=${entry.isFile} dir=${entry.isDirectory} ${sizeOf(entry)}"
+        val folder = (if (entry.isDirectory) entry else entry.parentFile)?.name.orEmpty()
+        out += "truyền ${entry.name} thư mục=$folder file=${entry.isFile} dir=${entry.isDirectory} ${sizeOf(entry)}"
         val dir = if (entry.isDirectory) entry else entry.parentFile
         val files = dir?.listFiles().orEmpty().filter { it.isFile }
         val startupLoose = files.any { it.name.equals("startup.tjs", ignoreCase = true) }
