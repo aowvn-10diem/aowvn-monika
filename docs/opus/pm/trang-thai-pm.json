@@ -57,7 +57,7 @@
     "88": "gộp d4357ea (Nova Đạt)",
     "91": "gộp ac7a843 06/10 (Nova Đạt, PM duyệt)",
     "93": "gộp c3489f3 06/10 (Nova Đạt, PM duyệt)",
-    "92": "Nova N03, build đỏ head 6d6d830, Nova tự sửa",
+    "92": "Nova N03 head 618401f CI xanh 7/7; chờ Haiku tiền duyệt (nhắc #94 11:15Z)",
     "97": "gộp 4a1486e 06/10 (Haiku Đạt, PM duyệt); giao Sonnet phát hành 0.7.6",
     "95": "gộp e124ada (Haiku Đạt, PM duyệt)",
     "102": "gộp e5e057d (lệnh sếp, docs/skill)",
@@ -67,7 +67,9 @@
     "99": "gộp f5b8bda (Nova+Haiku Đạt)",
     "96": "gộp 9a7a9a0 (Nova+Haiku Đạt)",
     "103": "gộp 438a79d (Haiku Đạt, Nova vắng)",
-    "105": "merged 34620c3"
+    "105": "merged 34620c3",
+    "98": "Haiku N02, Nova Cần sửa 05:44Z, chưa sửa",
+    "87": "Nova N01 4f8341f CI xanh; chờ Haiku tiền duyệt"
   },
   "idle": 0,
   "cadence": 60,
