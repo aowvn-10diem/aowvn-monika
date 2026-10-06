@@ -16,6 +16,7 @@ Chạy trong phiên mới, gọn: không đọc lại lịch sử, chỉ dựa v
 Sonnet: chỉ code lõi engine (Kirikiri, mkxp-z, Azahar, Ren'Py, J2ME Loader); không tự kiểm thư, PM nhắn khi có việc lõi (mỗi việc lõi = 1 phiên Sonnet mới). Sol: app, CI, config, cài gói, chẩn đoán, workflow. Luna: tài liệu, thêm test, script nhỏ, tiền duyệt PR (L07). PM: duyệt, sửa KE-HOACH, bảng tiến độ.
 
 ## Các bước
+0. **Báo động ngân sách (06/10)**: lượt nhanh trước. Bản tin `bot/trang-thai` không có PR hay commit mới so với `trang-thai-pm.json`, và `answers` không có câu mới, thì dừng: không ghi trang, không commit, không nhắn ai. Chỉ ghi trang khi có thay đổi thật.
 1. **Đồng bộ**: `git fetch origin main docs/opus-tra-loi`, checkout `docs/opus-tra-loi`, đọc `trang-thai-pm.json`.
 2. **Bản tin rẻ nhất** (V39): `git show origin/bot/trang-thai:docs/trang-thai/digest.md`. Chưa có nhánh/file đó thì bước 4 dùng `pr-tom-tat.sh`.
 3. **Câu trả lời của sếp**: ArtifactData `list` url `https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d`, collection `answers`. Câu có `at` khác `answers_seen[mã]` thì: làm theo; bỏ khỏi `needsBoss`; thêm vào `decisions` `{code,question,answer,at,by:"Sếp"}`; ghi log; lưu `answers_seen`. Câu **KEY** (khóa ký): tuyệt đối không tạo khóa, không xin sếp dán khóa hay mật khẩu.
