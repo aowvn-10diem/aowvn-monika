@@ -45,6 +45,7 @@ class KirikiriGameActivity : KR2Activity() {
         sAssetsRoot = File(packDir(), "assets").absolutePath
         Diagnostics.begin(this, "kirikiri", "kirikiroid2-yuri", File(packDir(), "manifest.json").takeIf { it.isFile }?.readText().orEmpty(), name, "Kirikiri")
         clock = PlayClock(intent.getStringExtra(PlayClock.EXTRA_KEY))
+        vn.aow.monika.diag.KirikiriDiag.logEntryAsync(this, intent.getStringExtra("aow_game_path")) // V26: vệt lối vào cho báo cáo lỗi
         super.onCreate(savedInstanceState)
         Diagnostics.stage(this, "created")
         engineWatch = vn.aow.monika.diag.EngineWatch(this, "kirikiri") { glSurfaceView }
