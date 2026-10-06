@@ -9,3 +9,6 @@ Notifier đưa intent implicit vào activity chuyển tiếp **không exported**
 Giả định: activity chuyển tiếp không giao diện giữ trình chọn handler hiện có, tránh chọn handler mặc định thay người dùng (PM phản đối thì đổi). Không thay lưu dữ liệu/giao thức, không phát hành hoặc cài APK vào máy phiên.
 
 Regression Robolectric API28/34 kiểm PendingIntent explicit, manifest không exported, giữ URI/MIME/quyền đọc khi chuyển tiếp và giữ launcher game ngoài app. Kiểm local: đọc tất cả caller, diffcheck PASS; root testDebugUnitTest thiếu SDK. Build/CodeQL đúng head và thao tác thông báo trên máy thật **[CHƯA KIỂM]**. Không tự đóng alert trước khi CodeQL xác nhận hoặc PM đánh giá.
+
+## Sửa theo Luna "Cần sửa" (06/10, Sonnet tiếp quản)
+CodeQL báo `java/android/intent-redirection` ở `NotificationOpenActivity.onCreate` (đọc `Intent` từ extra rồi `startActivity`). Sửa: extras chỉ mang chuỗi/số (action, data, type, flags); activity **dựng Intent mới** sau khi kiểm: action = `VIEW`, `content://` với authority `"<package>.files"` (FileProvider của app), cờ chỉ giữ `GRANT_READ_URI_PERMISSION | NEW_TASK`. Intent nhét vào extra bị bỏ qua. Test Robolectric thêm: không chuyển tiếp Intent trong extra, từ chối authority/action lạ, che cờ ghi/CLEAR_TASK. **[CHƯA KIỂM]** CodeQL có hết cảnh báo hay không (chờ CI trên head mới) và thao tác thông báo trên máy thật.

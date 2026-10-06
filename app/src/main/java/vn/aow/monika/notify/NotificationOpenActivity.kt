@@ -4,20 +4,20 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.os.Build
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 
-/** Explicit notification target; external apps cannot supply forwarding intents. */
+/**
+ * Explicit, unexported notification target. It never forwards an Intent received from outside (CodeQL
+ * java/android/intent-redirection): only primitive fields travel in extras, and a NEW Intent is built here
+ * after checking them against what the app itself produces (VIEW on a content URI of our own FileProvider).
+ */
 class NotificationOpenActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val target = if (Build.VERSION.SDK_INT >= 33)
-            intent.getParcelableExtra(EXTRA_TARGET, Intent::class.java)
-        else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra<Intent>(EXTRA_TARGET)
-        }
+        val target = buildTarget(this, intent.getStringExtra(EXTRA_ACTION), intent.getStringExtra(EXTRA_DATA),
+            intent.getStringExtra(EXTRA_TYPE), intent.getIntExtra(EXTRA_FLAGS, 0))
         try {
             if (target != null) startActivity(target)
         } catch (_: ActivityNotFoundException) {
@@ -30,11 +30,30 @@ class NotificationOpenActivity : Activity() {
     }
 
     companion object {
-        private const val EXTRA_TARGET = "notification_target"
+        private const val EXTRA_ACTION = "notification_action"
+        private const val EXTRA_DATA = "notification_data"
+        private const val EXTRA_TYPE = "notification_type"
+        private const val EXTRA_FLAGS = "notification_flags"
+        /** Cờ được phép chuyển tiếp: đọc file qua FileProvider và mở ở task mới. */
+        private const val ALLOWED_FLAGS = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
 
+        /** Gói các trường (chuỗi/số) của [target]; không bỏ cả Intent vào extras. */
         fun intent(context: Context, target: Intent): Intent =
             Intent(context, NotificationOpenActivity::class.java)
-                .putExtra(EXTRA_TARGET, Intent(target))
+                .putExtra(EXTRA_ACTION, target.action)
+                .putExtra(EXTRA_DATA, target.dataString)
+                .putExtra(EXTRA_TYPE, target.type)
+                .putExtra(EXTRA_FLAGS, target.flags)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        /** Dựng Intent MỚI từ các trường đã kiểm; null nếu không khớp thứ app tự tạo (VIEW + content:// của FileProvider của app). */
+        internal fun buildTarget(context: Context, action: String?, data: String?, type: String?, flags: Int): Intent? {
+            if (action != Intent.ACTION_VIEW || data.isNullOrEmpty()) return null
+            val uri = Uri.parse(data)
+            if (uri.scheme != "content" || uri.authority != "${context.packageName}.files") return null
+            return Intent(Intent.ACTION_VIEW)
+                .setDataAndType(uri, type)
+                .addFlags((flags and ALLOWED_FLAGS) or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
     }
 }
