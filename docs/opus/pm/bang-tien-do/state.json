@@ -1,10 +1,34 @@
 {
- "updatedAt": "2026-10-06T03:13:21Z",
+ "updatedAt": "2026-10-06T03:14:00Z",
  "mainSha": "4a1486e",
  "app": "App 0.7.5 (bản thử) · config 34",
  "nextCheck": "2026-10-06T03:43:21Z",
  "headline": "Đang phát hành 0.7.6 (bản sửa Kara no Shoujo). Có link tải là PM đưa lên trang để sếp thử.",
  "needsBoss": [
+  {
+   "code": "TAG",
+   "urgency": "Gấp",
+   "kind": "one",
+   "question": "Tạo tag v0.7.6 để chạy phát hành (phiên AI bị chặn quyền đẩy tag)",
+   "how": "Mở link Tạo release v0.7.6. Kiểm 3 ô: Tag = v0.7.6, Target = commit 4a1486e, ô “Set as a pre-release” đã tick. Bấm Publish release. Release sẽ tự chạy khoảng 15–20 phút. Không cần đính kèm file.",
+   "recommend": "Làm giống lần v0.7.5. PM sẽ kiểm chứng thư và gửi link tải APK lên trang này.",
+   "options": [
+    "Đã tạo release v0.7.6",
+    "Để sau"
+   ],
+   "links": [
+    {
+     "label": "Tạo release v0.7.6",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/new?tag=v0.7.6&target=4a1486e90d23ce7aa113255aa7f56da750148520&title=v0.7.6&prerelease=1",
+     "kind": "trang"
+    },
+    {
+     "label": "Commit 4a1486e",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/commit/4a1486e90d23ce7aa113255aa7f56da750148520",
+     "kind": "trang"
+    }
+   ]
+  },
   {
    "code": "G9",
    "urgency": "Nên làm",
@@ -784,6 +808,10 @@
  ],
  "log": [
   {
+   "t": "2026-10-06T03:14:00Z",
+   "text": "Sonnet bị chặn đẩy tag v0.7.6 (Production Deploy). Nhờ sếp tạo release v0.7.6 trên web (câu TAG)."
+  },
+  {
    "t": "2026-10-06T03:13:21Z",
    "text": "Gộp #97 (0.7.6, Haiku Đạt + PM duyệt) → 4a1486e. Giao Sonnet tag v0.7.6 và chạy phát hành 1 lần (A13)."
   },
@@ -1505,9 +1533,9 @@
  "blockers": [
   {
    "code": "V26",
-   "status": "dang",
-   "title": "Đang phát hành 0.7.6 (có bản sửa Kara no Shoujo)",
-   "who": "Sonnet tạo tag v0.7.6 và chạy phát hành 1 lần (A13)",
+   "status": "sep",
+   "title": "Phát hành 0.7.6 chờ sếp tạo tag (phiên AI bị chặn đẩy tag)",
+   "who": "Sếp tạo release v0.7.6 trên web → CI tự build → Sonnet kiểm chứng thư",
    "next": "Phát hành xong, PM đưa link tải APK lên trang để sếp thử Kara no Shoujo.",
    "links": [
     {
@@ -1520,7 +1548,8 @@
      "url": "https://github.com/aowvn-10diem/aowvn-monika/actions/workflows/release.yml",
      "kind": "run"
     }
-   ]
+   ],
+   "ask": "TAG"
   },
   {
    "code": "V31",
