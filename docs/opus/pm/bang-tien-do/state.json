@@ -1,58 +1,10 @@
 {
- "updatedAt": "2026-10-06T06:28:27Z",
+ "updatedAt": "2026-10-06T07:14:10Z",
  "mainSha": "1d33db1",
  "app": "App 0.7.6 (bản thử) · config 35",
  "nextCheck": "2026-10-06T07:28:27Z",
- "headline": "0.7.6 đã phát hành (có bản sửa Kara no Shoujo). Sếp thử ở câu G7B, link tải ngay trong câu.",
+ "headline": "0.7.6 vẫn lỗi Kara no Shoujo; Sonnet đang đọc báo cáo sếp gửi. Sếp chốt R1 (app nhận link), R2 (tách repo riêng).",
  "needsBoss": [
-  {
-   "code": "G7B",
-   "urgency": "Gấp",
-   "kind": "one",
-   "question": "Thử Kara no Shoujo trên bản 0.7.6 (có bản sửa lỗi startup.tjs)",
-   "how": "Tải APK ở nút dưới, cài đè lên bản cũ (giữ dữ liệu). Mở Kara no Shoujo. Nếu vẫn lỗi: trong game mở menu → bấm “Báo lỗi game này” rồi chọn kết quả bên dưới.",
-   "recommend": "Bản thử, chứng thư khớp khóa phát hành, SHA-256 0f3926a5…ffcf2, 19.116.957 byte.",
-   "options": [
-    "Vào được game",
-    "Vẫn lỗi startup.tjs (đã bấm Báo lỗi)",
-    "Lỗi khác (ghi chú)"
-   ],
-   "links": [
-    {
-     "label": "Tải APK 0.7.6",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.6/AowVN-Monika-v0.7.6.apk",
-     "kind": "tai"
-    },
-    {
-     "label": "Trang release",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.6",
-     "kind": "trang"
-    }
-   ]
-  },
-  {
-   "code": "R1",
-   "urgency": "Nên chốt sớm",
-   "kind": "one",
-   "question": "Firmware, ROM, link game: để ở đâu?",
-   "recommend": "Không để trong repo hay release công khai, kể cả khi đã nén RAR có mật khẩu và đặt tên ngẫu nhiên. Mật khẩu aow.vn ai cũng biết, còn mã app công khai thì để lộ luôn cách app tìm file. Cách đó không giảm được rủi ro bị gỡ, nên PM không dựng. Đề xuất: (a) người dùng tự nhập firmware hoặc game từ máy mình (app đã có luồng nhập), hoặc (b) sếp giữ ở kho riêng (repo private hoặc ổ của sếp), app chỉ nhận link qua config từ xa.",
-   "options": [
-    "Theo đề xuất: không để trong repo công khai",
-    "Bàn thêm"
-   ]
-  },
-  {
-   "code": "R2",
-   "urgency": "Nên chốt sớm",
-   "kind": "one",
-   "question": "Repo công khai: muốn người khác clone về không dựng lại được app. Chọn cách nào?",
-   "recommend": "Hiện người ngoài đã không ký được APK giống bản của sếp (khóa ký nằm trong GitHub Secrets) và không có Worker hay config riêng. Muốn chặt hơn: tách phần riêng (Worker, script phát hành, config gốc) sang repo private, repo công khai giữ phần mã engine. Lưu ý: app dùng engine giấy phép GPL (mkxp-z, ONScripter, Azahar, lõi libretro). Phát APK thì phải công bố mã của các phần GPL. Đóng hết mã có thể vi phạm giấy phép, cần kiểm trước khi chuyển private toàn bộ [CHƯA KIỂM].",
-   "options": [
-    "Tách phần riêng sang repo private, giữ phần GPL công khai",
-    "Chuyển cả repo sang private (PM kiểm nghĩa vụ GPL trước)",
-    "Giữ như hiện tại"
-   ]
-  },
   {
    "code": "G9",
    "urgency": "Nên làm",
@@ -140,8 +92,8 @@
    "code": "V26",
    "title": "Kirikiri không mở được game trên máy thật",
    "owner": "Sonnet",
-   "status": "sep",
-   "note": "0.7.6 phát hành 06/10 (run 37419192387), chờ sếp thử",
+   "status": "ket",
+   "note": "0.7.6 vẫn lỗi (G7B). Sonnet đọc báo cáo.",
    "module": "kirikiri",
    "links": [
     {
@@ -787,6 +739,14 @@
    "status": "cho",
    "note": "Sau V51",
    "module": ""
+  },
+  {
+   "code": "V52",
+   "title": "Tách repo: phần riêng sang repo private, rà giấy phép GPL trước",
+   "owner": "PM lập kế hoạch · Nova rà giấy phép",
+   "status": "dang",
+   "note": "Sếp chốt R2 06/10",
+   "module": ""
   }
  ],
  "gates": [
@@ -862,6 +822,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T07:14:10Z",
+   "text": "G7B: 0.7.6 vẫn lỗi startup.tjs, sếp đã gửi báo cáo. R1, R2 đã chốt. Haiku duyệt dự phòng PR Sonnet (Nova vắng)."
+  },
   {
    "t": "2026-10-06T06:28:27Z",
    "text": "v0.7.6 phát hành: run 37419192387 xanh, prerelease, chứng thư khớp, SHA 0f3926a5…ffcf2. Chờ sếp thử Kara no Shoujo (G7B)."
@@ -1446,6 +1410,27 @@
  ],
  "decisions": [
   {
+   "code": "R2",
+   "question": "Repo công khai: muốn người khác clone về không dựng lại được app. Chọn cách nào?",
+   "answer": "Tách phần riêng sang repo riêng, sao cho người hay AI đọc source công khai cũng không hiểu được quy trình và cơ chế của app",
+   "at": "2026-10-06T06:49:06.614Z",
+   "by": "Sếp"
+  },
+  {
+   "code": "R1",
+   "question": "Firmware, ROM, link game: để ở đâu?",
+   "answer": "App nhận link (qua config từ xa); firmware/ROM không nằm trong repo công khai",
+   "at": "2026-10-06T06:48:02.435Z",
+   "by": "Sếp"
+  },
+  {
+   "code": "G7B",
+   "question": "Thử Kara no Shoujo trên bản 0.7.6 (có bản sửa lỗi startup.tjs)",
+   "answer": "Vẫn lỗi startup.tjs trên 0.7.6, sếp đã bấm Báo lỗi game này",
+   "at": "2026-10-06T06:47:33.254Z",
+   "by": "Sếp"
+  },
+  {
    "code": "TAG",
    "question": "Tạo release v0.7.6",
    "answer": "Sếp đã tạo 05:34Z (prerelease, đúng commit 4a1486e)",
@@ -1611,18 +1596,17 @@
  "blockers": [
   {
    "code": "V26",
-   "status": "sep",
-   "title": "0.7.6 đã phát hành, chờ sếp thử Kara no Shoujo",
-   "who": "Sếp thử trên điện thoại",
-   "next": "Vào được game thì đóng G7. Vẫn lỗi thì báo cáo từ nút “Báo lỗi game này” cho Sonnet biết xp3 nào đang được chọn.",
+   "status": "ket",
+   "title": "0.7.6 vẫn lỗi Kara no Shoujo (startup.tjs)",
+   "who": "Sonnet đọc báo cáo sếp gửi từ nút Báo lỗi",
+   "next": "Từ vệt chẩn đoán xem xp3 nào có startup.tjs, resolver chọn gì; sửa rồi phát hành bản kế tiếp (cần sếp đồng ý).",
    "links": [
     {
      "label": "Tải APK 0.7.6",
      "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.6/AowVN-Monika-v0.7.6.apk",
      "kind": "tai"
     }
-   ],
-   "ask": "G7B"
+   ]
   },
   {
    "code": "V47",
