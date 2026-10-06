@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-06T00:59:16Z",
- "mainSha": "35ba442",
+ "updatedAt": "2026-10-06T01:14:39Z",
+ "mainSha": "ac7a843",
  "app": "App 0.7.5 (bản thử) · config 34",
- "nextCheck": "2026-10-06T01:44:16Z",
- "headline": "v0.7.5 đã phát hành dạng bản thử, chứng thư khớp. Bản này CHƯA sửa lỗi Kara no Shoujo (startup.tjs); bản sửa #91/#93 đang chờ Nova duyệt.",
+ "nextCheck": "2026-10-06T01:44:39Z",
+ "headline": "v0.7.5 (bản thử) đã phát hành, chưa có sửa Kara no Shoujo. Bước 1 chẩn đoán Kirikiri đã gộp (#91); bước 2 (#93) chờ Nova duyệt.",
  "needsBoss": [
   {
    "code": "G9",
@@ -97,7 +97,7 @@
    "title": "Kirikiri không mở được game trên máy thật",
    "owner": "Sonnet",
    "status": "dang",
-   "note": "Ảnh lỗi 06/10 bản 0.7.4: vẫn 'Cannot find storage startup.tjs' → lỗi thật của 0.7.4. Sonnet: chẩn đoán + chọn xp3 có startup.tjs ở gốc (kế hoạch trước khi code).",
+   "note": "#91 chẩn đoán gộp ac7a843; #93 chọn xp3 đúng chờ duyệt",
    "module": "kirikiri"
   },
   {
@@ -754,6 +754,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T01:14:39Z",
+   "text": "01:15Z: gộp #91 (Nova Đạt + PM duyệt) → ac7a843; #93 đổi base main, Sonnet gộp main + ghi basename; #92 Nova CI đỏ."
+  },
   {
    "t": "2026-10-06T00:59:16Z",
    "text": "00:58Z: v0.7.5 phát hành xanh (run 37395509233), prerelease, chứng thư khớp. Mở V31(3) Sol, N02 Nova."
