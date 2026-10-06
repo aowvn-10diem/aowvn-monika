@@ -1,5 +1,5 @@
 {
- "main": "4a1486e90d23ce7aa113255aa7f56da750148520",
+ "main": "1d33db1dc533700ca7a50afac3e7ea5afe0f0f9b",
  "branch": "2c4ddd3",
  "sol": {
   "V30": "xong#25",
@@ -51,20 +51,21 @@
   "81": "gộp 1eb266d; tag v0.7.5 (sếp); run 37345874546 đỏ ở guard chứng thư",
   "82": "gộp df60ccc sau Luna Đạt f14a5c5 + CI; KV đo lại sau secret: Sol",
   "83": "gộp 73313e2 sau Luna Đạt f6b5b7e + CI",
-  "84": "PM yêu cầu bỏ dismiss job",
+  "84": "gộp 1d33db1 (Haiku Đạt, PM duyệt)",
   "85": "gộp 35ba442 (Nova Đạt)",
   "86": "Luna Cần sửa",
   "88": "gộp d4357ea (Nova Đạt)",
   "91": "gộp ac7a843 06/10 (Nova Đạt, PM duyệt)",
   "93": "gộp c3489f3 06/10 (Nova Đạt, PM duyệt)",
   "92": "Nova N03, build đỏ head 6d6d830, Nova tự sửa",
-  "97": "gộp 4a1486e 06/10 (Haiku Đạt, PM duyệt); giao Sonnet phát hành 0.7.6"
+  "97": "gộp 4a1486e 06/10 (Haiku Đạt, PM duyệt); giao Sonnet phát hành 0.7.6",
+  "95": "gộp e124ada (Haiku Đạt, PM duyệt)"
  },
  "idle": 0,
  "cadence": 60,
  "dashboard": "https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d",
  "dashboard_state": "Nguồn GitHub: docs/opus/pm/bang-tien-do/state.json trên nhánh PM. Artifact Claude bên ngoài chưa cập nhật trong lượt tiếp quản.",
- "dashboard_version": 81,
+ "dashboard_version": 82,
  "rule": "Opus là PM (nhận lại 05/10 15:25Z theo lệnh sếp). Sol về phạm vi riêng (app/CI/config/gói/chẩn đoán/workflow), không duyệt/gộp PR người khác, không sửa docs/opus/pm.",
  "trigger": "trig_01Nk2NQXsfxm8hQLAZAo4ZsS tắt. Lịch mới bắn vào phiên PM: trig_015WwbYtSvWe2Cm48yXemN6n (ngày :12), trig_016SSxE2JNERoMQ8s2ZwzHGc (ngày :42), trig_01Q7BiVvi3bbBTyHDf6NU38j (đêm :27), giờ GMT+7. Chế độ phiên mới mỗi lượt KHÔNG dùng được: trigger tạo qua MCP không gắn repo/connector; cron tối thiểu 1 giờ nên ngày dùng 2 trigger lệch 30 phút. trig_01AYyFD6nwW3b3BBhQDipzqd (phiên mới, :42) chưa tắt được, chờ sếp tắt; trig_01LJqv…/trig_01D37a… đã tắt.",
  "note": "Tiếp quản của Sol (issue #65) kết thúc 05/10 15:25Z theo lệnh sếp; thư tra-loi-sol-010. Ghi chú của Sol lúc tiếp quản: Sol tạm tiếp quản PM/Sonnet theo issue65 tới 05/10 15:00Z. #71 PM docs đã merge 2c4ddd3 sau Luna+CI; #72/V43 single dry-run37261174377 SUCCESS/no artifact; #73/V16 merged config34. #79 L09 docs đã merged; checklist TEST-MAY-THAT RGSS và lỗi parser digest đã ghi issue65, chưa mở việc sửa riêng. G7 0.7.4 retest pending. Gemini F01/F02 standby.",

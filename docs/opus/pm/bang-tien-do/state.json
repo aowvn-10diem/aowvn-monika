@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-06T03:14:00Z",
- "mainSha": "4a1486e",
+ "updatedAt": "2026-10-06T05:13:49Z",
+ "mainSha": "1d33db1",
  "app": "App 0.7.5 (bản thử) · config 34",
- "nextCheck": "2026-10-06T03:43:21Z",
+ "nextCheck": "2026-10-06T05:43:49Z",
  "headline": "Đang phát hành 0.7.6 (bản sửa Kara no Shoujo). Có link tải là PM đưa lên trang để sếp thử.",
  "needsBoss": [
   {
@@ -436,7 +436,7 @@
    "title": "0.7.4 thành bản thử; sửa thông tin cập nhật app; K10 chặt",
    "owner": "Sonnet (thay Sol)",
    "status": "dang",
-   "note": "(3) v0.7.5 xong 06/10 → Sol cập nhật mục app trong config (thư sol-012)",
+   "note": "(3) Config app 0.7.5 gộp #95 (e124ada), configVersion 35",
    "module": "ci"
   },
   {
@@ -642,7 +642,7 @@
    "title": "Phân loại 26 cảnh báo CodeQL",
    "owner": "Sonnet: #84, #86",
    "status": "dang",
-   "note": "#84 PM yêu cầu bỏ job dismiss (quyền ghi security-events). #86 Luna Cần sửa.",
+   "note": "#84 inventory gộp (1d33db1). #86 chờ CodeQL + duyệt",
    "links": [
     {
      "label": "#86",
@@ -807,6 +807,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T05:13:49Z",
+   "text": "Gộp #95 (config app 0.7.5, configVersion 35) và #84 (CodeQL inventory chỉ đọc), Haiku Đạt + PM duyệt. v0.7.6 vẫn chờ sếp tạo tag."
+  },
   {
    "t": "2026-10-06T03:14:00Z",
    "text": "Sonnet bị chặn đẩy tag v0.7.6 (Production Deploy). Nhờ sếp tạo release v0.7.6 trên web (câu TAG)."
@@ -1552,37 +1556,11 @@
    "ask": "TAG"
   },
   {
-   "code": "V31",
+   "code": "V47",
    "status": "dang",
-   "title": "App trong máy người dùng chưa thấy bản mới (mục app trong config còn cũ)",
-   "who": "Sonnet (thay Sol tới 10/10)",
-   "next": "Đưa mục app lên 0.7.5, tăng configVersion, đồng bộ Cloudflare, đo lại KV (V47).",
-   "links": [
-    {
-     "label": "Thư giao việc",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/tra-loi-sol-012-v075-da-phat-hanh.md",
-     "kind": "doc"
-    }
-   ]
-  },
-  {
-   "code": "V49",
-   "status": "dang",
-   "title": "Hai PR bảo mật của Sol bị treo (#86 thông báo, #84 CodeQL)",
-   "who": "Sonnet sửa thay Sol → Nova tiền duyệt",
-   "next": "#86 sửa theo nhận xét \"Cần sửa\"; #84 bỏ job dismiss có quyền security-events: write.",
-   "links": [
-    {
-     "label": "#86",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/86",
-     "kind": "pr"
-    },
-    {
-     "label": "#84",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/84",
-     "kind": "pr"
-    }
-   ]
+   "title": "App trong máy người dùng sắp thấy bản 0.7.5 (config 35 đã gộp)",
+   "who": "Sonnet kiểm đồng bộ Cloudflare và đo configVersion trên KV",
+   "next": "Khi 0.7.6 phát hành sẽ đổi config sang 0.7.6."
   }
  ]
 }
