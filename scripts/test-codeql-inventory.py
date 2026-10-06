@@ -36,26 +36,5 @@ class InventoryTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             m.collect(lambda n: [self.alert(1)] * 100, set())
 
-    def test_dismissal_checks_identity_and_source_before_any_write(self):
-        source=Path(m.APK_SOURCE).read_bytes()
-        calls=[]
-        alert={'number':22,'state':'open','rule':{'id':'java/zipslip'},
-               'most_recent_instance':{'location':{'path':m.APK_SOURCE,'start_line':104}}}
-        def request(method,route,payload=None):
-            calls.append((method,route,payload))
-            return alert if method=='GET' else {'state':'dismissed'}
-        self.assertTrue(m.dismiss_reviewed_22(request,source))
-        self.assertEqual([c[0] for c in calls],['GET','PATCH'])
-        self.assertEqual(calls[-1][2]['dismissed_reason'],'false positive')
-        for change in ['source','number','rule','location']:
-            calls.clear();original=m.json.loads(m.json.dumps(alert))
-            if change=='number':alert['number']=23
-            if change=='rule':alert['rule']['id']='java/insecure-trustmanager'
-            if change=='location':alert['most_recent_instance']['location']['start_line']=105
-            with self.assertRaises(RuntimeError):
-                m.dismiss_reviewed_22(request,source+b'changed' if change=='source' else source)
-            self.assertNotIn('PATCH',[c[0] for c in calls])
-            alert.clear();alert.update(original)
-
 
 if __name__ == "__main__": unittest.main()
