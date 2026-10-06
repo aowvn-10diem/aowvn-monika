@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-/* Layout: một cột đọc trên điện thoại. Thứ tự: tóm tắt → câu sếp cần trả lời (điền ngay) → tiến độ theo module (game / chức năng app, mỗi module 4 bước) → việc của đội → cổng → nhật ký. */
+/* Layout: một cột đọc trên điện thoại. Thứ tự: tóm tắt → điểm nghẽn (ai gỡ, bước tiếp, link) → câu sếp cần trả lời (điền ngay, kèm link tải/tài liệu) → tiến độ theo module (game / chức năng app, mỗi module 4 bước) → việc của đội → cổng → nhật ký. */
 :root {
   --bg: #FBF6EE;
   --surface: #FFFDF9;
@@ -120,6 +120,30 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
 .dec .a { font-weight: 600; }
 .dec .by { font-size: 12px; color: var(--muted); }
 
+/* Link đính kèm: link tải là nút đặc, link tài liệu/PR là nút viền */
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.lnk { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; border: 1.5px solid var(--boss-line); border-radius: var(--r-sm); padding: 6px 14px; font-size: 13.5px; font-weight: 700; color: var(--boss); background: var(--surface); text-decoration: none; overflow-wrap: anywhere; }
+.lnk::after { content: "↗"; font-weight: 600; }
+.lnk:hover { border-color: var(--boss); }
+.lnk:focus-visible { outline: 2px solid var(--g3); outline-offset: 2px; }
+.lnk.tai { background: var(--boss); border-color: var(--boss); color: var(--on-accent); }
+.lnk.tai::after { content: "↓"; }
+.lnk-k { font-weight: 500; opacity: .8; }
+.t-links { grid-column: 2 / 4; }
+.t-links .lnk { padding: 3px 10px; font-size: 12.5px; }
+
+/* Điểm nghẽn */
+.blocks { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.blk { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--run); border-radius: var(--r-md); padding: 12px 16px; display: grid; gap: 8px; min-width: 0; }
+.blk.sep { border-left-color: var(--boss); }
+.blk.ket { border-left-color: var(--stuck); }
+.blk-top { display: flex; align-items: baseline; gap: 6px 10px; flex-wrap: wrap; }
+.blk-title { font-weight: 700; font-size: 15.5px; flex: 1 1 220px; min-width: 0; }
+.blk-row { font-size: 14px; color: var(--muted); max-width: 70ch; }
+.blk-row b { color: var(--fg); font-weight: 600; }
+.blk-go { font-size: 13.5px; font-weight: 700; color: var(--boss); text-decoration: none; }
+.blk-go:hover { text-decoration: underline; }
+
 /* Chip trạng thái */
 .chip { display: inline-flex; align-items: center; gap: 6px; border-radius: var(--r-sm); padding: 2px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -188,7 +212,7 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
   .stat:first-child { border-top: 0; }
   .list li { grid-template-columns: 1fr auto; }
   .list li .code { grid-column: 1 / 3; justify-self: start; }
-  .t-note { grid-column: 1 / 3; }
+  .t-note, .t-links { grid-column: 1 / 3; }
   .log li { grid-template-columns: 1fr; gap: 2px; }
   .opt { width: 100%; }
 }
@@ -209,13 +233,18 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
 
   <div class="stats" id="stats" aria-label="Tóm tắt">
     <div class="stat hot"><b id="st-q">–</b><span>câu hỏi chờ sếp trả lời</span></div>
-    <div class="stat"><b id="st-phone">–</b><span>module game đã thử trên điện thoại</span></div>
+    <div class="stat"><b id="st-blk">–</b><span>điểm nghẽn đang gỡ</span></div>
     <div class="stat"><b id="st-open">–</b><span>việc đội đang làm</span></div>
   </div>
 
+  <section class="sec" aria-labelledby="b-h" id="nghen">
+    <div class="sec-h"><h2 id="b-h">Điểm nghẽn</h2><span class="count">Xếp theo mức chặn, việc gỡ trước nằm trên</span></div>
+    <ul class="blocks" id="b-list"><li class="empty">Các điểm nghẽn sẽ hiện ở đây: ai đang gỡ, bước tiếp theo, link liên quan.</li></ul>
+  </section>
+
   <section class="boss sec" aria-labelledby="boss-h" id="hoi">
     <div class="sec-h"><h2 id="boss-h">Câu sếp cần trả lời</h2><span class="count num" id="boss-count"></span></div>
-    <p class="boss-intro" id="boss-intro">Chọn câu trả lời, thêm ghi chú nếu cần, rồi bấm Gửi. PM đọc câu trả lời ở lượt kiểm hộp thư kế tiếp và chuyển câu đó xuống mục Đã chốt.</p>
+    <p class="boss-intro" id="boss-intro">Mỗi câu có sẵn link cần dùng: link tải APK khi cần thử, link tài liệu hoặc PR khi cần xem. Chọn câu trả lời, thêm ghi chú nếu cần, rồi bấm Gửi. PM đọc ở lượt kiểm hộp thư kế tiếp và chuyển câu đó xuống mục Đã chốt.</p>
     <div class="qs" id="boss-list"><p class="calm">Câu hỏi sẽ hiện ở đây khi trang tải xong dữ liệu.</p></div>
     <details class="done-box" id="dec-box" hidden>
       <summary id="dec-sum">Đã chốt</summary>
@@ -251,7 +280,7 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
         <button id="f-all" type="button" data-f="all" aria-pressed="false">Tất cả</button>
       </div>
     </div>
-    <ul class="list" id="t-list"><li class="empty">Việc của Sonnet, Sol, Luna và PM sẽ hiện ở đây.</li></ul>
+    <ul class="list" id="t-list"><li class="empty">Việc của Sonnet, Nova, Haiku và PM sẽ hiện ở đây.</li></ul>
   </section>
 
   <section class="sec" aria-labelledby="g-h">
@@ -290,6 +319,20 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
   function chip(s) { var k = LABEL[s] ? s : "cho"; return el("span", "chip s-" + k, LABEL[k]); }
   function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
   function arr(x) { return Array.isArray(x) ? x : []; }
+  var KIND = { tai: "Tải", doc: "Tài liệu", pr: "PR", run: "Lượt chạy", trang: "Trang" };
+  function links(list, cls) {
+    var ok = arr(list).filter(function (l) { return l && typeof l.url === "string" && /^https:\/\//.test(l.url); });
+    if (!ok.length) return null;
+    var box = el("div", "links" + (cls ? " " + cls : ""));
+    ok.forEach(function (l) {
+      var a = el("a", "lnk" + (l.kind === "tai" ? " tai" : ""));
+      a.href = l.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+      if (l.kind && KIND[l.kind] && l.kind !== "tai") { a.appendChild(el("span", "lnk-k", KIND[l.kind] + ":")); }
+      a.appendChild(document.createTextNode(l.label || l.url));
+      box.appendChild(a);
+    });
+    return box;
+  }
   function modName(id) { var m = arr(state && state.modules).find(function (x) { return x.id === id; }); return m ? m.name : ""; }
 
   /* ---------- Đầu trang + tóm tắt ---------- */
@@ -310,11 +353,9 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
     var qs = arr(s.needsBoss);
     var waiting = qs.filter(function (q) { return !answers[q.code]; }).length;
     document.getElementById("st-q").textContent = String(waiting);
-    var games = arr(s.modules).filter(function (m) { return m.group === "game" && !m.frozen; });
-    var tried = games.filter(function (m) { return m.steps && m.steps.phone === "xong"; }).length;
-    var phone = document.getElementById("st-phone");
-    phone.textContent = tried + "/" + games.length;
-    phone.parentNode.className = "stat" + (tried === 0 && games.length ? " warn" : "");
+    var nb = arr(s.blockers).length, bk = document.getElementById("st-blk");
+    bk.textContent = String(nb);
+    bk.parentNode.className = "stat" + (nb ? " warn" : "");
     document.getElementById("st-open").textContent = String(arr(s.tasks).filter(function (t) { return t.status === "dang"; }).length);
   }
 
@@ -364,6 +405,7 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
     c.appendChild(el("h3", "ask-q", q.question || ""));
     if (q.recommend) { var r = el("p", "ask-r"); r.appendChild(el("b", null, "PM đề xuất: ")); r.appendChild(document.createTextNode(q.recommend)); c.appendChild(r); }
     if (q.how) { var h = el("p", "ask-r"); h.appendChild(el("b", null, "Cách làm: ")); h.appendChild(document.createTextNode(q.how)); c.appendChild(h); }
+    var ql = links(q.links); if (ql) c.appendChild(ql);
 
     if (PUBLIC) { c.appendChild(el("p", "msg", "Đang chờ sếp trả lời.")); return c; }
     var a = answers[q.code];
@@ -497,7 +539,7 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
   }
 
   /* ---------- Việc, cổng, nhật ký ---------- */
-  function row(code, title, note, status, who, mod) {
+  function row(code, title, note, status, who, mod, lk) {
     var li = el("li");
     li.appendChild(el("span", "code", code || ""));
     var tt = el("span", "t-title", title || "");
@@ -506,6 +548,7 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
     var right = el("span", "t-right"); right.appendChild(chip(status)); if (who) right.appendChild(el("span", "t-who", who));
     li.appendChild(right);
     if (note) li.appendChild(el("span", "t-note", note));
+    var tl = links(lk, "t-links"); if (tl) li.appendChild(tl);
     return li;
   }
 
@@ -519,14 +562,34 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
     var order = { ket: 0, loi: 0, sep: 1, dang: 2, cho: 3, lap: 4, xong: 5 };
     shown.sort(function (a, b) { return (order[a.status] ?? 9) - (order[b.status] ?? 9); });
     if (!shown.length) { box.appendChild(el("li", "empty", filter === "done" ? "Chưa có việc nào xong." : "Không có việc nào đang chạy.")); return; }
-    shown.forEach(function (t) { box.appendChild(row(t.code, t.title, t.note, t.status, t.owner, modName(t.module))); });
+    shown.forEach(function (t) { box.appendChild(row(t.code, t.title, t.note, t.status, t.owner, modName(t.module), t.links)); });
   }
 
   function renderGates(s) {
     var box = document.getElementById("g-list"); clear(box);
     var g = arr(s.gates);
     if (!g.length) { box.appendChild(el("li", "empty", "Không có cổng nào.")); return; }
-    g.forEach(function (x) { box.appendChild(row(x.code, x.title, x.note, x.status, x.when)); });
+    g.forEach(function (x) { box.appendChild(row(x.code, x.title, x.note, x.status, x.when, null, x.links)); });
+  }
+
+  function renderBlocks(s) {
+    var box = document.getElementById("b-list"); clear(box);
+    var b = arr(s.blockers);
+    if (!b.length) { box.appendChild(el("li", "empty", "Không có điểm nghẽn nào lúc này.")); return; }
+    b.forEach(function (x) {
+      var st = x.status === "sep" ? "sep" : (x.status === "ket" ? "ket" : "dang");
+      var li = el("li", "blk " + st);
+      var top = el("div", "blk-top");
+      if (x.code) top.appendChild(el("span", "code", x.code));
+      top.appendChild(el("span", "blk-title", x.title || ""));
+      top.appendChild(chip(st));
+      li.appendChild(top);
+      if (x.who) { var w = el("p", "blk-row"); w.appendChild(el("b", null, "Ai gỡ: ")); w.appendChild(document.createTextNode(x.who)); li.appendChild(w); }
+      if (x.next) { var n = el("p", "blk-row"); n.appendChild(el("b", null, "Bước tiếp: ")); n.appendChild(document.createTextNode(x.next)); li.appendChild(n); }
+      var bl = links(x.links); if (bl) li.appendChild(bl);
+      if (x.ask) { var go = el("a", "blk-go", "Trả lời ở mục Câu sếp cần trả lời (" + x.ask + ")"); go.href = "#q-" + x.ask; li.appendChild(go); }
+      box.appendChild(li);
+    });
   }
 
   function renderLog(s) {
@@ -543,7 +606,7 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
 
   function render() {
     if (!state) return;
-    renderMeta(state); renderStats(state); renderBoss(state); renderMods(state); renderTasks(state); renderGates(state); renderLog(state);
+    renderMeta(state); renderStats(state); renderBlocks(state); renderBoss(state); renderMods(state); renderTasks(state); renderGates(state); renderLog(state);
   }
 
   function setFilter(f) {

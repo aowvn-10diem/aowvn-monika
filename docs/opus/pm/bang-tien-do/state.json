@@ -1,10 +1,67 @@
 {
- "updatedAt": "2026-10-06T01:43:16Z",
+ "updatedAt": "2026-10-06T01:52:01Z",
  "mainSha": "ac7a843",
  "app": "App 0.7.5 (bản thử) · config 34",
- "nextCheck": "2026-10-06T02:13:16Z",
- "headline": "v0.7.5 (bản thử) đã phát hành, chưa có sửa Kara no Shoujo. Bước 1 chẩn đoán Kirikiri đã gộp (#91); bước 2 (#93) chờ Nova duyệt.",
+ "nextCheck": "2026-10-06T02:21:55Z",
+ "headline": "Sol và Luna nghỉ tới 10/10 (hết hạn mức). Sonnet, Nova, Haiku tiếp quản. Điểm nghẽn số 1: bản sửa Kara no Shoujo (#93) chờ Nova duyệt; sếp chốt A13 để phát hành 0.7.6 ngay sau đó.",
  "needsBoss": [
+  {
+   "code": "A13",
+   "urgency": "Gấp",
+   "kind": "one",
+   "question": "Đồng ý phát hành 0.7.6 (bản thử, pre-release) ngay khi #93 (sửa lỗi Kara no Shoujo) được duyệt và gộp?",
+   "recommend": "Đồng ý. Phát hành chạy trên CI, ký bằng khóa hiện có, chỉ chạy release.yml một lần. Xong PM gửi link tải APK lên trang này để sếp thử Kara no Shoujo và bấm \"Báo lỗi game này\" nếu còn lỗi.",
+   "options": [
+    "Đồng ý, phát hành 1 lần sau khi #93 gộp",
+    "Chờ tôi xem #93 trước"
+   ],
+   "links": [
+    {
+     "label": "#93 chọn đúng xp3",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/93",
+     "kind": "pr"
+    },
+    {
+     "label": "Bản 0.7.5 hiện tại",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.5",
+     "kind": "trang"
+    }
+   ]
+  },
+  {
+   "code": "H1",
+   "urgency": "Gấp",
+   "kind": "one",
+   "question": "Sếp mở phiên Haiku 4.6 để thay Luna tới 10/10?",
+   "recommend": "Mở một phiên Claude Code (Haiku 4.6) trên repo aowvn-monika, dán nguyên nội dung prompt bên dưới. Haiku tự báo vào issue #94.",
+   "options": [
+    "Đã mở phiên Haiku",
+    "Không dùng Haiku, để Sonnet duyệt thay"
+   ],
+   "links": [
+    {
+     "label": "Prompt Haiku",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/PROMPT-HAIKU-TIEP-QUAN.md",
+     "kind": "doc"
+    },
+    {
+     "label": "Hộp thư Haiku #94",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/issues/94",
+     "kind": "trang"
+    }
+   ]
+  },
+  {
+   "code": "T1",
+   "urgency": "Khi tiện",
+   "kind": "one",
+   "question": "Tắt lịch \"[PM kiểm thư] ngày B (:42)\" bị trùng (mỗi giờ mở một phiên trống, tốn hạn mức)?",
+   "how": "claude.ai → Code → Routines → \"[PM kiểm thư] ngày B (:42)\" → tắt (Disable). Giữ lịch \"[PM kiểm thư] ngày :42 (phiên PM)\". Phiên PM bị chặn quyền tắt lịch này.",
+   "options": [
+    "Đã tắt",
+    "Để sau"
+   ]
+  },
   {
    "code": "G9",
    "urgency": "Nên làm",
@@ -14,6 +71,18 @@
    "options": [
     "Đã làm xong",
     "Để sau"
+   ],
+   "links": [
+    {
+     "label": "Hướng dẫn TEST-LAB",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/TEST-LAB.md",
+     "kind": "doc"
+    },
+    {
+     "label": "Thêm GitHub Secret",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/settings/secrets/actions",
+     "kind": "trang"
+    }
    ]
   },
   {
@@ -21,10 +90,22 @@
    "urgency": "Gấp",
    "kind": "many",
    "question": "Còn 1 việc chỉ sếp làm được trên GitHub: đặt v0.7.4 là pre-release.",
-   "how": "Releases → v0.7.4 → Edit → tick “Set as a pre-release” → Update. KHÔNG xóa engines-rgss-6: config 34 đang dùng gói này.",
+   "how": "Mở link Sửa release v0.7.4 → tick “Set as a pre-release” → Update release. KHÔNG xóa engines-rgss-6: config 34 đang dùng gói này.",
    "options": [
     "Đã đặt v0.7.4 là pre-release",
     "Để sau"
+   ],
+   "links": [
+    {
+     "label": "Sửa release v0.7.4",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/edit/v0.7.4",
+     "kind": "trang"
+    },
+    {
+     "label": "Xem release v0.7.4",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.4",
+     "kind": "trang"
+    }
    ]
   }
  ],
@@ -87,7 +168,14 @@
    "owner": "Sonnet",
    "status": "dang",
    "note": "#91 chẩn đoán gộp ac7a843; #93 chọn xp3 đúng chờ duyệt",
-   "module": "kirikiri"
+   "module": "kirikiri",
+   "links": [
+    {
+     "label": "#93",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/93",
+     "kind": "pr"
+    }
+   ]
   },
   {
    "code": "V23",
@@ -396,7 +484,7 @@
   {
    "code": "V31",
    "title": "0.7.4 thành bản thử; sửa thông tin cập nhật app; K10 chặt",
-   "owner": "Sol",
+   "owner": "Sonnet (thay Sol)",
    "status": "dang",
    "note": "(3) v0.7.5 xong 06/10 → Sol cập nhật mục app trong config (thư sol-012)",
    "module": "ci"
@@ -476,7 +564,7 @@
   {
    "code": "L07",
    "title": "Tiền duyệt mọi PR của Sol, Sonnet",
-   "owner": "Luna",
+   "owner": "Nova + Haiku (thay Luna)",
    "status": "lap",
    "module": "ci",
    "note": "Luna đã bắt đầu tiền duyệt (2 lượt cho PR Ren'Py)."
@@ -492,7 +580,7 @@
   {
    "code": "L09",
    "title": "Đồng bộ tài liệu sau mỗi tính năng mới",
-   "owner": "Luna",
+   "owner": "Haiku (thay Luna)",
    "status": "lap",
    "module": "ci",
    "note": "Luna đồng bộ HANDOFF (#49)."
@@ -572,8 +660,8 @@
   {
    "code": "V45",
    "title": "Ren'Py 8: đăng gói và bật trong config (P4)",
-   "owner": "Sol",
-   "status": "dang",
+   "owner": "Tạm dừng tới 10/10 (Sol)",
+   "status": "cho",
    "module": "renpy8",
    "note": "#85 gộp 35ba442 (Nova Đạt + PM): gói Ren'Py kiểm trên CI, menu synthetic đạt trên máy ảo. Phát hành gói cần sếp duyệt riêng."
   },
@@ -588,84 +676,110 @@
   {
    "code": "V47",
    "title": "Sync config lên Cloudflare đỏ (thiếu secret)",
-   "owner": "",
+   "owner": "Sonnet (thay Sol)",
    "status": "xong",
    "note": "#82 gộp df60ccc. Sếp thêm CLOUDFLARE_API_TOKEN, sync xanh 15:56Z. Đo lại configVersion KV: [CHƯA KIỂM] (Sol)."
   },
   {
    "code": "V48",
    "title": "Bản tin: nhận mẫu review Luna mới",
-   "owner": "",
+   "owner": "Nova (thay Sol)",
    "status": "xong",
    "note": "#83 gộp 73313e2. Còn: nhận mẫu Nova."
   },
   {
    "code": "V49",
    "title": "Phân loại 26 cảnh báo CodeQL",
-   "owner": "",
+   "owner": "Sonnet: #84, #86",
    "status": "dang",
-   "note": "#84 PM yêu cầu bỏ job dismiss (quyền ghi security-events). #86 Luna Cần sửa."
+   "note": "#84 PM yêu cầu bỏ job dismiss (quyền ghi security-events). #86 Luna Cần sửa.",
+   "links": [
+    {
+     "label": "#86",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/86",
+     "kind": "pr"
+    },
+    {
+     "label": "#84",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/84",
+     "kind": "pr"
+    }
+   ]
   },
   {
    "code": "V50",
    "title": "Nâng nốt action v7/v6 cho workflow còn lại",
-   "owner": "",
+   "owner": "Sonnet (thay Sol)",
    "status": "cho",
    "note": "Thư sol-011, ưu tiên 6, sau khi gộp #76/#78."
   },
   {
    "code": "N00",
    "title": "Nova: tiền duyệt dự phòng",
-   "owner": "",
+   "owner": "Nova",
    "status": "lap",
    "note": "Thành viên mới Sonnet 5.5 medium (05/10). Duyệt PR chờ Luna quá 2 giờ."
   },
   {
    "code": "N01",
    "title": "Nova: sửa TEST-MAY-THAT mục RGSS",
-   "owner": "",
+   "owner": "Nova",
    "status": "cho",
-   "note": "Phát hiện audit Luna 2."
+   "note": "Phát hiện audit Luna 2.",
+   "links": [
+    {
+     "label": "#87",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/87",
+     "kind": "pr"
+    }
+   ]
   },
   {
    "code": "N02",
    "title": "Nova: CHANGELOG v0.7.5",
-   "owner": "",
+   "owner": "Haiku",
    "status": "dang",
    "note": "Mở 06/10: viết CHANGELOG v0.7.5 (issue #90)"
   },
   {
    "code": "N03",
    "title": "Nova: test EngineRoutes",
-   "owner": "",
+   "owner": "Nova",
    "status": "cho",
-   "note": "Thư nova-001."
+   "note": "Thư nova-001.",
+   "links": [
+    {
+     "label": "#92",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/92",
+     "kind": "pr"
+    }
+   ]
   },
   {
    "code": "N04",
    "title": "Nova: test cho script chưa có test",
-   "owner": "",
+   "owner": "Nova",
    "status": "cho",
    "note": "verify-apk-cert, prepare-core-pins, gen-architecture, crash-report-detail, cheats-index."
   },
   {
    "code": "N05",
    "title": "Nova: trang Thử nhanh 0.7.5 cho sếp",
-   "owner": "",
+   "owner": "Nova",
    "status": "cho",
    "note": "4 bài thử trên điện thoại."
   },
   {
    "code": "N06",
    "title": "Nova: đồng bộ tài liệu dự phòng",
-   "owner": "",
+   "owner": "Haiku",
    "status": "cho",
    "note": "Thay L09 khi Luna vắng quá 2 giờ."
   },
   {
    "code": "N07",
    "title": "Nova: rà thông tin cũ trong tài liệu",
-   "owner": "",
+   "owner": "Haiku",
    "status": "cho",
    "note": "Phiên bản, configVersion, gói, phân vai."
   }
@@ -743,6 +857,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-06T01:51:55Z",
+   "text": "01:52Z: Sol, Luna nghỉ tới 10/10. Chia việc: Sonnet (V31(3), #84, #86, V47, V50), Nova (tiền duyệt, V48), Haiku (tiền duyệt PR Nova, L09, N02, N07). Trang thêm mục Điểm nghẽn và link kèm mỗi câu hỏi."
+  },
   {
    "t": "2026-10-06T01:43:16Z",
    "text": "01:45Z: sếp chốt G4A2 = chỉ zip cấu hình sẵn trước. #93 chờ Nova duyệt (head 5fe1a1f, CI xanh)."
@@ -1417,5 +1535,95 @@
    "answer": "Sol thay Opus/Sonnet, phối hợp Luna tới22:00 05/10 GMT+7; chuẩn bị Gemini Flash tối nay."
   }
  ],
- "progressBasis": "Phần trăm mốc giữ ước lượng PM cũ, chưa đo lại trong lượt tiếp quản."
+ "progressBasis": "Phần trăm mốc giữ ước lượng PM cũ, chưa đo lại trong lượt tiếp quản.",
+ "blockers": [
+  {
+   "code": "V26",
+   "status": "dang",
+   "title": "Kara no Shoujo báo \"Cannot find storage startup.tjs\" (bản sửa #93)",
+   "who": "Nova tiền duyệt #93 → PM duyệt và gộp → xin sếp phát hành 0.7.6",
+   "next": "Nova duyệt đúng commit 5fe1a1f (CI đã xanh 7/7). Sếp chốt trước câu A13 để không phải chờ thêm một vòng.",
+   "ask": "A13",
+   "links": [
+    {
+     "label": "#93 chọn đúng xp3",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/93",
+     "kind": "pr"
+    },
+    {
+     "label": "Kết quả đọc mã V26",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/sonnet/V26-kirikiri/docs/opus/ket-qua/V26.md",
+     "kind": "doc"
+    }
+   ]
+  },
+  {
+   "code": "ĐỘI",
+   "status": "sep",
+   "title": "Đội Haiku 4.6 chưa có phiên làm việc",
+   "who": "Sếp mở phiên Haiku bằng prompt có sẵn",
+   "next": "Không có Haiku thì PR của Nova (#87, #92) không có người tiền duyệt; Sonnet sẽ duyệt thay nhưng chậm việc của Sonnet.",
+   "ask": "H1",
+   "links": [
+    {
+     "label": "Prompt Haiku",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/PROMPT-HAIKU-TIEP-QUAN.md",
+     "kind": "doc"
+    },
+    {
+     "label": "Bảng phân việc",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/tiep-quan-sol-luna-0610.md",
+     "kind": "doc"
+    }
+   ]
+  },
+  {
+   "code": "V31",
+   "status": "dang",
+   "title": "App trong máy người dùng chưa thấy bản mới (mục app trong config còn cũ)",
+   "who": "Sonnet (thay Sol tới 10/10)",
+   "next": "Đưa mục app lên 0.7.5, tăng configVersion, đồng bộ Cloudflare, đo lại KV (V47).",
+   "links": [
+    {
+     "label": "Thư giao việc",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/tra-loi-sol-012-v075-da-phat-hanh.md",
+     "kind": "doc"
+    }
+   ]
+  },
+  {
+   "code": "V49",
+   "status": "dang",
+   "title": "Hai PR bảo mật của Sol bị treo (#86 thông báo, #84 CodeQL)",
+   "who": "Sonnet sửa thay Sol → Nova tiền duyệt",
+   "next": "#86 sửa theo nhận xét \"Cần sửa\"; #84 bỏ job dismiss có quyền security-events: write.",
+   "links": [
+    {
+     "label": "#86",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/86",
+     "kind": "pr"
+    },
+    {
+     "label": "#84",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/84",
+     "kind": "pr"
+    }
+   ]
+  },
+  {
+   "code": "Q4",
+   "status": "sep",
+   "title": "v0.7.4 (bản lỗi Kirikiri) vẫn đang là bản chính thức mới nhất trên GitHub",
+   "who": "Chỉ sếp bấm được (phiên AI bị chặn quyền sửa release)",
+   "next": "Đặt v0.7.4 là pre-release. Mất khoảng 1 phút.",
+   "ask": "Q4",
+   "links": [
+    {
+     "label": "Sửa release v0.7.4",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/edit/v0.7.4",
+     "kind": "trang"
+    }
+   ]
+  }
+ ]
 }
