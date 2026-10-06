@@ -1,12 +1,12 @@
 {
-  "configVersion": 35,
+  "configVersion": 36,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
-    "latestVersionCode": 40,
-    "latestVersionName": "0.7.5",
+    "latestVersionCode": 41,
+    "latestVersionName": "0.7.6",
     "minVersionCode": 1,
-    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.5/AowVN-Monika-v0.7.5.apk",
-    "changelog": "Bản thử 0.7.5: thêm nút “Báo lỗi game này”, cải thiện chẩn đoán lỗi và nhiều sửa lỗi nội bộ."
+    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.6/AowVN-Monika-v0.7.6.apk",
+    "changelog": "Bản thử 0.7.6: sửa lỗi mở game Kirikiri (startup.tjs)"
   },
   "feed": {
     "url": "https://www.aow.vn/feeds/posts/default",
