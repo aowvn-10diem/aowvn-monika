@@ -155,6 +155,7 @@ class EnginePrepActivity : ComponentActivity() {
                 is EntryResolution.Use -> { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "chọn ${r.entry.name}: ${r.why}"); open(r.entry) }
                 is EntryResolution.NotFound -> {
                     Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "không tìm thấy lối vào: ${r.why}")
+                    r.details.forEach { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", it) }
                     Diagnostics.recordHandled(this@EnginePrepActivity, "engine:$engine", "không có startup.tjs trong ${r.dirName}: ${r.why}")
                     status = getString(R.string.engine_entry_not_found, r.dirName)
                     reportable = true
