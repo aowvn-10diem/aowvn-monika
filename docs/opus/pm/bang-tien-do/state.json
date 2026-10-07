@@ -1,22 +1,10 @@
 {
- "updatedAt": "2026-10-07T05:13:44Z",
+ "updatedAt": "2026-10-07T10:14:13Z",
  "mainSha": "51c1462",
  "app": "App 0.7.6 (bản thử) · config 36",
- "nextCheck": "2026-10-07T06:13:44Z",
+ "nextCheck": "2026-10-07T11:14:13Z",
  "headline": "0.7.6 vẫn lỗi Kara no Shoujo; Sonnet đang đọc báo cáo sếp gửi. Sếp chốt R1 (app nhận link), R2 (tách repo riêng).",
  "needsBoss": [
-  {
-   "code": "TOK",
-   "urgency": "Gấp",
-   "kind": "one",
-   "question": "Cho Sonnet đọc được báo cáo lỗi Kara no Shoujo sếp vừa gửi",
-   "how": "Trong phiên Sonnet: bấm tên môi trường cloud trên thanh tiêu đề → Edit → thêm biến môi trường CRASH_ADMIN_TOKEN = token quản trị Worker báo lỗi (token tạo lúc làm V29, sếp giữ). Lưu lại. Phiên Sonnet mới sẽ đọc được. KHÔNG dán token vào chat.",
-   "recommend": "Đây là cách duy nhất để đội tự đọc báo cáo. Nếu không tìm thấy token, chọn “Không có token”, PM sẽ giao Sonnet làm lối đọc báo cáo khác.",
-   "options": [
-    "Đã thêm CRASH_ADMIN_TOKEN",
-    "Không có token"
-   ]
-  },
   {
    "code": "G9",
    "urgency": "Nên làm",
@@ -835,6 +823,10 @@
  ],
  "log": [
   {
+   "t": "2026-10-07T10:14:13Z",
+   "text": "Sếp thêm CRASH_ADMIN_TOKEN; Sonnet deploy Worker mới (32c145c4), chờ sếp bấm Báo lỗi lại. #107 chờ Nova"
+  },
+  {
    "t": "2026-10-07T05:13:44Z",
    "text": "Nova quay lại. PM gộp #98 (N02 CHANGELOG, 51c1462). #106 N08 chờ Nova"
   },
@@ -1626,6 +1618,13 @@
    "at": "2026-10-04T10:55:29Z",
    "question": "Đội gặp sự cố, ai tiếp quản?",
    "answer": "Sol thay Opus/Sonnet, phối hợp Luna tới22:00 05/10 GMT+7; chuẩn bị Gemini Flash tối nay."
+  },
+  {
+   "code": "TOK",
+   "question": "Cho Sonnet đọc báo lỗi Kara",
+   "answer": "Đã thêm CRASH_ADMIN_TOKEN",
+   "at": "2026-10-07T09:18:44Z",
+   "by": "Sếp"
   }
  ],
  "progressBasis": "Phần trăm mốc giữ ước lượng PM cũ, chưa đo lại trong lượt tiếp quản.",
