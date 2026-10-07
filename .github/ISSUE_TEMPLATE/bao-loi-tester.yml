@@ -32,7 +32,7 @@ body:
     attributes:
       label: Bản app AowVN Monika
       description: "Xem trong app: Cài đặt → Về ứng dụng, hoặc phần thông tin app"
-      placeholder: "v0.7.5"
+      placeholder: "v<X.X.X>"
     validations:
       required: true
 
@@ -42,7 +42,7 @@ body:
       label: Hệ máy game
       description: "Engine game bạn đang thử"
       options:
-        - Kirikiki (KAG)
+        - Kirikiri (KAG)
         - RPG Maker (RGSS/RGSS2/RGSS3)
         - Game Boy (GB)
         - Game Boy Advance (GBA)

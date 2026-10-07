@@ -4,12 +4,12 @@ Cảm ơn bạn đã giúp thử app **AowVN Monika**. Bên dưới là các bư
 
 ---
 
-## 1. Kirikiki (KAG)
+## 1. Kirikiri (KAG)
 
-Kirikiki là engine chạy game visual novel (VN) với tệp startup.tjs.
+Kirikiri là engine chạy game visual novel (VN) với tệp startup.tjs.
 
 **Bước thử:**
-1. Mở app, chọn thư mục chứa game Kirikiki.
+1. Mở app, chọn thư mục chứa game Kirikiri.
 2. Nếu app phát hiện startup.tjs, game sẽ tải. Nếu không, app sẽ báo lỗi.
 3. Nhấp "Khởi động" để chạy game.
 4. Kiểm tra: game hiển thị, có thể tương tác (bấm, swipe, chọn menu).
