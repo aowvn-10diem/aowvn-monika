@@ -144,21 +144,34 @@ def timestamp(value: str | None) -> datetime:
     return parse_time(value) or datetime.min.replace(tzinfo=timezone.utc)
 
 
+# Tiền tố comment tiền duyệt → loại trong bản tin. Luna giữ "luna_tien_duyet" để consumer cũ không đổi schema.
+PREREVIEW_KINDS = (
+    ("Luna tiền duyệt", "luna_tien_duyet"),
+    ("Luna review L07", "luna_tien_duyet"),
+    ("Nova tiền duyệt", "nova_tien_duyet"),
+    ("Haiku tiền duyệt", "haiku_tien_duyet"),
+)
+PREREVIEW_PREFIXES = tuple(prefix for prefix, _ in PREREVIEW_KINDS)
+
+
 def classify_comment(comment: dict) -> dict:
     body = comment.get("body") if isinstance(comment.get("body"), str) else ""
     text = body.lstrip()
+    # Review templates wrap headings/verdicts in Markdown; inspect text, never export bodies.
+    text = re.sub(r"^[#*`\s]+", "", text)
     result = {"type": "khac"}
     if text.startswith("PM duyệt"):
         result["type"] = "pm_duyet"
     elif text.startswith("PM yêu cầu sửa"):
         result["type"] = "pm_sua"
-    elif text.startswith("Luna tiền duyệt") or text.startswith("Luna review L07"):
-        result["type"] = "luna_tien_duyet"
+    elif text.startswith(PREREVIEW_PREFIXES):
+        # Cùng một mẫu tiền duyệt cho Luna, Nova, Haiku; mỗi người một loại để bản tin biết ai đã duyệt.
+        result["type"] = next(kind for prefix, kind in PREREVIEW_KINDS if text.startswith(prefix))
         # Read the review header only: later prose may mention an older commit.
         header = text.splitlines()[0]
-        label = "commit" if text.startswith("Luna tiền duyệt") else "head"
+        label = "head" if text.startswith("Luna review L07") else "commit"
         sha = re.search(rf"\b{label}\s+`?([0-9a-f]{{7,40}})\b(?![0-9a-f])", header, re.IGNORECASE)
-        verdict = re.search(r"^Kết luận:\s*(Đạt|Cần sửa|Cần PM xem)", body, re.MULTILINE | re.IGNORECASE)
+        verdict = re.search(r"^[ \t*`]*Kết luận[*`]*:[ \t*`]*(Đạt|Cần sửa|Cần PM xem)", body, re.MULTILINE | re.IGNORECASE)
         if sha:
             result["sha"] = sha.group(1).lower()
         if verdict:
