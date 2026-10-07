@@ -78,6 +78,11 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 - Có menu Monika tiếng Việt trong game Kirikiri với các lối tiếp tục, mở menu game, tua nhanh và thoát. ([92a65b2](https://github.com/aowvn-10diem/aowvn-monika/commit/92a65b22ece2f1346b61aa0875eb33da67a27d4d))
 - Gói Kirikiri phát hành kèm bản dịch giao diện và được tải riêng khi dùng. ([33f7ba0](https://github.com/aowvn-10diem/aowvn-monika/commit/33f7ba0bc27f9d1a721c22f9ff35ae85754f9282))
 
+## [v0.7.5](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.5) (Bản thử — Pre-release)
+
+- Nút "Báo lỗi game này" cho phép người dùng gửi báo cáo lỗi trực tiếp từ menu trong game, kèm thông tin chi tiết về engine và thành phần. ([#60](https://github.com/aowvn-10diem/aowvn-monika/pull/60), [b65c315](https://github.com/aowvn-10diem/aowvn-monika/commit/b65c315))
+- **Bản thử**: Chưa có sửa lỗi Kirikiri Kara no Shoujo; sẽ bổ sung ở bản tiếp theo.
+
 ## [v0.7.4](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.4)
 
 - Nếu thư mục game có tệp `.exe` và `.xp3` cùng tên, Kirikiri chọn đúng cặp game thay vì tệp `.exe` không liên quan. ([9a32943](https://github.com/aowvn-10diem/aowvn-monika/commit/9a32943375890d2581738e2abfcd9f39fca5de1d), [6454b56](https://github.com/aowvn-10diem/aowvn-monika/commit/6454b56292c8e5c677049be9efe6195709bd6a76))
