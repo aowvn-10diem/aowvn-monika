@@ -1,5 +1,7 @@
 # PM: tiếp quản việc của Sol và Luna (06/10 → 10/10/2026)
 
+> **Kết thúc sớm 07/10/2026 23:40Z:** sếp báo Sol và Luna có hạn mức trở lại. Việc trả lại theo `tra-loi-sol-013-quay-lai-tang-viec.md` và `tra-loi-luna-005-quay-lai-tang-viec.md`. Từ nay tiền duyệt: Luna cho PR của Sol, Sonnet, Haiku, Nova; Nova cho PR của Luna.
+
 **Kết luận:** Sol và Luna hết hạn mức, nghỉ tới **10/10**. Sếp giao (06/10): Sonnet, Nova và Haiku tiếp quản. Ưu tiên gỡ điểm nghẽn trước. Việc nào PM không tự quyết được thì đưa lên trang tiến độ để sếp duyệt nhanh, kèm link.
 
 ## Phân việc

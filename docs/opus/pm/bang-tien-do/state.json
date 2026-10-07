@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-07T10:14:13Z",
+ "updatedAt": "2026-10-07T23:38:30Z",
  "mainSha": "51c1462",
  "app": "App 0.7.6 (bản thử) · config 36",
- "nextCheck": "2026-10-07T11:14:13Z",
- "headline": "0.7.6 vẫn lỗi Kara no Shoujo; Sonnet đang đọc báo cáo sếp gửi. Sếp chốt R1 (app nhận link), R2 (tách repo riêng).",
+ "nextCheck": "2026-10-08T00:38:30Z",
+ "headline": "Sol và Luna quay lại: Luna gỡ nghẽn duyệt #107/#106, Sol nhận 6 việc",
  "needsBoss": [
   {
    "code": "G9",
@@ -410,9 +410,9 @@
   {
    "code": "V31",
    "title": "0.7.4 thành bản thử; sửa thông tin cập nhật app; K10 chặt",
-   "owner": "Sonnet (thay Sol)",
-   "status": "dang",
-   "note": "(3) Config app 0.7.5 gộp #95 (e124ada), configVersion 35",
+   "owner": "Sonnet",
+   "status": "xong",
+   "note": "Config 36, mục app = 0.7.6",
    "module": "ci"
   },
   {
@@ -490,10 +490,10 @@
   {
    "code": "L07",
    "title": "Tiền duyệt mọi PR của Sol, Sonnet",
-   "owner": "Nova + Haiku (thay Luna)",
+   "owner": "Luna (nhận lại 07/10)",
    "status": "lap",
    "module": "ci",
-   "note": "Luna đã bắt đầu tiền duyệt (2 lượt cho PR Ren'Py)."
+   "note": "Ưu tiên #107, #106; PR của Luna do Nova duyệt"
   },
   {
    "code": "L08",
@@ -506,7 +506,7 @@
   {
    "code": "L09",
    "title": "Đồng bộ tài liệu sau mỗi tính năng mới",
-   "owner": "Haiku (thay Luna)",
+   "owner": "Luna (nhận lại 07/10)",
    "status": "lap",
    "module": "ci",
    "note": "Luna đồng bộ HANDOFF (#49)."
@@ -586,10 +586,10 @@
   {
    "code": "V45",
    "title": "Ren'Py 8: đăng gói và bật trong config (P4)",
-   "owner": "Tạm dừng tới 10/10 (Sol)",
+   "owner": "Sol",
    "status": "cho",
    "module": "renpy8",
-   "note": "#85 gộp 35ba442 (Nova Đạt + PM): gói Ren'Py kiểm trên CI, menu synthetic đạt trên máy ảo. Phát hành gói cần sếp duyệt riêng."
+   "note": "Phần B xong; phát hành renpy8 chờ sếp duyệt"
   },
   {
    "code": "V46",
@@ -608,17 +608,17 @@
   },
   {
    "code": "V48",
-   "title": "Bản tin: nhận mẫu review Luna mới",
-   "owner": "Nova (thay Sol)",
-   "status": "xong",
+   "title": "Bản tin nhận mẫu tiền duyệt Luna/Nova/Haiku",
+   "owner": "Sol",
+   "status": "cho",
    "note": "#83 gộp 73313e2. Còn: nhận mẫu Nova."
   },
   {
    "code": "V49",
    "title": "Phân loại 26 cảnh báo CodeQL",
-   "owner": "Sonnet: #84, #86",
+   "owner": "Sol (nhận lại 07/10)",
    "status": "cho",
-   "note": "#86 gộp 0171920 (MediaStore/SAF). Chờ thử máy ở bản phát hành sau",
+   "note": "#84, #86 gộp; còn SRI, test ZIP, bảng đề xuất đóng",
    "links": [
     {
      "label": "#86",
@@ -684,7 +684,7 @@
   {
    "code": "N04",
    "title": "Nova: test cho script chưa có test",
-   "owner": "Nova",
+   "owner": "Luna (từ Nova 07/10)",
    "status": "cho",
    "note": "verify-apk-cert, prepare-core-pins, gen-architecture, crash-report-detail, cheats-index."
   },
@@ -698,14 +698,14 @@
   {
    "code": "N06",
    "title": "Nova: đồng bộ tài liệu dự phòng",
-   "owner": "Haiku",
+   "owner": "Luna (gộp vào L09)",
    "status": "cho",
    "note": "Thay L09 khi Luna vắng quá 2 giờ."
   },
   {
    "code": "N07",
    "title": "Nova: rà thông tin cũ trong tài liệu",
-   "owner": "Haiku",
+   "owner": "Luna (từ Haiku 07/10)",
    "status": "cho",
    "note": "Phiên bản, configVersion, gói, phân vai."
   },
@@ -735,7 +735,7 @@
   {
    "code": "N09",
    "title": "Thêm test theo báo cáo độ phủ",
-   "owner": "Nova",
+   "owner": "Luna · Sol (V54) · Nova",
    "status": "cho",
    "note": "Sau V51",
    "module": ""
@@ -747,6 +747,27 @@
    "status": "dang",
    "note": "Sếp chốt R2 06/10",
    "module": ""
+  },
+  {
+   "code": "V53",
+   "title": "Đóng thành phần j2me không cần mở từ ngoài (manifest :app)",
+   "owner": "Sol",
+   "status": "cho",
+   "note": ""
+  },
+  {
+   "code": "V54",
+   "title": "Test độ phủ azahar + cài gói",
+   "owner": "Sol",
+   "status": "cho",
+   "note": ""
+  },
+  {
+   "code": "V55",
+   "title": "Kiểm định kỳ: configVersion trên Worker so với main",
+   "owner": "Sol",
+   "status": "cho",
+   "note": ""
   }
  ],
  "gates": [
@@ -822,6 +843,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-07T23:38:24Z",
+   "text": "Sol, Luna quay lại sớm theo sếp: Luna tiền duyệt #107, #106 trước; Sol 6 việc (V48, V49, V53, V54, V50, V55)"
+  },
   {
    "t": "2026-10-07T10:14:13Z",
    "text": "Sếp thêm CRASH_ADMIN_TOKEN; Sonnet deploy Worker mới (32c145c4), chờ sếp bấm Báo lỗi lại. #107 chờ Nova"
