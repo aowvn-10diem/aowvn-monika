@@ -19,7 +19,7 @@ jobs:
       - name: Read open alert locations without snippets or mutations
         env: {GITHUB_TOKEN: '${{ github.token }}'}
         run: python3 scripts/codeql-inventory.py --out out/codeql-inventory
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: v49-codeql-inventory
           path: out/codeql-inventory/
