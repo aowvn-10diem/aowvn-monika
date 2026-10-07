@@ -2,5 +2,5 @@
 <resources>
     <string name="app_name">AowVN Monika</string>
     <string name="engine_prep_checking_entry">Đang kiểm tra tệp game…</string>
-    <string name="engine_entry_not_found">Không tìm thấy tệp khởi động (startup.tjs) trong thư mục “%1$s”. Game có thể thiếu tệp hoặc bị mã hóa. Hãy quay lại trang game và bấm “Báo lỗi game này” để gửi thông tin cho nhóm phát triển.</string>
+    <string name="engine_entry_not_found">Không tìm thấy tệp khởi động (startup.tjs) trong thư mục “%1$s”. Game có thể thiếu tệp hoặc bị mã hóa. Hãy bấm “Báo lỗi game này” bên dưới để gửi thông tin cho nhóm phát triển.</string>
 </resources>

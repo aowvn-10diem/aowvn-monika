@@ -50,6 +50,7 @@ class EnginePrepActivity : ComponentActivity() {
     private var status by mutableStateOf("Đang chuẩn bị…")
     private var ask by mutableStateOf(false)
     private var needAccess by mutableStateOf(false)
+    private var reportable by mutableStateOf(false)
     private var started = false
 
     private val engine: String get() = intent.getStringExtra(EXTRA_ENGINE).orEmpty()
@@ -65,8 +66,10 @@ class EnginePrepActivity : ComponentActivity() {
         setContent {
             MonikaTheme {
                 Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF141315))) {
+                    // Nút báo lỗi chỉ hiện khi không tìm thấy lối vào (V26/G7B); keepOpen để bấm không đóng màn hình.
+                    val reportAction = vn.aow.monika.ui.gameReportAction {}.copy(keepOpen = true)
                     MonikaMenuSheet(
-                        true, { finish() }, actions = emptyList(),
+                        true, { finish() }, actions = if (reportable) listOf(reportAction) else emptyList(),
                         title = title.ifBlank { label }, subtitle = status,
                         header = {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -154,6 +157,7 @@ class EnginePrepActivity : ComponentActivity() {
                     Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "không tìm thấy lối vào: ${r.why}")
                     Diagnostics.recordHandled(this@EnginePrepActivity, "engine:$engine", "không có startup.tjs trong ${r.dirName}: ${r.why}")
                     status = getString(R.string.engine_entry_not_found, r.dirName)
+                    reportable = true
                     started = false
                 }
                 is EntryResolution.Keep -> { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "giữ nguyên: ${r.why}"); open(entry) }

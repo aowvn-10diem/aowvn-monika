@@ -537,19 +537,27 @@ object Diagnostics {
      * chưa có thì chép nội dung vào clipboard để dán vào nhóm / Discord của AowVN.
      * Trả true nếu đã gửi lên máy chủ.
      */
-    fun send(c: Context, http: OkHttpClient, r: Report, endpoint: String): Boolean {
+    fun send(c: Context, http: OkHttpClient, r: Report, endpoint: String): Boolean = sendResult(c, http, r, endpoint).ok
+
+    /** Kết quả gửi; [error] null khi đã lên máy chủ, còn lại là lý do ngắn (mã HTTP / loại lỗi mạng) để hiện cho người chơi. */
+    data class SendResult(val ok: Boolean, val error: String? = null)
+
+    fun sendResult(c: Context, http: OkHttpClient, r: Report, endpoint: String): SendResult {
         val text = r.toText()
         if (endpoint.isBlank()) {
             c.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Báo lỗi Aow Monika", text))
-            return false
+            return SendResult(false, "chưa cấu hình địa chỉ nhận")
         }
-        val ok = runCatching {
+        val result = runCatching {
             http.newCall(Request.Builder().url(endpoint).post(reportJson(c, r).toRequestBody("application/json".toMediaType())).build())
-                .execute().use { it.isSuccessful }
-        }.getOrDefault(false)
-        if (ok) save(c, r.copy(sent = true))
-        else c.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Báo lỗi Aow Monika", text))
-        return ok
+                .execute().use { if (it.isSuccessful) SendResult(true) else SendResult(false, "HTTP ${it.code}") }
+        }.getOrElse { SendResult(false, it.javaClass.simpleName.ifBlank { "lỗi mạng" }) }
+        if (result.ok) save(c, r.copy(sent = true))
+        else {
+            Breadcrumbs.add(c, "report-send", "gửi thất bại: ${result.error}")
+            c.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Báo lỗi Aow Monika", text))
+        }
+        return result
     }
 
     private fun appLine() = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) ${if (BuildConfig.DEBUG) "debug" else "release"}"
