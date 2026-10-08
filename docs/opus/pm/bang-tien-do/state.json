@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-08T11:16:51Z",
- "mainSha": "8c0bdb2",
+ "updatedAt": "2026-10-08T12:15:05Z",
+ "mainSha": "722bab0",
  "app": "App 0.7.6 (bản thử) · config 36",
- "nextCheck": "2026-10-08T12:16:51Z",
- "headline": "31 PR gộp từ đầu nước rút. V64 (chặn RC) đã có PR, chờ duyệt",
+ "nextCheck": "2026-10-08T13:15:05Z",
+ "headline": "V64 xong: RC 0.7.7 chỉ còn chờ V60 + CHANGELOG (09/10 12:00)",
  "needsBoss": [
   {
    "code": "G9",
@@ -794,8 +794,8 @@
    "code": "V64",
    "title": "Sửa bộ nhớ resolver Kirikiri (chặn RC 0.7.7)",
    "owner": "Sol (từ Sonnet)",
-   "status": "dang",
-   "note": "PR #142 (Sol) CI bắt buộc xanh, chờ Luna tiền duyệt"
+   "status": "xong",
+   "note": "PR #142 gộp, Luna Đạt + CI bắt buộc xanh; gỡ lỗi chặn RC"
   },
   {
    "code": "V58",
@@ -844,7 +844,7 @@
    "title": "Báo rõ \"xp3 mã hóa\" thay cho NotFound",
    "owner": "Sonnet",
    "status": "dang",
-   "note": "PR #144 (Sonnet, draft) xong mã, chờ Luna + Luna Ultra"
+   "note": "#144: Luna Cần sửa, phải gộp main sau V64"
   }
  ],
  "gates": [
@@ -927,6 +927,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T12:15:05Z",
+   "text": "Gộp #142 (V64, gỡ lỗi chặn RC 0.7.7) và #143 (V26 thư 005). Gọi sớm V60 (Sol) và L11 CHANGELOG (Luna), hạn 09/10 12:00. Sonnet gộp main vào #144."
+  },
   {
    "t": "2026-10-08T11:16:51Z",
    "text": "Gộp #140 (Haiku-2 test download) và #141 (Luna, tài liệu). PM chốt: PR chỉ sửa tài liệu miễn Build/Coverage/CodeQL theo V11. V64 #142 và V26b #144 đã có PR."
