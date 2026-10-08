@@ -35,6 +35,7 @@ Sonnet: chỉ code lõi engine (Kirikiri, mkxp-z, Azahar, Ren'Py, J2ME Loader); 
       - `task V46 --status dang|xong|lap|cho|ket|sep --note "…"` (việc mới cần `--title`; status ngoài danh sách bị từ chối)
       - `module <id> build|auto|phone|release xong|dang|cho|sep|loi|na`
       - `log "…"` · `meta --main <sha> --headline "…" --next-check-min 30` · `show`
+   1b. Lượt đầu mỗi 3 giờ (hoặc khi có PR gộp): `python3 $S/nang-suat.py` đo lại năng suất từng agent + % việc xong (ghi `productivity`, `overall`). Sửa `sprint` (mốc M1–M4) và `improvements` (đề xuất PM) bằng tay khi đổi.
    2. ArtifactData `set` `board/state` (nội dung = `state.json`, kèm `if_version` = `dashboard_version`); lưu `dashboard_version` mới vào `trang-thai-pm.json`, đặt `idle` = 0.
    3. Commit `KE-HOACH.md` + `docs/opus/pm/` và push `docs/opus-tra-loi`.
 10. **Nhịp & lịch**: ban ngày (06:00–23:00 GMT+7) 30 phút; rảnh ≥ 4 lượt liền thì 60 phút; ban đêm 60 phút. Trigger `trig_01Nk2NQXsfxm8hQLAZAo4ZsS`; sau V46, PM đổi sang "phiên mới mỗi lượt" (`create_new_session_on_fire`, prompt: "Dùng skill pm-kiem-thu") → chế độ đó tự bắn lại, không cần `send_later`.
