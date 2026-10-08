@@ -95,7 +95,7 @@ Các mục V70a/V70c này cần kiểm trên máy thật; giả lập CI không 
 | 4.19.1 | Mở game có phím ảo, nhấn rồi thả D-pad và một nút hành động | Khi nhấn, nút thu còn 92% cỡ ban đầu và dịch xuống 2 dp, rồi bật lại; phím không bị kẹt sau khi thả | |
 | 4.19.2 | Cài đặt → Tay cầm ảo → tắt hiệu ứng bấm; nhấn nút rồi bật lại và thử | Khi tắt, không chạy hoạt ảnh lún; khi bật, hiệu ứng trở lại. Game vẫn nhận đúng phím | |
 | 4.19.3 | Cài đặt → Tay cầm ảo → thử Tắt/Nhẹ/Vừa/Mạnh; nhấn, thả rồi giữ một phím | Mức rung đổi theo lựa chọn; nhả rung nhẹ hơn hoặc tắt; Tắt/cài đặt rung khi chạm của Android tắt thì không rung; giữ phím không rung lặp | |
-| 4.19.4 | Mở **Chỉnh phím** nếu có; kéo nút, đổi cỡ 70–140%, độ mờ 20–100%, ẩn/hiện nút rồi chọn Xong | Giá trị nằm trong khoảng; bố cục nằm trong tầm ngón cái, không che phần chơi; mã phím trong game không đổi | |
+| 4.19.4 | Mở **Chỉnh phím** nếu có; kéo nút, đổi cỡ 70–140%, độ mờ 20–100%, ẩn/hiện nút rồi chọn Xong | Giá trị nằm trong khoảng; mỗi vùng chạm ≥48 dp; trên nền sáng, tương phản nút ≥3:1; nhãn không bị cắt; bố cục nằm trong tầm ngón cái, không che phần chơi; mã phím trong game không đổi | |
 | 4.19.5 | Lưu bố cục theo hệ thống, ghi đè theo game; mở lại, thử preset Chuẩn/Gọn/Tay trái và **Về mặc định** | Bố cục theo phạm vi đã chọn được giữ; preset áp dụng được; khôi phục mặc định trả nút về vị trí gốc | |
 
 ## 5. Game Java (J2ME)
