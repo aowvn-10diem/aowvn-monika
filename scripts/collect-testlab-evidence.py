@@ -88,12 +88,14 @@ def collect(result, stderr, output):
                 report['files'] += 1
             report['bytes'] = total
             summaries = list(output.rglob('summary.json'))
-            if len(summaries) == 2:
+            expected = int(os.environ.get('V56_EXPECTED_DEVICES', '1'))
+            if expected in (1, 2) and len(summaries) == expected:
                 devices = []
                 try:
                     for summary in summaries:
                         value = json.loads(summary.read_text())
                         assert value['synthetic'] is True
+                        assert value['sdk'] == 37 and value['abi'] == 'arm64-v8a'
                         assert [r['game'] for r in value['rows']] == [f'K{n}' for n in range(1, 9)]
                         # Complete summaries alone do not prove images/logs actually arrived.
                         required = ['metadata.json']
@@ -113,7 +115,7 @@ def collect(result, stderr, output):
                     report.update(collection='COLLECTED', devices=devices)
                     report.pop('reason', None)
                 except (KeyError, ValueError, AssertionError):
-                    report['reason'] = 'two complete K1–K8 synthetic summaries required'
+                    report['reason'] = 'complete K1–K8 summaries, API37 ARM64 and all declared evidence required'
     (output / 'collection.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     print(f'V56 collection: {report["collection"]}; files={report["files"]}; bytes={report["bytes"]}')
     if report['collection'] != 'COLLECTED':
