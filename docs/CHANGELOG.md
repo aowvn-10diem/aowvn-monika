@@ -80,11 +80,12 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 ## Ứng viên 0.7.7 (RC — chưa phát hành/tag)
 
-> Ghi chú chuẩn bị từ v0.7.6 đến main `722bab0`; chưa có tag hoặc bản phát hành v0.7.7.
+> Ghi chú chuẩn bị từ v0.7.6 đến main `9dc9774`; chưa có tag hoặc bản phát hành v0.7.7.
 
-- Tại màn chuẩn bị Kirikiri, khi không tìm thấy lối vào, người dùng có thể gửi báo lỗi ngay; báo cáo có thêm tóm tắt các gói XP3 và màn hình nêu lý do nếu gửi không thành công. ([#107](https://github.com/aowvn-10diem/aowvn-monika/pull/107))
+- Tại màn chuẩn bị Kirikiri, khi không tìm thấy lối vào, người dùng có thể gửi báo lỗi ngay; báo cáo có thêm tóm tắt các gói XP3 và thông báo nêu lý do nếu gửi không thành công. ([#107](https://github.com/aowvn-10diem/aowvn-monika/pull/107))
 - Bước kiểm lối vào Kirikiri có giới hạn chờ 8 giây; nếu đọc kho quá hạn, ứng dụng giữ lối vào đã chọn thay vì chờ vô hạn. ([#96](https://github.com/aowvn-10diem/aowvn-monika/pull/96))
 - Khi quét thư mục có nhiều gói XP3, bộ đọc xử lý từng chỉ mục rồi bỏ dữ liệu tạm trước khi đọc gói kế tiếp, giảm lượng chỉ mục cùng giữ trong bộ nhớ. ([#142](https://github.com/aowvn-10diem/aowvn-monika/pull/142))
+- Khi không tìm thấy lối vào và chỉ mục đầy đủ cho thấy các gói `.xp3` có vẻ mã hóa, ứng dụng thông báo đây là khả năng chưa xác nhận và lõi Kirikiri hiện chưa hỗ trợ loại gói đó. ([#144](https://github.com/aowvn-10diem/aowvn-monika/pull/144))
 
 ## [v0.7.6](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.6) (Bản thử — Pre-release)
 
