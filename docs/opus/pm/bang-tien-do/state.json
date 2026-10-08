@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-08T20:28:59Z",
+ "updatedAt": "2026-10-08T20:59:51Z",
  "mainSha": "fc095be",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-08T20:58:59Z",
@@ -941,8 +941,8 @@
    "code": "V71",
    "title": "Sửa bộ kiểm thử máy ảo",
    "owner": "",
-   "status": "dang",
-   "note": "Sol, hạn 09/10 12:00"
+   "status": "xong",
+   "note": "#158 gộp 6c48f03 (Luna Đạt d453baf, CI xanh). Chờ lượt emulator trên main."
   }
  ],
  "gates": [
@@ -1025,6 +1025,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T20:59:51Z",
+   "text": "20:58Z gộp #158 V71 (emulator lọc ABI). Trả lời Cần PM xem #161: dispatch cấp repo + preflight là đủ."
+  },
   {
    "t": "2026-10-08T20:28:59Z",
    "text": "Test Lab V56 sau #157: run 37837095996 bị chặn (results bucket unavailable, nhiều khả năng hết 5 lượt/ngày). Hẹn chạy lại 09/10 08:05Z."
