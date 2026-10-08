@@ -21,7 +21,7 @@ object Xp3Fixture {
     fun xp3(dir: File, names: List<String>, compressed: Boolean, v2: Boolean = false, filler: Int = 100): File {
         val magic = byteArrayOf(0x58, 0x50, 0x33, 0x0d, 0x0a, 0x20, 0x0a, 0x1a, 0x8b.toByte(), 0x67, 0x01)
         val headerLen = if (v2) 0x28 else 0x13
-        val raw = names.fold(ByteArray(0)) { a, n -> a + entry(n) }
+        val raw = ByteArrayOutputStream().also { out -> names.forEach { out.write(entry(it)) } }.toByteArray()
         val index = ByteArrayOutputStream()
         if (compressed) {
             val d = Deflater(); d.setInput(raw); d.finish()
