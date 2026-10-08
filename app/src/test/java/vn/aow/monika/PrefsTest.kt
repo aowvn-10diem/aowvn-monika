@@ -10,9 +10,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowSystemClock
 import vn.aow.monika.feed.Post
 import vn.aow.monika.ui.TestApp
 import java.io.File
+import java.time.Duration
 
 /** Cài đặt nhỏ trên máy: giá trị mặc định, lịch sử, bài đã xem, cộng giờ chơi, sự kiện từ tiến trình game. Không dùng đồng hồ giả. */
 @RunWith(RobolectricTestRunner::class)
@@ -82,13 +84,22 @@ class PrefsTest {
         assertEquals(12_000L, p.playTime("games/a"))
     }
 
-    @Test fun markPlayedCountsAndCancelledSessionIsNotCounted() {
+    @Test fun markPlayedSessionTimeRulesUseFakeClock() {
         val p = prefs
         p.markPlayed("games/a")
         p.markPlayed("games/a")
         assertEquals(2, p.playCount("games/a"))
         assertTrue(p.lastPlayed("games/a") > 0L)
-        // Không gọi endSession() ở đây: nó đọc đồng hồ thật, nên kết quả phụ thuộc thời gian chạy CI.
+        // Đồng hồ giả để kết quả không phụ thuộc tốc độ CI. Tự kiểm: System.currentTimeMillis phải đã nhảy thật.
+        val t0 = System.currentTimeMillis()
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(5))
+        check(System.currentTimeMillis() - t0 >= 5_000) { "ShadowSystemClock không đổi System.currentTimeMillis" }
+        p.endSession() // phiên 5 giây, dưới 10 giây → không cộng giờ
+        assertEquals(0L, p.playTime("games/a"))
+        p.markPlayed("games/a")
+        ShadowSystemClock.advanceBy(Duration.ofSeconds(15))
+        p.endSession() // phiên 15 giây → cộng khoảng 15 giây
+        assertTrue(p.playTime("games/a") in 15_000L..16_000L)
         p.markPlayed("games/b")
         p.cancelSession()
         p.endSession()
