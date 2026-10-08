@@ -43,6 +43,8 @@ class AdBlockParseTest {
 
     @Test fun hashIsFnv1a64() {
         assertEquals(0xcbf29ce484222325UL.toLong(), AdBlock.hash(""))
+        assertEquals(0xaf63dc4c8601ec8cUL.toLong(), AdBlock.hash("a"))
+        assertEquals(0x85944171f73967e8UL.toLong(), AdBlock.hash("foobar"))
         assertNotEquals(AdBlock.hash("a"), AdBlock.hash("b"))
     }
 }
