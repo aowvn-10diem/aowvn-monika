@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-08T03:18:33Z",
+ "updatedAt": "2026-10-08T03:24:54Z",
  "mainSha": "8cad51b",
  "app": "App 0.7.6 (bản thử) · config 36",
  "nextCheck": "2026-10-08T04:13:28Z",
@@ -843,6 +843,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T03:24:54Z",
+   "text": "Thêm khối Đội ngũ (9 thành viên) vào trang tiến độ theo yêu cầu sếp"
+  },
   {
    "t": "2026-10-08T03:18:33Z",
    "text": "Sonnet duyệt thay Nova: gộp #115 N04 (a07e5c7), #116 N09 (8cad51b); #114 Cần sửa. Test Lab run 37721419669 đang chạy (sếp đã set khóa)"
@@ -1691,6 +1695,113 @@
    "title": "App trong máy người dùng sắp thấy bản 0.7.5 (config 35 đã gộp)",
    "who": "Sonnet kiểm đồng bộ Cloudflare và đo configVersion trên KV",
    "next": "Khi 0.7.6 phát hành sẽ đổi config sang 0.7.6."
+  }
+ ],
+ "team": [
+  {
+   "id": "sep",
+   "name": "Sếp (Minh)",
+   "kind": "boss",
+   "status": "sep",
+   "role": "Chủ dự án: chốt hướng, duyệt phát hành, thử trên máy thật, giữ khóa ký và secret.",
+   "now": "3 câu chờ quyết: phát hành bản mới, file Kara no Shoujo, đóng cảnh báo bảo mật.",
+   "lastSeen": "2026-10-08T03:17:00Z",
+   "channel": "Chat với PM · trang này"
+  },
+  {
+   "id": "opus",
+   "name": "Opus",
+   "kind": "pm",
+   "model": "PM điều phối",
+   "status": "dang",
+   "role": "Giao việc, đọc hộp thư mỗi giờ, kiểm rủi ro rồi gộp PR, cập nhật trang này.",
+   "match": [
+    "pm"
+   ],
+   "lastSeen": "2026-10-08T03:25:00Z",
+   "channel": "Nhánh docs/opus-tra-loi"
+  },
+  {
+   "id": "sonnet",
+   "name": "Sonnet",
+   "kind": "dev",
+   "status": "dang",
+   "role": "Engine và luồng app khó (Kirikiri, RGSS, Ren'Py); duyệt dự phòng khi người duyệt vắng.",
+   "now": "Vừa duyệt thay Nova 3 PR của Luna.",
+   "match": [
+    "sonnet"
+   ],
+   "lastSeen": "2026-10-08T03:18:00Z",
+   "channel": "Phiên chính Sonnet"
+  },
+  {
+   "id": "sol",
+   "name": "Sol",
+   "kind": "dev",
+   "status": "dang",
+   "role": "App, CI, config, script, chẩn đoán lỗi. Quay lại sớm 07/10.",
+   "now": "Xong 6/6 việc giao 07/10 (V48–V55), chờ lô mới.",
+   "match": [
+    "sol"
+   ],
+   "lastSeen": "2026-10-08T02:44:00Z",
+   "channel": "Thư tra-loi-sol-*"
+  },
+  {
+   "id": "luna",
+   "name": "Luna",
+   "kind": "rev",
+   "status": "dang",
+   "role": "Tiền duyệt mọi PR (L07), tài liệu, test, script nhỏ. Quay lại sớm 07/10.",
+   "now": "Sửa #114 theo góp ý của Sonnet.",
+   "match": [
+    "luna"
+   ],
+   "lastSeen": "2026-10-08T02:41:00Z",
+   "channel": "Thư tra-loi-luna-*"
+  },
+  {
+   "id": "nova",
+   "name": "Nova",
+   "kind": "rev",
+   "model": "Tài khoản khác, sếp quản",
+   "status": "vang",
+   "role": "Duyệt PR của Luna; test độ phủ phần còn lại; trang Thử nhanh.",
+   "now": "Im từ 07/10 12:09 (giờ VN); Sonnet duyệt thay.",
+   "match": [
+    "nova"
+   ],
+   "lastSeen": "2026-10-07T05:09:00Z",
+   "channel": "Issue #90"
+  },
+  {
+   "id": "haiku",
+   "name": "Haiku",
+   "kind": "doc",
+   "status": "cho",
+   "role": "Việc nhẹ, máy móc: tài liệu, kiểm tra, sửa nhỏ có test sẵn.",
+   "now": "Xong N08 (#106), chờ việc mới.",
+   "match": [
+    "haiku"
+   ],
+   "lastSeen": "2026-10-08T00:46:00Z",
+   "channel": "Issue #94"
+  },
+  {
+   "id": "gemini",
+   "name": "Gemini Flash",
+   "kind": "aux",
+   "status": "dubi",
+   "role": "Dự bị cho việc F01/F02, chỉ chạy khi sếp báo sẵn sàng.",
+   "channel": "PROMPT-GEMINI-FLASH.md"
+  },
+  {
+   "id": "chrome",
+   "name": "Claude in Chrome",
+   "kind": "aux",
+   "status": "dubi",
+   "role": "Thao tác trên trình duyệt của sếp khi cần (vd. dựng Test Lab), không đọc khóa.",
+   "channel": "PROMPT-CHROME-TEST-LAB.md"
   }
  ]
 }

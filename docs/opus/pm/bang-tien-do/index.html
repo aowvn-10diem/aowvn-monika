@@ -199,6 +199,30 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
 .t-right { display: grid; justify-items: end; gap: 4px; }
 .empty { padding: 16px; color: var(--muted); }
 
+/* Đội ngũ */
+.team { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.mem { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.mem.off { background: transparent; border-style: dashed; }
+.mem-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ava { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 800; font-size: 14px; color: var(--on-accent); background: var(--boss); }
+.ava.k-pm { background: linear-gradient(135deg, var(--g1), var(--g2) 55%, var(--g3)); color: #fff; }
+.ava.k-dev { background: var(--run); }
+.ava.k-rev { background: var(--frost); }
+.ava.k-doc { background: var(--ok); }
+.ava.k-boss { background: var(--boss); }
+.ava.k-aux { background: var(--chip); color: var(--muted); }
+.mem-id { display: grid; min-width: 0; flex: 1; }
+.mem-name { font-weight: 800; font-size: 15.5px; line-height: 1.2; }
+.mem-model { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mem-role { font-size: 13.5px; }
+.mem-now { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.mem-now b { color: var(--fg); font-weight: 600; }
+.mem-codes { display: flex; flex-wrap: wrap; gap: 4px; }
+.mem-foot { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 6px; }
+.mem-foot .late { color: var(--run); font-weight: 700; }
+.s-vang { color: var(--stuck); background: var(--stuck-bg); }
+.s-dubi { color: var(--frost); background: var(--frost-bg); }
+
 /* Nhật ký */
 .log { list-style: none; margin: 0; padding: 0; display: grid; }
 .log li { display: grid; grid-template-columns: 7.5em 1fr; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
@@ -236,6 +260,11 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
     <div class="stat"><b id="st-blk">–</b><span>điểm nghẽn đang gỡ</span></div>
     <div class="stat"><b id="st-open">–</b><span>việc đội đang làm</span></div>
   </div>
+
+  <section class="sec" aria-labelledby="team-h" id="doi">
+    <div class="sec-h"><h2 id="team-h">Đội ngũ</h2><span class="count num" id="team-count"></span></div>
+    <div class="team" id="team-list"><p class="empty">Danh sách nhân viên AI và người đang tham gia dự án sẽ hiện ở đây: vai trò, việc đang cầm, lần hoạt động gần nhất.</p></div>
+  </section>
 
   <section class="sec" aria-labelledby="b-h" id="nghen">
     <div class="sec-h"><h2 id="b-h">Điểm nghẽn</h2><span class="count">Xếp theo mức chặn, việc gỡ trước nằm trên</span></div>
@@ -604,9 +633,58 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
     });
   }
 
+  /* ---------- Đội ngũ ---------- */
+  var MEM_LABEL = { dang: ["Đang làm", "s-dang"], cho: ["Chờ việc", "s-cho"], vang: ["Vắng", "s-vang"], dubi: ["Dự bị", "s-dubi"], sep: ["Chủ dự án", "s-sep"] };
+  function ago(iso) {
+    var t = new Date(iso).getTime(); if (isNaN(t)) return null;
+    var m = Math.max(0, Math.round((Date.now() - t) / 60000));
+    if (m < 60) return { txt: m + " phút trước", h: m / 60 };
+    var h = Math.round(m / 60); if (h < 48) return { txt: h + " giờ trước", h: h };
+    return { txt: Math.round(h / 24) + " ngày trước", h: h };
+  }
+  function memTasks(m, s) {
+    var keys = arr(m.match).map(function (k) { return String(k).toLowerCase(); });
+    if (!keys.length) return [];
+    return arr(s.tasks).filter(function (t) {
+      var o = String(t.owner || "").toLowerCase();
+      return keys.some(function (k) { return o.indexOf(k) >= 0; });
+    });
+  }
+  function renderTeam(s) {
+    var box = document.getElementById("team-list"); clear(box);
+    var team = arr(s.team);
+    document.getElementById("team-count").textContent = team.length ? team.filter(function (m) { return m.status === "dang"; }).length + "/" + team.length + " đang làm" : "";
+    if (!team.length) { box.appendChild(el("p", "empty", "Chưa có danh sách đội ngũ.")); return; }
+    team.forEach(function (m) {
+      var off = m.status === "vang" || m.status === "dubi";
+      var c = el("article", "mem" + (off ? " off" : ""));
+      var top = el("div", "mem-top");
+      top.appendChild(el("span", "ava k-" + (m.kind || "aux"), (m.name || "?").charAt(0).toUpperCase()));
+      var id = el("div", "mem-id"); id.appendChild(el("span", "mem-name", m.name || ""));
+      if (m.model) id.appendChild(el("span", "mem-model", m.model));
+      top.appendChild(id);
+      var lb = MEM_LABEL[m.status] || MEM_LABEL.cho; top.appendChild(el("span", "chip " + lb[1], lb[0]));
+      c.appendChild(top);
+      if (m.role) c.appendChild(el("p", "mem-role", m.role));
+      var tk = memTasks(m, s), open = tk.filter(function (t) { return t.status !== "xong"; });
+      if (m.now) { var n = el("p", "mem-now"); n.appendChild(el("b", null, "Đang: ")); n.appendChild(document.createTextNode(m.now)); c.appendChild(n); }
+      if (open.length) {
+        var cd = el("div", "mem-codes");
+        open.forEach(function (t) { var x = el("span", "code", t.code); x.title = t.title || ""; cd.appendChild(x); });
+        c.appendChild(cd);
+      }
+      var f = el("div", "mem-foot");
+      if (tk.length) f.appendChild(el("span", "num", open.length + " việc mở · " + (tk.length - open.length) + " đã xong"));
+      if (m.lastSeen) { var a = ago(m.lastSeen); if (a) f.appendChild(el("span", a.h >= 6 ? "late" : null, "Hoạt động " + a.txt)); }
+      if (m.channel) f.appendChild(el("span", null, m.channel));
+      c.appendChild(f);
+      box.appendChild(c);
+    });
+  }
+
   function render() {
     if (!state) return;
-    renderMeta(state); renderStats(state); renderBlocks(state); renderBoss(state); renderMods(state); renderTasks(state); renderGates(state); renderLog(state);
+    renderMeta(state); renderStats(state); renderTeam(state); renderBlocks(state); renderBoss(state); renderMods(state); renderTasks(state); renderGates(state); renderLog(state);
   }
 
   function setFilter(f) {
