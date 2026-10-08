@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-08T17:59:48Z",
+ "updatedAt": "2026-10-08T18:29:48Z",
  "mainSha": "85269ea",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-08T18:29:48Z",
@@ -816,7 +816,7 @@
    "title": "Game thật trên máy ARM qua Test Lab",
    "owner": "Sol",
    "status": "dang",
-   "note": "#127 gộp 4d711c0; chờ Sol chạy Test Lab K1–K8"
+   "note": "K1 PASS, K2 SIGSEGV GLThread (Pixel 11/11 Pro API 37); Sonnet sửa lõi"
   },
   {
    "code": "V57",
@@ -936,6 +936,13 @@
    "owner": "Sol",
    "status": "dang",
    "note": "mở 09/10"
+  },
+  {
+   "code": "V71",
+   "title": "Sửa bộ kiểm thử máy ảo",
+   "owner": "",
+   "status": "dang",
+   "note": "Sol, hạn 09/10 12:00"
   }
  ],
  "gates": [
@@ -1018,6 +1025,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T18:29:48Z",
+   "text": "Kiểm thử toàn bộ (sếp yêu cầu): GB/GBA/NES lên hình trên máy ảo; Kirikiri crash cả máy ảo lẫn 2 máy ARM thật (K2 SIGSEGV GLThread) → Sonnet; bộ máy ảo đỏ vì Kirikiri x86 + V33 fixture → Sol V71."
+  },
   {
    "t": "2026-10-08T17:59:48Z",
    "text": "Ca đêm: gộp #146 (V60) và #152 (Nova N09-N test library). #151 V45(a) chờ Luna Ultra duyệt lần hai."
