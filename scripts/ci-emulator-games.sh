@@ -52,6 +52,13 @@ for c in "${CASES[@]}"; do
   [ "$result" = OK ] || fail=1
 done
 
+# V71: the Android guest ABI decides capability, not the runner architecture.
+DEVICE_ABI=$(adb shell getprop ro.product.cpu.abi | tr -d '\r')
+case "$DEVICE_ABI" in
+  x86|x86_64)
+    echo "SKIP_KNOWN kirikiri (ABI=$DEVICE_ABI; V18/V40: native ARM unavailable on x86; docs/opus/ket-qua/V40.md; K1–K8 CHƯA KIỂM)" | tee -a "$OUT/games/summary.txt"
+    ;;
+  *)
 # ---- Kirikiri (nhúng sâu): tải GÓI THẬT từ Releases theo config, đặt vào files/packs/kirikiri như PackManager làm,
 # mở KirikiriGameActivity không kèm game (→ màn chọn thư mục của Kirikiri). Kiểm: nạp được libkrkr2yuri.so ngoài APK, tìm thấy tài nguyên, không sập.
 echo "=== kirikiri (nhúng)"
@@ -230,6 +237,9 @@ m=re.search(r'pos1=(\d+) pos2=(\d+)',sys.argv[1]); sys.exit(0 if m and int(m.gro
     [ "${KRKR_STRICT:-0}" = 1 ] && fail=1   # V18 kẹt: engine sập trên máy ảo (xem hop-thu/hoi-008) → chỉ báo cho tới khi có máy ARM thật
   fi
 fi
+
+    ;;
+esac
 
 # ---- RPG Maker XP/VX/Ace (RGSS, mkxp-z nhúng): đặt gói rgss vào files/packs/rgss như PackManager làm, sinh một "game" XP tối thiểu
 # (Game.ini + Data/Scripts.rxdata: ghi monika-ok.txt rồi thoát; không vẽ gì nên không cần RTP), mở RgssGameActivity.
