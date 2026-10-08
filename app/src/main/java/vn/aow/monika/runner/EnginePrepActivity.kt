@@ -157,7 +157,7 @@ class EnginePrepActivity : ComponentActivity() {
                     Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "không tìm thấy lối vào: ${r.why}")
                     r.details.forEach { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", it) }
                     Diagnostics.recordHandled(this@EnginePrepActivity, "engine:$engine", "không có startup.tjs trong ${r.dirName}: ${r.why}")
-                    status = getString(R.string.engine_entry_not_found, r.dirName)
+                    status = getString(if (r.encrypted) R.string.engine_entry_encrypted else R.string.engine_entry_not_found, r.dirName)
                     reportable = true
                     started = false
                 }

@@ -3,6 +3,7 @@
     <string name="app_name">AowVN Monika</string>
     <string name="engine_prep_checking_entry">Đang kiểm tra tệp game…</string>
     <string name="engine_entry_not_found">Không tìm thấy tệp khởi động (startup.tjs) trong thư mục “%1$s”. Game có thể thiếu tệp hoặc bị mã hóa. Hãy bấm “Báo lỗi game này” bên dưới để gửi thông tin cho nhóm phát triển.</string>
+    <string name="engine_entry_encrypted">Game trong thư mục “%1$s” dùng gói .xp3 mã hóa, lõi Kirikiri hiện chưa hỗ trợ nên chưa chạy được. Hãy bấm “Báo lỗi game này” bên dưới để gửi thông tin cho nhóm phát triển.</string>
     <string name="game_report_title">Báo lỗi game này</string>
     <string name="game_report_sent">Đã gửi báo lỗi. Cảm ơn bạn!</string>
     <string name="game_report_send_failed">Gửi báo lỗi thất bại (%1$s). Đã lưu và chép phần chữ để bạn gửi cho AowVN.</string>

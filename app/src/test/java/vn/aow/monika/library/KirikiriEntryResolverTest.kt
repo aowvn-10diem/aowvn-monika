@@ -71,6 +71,24 @@ class KirikiriEntryResolverTest {
         assertTrue(r.details.all { it.length <= 280 })
     }
 
+    @Test fun notFoundDanhDauMaHoaChiKhiMoiXp3DeuCoCo() {
+        val all = tmp.newFolder("enc")
+        val a = put(all, "a.xp3", listOf("3f9a1c", "77be02"))
+        put(all, "patch.xp3", listOf("c0ffee", "a1b2c3"), pad = 500)
+        assertTrue((KirikiriEntryResolver.resolve(a) as EntryResolution.NotFound).encrypted)
+        val mixed = tmp.newFolder("mix")
+        val m = put(mixed, "a.xp3", listOf("3f9a1c", "77be02"))
+        put(mixed, "patch.xp3", listOf("scn/b.ks"), pad = 500)
+        assertTrue(!(KirikiriEntryResolver.resolve(m) as EntryResolution.NotFound).encrypted)
+    }
+
+    @Test fun looksEncrypted_nhanDienTheoTenMuc() {
+        assertTrue(!KirikiriEntryResolver.looksEncrypted(null))
+        assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(emptyList(), true)))
+        assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(listOf("a.png", "Scn/B.KS"), true)))
+        assertTrue(KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(listOf("a.png", "3f9a1c"), true)))
+    }
+
     @Test fun docDuocMoiXp3MaKhongCoStartup_baoNotFound() {
         val dir = tmp.newFolder("Game thieu")
         val main = put(dir, "game.xp3", listOf("image/a.png"), v2 = true)
