@@ -98,6 +98,7 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | V66 | **Workflow phát hành tự tạo tag** (A14): `release.yml` thêm `workflow_dispatch` (sha, prerelease), tự chặn khi tag có sẵn/SHA ngoài main/CI chưa xanh; giữ V30 | Sol (nhận từ Sonnet 09/10) | A14 | PR xanh, Luna + Luna Ultra Đạt | mở 09/10 (thư sol-020) |
 | V67 | Rà báo lỗi người dùng bản RC 0.7.7 theo `fingerprint`; lỗi lặp ≥ 2 lần → PR sửa | Sol | V20–V22 | `ket-qua/V67.md` | mở 09/10 (thư sol-020) |
 | V68 | Rà soát trước bản ổn định: diff `v0.7.7..<head ổn định>` tìm lỗi, rò rỉ khóa, vi phạm luật repo | Luna Ultra | V61 | `ket-qua/V68.md`, lỗi chặn → PR | mở 09/10 |
+| V69 | **Lô UI/UX trước bản ổn định**: 7 điểm từ ảnh chụp giao diện (chữ tiếng Anh ở tùy chọn giả lập, feed lỗi không báo, đường dẫn thô, thẻ ủng hộ lặp, dock đè nội dung, nhãn bị cắt, chip cắt) | Sol | V21 | Ảnh mới + Build xanh + Luna Đạt | mở 09/10 (thư sol-021), hạn 10/10 20:00 |
 | L14 | CHANGELOG + ghi chú phát hành bản ổn định 0.7.7 | Luna | L11 | Mỗi dòng trỏ PR | mở 09/10 (thư luna-010) |
 | L15 | TESTER-NGOAI + THU-NHANH cho 0.7.7 | Luna | N05, N08 | Tên nút khớp strings.xml | mở 09/10 (thư luna-010) |
 | V26b | Hộp thoại NotFound: khi mọi xp3 đều có cờ "tên có vẻ băm/mã hóa" thì báo rõ "gói .xp3 mã hóa, lõi chưa hỗ trợ" thay cho "không tìm thấy startup.tjs"; giữ nút Báo lỗi; chuỗi trong strings.xml; có test | Sonnet | V26, #107 | Test xanh; Luna Đạt + Luna Ultra lần hai | xong (PR #144, 9dc9774) |
