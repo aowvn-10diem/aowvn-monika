@@ -37,7 +37,7 @@ jobs:
         run: |
           ./gradlew assembleRelease --console=plain
           python3 scripts/check-r8-mapping.py app/build/outputs/mapping/release/mapping.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         id: up_apk
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         with:
@@ -134,7 +134,7 @@ jobs:
             adb logcat -d > out/logcat-after-games.txt
             # Crash của app = lỗi, dù Maestro có báo xanh.
             if grep -E "FATAL EXCEPTION|AndroidRuntime.*com\.aow\.monika|IncompatibleClassChangeError" out/logcat.txt | head -20 > out/crash.txt && [ -s out/crash.txt ]; then echo CRASH > out/crash.flag; fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         if: always()
         with:
@@ -197,7 +197,7 @@ jobs:
           script: |
             python3 scripts/ci-user-path.py serve --out "$RUNNER_TEMP/v33-fixture" > "$RUNNER_TEMP/v33-server.log" 2>&1 &
             bash scripts/ci-user-path.sh out/user-path "$RUNNER_TEMP/v33-fixture"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: v33-user-path-api-34
