@@ -1,6 +1,5 @@
 package vn.aow.monika.account
 
-import android.os.SystemClock
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -26,7 +25,7 @@ class ProfileCoverageTest {
     private val fixedNow = Instant.parse("2100-01-01T00:30:00Z").toEpochMilli()
 
     @Before fun freezeClock() {
-        val advanceMillis = fixedNow - SystemClock.uptimeMillis()
+        val advanceMillis = fixedNow - System.currentTimeMillis()
         assertTrue("test clock must start before the fixed instant", advanceMillis >= 0)
         ShadowSystemClock.advanceBy(Duration.ofMillis(advanceMillis))
         assertEquals("test clock must be fixed", fixedNow, System.currentTimeMillis())
