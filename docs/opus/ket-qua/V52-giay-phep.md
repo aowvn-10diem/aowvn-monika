@@ -49,3 +49,19 @@ Cột "Để private?" chỉ ghi **điều văn bản cho phép/không nói**; k
 1. ~~Đọc LICENSE trong từng gói đã phát hành~~ — **xong ngày 08/10** (mục 3.7). Còn lại: văn bản giấy phép của AzaharPlus và 7-Zip-JBinding (không có trong gói).
 2. Đọc giấy phép từng lõi libretro trong snapshot `cores-*`.
 3. Báo cáo giấy phép Gradle (artifact từng thư viện).
+
+## 5. Bảng theo thư mục cấp 1 và module Gradle (bổ sung theo dòng V52 trong KE-HOACH)
+"Hệ quả nếu chuyển sang repo private" chỉ ghi điều file giấy phép/ghi chú nguồn trong repo nói; không phải ý kiến pháp lý. Kiểm bằng `git ls-files` + `git grep -i "copyright|licensed under|SPDX"` trên main, không tìm thấy ngoài các dòng nêu.
+
+| Thư mục / module | Giấy phép (bằng chứng) | Nguồn upstream | Hệ quả nếu chuyển private (theo văn bản) |
+|---|---|---|---|
+| `app/` (`:app`) | Không có LICENSE riêng; `LICENSE` gốc = GPLv3. Assets: `licenses/j2me-loader.txt`, `licenses/fluent-system-icons.txt` (MIT) | Mã Monika + icon Fluent | `:app` phụ thuộc `:libretrodroid`, `:kirikiri`, `:renpy`, `:rgss`, `:j2me` (`app/build.gradle.kts:172-184`). GPLv3 §5c (dòng 87) và §6 áp dụng khi phát APK có `:libretrodroid`; phần nào tách được: `[CHƯA KIỂM]` |
+| `libretrodroid/` | GPLv3 (`libretrodroid/LICENSE`); oboe Apache-2.0; rcheevos MIT | Swordfish90/LibretroDroid 0.14.0 (`docs/LIBRETRODROID.md`) | Giữ GPLv3; phát nhị phân kèm nguồn tương ứng (§6) |
+| `j2me/`, `dexlib/` | Apache-2.0 (`j2me/LICENSE-J2ME-Loader`; `dexlib/src` có header "Licensed under the Apache License, Version 2.0 … The Android Open Source Project"); `j2me/.../licenses.html` liệt kê thư viện thứ ba (có LGPL v3.0 MobileFFmpeg, MPL-2.0) | nikita36078/J2ME-Loader (JL-Mod); `docs/J2ME-LOADER.md` | Apache-2.0 không đòi mở mã phần sửa; phải giữ giấy phép/thông báo và ghi file đã sửa. LGPL/MPL của thư viện thứ ba: `[CHƯA KIỂM]` |
+| `kirikiri/` | Java trong `src/` có header kiểu MIT của Cocos2d-x (Chukong Technologies, Xiamen Yaji Software; "Permission is hereby granted, free of charge…"); `patches/*.patch` là bản vá cho Kirikiroid2Yuri (gói tải kèm LICENSE kiểu BSD — xem mục 2) | YuriSizuku/Kirikiroid2Yuri, commit `6e61ce3` | Theo văn bản MIT/BSD không đòi mở mã; phải giữ thông báo bản quyền |
+| `rgss/` | `LICENSE-SDL.txt` (zlib) cho Java SDL đổi gói | SDL 2.26.3 (libsdl-org) | zlib: ghi rõ bản đã sửa; không xóa thông báo |
+| `engines/rgss/` | Không có LICENSE riêng; chỉ script và `UPSTREAM.md` | BookerRues9/mkxp-z-android-reworked `b668e08` (lõi GPL-2.0-or-later) | Bản nhị phân dựng từ đây là sửa đổi trên mã GPL (UPSTREAM.md); vỏ Java của bản port không có giấy phép nên Monika không chép |
+| `renpy/` | Java RAPT 8.5.3: header Apache-2.0 trong `org/kamranzafar/jtar/*`; SDL 2.0.20 (zlib theo ghi nhận khác); `UPSTREAM.md`: "chưa kiểm kê" | renpy.org RAPT 8.5.3 | `[CHƯA KIỂM]` toàn bộ phần còn lại |
+| `packs/` | `packs/sevenzip/*.zip` chỉ chứa `.so`, không giấy phép; `packs/renpy/environment.txt` là cấu hình | 7-Zip-JBinding4Android (`libs.sevenzip.android`) | `[CHƯA KIỂM]` giấy phép nhị phân 7-Zip/unRAR |
+| `loader/` (5 file), `tools/` (3 file), `cloudflare/` (7 file), `scripts/`, `config/`, `docs/` | Không có header bản quyền/giấy phép; không có LICENSE riêng | Mã Monika | Không thấy ràng buộc giấy phép bên thứ ba trong các thư mục này theo grep. Giấy phép áp dụng cho mã Monika (GPLv3 gốc repo) và việc đổi giấy phép/tách repo do chủ bản quyền quyết: ngoài văn bản, `[CHƯA KIỂM]` |
+| `gradle/` | `gradle-wrapper.jar`, `libs.versions.toml`, `gradle-wrapper.properties`; không file giấy phép | Gradle wrapper | `[CHƯA KIỂM]` giấy phép wrapper jar |
