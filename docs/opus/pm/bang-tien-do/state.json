@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-08T13:15:12Z",
- "mainSha": "d84c5e7",
+ "updatedAt": "2026-10-08T14:14:11Z",
+ "mainSha": "9dc9774",
  "app": "App 0.7.6 (bản thử) · config 36",
- "nextCheck": "2026-10-08T14:15:12Z",
- "headline": "RC 0.7.7: CHANGELOG xong; chờ V60 + Luna Ultra duyệt bù V64 + V26b",
+ "nextCheck": "2026-10-08T15:14:11Z",
+ "headline": "RC 0.7.7 chỉ còn chờ V60 (Sol) trên 9dc9774",
  "needsBoss": [
   {
    "code": "G9",
@@ -795,7 +795,7 @@
    "title": "Sửa bộ nhớ resolver Kirikiri (chặn RC 0.7.7)",
    "owner": "Sol (từ Sonnet)",
    "status": "xong",
-   "note": "PR #142 gộp, Luna Đạt + CI bắt buộc xanh; gỡ lỗi chặn RC"
+   "note": "#142: Luna Ultra duyệt bù Đạt 14:00Z"
   },
   {
    "code": "V58",
@@ -843,8 +843,8 @@
    "code": "V26b",
    "title": "Báo rõ \"xp3 mã hóa\" thay cho NotFound",
    "owner": "Sonnet",
-   "status": "dang",
-   "note": "#144 Luna Đạt 6ba8468, chờ Luna Ultra lần hai"
+   "status": "xong",
+   "note": "#144 gộp: Luna + Luna Ultra Đạt, CI xanh"
   },
   {
    "code": "L11",
@@ -858,7 +858,7 @@
    "title": "Rà soát CI trước phát hành RC",
    "owner": "",
    "status": "dang",
-   "note": "#146: Sol chờ duyệt lần hai V64, PM bảo chạy song song"
+   "note": "Gate đủ; Sol chạy periodic-check + Robo trên 9dc9774"
   }
  ],
  "gates": [
@@ -941,6 +941,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T14:14:11Z",
+   "text": "Luna Ultra duyệt bù #142 (V64): Đạt. Gộp #144 (V26b: báo rõ xp3 mã hóa). RC 0.7.7 chỉ còn chờ V60 trên 9dc9774."
+  },
   {
    "t": "2026-10-08T13:15:12Z",
    "text": "Gộp #145 (CHANGELOG 0.7.7). PM nhận thiếu: #142 gộp khi chưa có Luna Ultra duyệt lần hai, đã giao duyệt bù. Luật A12: PR chỉ sửa tài liệu miễn check bắt buộc."
