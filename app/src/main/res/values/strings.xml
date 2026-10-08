@@ -3,4 +3,20 @@
     <string name="app_name">AowVN Monika</string>
     <string name="engine_prep_checking_entry">Đang kiểm tra tệp game…</string>
     <string name="engine_entry_not_found">Không tìm thấy tệp khởi động (startup.tjs) trong thư mục “%1$s”. Game có thể thiếu tệp hoặc bị mã hóa. Hãy bấm “Báo lỗi game này” bên dưới để gửi thông tin cho nhóm phát triển.</string>
+    <string name="game_report_title">Báo lỗi game này</string>
+    <string name="game_report_sent">Đã gửi báo lỗi. Cảm ơn bạn!</string>
+    <string name="game_report_send_failed">Gửi báo lỗi thất bại (%1$s). Đã lưu và chép phần chữ để bạn gửi cho AowVN.</string>
+    <string name="game_report_type_video">Không lên hình</string>
+    <string name="game_report_type_audio">Không có tiếng</string>
+    <string name="game_report_type_input">Phím không hoạt động</string>
+    <string name="game_report_type_frozen">Game bị treo</string>
+    <string name="game_report_type_other">Lỗi khác</string>
+    <string name="game_report_cancel">Hủy</string>
+    <string name="game_report_question">Bạn gặp lỗi gì?</string>
+    <string name="game_report_description">Mô tả thêm (tùy chọn)</string>
+    <string name="game_report_include_image">Kèm ảnh game</string>
+    <string name="game_report_no_image">Chưa chụp được ảnh; báo lỗi vẫn gửi được.</string>
+    <string name="game_report_include_diagnostics">Kèm thông tin máy và nhật ký lỗi gần đây.</string>
+    <string name="game_report_sending">Đang gửi…</string>
+    <string name="game_report_send">Gửi báo lỗi</string>
 </resources>
