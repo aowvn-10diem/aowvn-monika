@@ -29,6 +29,11 @@ def physical_gate(sha, checks, changed, rows, day, history_ids):
     known = {r['run'] for r in todays}
     if set(history_ids) - known:
         raise ValueError('Unrecorded physical run: reconcile quota ledger before spending')
+    if isinstance(history_ids, dict):
+        for run, required in history_ids.items():
+            recorded = sum(r['units'] for r in todays if r['run'] == run)
+            if recorded < required:
+                raise ValueError('Physical attempts exceed recorded units: reconcile quota ledger before spending')
     used = sum(r['units'] for r in todays)
     if used >= 5:
         raise ValueError('Daily physical quota exhausted (5); no retry')
@@ -60,6 +65,53 @@ def gh(path):
     return json.loads(result.stdout)
 
 
+def physical_history(repo, workflows, day, own):
+    """Read every attempt; unknown/rejected requests reserve conservatively, not usage proof."""
+    required = {}
+    requests = 0
+    one_device = 'Chạy K1–K8 trên một máy ARM thật (một cách instrumentation)'
+    virtual = 'Chạy Robo máy ảo (không quota máy thật)'
+    for workflow, records in workflows:
+        if len(records) >= 100:
+            raise ValueError('Physical history exceeded bounded page; reconcile ledger')
+        for run in records:
+            if run['id'] == own:
+                continue  # caller already proved RUN_ATTEMPT=1
+            if max(run['created_at'][:10], run.get('updated_at', run['created_at'])[:10]) < day:
+                continue
+            attempts = run.get('run_attempt')
+            if not isinstance(attempts, int) or not 1 <= attempts <= 10:
+                raise ValueError('Physical history attempt count unknown or above bound')
+            for attempt in range(1, attempts + 1):
+                requests += 1
+                if requests > 40:
+                    raise ValueError('Physical history API budget exceeded; reconcile ledger')
+                data = gh(repo + f'/actions/runs/{run["id"]}/attempts/{attempt}/jobs?per_page=100')
+                jobs = data['jobs']
+                if len(jobs) >= 100 or data.get('total_count', len(jobs)) > len(jobs):
+                    raise ValueError('Physical attempt jobs truncated; reconcile ledger')
+                steps = [step for job in jobs for step in job.get('steps', [])]
+                dates = [job['started_at'][:10] for job in jobs if job.get('started_at')]
+                dates += [step['started_at'][:10] for step in steps if step.get('started_at')]
+                if not dates:
+                    if attempt == 1:
+                        dates = [run['created_at'][:10]]
+                    elif attempt == attempts and run.get('updated_at'):
+                        dates = [run['updated_at'][:10]]
+                    else:
+                        raise ValueError('Physical attempt date unknown; reconcile ledger')
+                if day not in dates:
+                    continue
+                physical = [s for s in steps if 'Chạy K1–K8' in s['name'] or s['name'] == 'Chạy robot test']
+                started = [s for s in physical if s.get('started_at', '') and s['started_at'][:10] == day and s.get('conclusion') != 'skipped']
+                if not started and any(s['name'] == virtual for s in steps):
+                    continue  # explicit virtual workflow; old/unknown Robo remains reserved physical
+                # Failed/blocked attempts also reserve. Old or unknown requests may select two models.
+                units = 1 if any(s['name'] == one_device for s in steps) else 2
+                required[run['id']] = required.get(run['id'], 0) + units
+    return required
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--physical', action='store_true')
@@ -89,23 +141,13 @@ def main():
     day = dt.datetime.now(dt.timezone.utc).date().isoformat()
     # Current RUN_ID may be excluded only after proving this is its first attempt.
     # One bounded page each. Unknown/unrecorded started physical runs block, never disappear from budget.
-    history = []
     own = int(os.environ['GITHUB_RUN_ID'])
+    workflows = []
     for workflow in ('test-lab-engine-games.yml', 'test-lab.yml'):
         records = gh(repo + '/actions/workflows/' + workflow + '/runs?event=workflow_dispatch&per_page=100')['workflow_runs']
-        if len(records) == 100 and records[-1]['created_at'][:10] >= day:
-            raise SystemExit('BLOCKED: daily history exceeded bounded page')
-        for run in records:
-            if run['created_at'][:10] != day or run['id'] == own:
-                continue
-            jobs = gh(repo + '/actions/runs/' + str(run['id']) + '/jobs?per_page=100')['jobs']
-            physical_started = any(step.get('started_at') and step.get('conclusion') != 'skipped'
-                                   and ('Chạy K1–K8' in step['name'] or step['name'] == 'Chạy robot test')
-                                   for job in jobs for step in job.get('steps', []))
-            # New virtual Robo opts out via an explicit step name; old Robo is conservatively physical.
-            if physical_started:
-                history.append(run['id'])
+        workflows.append((workflow, records))
     try:
+        history = physical_history(repo, workflows, day, own)
         used = physical_gate(sha, runs, changed, rows, day, history)
     except ValueError as error:
         raise SystemExit('BLOCKED: ' + str(error))

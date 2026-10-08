@@ -68,5 +68,55 @@ class PhysicalRerunGate(unittest.TestCase):
         gate.require_first_physical_attempt('1')
 
 
+class PhysicalHistoryGate(unittest.TestCase):
+    def setUp(self):
+        PhysicalGate.setUp(self)
+
+    def check(self, **overrides):
+        return PhysicalGate.check(self, **overrides)
+    def record(self, attempts=2, created='2026-10-08T08:00:00Z'):
+        return dict(id=7, run_attempt=attempts, created_at=created, updated_at='2026-10-08T09:00:00Z')
+
+    def jobs(self, started, conclusion, name='Chạy K1–K8 Kirikiri'):
+        return dict(total_count=1, jobs=[dict(started_at='2026-10-08T09:00:00Z', steps=[
+            dict(name=name, started_at=started, conclusion=conclusion)])])
+
+    def test_latest_blocked_attempt_cannot_hide_first_physical_attempt(self):
+        replies = [self.jobs('2026-10-08T08:00:00Z', 'failure'), self.jobs(None, 'skipped')]
+        with patch.object(gate, 'gh', side_effect=replies) as api:
+            history = gate.physical_history('repo', [('test-lab-engine-games.yml', [self.record()])], '2026-10-08', 99)
+        self.assertEqual({7: 4}, history)  # old/unknown two-model request ×2 attempts, including rejected intent
+        self.assertIn('/attempts/1/jobs?', api.call_args_list[0].args[0])
+        self.assertIn('/attempts/2/jobs?', api.call_args_list[1].args[0])
+        with self.assertRaisesRegex(ValueError, 'Unrecorded'):
+            self.check(history_ids=history)
+        with self.assertRaisesRegex(ValueError, 'attempts exceed'):
+            self.check(rows=[dict(day='2026-10-08', run=7, units=2)], history_ids=history)
+        self.assertEqual(4, self.check(rows=[dict(day='2026-10-08', run=7, units=4)], history_ids=history))
+
+    def test_rerun_of_yesterdays_run_is_reserved_on_todays_attempt_date(self):
+        old = dict(total_count=1, jobs=[dict(started_at='2026-10-07T08:00:00Z', steps=[
+            dict(name='Chạy robot test', started_at='2026-10-07T08:00:00Z', conclusion='failure')])])
+        with patch.object(gate, 'gh', side_effect=[old, self.jobs(None, 'skipped', 'Chạy robot test')]):
+            history = gate.physical_history('repo', [('test-lab.yml', [self.record(created='2026-10-07T08:00:00Z')])], '2026-10-08', 99)
+        self.assertEqual({7: 2}, history)
+
+    def test_explicit_virtual_attempt_does_not_consume_physical_quota(self):
+        with patch.object(gate, 'gh', return_value=self.jobs('2026-10-08T09:00:00Z', 'success', 'Chạy Robo máy ảo (không quota máy thật)')):
+            self.assertEqual({}, gate.physical_history('repo', [('test-lab.yml', [self.record(1)])], '2026-10-08', 99))
+
+    def test_unknown_attempts_truncated_jobs_and_api_budget_fail_closed(self):
+        with self.assertRaisesRegex(ValueError, 'attempt count'):
+            gate.physical_history('repo', [('w', [self.record(11)])], '2026-10-08', 99)
+        with patch.object(gate, 'gh', return_value=dict(total_count=2, jobs=[])):
+            with self.assertRaisesRegex(ValueError, 'truncated'):
+                gate.physical_history('repo', [('w', [self.record(1)])], '2026-10-08', 99)
+        with patch.object(gate, 'gh', return_value=self.jobs(None, 'skipped')) as api:
+            records = [dict(self.record(10), id=n) for n in range(5)]
+            with self.assertRaisesRegex(ValueError, 'API budget'):
+                gate.physical_history('repo', [('w', records)], '2026-10-08', 99)
+            self.assertEqual(40, api.call_count)
+
+
 if __name__ == '__main__':
     unittest.main()

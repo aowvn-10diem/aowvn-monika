@@ -23,3 +23,9 @@ Luna6067757250 và Ultra6068094261 chỉ ra cùng RUN_ID được GitHub giữ k
 PM run37837095996 đã FAIL; metadata+logs collection đọc: BLOCKED0files/0bytes, không bằng chứng K2 mới. PM KEH ghi chặn quota và sẽ thử09Oct15:05VN; Sol không tạo lịch/dispatch thay PM. Dự trữ2 bảo thủ không phải claim Firebase đã tính thêm2. CI/review của head470 không chuyển sang head sửa này.
 
 Lượt bị từ chối chưa chạy máy vẫn tính dự trữ trong budget, nhưng không trở thành baseline engine đã kiểm. Baseline giữ lần physical thực tế trước đó; thêm regression cho tách hai ý nghĩa này. Tổng7test preflight +6collector PASS local; CI exact head mới chưa kiểm.
+
+## SOL025 — lịch sử mọi attempt
+
+API `/runs/{id}/jobs` mặc định chỉ cho attempt mới nhất, nên attempt bị chặn có thể che attempt vật lý trước. Đọc rõ `/runs/{id}/attempts/{n}/jobs` cho mọi attempt, tối đa10/run, 40lượt API; lịch sử/jobs bị cắt hoặc ngày/attempt không rõ thì BLOCKED trước GCP. Run tạo hôm qua nhưng attempt mới bắt đầu hôm nay vẫn tính ngày UTC hôm nay.
+
+Sổ phải có cả run lẫn đủ đơn vị cho mọi attempt trong ngày. Intent FAIL/BLOCKED cũng dự trữ: tên bước mới xác định một máy thì1; workflow cũ/không rõ số máy thì2 bảo thủ. Robo có tên bước máy ảo rõ ràng không tính vật lý; không suy từ job mới skipped rằng attempt cũ chưa chạy. Regression tái hiện attempt1physical/attempt2blocked/sổ thiếu hoặc thiếu đơn vị và kiểm cổng chặn; không claim đây là usage Firebase chính xác. Không dispatch/rerun để kiểm policy.
