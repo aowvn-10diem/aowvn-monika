@@ -1,0 +1,48 @@
+# V52a — Rà giấy phép thành phần của app (08/10/2026)
+
+**Phạm vi:** mọi thành phần APK đóng gói hoặc tải thêm. **Nguồn duy nhất:** file `LICENSE`/`COPYING`/`NOTICE` trong repo (main `59c1540`), văn bản giấy phép đó, và các ghi chú nguồn đã có trong repo (`engines/rgss/UPSTREAM.md`, `renpy/UPSTREAM.md`, workflow `build-*.yml`, `docs/LIBRETRODROID.md`). **Không** kết luận pháp lý vượt quá văn bản; chỗ không đọc được giấy phép trong repo hoặc gói thì ghi `[CHƯA KIỂM]`. Việc quyết định tách phần nào sang repo private là của sếp (G5/G8); bảng này chỉ nêu giấy phép ghi gì.
+
+## 1. Điều văn bản giấy phép nói (trích từ file trong repo)
+| Giấy phép | File đã đọc | Điều đã đọc |
+|---|---|---|
+| GPLv3 | `LICENSE` (gốc repo), `libretrodroid/LICENSE` | §6 (dòng 93): bản dạng nhị phân (object code) phải kèm "Corresponding Source" theo một trong các cách §6 liệt kê (kèm nguồn, hoặc lời đề nghị bằng văn bản ≥ 3 năm, …). §5c (dòng 87): tác phẩm sửa đổi phải được cấp phép **toàn bộ theo GPLv3**, "regardless of how they are packaged". |
+| Apache-2.0 | `j2me/LICENSE-J2ME-Loader`, `libretrodroid/src/main/cpp/oboe/LICENSE` | §4: kèm bản sao giấy phép; file sửa phải ghi đã sửa; giữ thông báo bản quyền/NOTICE trong dạng nguồn. |
+| MIT | `libretrodroid/src/main/cpp/rcheevos/LICENSE`, `app/src/main/assets/licenses/fluent-system-icons.txt` | Giữ thông báo bản quyền + văn bản giấy phép (theo nội dung MIT trong file). |
+| zlib (SDL) | `rgss/LICENSE-SDL.txt` | Không được nhận là tác giả gốc; bản nguồn sửa phải ghi rõ đã sửa; không xóa thông báo. Ghi nhận trong tài liệu sản phẩm "appreciated but is not required". |
+
+## 2. Bảng thành phần
+Cột "Để private?" chỉ ghi **điều văn bản cho phép/không nói**; không phải ý kiến pháp lý.
+
+| Thành phần | Giấy phép (nguồn đọc) | Cách liên kết | Nghĩa vụ khi phát APK / gói (theo văn bản) | Để private? |
+|---|---|---|---|---|
+| Mã Aow Monika (`app/`, `loader/`, `tools/`, …) | GPLv3 (`LICENSE` gốc repo) | Mã chính của APK | §6: phát nhị phân thì kèm Corresponding Source | Repo đã công khai (G5). Phần nào không dính tác phẩm GPL thì `[CHƯA KIỂM]`; xem mục 3 |
+| `:libretrodroid` (LibretroDroid 0.14.0, chép nguyên) | GPLv3 (`libretrodroid/LICENSE`) | Module Gradle `implementation(project(":libretrodroid"))` + `.so` trong APK | §6 như trên; §5c cho tác phẩm sửa đổi | Văn bản GPLv3 §5c: tác phẩm sửa đổi cấp phép toàn bộ theo GPLv3. Phần ghép với `:libretrodroid` trong cùng APK: `[CHƯA KIỂM]` có bị coi là một tác phẩm hay không |
+| oboe (trong libretrodroid) | Apache-2.0 (`.../oboe/LICENSE`) | Biên dịch thành `.so` trong APK | Kèm giấy phép + giữ thông báo | Không bị GPL ràng buộc riêng theo văn bản; nghĩa vụ Apache-2.0 vẫn áp dụng |
+| rcheevos v12.5.0 (trong libretrodroid) | MIT (`.../rcheevos/LICENSE`) | `.so` trong APK | Giữ thông báo MIT | Như trên |
+| libretro-common (trong libretrodroid) | `[CHƯA KIỂM]` (repo không chép file giấy phép riêng cho thư mục này) | `.so` trong APK | `[CHƯA KIỂM]` | `[CHƯA KIỂM]` |
+| `:j2me` (J2ME Loader/JL-Mod) | Apache-2.0 (`j2me/LICENSE-J2ME-Loader`; bản sao trong APK `assets/licenses/j2me-loader.txt`) | Module Java + `.so` (NDK) trong APK | Apache-2.0 §4: kèm giấy phép, ghi file sửa (`docs/J2ME-LOADER.md`) | Theo văn bản Apache-2.0 không đòi mở mã phần sửa; Monika đã công khai nên không ảnh hưởng |
+| Thư viện bên thứ ba của J2ME (`j2me/.../licenses.html`) | Danh sách trong file: Apache-2.0 (nhiều mục), BSD (ASM), MPL-2.0 (Jonas Kalderstam), **LGPL v3.0 (MobileFFmpeg, Taner Sener)** | `[CHƯA KIỂM]` mục nào liên kết tĩnh/động | Theo từng giấy phép; LGPL v3.0 của MobileFFmpeg: `[CHƯA KIỂM]` cách liên kết và nghĩa vụ cụ thể | `[CHƯA KIỂM]` |
+| `:kirikiri` (mã Java + patch) | Gói tải kèm `LICENSE-Kirikiroid2Yuri.txt` (workflow `build-kirikiri.yml:150` chép `src/LICENSE`); workflow ghi "giấy phép kiểu BSD sửa đổi" | Java trong APK; `libkrkr2yuri.so` + tài nguyên là gói tải thêm (`modules.kirikiri` = `engines-kirikiri-14`) | Gói kèm file LICENSE và `SOURCE.txt` (repo + commit + nơi chứa patch `kirikiri/patches/`) | Nội dung file LICENSE của Kirikiroid2Yuri chưa được đọc ở đây (nó nằm trong gói tải, không trong repo): **`[CHƯA KIỂM]`**. Plan cũ ghi LICENSE Kirikiri2/Z "kiểu BSD" (`docs/plan-engine-moi.md`, bước C) |
+| `:rgss` (9 file Java SDL 2.26.3 đổi gói) | zlib (`rgss/LICENSE-SDL.txt`) | Java trong APK | Giữ thông báo, ghi đã sửa (đổi tên gói; `engines/rgss/rename-sdl-java.py`) | Theo văn bản zlib: được dùng trong sản phẩm đóng, nhưng phải ghi bản sửa |
+| Gói `rgss` (mkxp-z) | Lõi GPL-2.0-or-later (`app/jni/mkxp-z/COPYING` trong repo nguồn, ghi ở `engines/rgss/UPSTREAM.md`); SDL/SDL_image/SDL_ttf/SDL_sound/PhysicsFS zlib; OpenAL Soft LGPL-2.0; Ruby 3.1 Ruby/BSD-2; libogg/vorbis/theora BSD-3; pixman/uchardet/libiconv MIT/MPL/LGPL | Gói tải thêm, `.so` nạp lúc chạy (`modules.rgss` = `engines-rgss-6`, arm64-v8a) | Phát gói nhị phân GPL: phải kèm cách lấy nguồn + bản vá (workflow ghi commit nguồn trong ghi chú Release). `UPSTREAM.md`: "Là sửa đổi trên mã GPL" | Vỏ Java `com.hatkid.mkxpz.*`, `Makefile`... **không có file giấy phép** (UPSTREAM.md) nên Monika không chép; hỏi tác giả là việc của sếp. Gói thì không được giữ riêng tư nếu phát hành nhị phân GPL (theo §6) |
+| Gói `onsyuri` (OnscripterYuri wasm) | GPLv2 (ghi ở `docs/plan-engine-moi.md` bước B; `build-engines.yml:85` chép `ons/LICENSE` vào gói) | Gói tải thêm, chạy trong WebView (`modules.onsyuri`) | Gói kèm `LICENSE`; nguồn: commit `08f744b` | Nội dung `LICENSE` trong gói `onsyuri` chưa đọc ở đây: **`[CHƯA KIỂM]`**; không dùng "GPLv2 hay mới hơn" |
+| Gói `azahar` (3DS) | GPLv2 hoặc mới hơn — chỉ ghi bởi workflow (`build-engines.yml:175,220`), **chưa đọc file `COPYING`/`LICENSE` của Azahar** | Gói tải thêm (`modules.azahar` `662d412`) | Phát nhị phân GPL: cách lấy nguồn trong ghi chú Release (workflow có ghi repo + commit) | `[CHƯA KIỂM]` văn bản giấy phép; theo workflow là GPL nên áp dụng §6-tương đương |
+| `:renpy` (Java của RAPT 8.5.3 + jnius + jtar + SDL 2.0.20) | `renpy/UPSTREAM.md`: "Giấy phép: **chưa kiểm kê**" | Java trong APK | `[CHƯA KIỂM]` | `[CHƯA KIỂM]` |
+| Gói `renpy8` (`librenpython.so`, Python, mã Ren'Py) | Script `scripts/ci-renpy-pack.sh` (và workflow build-renpy-pack) ghi NOTICE: "MIT and LGPL components"; link tài liệu giấy phép Ren'Py | Gói tải thêm (chưa bật trong config: Ren'Py vẫn JoiPlay) | Gói kèm `NOTICE.txt`; chi tiết từng thành phần `[CHƯA KIỂM]` | `[CHƯA KIỂM]` |
+| Gói `sevenzip` (7-Zip-JBinding4Android `lib7-Zip-JBinding.so`) | `packs/sevenzip/sevenzip-*.zip` **chỉ chứa `lib7-Zip-JBinding.so`, không có LICENSE/NOTICE** (đã liệt kê nội dung zip) | Gói tải thêm (`modules.sevenzip` `16.02-2.02`), kèm thư viện Java `libs.sevenzip.android` | Gói không kèm giấy phép → **thiếu thông báo** nếu giấy phép đòi; chi tiết giấy phép 7-Zip/unRAR: `[CHƯA KIỂM]` (không có file trong repo) | `[CHƯA KIỂM]` |
+| Lõi libretro (desmume, melonds, mgba, gambatte, pcsx_rearmed, ppsspp, easyrpg, snes9x, fceumm, nestopia, genesis_plus_gx, mednafen_pce_fast, mupen64plus_next_gles3, parallel_n64, flycast, handy, stella2014, prosystem, mednafen_wswan, mednafen_ngp, citra, melondsds — `config.cores`) | Mỗi lõi một giấy phép riêng; repo **không** chứa `LICENSE` của từng lõi | Gói `.so` tải thêm, nạp bằng LibretroDroid (không đóng trong APK) | `[CHƯA KIỂM]` từng lõi | `[CHƯA KIỂM]`. Việc cần làm: đọc `LICENSE`/`COPYING` của từng lõi trong snapshot `cores-*` (repo `aowvn-monika-packs`) rồi điền bảng |
+| Fluent System Icons | MIT (`assets/licenses/fluent-system-icons.txt`) | Tài nguyên trong APK | Giữ thông báo (file đã nằm trong assets) | Theo văn bản MIT |
+| Thư viện Gradle (`gradle/libs.versions.toml`): androidx, Compose, OkHttp, kotlinx-serialization, Coil, WebKit, ML Kit (GMS), zip4j, commons-compress, xz, 7-Zip-JBinding-4Android | Ghi trong toml: ARSCLib, apksig, libadb là Apache-2.0. Các thư viện còn lại **không có file giấy phép trong repo** | Java/Kotlin trong APK | `[CHƯA KIỂM]` (cần đọc LICENSE từng artifact hoặc báo cáo giấy phép của Gradle) | `[CHƯA KIỂM]` |
+
+## 3. Phát hiện cần sếp/PM xem
+1. **Gói `sevenzip` không có LICENSE/NOTICE** trong zip (kiểm bằng liệt kê nội dung `packs/sevenzip/sevenzip-arm64-v8a.zip`: chỉ `lib7-Zip-JBinding.so`). Các gói khác (kirikiri, onsyuri) có chép LICENSE vào gói theo workflow; `renpy8` có `NOTICE.txt`.
+2. **`renpy/UPSTREAM.md` ghi giấy phép "chưa kiểm kê"** dù module `:renpy` đã nằm trong APK; chưa xuất bản gói `renpy8` (config vẫn dùng JoiPlay).
+3. **Lõi libretro chưa có bảng giấy phép nào trong repo**; mỗi lõi khác nhau và là phần tải thêm.
+4. **`engines/rgss/UPSTREAM.md` còn liệt kê OpenSSL 1.1.1t** trong khi cùng file ghi "bỏ OpenSSL" ở mục sửa đổi (2): hai chỗ mâu thuẫn, cần sửa tài liệu (không đổi mã).
+5. **J2ME có MobileFFmpeg LGPL v3.0** trong `licenses.html`; cách liên kết chưa xác minh `[CHƯA KIỂM]`.
+6. Văn bản GPLv3 §5c (dòng 87 của `LICENSE`) nói tác phẩm sửa đổi phải cấp phép toàn bộ theo GPLv3 "regardless of how they are packaged". Việc APK Monika (có `:libretrodroid` GPLv3 liên kết) có thể tách phần nào sang repo private mà không vi phạm là **câu hỏi pháp lý, nằm ngoài những gì file giấy phép tự trả lời**; cần người có chuyên môn. Gợi ý (chỉ là giả thuyết, `[CHƯA KIỂM]`): thư mục ít dính mã GPL như `cloudflare/`, `config/` (dữ liệu), `docs/`, `scripts/` không nằm trong APK, nhưng chưa kiểm từng thư mục.
+
+## 4. Chưa làm (để lượt sau, theo thứ tự)
+1. Đọc `LICENSE`/`COPYING` trong từng gói đã phát hành (`engines-kirikiri-14`, `engines-onsyuri-2`, `engine-azahar-1`, `engines-rgss-6`, `pack-sevenzip-1`) bằng cách tải gói công khai về thư mục riêng và chỉ đọc file giấy phép, rồi điền cột "chưa đọc".
+2. Đọc giấy phép từng lõi libretro trong snapshot `cores-*`.
+3. Báo cáo giấy phép Gradle (artifact từng thư viện).
