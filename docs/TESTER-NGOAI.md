@@ -11,7 +11,7 @@ Kirikiri là engine chạy game visual novel (VN) với tệp startup.tjs.
 **Bước thử:**
 1. Mở app, chọn thư mục chứa game Kirikiri.
 2. Nếu app phát hiện startup.tjs, game sẽ tải. Nếu không, app sẽ báo lỗi.
-3. Nhấp "Khởi động" để chạy game.
+3. Nhấp "Chơi" để chạy game.
 4. Kiểm tra: game hiển thị, có thể tương tác (bấm, swipe, chọn menu).
 5. Nếu gặp lỗi, từ màn hình game, bấm nút menu → "Báo lỗi game này" → ghi thông tin.
 
@@ -24,7 +24,7 @@ RPG Maker là engine phát triển game RPG (Data.system.bin, cấu hình RGSS h
 **Bước thử:**
 1. Mở app, chọn thư mục game RPG Maker.
 2. App sẽ kiểm tra loại RGSS (1/2/3) từ tệp game.
-3. Nhấp "Khởi động" để chạy game.
+3. Nhấp "Chơi" để chạy game.
 4. Kiểm tra: màn hình game hiển thị, nhân vật di chuyển, chiêu thức/item hoạt động.
 5. Nếu gặp lỗi, từ màn hình game, bấm nút menu → "Báo lỗi game này" → ghi thông tin.
 
@@ -63,7 +63,7 @@ ONScripter là engine chạy game với script (.ons hoặc tệp startup chỉ 
 **Bước thử:**
 1. Mở app, chọn thư mục game ONScripter.
 2. App sẽ kiểm tra và xác nhận engine ONScripter.
-3. Nhấp "Khởi động" để chạy game.
+3. Nhấp "Chơi" để chạy game.
 4. Kiểm tra: game hiển thị, có thể đọc cốt truyện, menu tương tác.
 5. Nếu gặp lỗi, từ màn hình game, bấm nút menu → "Báo lỗi game này" → ghi thông tin.
 
