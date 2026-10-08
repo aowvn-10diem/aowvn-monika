@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-08T18:29:48Z",
- "mainSha": "85269ea",
+ "updatedAt": "2026-10-08T18:58:58Z",
+ "mainSha": "8619479",
  "app": "App 0.7.7 (bản thử RC) · config 36",
- "nextCheck": "2026-10-08T18:29:48Z",
- "headline": "Ca đêm: đội ChatGPT chạy tối đa; V70 tay cầm thống nhất đã giao",
+ "nextCheck": "2026-10-08T19:28:58Z",
+ "headline": "Sửa crash Kirikiri Android 17 (#157) chờ Luna Ultra; V71, V70 đang làm",
  "needsBoss": [
   {
    "code": "G9",
@@ -1025,6 +1025,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T18:58:58Z",
+   "text": "Ca đêm 01:57: gộp #139 (Haiku-2 test), đóng #122 (thay bởi #154). #157 sửa crash Kirikiri: Luna Đạt, chờ Luna Ultra. #151 V45a: Luna Ultra Cần sửa nhỏ (ghi run ID vào V45.md)."
+  },
   {
    "t": "2026-10-08T18:29:48Z",
    "text": "Kiểm thử toàn bộ (sếp yêu cầu): GB/GBA/NES lên hình trên máy ảo; Kirikiri crash cả máy ảo lẫn 2 máy ARM thật (K2 SIGSEGV GLThread) → Sonnet; bộ máy ảo đỏ vì Kirikiri x86 + V33 fixture → Sol V71."
