@@ -118,4 +118,20 @@ class KirikiriEntryResolverTest {
         val r = KirikiriEntryResolver.resolve(dir) as EntryResolution.Use
         assertEquals(good.name, r.entry.name)
     }
+    @Test fun nhieuKhoThuongCoStartup_chonKhoLonNhatTruBanVa() {
+        val dir = tmp.newFolder("multiple-normal")
+        val wrong = put(dir, "extra.xp3", listOf("image/a.png"))
+        put(dir, "small.xp3", listOf("startup.tjs"), pad = 100)
+        val largest = put(dir, "large.xp3", listOf("startup.tjs"), pad = 2000)
+        put(dir, "patch.xp3", listOf("startup.tjs"), pad = 5000)
+        assertEquals(largest, (KirikiriEntryResolver.resolve(wrong) as EntryResolution.Use).entry)
+    }
+
+    @Test fun khoKhongDocDuoc_khongCanKhoThuongKhacCoStartup() {
+        val dir = tmp.newFolder("unreadable-with-startup")
+        val wrong = File(dir, "broken.xp3").also { it.writeBytes(ByteArray(500) { 3 }) }
+        val good = put(dir, "data.xp3", listOf("startup.tjs"))
+        assertEquals(good, (KirikiriEntryResolver.resolve(wrong) as EntryResolution.Use).entry)
+    }
+
 }
