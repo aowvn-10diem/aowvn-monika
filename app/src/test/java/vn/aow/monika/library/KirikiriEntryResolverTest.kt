@@ -87,6 +87,7 @@ class KirikiriEntryResolverTest {
         assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(emptyList(), true)))
         assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(listOf("a.png", "Scn/B.KS"), true)))
         assertTrue(KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(listOf("a.png", "3f9a1c"), true)))
+        assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(listOf("a.png", "3f9a1c"), false))) // chỉ mục bị cắt: không kết luận
     }
 
     @Test fun docDuocMoiXp3MaKhongCoStartup_baoNotFound() {

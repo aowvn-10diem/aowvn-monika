@@ -73,9 +73,9 @@ object KirikiriEntryResolver {
     private const val MAX_DETAIL_FILES = 8
     private const val MAX_SAMPLE_NAMES = 5
 
-    /** Kho có mục nhưng không tên nào là *.tjs / *.ks → tên có vẻ băm/mã hóa (không đọc được chỉ mục thì false). */
+    /** Kho có mục nhưng không tên nào là *.tjs / *.ks → tên có vẻ băm/mã hóa. Chỉ mục bị cắt ([Xp3Index.Result.Names.complete] = false) hoặc không đọc được thì false. */
     internal fun looksEncrypted(result: Xp3Index.Result?): Boolean {
-        val names = (result as? Xp3Index.Result.Names)?.names ?: return false
+        val names = (result as? Xp3Index.Result.Names)?.takeIf { it.complete }?.names ?: return false
         return names.isNotEmpty() && names.none { it.endsWith(".tjs", true) || it.endsWith(".ks", true) }
     }
 
