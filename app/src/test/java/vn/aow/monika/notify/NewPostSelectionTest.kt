@@ -42,4 +42,10 @@ class NewPostSelectionTest {
     @Test fun seenIdsKeepSmallSetsWhole() {
         assertEquals(setOf("a", "b", "c"), NewPostWorker.nextSeenIds(listOf(post("a"), post("b")), setOf("c")))
     }
+
+    // PM chốt (#120, #124): bài vượt MAX_PER_RUN vẫn ghi là đã thấy, không báo lại ở lượt sau.
+    @Test fun postsOverRunLimitStillCountAsSeen() {
+        val posts = (1..7).map { post("p$it") }
+        assertEquals(posts.map { it.id }.toSet(), NewPostWorker.nextSeenIds(posts, emptySet()))
+    }
 }
