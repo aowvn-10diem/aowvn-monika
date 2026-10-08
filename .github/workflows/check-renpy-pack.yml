@@ -1,7 +1,7 @@
 name: RenPy pack CI (V45 B, no publish)
 on:
   pull_request:
-    paths: ['scripts/ci-renpy-pack.sh', 'scripts/ci-renpy-menu.sh', 'scripts/*renpy-bytecode*', '.github/workflows/check-renpy-pack.yml', 'tools/pack-check/**']
+    paths: ['scripts/ci-renpy-pack.sh', 'scripts/ci-renpy-menu.sh', 'scripts/*renpy-bytecode*', 'scripts/*renpy8-config*', '.github/workflows/check-renpy-pack.yml', 'tools/pack-check/**']
 permissions: {contents: read}
 concurrency: {group: 'v45-${{ github.ref }}', cancel-in-progress: true}
 jobs:
@@ -19,12 +19,20 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb >/dev/null
       - run: python3 scripts/test-renpy-bytecode-layout.py
+      - run: python3 scripts/test-renpy8-config.py
       - name: Official pinned engine only, no publish or signing
         run: bash scripts/ci-renpy-pack.sh "$RUNNER_TEMP/v45-pack" '${{ matrix.abi }}'
       - name: Validate actual ZIP with app PackTransaction
         run: |
           ./gradlew -p tools/pack-check test installDist --console=plain
           tools/pack-check/build/install/monika-pack-check/bin/monika-pack-check --archive renpy8 '${{ matrix.abi }}' "$RUNNER_TEMP/v45-pack/renpy8-${{ matrix.abi }}.zip" | tee "$RUNNER_TEMP/v45-pack/evidence/kotlin-check.txt"
+      - name: Khối config sẽ dán cho gói này (SHA-256/size thật của ZIP vừa dựng, URL giả, chưa đăng gói)
+        run: |
+          python3 scripts/renpy8-config.py --version 8.5.3-ci --url 'https://invalid.example/renpy8-{abi}.zip' \
+            --abis '${{ matrix.abi }}' --zip '${{ matrix.abi }}='"$RUNNER_TEMP/v45-pack/renpy8-${{ matrix.abi }}.zip" \
+            --out "$RUNNER_TEMP/v45-pack/evidence/config-preview.json"
+          python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(json.dumps(d['modules']['renpy8'], indent=1))" \
+            "$RUNNER_TEMP/v45-pack/evidence/config-preview.json" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:
           name: v45-renpy8-${{ matrix.abi }}
