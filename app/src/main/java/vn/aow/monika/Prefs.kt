@@ -75,12 +75,16 @@ class Prefs(private val context: Context) {
         get() = sp.getString("motion_mode", "auto")!!
         set(value) = sp.edit().putString("motion_mode", value).apply()
 
+    /** Đồng hồ của Prefs (ms). Mặc định là giờ hệ thống; test thay bằng đồng hồ giả để kiểm thời gian chơi. */
+    internal var nowMillis: () -> Long = { System.currentTimeMillis() }
+
     /** Lần chơi gần nhất của từng game (theo đường dẫn thư mục). */
     fun markPlayed(gameDir: String) {
-        sp.edit().putLong("played_$gameDir", System.currentTimeMillis())
+        val now = nowMillis()
+        sp.edit().putLong("played_$gameDir", now)
             .putInt("playcount_$gameDir", playCount(gameDir) + 1)
             // Phiên chơi: game chạy ở app/tiến trình khác (Java, app ngoài) → tính giờ khi quay lại Monika.
-            .putString("session_key", gameDir).putLong("session_start", System.currentTimeMillis()).apply()
+            .putString("session_key", gameDir).putLong("session_start", now).apply()
         playedTick.value++
     }
 
@@ -101,7 +105,7 @@ class Prefs(private val context: Context) {
         val key = sp.getString("session_key", null) ?: return
         val start = sp.getLong("session_start", 0L)
         cancelSession()
-        val ms = System.currentTimeMillis() - start
+        val ms = nowMillis() - start
         if (start > 0 && ms in 10_000..4 * 3_600_000L) addPlayTime(key, ms)
     }
     /** Số lần mở chơi (cho mục "Thường xuyên chơi"). */
