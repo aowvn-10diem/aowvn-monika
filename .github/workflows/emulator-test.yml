@@ -177,7 +177,8 @@ jobs:
       - name: Cài NDK và build APK test với config/TLS fixture
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
-          ./gradlew testDebugUnitTest assembleDebug --console=plain
+          # V33 fixture replaces production config/TLS; unfiltered unit tests run in Build on production config.
+          ./gradlew assembleDebug --console=plain
       - name: Bật KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
