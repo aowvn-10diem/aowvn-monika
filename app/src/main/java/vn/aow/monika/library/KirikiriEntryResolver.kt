@@ -37,18 +37,45 @@ object KirikiriEntryResolver {
         val patch = patchPatterns.map { Regex(it, RegexOption.IGNORE_CASE) }
         fun isPatch(f: File) = patch.any { it.matches(f.name) }
         val xp3s = dir.listFiles().orEmpty().filter { it.isFile && it.extension.equals("xp3", true) }
-        val idx: Map<File, Xp3Index.Result> = xp3s.associateWith { Xp3Index.read(it) }
-        val has: Map<File, Boolean?> = idx.mapValues { (_, r) -> (r as? Xp3Index.Result.Names)?.let { Xp3Index.hasRootStartup(it.names) } }
+        // V64: không giữ Result/Names qua lần đọc kế tiếp. Chỉ giữ ứng viên và
+        // tối đa 8 dòng chẩn đoán; chỉ mục lớn vẫn chịu cap riêng của Xp3Index.
+        var selectedHasStartup = false
+        var allReadable = true
+        var startupCount = 0
+        var firstWithStartup: File? = null
+        var bestNormal: File? = null
+        var bestNormalSize = -1L
+        val details = mutableListOf<Pair<String, String>>()
+        for (file in xp3s) {
+            val summary = readSummary(file)
+            if (summary.hasStartup == null) allReadable = false
+            if (summary.hasStartup == true) {
+                if (file == entry) selectedHasStartup = true
+                startupCount++
+                if (firstWithStartup == null) firstWithStartup = file
+                if (!isPatch(file)) {
+                    val size = file.length()
+                    if (size > bestNormalSize) {
+                        bestNormal = file
+                        bestNormalSize = size
+                    }
+                }
+            }
+            details.add(file.name to summary.detail)
+            details.sortBy { it.first }
+            if (details.size > MAX_DETAIL_FILES) details.removeAt(details.lastIndex)
+        }
 
         // 1. Lối vào hiện tại đã có startup.tjs ở gốc → không đổi gì.
-        if (isXp3Entry && has[entry] == true) return EntryResolution.Keep("xp3 đang chọn có startup.tjs ở gốc")
+        if (isXp3Entry && selectedHasStartup) return EntryResolution.Keep("xp3 đang chọn có startup.tjs ở gốc")
 
         // 2. Kho khác có startup.tjs: ưu tiên kho thường (lớn nhất); bản vá chỉ khi là kho duy nhất lộ startup.tjs.
-        val withStartup = xp3s.filter { has[it] == true }
-        val normal = withStartup.filter { !isPatch(it) }.sortedByDescending { it.length() }
-        if (normal.isNotEmpty()) return EntryResolution.Use(normal.first(), "xp3 ${normal.first().name} có startup.tjs ở gốc, xp3 đang chọn thì không/không rõ")
-        if (withStartup.size == 1) return EntryResolution.Use(withStartup.first(), "chỉ ${withStartup.first().name} (bản vá) lộ startup.tjs ở gốc")
-        if (withStartup.size > 1) return EntryResolution.Keep("${withStartup.size} bản vá cùng có startup.tjs, không tự chọn")
+        bestNormal?.let { return EntryResolution.Use(it, "xp3 ${it.name} có startup.tjs ở gốc, xp3 đang chọn thì không/không rõ") }
+        if (startupCount == 1) {
+            val only = checkNotNull(firstWithStartup)
+            return EntryResolution.Use(only, "chỉ ${only.name} (bản vá) lộ startup.tjs ở gốc")
+        }
+        if (startupCount > 1) return EntryResolution.Keep("${startupCount} bản vá cùng có startup.tjs, không tự chọn")
 
         // 3. Không xp3 nào lộ startup.tjs: thư mục có startup.tjs rời thì engine nhận được thư mục.
         if (dir.listFiles().orEmpty().any { it.isFile && it.name.equals("startup.tjs", true) }) {
@@ -56,11 +83,21 @@ object KirikiriEntryResolver {
         }
 
         // 4. Đọc được chỉ mục của mọi xp3 mà không đâu có startup.tjs → báo lỗi rõ. Có xp3 không đọc được (mã hóa/định dạng lạ) → giữ nguyên.
-        if (xp3s.isNotEmpty() && xp3s.all { has[it] == false }) {
+        if (xp3s.isNotEmpty() && allReadable) {
             return EntryResolution.NotFound(dir.name, "đọc chỉ mục ${xp3s.size} xp3, không có startup.tjs ở gốc, không có startup.tjs rời",
-                xp3s.sortedBy { it.name }.take(MAX_DETAIL_FILES).map { describe(it, idx[it]) })
+                details.map { it.second })
         }
         return EntryResolution.Keep(if (xp3s.isEmpty()) "thư mục không có xp3" else "có xp3 không đọc được chỉ mục, giữ nguyên")
+    }
+
+    private data class IndexSummary(val hasStartup: Boolean?, val detail: String)
+
+    // Result và toàn bộ tên chỉ sống trong scope này; dòng detail đã cắt ngắn,
+    // không trả danh sách tên hoặc closure giữ Result về vòng lặp resolve.
+    private fun readSummary(file: File): IndexSummary {
+        val result = Xp3Index.read(file)
+        val hasStartup = (result as? Xp3Index.Result.Names)?.let { Xp3Index.hasRootStartup(it.names) }
+        return IndexSummary(hasStartup, describe(file, result))
     }
 
     private const val MAX_DETAIL_FILES = 8
