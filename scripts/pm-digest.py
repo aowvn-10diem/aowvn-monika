@@ -20,9 +20,33 @@ MAX_MARKDOWN_LINES = 40
 
 
 class GitHubAPIError(RuntimeError):
-    def __init__(self, status_code: int):
+    def __init__(self, status_code: int, *, headers=None, kind: str = "unknown"):
         super().__init__(f"GitHub API returned HTTP {status_code}.")
         self.status_code = status_code
+        # Whitelist numeric quota hints only: never retain/print arbitrary headers or response bodies.
+        def number(name):
+            value = str((headers or {}).get(name, (headers or {}).get(name.lower(), "")))
+            return int(value) if re.fullmatch(r"[0-9]{1,12}", value) else None
+        self.remaining = number("X-RateLimit-Remaining")
+        self.reset = number("X-RateLimit-Reset")
+        self.retry_after = number("Retry-After")
+        self.kind = ("rate-limit" if status_code == 429 or self.remaining == 0 else
+                     kind if kind in {"rate-limit", "secondary-rate-limit", "permission", "unknown"} else "unknown")
+
+    @classmethod
+    def from_http(cls, error):
+        try:
+            text = error.read(2048).decode("utf-8", errors="replace").lower()
+        except (OSError, AttributeError):
+            text = ""
+        kind = ("secondary-rate-limit" if "secondary rate limit" in text else
+                "rate-limit" if "api rate limit exceeded" in text else
+                "permission" if "resource not accessible" in text else "unknown")
+        return cls(error.code, headers=error.headers, kind=kind)
+
+    def diagnostic(self):
+        return {"http": self.status_code, "kind": self.kind, "remaining": self.remaining,
+                "reset_epoch": self.reset, "retry_after_seconds": self.retry_after}
 
 
 class GitHubAPI:
@@ -53,7 +77,7 @@ class GitHubAPI:
             with urllib.request.urlopen(request, timeout=30) as response:
                 return json.load(response), response.headers
         except urllib.error.HTTPError as error:
-            raise GitHubAPIError(error.code) from None
+            raise GitHubAPIError.from_http(error) from None
         except urllib.error.URLError:
             raise RuntimeError("GitHub API request failed.") from None
         except json.JSONDecodeError:

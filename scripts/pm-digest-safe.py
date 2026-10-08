@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import time
 import urllib.parse
 import urllib.error
 import urllib.request
@@ -18,6 +19,27 @@ REPOSITORY = 'aowvn-10diem/aowvn-monika'
 # Public repository ID measured from GitHub metadata/Link; never an input.
 REPOSITORY_ID = 1392088306
 SENSITIVE_KEYS = {'body', 'email', 'path', 'token', 'authorization', 'password', 'secret', 'author', 'login'}
+
+class DigestUnavailable(RuntimeError):
+    """A bounded data-source failure; never use it to bypass input/publish guards."""
+
+def retry_http(call, sleep=None):
+    """Three attempts on 403/429 only; at most two 30s waits, no blind mutation retry."""
+    wait = sleep or time.sleep
+    for attempt in range(3):
+        try:
+            return call()
+        except digest.GitHubAPIError as error:
+            if error.status_code not in (403, 429) or attempt == 2:
+                raise
+            reset_wait = max(0, (error.reset or 0) - int(time.time())) if error.remaining == 0 else 0
+            required_wait = max(error.retry_after or 0, reset_wait)
+            if required_wait > 30:
+                # Respect server backoff without holding a runner until the next quota window.
+                raise
+            delay = max(5 if attempt == 0 else 15, required_wait)
+            print('::warning::Digest API retry ' + json.dumps(error.diagnostic()) + f'; wait={delay}s', file=sys.stderr)
+            wait(delay)
 
 def safe_text(value):
     # Giữ URL run công khai đúng repo; không query/redirect/token.
@@ -41,6 +63,31 @@ def sanitize(value, field=''):
     return value
 
 class BoundedDigestAPI(digest.GitHubAPI):
+    def __init__(self, repository, token):
+        super().__init__(repository, token)
+        self.cache = {}
+        self.reads = 0
+
+    def _request_json(self, route):
+        key = self._url(route)  # Security guards still fail hard, before soft transport handling.
+        if key in self.cache:
+            return self.cache[key]
+        def request():
+            if self.reads >= 120:
+                raise DigestUnavailable('API read budget 120 exhausted; no partial digest published')
+            self.reads += 1
+            try:
+                data, headers = super(BoundedDigestAPI, self)._request_json(route)
+                if self.reads == 1:
+                    print('Digest API quota hints: ' + json.dumps(digest.GitHubAPIError(200, headers=headers).diagnostic()), file=sys.stderr)
+                return data, headers
+            except RuntimeError as error:
+                if str(error) in {'GitHub API request failed.', 'GitHub API returned invalid JSON.'}:
+                    raise DigestUnavailable(str(error)) from None
+                raise
+        self.cache[key] = retry_http(request)
+        return self.cache[key]
+
     def _url(self, route):
         if route.startswith('https://'):
             parsed = urllib.parse.urlsplit(route)
@@ -69,12 +116,18 @@ class GitDB:
         url = 'https://api.github.com/repos/' + REPOSITORY + route
         request = urllib.request.Request(url, method=method, data=None if payload is None else json.dumps(payload).encode(),
             headers={'Authorization': 'Bearer ' + self.token, 'Accept': 'application/vnd.github+json', 'Content-Type':'application/json', 'X-GitHub-Api-Version':'2022-11-28'})
-        try:
-            with urllib.request.urlopen(request, timeout=30) as response: return json.load(response)
-        except urllib.error.HTTPError as error:
-            if method == 'GET' and error.code == 404: return None
-            raise RuntimeError('GitDB HTTP ' + str(error.code)) from None
-        except urllib.error.URLError: raise RuntimeError('GitDB không truy cập được') from None
+        def send():
+            try:
+                with urllib.request.urlopen(request, timeout=30) as response: return json.load(response)
+            except urllib.error.HTTPError as error:
+                if method == 'GET' and error.code == 404: return None
+                raise digest.GitHubAPIError.from_http(error) from None
+            except urllib.error.URLError:
+                # Unknown outcome on POST/PATCH: do not create duplicate commits by retrying blindly.
+                raise DigestUnavailable('GitDB không truy cập được; không retry mutation mù') from None
+            except json.JSONDecodeError:
+                raise DigestUnavailable('GitDB trả JSON không hợp lệ; không retry mutation mù') from None
+        return retry_http(send)
 
 def publish(client, data):
     safe = sanitize(data)
@@ -91,8 +144,8 @@ def publish(client, data):
         client.request('PATCH', route, {'sha':commit['sha'], 'force':True})
     return commit['sha']
 
-if __name__ == '__main__':
-    p=argparse.ArgumentParser();p.add_argument('--out',type=Path,required=True);p.add_argument('--fixture',type=Path);p.add_argument('--publish',action='store_true');args=p.parse_args()
+def main(argv=None):
+    p=argparse.ArgumentParser();p.add_argument('--out',type=Path,required=True);p.add_argument('--fixture',type=Path);p.add_argument('--publish',action='store_true');args=p.parse_args(argv)
     try:
         if args.publish and args.fixture: raise RuntimeError('Không đăng fixture lên bot')
         token=os.environ.get('GITHUB_TOKEN','')
@@ -103,5 +156,19 @@ if __name__ == '__main__':
         (args.out/'digest.md').write_text(digest.render_markdown(data))
         if args.publish: print('Đã đăng root commit ' + publish(GitDB(token),data)[:7] + ' vào bot/trang-thai')
         else: print('Đã chuẩn bị digest; chưa đăng bot')
+        return 0
+    except (digest.GitHubAPIError, DigestUnavailable) as error:
+        # Ancillary job stays green with an explicit warning; preserve last complete bot snapshot.
+        hint = error.diagnostic() if isinstance(error, digest.GitHubAPIError) else {'kind': 'unavailable', 'detail': str(error)}
+        hint = sanitize(hint)
+        args.out.mkdir(parents=True, exist_ok=True)
+        (args.out/'warning.json').write_text(json.dumps(hint, ensure_ascii=False, indent=2)+'\n')
+        (args.out/'warning.md').write_text('# CẢNH BÁO: digest không cập nhật được\nKhông coi job xanh là dữ liệu mới. Giữ bot ở snapshot đầy đủ gần nhất.\n'+json.dumps(hint, ensure_ascii=False)+'\n')
+        print('::warning::Digest không cập nhật được; giữ snapshot bot cũ: '+json.dumps(hint, ensure_ascii=False), file=sys.stderr)
+        return 0
     except (RuntimeError,OSError) as error:
-        print(str(error),file=sys.stderr);raise SystemExit(1)
+        print(safe_text(str(error)),file=sys.stderr)
+        return 1
+
+if __name__ == '__main__':
+    raise SystemExit(main())
