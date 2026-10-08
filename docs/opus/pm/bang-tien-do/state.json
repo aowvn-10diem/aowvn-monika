@@ -1,2600 +1,2615 @@
 {
- "updatedAt": "2026-10-08T18:58:58Z",
- "mainSha": "8619479",
- "app": "App 0.7.7 (bản thử RC) · config 36",
- "nextCheck": "2026-10-08T19:28:58Z",
- "headline": "Sửa crash Kirikiri Android 17 (#157) chờ Luna Ultra; V71, V70 đang làm",
- "needsBoss": [
-  {
-   "code": "G9",
-   "urgency": "Nên làm",
-   "kind": "one",
-   "question": "Firebase Test Lab: giao Claude in Chrome làm theo prompt bên dưới",
-   "recommend": "Dán prompt cho Claude in Chrome. Chrome tự làm bước A, B và thêm secret GCP_PROJECT_ID. Riêng GCP_SA_KEY sếp tự dán (khoảng 1 phút), vì PM không cho agent đọc khóa JSON.",
-   "options": [
-    "Đã xong, Test Lab chạy được",
-    "Để sau"
-   ],
-   "links": [
+  "updatedAt": "2026-10-08T19:29:19Z",
+  "mainSha": "70e43b9",
+  "app": "App 0.7.7 (bản thử RC) · config 36",
+  "nextCheck": "2026-10-08T19:59:19Z",
+  "headline": "Ca đêm: 6 PR gộp từ 00:00; #157 sửa crash Kirikiri chờ duyệt lần hai",
+  "needsBoss": [
     {
-     "label": "Prompt Chrome",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/PROMPT-CHROME-TEST-LAB.md",
-     "kind": "doc"
-    },
-    {
-     "label": "Trang GitHub Secrets",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/settings/secrets/actions",
-     "kind": "trang"
-    },
-    {
-     "label": "Hướng dẫn TEST-LAB",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/main/docs/TEST-LAB.md",
-     "kind": "doc"
+      "code": "G9",
+      "urgency": "Nên làm",
+      "kind": "one",
+      "question": "Firebase Test Lab: giao Claude in Chrome làm theo prompt bên dưới",
+      "recommend": "Dán prompt cho Claude in Chrome. Chrome tự làm bước A, B và thêm secret GCP_PROJECT_ID. Riêng GCP_SA_KEY sếp tự dán (khoảng 1 phút), vì PM không cho agent đọc khóa JSON.",
+      "options": [
+        "Đã xong, Test Lab chạy được",
+        "Để sau"
+      ],
+      "links": [
+        {
+          "label": "Prompt Chrome",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/PROMPT-CHROME-TEST-LAB.md",
+          "kind": "doc"
+        },
+        {
+          "label": "Trang GitHub Secrets",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/settings/secrets/actions",
+          "kind": "trang"
+        },
+        {
+          "label": "Hướng dẫn TEST-LAB",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/main/docs/TEST-LAB.md",
+          "kind": "doc"
+        }
+      ],
+      "how": "Mở link Prompt Chrome → chép toàn bộ → dán cho Claude in Chrome. Khi Chrome báo dừng ở GCP_SA_KEY: mở trang Secrets, tạo GCP_SA_KEY, dán nội dung file .json vừa tải, rồi xóa file."
     }
-   ],
-   "how": "Mở link Prompt Chrome → chép toàn bộ → dán cho Claude in Chrome. Khi Chrome báo dừng ở GCP_SA_KEY: mở trang Secrets, tạo GCP_SA_KEY, dán nội dung file .json vừa tải, rồi xóa file."
-  }
- ],
- "milestones": [
-  {
-   "code": "M0",
-   "name": "Kirikiri 0.7.3 (menu tiếng Việt)",
-   "status": "xong",
-   "progress": 100,
-   "note": "Đã phát hành, APK đã gửi sếp. Chưa thử máy thật (G7). Phần trăm là ước lượng PM cũ, chưa đo lại."
-  },
-  {
-   "code": "M1",
-   "name": "RPG Maker XP/VX/Ace chơi trong app",
-   "status": "dang",
-   "progress": 68,
-   "note": "R0–R5 mãxong; V44#50gộpca8 sauLuna+CI. R6f740 XP369/VX339/Ace382sPASSmức1/titleNewGame/scenehội thoại; signalsretrycùngcodePASS, lầnđầurunnerOOMkhôngappfix. Đủ5/audio/save-load/FPS chưakiểm; R7chờ. PhầntrămPMcũ chưađolại."
-  },
-  {
-   "code": "Q",
-   "name": "Kiểm thử không máy thật + báo lỗi từ xa",
-   "status": "cho",
-   "progress": 15,
-   "note": "V18–V22 mã/CI đã có bằng chứng; Worker chưa deploy và máy thật chưa kiểm. Phần trăm là ước lượng PM cũ, chưa đo lại."
-  },
-  {
-   "code": "M2",
-   "name": "Ren'Py 8 chơi trong app",
-   "status": "xong",
-   "progress": 25,
-   "note": "Renpy8 P2/P3 đã gộp33/41; P4publication/config kẹtSOL012, chưa bật cho người dùng. Phần trăm là ước lượng PM cũ, chưa đo lại."
-  },
-  {
-   "code": "M3",
-   "name": "Ren'Py 7",
-   "status": "xong",
-   "progress": 0,
-   "note": "Sau M2. Phần trăm là ước lượng PM cũ, chưa đo lại."
-  },
-  {
-   "code": "M4",
-   "name": "Symbian / N-Gage chơi trong app",
-   "status": "xong",
-   "progress": 5,
-   "note": "Có phương án; chờ sếp chốt A1, A2 (G4). Làm sau M2. Phần trăm là ước lượng PM cũ, chưa đo lại."
-  }
- ],
- "tasks": [
-  {
-   "code": "V25",
-   "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "Đã gộp (#44). Job tự kết luận từng game; dùng để kiểm mọi bản sửa RPG Maker.",
-   "module": "rgss"
-  },
-  {
-   "code": "V26",
-   "title": "Kirikiri không mở được game trên máy thật",
-   "owner": "Sonnet",
-   "status": "ket",
-   "note": "Sếp gửi danh sách file 08/10: không có xp3filter.tjs; Sonnet phân tích (thư 005); chờ ảnh plugin/ + báo lỗi qua 0.7.7",
-   "module": "kirikiri",
-   "links": [
-    {
-     "label": "#93",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/93",
-     "kind": "pr"
-    }
-   ]
-  },
-  {
-   "code": "V23",
-   "title": "Dọn kho artifact GitHub Actions, đặt hạn giữ 3 ngày; tự xóa release tạm",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "Đã gộp (867b73b). Dọn dẹp Actions chạy xanh, không còn release ci-apk-*.",
-   "module": "ci"
-  },
-  {
-   "code": "V24",
-   "title": "Release gói RPG Maker dạng nháp tới khi có giấy phép (chuẩn bị công khai repo)",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "Đã gộp (85fda8d): gói RGSS từ nay chỉ ra bản nháp.",
-   "module": "rgss"
-  },
-  {
-   "code": "V16",
-   "title": "R5: phím ảo + menu Monika cho RPG Maker, đăng ký gói vào config",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "Đã gộp (#73). Config 34 dùng gói RPG Maker nhúng công khai, JoiPlay làm dự phòng.",
-   "module": "rgss"
-  },
-  {
-   "code": "V18",
-   "title": "Game Kirikiri tự sinh trên CI: kiểm hình, chạm, Back, âm thanh, lưu/tải",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "Gộp vào V26 (cùng lỗi mở game Kirikiri).",
-   "module": "kirikiri"
-  },
-  {
-   "code": "V19",
-   "title": "Kiểm đường báo lỗi: cố ý làm game crash, app phải ghi báo cáo đúng",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "Báo lỗi khi game RPG Maker sập đã kiểm đúng engine, đúng tiến trình (gói nháp rgss-7).",
-   "module": "diag"
-  },
-  {
-   "code": "V20",
-   "title": "Đọc được lỗi: lưu mapping R8 + ký hiệu .so, đọc đúng tombstone",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "Đọc được ngăn xếp lỗi native, log DEBUG trên API 30.",
-   "module": "diag"
-  },
-  {
-   "code": "V21",
-   "title": "Nút \"Báo lỗi game này\": ảnh mặc định, chọn loại lỗi bằng nút",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "D4+D5#60 đã gộp; ảnh JPEG480x222/2776B, JSON9465B fixture API34 xanh. Worker chưa deploy, engine khác/máy thật chưa kiểm.",
-   "module": "diag"
-  },
-  {
-   "code": "V22",
-   "title": "Bắt lỗi script engine + phát hiện màn đen",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "#46 đã gộp sau Luna+Build/signals/real-packs xanh; K3 máy thật/màn đen chưa kiểm.",
-   "module": "diag"
-  },
-  {
-   "code": "V17",
-   "title": "P2–P3: module :renpy (Ren'Py 8)",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "P2 và P3 (màn chơi Ren'Py) đã gộp vào main.",
-   "module": "renpy8"
-  },
-  {
-   "code": "V06",
-   "title": "Gộp nhánh của PM vào main mỗi lượt kiểm",
-   "owner": "Sonnet",
-   "status": "lap",
-   "note": "",
-   "module": "ci"
-  },
-  {
-   "code": "O01",
-   "title": "Trả lời hộp thư, cập nhật kế hoạch và trang này",
-   "owner": "PM",
-   "status": "lap",
-   "note": "",
-   "module": "ci"
-  },
-  {
-   "code": "H03",
-   "title": "Sửa hướng dẫn thử Kirikiri trên máy thật (PR #4)",
-   "owner": "Haiku",
-   "status": "dang",
-   "note": "PR #4 PM duyệt; chờ Haiku gộp.",
-   "module": "kirikiri"
-  },
-  {
-   "code": "H04",
-   "title": "Cập nhật tài liệu bàn giao: các mốc R0–R5, gói 32-bit, repo công khai",
-   "owner": "Luna",
-   "status": "xong",
-   "note": "Đã gộp.",
-   "module": "ci"
-  },
-  {
-   "code": "H05",
-   "title": "Hướng dẫn thử RPG Maker trên máy thật (dùng sau R7)",
-   "owner": "Luna",
-   "status": "xong",
-   "note": "Đã gộp.",
-   "module": "rgss"
-  },
-  {
-   "code": "H06",
-   "title": "Test ảnh chụp cho lớp phủ RPG Maker và Kirikiri",
-   "owner": "Luna",
-   "status": "xong",
-   "note": "Đã gộp.",
-   "module": "ingame"
-  },
-  {
-   "code": "H07",
-   "title": "Tài liệu kiến trúc: luồng engine nhúng, sửa gì mở file nào",
-   "owner": "Luna",
-   "status": "xong",
-   "note": "Đã gộp.",
-   "module": "ci"
-  },
-  {
-   "code": "H02",
-   "title": "Sửa script sinh sơ đồ kiến trúc cho đủ module",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "PR #8 đã gộp.",
-   "module": "ci"
-  },
-  {
-   "code": "O02",
-   "title": "Phương án kiểm thử không máy thật + crash log",
-   "owner": "PM",
-   "status": "xong",
-   "note": "docs/opus/2026-10-03-kiem-thu-chan-doan.md",
-   "module": "ci"
-  },
-  {
-   "code": "V15",
-   "title": "Gói RPG Maker cho máy 32-bit (armeabi-v7a)",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "7,1 MiB. Chưa chạy trên máy 32-bit thật.",
-   "module": "rgss"
-  },
-  {
-   "code": "V14",
-   "title": "CI tự xóa release tạm",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "",
-   "module": "ci"
-  },
-  {
-   "code": "V12",
-   "title": "R3: RPG Maker chạy trong app (máy ảo Android 11 và 14)",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "Game XP tự sinh ghi được file kiểm.",
-   "module": "rgss"
-  },
-  {
-   "code": "V07",
-   "title": "Bỏ OpenSSL khỏi gói RPG Maker",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "",
-   "module": "rgss"
-  },
-  {
-   "code": "V08",
-   "title": "R2: module SDL riêng cho RPG Maker",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "",
-   "module": "rgss"
-  },
-  {
-   "code": "V02",
-   "title": "R1: dựng gói rgss (7,6 MiB)",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "",
-   "module": "rgss"
-  },
-  {
-   "code": "V01",
-   "title": "R0: dựng thử mkxp-z",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "",
-   "module": "rgss"
-  },
-  {
-   "code": "V04",
-   "title": "P1: dựng gói renpy8 (22,6 MB)",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "",
-   "module": "renpy8"
-  },
-  {
-   "code": "V03",
-   "title": "P0: dựng thử Ren'Py",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "",
-   "module": "renpy8"
-  },
-  {
-   "code": "V05",
-   "title": "Phát hành Kirikiri 0.7.3",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "",
-   "module": "kirikiri"
-  },
-  {
-   "code": "V10",
-   "title": "Sửa gốc lỗi test tải file chập chờn",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "",
-   "module": "ci"
-  },
-  {
-   "code": "V11",
-   "title": "Commit chỉ sửa tài liệu không chạy build",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "",
-   "module": "ci"
-  },
-  {
-   "code": "L01",
-   "title": "Kiểm mọi link trong config",
-   "owner": "Luna",
-   "status": "xong",
-   "note": "Đã gộp, đọc đúng ABI.",
-   "module": "config"
-  },
-  {
-   "code": "L02",
-   "title": "Test chọn file game Kirikiri",
-   "owner": "Luna",
-   "status": "xong",
-   "note": "Đã gộp (#18).",
-   "module": "kirikiri"
-  },
-  {
-   "code": "L03",
-   "title": "Nhật ký thay đổi tiếng Việt",
-   "owner": "Luna",
-   "status": "xong",
-   "note": "Đã gộp; mỗi bản mới thêm mục.",
-   "module": "ci"
-  },
-  {
-   "code": "V27",
-   "title": "Sửa link lõi 3DS bản 32-bit (404)",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "Báo động giả (lõi citra chỉ khai arm64). Lỗi của PM, đã đóng.",
-   "module": "libretro"
-  },
-  {
-   "code": "O03",
-   "title": "Rà soát độc lập toàn dự án",
-   "owner": "Tư vấn",
-   "status": "xong",
-   "note": "Gộp#21/3453741 sau LunaĐạt d275. Audit lịch sử149dòng/19phát hiện/48đềxuất; BuildmiễnV11 docs-only, không bảnghiệntrạng.",
-   "module": "ci"
-  },
-  {
-   "code": "V28",
-   "title": "Che dữ liệu riêng trong báo lỗi",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "Đã gộp (#23). Báo lỗi được che token, khóa, đường dẫn ở mọi chỗ lưu và gửi.",
-   "module": "diag"
-  },
-  {
-   "code": "V29",
-   "title": "Máy chủ báo lỗi lưu đủ thông tin",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "Đã gộp (#24). Máy chủ báo lỗi chưa triển khai lên Cloudflare (cần secret, Q4).",
-   "module": "diag"
-  },
-  {
-   "code": "V30",
-   "title": "Chặn phát hành bản ký debug",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "Đã gộp (#25): release không bao giờ phát bản ký debug.",
-   "module": "ci"
-  },
-  {
-   "code": "V31",
-   "title": "0.7.4 thành bản thử; sửa thông tin cập nhật app; K10 chặt",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "Config 36, mục app = 0.7.6",
-   "module": "ci"
-  },
-  {
-   "code": "V32",
-   "title": "Ghim phiên bản lõi giả lập (GB/GBA/NES)",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "#67 gộp7b45e57 sau Luna+CI; config33 ghim12ABI từ snapshotpublicđãđo. Game/ROM vàCloudsync chưa kiểm.",
-   "module": "libretro"
-  },
-  {
-   "code": "V33",
-   "title": "Bài kiểm theo đúng đường người dùng",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "Đã gộp (#26): máy ảo chạy đúng đường người dùng.",
-   "module": "ci"
-  },
-  {
-   "code": "L04",
-   "title": "Sửa lô tài liệu mâu thuẫn + sửa script kiểm link",
-   "owner": "Luna",
-   "status": "xong",
-   "note": "Đã gộp, gồm phần sửa HANDOFF sau V30.",
-   "module": "ci"
-  },
-  {
-   "code": "V34",
-   "title": "Kiểm config từ xa trước khi áp dụng",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "Đã gộp (#27).",
-   "module": "config"
-  },
-  {
-   "code": "V35",
-   "title": "Cài gói không mất bản cũ khi lỗi",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "Đã gộp: cài gói không mất bản cũ khi lỗi.",
-   "module": "config"
-  },
-  {
-   "code": "L05",
-   "title": "Test tự động bắt lỗi config",
-   "owner": "Luna",
-   "status": "xong",
-   "note": "Đã gộp.",
-   "module": "config"
-  },
-  {
-   "code": "L06",
-   "title": "Script kiểm chữ ký APK",
-   "owner": "Luna",
-   "status": "xong",
-   "note": "Đã gộp.",
-   "module": "ci"
-  },
-  {
-   "code": "V36",
-   "title": "Gói ONS (NScripter) sai bố cục nên chưa cài được",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "Đã gộp: gói ONScripter cài được.",
-   "module": "onscripter"
-  },
-  {
-   "code": "V37",
-   "title": "CI tự kiểm gói engine thật (thay PM tải tay)",
-   "owner": "Sol",
-   "status": "xong",
-   "module": "config",
-   "note": "Đã gộp: mỗi PR đụng gói đều được GitHub tự kiểm bằng gói thật."
-  },
-  {
-   "code": "L07",
-   "title": "Tiền duyệt mọi PR của Sol, Sonnet",
-   "owner": "Luna (nhận lại 07/10)",
-   "status": "lap",
-   "module": "ci",
-   "note": "Luna đã duyệt 9 PR trong 1 giờ"
-  },
-  {
-   "code": "L08",
-   "title": "Hướng dẫn thử nhanh trên điện thoại theo từng module",
-   "owner": "Luna",
-   "status": "xong",
-   "module": "ci",
-   "note": "Đã gộp: bảng thử nhanh theo module ở đầu docs/TEST-MAY-THAT.md."
-  },
-  {
-   "code": "L09",
-   "title": "Đồng bộ tài liệu sau mỗi tính năng mới",
-   "owner": "Luna (nhận lại 07/10)",
-   "status": "lap",
-   "module": "ci",
-   "note": "Luna đồng bộ HANDOFF (#49)."
-  },
-  {
-   "code": "S0",
-   "title": "Dựng thử engine Symbian trên CI",
-   "owner": "Sol",
-   "status": "xong",
-   "module": "symbian",
-   "note": "Native EKA2L1 đúng cf6e5c5 PASS37184987946, chỉ spike CI; chưa nhúng/chơi game, cache nóng chưa kiểm."
-  },
-  {
-   "code": "V38",
-   "title": "Gửi file khóa ký cho sếp để sao lưu",
-   "owner": "Sonnet",
-   "status": "xong",
-   "module": "ci",
-   "note": "Khóa đã nằm an toàn trong GitHub Secrets."
-  },
-  {
-   "code": "V39",
-   "title": "Bản tin trạng thái tự động chạy trên GitHub (PM đọc 1 file mỗi lượt)",
-   "owner": "Sol",
-   "status": "xong",
-   "module": "ci",
-   "note": "**xong** #48/#63; MAIN37196924569 xanh, bot6cdaf009 rootparents[]/đúnghai file verified. Không vòng lặpBuild; không suy từpreview."
-  },
-  {
-   "code": "L10",
-   "title": "Script tổng hợp trạng thái repo cho bản tin tự động",
-   "owner": "Luna",
-   "status": "xong",
-   "module": "ci",
-   "note": "Đã gộp."
-  },
-  {
-   "code": "V42",
-   "title": "GitHub tự kiểm hằng ngày (link, gói, test), lỗi thì mở issue",
-   "owner": "Sol",
-   "status": "xong",
-   "module": "ci",
-   "note": "Đã gộp: kiểm định kỳ hằng ngày, tự mở/đóng issue khi đỏ/xanh."
-  },
-  {
-   "code": "V41",
-   "title": "Dependabot/nâng thư viện",
-   "owner": "Sol",
-   "status": "xong",
-   "module": "ci",
-   "note": "Gộp #77 cd1963d (BOM 2025.03.01), #76 0fbe86d (upload-artifact v7), #78 52be109 (setup-gradle v6 basic) 06/10 23:1xZ. #75 chờ Sol đóng."
-  },
-  {
-   "code": "V40",
-   "title": "Thử chạy máy ảo ARM trên GitHub để test Kirikiri không cần máy sếp",
-   "owner": "Sol",
-   "status": "xong",
-   "module": "kirikiri",
-   "note": "Đã gộp. Kết luận: không có đường máy ảo ARM trên GitHub; máy ARM thật chỉ còn Firebase Test Lab (G9)."
-  },
-  {
-   "code": "V43",
-   "title": "Phát hành APK ký trên GitHub thay vì build trong phiên",
-   "owner": "Sol",
-   "status": "xong",
-   "module": "ci",
-   "note": "v0.7.5 phát hành 06/10 run 37395509233 xanh, prerelease, chứng thư khớp"
-  },
-  {
-   "code": "V44",
-   "title": "Sửa tương thích RPG Maker VX/VX Ace (lỗi script khi mở game)",
-   "owner": "Sol (tiếp quản Sonnet)",
-   "status": "xong",
-   "module": "rgss",
-   "note": "Đã gộp (#50). VX và VX Ace hết lỗi script: cả 3 game thật vào màn tiêu đề, New Game, tới cảnh hội thoại trên máy ảo (mức 1)."
-  },
-  {
-   "code": "V45",
-   "title": "Ren'Py 8: đăng gói và bật trong config (P4)",
-   "owner": "Nova",
-   "status": "dang",
-   "module": "renpy8",
-   "note": "Nova (5.5 xhigh) nhận từ Sol; 2 PR nháp, hạn 10/10 20:00"
-  },
-  {
-   "code": "V46",
-   "title": "Đúc skill để giảm 50% hạn mức (theo lệnh sếp)",
-   "owner": "Sol (tiếp quản Sonnet)",
-   "status": "xong",
-   "module": "ci",
-   "note": "Đã gộp (#51): 9 skill + CLAUDE.md gọn. Bước tiếp: lượt kiểm PM chạy phiên mới gọn."
-  },
-  {
-   "code": "V47",
-   "title": "Sync config lên Cloudflare đỏ (thiếu secret)",
-   "owner": "Sonnet (thay Sol)",
-   "status": "xong",
-   "note": "KV = configVersion 35 (#99). #104 đưa lên 36"
-  },
-  {
-   "code": "V48",
-   "title": "Bản tin nhận mẫu tiền duyệt Luna/Nova/Haiku",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "#83 gộp 73313e2. Còn: nhận mẫu Nova."
-  },
-  {
-   "code": "V49",
-   "title": "Phân loại 26 cảnh báo CodeQL",
-   "owner": "Sol (nhận lại 07/10)",
-   "status": "cho",
-   "note": "#109 gộp; chờ sếp đóng tay alert theo bảng V49.md",
-   "links": [
-    {
-     "label": "#86",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/86",
-     "kind": "pr"
-    },
-    {
-     "label": "#84",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/84",
-     "kind": "pr"
-    }
-   ]
-  },
-  {
-   "code": "V50",
-   "title": "Nâng nốt action v7/v6 cho workflow còn lại",
-   "owner": "Sonnet (thay Sol)",
-   "status": "xong",
-   "note": "#100 gộp ea2125f"
-  },
-  {
-   "code": "N00",
-   "title": "Nova: tiền duyệt dự phòng",
-   "owner": "Nova",
-   "status": "lap",
-   "note": "Thành viên mới Sonnet 5.5 medium (05/10). Duyệt PR chờ Luna quá 2 giờ."
-  },
-  {
-   "code": "N01",
-   "title": "Nova: sửa TEST-MAY-THAT mục RGSS",
-   "owner": "Nova",
-   "status": "xong",
-   "note": "#87 gộp 16260ad (Haiku Đạt)",
-   "links": [
-    {
-     "label": "#87",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/87",
-     "kind": "pr"
-    }
-   ]
-  },
-  {
-   "code": "N02",
-   "title": "Nova: CHANGELOG v0.7.5",
-   "owner": "Haiku",
-   "status": "xong",
-   "note": "#98 gộp 51c1462 (Nova Đạt)"
-  },
-  {
-   "code": "N03",
-   "title": "Nova: test EngineRoutes",
-   "owner": "Nova",
-   "status": "xong",
-   "note": "#92 gộp d1abfa5 (Haiku Đạt)",
-   "links": [
-    {
-     "label": "#92",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/92",
-     "kind": "pr"
-    }
-   ]
-  },
-  {
-   "code": "N04",
-   "title": "Nova: test cho script chưa có test",
-   "owner": "Luna (từ Nova 07/10)",
-   "status": "xong",
-   "note": "verify-apk-cert, prepare-core-pins, gen-architecture, crash-report-detail, cheats-index."
-  },
-  {
-   "code": "N05",
-   "title": "Nova: trang Thử nhanh 0.7.5 cho sếp",
-   "owner": "Haiku 5.5",
-   "status": "xong",
-   "note": "4 bài thử trên điện thoại."
-  },
-  {
-   "code": "N06",
-   "title": "Nova: đồng bộ tài liệu dự phòng",
-   "owner": "Luna (gộp vào L09)",
-   "status": "cho",
-   "note": "Thay L09 khi Luna vắng quá 2 giờ."
-  },
-  {
-   "code": "N07",
-   "title": "Nova: rà thông tin cũ trong tài liệu",
-   "owner": "Luna (từ Haiku 07/10)",
-   "status": "xong",
-   "note": "Phiên bản, configVersion, gói, phân vai."
-  },
-  {
-   "code": "V51",
-   "title": "Độ phủ test: Kover trong CI, báo % theo module",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "#103 gộp 438a79d. Mốc: dòng 47,1% · nhánh 31,2%",
-   "module": ""
-  },
-  {
-   "code": "N08",
-   "title": "Checklist cho tester ngoài + mẫu báo lỗi GitHub + bảng Google Sheet",
-   "owner": "Haiku soạn · Nova duyệt",
-   "status": "xong",
-   "note": "#106 chờ Nova duyệt",
-   "module": "",
-   "links": [
-    {
-     "label": "Hộp thư Haiku #94",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/issues/94",
-     "kind": "trang"
-    }
-   ]
-  },
-  {
-   "code": "N09",
-   "title": "Thêm test theo báo cáo độ phủ",
-   "owner": "Luna · Sol · Haiku · Haiku-2 · Nova",
-   "status": "cho",
-   "note": "Gộp: #116 Luna, #111 Sol, #117 Haiku (ffe7e7e), #123 Haiku-2 (a7f4ff3); #124 chờ test khóa giới hạn 5 bài",
-   "module": ""
-  },
-  {
-   "code": "V52",
-   "title": "Tách repo: phần riêng sang repo private, rà giấy phép GPL trước",
-   "owner": "Luna Ultra (rà giấy phép) · PM lập kế hoạch",
-   "status": "dang",
-   "note": "Sếp chốt R2 06/10",
-   "module": ""
-  },
-  {
-   "code": "V53",
-   "title": "Đóng thành phần j2me không cần mở từ ngoài (manifest :app)",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "#110 gộp 7dacebb"
-  },
-  {
-   "code": "V54",
-   "title": "Test độ phủ azahar + cài gói",
-   "owner": "Sol",
-   "status": "xong",
-   "note": ""
-  },
-  {
-   "code": "V55",
-   "title": "Kiểm định kỳ: configVersion trên Worker so với main",
-   "owner": "Sol",
-   "status": "xong",
-   "note": ""
-  },
-  {
-   "code": "L07-U",
-   "title": "Tiền duyệt PR của Luna, Haiku, Haiku-2",
-   "owner": "Luna Ultra",
-   "status": "lap",
-   "note": ""
-  },
-  {
-   "code": "V63",
-   "title": "Sửa bản tin digest/preview đỏ HTTP 403",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "#132 gộp 4dee745"
-  },
-  {
-   "code": "V62",
-   "title": "Đối chiếu chữ tài liệu với app",
-   "owner": "Luna Ultra",
-   "status": "xong",
-   "note": "#131 gộp 60758f5"
-  },
-  {
-   "code": "V64",
-   "title": "Sửa bộ nhớ resolver Kirikiri (chặn RC 0.7.7)",
-   "owner": "Sol (từ Sonnet)",
-   "status": "xong",
-   "note": "#142: Luna Ultra duyệt bù Đạt 14:00Z"
-  },
-  {
-   "code": "V58",
-   "title": "Chuẩn bị RC 0.7.7",
-   "owner": "Sol",
-   "status": "xong",
-   "note": "#128 gộp c6dee40"
-  },
-  {
-   "code": "V61",
-   "title": "Rà soát mã trước phát hành",
-   "owner": "Luna Ultra",
-   "status": "xong",
-   "note": "#130: tìm 1 lỗi chặn → V64"
-  },
-  {
-   "code": "V56",
-   "title": "Game thật trên máy ARM qua Test Lab",
-   "owner": "Sol",
-   "status": "dang",
-   "note": "K1 PASS, K2 SIGSEGV GLThread (Pixel 11/11 Pro API 37); Sonnet sửa lõi"
-  },
-  {
-   "code": "V57",
-   "title": "Nối test script N04 vào CI",
-   "owner": "Sol",
-   "status": "xong",
-   "note": ""
-  },
-  {
-   "code": "V65",
-   "title": "Bỏ .pyc khỏi repo",
-   "owner": "Sol",
-   "status": "xong",
-   "note": ""
-  },
-  {
-   "code": "V59",
-   "title": "Nhãn màn báo lỗi vào strings.xml",
-   "owner": "Sol",
-   "status": "xong",
-   "note": ""
-  },
-  {
-   "code": "V26b",
-   "title": "Báo rõ \"xp3 mã hóa\" thay cho NotFound",
-   "owner": "Sonnet",
-   "status": "xong",
-   "note": "#144 gộp: Luna + Luna Ultra Đạt, CI xanh"
-  },
-  {
-   "code": "L11",
-   "title": "CHANGELOG 0.7.7 + ghi chú phát hành",
-   "owner": "",
-   "status": "xong",
-   "note": "#145 gộp; còn nit + thêm V26b"
-  },
-  {
-   "code": "V60",
-   "title": "Rà soát CI trước phát hành RC",
-   "owner": "",
-   "status": "xong",
-   "note": "#146 gộp: periodic + Robo success"
-  },
-  {
-   "code": "L13",
-   "title": "Hướng dẫn người dùng bản ổn định",
-   "owner": "",
-   "status": "xong",
-   "note": "#149 gộp, Luna Ultra Đạt"
-  },
-  {
-   "code": "V52a",
-   "title": "V52a (Nova #122)",
-   "owner": "",
-   "status": "dang",
-   "note": "Quá hạn, chuyển Luna Ultra (luna-ultra/V52a), hạn 09/10 18:00"
-  },
-  {
-   "code": "V66",
-   "title": "Workflow phát hành tự tạo tag (A14)",
-   "owner": "Sol",
-   "status": "dang",
-   "note": "A15 chạy tối đa, mở 09/10"
-  },
-  {
-   "code": "V67",
-   "title": "Rà báo lỗi người dùng RC 0.7.7",
-   "owner": "Sol",
-   "status": "dang",
-   "note": "A15 chạy tối đa, mở 09/10"
-  },
-  {
-   "code": "V68",
-   "title": "Rà soát trước bản ổn định",
-   "owner": "Luna Ultra",
-   "status": "dang",
-   "note": "A15 chạy tối đa, mở 09/10"
-  },
-  {
-   "code": "L14",
-   "title": "CHANGELOG bản ổn định 0.7.7",
-   "owner": "Luna",
-   "status": "dang",
-   "note": "A15 chạy tối đa, mở 09/10"
-  },
-  {
-   "code": "L15",
-   "title": "TESTER-NGOAI + THU-NHANH 0.7.7",
-   "owner": "Luna",
-   "status": "dang",
-   "note": "A15 chạy tối đa, mở 09/10"
-  },
-  {
-   "code": "V69",
-   "title": "Lô UI/UX 7 điểm",
-   "owner": "Sol",
-   "status": "dang",
-   "note": "mở 09/10"
-  },
-  {
-   "code": "V70a",
-   "title": "Bộ nút chung + lún + rung",
-   "owner": "Sol",
-   "status": "dang",
-   "note": "mở 09/10"
-  },
-  {
-   "code": "V70b",
-   "title": "Menu trong game dùng chung",
-   "owner": "Luna",
-   "status": "dang",
-   "note": "mở 09/10"
-  },
-  {
-   "code": "V70c",
-   "title": "Tự chỉnh bố cục tay cầm (0.7.8)",
-   "owner": "Sol",
-   "status": "dang",
-   "note": "mở 09/10"
-  },
-  {
-   "code": "V71",
-   "title": "Sửa bộ kiểm thử máy ảo",
-   "owner": "",
-   "status": "dang",
-   "note": "Sol, hạn 09/10 12:00"
-  }
- ],
- "gates": [
-  {
-   "code": "G10",
-   "title": "Thanh toán GitHub Actions bị lỗi, CI dừng",
-   "when": "Ngay",
-   "status": "xong",
-   "note": "Sếp đã công khai repo + xóa 2 release rgss (03/10 16:35)."
-  },
-  {
-   "code": "G2",
-   "title": "5 game RPG Maker cho R6",
-   "when": "Sau R5",
-   "status": "xong",
-   "note": "Sếp gửi 5 game (03/10 20:05): The Reconstruction (XP), Star Stealing Prince (VX), In Search of Immortality (VX Ace), Pokémon Reborn 19, To the Moon Việt hóa."
-  },
-  {
-   "code": "G9",
-   "title": "Secrets Firebase Test Lab",
-   "when": "Khi tiện",
-   "status": "xong",
-   "note": "Sếp thêm secret 08/10; run 37721419669 xanh, Robo Passed trên 2 máy thật API 37 (cubs, grizzly).",
-   "links": [
-    {
-     "kind": "run",
-     "label": "Run 37721419669",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/actions/runs/37721419669"
-    }
-   ]
-  },
-  {
-   "code": "G8",
-   "title": "Giấy phép file dựng của bản port mkxp-z",
-   "when": "Trước R7",
-   "status": "xong",
-   "note": "Chủ dự án xác nhận G8 đã OK ngày05/10; đã gỡ điều kiện chờ trả lời giấy phép. Không mở rộng sang quyền phát hành engine ngoài phạm vi."
-  },
-  {
-   "code": "G4",
-   "title": "Symbian: A1, A2",
-   "when": "Khi tiện",
-   "status": "dang",
-   "note": "A1 coi như đồng ý theo Q1 (S0 chạy). A2 hỏi trên trang (G4A2)."
-  },
-  {
-   "code": "G7",
-   "title": "Thử lại Kirikiri 0.7.4 trên máy thật",
-   "when": "Gấp",
-   "status": "dang",
-   "note": "Ảnh chủ dự án 05/10 hiển thị app v0.7.3 với lỗi “Cannot find storage startup.tjs”. V26 đã phát hành 0.7.4 nhưng chưa có xác nhận thử lại Kara no Shoujo bằng 0.7.4; G7 tiếp tục mở."
-  },
-  {
-   "code": "G6",
-   "title": "Nhắn RAdmin duyệt client AowMonika (hardcore)",
-   "when": "Khi tiện",
-   "status": "sep",
-   "note": ""
-  },
-  {
-   "code": "G3",
-   "title": "2 game Ren'Py (bản 7 và bản 8)",
-   "when": "P6",
-   "status": "cho",
-   "note": ""
-  },
-  {
-   "code": "G1",
-   "title": "1 game RPG Maker XP",
-   "when": "—",
-   "status": "cho",
-   "note": "Không gấp: R3 đã dùng game tự sinh. Gộp vào G2."
-  },
-  {
-   "code": "G5",
-   "title": "Công khai mã nguồn trước khi phát hành gói GPL",
-   "when": "Trước phát hành",
-   "status": "xong",
-   "note": "Repo đã công khai. Còn chọn file LICENSE (không gấp)."
-  }
- ],
- "log": [
-  {
-   "t": "2026-10-08T18:58:58Z",
-   "text": "Ca đêm 01:57: gộp #139 (Haiku-2 test), đóng #122 (thay bởi #154). #157 sửa crash Kirikiri: Luna Đạt, chờ Luna Ultra. #151 V45a: Luna Ultra Cần sửa nhỏ (ghi run ID vào V45.md)."
-  },
-  {
-   "t": "2026-10-08T18:29:48Z",
-   "text": "Kiểm thử toàn bộ (sếp yêu cầu): GB/GBA/NES lên hình trên máy ảo; Kirikiri crash cả máy ảo lẫn 2 máy ARM thật (K2 SIGSEGV GLThread) → Sonnet; bộ máy ảo đỏ vì Kirikiri x86 + V33 fixture → Sol V71."
-  },
-  {
-   "t": "2026-10-08T17:59:48Z",
-   "text": "Ca đêm: gộp #146 (V60) và #152 (Nova N09-N test library). #151 V45(a) chờ Luna Ultra duyệt lần hai."
-  },
-  {
-   "t": "2026-10-08T17:52:47Z",
-   "text": "V70: sếp giao thiết kế lại tay cầm và menu thống nhất (lún, rung, tự chỉnh). Spec thiet-ke/V70. Sol V70a+V70c, Luna V70b, Luna Ultra duyệt UX. A16: V70c sang 0.7.8."
-  },
-  {
-   "t": "2026-10-08T17:47:10Z",
-   "text": "A15: đội ChatGPT chạy tối đa. Sol nhận V66 (workflow tự tạo tag, từ Sonnet), V67, F01/F02 (từ Gemini), N09-S, H02. Luna: L12, L14, L15, N09-L. Luna Ultra: V52a, V68, V52b. Sonnet chuyển sang lõi Kirikiri V18/V26."
-  },
-  {
-   "t": "2026-10-08T17:36:03Z",
-   "text": "Sếp nâng Nova lên Sonnet 5.5 xhigh. V45 Ren'Py 8 chuyển từ Sol sang Nova; Sol dồn V56 (hạn mới 10/10 12:00). Nova duyệt thêm PR tài liệu."
-  },
-  {
-   "t": "2026-10-08T17:27:57Z",
-   "text": "Gộp #150 (quyền Artifact). V52a chuyển từ Nova sang Luna Ultra do quá hạn 23:00."
-  },
-  {
-   "t": "2026-10-08T16:28:08Z",
-   "text": "Gộp #149 (L13 hướng dẫn người dùng). Nova đã sửa #122, chờ Luna duyệt lại. #146 (V60.md) chờ Luna."
-  },
-  {
-   "t": "2026-10-08T16:06:08Z",
-   "text": "v0.7.7 RC phát hành: run 37803788979 xanh, prerelease, APK 19135241 byte, SHA-256 a337a90b…, chứng thư khớp (Sonnet kiểm). M2 xong sớm."
-  },
-  {
-   "t": "2026-10-08T16:01Z",
-   "text": "A14: sếp giao PM tự phát hành (thử + ổn định). Sonnet sửa release.yml cho phép kích hoạt tự tạo tag + cổng tự động. v0.7.7 RC do sếp tạo release, run 37803788979."
-  },
-  {
-   "t": "2026-10-08T15:23Z",
-   "text": "Sonnet: không đẩy được tag v0.7.7 (proxy chặn). Chờ sếp tạo release v0.7.7 pre-release trên 33876712."
-  },
-  {
-   "t": "2026-10-08T15:14:25Z",
-   "text": "V60 xanh: periodic-check 37796099292, Test Lab Robo 37796105693 trên 9dc9774. Gộp #147 (CHANGELOG thêm V26b). RC 0.7.7 sẵn sàng, chờ sếp ra lệnh Sonnet phát hành."
-  },
-  {
-   "t": "2026-10-08T14:14:11Z",
-   "text": "Luna Ultra duyệt bù #142 (V64): Đạt. Gộp #144 (V26b: báo rõ xp3 mã hóa). RC 0.7.7 chỉ còn chờ V60 trên 9dc9774."
-  },
-  {
-   "t": "2026-10-08T13:15:12Z",
-   "text": "Gộp #145 (CHANGELOG 0.7.7). PM nhận thiếu: #142 gộp khi chưa có Luna Ultra duyệt lần hai, đã giao duyệt bù. Luật A12: PR chỉ sửa tài liệu miễn check bắt buộc."
-  },
-  {
-   "t": "2026-10-08T12:15:05Z",
-   "text": "Gộp #142 (V64, gỡ lỗi chặn RC 0.7.7) và #143 (V26 thư 005). Gọi sớm V60 (Sol) và L11 CHANGELOG (Luna), hạn 09/10 12:00. Sonnet gộp main vào #144."
-  },
-  {
-   "t": "2026-10-08T11:16:51Z",
-   "text": "Gộp #140 (Haiku-2 test download) và #141 (Luna, tài liệu). PM chốt: PR chỉ sửa tài liệu miễn Build/Coverage/CodeQL theo V11. V64 #142 và V26b #144 đã có PR."
-  },
-  {
-   "t": "2026-10-08T11:12:21Z",
-   "text": "Sonnet trả thư 005 (#143): chưa kết luận mã hóa hay thứ tự patch; PM duyệt V26b (báo rõ xp3 mã hóa). Kênh Sonnet: send_message kèm tên thư"
-  },
-  {
-   "t": "2026-10-08T10:14:43Z",
-   "text": "Gộp #138 (Haiku, browser 35,5→38,3%). V64 chuyển Sonnet → Sol vì chưa bắt đầu; RC 0.7.7 chờ V64. #139, #140 Cần sửa"
-  },
-  {
-   "t": "2026-10-08T09:14:45Z",
-   "text": "Gộp 3 PR của Sol: #129 V57 (test script vào CI), #135 V65 (bỏ .pyc), #137 V59 (nhãn báo lỗi vào strings.xml). Haiku, Haiku-2 lô test mới"
-  },
-  {
-   "t": "2026-10-08T08:14:43Z",
-   "text": "Gộp #134 (apkinstall.adb), #136 (gói gốc) của Haiku-2. Chốt digest/preview không chặn. Sol mở #135 V65, #137 V59; #129 sửa, chờ Luna"
-  },
-  {
-   "t": "2026-10-08T07:14:18Z",
-   "text": "Gộp #127 V56 (workflow Test Lab game thật, 4d711c0), #132 V63 (digest 403, 4dee745). Haiku-2 nhận apkinstall.adb + gói gốc. RC chờ V64 của Sonnet"
-  },
-  {
-   "t": "2026-10-08T06:15:06Z",
-   "text": "Gộp #128 V58 (0.7.7), #130 V61, #131 V62, #133 runner. V61 tìm lỗi bộ nhớ resolver Kirikiri → V64 (Sonnet) chặn RC. #127 xung đột, Sol sửa"
-  },
-  {
-   "t": "2026-10-08T05:14:24Z",
-   "text": "Gộp #124 (Haiku-2), #114 L09/N07 (Luna), #126 N08-fix (Haiku). digest/preview đỏ 403 cả main → Sol V63 ưu tiên 0. Sol mở #127 V56, #128 V58, #129 V57 chờ Luna"
-  },
-  {
-   "t": "2026-10-08T04:14:01Z",
-   "text": "Gộp #123 (Haiku-2), #118 N05 (Nova), #117 (Haiku, PM nhận). #124 chờ test; #122, #114 Cần sửa"
-  },
-  {
-   "t": "2026-10-08T04:09:08Z",
-   "text": "Sếp duyệt RC 0.7.7; gửi danh sách file Kara no Shoujo (không có xp3filter.tjs) → thư Sonnet 005. PM thêm SRI cho landing (alert 26)"
-  },
-  {
-   "t": "2026-10-08T03:57:23Z",
-   "text": "Nước rút tới CN 11/10: lịch kiểm lệch phút, Sol 6 việc (V56–V60), Luna 5 việc; trang tiến độ có sơ đồ Văn phòng"
-  },
-  {
-   "t": "2026-10-08T03:43:49Z",
-   "text": "Sếp bổ sung Luna Ultra (hộp thư #119) và Haiku-2 (#120). Luna Ultra duyệt PR Luna/Haiku/Haiku-2 + rà giấy phép V52; Haiku-2 test download/translate/notify/runner"
-  },
-  {
-   "t": "2026-10-08T03:39:57Z",
-   "text": "Test Lab chạy được: run 37721419669 xanh, robot 10 phút trên 2 máy thật API 37 (cubs, grizzly), cả hai Passed"
-  },
-  {
-   "t": "2026-10-08T03:37:37Z",
-   "text": "Sếp nâng Haiku 4.6 → Haiku 5.5 ultracode; prompt PROMPT-HAIKU-55.md: test độ phủ cheats/browser, N05, duyệt dự phòng PR Luna"
-  },
-  {
-   "t": "2026-10-08T03:24:54Z",
-   "text": "Thêm khối Đội ngũ (9 thành viên) vào trang tiến độ theo yêu cầu sếp"
-  },
-  {
-   "t": "2026-10-08T03:18:33Z",
-   "text": "Sonnet duyệt thay Nova: gộp #115 N04 (a07e5c7), #116 N09 (8cad51b); #114 Cần sửa. Test Lab run 37721419669 đang chạy (sếp đã set khóa)"
-  },
-  {
-   "t": "2026-10-08T03:13:27Z",
-   "text": "Gộp #110 V53 (7dacebb). Nova vắng >2h: nhờ Sonnet tiền duyệt #114–#116 của Luna"
-  },
-  {
-   "t": "2026-10-08T01:15:37Z",
-   "text": "Gộp 7 PR: #107 G7B, #106 N08, #108 V48, #109 V49, #111 V54, #112 V50, #113 V55. Giữ #110 (V53) kiểm lối tắt. Luna mở #114–#116 chờ Nova"
-  },
-  {
-   "t": "2026-10-08T00:13:31Z",
-   "text": "Sol mở 6 PR (#108–#113: V48, V49, V53, V54, V50, V55) chờ Luna duyệt; Luna 'Cần sửa' #107 (phạm vi, PM đã xác nhận) và #106 (Haiku đã sửa 8df30a1)"
-  },
-  {
-   "t": "2026-10-07T23:38:24Z",
-   "text": "Sol, Luna quay lại sớm theo sếp: Luna tiền duyệt #107, #106 trước; Sol 6 việc (V48, V49, V53, V54, V50, V55)"
-  },
-  {
-   "t": "2026-10-07T10:14:13Z",
-   "text": "Sếp thêm CRASH_ADMIN_TOKEN; Sonnet deploy Worker mới (32c145c4), chờ sếp bấm Báo lỗi lại. #107 chờ Nova"
-  },
-  {
-   "t": "2026-10-07T05:13:44Z",
-   "text": "Nova quay lại. PM gộp #98 (N02 CHANGELOG, 51c1462). #106 N08 chờ Nova"
-  },
-  {
-   "t": "2026-10-06T16:28:34Z",
-   "text": "Haiku chạy lại. PM gộp #92 (N03, d1abfa5) và #87 (N01, 16260ad). #98 Haiku đã sửa (21114ad), #106 N08 chờ Nova"
-  },
-  {
-   "t": "2026-10-06T10:15:16Z",
-   "text": "PM gộp #86 (0171920, thông báo V49) và #105 (34620c3, release.yml setup-gradle v6) — Haiku Đạt, CI xanh"
-  },
-  {
-   "t": "2026-10-06T09:14:23Z",
-   "text": "Gộp #103 (độ phủ test, Kover). #86 và #105 chờ duyệt."
-  },
-  {
-   "t": "2026-10-06T08:14:35Z",
-   "text": "Gộp #104 (config 0.7.6), #100 (action v6), #99 (V47), #96 (timeout). #86 chờ sửa theo Nova."
-  },
-  {
-   "t": "2026-10-06T07:14:50Z",
-   "text": "Sonnet thiếu CRASH_ADMIN_TOKEN nên chưa đọc được báo cáo G7B. Hỏi sếp (câu TOK)."
-  },
-  {
-   "t": "2026-10-06T07:14:10Z",
-   "text": "G7B: 0.7.6 vẫn lỗi startup.tjs, sếp đã gửi báo cáo. R1, R2 đã chốt. Haiku duyệt dự phòng PR Sonnet (Nova vắng)."
-  },
-  {
-   "t": "2026-10-06T06:28:27Z",
-   "text": "v0.7.6 phát hành: run 37419192387 xanh, prerelease, chứng thư khớp, SHA 0f3926a5…ffcf2. Chờ sếp thử Kara no Shoujo (G7B)."
-  },
-  {
-   "t": "2026-10-06T05:42:54Z",
-   "text": "Báo động ngân sách (lệnh sếp): #102 gộp, thêm luật chung + skill tien-duyet, kiem-phat-hanh. PM kiểm thư giảm xuống 60 phút/lần."
-  },
-  {
-   "t": "2026-10-06T05:40:35Z",
-   "text": "Sếp: tăng độ phủ test, tuyển tester ngoài (V51, N08, N09). Hỏi sếp R1 (nơi để firmware/ROM) và R2 (tách repo riêng/công khai). Release v0.7.6 đang chạy."
-  },
-  {
-   "t": "2026-10-06T05:13:49Z",
-   "text": "Gộp #95 (config app 0.7.5, configVersion 35) và #84 (CodeQL inventory chỉ đọc), Haiku Đạt + PM duyệt. v0.7.6 vẫn chờ sếp tạo tag."
-  },
-  {
-   "t": "2026-10-06T03:14:00Z",
-   "text": "Sonnet bị chặn đẩy tag v0.7.6 (Production Deploy). Nhờ sếp tạo release v0.7.6 trên web (câu TAG)."
-  },
-  {
-   "t": "2026-10-06T03:13:21Z",
-   "text": "Gộp #97 (0.7.6, Haiku Đạt + PM duyệt) → 4a1486e. Giao Sonnet tag v0.7.6 và chạy phát hành 1 lần (A13)."
-  },
-  {
-   "t": "2026-10-06T02:13:23Z",
-   "text": "Sếp chốt A13 (phát hành 0.7.6), H1 (Haiku đã vào), T1 (đã tắt lịch trùng). G9: PM gửi prompt cho Claude in Chrome."
-  },
-  {
-   "t": "2026-10-06T01:57:19Z",
-   "text": "01:57Z: gộp #93 (Nova Đạt + PM duyệt) → c3489f3. Sếp đã đặt v0.7.4 là pre-release (Q4). Sonnet: #95 config 0.7.5, #86, #84 đã đẩy, chờ CI + Nova."
-  },
-  {
-   "t": "2026-10-06T01:51:55Z",
-   "text": "01:52Z: Sol, Luna nghỉ tới 10/10. Chia việc: Sonnet (V31(3), #84, #86, V47, V50), Nova (tiền duyệt, V48), Haiku (tiền duyệt PR Nova, L09, N02, N07). Trang thêm mục Điểm nghẽn và link kèm mỗi câu hỏi."
-  },
-  {
-   "t": "2026-10-06T01:43:16Z",
-   "text": "01:45Z: sếp chốt G4A2 = chỉ zip cấu hình sẵn trước. #93 chờ Nova duyệt (head 5fe1a1f, CI xanh)."
-  },
-  {
-   "t": "2026-10-06T01:14:39Z",
-   "text": "01:15Z: gộp #91 (Nova Đạt + PM duyệt) → ac7a843; #93 đổi base main, Sonnet gộp main + ghi basename; #92 Nova CI đỏ."
-  },
-  {
-   "t": "2026-10-06T00:59:16Z",
-   "text": "00:58Z: v0.7.5 phát hành xanh (run 37395509233), prerelease, chứng thư khớp. Mở V31(3) Sol, N02 Nova."
-  },
-  {
-   "t": "2026-10-06T00:43:41Z",
-   "text": "00:45Z: Nova duyệt Đạt #88, #85 → PM gộp. Báo Sonnet chạy lại release v0.7.5 (A8)."
-  },
-  {
-   "t": "2026-10-06T00:13:38Z",
-   "text": "06/10: G7 0.7.4 vẫn lỗi startup.tjs (ảnh sếp). Sếp chỉ định Nova duyệt #88. Mở issue #90 hộp thư PM↔Nova + prompt kiểm thư Nova."
-  },
-  {
-   "t": "2026-10-06T00:08:51Z",
-   "text": "06/10: sếp đồng ý A8 (chạy lại release 0.7.5 sau #88). Ảnh lỗi G7 cho thấy máy đang chạy 0.7.3, chưa phải 0.7.4."
-  },
-  {
-   "t": "2026-10-05T23:15:25Z",
-   "text": "23:14Z: gộp #77, #76, #78 (Dependabot). #85 Ren'Py menu synthetic xanh, PM duyệt chờ Luna. #84 yêu cầu bỏ quyền ghi."
-  },
-  {
-   "t": "2026-10-05T20:28:45Z",
-   "text": "20:28Z: gộp #83, #82 (Luna Đạt + CI). Release v0.7.5 đỏ ở bước kiểm chứng thư → #88 sửa, chờ duyệt + A8. G7: 0.7.4 không vào được game → Sonnet V26."
-  },
-  {
-   "t": "2026-10-05T16:51:04Z",
-   "text": "Sếp chốt A6: Nova Đạt = Luna Đạt khi Luna vắng >2 giờ. Giao Nova thêm N03–N07 (thư nova-001)."
-  },
-  {
-   "t": "2026-10-05T16:47:05Z",
-   "text": "Sếp bổ sung thành viên Nova (Sonnet 5.5 medium): tiền duyệt dự phòng N00, việc N01 tài liệu RGSS, N02 CHANGELOG. Prompt: hop-thu/PROMPT-NOVA.md."
-  },
-  {
-   "t": "2026-10-05T16:28:31Z",
-   "text": "16:28Z: Sol mở #82–#86 (V47, V48, V49×2, V45). Chưa có Luna review. #81 xanh từ 15:45Z nhưng Sonnet chưa gộp/phát hành (phiên Sonnet idle từ 15:38Z)."
-  },
-  {
-   "t": "2026-10-05T15:57:01Z",
-   "text": "Sếp thêm CLOUDFLARE_API_TOKEN; Sync config lên Cloudflare xanh (run 37261093978 lần 2). Bỏ mục xóa engines-rgss-6 khỏi Q4 vì config 34 đang dùng gói này."
-  },
-  {
-   "t": "2026-10-05T15:47:30Z",
-   "text": "Theo lệnh sếp tăng việc cho Sol: thư sol-011 giao V47 (sync Cloudflare đỏ do thiếu secret), V31(3) sau 0.7.5, V48 parser bản tin, V49 CodeQL 26 cảnh báo, V45 kiểm trên CI, V50 nâng action."
-  },
-  {
-   "t": "2026-10-05T15:40:39Z",
-   "text": "PM mới (phiên session_01EAtBeD…) nhận việc 15:40Z. Lịch kiểm thư mới (ngày 30', đêm 60'). PM duyệt #76/#77/#78, đồng ý đóng #75, trả lời SOL-012 (#62). #81 0.7.5 đang chờ build."
-  },
-  {
-   "t": "2026-10-05T15:35:00Z",
-   "text": "Sếp đồng ý phát hành 0.7.5 bản thử. Sonnet (phiên mới) mở PR #81 nâng phiên bản; PM duyệt; sau khi CI xanh Sonnet gộp, chạy phát hành trên GitHub và kiểm chứng thư ký."
-  },
-  {
-   "t": "2026-10-05T15:35:00Z",
-   "text": "PM (Opus) nhận lại điều phối theo lệnh sếp; Sol dừng tiếp quản (issue #65) và quay về app/CI/config/gói. PM rà kết quả của Sol: 23 PR gộp đúng quy trình (Luna xem + CI xanh), không vi phạm luật ký/phát hành."
-  },
-  {
-   "t": "2026-10-05T15:35:00Z",
-   "text": "Trong lúc Sol tiếp quản (04–05/10): V44 sửa xong RPG Maker VX/VX Ace; V25, V16, V21 D5, V22, V32, V46 đã gộp; V43 chạy thử ký trên GitHub thành công."
-  },
-  {
-   "t": "2026-10-05T05:54:40Z",
-   "text": "PM docs #71 merged 2c4ddd3 after Luna review5988269621 and exact-head Build37262788942/docs checks37263165134 green. Main now includes #79 L09 docs update4b2aa8f. V43 single dry-run37261174377 SUCCESS, release skipped/no artifacts; G7 0.7.4 retest pending. Audit findings remain recorded in issue65."
-  },
-  {
-   "t": "2026-10-05T04:08:32Z",
-   "text": "V43 authorized single dry-run37261174377 SUCCESS on main2493ec0: signing_dry_run and verify-apk-cert passed; release job skipped; artifact list empty. No release/tag/APK upload."
-  },
-  {
-   "t": "2026-10-05T03:56:05Z",
-   "text": "#73 V16 merged ef6b8c0 after Luna+exact CI; config34 RGSS pin. #72 V43 merged 2493ec0; exactly one owner-authorized main dry-run dispatched as run37261174377, signing_dry_run still in progress and release job skipped at 03:56Z. No release/tag/APK upload."
-  },
-  {
-   "t": "2026-10-05T02:23:04Z",
-   "text": "Owner approved exactly one V43 main dry_run after PR72 Luna+merge; Build37253552086 SUCCESS. V16 PR73 exact f524 Build37254516080/realpacks37254516114/CodeQL37254516059 SUCCESS, Luna pending. G8 confirmed; G7 screenshot is 0.7.3 startup.tjs, 0.7.4 retest unconfirmed."
-  },
-  {
-   "t": "2026-10-05T02:14:12.883060Z",
-   "text": "Owner05/10 confirms V43 approve exact one main dry_run after Luna/merge; G8OK; G7 screenshot0.7.3 startup.tjs failure. V16 sees public engines-rgss-6 source/hash/size/HEAD200; PR73 config34 ARM64 keepJoiplay, CI/Luna pending. No engine publication."
-  },
-  {
-   "t": "2026-10-05T02:06:39.070087Z",
-   "text": "Owner05/10 approvedV43 dry-runonly; #72 Build37253552086green/Lunapending, then one main dry_run=true no publish. G8owner reports OK; V16 still verify public RGSS URL/V12 beforeconfig. G7 newreport+image is v0.7.3 Cannot find storage startup.tjs;0.7.4 testunconfirmed."
-  },
-  {
-   "t": "2026-10-05T02:00:35.545091Z",
-   "text": "#50mergecommitca8 sauLuna f740 vàactingPMduyệt5986819733; Build/R6/CodeQL/signalsattempt2SUCCESS, actualcontrolmarker/orange/PixelCopyproof. Ownerkeyexistsconfirmed; #72V43chuẩnbịdry_runmain-only,nopublish;9fakeguardsPASS,actualdispatchownerngoạilệvẫnSOL012. PMdocsheadmớicầnLuna, khôngfakeaudio/full5."
-  },
-  {
-   "t": "2026-10-05T01:50:37.500648Z",
-   "text": "SửaLunac55 snapshotCI:Build/R6/CodeQLf740SUCCESS; R6artifact11320593801đãxemXP369/VX339/Ace382sPASSmức1. Signalsattempt1forkOOMexit126trướcgame/control, singlejobretrycùnghead/assertions đangchạy; khônggọicảCIxanh. Lunas5986720042expectationkhớpproof nhưngcầnxửlýsignals; docsheadmớicầnLuna trướcmerge."
-  },
-  {
-   "t": "2026-10-05T00:51:51.623670Z",
-   "text": "Đãxem R6@dd01/art11316984731 XP306/VX274/Ace298s PASSmức1; VXNewGame→scene+hội thoại, noerror. Native11318190058 regexp-result3+marker/orange/PixelCopyPASS. JobFAIL vìexpectvx cũ; actingPMchốtremoveVX vàpushf740, giữmọingưỡng/assertions. CầnCIheadmới/Lunafresh; full5/audio/save-load/FPS/máythật chưakiểm."
-  },
-  {
-   "t": "2026-10-04T22:57:08.399362Z",
-   "text": "SửaLuna185 snapshotstale:871R6hoàntất XP388/Ace381 mức1,VX367FAILsize/Regexp2174, width1633qua. Native11316493179getter17+marker/orange/PixelCopyPASS. C4masked2174choRegexpLiteral/resultsize; dd01appfix chungSTRwidth/RegexpSize grammarbounded, local122/20/6PASS, nativefixturecompile-only. Neednative/R6/Lunafresh, khônggameplayclaim/expectationlowering."
-  },
-  {
-   "t": "2026-10-04T22:57:08.399362Z",
-   "text": "#70gộpf4ebd0b sauLunaĐạt f40f89c+docschecks; V11BuildskipkhôngunitappPASS. #50head871 sửaCALL SPACE (StringLiteral).width theo maskedcd0+synthetic1.8.7/3.1.7, local110/20/6PASS/nativefixturecompile-only. Cầnnative/R6/Lunafresh, chưaclaimVXrecovery; R6cd0 supersededkhônggreen."
-  },
-  {
-   "t": "2026-10-04T22:57:08.399362Z",
-   "text": "R6@00bfe hoàn tất: XP372/Ace381 mức1PASS; VX439 FAILNoMethodError96:1633 (width/String) sauNewGame, đãqua slice137:118. Native11314836860 slice mutation+marker/orange/PixelCopyPASS; compile1570errorkhônggameplay. Headcd0 sửaLuna trigger/probe-missing/privacy20, thu masked1633; khôngđổiexpectfail/threshold."
-  },
-  {
-   "t": "2026-10-04T22:57:08.399362Z",
-   "text": "Head00bfe sửa slice! (/Regexp/) !=nil trongRAM: MRI1.8.7 so sánh kếtquả, MRI3.1.7 đưaBoolean vàoarg; proofmasked137:118 + synthetic thật. GuardmộtCALL/mộtline/literalRegexp/nilcomparison, commonbudgetgiữnguyên, nativefixtureStringmutation mới. Local98/19/6PASS; CI/R6/native pending, khôngđổiexpectfail."
-  },
-  {
-   "t": "2026-10-04T20:34:41.826757Z",
-   "text": "R6@808 đã xem ảnh/log/verdict11313582885: VX trướcphím cótitle, sauNewGame FAIL slice! TypeError137:118; XP370/Ace372 mức1PASS. Đã vượt Range957. Head131 guardconstants/proof/diagnostic mới, local87/18/6PASS; không đổiexpectfail. Bằng chứngClass.constants lexical1.8.7 đã chạy thật, khôngclaim1.8.1/fullSDK."
-  },
-  {
-   "t": "2026-10-04T20:17:40.250832Z",
-   "text": "808 Build37230428845/CodeQL37230428849/native37230428853 SUCCESS; native11312749848 kiểm predicate Integer/Range identity/exclusive+eval/accessor/orange/PixelCopy thật. R6pending. Fixture1.8.7 thật xác nhận Class.constants đọc constants lexical trongclassbody qua Module.singleton rb_mod_s_constants; 3.1.7 không, chưađo1.8.1. Guard Class.constants override đang chuẩn bị, không push hủy R6."
-  },
-  {
-   "t": "2026-10-04T20:02:06.172666Z",
-   "text": "#50 head808 sửa đúng khác biệt parser predicate-spacing Ruby1.8.7→3.1.7 trên RAM, local82Ruby18/18privacy/6probe PASS. Proof8a7: XP360/Ace373 mức1, VX65 FAIL957, native attempt2 đạt; attempt1 không có report, không claim sửa startup. Cần CI808/native/R6/Luna. Sửa headline/M1 PM cũ theo Luna4fb, giữ phần trăm chưa đo lại và lịch sử."
-  },
-  {
-   "t": "2026-10-04T19:44:34.082693Z",
-   "text": "#50 đã merge main345 giữparent; head8a7 chỉ diagnostic CI-only ngoài game, không appasset phát hành. Build/CodeQL xanh. Native lần1 đỏ thiếu XP report trước control, đã xem artifact11312638669, rerun nguyên assert cùng head. R6/probe chưa xong; không claim VX recovery. #70 đồng bộ snapshot thực tế, Gemini/SOL012 giữ cổng."
-  },
-  {
-   "t": "2026-10-04T18:56:34.359703Z",
-   "text": "Đã đọc Luna18:51 và ảnh/log/verdict R6@46b: XP266/Ace294 đạt mức1, VX64 vẫn FAIL ArgumentError96:957 sau setter934. Native accessor17/23/eval/PixelCopy thật PASS. #50 head84aa chỉ thu Range masked/proof; PM70 sửa trạng thái theo Luna7e. Chưa merge50/70; không đổi expect_fail."
-  },
-  {
-   "t": "2026-10-04T18:06:36Z",
-   "text": "Gộp#21/3453741 sau LunaĐạt đúngd275: giữaudit snapshotlịch sử, BuildmiễnV11docs-only ghiđúng. #50head94e chỉthêm maskedinspect895/915 tìm nguồn accessor; download/hash bằngreadtoken đãPASS@3554, cònCI/native/R6latest."
-  },
-  {
-   "t": "2026-10-04T17:56:53Z",
-   "text": "Đọc artifact11310460101/11309546982: XP358/Ace379PASSmức1, VX65FAIL NoMethodError96:934, nativeevalcontext+PixelCopyPASS. Xử lý Luna17:46: #50head3554 chỉreadtoken/artifactRGSS7ghimhash, CI đang chạy. #70 sửa trạngthái hoàn tất, cầnreview mới. #21 LunaĐạt snapshot, chưaBuild; SOL012/Gemini giữcổng."
-  },
-  {
-   "t": "2026-10-04T17:13:20Z",
-   "text": "Đãxemảnh/log/verdict635:VX runtimeeval96:951FAIL, khôngsuycompile0lỗi=gameplay. #50head7bf bọcđốisốeval tại callsite trongRAM/boundedAST+cache, 55testsPASSlocal; nativefixture/R6 đang chạy. Luna khôngcóreviewmới khi kiểm16:48, chưamerge50/70."
-  },
-  {
-   "t": "2026-10-04T16:10:35Z",
-   "text": "V446357e07: Build37215280550 xanh, diagnostic11308302026 xác nhận157scriptVX/0SyntaxError dưới sharedbudget512/64MiB. Runtime chưa xong, Luna cầnheadmới. Git/gh môi trường401; connector cònhoạt động, khôngđọc/sửa token."
-  },
-  {
-   "t": "2026-10-04T15:51:52Z",
-   "text": "Gộp#66 sau Luna+CI; R6 đúng9df XP/Ace PASSmức1, VXFAIL/còn1SyntaxError. #50 sửa shared64MiB bytebudget theo Luna, test28+privacy6 localPASS, CI mới đang chạy. Lịch kiểmtra60phút enabled/chốngtrùng; Gemini standby."
-  },
-  {
-   "t": "2026-10-04T14:13:00Z",
-   "text": "Gộp#58coroutines/#67pins/#56setupjava/#55setupgcloud theoLuna+CI+PMreview riêng. #64đóng vì57đãgộp. V44 Buildmới xanh, runtimechờ. Tái sinh landing byte-identical/15assetverify, sửa generator thiếuassets ởcheckout sạch."
-  },
-  {
-   "t": "2026-10-04T11:36:00Z",
-   "text": "Tiếp quản: gộp#63/#61/#60/#46/#57/#51/#44 sau Luna/CI. Snapshot12core công khai; PR#67 pinconfig và#58 coroutines1.9.0 CI xanh chờreview. V44 VXshape xanh, runtime đang chạy. GeminiF01/F02 chưa kích hoạt."
-  },
-  {
-   "text": "Lệnh chủ dự án: Sol tiếp quản tạm PM/Sonnet; Luna tiếp L07/L09; Gemini Flash chuẩn bị F01/F02, chưa kích hoạt. Issue65.",
-   "t": "2026-10-04T10:55:29Z"
-  },
-  {
-   "t": "2026-10-04T08:40:00Z",
-   "text": "Sol gộp 6 PR đã duyệt: V39 bản tin tự động, V40, V41 Dependabot + CodeQL, V42 kiểm định kỳ, V32 workflow chụp lõi, V21 D4. Dependabot mở 3 PR đầu tiên → giao Sol xử lý theo luật (bản lớn chờ PM)."
-  },
-  {
-   "t": "2026-10-04T08:09:00Z",
-   "text": "V46: phiên Sonnet bị bộ kiểm duyệt chặn sửa file skill; sếp đổi chế độ phiên, Sonnet đã sửa xong và chuyển PR #51 sang sẵn sàng."
-  },
-  {
-   "t": "2026-10-04T08:09:00Z",
-   "text": "PM xem bằng chứng 3 game RPG Maker thật trên máy ảo: XP chơi tới hội thoại; VX lỗi cú pháp Ruby 1.8; VX Ace thiếu user32 → V44. Yêu cầu Sol sửa job tự kết luận (#44) và bớt quyền token (#46)."
-  },
-  {
-   "t": "2026-10-04T07:41:00Z",
-   "text": "Sếp xác nhận khóa ký đã có trong GitHub Secrets → V38 xong. Giao Sol chạy thử ký trên GitHub và so chứng thư (V43 bước 1)."
-  },
-  {
-   "t": "2026-10-04T07:40:00Z",
-   "text": "Đo hạn mức thật: mỗi lượt kiểm của PM ~15 triệu token, gần hết là đọc lại ngữ cảnh dài. Giao Sonnet V46 (đúc skill, phiên mới) để chạy lượt kiểm trong phiên gọn, đích giảm ≥50%."
-  },
-  {
-   "t": "2026-10-04T07:36:00Z",
-   "text": "GitHub Pages chạy (landing tải app). Gộp V36, L10, Ren'Py P2. PM duyệt 8 PR, trả lời 4 thư hỏi của Sol, giao Sonnet V44, Sol V45. V38 kẹt: không tìm thấy file khóa ký."
-  },
-  {
-   "t": "2026-10-04T05:04:00Z",
-   "text": "Gộp V35, V37, phần mã V32. PM duyệt V36 (ONScripter cài được), L10 (script bản tin), Ren'Py 8 P2. Sol mở V42 (kiểm hằng ngày) và đang dựng thử Symbian (S0)."
-  },
-  {
-   "t": "2026-10-04T04:33:00Z",
-   "text": "Mở thêm trang tiến độ công khai: ai có link đều xem được, không cần đăng nhập."
-  },
-  {
-   "t": "2026-10-04T04:31:00Z",
-   "text": "Luna gộp hướng dẫn thử nhanh theo module (L08) và bắt đầu tiền duyệt PR. PM yêu cầu sửa script bản tin (L10); PR Ren'Py 8 chờ Sonnet ghi số APK."
-  },
-  {
-   "t": "2026-10-04T03:59:00Z",
-   "text": "Sol mở 4 PR (V32, V36, S0, V37). PM duyệt V37 và phần mã V32; trả lời 2 thư hỏi của Sol (cho phép S0, game thử V25, tự đăng lõi lên repo packs); V36 yêu cầu sửa nhỏ. Ren'Py 8 P2 chờ Luna tiền duyệt."
-  },
-  {
-   "t": "2026-10-04T03:26:00Z",
-   "text": "Gộp V30, V33, V34. PM duyệt V35 sau khi kiểm lại gói thật. Sol mở PR V37 (CI kiểm gói thật), Sonnet mở PR Ren'Py 8 P2."
-  },
-  {
-   "t": "2026-10-04T03:24:00Z",
-   "text": "Theo lệnh tận dụng GitHub: giao Sol V39 (bản tin tự động), V40 (thử máy ảo ARM), V41 (CodeQL, Dependabot), V42 (kiểm hằng ngày); Luna L10 (script bản tin); V43 phát hành trên GitHub khi có secret."
-  },
-  {
-   "t": "2026-10-04T02:58:00Z",
-   "text": "Đọc câu trả lời của sếp trên trang: Q1 làm engine song song → mở lại V17 (Sonnet), thêm S0 Symbian (Sol); Q2 → V38 Sonnet gửi file khóa; Q6 → ghi Máy thật cho máy cổ điển và game Java."
-  },
-  {
-   "t": "2026-10-04T02:55:00Z",
-   "text": "Phân vai mới: Sonnet chỉ code lõi (V21, V22, V25, V32, phần config của V31 chuyển Sol). Thêm V37 (CI kiểm gói thật), L07 (Luna tiền duyệt PR), L08, L09. Luna gộp L05, L06. PM chuyển sang kiểm 30 phút/lần."
-  },
-  {
-   "t": "2026-10-04T02:44:00Z",
-   "text": "Trang tiến độ đổi cách trình bày: thêm mục trả lời câu hỏi, chia tiến độ theo 12 module game và 7 chức năng app. Q3 không cần quyết nữa (V28 đã gộp)."
-  },
-  {
-   "t": "2026-10-04T02:37:00Z",
-   "text": "Sol cũ để lại bàn giao (PR #22, 08:11) rồi dừng; V28–V35 đều do Sol mới làm, không trùng. Gộp V28, V29, L02, L04. PM duyệt V34, L05, L06; yêu cầu sửa V35 (gói 3DS thật không qua kiểm). Thêm V36 (gói ONS)."
-  },
-  {
-   "t": "2026-10-04T01:37:00Z",
-   "text": "Sol mở 4 PR (#23–#26: V28, V29, V30, V33), PM duyệt cả 4 (#26 chờ bài kiểm xanh). Luna gộp H04–H07, L01, L03; PR #18 (L02) duyệt."
-  },
-  {
-   "t": "2026-10-04T01:10:00Z",
-   "text": "V19 xong (báo lỗi RPG Maker đúng engine), V20 xong (PR #22 gộp). Prompt mới cho Sol/Luna: đọc thư 60 phút, tự làm dài; giao thêm V34, V35, L05, L06."
-  },
-  {
-   "t": "2026-10-04T00:52:00Z",
-   "text": "Sonnet sửa quyền Emulator Test để đọc được gói RPG Maker bản nháp (V19)."
-  },
-  {
-   "t": "2026-10-04T00:06:00Z",
-   "text": "Bản rà soát sửa lại: bỏ phần pháp lý (sếp tự lo), còn 19 phát hiện. PM cập nhật phản hồi, hủy việc kiểm kê giấy phép."
-  },
-  {
-   "t": "2026-10-03T23:43:00Z",
-   "text": "Sonnet làm V31: K10 chặt, release mặc định là bản thử. Sol xong phần 4 V20 (PR #22 duyệt)."
-  },
-  {
-   "t": "2026-10-03T23:22:00Z",
-   "text": "Rà soát độc lập O03 nộp báo cáo: XA ĐÀ NẶNG, 23 phát hiện. PM đồng ý, gỡ link game thương mại khỏi repo, chia 8 việc sửa, đóng băng engine mới chờ sếp."
-  },
-  {
-   "t": "2026-10-03T22:42:00Z",
-   "text": "Sonnet phát hành 0.7.4 (sửa Kirikiri). PM miễn kiểm CI, đã gửi APK cho sếp thử. Duyệt 6 PR của Luna, đóng 4 PR trùng của Haiku. Sol gộp PR #6, #8."
-  },
-  {
-   "t": "2026-10-03T15:53:00Z",
-   "text": "Sonnet đẩy V26 (chọn đúng karanoshojo.xp3, config 32, có test). PM duyệt, yêu cầu kiểm nạp bản vá Việt hóa trước khi phát hành."
-  },
-  {
-   "t": "2026-10-03T15:31:00Z",
-   "text": "Sonnet chưa đọc thư V26 (chưa gộp nhánh PM từ 20:00) → PM nhắn thẳng phiên Sonnet, yêu cầu làm V26 trước."
-  },
-  {
-   "t": "2026-10-03T15:14:00Z",
-   "text": "PR #7 (V24) đã gộp. Sonnet đẩy V19 (đạt một phần) và phần đọc tombstone của V20. PR #6 Build xanh."
-  },
-  {
-   "t": "2026-10-03T14:56:00Z",
-   "text": "PM đọc danh sách file Kara no Shoujo (bản Android): kho chính là karanoshojo.xp3, không có data.xp3 → Monika mở nhầm bản vá. Đã ghi cách sửa cho Sonnet."
-  },
-  {
-   "t": "2026-10-03T14:41:00Z",
-   "text": "Sếp: game thử là Kara no Shoujo; Kirikiri cần mở được cả .xp3 lẫn .exe → ghi vào V26."
-  },
-  {
-   "t": "2026-10-03T14:32:00Z",
-   "text": "Sonnet đẩy V19: báo cáo lỗi nhận đúng engine RPG Maker/Kirikiri (Build xanh)."
-  },
-  {
-   "t": "2026-10-03T14:31:00Z",
-   "text": "G7: sếp thử 0.7.3, Kirikiri báo \"Cannot find storage startup.tjs\". Giao Sonnet V26 (pm-hoi-002), gộp V18."
-  },
-  {
-   "t": "2026-10-03T13:58:00Z",
-   "text": "V23 xong. PM duyệt PR #8 (H02). Phát hiện engines-rgss-6 lỡ công khai, đã nhờ sếp xóa."
-  }
- ],
- "modules": [
-  {
-   "id": "libretro",
-   "group": "game",
-   "name": "Máy chơi game cổ điển",
-   "scope": "GB/GBC, GBA, NDS, NES, SNES, Mega Drive, Master System, Game Gear, PC Engine, N64, PS1, PSP, Dreamcast, Atari, WonderSwan, Neo Geo Pocket, RPG Maker 2000/2003 (20 hệ, lõi libretro)",
-   "steps": {
-    "build": "xong",
-    "auto": "dang",
-    "phone": "xong",
-    "release": "xong"
-   },
-   "note": "Ghim12coreGB/GBA/NES config33 đã gộp#67 từ snapshotcores-gb-gba-nes-1 đúngrunphát hành. Các core khác giữlegacy. ROM thật/syncCloudflare chưa kiểm."
-  },
-  {
-   "id": "3ds",
-   "group": "game",
-   "name": "3DS (Azahar)",
-   "scope": "Nintendo 3DS, engine Azahar đóng kèm APK (chỉ máy 64-bit)",
-   "steps": {
-    "build": "xong",
-    "auto": "xong",
-    "phone": "cho",
-    "release": "xong"
-   },
-   "note": "Bản cài gói an toàn (V35) đã gộp; gói 3DS thật qua bài kiểm tự động trên mỗi PR (V37)."
-  },
-  {
-   "id": "j2me",
-   "group": "game",
-   "name": "Game Java (J2ME)",
-   "scope": "Game điện thoại Java .jar/.jad, J2ME Loader nhúng trong app",
-   "steps": {
-    "build": "xong",
-    "auto": "cho",
-    "phone": "xong",
-    "release": "xong"
-   },
-   "note": "Sếp đã chơi được trên điện thoại (04/10). Chưa có bài kiểm tự động riêng cho game Java."
-  },
-  {
-   "id": "kirikiri",
-   "group": "game",
-   "name": "Kirikiri",
-   "scope": "Visual novel .xp3 và .exe (krkr2 nhúng, gói tải khi cần)",
-   "steps": {
-    "build": "xong",
-    "auto": "dang",
-    "phone": "sep",
-    "release": "cho"
-   },
-   "note": "0.7.5 chưa có sửa startup.tjs; chờ #91/#93"
-  },
-  {
-   "id": "rgss",
-   "group": "game",
-   "name": "RPG Maker XP/VX/Ace",
-   "scope": "mkxp-z nhúng, gói rgss 64-bit và 32-bit",
-   "steps": {
-    "build": "xong",
-    "auto": "xong",
-    "phone": "cho",
-    "release": "sep"
-   },
-   "note": "3 game thật XP/VX/VX Ace chạy tới hội thoại trên máy ảo (V44). Có trong bản 0.7.5. Chờ sếp thử trên điện thoại."
-  },
-  {
-   "id": "web",
-   "group": "game",
-   "name": "Game web",
-   "scope": "Flash (Ruffle), RPG Maker MV/MZ, TyranoScript",
-   "steps": {
-    "build": "xong",
-    "auto": "cho",
-    "phone": "cho",
-    "release": "xong"
-   },
-   "note": "Có trong app. PM chưa có bằng chứng kiểm chạy game web tự động."
-  },
-  {
-   "id": "onscripter",
-   "group": "game",
-   "name": "ONScripter",
-   "scope": "Visual novel NScripter (onsyuri bản web)",
-   "steps": {
-    "build": "xong",
-    "auto": "xong",
-    "phone": "cho",
-    "release": "loi"
-   },
-   "note": "Gói đã cài được (V36 đã gộp). Chờ bản phát hành mới."
-  },
-  {
-   "id": "apk",
-   "group": "game",
-   "name": "Game Android (APK)",
-   "scope": "Cài APK, OBB, APK chia nhỏ",
-   "steps": {
-    "build": "xong",
-    "auto": "xong",
-    "phone": "cho",
-    "release": "xong"
-   },
-   "note": "Có test kiểm APK, OBB, APK chia nhỏ. Mở rộng repack/ADB đang hoãn (R15)."
-  },
-  {
-   "id": "external",
-   "group": "game",
-   "name": "Mở bằng app ngoài",
-   "scope": "Kirikiroid2, JoiPlay, ONScripter, EKA2L1",
-   "steps": {
-    "build": "xong",
-    "auto": "cho",
-    "phone": "cho",
-    "release": "sep"
-   },
-   "note": "Chờ sếp đưa link tải chính thức của các app này."
-  },
-  {
-   "id": "renpy8",
-   "group": "game",
-   "name": "Ren'Py 8",
-   "scope": "Visual novel Ren'Py 8, sẽ chạy trong app",
-   "steps": {
-    "build": "dang",
-    "auto": "cho",
-    "phone": "cho",
-    "release": "cho"
-   },
-   "note": "Đã có module Ren'Py trong app (P2) và màn chơi (P3, đã duyệt). Tiếp: đăng gói và bật trong config (V45)."
-  },
-  {
-   "id": "renpy7",
-   "group": "game",
-   "name": "Ren'Py 7",
-   "scope": "Visual novel Ren'Py 7",
-   "steps": {
-    "build": "cho",
-    "auto": "cho",
-    "phone": "cho",
-    "release": "cho"
-   },
-   "note": "Làm sau Ren'Py 8."
-  },
-  {
-   "id": "symbian",
-   "group": "game",
-   "name": "Symbian / N-Gage",
-   "scope": "Game Nokia Symbian, N-Gage",
-   "steps": {
-    "build": "xong",
-    "auto": "cho",
-    "phone": "cho",
-    "release": "cho"
-   },
-   "note": "S0 nativeCI đúng head đã PASS. Chỉ spike, chưa nhúng vào app/chơi game; nhập firmware chờG4A2."
-  },
-  {
-   "id": "feed",
-   "group": "app",
-   "name": "Đọc bài và thông báo",
-   "scope": "Bài viết aow.vn, thông báo bài mới, diễn đàn, cộng đồng, điểm danh",
-   "steps": {
-    "build": "xong",
-    "auto": "xong",
-    "phone": "cho",
-    "release": "xong"
-   },
-   "note": "Thông báo chạy trong app (IP Việt Nam) vì aow.vn chặn máy chủ nước ngoài."
-  },
-  {
-   "id": "library",
-   "group": "app",
-   "name": "Thư viện và tải game",
-   "scope": "Tải từ Pixeldrain và các host, giải nén zip/rar/7z có mật khẩu, nhận diện hệ máy, ảnh bìa",
-   "steps": {
-    "build": "xong",
-    "auto": "xong",
-    "phone": "cho",
-    "release": "xong"
-   },
-   "note": "Có test giải nén với file mẫu (RAR nhiều phần, 7z mật khẩu) và nhận diện game."
-  },
-  {
-   "id": "ingame",
-   "group": "app",
-   "name": "Trong lúc chơi",
-   "scope": "Tay cầm ảo theo hệ máy, 3 ô lưu, mã gian lận, dịch màn hình, RetroAchievements",
-   "steps": {
-    "build": "xong",
-    "auto": "xong",
-    "phone": "cho",
-    "release": "xong"
-   },
-   "note": "Có test giao diện lớp phủ trong game. Chế độ hardcore RetroAchievements chờ RAdmin duyệt (G6)."
-  },
-  {
-   "id": "patch",
-   "group": "app",
-   "name": "Vá Việt hóa ROM",
-   "scope": "IPS, BPS, UPS; ghi game mới vào thư mục riêng",
-   "steps": {
-    "build": "xong",
-    "auto": "xong",
-    "phone": "cho",
-    "release": "xong"
-   },
-   "note": "Chưa hỗ trợ xdelta, PPF, APS và ISO trên 256 MB."
-  },
-  {
-   "id": "config",
-   "group": "app",
-   "name": "Cấu hình từ xa và cài gói",
-   "scope": "Config tải từ Cloudflare, gói engine tải khi cần",
-   "steps": {
-    "build": "dang",
-    "auto": "xong",
-    "phone": "cho",
-    "release": "dang"
-   },
-   "note": "Đã gộp: kiểm config trước khi áp dụng (V34), cài gói an toàn (V35), GitHub tự kiểm gói thật (V37). Đồng bộ config lên Cloudflare đang hỏng vì thiếu secret (Q4)."
-  },
-  {
-   "id": "diag",
-   "group": "app",
-   "name": "Báo lỗi và chẩn đoán",
-   "scope": "Ghi crash, lỗi native, game chết; gửi báo cáo về máy chủ",
-   "steps": {
-    "build": "xong",
-    "auto": "xong",
-    "phone": "cho",
-    "release": "dang"
-   },
-   "note": "D4/D5/V22 đã gộp, fixtureAPI34+unit xanh. Worker chưa deploy; mànđenK3/máy thật/engine khác chưa kiểm."
-  },
-  {
-   "id": "ci",
-   "group": "app",
-   "name": "Phát hành, kiểm thử, tài liệu",
-   "scope": "Build, máy ảo CI, ký app, phát hành, tài liệu cho đội",
-   "steps": {
-    "build": "dang",
-    "auto": "dang",
-    "phone": "na",
-    "release": "dang"
-   },
-   "note": "V39/V42/V41 đã gộp, bot hồi phục; skillV46 qua5ZIP thật. Khóa ký được chủ dự án xác nhận có trong Secrets, không đọc giá trị. V43 ký/phát hành giữkẹtSOL012."
-  }
- ],
- "decisions": [
-  {
-   "code": "A16",
-   "question": "Thiết kế lại tay cầm/menu vào bản nào?",
-   "answer": "V70a (nút chung, lún, rung) + V70b (menu chung) vào 0.7.7 ổn định nếu xanh trước 10/10 20:00; V70c (tự chỉnh bố cục) vào 0.7.8",
-   "at": "2026-10-08T17:52:47Z",
-   "by": "PM (theo yêu cầu sếp)"
-  },
-  {
-   "code": "A15",
-   "question": "Dùng hạn mức đội ChatGPT thế nào?",
-   "answer": "Chạy tối đa tới hết hạn mức (sếp còn 1 lần đặt lại). Sol WIP 4, Luna/Luna Ultra 3, làm liên tục",
-   "at": "2026-10-08T17:47:10Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "A14",
-   "question": "Ai phát hành?",
-   "answer": "PM tự phát hành cả bản thử và bản ổn định khi đủ cổng tự động; không cần báo sếp",
-   "at": "2026-10-08T16:01Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "A8",
-   "question": "Luna Ultra có thuộc đội ChatGPT (nhiều hạn mức)?",
-   "answer": "Có — giao thêm duyệt lần hai và V62.",
-   "by": "Sếp",
-   "at": "2026-10-08T04:10:00Z"
-  },
-  {
-   "code": "A7",
-   "question": "Phát hành RC 0.7.7 (prerelease) tối T6?",
-   "answer": "Sếp duyệt (một lần, 08/10).",
-   "by": "Sếp",
-   "at": "2026-10-08T04:10:00Z"
-  },
-  {
-   "code": "R2",
-   "question": "Repo công khai: muốn người khác clone về không dựng lại được app. Chọn cách nào?",
-   "answer": "Tách phần riêng sang repo riêng, sao cho người hay AI đọc source công khai cũng không hiểu được quy trình và cơ chế của app",
-   "at": "2026-10-06T06:49:06.614Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "R1",
-   "question": "Firmware, ROM, link game: để ở đâu?",
-   "answer": "App nhận link (qua config từ xa); firmware/ROM không nằm trong repo công khai",
-   "at": "2026-10-06T06:48:02.435Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "G7B",
-   "question": "Thử Kara no Shoujo trên bản 0.7.6 (có bản sửa lỗi startup.tjs)",
-   "answer": "Vẫn lỗi startup.tjs trên 0.7.6, sếp đã bấm Báo lỗi game này",
-   "at": "2026-10-06T06:47:33.254Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "TAG",
-   "question": "Tạo release v0.7.6",
-   "answer": "Sếp đã tạo 05:34Z (prerelease, đúng commit 4a1486e)",
-   "at": "2026-10-06T05:34:12Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "T1",
-   "question": "Tắt lịch \"[PM kiểm thư] ngày B (:42)\" bị trùng (mỗi giờ mở một phiên trống, tốn hạn mức)?",
-   "answer": "Đã tắt (kiểm: enabled=false)",
-   "at": "2026-10-06T02:00:55.867Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "H1",
-   "question": "Sếp mở phiên Haiku 4.6 để thay Luna tới 10/10?",
-   "answer": "Đã mở phiên Haiku",
-   "at": "2026-10-06T01:58:29.555Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "A13",
-   "question": "Đồng ý phát hành 0.7.6 (bản thử, pre-release) ngay khi #93 (sửa lỗi Kara no Shoujo) được duyệt và gộp?",
-   "answer": "Đồng ý phát hành 0.7.6 (bản thử) 1 lần sau khi #93 gộp",
-   "at": "2026-10-06T01:58:26.581Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "Q4",
-   "question": "Đặt v0.7.4 là pre-release",
-   "answer": "Đã đặt (kiểm qua API: prerelease=true, 01:56Z 06/10)",
-   "at": "2026-10-06T01:56:46.214Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "G4A2",
-   "question": "Symbian: bản đầu có làm đủ 3 cách nhập firmware không?",
-   "answer": "Chỉ zip cấu hình sẵn trước. Sếp định tự lưu firmware cũ lên GitHub, người dùng có nhu cầu mới tải về. Đội không đưa firmware hay link firmware vào repo công khai/config khi sếp chưa chốt nơi lưu.",
-   "at": "2026-10-06T01:43:11.035Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "G7-ảnh",
-   "question": "Ảnh lỗi Kara no Shoujo",
-   "answer": "Hộp thoại \"0.7.3 Kirikiri — Cannot find storage startup.tjs\". Tiêu đề lấy từ versionName ⇒ máy đang chạy 0.7.3, bản sửa 0.7.4 chưa được thử",
-   "at": "2026-10-06T00:10:00Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "A8",
-   "question": "Chạy lại release.yml 1 lần cho v0.7.5 sau khi #88 gộp?",
-   "answer": "Đồng ý",
-   "at": "2026-10-06T00:10:00Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "G7",
-   "question": "Thử Kara no Shoujo bằng 0.7.4?",
-   "answer": "Không vào được game",
-   "at": "2026-10-05T15:46:16.623Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "A6",
-   "question": "Nova \"Đạt\" có tính như Luna \"Đạt\" để PM gộp?",
-   "answer": "Có (khi Luna chưa duyệt đúng head sau 2 giờ); tăng việc cho Nova",
-   "at": "2026-10-05T16:55:00Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "Q4",
-   "question": "Thêm secret CLOUDFLARE_API_TOKEN",
-   "answer": "Sếp đã thêm; Sync config chạy lại xanh (run 37261093978 lần 2, 15:56Z)",
-   "at": "2026-10-05T15:56:26Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "KEY",
-   "question": "File khóa ký app đang ở đâu?",
-   "answer": "Đã có trong GitHub Secrets (MONIKA_KEYSTORE_*, MONIKA_KEY_*), thêm khoảng 5 ngày trước. Từ nay ký và phát hành trên GitHub.",
-   "at": "2026-10-04T07:41:00Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "—",
-   "question": "Trang công khai cho người dùng?",
-   "answer": "Landing page tải app trên GitHub Pages (thay trang tiến độ công khai).",
-   "at": "2026-10-04T07:36:00Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "Q6",
-   "question": "Đã chơi được trên điện thoại phần nào?",
-   "answer": "Máy chơi game cổ điển và game Java.",
-   "at": "2026-10-04T02:54:25Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "Q5",
-   "question": "PM kiểm hộp thư 30 phút/lần ban ngày?",
-   "answer": "Đồng ý, 30 phút.",
-   "at": "2026-10-04T02:53:57Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "Q2",
-   "question": "Sao lưu khóa ký app?",
-   "answer": "Đồng ý. Sonnet gửi file khóa cho sếp (V38).",
-   "at": "2026-10-04T02:53:38Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "Q1",
-   "question": "Tạm dừng làm engine mới?",
-   "answer": "Không, cứ làm engine mới song song. Ren'Py 8 (V17) mở lại; Symbian dựng thử S0 giao Sol.",
-   "at": "2026-10-04T02:53:28Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "—",
-   "question": "Chia việc trong đội thế nào cho đỡ hạn mức?",
-   "answer": "Sonnet chỉ code lõi engine; Sol nhận việc app, CI, config, chẩn đoán; Luna nhận tài liệu, test, tiền duyệt PR.",
-   "at": "2026-10-04T02:55:00Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "Q3",
-   "question": "Tắt báo lỗi tự gửi nếu phần che dữ liệu chưa xong trước bản phát hành kế tiếp?",
-   "answer": "Không cần quyết nữa: phần che dữ liệu (V28) đã gộp.",
-   "at": "2026-10-04T02:44:00Z",
-   "by": "PM"
-  },
-  {
-   "code": "—",
-   "question": "Đội Sol, Luna làm việc thế nào?",
-   "answer": "Đọc thư 60 phút/lần, tự làm dài, PM duyệt qua PR.",
-   "at": "2026-10-04T00:50:00Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "—",
-   "question": "Phần pháp lý trong bản rà soát?",
-   "answer": "Sếp tự xử lý; đội bỏ việc kiểm kê giấy phép (O04).",
-   "at": "2026-10-04T00:06:00Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "G7",
-   "question": "Kirikiri mở game kiểu nào?",
-   "answer": "Hỗ trợ cả .xp3 và .exe.",
-   "at": "2026-10-03T14:41:00Z",
-   "by": "Sếp"
-  },
-  {
-   "code": "TIEP-QUAN-20261004",
-   "by": "Sếp",
-   "at": "2026-10-04T10:55:29Z",
-   "question": "Đội gặp sự cố, ai tiếp quản?",
-   "answer": "Sol thay Opus/Sonnet, phối hợp Luna tới22:00 05/10 GMT+7; chuẩn bị Gemini Flash tối nay."
-  },
-  {
-   "code": "TOK",
-   "question": "Cho Sonnet đọc báo lỗi Kara",
-   "answer": "Đã thêm CRASH_ADMIN_TOKEN",
-   "at": "2026-10-07T09:18:44Z",
-   "by": "Sếp"
-  }
- ],
- "progressBasis": "Phần trăm mốc giữ ước lượng PM cũ, chưa đo lại trong lượt tiếp quản.",
- "blockers": [
-  {
-   "code": "V26",
-   "status": "sep",
-   "title": "0.7.6 vẫn lỗi Kara no Shoujo (startup.tjs)",
-   "who": "Sếp thêm CRASH_ADMIN_TOKEN vào môi trường cloud → Sonnet đọc báo cáo",
-   "next": "Từ vệt chẩn đoán xem xp3 nào có startup.tjs, resolver chọn gì; sửa rồi phát hành bản kế tiếp (cần sếp đồng ý).",
-   "links": [
-    {
-     "label": "Tải APK 0.7.6",
-     "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.6/AowVN-Monika-v0.7.6.apk",
-     "kind": "tai"
-    }
-   ],
-   "ask": "TOK"
-  },
-  {
-   "code": "V47",
-   "status": "dang",
-   "title": "App trong máy người dùng sắp thấy bản 0.7.5 (config 35 đã gộp)",
-   "who": "Sonnet kiểm đồng bộ Cloudflare và đo configVersion trên KV",
-   "next": "Khi 0.7.6 phát hành sẽ đổi config sang 0.7.6."
-  }
- ],
- "team": [
-  {
-   "id": "sep",
-   "name": "Sếp (Minh)",
-   "kind": "boss",
-   "status": "sep",
-   "role": "Chủ dự án: chốt hướng, duyệt phát hành, thử trên máy thật, giữ khóa ký và secret.",
-   "now": "Còn: ảnh thư mục plugin/ của Kara no Shoujo; khóa Cloudflare; đóng cảnh báo #22. (Có thể thử game bằng Kirikiroid2 chính thức.)",
-   "lastSeen": "2026-10-08T03:17:00Z",
-   "channel": "Chat với PM · trang này"
-  },
-  {
-   "id": "opus",
-   "name": "Opus",
-   "kind": "pm",
-   "model": "PM điều phối",
-   "status": "dang",
-   "role": "Giao việc, đọc hộp thư mỗi giờ, kiểm rủi ro rồi gộp PR, cập nhật trang này.",
-   "match": [
-    "pm"
-   ],
-   "lastSeen": "2026-10-08T10:18:00Z",
-   "channel": "Nhánh docs/opus-tra-loi",
-   "now": "Điều phối nước rút tới CN 11/10; gộp PR mỗi giờ phút :12."
-  },
-  {
-   "id": "sonnet",
-   "name": "Sonnet",
-   "kind": "dev",
-   "status": "dang",
-   "role": "Engine và luồng app khó (Kirikiri, RGSS, Ren'Py); duyệt dự phòng khi người duyệt vắng.",
-   "now": "V26b: báo rõ 'xp3 mã hóa' (hạn T7 12:00); #143 thư 005 chờ Luna.",
-   "match": [
-    "sonnet"
-   ],
-   "lastSeen": "2026-10-08T11:11:00Z",
-   "channel": "Phiên chính Sonnet"
-  },
-  {
-   "id": "sol",
-   "name": "Sol",
-   "kind": "dev",
-   "status": "dang",
-   "role": "App, CI, config, script, chẩn đoán lỗi. Quay lại sớm 07/10.",
-   "now": "Ưu tiên 0: V64 sửa bộ nhớ resolver Kirikiri (chặn RC). Sau đó V56 Test Lab, V60.",
-   "match": [
-    "sol"
-   ],
-   "lastSeen": "2026-10-08T05:00:00Z",
-   "channel": "Thư tra-loi-sol-*"
-  },
-  {
-   "id": "luna",
-   "name": "Luna",
-   "kind": "rev",
-   "status": "dang",
-   "role": "Tiền duyệt PR của Sol, Sonnet, Nova (L07), tài liệu, test, script.",
-   "now": "Nước rút: duyệt #118, #122 + lô của Sol; CHANGELOG 0.7.7; hướng dẫn người dùng.",
-   "match": [
-    "luna"
-   ],
-   "lastSeen": "2026-10-08T08:40:00Z",
-   "channel": "Thư tra-loi-luna-*"
-  },
-  {
-   "id": "nova",
-   "name": "Nova",
-   "kind": "dev",
-   "model": "Tài khoản khác, sếp quản",
-   "status": "dang",
-   "role": "V45 Ren'Py 8, test độ phủ, duyệt PR tài liệu",
-   "now": "V45 Ren'Py 8 (nhận từ Sol)",
-   "match": "Sonnet 5.5 xhigh (nâng 09/10)",
-   "lastSeen": "2026-10-08T03:44:00Z",
-   "channel": "Issue #90"
-  },
-  {
-   "id": "haiku",
-   "name": "Haiku",
-   "kind": "dev",
-   "status": "dang",
-   "role": "Test tăng độ phủ, script, sửa mã nhỏ/vừa có test; duyệt dự phòng PR của Luna.",
-   "now": "#138 browser đã gộp; chờ lô mới.",
-   "match": [
-    "haiku"
-   ],
-   "lastSeen": "2026-10-08T10:03:00Z",
-   "channel": "Issue #94",
-   "model": "Haiku 5.5 ultracode (nâng 08/10)"
-  },
-  {
-   "id": "luna-ultra",
-   "name": "Luna Ultra",
-   "kind": "rev",
-   "status": "dang",
-   "role": "Duyệt thứ hai: PR của Luna, Haiku, Haiku-2; rà giấy phép trước khi tách repo (V52).",
-   "now": "Hàng duyệt + duyệt lần hai V56/V58/V60; V61, V62 rồi V52b.",
-   "match": [
-    "luna ultra"
-   ],
-   "channel": "Issue #119",
-   "lastSeen": "2026-10-08T10:04:00Z"
-  },
-  {
-   "id": "haiku-2",
-   "name": "Haiku-2",
-   "kind": "dev",
-   "model": "Haiku 5.5 ultracode",
-   "status": "dang",
-   "role": "Test tăng độ phủ cho download, translate, notify, runner; sửa mã nhỏ/vừa có test.",
-   "now": "Lô H2f: test sâu download.",
-   "match": [
-    "haiku-2"
-   ],
-   "channel": "Issue #120",
-   "lastSeen": "2026-10-08T07:53:00Z"
-  },
-  {
-   "id": "gemini",
-   "name": "Gemini Flash",
-   "kind": "aux",
-   "status": "dubi",
-   "role": "Dự bị cho việc F01/F02, chỉ chạy khi sếp báo sẵn sàng.",
-   "channel": "PROMPT-GEMINI-FLASH.md"
-  },
-  {
-   "id": "chrome",
-   "name": "Claude in Chrome",
-   "kind": "aux",
-   "status": "dubi",
-   "role": "Thao tác trên trình duyệt của sếp khi cần (vd. dựng Test Lab), không đọc khóa.",
-   "channel": "PROMPT-CHROME-TEST-LAB.md"
-  }
- ],
- "comms": [
-  {
-   "t": "2026-10-07T23:38:00Z",
-   "from": "opus",
-   "to": "sol",
-   "text": "Thư sol-013: 6 việc mới V48, V49, V53, V54, V50, V55."
-  },
-  {
-   "t": "2026-10-07T23:38:30Z",
-   "from": "opus",
-   "to": "luna",
-   "text": "Thư luna-005: duyệt gấp #107, #106."
-  },
-  {
-   "t": "2026-10-07T23:43:00Z",
-   "from": "luna",
-   "to": "sonnet",
-   "text": "#107 Cần sửa: phạm vi có thêm 2 tệp V29."
-  },
-  {
-   "t": "2026-10-07T23:44:00Z",
-   "from": "sonnet",
-   "to": "luna",
-   "text": "Mô tả #107 đã cập nhật; V29 đi cùng theo lệnh PM."
-  },
-  {
-   "t": "2026-10-07T23:44:30Z",
-   "from": "haiku",
-   "to": "opus",
-   "text": "#106 đã sửa Kirikiri và số phiên bản, chờ Luna."
-  },
-  {
-   "t": "2026-10-08T00:13:00Z",
-   "from": "opus",
-   "to": "luna",
-   "text": "PM xác nhận phạm vi #107 đúng lệnh."
-  },
-  {
-   "t": "2026-10-08T00:48:00Z",
-   "from": "luna",
-   "to": "sol",
-   "text": "6 PR #108–#113: Đạt."
-  },
-  {
-   "t": "2026-10-08T01:15:00Z",
-   "from": "opus",
-   "to": "sol",
-   "text": "Gộp 7 PR; giữ #110, chứng minh lối tắt game Java còn chạy."
-  },
-  {
-   "t": "2026-10-08T02:40:00Z",
-   "from": "luna",
-   "to": "sol",
-   "text": "#110 Đạt: trích dẫn AOSP khớp."
-  },
-  {
-   "t": "2026-10-08T03:15:00Z",
-   "from": "opus",
-   "to": "sonnet",
-   "text": "Nhờ duyệt thay Nova #114–#116."
-  },
-  {
-   "t": "2026-10-08T03:18:00Z",
-   "from": "sonnet",
-   "to": "opus",
-   "text": "#115, #116 Đạt; #114 Cần sửa."
-  },
-  {
-   "t": "2026-10-08T03:42:00Z",
-   "from": "nova",
-   "to": "opus",
-   "text": "Nova quay lại: N05 (#118) xong, tiếp V52a."
-  },
-  {
-   "t": "2026-10-08T03:43:00Z",
-   "from": "haiku",
-   "to": "opus",
-   "text": "#117, #121 chờ duyệt; nhãn Báo lỗi đang hard-code."
-  },
-  {
-   "t": "2026-10-08T03:50:00Z",
-   "from": "haiku-2",
-   "to": "opus",
-   "text": "#123, #124 xong; hỏi: bài thứ 6 trở đi có báo không?"
-  },
-  {
-   "t": "2026-10-08T03:50:30Z",
-   "from": "luna-ultra",
-   "to": "opus",
-   "text": "Luna Ultra đã vào ca."
-  },
-  {
-   "t": "2026-10-08T04:00:00Z",
-   "from": "opus",
-   "to": "haiku",
-   "text": "Đóng #121 vì trùng #118; sửa nhãn Chơi trong TESTER-NGOAI."
-  },
-  {
-   "t": "2026-10-08T04:00:30Z",
-   "from": "opus",
-   "to": "haiku-2",
-   "text": "Giữ giới hạn 5 bài/lượt, khóa bằng test."
-  },
-  {
-   "t": "2026-10-08T04:05:00Z",
-   "from": "opus",
-   "to": "sol",
-   "text": "Nước rút: V56 game thật trên Test Lab, RC 0.7.7, Ren'Py 8."
-  },
-  {
-   "t": "2026-10-08T04:12:00Z",
-   "from": "sep",
-   "to": "opus",
-   "text": "Gửi danh sách file Kara no Shoujo; duyệt RC 0.7.7."
-  },
-  {
-   "t": "2026-10-08T04:14:00Z",
-   "from": "opus",
-   "to": "sonnet",
-   "text": "Thư 005: phân tích file Kara no Shoujo (mã hóa hay thứ tự patch)."
-  },
-  {
-   "t": "2026-10-08T03:56:00Z",
-   "from": "luna-ultra",
-   "to": "luna",
-   "text": "#114 Cần sửa: đồng bộ với main, đánh dấu mốc lịch sử."
-  },
-  {
-   "t": "2026-10-08T04:02:00Z",
-   "from": "luna",
-   "to": "nova",
-   "text": "#122 Cần sửa; #118 nội dung ổn, chờ PM xem CI."
-  },
-  {
-   "t": "2026-10-08T04:04:00Z",
-   "from": "luna-ultra",
-   "to": "haiku-2",
-   "text": "#123 Đạt; #124 cần PM chốt giới hạn 5 bài."
-  },
-  {
-   "t": "2026-10-08T04:16:00Z",
-   "from": "opus",
-   "to": "haiku",
-   "text": "Nhận #117, đã gộp; phần browser để PR sau."
-  },
-  {
-   "t": "2026-10-08T04:47:00Z",
-   "from": "haiku-2",
-   "to": "opus",
-   "text": "#124 đã thêm test khóa giới hạn 5 bài."
-  },
-  {
-   "t": "2026-10-08T05:06:00Z",
-   "from": "luna-ultra",
-   "to": "haiku-2",
-   "text": "#124 Đạt."
-  },
-  {
-   "t": "2026-10-08T05:06:30Z",
-   "from": "luna-ultra",
-   "to": "luna",
-   "text": "#125 Cần sửa: cố định đồng hồ trong ProfileCoverageTest."
-  },
-  {
-   "t": "2026-10-08T05:16:00Z",
-   "from": "opus",
-   "to": "sol",
-   "text": "V63 ưu tiên 0: bản tin digest đỏ HTTP 403 trên main."
-  },
-  {
-   "t": "2026-10-08T05:49:00Z",
-   "from": "luna",
-   "to": "sol",
-   "text": "#127, #128: chờ CI xong trên head mới."
-  },
-  {
-   "t": "2026-10-08T06:08:00Z",
-   "from": "luna-ultra",
-   "to": "sol",
-   "text": "#128 duyệt lần hai: Đạt."
-  },
-  {
-   "t": "2026-10-08T06:06:00Z",
-   "from": "luna-ultra",
-   "to": "haiku-2",
-   "text": "#133 runner: Đạt."
-  },
-  {
-   "t": "2026-10-08T06:20:00Z",
-   "from": "opus",
-   "to": "sonnet",
-   "text": "Thư 006: V64 sửa bộ nhớ resolver, chặn RC."
-  },
-  {
-   "t": "2026-10-08T06:20:30Z",
-   "from": "opus",
-   "to": "sol",
-   "text": "#127 xung đột build.gradle.kts: gộp main."
-  },
-  {
-   "t": "2026-10-08T06:47:00Z",
-   "from": "luna",
-   "to": "sol",
-   "text": "#132 V63 Đạt; #129 V57 Cần sửa."
-  },
-  {
-   "t": "2026-10-08T06:51:00Z",
-   "from": "haiku-2",
-   "to": "opus",
-   "text": "Cả 3 PR đã gộp; notify 25,5% → 83,8%."
-  },
-  {
-   "t": "2026-10-08T07:16:00Z",
-   "from": "opus",
-   "to": "haiku-2",
-   "text": "Lô mới: test apkinstall.adb và gói gốc."
-  },
-  {
-   "t": "2026-10-08T08:03:00Z",
-   "from": "luna-ultra",
-   "to": "opus",
-   "text": "#134, #136: digest skipped có tính đạt không?"
-  },
-  {
-   "t": "2026-10-08T08:18:00Z",
-   "from": "opus",
-   "to": "luna-ultra",
-   "text": "digest/preview không chặn; đã gộp #134, #136."
-  },
-  {
-   "t": "2026-10-08T08:40:00Z",
-   "from": "luna",
-   "to": "sol",
-   "text": "#129, #135, #137: Đạt."
-  },
-  {
-   "t": "2026-10-08T09:17:00Z",
-   "from": "opus",
-   "to": "sol",
-   "text": "Đã gộp #129, #135, #137."
-  },
-  {
-   "t": "2026-10-08T10:03:00Z",
-   "from": "luna-ultra",
-   "to": "haiku",
-   "text": "#138 browser: Đạt."
-  },
-  {
-   "t": "2026-10-08T10:04:00Z",
-   "from": "luna-ultra",
-   "to": "haiku-2",
-   "text": "#139, #140 Cần sửa: giữ endSession, test xác định."
-  },
-  {
-   "t": "2026-10-08T10:18:00Z",
-   "from": "opus",
-   "to": "sol",
-   "text": "V64 chuyển sang Sol, ưu tiên 0, hạn T6 09:00."
-  },
-  {
-   "t": "2026-10-08T11:11:00Z",
-   "from": "sonnet",
-   "to": "opus",
-   "text": "Thư 005 xong (#143); đề xuất V26b báo rõ xp3 mã hóa."
-  },
-  {
-   "t": "2026-10-08T11:14:00Z",
-   "from": "opus",
-   "to": "sonnet",
-   "text": "Duyệt V26b, hạn T7 12:00."
-  }
- ],
- "overall": {
-  "done": 83,
-  "total": 103,
-  "pct": 81,
-  "at": "2026-10-08T17:47:13Z"
- },
- "productivity": {
-  "since": "2026-10-07T23:30:00Z",
-  "at": "2026-10-08T17:47:13Z",
-  "pmMerges": 38,
-  "agents": [
-   {
-    "id": "luna",
-    "name": "Luna",
-    "opened": 8,
-    "merged": 7,
-    "open": 1,
-    "reviews": 32,
-    "changesAsked": 8,
-    "medianHours": 0.7
-   },
-   {
-    "id": "sol",
-    "name": "Sol",
-    "opened": 14,
-    "merged": 13,
-    "open": 1,
-    "reviews": 0,
-    "changesAsked": 0,
-    "medianHours": 1.4
-   },
-   {
-    "id": "luna-ultra",
-    "name": "Luna Ultra",
-    "opened": 3,
-    "merged": 2,
-    "open": 1,
-    "reviews": 25,
-    "changesAsked": 6,
-    "medianHours": 0.9
-   },
-   {
-    "id": "haiku-2",
-    "name": "Haiku-2",
-    "opened": 7,
-    "merged": 6,
-    "open": 1,
-    "reviews": 0,
-    "changesAsked": 0,
-    "medianHours": 0.4
-   },
-   {
-    "id": "sonnet",
-    "name": "Sonnet",
-    "opened": 2,
-    "merged": 4,
-    "open": 0,
-    "reviews": 3,
-    "changesAsked": 1,
-    "medianHours": 11.0
-   },
-   {
-    "id": "haiku",
-    "name": "Haiku",
-    "opened": 4,
-    "merged": 4,
-    "open": 0,
-    "reviews": 1,
-    "changesAsked": 0,
-    "medianHours": 0.8
-   },
-   {
-    "id": "nova",
-    "name": "Nova",
-    "opened": 3,
-    "merged": 1,
-    "open": 2,
-    "reviews": 0,
-    "changesAsked": 0,
-    "medianHours": 0.5
-   }
   ],
-  "basis": "PR theo tiền tố nhánh; lượt duyệt theo dòng đầu comment 'X tiền duyệt'/'duyệt lần hai'. Không tính commit trực tiếp hay thư."
- },
- "sprint": [
-  {
-   "code": "M1",
-   "name": "Gộp hết PR tồn có Đạt",
-   "due": "08/10 23:00",
-   "status": "xong"
+  "milestones": [
+    {
+      "code": "M0",
+      "name": "Kirikiri 0.7.3 (menu tiếng Việt)",
+      "status": "xong",
+      "progress": 100,
+      "note": "Đã phát hành, APK đã gửi sếp. Chưa thử máy thật (G7). Phần trăm là ước lượng PM cũ, chưa đo lại."
+    },
+    {
+      "code": "M1",
+      "name": "RPG Maker XP/VX/Ace chơi trong app",
+      "status": "dang",
+      "progress": 68,
+      "note": "R0–R5 mãxong; V44#50gộpca8 sauLuna+CI. R6f740 XP369/VX339/Ace382sPASSmức1/titleNewGame/scenehội thoại; signalsretrycùngcodePASS, lầnđầurunnerOOMkhôngappfix. Đủ5/audio/save-load/FPS chưakiểm; R7chờ. PhầntrămPMcũ chưađolại."
+    },
+    {
+      "code": "Q",
+      "name": "Kiểm thử không máy thật + báo lỗi từ xa",
+      "status": "cho",
+      "progress": 15,
+      "note": "V18–V22 mã/CI đã có bằng chứng; Worker chưa deploy và máy thật chưa kiểm. Phần trăm là ước lượng PM cũ, chưa đo lại."
+    },
+    {
+      "code": "M2",
+      "name": "Ren'Py 8 chơi trong app",
+      "status": "xong",
+      "progress": 25,
+      "note": "Renpy8 P2/P3 đã gộp33/41; P4publication/config kẹtSOL012, chưa bật cho người dùng. Phần trăm là ước lượng PM cũ, chưa đo lại."
+    },
+    {
+      "code": "M3",
+      "name": "Ren'Py 7",
+      "status": "xong",
+      "progress": 0,
+      "note": "Sau M2. Phần trăm là ước lượng PM cũ, chưa đo lại."
+    },
+    {
+      "code": "M4",
+      "name": "Symbian / N-Gage chơi trong app",
+      "status": "xong",
+      "progress": 5,
+      "note": "Có phương án; chờ sếp chốt A1, A2 (G4). Làm sau M2. Phần trăm là ước lượng PM cũ, chưa đo lại."
+    }
+  ],
+  "tasks": [
+    {
+      "code": "V25",
+      "title": "R6: chạy thử 5 game RPG Maker thật trên máy ảo",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "Đã gộp (#44). Job tự kết luận từng game; dùng để kiểm mọi bản sửa RPG Maker.",
+      "module": "rgss"
+    },
+    {
+      "code": "V26",
+      "title": "Kirikiri không mở được game trên máy thật",
+      "owner": "Sonnet",
+      "status": "ket",
+      "note": "Sếp gửi danh sách file 08/10: không có xp3filter.tjs; Sonnet phân tích (thư 005); chờ ảnh plugin/ + báo lỗi qua 0.7.7",
+      "module": "kirikiri",
+      "links": [
+        {
+          "label": "#93",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/93",
+          "kind": "pr"
+        }
+      ]
+    },
+    {
+      "code": "V23",
+      "title": "Dọn kho artifact GitHub Actions, đặt hạn giữ 3 ngày; tự xóa release tạm",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "Đã gộp (867b73b). Dọn dẹp Actions chạy xanh, không còn release ci-apk-*.",
+      "module": "ci"
+    },
+    {
+      "code": "V24",
+      "title": "Release gói RPG Maker dạng nháp tới khi có giấy phép (chuẩn bị công khai repo)",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "Đã gộp (85fda8d): gói RGSS từ nay chỉ ra bản nháp.",
+      "module": "rgss"
+    },
+    {
+      "code": "V16",
+      "title": "R5: phím ảo + menu Monika cho RPG Maker, đăng ký gói vào config",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "Đã gộp (#73). Config 34 dùng gói RPG Maker nhúng công khai, JoiPlay làm dự phòng.",
+      "module": "rgss"
+    },
+    {
+      "code": "V18",
+      "title": "Game Kirikiri tự sinh trên CI: kiểm hình, chạm, Back, âm thanh, lưu/tải",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "Gộp vào V26 (cùng lỗi mở game Kirikiri).",
+      "module": "kirikiri"
+    },
+    {
+      "code": "V19",
+      "title": "Kiểm đường báo lỗi: cố ý làm game crash, app phải ghi báo cáo đúng",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "Báo lỗi khi game RPG Maker sập đã kiểm đúng engine, đúng tiến trình (gói nháp rgss-7).",
+      "module": "diag"
+    },
+    {
+      "code": "V20",
+      "title": "Đọc được lỗi: lưu mapping R8 + ký hiệu .so, đọc đúng tombstone",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "Đọc được ngăn xếp lỗi native, log DEBUG trên API 30.",
+      "module": "diag"
+    },
+    {
+      "code": "V21",
+      "title": "Nút \"Báo lỗi game này\": ảnh mặc định, chọn loại lỗi bằng nút",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "D4+D5#60 đã gộp; ảnh JPEG480x222/2776B, JSON9465B fixture API34 xanh. Worker chưa deploy, engine khác/máy thật chưa kiểm.",
+      "module": "diag"
+    },
+    {
+      "code": "V22",
+      "title": "Bắt lỗi script engine + phát hiện màn đen",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "#46 đã gộp sau Luna+Build/signals/real-packs xanh; K3 máy thật/màn đen chưa kiểm.",
+      "module": "diag"
+    },
+    {
+      "code": "V17",
+      "title": "P2–P3: module :renpy (Ren'Py 8)",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "P2 và P3 (màn chơi Ren'Py) đã gộp vào main.",
+      "module": "renpy8"
+    },
+    {
+      "code": "V06",
+      "title": "Gộp nhánh của PM vào main mỗi lượt kiểm",
+      "owner": "Sonnet",
+      "status": "lap",
+      "note": "",
+      "module": "ci"
+    },
+    {
+      "code": "O01",
+      "title": "Trả lời hộp thư, cập nhật kế hoạch và trang này",
+      "owner": "PM",
+      "status": "lap",
+      "note": "",
+      "module": "ci"
+    },
+    {
+      "code": "H03",
+      "title": "Sửa hướng dẫn thử Kirikiri trên máy thật (PR #4)",
+      "owner": "Haiku",
+      "status": "dang",
+      "note": "PR #4 PM duyệt; chờ Haiku gộp.",
+      "module": "kirikiri"
+    },
+    {
+      "code": "H04",
+      "title": "Cập nhật tài liệu bàn giao: các mốc R0–R5, gói 32-bit, repo công khai",
+      "owner": "Luna",
+      "status": "xong",
+      "note": "Đã gộp.",
+      "module": "ci"
+    },
+    {
+      "code": "H05",
+      "title": "Hướng dẫn thử RPG Maker trên máy thật (dùng sau R7)",
+      "owner": "Luna",
+      "status": "xong",
+      "note": "Đã gộp.",
+      "module": "rgss"
+    },
+    {
+      "code": "H06",
+      "title": "Test ảnh chụp cho lớp phủ RPG Maker và Kirikiri",
+      "owner": "Luna",
+      "status": "xong",
+      "note": "Đã gộp.",
+      "module": "ingame"
+    },
+    {
+      "code": "H07",
+      "title": "Tài liệu kiến trúc: luồng engine nhúng, sửa gì mở file nào",
+      "owner": "Luna",
+      "status": "xong",
+      "note": "Đã gộp.",
+      "module": "ci"
+    },
+    {
+      "code": "H02",
+      "title": "Sửa script sinh sơ đồ kiến trúc cho đủ module",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "PR #8 đã gộp.",
+      "module": "ci"
+    },
+    {
+      "code": "O02",
+      "title": "Phương án kiểm thử không máy thật + crash log",
+      "owner": "PM",
+      "status": "xong",
+      "note": "docs/opus/2026-10-03-kiem-thu-chan-doan.md",
+      "module": "ci"
+    },
+    {
+      "code": "V15",
+      "title": "Gói RPG Maker cho máy 32-bit (armeabi-v7a)",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "7,1 MiB. Chưa chạy trên máy 32-bit thật.",
+      "module": "rgss"
+    },
+    {
+      "code": "V14",
+      "title": "CI tự xóa release tạm",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "",
+      "module": "ci"
+    },
+    {
+      "code": "V12",
+      "title": "R3: RPG Maker chạy trong app (máy ảo Android 11 và 14)",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "Game XP tự sinh ghi được file kiểm.",
+      "module": "rgss"
+    },
+    {
+      "code": "V07",
+      "title": "Bỏ OpenSSL khỏi gói RPG Maker",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "",
+      "module": "rgss"
+    },
+    {
+      "code": "V08",
+      "title": "R2: module SDL riêng cho RPG Maker",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "",
+      "module": "rgss"
+    },
+    {
+      "code": "V02",
+      "title": "R1: dựng gói rgss (7,6 MiB)",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "",
+      "module": "rgss"
+    },
+    {
+      "code": "V01",
+      "title": "R0: dựng thử mkxp-z",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "",
+      "module": "rgss"
+    },
+    {
+      "code": "V04",
+      "title": "P1: dựng gói renpy8 (22,6 MB)",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "",
+      "module": "renpy8"
+    },
+    {
+      "code": "V03",
+      "title": "P0: dựng thử Ren'Py",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "",
+      "module": "renpy8"
+    },
+    {
+      "code": "V05",
+      "title": "Phát hành Kirikiri 0.7.3",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "",
+      "module": "kirikiri"
+    },
+    {
+      "code": "V10",
+      "title": "Sửa gốc lỗi test tải file chập chờn",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "",
+      "module": "ci"
+    },
+    {
+      "code": "V11",
+      "title": "Commit chỉ sửa tài liệu không chạy build",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "",
+      "module": "ci"
+    },
+    {
+      "code": "L01",
+      "title": "Kiểm mọi link trong config",
+      "owner": "Luna",
+      "status": "xong",
+      "note": "Đã gộp, đọc đúng ABI.",
+      "module": "config"
+    },
+    {
+      "code": "L02",
+      "title": "Test chọn file game Kirikiri",
+      "owner": "Luna",
+      "status": "xong",
+      "note": "Đã gộp (#18).",
+      "module": "kirikiri"
+    },
+    {
+      "code": "L03",
+      "title": "Nhật ký thay đổi tiếng Việt",
+      "owner": "Luna",
+      "status": "xong",
+      "note": "Đã gộp; mỗi bản mới thêm mục.",
+      "module": "ci"
+    },
+    {
+      "code": "V27",
+      "title": "Sửa link lõi 3DS bản 32-bit (404)",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "Báo động giả (lõi citra chỉ khai arm64). Lỗi của PM, đã đóng.",
+      "module": "libretro"
+    },
+    {
+      "code": "O03",
+      "title": "Rà soát độc lập toàn dự án",
+      "owner": "Tư vấn",
+      "status": "xong",
+      "note": "Gộp#21/3453741 sau LunaĐạt d275. Audit lịch sử149dòng/19phát hiện/48đềxuất; BuildmiễnV11 docs-only, không bảnghiệntrạng.",
+      "module": "ci"
+    },
+    {
+      "code": "V28",
+      "title": "Che dữ liệu riêng trong báo lỗi",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "Đã gộp (#23). Báo lỗi được che token, khóa, đường dẫn ở mọi chỗ lưu và gửi.",
+      "module": "diag"
+    },
+    {
+      "code": "V29",
+      "title": "Máy chủ báo lỗi lưu đủ thông tin",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "Đã gộp (#24). Máy chủ báo lỗi chưa triển khai lên Cloudflare (cần secret, Q4).",
+      "module": "diag"
+    },
+    {
+      "code": "V30",
+      "title": "Chặn phát hành bản ký debug",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "Đã gộp (#25): release không bao giờ phát bản ký debug.",
+      "module": "ci"
+    },
+    {
+      "code": "V31",
+      "title": "0.7.4 thành bản thử; sửa thông tin cập nhật app; K10 chặt",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "Config 36, mục app = 0.7.6",
+      "module": "ci"
+    },
+    {
+      "code": "V32",
+      "title": "Ghim phiên bản lõi giả lập (GB/GBA/NES)",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "#67 gộp7b45e57 sau Luna+CI; config33 ghim12ABI từ snapshotpublicđãđo. Game/ROM vàCloudsync chưa kiểm.",
+      "module": "libretro"
+    },
+    {
+      "code": "V33",
+      "title": "Bài kiểm theo đúng đường người dùng",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "Đã gộp (#26): máy ảo chạy đúng đường người dùng.",
+      "module": "ci"
+    },
+    {
+      "code": "L04",
+      "title": "Sửa lô tài liệu mâu thuẫn + sửa script kiểm link",
+      "owner": "Luna",
+      "status": "xong",
+      "note": "Đã gộp, gồm phần sửa HANDOFF sau V30.",
+      "module": "ci"
+    },
+    {
+      "code": "V34",
+      "title": "Kiểm config từ xa trước khi áp dụng",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "Đã gộp (#27).",
+      "module": "config"
+    },
+    {
+      "code": "V35",
+      "title": "Cài gói không mất bản cũ khi lỗi",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "Đã gộp: cài gói không mất bản cũ khi lỗi.",
+      "module": "config"
+    },
+    {
+      "code": "L05",
+      "title": "Test tự động bắt lỗi config",
+      "owner": "Luna",
+      "status": "xong",
+      "note": "Đã gộp.",
+      "module": "config"
+    },
+    {
+      "code": "L06",
+      "title": "Script kiểm chữ ký APK",
+      "owner": "Luna",
+      "status": "xong",
+      "note": "Đã gộp.",
+      "module": "ci"
+    },
+    {
+      "code": "V36",
+      "title": "Gói ONS (NScripter) sai bố cục nên chưa cài được",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "Đã gộp: gói ONScripter cài được.",
+      "module": "onscripter"
+    },
+    {
+      "code": "V37",
+      "title": "CI tự kiểm gói engine thật (thay PM tải tay)",
+      "owner": "Sol",
+      "status": "xong",
+      "module": "config",
+      "note": "Đã gộp: mỗi PR đụng gói đều được GitHub tự kiểm bằng gói thật."
+    },
+    {
+      "code": "L07",
+      "title": "Tiền duyệt mọi PR của Sol, Sonnet",
+      "owner": "Luna (nhận lại 07/10)",
+      "status": "lap",
+      "module": "ci",
+      "note": "Luna đã duyệt 9 PR trong 1 giờ"
+    },
+    {
+      "code": "L08",
+      "title": "Hướng dẫn thử nhanh trên điện thoại theo từng module",
+      "owner": "Luna",
+      "status": "xong",
+      "module": "ci",
+      "note": "Đã gộp: bảng thử nhanh theo module ở đầu docs/TEST-MAY-THAT.md."
+    },
+    {
+      "code": "L09",
+      "title": "Đồng bộ tài liệu sau mỗi tính năng mới",
+      "owner": "Luna (nhận lại 07/10)",
+      "status": "lap",
+      "module": "ci",
+      "note": "Luna đồng bộ HANDOFF (#49)."
+    },
+    {
+      "code": "S0",
+      "title": "Dựng thử engine Symbian trên CI",
+      "owner": "Sol",
+      "status": "xong",
+      "module": "symbian",
+      "note": "Native EKA2L1 đúng cf6e5c5 PASS37184987946, chỉ spike CI; chưa nhúng/chơi game, cache nóng chưa kiểm."
+    },
+    {
+      "code": "V38",
+      "title": "Gửi file khóa ký cho sếp để sao lưu",
+      "owner": "Sonnet",
+      "status": "xong",
+      "module": "ci",
+      "note": "Khóa đã nằm an toàn trong GitHub Secrets."
+    },
+    {
+      "code": "V39",
+      "title": "Bản tin trạng thái tự động chạy trên GitHub (PM đọc 1 file mỗi lượt)",
+      "owner": "Sol",
+      "status": "xong",
+      "module": "ci",
+      "note": "**xong** #48/#63; MAIN37196924569 xanh, bot6cdaf009 rootparents[]/đúnghai file verified. Không vòng lặpBuild; không suy từpreview."
+    },
+    {
+      "code": "L10",
+      "title": "Script tổng hợp trạng thái repo cho bản tin tự động",
+      "owner": "Luna",
+      "status": "xong",
+      "module": "ci",
+      "note": "Đã gộp."
+    },
+    {
+      "code": "V42",
+      "title": "GitHub tự kiểm hằng ngày (link, gói, test), lỗi thì mở issue",
+      "owner": "Sol",
+      "status": "xong",
+      "module": "ci",
+      "note": "Đã gộp: kiểm định kỳ hằng ngày, tự mở/đóng issue khi đỏ/xanh."
+    },
+    {
+      "code": "V41",
+      "title": "Dependabot/nâng thư viện",
+      "owner": "Sol",
+      "status": "xong",
+      "module": "ci",
+      "note": "Gộp #77 cd1963d (BOM 2025.03.01), #76 0fbe86d (upload-artifact v7), #78 52be109 (setup-gradle v6 basic) 06/10 23:1xZ. #75 chờ Sol đóng."
+    },
+    {
+      "code": "V40",
+      "title": "Thử chạy máy ảo ARM trên GitHub để test Kirikiri không cần máy sếp",
+      "owner": "Sol",
+      "status": "xong",
+      "module": "kirikiri",
+      "note": "Đã gộp. Kết luận: không có đường máy ảo ARM trên GitHub; máy ARM thật chỉ còn Firebase Test Lab (G9)."
+    },
+    {
+      "code": "V43",
+      "title": "Phát hành APK ký trên GitHub thay vì build trong phiên",
+      "owner": "Sol",
+      "status": "xong",
+      "module": "ci",
+      "note": "v0.7.5 phát hành 06/10 run 37395509233 xanh, prerelease, chứng thư khớp"
+    },
+    {
+      "code": "V44",
+      "title": "Sửa tương thích RPG Maker VX/VX Ace (lỗi script khi mở game)",
+      "owner": "Sol (tiếp quản Sonnet)",
+      "status": "xong",
+      "module": "rgss",
+      "note": "Đã gộp (#50). VX và VX Ace hết lỗi script: cả 3 game thật vào màn tiêu đề, New Game, tới cảnh hội thoại trên máy ảo (mức 1)."
+    },
+    {
+      "code": "V45",
+      "title": "Ren'Py 8: đăng gói và bật trong config (P4)",
+      "owner": "Nova",
+      "status": "dang",
+      "module": "renpy8",
+      "note": "Nova (5.5 xhigh) nhận từ Sol; 2 PR nháp, hạn 10/10 20:00"
+    },
+    {
+      "code": "V46",
+      "title": "Đúc skill để giảm 50% hạn mức (theo lệnh sếp)",
+      "owner": "Sol (tiếp quản Sonnet)",
+      "status": "xong",
+      "module": "ci",
+      "note": "Đã gộp (#51): 9 skill + CLAUDE.md gọn. Bước tiếp: lượt kiểm PM chạy phiên mới gọn."
+    },
+    {
+      "code": "V47",
+      "title": "Sync config lên Cloudflare đỏ (thiếu secret)",
+      "owner": "Sonnet (thay Sol)",
+      "status": "xong",
+      "note": "KV = configVersion 35 (#99). #104 đưa lên 36"
+    },
+    {
+      "code": "V48",
+      "title": "Bản tin nhận mẫu tiền duyệt Luna/Nova/Haiku",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "#83 gộp 73313e2. Còn: nhận mẫu Nova."
+    },
+    {
+      "code": "V49",
+      "title": "Phân loại 26 cảnh báo CodeQL",
+      "owner": "Sol (nhận lại 07/10)",
+      "status": "cho",
+      "note": "#109 gộp; chờ sếp đóng tay alert theo bảng V49.md",
+      "links": [
+        {
+          "label": "#86",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/86",
+          "kind": "pr"
+        },
+        {
+          "label": "#84",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/84",
+          "kind": "pr"
+        }
+      ]
+    },
+    {
+      "code": "V50",
+      "title": "Nâng nốt action v7/v6 cho workflow còn lại",
+      "owner": "Sonnet (thay Sol)",
+      "status": "xong",
+      "note": "#100 gộp ea2125f"
+    },
+    {
+      "code": "N00",
+      "title": "Nova: tiền duyệt dự phòng",
+      "owner": "Nova",
+      "status": "lap",
+      "note": "Thành viên mới Sonnet 5.5 medium (05/10). Duyệt PR chờ Luna quá 2 giờ."
+    },
+    {
+      "code": "N01",
+      "title": "Nova: sửa TEST-MAY-THAT mục RGSS",
+      "owner": "Nova",
+      "status": "xong",
+      "note": "#87 gộp 16260ad (Haiku Đạt)",
+      "links": [
+        {
+          "label": "#87",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/87",
+          "kind": "pr"
+        }
+      ]
+    },
+    {
+      "code": "N02",
+      "title": "Nova: CHANGELOG v0.7.5",
+      "owner": "Haiku",
+      "status": "xong",
+      "note": "#98 gộp 51c1462 (Nova Đạt)"
+    },
+    {
+      "code": "N03",
+      "title": "Nova: test EngineRoutes",
+      "owner": "Nova",
+      "status": "xong",
+      "note": "#92 gộp d1abfa5 (Haiku Đạt)",
+      "links": [
+        {
+          "label": "#92",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/pull/92",
+          "kind": "pr"
+        }
+      ]
+    },
+    {
+      "code": "N04",
+      "title": "Nova: test cho script chưa có test",
+      "owner": "Luna (từ Nova 07/10)",
+      "status": "xong",
+      "note": "verify-apk-cert, prepare-core-pins, gen-architecture, crash-report-detail, cheats-index."
+    },
+    {
+      "code": "N05",
+      "title": "Nova: trang Thử nhanh 0.7.5 cho sếp",
+      "owner": "Haiku 5.5",
+      "status": "xong",
+      "note": "4 bài thử trên điện thoại."
+    },
+    {
+      "code": "N06",
+      "title": "Nova: đồng bộ tài liệu dự phòng",
+      "owner": "Luna (gộp vào L09)",
+      "status": "cho",
+      "note": "Thay L09 khi Luna vắng quá 2 giờ."
+    },
+    {
+      "code": "N07",
+      "title": "Nova: rà thông tin cũ trong tài liệu",
+      "owner": "Luna (từ Haiku 07/10)",
+      "status": "xong",
+      "note": "Phiên bản, configVersion, gói, phân vai."
+    },
+    {
+      "code": "V51",
+      "title": "Độ phủ test: Kover trong CI, báo % theo module",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "#103 gộp 438a79d. Mốc: dòng 47,1% · nhánh 31,2%",
+      "module": ""
+    },
+    {
+      "code": "N08",
+      "title": "Checklist cho tester ngoài + mẫu báo lỗi GitHub + bảng Google Sheet",
+      "owner": "Haiku soạn · Nova duyệt",
+      "status": "xong",
+      "note": "#106 chờ Nova duyệt",
+      "module": "",
+      "links": [
+        {
+          "label": "Hộp thư Haiku #94",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/issues/94",
+          "kind": "trang"
+        }
+      ]
+    },
+    {
+      "code": "N09",
+      "title": "Thêm test theo báo cáo độ phủ",
+      "owner": "Luna · Sol · Haiku · Haiku-2 · Nova",
+      "status": "cho",
+      "note": "Gộp: #116 Luna, #111 Sol, #117 Haiku (ffe7e7e), #123 Haiku-2 (a7f4ff3); #124 chờ test khóa giới hạn 5 bài",
+      "module": ""
+    },
+    {
+      "code": "V52",
+      "title": "Tách repo: phần riêng sang repo private, rà giấy phép GPL trước",
+      "owner": "Luna Ultra (rà giấy phép) · PM lập kế hoạch",
+      "status": "dang",
+      "note": "Sếp chốt R2 06/10",
+      "module": ""
+    },
+    {
+      "code": "V53",
+      "title": "Đóng thành phần j2me không cần mở từ ngoài (manifest :app)",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "#110 gộp 7dacebb"
+    },
+    {
+      "code": "V54",
+      "title": "Test độ phủ azahar + cài gói",
+      "owner": "Sol",
+      "status": "xong",
+      "note": ""
+    },
+    {
+      "code": "V55",
+      "title": "Kiểm định kỳ: configVersion trên Worker so với main",
+      "owner": "Sol",
+      "status": "xong",
+      "note": ""
+    },
+    {
+      "code": "L07-U",
+      "title": "Tiền duyệt PR của Luna, Haiku, Haiku-2",
+      "owner": "Luna Ultra",
+      "status": "lap",
+      "note": ""
+    },
+    {
+      "code": "V63",
+      "title": "Sửa bản tin digest/preview đỏ HTTP 403",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "#132 gộp 4dee745"
+    },
+    {
+      "code": "V62",
+      "title": "Đối chiếu chữ tài liệu với app",
+      "owner": "Luna Ultra",
+      "status": "xong",
+      "note": "#131 gộp 60758f5"
+    },
+    {
+      "code": "V64",
+      "title": "Sửa bộ nhớ resolver Kirikiri (chặn RC 0.7.7)",
+      "owner": "Sol (từ Sonnet)",
+      "status": "xong",
+      "note": "#142: Luna Ultra duyệt bù Đạt 14:00Z"
+    },
+    {
+      "code": "V58",
+      "title": "Chuẩn bị RC 0.7.7",
+      "owner": "Sol",
+      "status": "xong",
+      "note": "#128 gộp c6dee40"
+    },
+    {
+      "code": "V61",
+      "title": "Rà soát mã trước phát hành",
+      "owner": "Luna Ultra",
+      "status": "xong",
+      "note": "#130: tìm 1 lỗi chặn → V64"
+    },
+    {
+      "code": "V56",
+      "title": "Game thật trên máy ARM qua Test Lab",
+      "owner": "Sol",
+      "status": "dang",
+      "note": "K1 PASS, K2 SIGSEGV GLThread (Pixel 11/11 Pro API 37); Sonnet sửa lõi"
+    },
+    {
+      "code": "V57",
+      "title": "Nối test script N04 vào CI",
+      "owner": "Sol",
+      "status": "xong",
+      "note": ""
+    },
+    {
+      "code": "V65",
+      "title": "Bỏ .pyc khỏi repo",
+      "owner": "Sol",
+      "status": "xong",
+      "note": ""
+    },
+    {
+      "code": "V59",
+      "title": "Nhãn màn báo lỗi vào strings.xml",
+      "owner": "Sol",
+      "status": "xong",
+      "note": ""
+    },
+    {
+      "code": "V26b",
+      "title": "Báo rõ \"xp3 mã hóa\" thay cho NotFound",
+      "owner": "Sonnet",
+      "status": "xong",
+      "note": "#144 gộp: Luna + Luna Ultra Đạt, CI xanh"
+    },
+    {
+      "code": "L11",
+      "title": "CHANGELOG 0.7.7 + ghi chú phát hành",
+      "owner": "",
+      "status": "xong",
+      "note": "#145 gộp; còn nit + thêm V26b"
+    },
+    {
+      "code": "V60",
+      "title": "Rà soát CI trước phát hành RC",
+      "owner": "",
+      "status": "xong",
+      "note": "#146 gộp: periodic + Robo success"
+    },
+    {
+      "code": "L13",
+      "title": "Hướng dẫn người dùng bản ổn định",
+      "owner": "",
+      "status": "xong",
+      "note": "#149 gộp, Luna Ultra Đạt"
+    },
+    {
+      "code": "V52a",
+      "title": "V52a (Nova #122)",
+      "owner": "",
+      "status": "dang",
+      "note": "Quá hạn, chuyển Luna Ultra (luna-ultra/V52a), hạn 09/10 18:00"
+    },
+    {
+      "code": "V66",
+      "title": "Workflow phát hành tự tạo tag (A14)",
+      "owner": "Sol",
+      "status": "dang",
+      "note": "A15 chạy tối đa, mở 09/10"
+    },
+    {
+      "code": "V67",
+      "title": "Rà báo lỗi người dùng RC 0.7.7",
+      "owner": "Sol",
+      "status": "dang",
+      "note": "A15 chạy tối đa, mở 09/10"
+    },
+    {
+      "code": "V68",
+      "title": "Rà soát trước bản ổn định",
+      "owner": "Luna Ultra",
+      "status": "dang",
+      "note": "A15 chạy tối đa, mở 09/10"
+    },
+    {
+      "code": "L14",
+      "title": "CHANGELOG bản ổn định 0.7.7",
+      "owner": "Luna",
+      "status": "dang",
+      "note": "A15 chạy tối đa, mở 09/10"
+    },
+    {
+      "code": "L15",
+      "title": "TESTER-NGOAI + THU-NHANH 0.7.7",
+      "owner": "Luna",
+      "status": "xong",
+      "note": "#159 gộp, Luna Ultra Đạt"
+    },
+    {
+      "code": "V69",
+      "title": "Lô UI/UX 7 điểm",
+      "owner": "Sol",
+      "status": "dang",
+      "note": "mở 09/10"
+    },
+    {
+      "code": "V70a",
+      "title": "Bộ nút chung + lún + rung",
+      "owner": "Sol",
+      "status": "dang",
+      "note": "mở 09/10"
+    },
+    {
+      "code": "V70b",
+      "title": "Menu trong game dùng chung",
+      "owner": "Luna",
+      "status": "dang",
+      "note": "mở 09/10"
+    },
+    {
+      "code": "V70c",
+      "title": "Tự chỉnh bố cục tay cầm (0.7.8)",
+      "owner": "Sol",
+      "status": "dang",
+      "note": "mở 09/10"
+    },
+    {
+      "code": "V71",
+      "title": "Sửa bộ kiểm thử máy ảo",
+      "owner": "",
+      "status": "dang",
+      "note": "Sol, hạn 09/10 12:00"
+    }
+  ],
+  "gates": [
+    {
+      "code": "G10",
+      "title": "Thanh toán GitHub Actions bị lỗi, CI dừng",
+      "when": "Ngay",
+      "status": "xong",
+      "note": "Sếp đã công khai repo + xóa 2 release rgss (03/10 16:35)."
+    },
+    {
+      "code": "G2",
+      "title": "5 game RPG Maker cho R6",
+      "when": "Sau R5",
+      "status": "xong",
+      "note": "Sếp gửi 5 game (03/10 20:05): The Reconstruction (XP), Star Stealing Prince (VX), In Search of Immortality (VX Ace), Pokémon Reborn 19, To the Moon Việt hóa."
+    },
+    {
+      "code": "G9",
+      "title": "Secrets Firebase Test Lab",
+      "when": "Khi tiện",
+      "status": "xong",
+      "note": "Sếp thêm secret 08/10; run 37721419669 xanh, Robo Passed trên 2 máy thật API 37 (cubs, grizzly).",
+      "links": [
+        {
+          "kind": "run",
+          "label": "Run 37721419669",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/actions/runs/37721419669"
+        }
+      ]
+    },
+    {
+      "code": "G8",
+      "title": "Giấy phép file dựng của bản port mkxp-z",
+      "when": "Trước R7",
+      "status": "xong",
+      "note": "Chủ dự án xác nhận G8 đã OK ngày05/10; đã gỡ điều kiện chờ trả lời giấy phép. Không mở rộng sang quyền phát hành engine ngoài phạm vi."
+    },
+    {
+      "code": "G4",
+      "title": "Symbian: A1, A2",
+      "when": "Khi tiện",
+      "status": "dang",
+      "note": "A1 coi như đồng ý theo Q1 (S0 chạy). A2 hỏi trên trang (G4A2)."
+    },
+    {
+      "code": "G7",
+      "title": "Thử lại Kirikiri 0.7.4 trên máy thật",
+      "when": "Gấp",
+      "status": "dang",
+      "note": "Ảnh chủ dự án 05/10 hiển thị app v0.7.3 với lỗi “Cannot find storage startup.tjs”. V26 đã phát hành 0.7.4 nhưng chưa có xác nhận thử lại Kara no Shoujo bằng 0.7.4; G7 tiếp tục mở."
+    },
+    {
+      "code": "G6",
+      "title": "Nhắn RAdmin duyệt client AowMonika (hardcore)",
+      "when": "Khi tiện",
+      "status": "sep",
+      "note": ""
+    },
+    {
+      "code": "G3",
+      "title": "2 game Ren'Py (bản 7 và bản 8)",
+      "when": "P6",
+      "status": "cho",
+      "note": ""
+    },
+    {
+      "code": "G1",
+      "title": "1 game RPG Maker XP",
+      "when": "—",
+      "status": "cho",
+      "note": "Không gấp: R3 đã dùng game tự sinh. Gộp vào G2."
+    },
+    {
+      "code": "G5",
+      "title": "Công khai mã nguồn trước khi phát hành gói GPL",
+      "when": "Trước phát hành",
+      "status": "xong",
+      "note": "Repo đã công khai. Còn chọn file LICENSE (không gấp)."
+    }
+  ],
+  "log": [
+    {
+      "t": "2026-10-08T19:29:43Z",
+      "text": "Sếp duyệt D1–D5 trên trang. Áp dụng D4: PR đỏ >6h PM nhắc, >12h PM đóng."
+    },
+    {
+      "t": "2026-10-08T19:29:16Z",
+      "text": "02:27: gộp #155 (Haiku test browser) và #159 (L15 tài liệu 0.7.7). Chờ Luna duyệt Sol #158 V71, #160 quota, #161 V66; #157 chờ Luna Ultra."
+    },
+    {
+      "t": "2026-10-08T18:58:58Z",
+      "text": "Ca đêm 01:57: gộp #139 (Haiku-2 test), đóng #122 (thay bởi #154). #157 sửa crash Kirikiri: Luna Đạt, chờ Luna Ultra. #151 V45a: Luna Ultra Cần sửa nhỏ (ghi run ID vào V45.md)."
+    },
+    {
+      "t": "2026-10-08T18:29:48Z",
+      "text": "Kiểm thử toàn bộ (sếp yêu cầu): GB/GBA/NES lên hình trên máy ảo; Kirikiri crash cả máy ảo lẫn 2 máy ARM thật (K2 SIGSEGV GLThread) → Sonnet; bộ máy ảo đỏ vì Kirikiri x86 + V33 fixture → Sol V71."
+    },
+    {
+      "t": "2026-10-08T17:59:48Z",
+      "text": "Ca đêm: gộp #146 (V60) và #152 (Nova N09-N test library). #151 V45(a) chờ Luna Ultra duyệt lần hai."
+    },
+    {
+      "t": "2026-10-08T17:52:47Z",
+      "text": "V70: sếp giao thiết kế lại tay cầm và menu thống nhất (lún, rung, tự chỉnh). Spec thiet-ke/V70. Sol V70a+V70c, Luna V70b, Luna Ultra duyệt UX. A16: V70c sang 0.7.8."
+    },
+    {
+      "t": "2026-10-08T17:47:10Z",
+      "text": "A15: đội ChatGPT chạy tối đa. Sol nhận V66 (workflow tự tạo tag, từ Sonnet), V67, F01/F02 (từ Gemini), N09-S, H02. Luna: L12, L14, L15, N09-L. Luna Ultra: V52a, V68, V52b. Sonnet chuyển sang lõi Kirikiri V18/V26."
+    },
+    {
+      "t": "2026-10-08T17:36:03Z",
+      "text": "Sếp nâng Nova lên Sonnet 5.5 xhigh. V45 Ren'Py 8 chuyển từ Sol sang Nova; Sol dồn V56 (hạn mới 10/10 12:00). Nova duyệt thêm PR tài liệu."
+    },
+    {
+      "t": "2026-10-08T17:27:57Z",
+      "text": "Gộp #150 (quyền Artifact). V52a chuyển từ Nova sang Luna Ultra do quá hạn 23:00."
+    },
+    {
+      "t": "2026-10-08T16:28:08Z",
+      "text": "Gộp #149 (L13 hướng dẫn người dùng). Nova đã sửa #122, chờ Luna duyệt lại. #146 (V60.md) chờ Luna."
+    },
+    {
+      "t": "2026-10-08T16:06:08Z",
+      "text": "v0.7.7 RC phát hành: run 37803788979 xanh, prerelease, APK 19135241 byte, SHA-256 a337a90b…, chứng thư khớp (Sonnet kiểm). M2 xong sớm."
+    },
+    {
+      "t": "2026-10-08T16:01Z",
+      "text": "A14: sếp giao PM tự phát hành (thử + ổn định). Sonnet sửa release.yml cho phép kích hoạt tự tạo tag + cổng tự động. v0.7.7 RC do sếp tạo release, run 37803788979."
+    },
+    {
+      "t": "2026-10-08T15:23Z",
+      "text": "Sonnet: không đẩy được tag v0.7.7 (proxy chặn). Chờ sếp tạo release v0.7.7 pre-release trên 33876712."
+    },
+    {
+      "t": "2026-10-08T15:14:25Z",
+      "text": "V60 xanh: periodic-check 37796099292, Test Lab Robo 37796105693 trên 9dc9774. Gộp #147 (CHANGELOG thêm V26b). RC 0.7.7 sẵn sàng, chờ sếp ra lệnh Sonnet phát hành."
+    },
+    {
+      "t": "2026-10-08T14:14:11Z",
+      "text": "Luna Ultra duyệt bù #142 (V64): Đạt. Gộp #144 (V26b: báo rõ xp3 mã hóa). RC 0.7.7 chỉ còn chờ V60 trên 9dc9774."
+    },
+    {
+      "t": "2026-10-08T13:15:12Z",
+      "text": "Gộp #145 (CHANGELOG 0.7.7). PM nhận thiếu: #142 gộp khi chưa có Luna Ultra duyệt lần hai, đã giao duyệt bù. Luật A12: PR chỉ sửa tài liệu miễn check bắt buộc."
+    },
+    {
+      "t": "2026-10-08T12:15:05Z",
+      "text": "Gộp #142 (V64, gỡ lỗi chặn RC 0.7.7) và #143 (V26 thư 005). Gọi sớm V60 (Sol) và L11 CHANGELOG (Luna), hạn 09/10 12:00. Sonnet gộp main vào #144."
+    },
+    {
+      "t": "2026-10-08T11:16:51Z",
+      "text": "Gộp #140 (Haiku-2 test download) và #141 (Luna, tài liệu). PM chốt: PR chỉ sửa tài liệu miễn Build/Coverage/CodeQL theo V11. V64 #142 và V26b #144 đã có PR."
+    },
+    {
+      "t": "2026-10-08T11:12:21Z",
+      "text": "Sonnet trả thư 005 (#143): chưa kết luận mã hóa hay thứ tự patch; PM duyệt V26b (báo rõ xp3 mã hóa). Kênh Sonnet: send_message kèm tên thư"
+    },
+    {
+      "t": "2026-10-08T10:14:43Z",
+      "text": "Gộp #138 (Haiku, browser 35,5→38,3%). V64 chuyển Sonnet → Sol vì chưa bắt đầu; RC 0.7.7 chờ V64. #139, #140 Cần sửa"
+    },
+    {
+      "t": "2026-10-08T09:14:45Z",
+      "text": "Gộp 3 PR của Sol: #129 V57 (test script vào CI), #135 V65 (bỏ .pyc), #137 V59 (nhãn báo lỗi vào strings.xml). Haiku, Haiku-2 lô test mới"
+    },
+    {
+      "t": "2026-10-08T08:14:43Z",
+      "text": "Gộp #134 (apkinstall.adb), #136 (gói gốc) của Haiku-2. Chốt digest/preview không chặn. Sol mở #135 V65, #137 V59; #129 sửa, chờ Luna"
+    },
+    {
+      "t": "2026-10-08T07:14:18Z",
+      "text": "Gộp #127 V56 (workflow Test Lab game thật, 4d711c0), #132 V63 (digest 403, 4dee745). Haiku-2 nhận apkinstall.adb + gói gốc. RC chờ V64 của Sonnet"
+    },
+    {
+      "t": "2026-10-08T06:15:06Z",
+      "text": "Gộp #128 V58 (0.7.7), #130 V61, #131 V62, #133 runner. V61 tìm lỗi bộ nhớ resolver Kirikiri → V64 (Sonnet) chặn RC. #127 xung đột, Sol sửa"
+    },
+    {
+      "t": "2026-10-08T05:14:24Z",
+      "text": "Gộp #124 (Haiku-2), #114 L09/N07 (Luna), #126 N08-fix (Haiku). digest/preview đỏ 403 cả main → Sol V63 ưu tiên 0. Sol mở #127 V56, #128 V58, #129 V57 chờ Luna"
+    },
+    {
+      "t": "2026-10-08T04:14:01Z",
+      "text": "Gộp #123 (Haiku-2), #118 N05 (Nova), #117 (Haiku, PM nhận). #124 chờ test; #122, #114 Cần sửa"
+    },
+    {
+      "t": "2026-10-08T04:09:08Z",
+      "text": "Sếp duyệt RC 0.7.7; gửi danh sách file Kara no Shoujo (không có xp3filter.tjs) → thư Sonnet 005. PM thêm SRI cho landing (alert 26)"
+    },
+    {
+      "t": "2026-10-08T03:57:23Z",
+      "text": "Nước rút tới CN 11/10: lịch kiểm lệch phút, Sol 6 việc (V56–V60), Luna 5 việc; trang tiến độ có sơ đồ Văn phòng"
+    },
+    {
+      "t": "2026-10-08T03:43:49Z",
+      "text": "Sếp bổ sung Luna Ultra (hộp thư #119) và Haiku-2 (#120). Luna Ultra duyệt PR Luna/Haiku/Haiku-2 + rà giấy phép V52; Haiku-2 test download/translate/notify/runner"
+    },
+    {
+      "t": "2026-10-08T03:39:57Z",
+      "text": "Test Lab chạy được: run 37721419669 xanh, robot 10 phút trên 2 máy thật API 37 (cubs, grizzly), cả hai Passed"
+    },
+    {
+      "t": "2026-10-08T03:37:37Z",
+      "text": "Sếp nâng Haiku 4.6 → Haiku 5.5 ultracode; prompt PROMPT-HAIKU-55.md: test độ phủ cheats/browser, N05, duyệt dự phòng PR Luna"
+    },
+    {
+      "t": "2026-10-08T03:24:54Z",
+      "text": "Thêm khối Đội ngũ (9 thành viên) vào trang tiến độ theo yêu cầu sếp"
+    },
+    {
+      "t": "2026-10-08T03:18:33Z",
+      "text": "Sonnet duyệt thay Nova: gộp #115 N04 (a07e5c7), #116 N09 (8cad51b); #114 Cần sửa. Test Lab run 37721419669 đang chạy (sếp đã set khóa)"
+    },
+    {
+      "t": "2026-10-08T03:13:27Z",
+      "text": "Gộp #110 V53 (7dacebb). Nova vắng >2h: nhờ Sonnet tiền duyệt #114–#116 của Luna"
+    },
+    {
+      "t": "2026-10-08T01:15:37Z",
+      "text": "Gộp 7 PR: #107 G7B, #106 N08, #108 V48, #109 V49, #111 V54, #112 V50, #113 V55. Giữ #110 (V53) kiểm lối tắt. Luna mở #114–#116 chờ Nova"
+    },
+    {
+      "t": "2026-10-08T00:13:31Z",
+      "text": "Sol mở 6 PR (#108–#113: V48, V49, V53, V54, V50, V55) chờ Luna duyệt; Luna 'Cần sửa' #107 (phạm vi, PM đã xác nhận) và #106 (Haiku đã sửa 8df30a1)"
+    },
+    {
+      "t": "2026-10-07T23:38:24Z",
+      "text": "Sol, Luna quay lại sớm theo sếp: Luna tiền duyệt #107, #106 trước; Sol 6 việc (V48, V49, V53, V54, V50, V55)"
+    },
+    {
+      "t": "2026-10-07T10:14:13Z",
+      "text": "Sếp thêm CRASH_ADMIN_TOKEN; Sonnet deploy Worker mới (32c145c4), chờ sếp bấm Báo lỗi lại. #107 chờ Nova"
+    },
+    {
+      "t": "2026-10-07T05:13:44Z",
+      "text": "Nova quay lại. PM gộp #98 (N02 CHANGELOG, 51c1462). #106 N08 chờ Nova"
+    },
+    {
+      "t": "2026-10-06T16:28:34Z",
+      "text": "Haiku chạy lại. PM gộp #92 (N03, d1abfa5) và #87 (N01, 16260ad). #98 Haiku đã sửa (21114ad), #106 N08 chờ Nova"
+    },
+    {
+      "t": "2026-10-06T10:15:16Z",
+      "text": "PM gộp #86 (0171920, thông báo V49) và #105 (34620c3, release.yml setup-gradle v6) — Haiku Đạt, CI xanh"
+    },
+    {
+      "t": "2026-10-06T09:14:23Z",
+      "text": "Gộp #103 (độ phủ test, Kover). #86 và #105 chờ duyệt."
+    },
+    {
+      "t": "2026-10-06T08:14:35Z",
+      "text": "Gộp #104 (config 0.7.6), #100 (action v6), #99 (V47), #96 (timeout). #86 chờ sửa theo Nova."
+    },
+    {
+      "t": "2026-10-06T07:14:50Z",
+      "text": "Sonnet thiếu CRASH_ADMIN_TOKEN nên chưa đọc được báo cáo G7B. Hỏi sếp (câu TOK)."
+    },
+    {
+      "t": "2026-10-06T07:14:10Z",
+      "text": "G7B: 0.7.6 vẫn lỗi startup.tjs, sếp đã gửi báo cáo. R1, R2 đã chốt. Haiku duyệt dự phòng PR Sonnet (Nova vắng)."
+    },
+    {
+      "t": "2026-10-06T06:28:27Z",
+      "text": "v0.7.6 phát hành: run 37419192387 xanh, prerelease, chứng thư khớp, SHA 0f3926a5…ffcf2. Chờ sếp thử Kara no Shoujo (G7B)."
+    },
+    {
+      "t": "2026-10-06T05:42:54Z",
+      "text": "Báo động ngân sách (lệnh sếp): #102 gộp, thêm luật chung + skill tien-duyet, kiem-phat-hanh. PM kiểm thư giảm xuống 60 phút/lần."
+    },
+    {
+      "t": "2026-10-06T05:40:35Z",
+      "text": "Sếp: tăng độ phủ test, tuyển tester ngoài (V51, N08, N09). Hỏi sếp R1 (nơi để firmware/ROM) và R2 (tách repo riêng/công khai). Release v0.7.6 đang chạy."
+    },
+    {
+      "t": "2026-10-06T05:13:49Z",
+      "text": "Gộp #95 (config app 0.7.5, configVersion 35) và #84 (CodeQL inventory chỉ đọc), Haiku Đạt + PM duyệt. v0.7.6 vẫn chờ sếp tạo tag."
+    },
+    {
+      "t": "2026-10-06T03:14:00Z",
+      "text": "Sonnet bị chặn đẩy tag v0.7.6 (Production Deploy). Nhờ sếp tạo release v0.7.6 trên web (câu TAG)."
+    },
+    {
+      "t": "2026-10-06T03:13:21Z",
+      "text": "Gộp #97 (0.7.6, Haiku Đạt + PM duyệt) → 4a1486e. Giao Sonnet tag v0.7.6 và chạy phát hành 1 lần (A13)."
+    },
+    {
+      "t": "2026-10-06T02:13:23Z",
+      "text": "Sếp chốt A13 (phát hành 0.7.6), H1 (Haiku đã vào), T1 (đã tắt lịch trùng). G9: PM gửi prompt cho Claude in Chrome."
+    },
+    {
+      "t": "2026-10-06T01:57:19Z",
+      "text": "01:57Z: gộp #93 (Nova Đạt + PM duyệt) → c3489f3. Sếp đã đặt v0.7.4 là pre-release (Q4). Sonnet: #95 config 0.7.5, #86, #84 đã đẩy, chờ CI + Nova."
+    },
+    {
+      "t": "2026-10-06T01:51:55Z",
+      "text": "01:52Z: Sol, Luna nghỉ tới 10/10. Chia việc: Sonnet (V31(3), #84, #86, V47, V50), Nova (tiền duyệt, V48), Haiku (tiền duyệt PR Nova, L09, N02, N07). Trang thêm mục Điểm nghẽn và link kèm mỗi câu hỏi."
+    },
+    {
+      "t": "2026-10-06T01:43:16Z",
+      "text": "01:45Z: sếp chốt G4A2 = chỉ zip cấu hình sẵn trước. #93 chờ Nova duyệt (head 5fe1a1f, CI xanh)."
+    },
+    {
+      "t": "2026-10-06T01:14:39Z",
+      "text": "01:15Z: gộp #91 (Nova Đạt + PM duyệt) → ac7a843; #93 đổi base main, Sonnet gộp main + ghi basename; #92 Nova CI đỏ."
+    },
+    {
+      "t": "2026-10-06T00:59:16Z",
+      "text": "00:58Z: v0.7.5 phát hành xanh (run 37395509233), prerelease, chứng thư khớp. Mở V31(3) Sol, N02 Nova."
+    },
+    {
+      "t": "2026-10-06T00:43:41Z",
+      "text": "00:45Z: Nova duyệt Đạt #88, #85 → PM gộp. Báo Sonnet chạy lại release v0.7.5 (A8)."
+    },
+    {
+      "t": "2026-10-06T00:13:38Z",
+      "text": "06/10: G7 0.7.4 vẫn lỗi startup.tjs (ảnh sếp). Sếp chỉ định Nova duyệt #88. Mở issue #90 hộp thư PM↔Nova + prompt kiểm thư Nova."
+    },
+    {
+      "t": "2026-10-06T00:08:51Z",
+      "text": "06/10: sếp đồng ý A8 (chạy lại release 0.7.5 sau #88). Ảnh lỗi G7 cho thấy máy đang chạy 0.7.3, chưa phải 0.7.4."
+    },
+    {
+      "t": "2026-10-05T23:15:25Z",
+      "text": "23:14Z: gộp #77, #76, #78 (Dependabot). #85 Ren'Py menu synthetic xanh, PM duyệt chờ Luna. #84 yêu cầu bỏ quyền ghi."
+    },
+    {
+      "t": "2026-10-05T20:28:45Z",
+      "text": "20:28Z: gộp #83, #82 (Luna Đạt + CI). Release v0.7.5 đỏ ở bước kiểm chứng thư → #88 sửa, chờ duyệt + A8. G7: 0.7.4 không vào được game → Sonnet V26."
+    },
+    {
+      "t": "2026-10-05T16:51:04Z",
+      "text": "Sếp chốt A6: Nova Đạt = Luna Đạt khi Luna vắng >2 giờ. Giao Nova thêm N03–N07 (thư nova-001)."
+    },
+    {
+      "t": "2026-10-05T16:47:05Z",
+      "text": "Sếp bổ sung thành viên Nova (Sonnet 5.5 medium): tiền duyệt dự phòng N00, việc N01 tài liệu RGSS, N02 CHANGELOG. Prompt: hop-thu/PROMPT-NOVA.md."
+    },
+    {
+      "t": "2026-10-05T16:28:31Z",
+      "text": "16:28Z: Sol mở #82–#86 (V47, V48, V49×2, V45). Chưa có Luna review. #81 xanh từ 15:45Z nhưng Sonnet chưa gộp/phát hành (phiên Sonnet idle từ 15:38Z)."
+    },
+    {
+      "t": "2026-10-05T15:57:01Z",
+      "text": "Sếp thêm CLOUDFLARE_API_TOKEN; Sync config lên Cloudflare xanh (run 37261093978 lần 2). Bỏ mục xóa engines-rgss-6 khỏi Q4 vì config 34 đang dùng gói này."
+    },
+    {
+      "t": "2026-10-05T15:47:30Z",
+      "text": "Theo lệnh sếp tăng việc cho Sol: thư sol-011 giao V47 (sync Cloudflare đỏ do thiếu secret), V31(3) sau 0.7.5, V48 parser bản tin, V49 CodeQL 26 cảnh báo, V45 kiểm trên CI, V50 nâng action."
+    },
+    {
+      "t": "2026-10-05T15:40:39Z",
+      "text": "PM mới (phiên session_01EAtBeD…) nhận việc 15:40Z. Lịch kiểm thư mới (ngày 30', đêm 60'). PM duyệt #76/#77/#78, đồng ý đóng #75, trả lời SOL-012 (#62). #81 0.7.5 đang chờ build."
+    },
+    {
+      "t": "2026-10-05T15:35:00Z",
+      "text": "Sếp đồng ý phát hành 0.7.5 bản thử. Sonnet (phiên mới) mở PR #81 nâng phiên bản; PM duyệt; sau khi CI xanh Sonnet gộp, chạy phát hành trên GitHub và kiểm chứng thư ký."
+    },
+    {
+      "t": "2026-10-05T15:35:00Z",
+      "text": "PM (Opus) nhận lại điều phối theo lệnh sếp; Sol dừng tiếp quản (issue #65) và quay về app/CI/config/gói. PM rà kết quả của Sol: 23 PR gộp đúng quy trình (Luna xem + CI xanh), không vi phạm luật ký/phát hành."
+    },
+    {
+      "t": "2026-10-05T15:35:00Z",
+      "text": "Trong lúc Sol tiếp quản (04–05/10): V44 sửa xong RPG Maker VX/VX Ace; V25, V16, V21 D5, V22, V32, V46 đã gộp; V43 chạy thử ký trên GitHub thành công."
+    },
+    {
+      "t": "2026-10-05T05:54:40Z",
+      "text": "PM docs #71 merged 2c4ddd3 after Luna review5988269621 and exact-head Build37262788942/docs checks37263165134 green. Main now includes #79 L09 docs update4b2aa8f. V43 single dry-run37261174377 SUCCESS, release skipped/no artifacts; G7 0.7.4 retest pending. Audit findings remain recorded in issue65."
+    },
+    {
+      "t": "2026-10-05T04:08:32Z",
+      "text": "V43 authorized single dry-run37261174377 SUCCESS on main2493ec0: signing_dry_run and verify-apk-cert passed; release job skipped; artifact list empty. No release/tag/APK upload."
+    },
+    {
+      "t": "2026-10-05T03:56:05Z",
+      "text": "#73 V16 merged ef6b8c0 after Luna+exact CI; config34 RGSS pin. #72 V43 merged 2493ec0; exactly one owner-authorized main dry-run dispatched as run37261174377, signing_dry_run still in progress and release job skipped at 03:56Z. No release/tag/APK upload."
+    },
+    {
+      "t": "2026-10-05T02:23:04Z",
+      "text": "Owner approved exactly one V43 main dry_run after PR72 Luna+merge; Build37253552086 SUCCESS. V16 PR73 exact f524 Build37254516080/realpacks37254516114/CodeQL37254516059 SUCCESS, Luna pending. G8 confirmed; G7 screenshot is 0.7.3 startup.tjs, 0.7.4 retest unconfirmed."
+    },
+    {
+      "t": "2026-10-05T02:14:12.883060Z",
+      "text": "Owner05/10 confirms V43 approve exact one main dry_run after Luna/merge; G8OK; G7 screenshot0.7.3 startup.tjs failure. V16 sees public engines-rgss-6 source/hash/size/HEAD200; PR73 config34 ARM64 keepJoiplay, CI/Luna pending. No engine publication."
+    },
+    {
+      "t": "2026-10-05T02:06:39.070087Z",
+      "text": "Owner05/10 approvedV43 dry-runonly; #72 Build37253552086green/Lunapending, then one main dry_run=true no publish. G8owner reports OK; V16 still verify public RGSS URL/V12 beforeconfig. G7 newreport+image is v0.7.3 Cannot find storage startup.tjs;0.7.4 testunconfirmed."
+    },
+    {
+      "t": "2026-10-05T02:00:35.545091Z",
+      "text": "#50mergecommitca8 sauLuna f740 vàactingPMduyệt5986819733; Build/R6/CodeQL/signalsattempt2SUCCESS, actualcontrolmarker/orange/PixelCopyproof. Ownerkeyexistsconfirmed; #72V43chuẩnbịdry_runmain-only,nopublish;9fakeguardsPASS,actualdispatchownerngoạilệvẫnSOL012. PMdocsheadmớicầnLuna, khôngfakeaudio/full5."
+    },
+    {
+      "t": "2026-10-05T01:50:37.500648Z",
+      "text": "SửaLunac55 snapshotCI:Build/R6/CodeQLf740SUCCESS; R6artifact11320593801đãxemXP369/VX339/Ace382sPASSmức1. Signalsattempt1forkOOMexit126trướcgame/control, singlejobretrycùnghead/assertions đangchạy; khônggọicảCIxanh. Lunas5986720042expectationkhớpproof nhưngcầnxửlýsignals; docsheadmớicầnLuna trướcmerge."
+    },
+    {
+      "t": "2026-10-05T00:51:51.623670Z",
+      "text": "Đãxem R6@dd01/art11316984731 XP306/VX274/Ace298s PASSmức1; VXNewGame→scene+hội thoại, noerror. Native11318190058 regexp-result3+marker/orange/PixelCopyPASS. JobFAIL vìexpectvx cũ; actingPMchốtremoveVX vàpushf740, giữmọingưỡng/assertions. CầnCIheadmới/Lunafresh; full5/audio/save-load/FPS/máythật chưakiểm."
+    },
+    {
+      "t": "2026-10-04T22:57:08.399362Z",
+      "text": "SửaLuna185 snapshotstale:871R6hoàntất XP388/Ace381 mức1,VX367FAILsize/Regexp2174, width1633qua. Native11316493179getter17+marker/orange/PixelCopyPASS. C4masked2174choRegexpLiteral/resultsize; dd01appfix chungSTRwidth/RegexpSize grammarbounded, local122/20/6PASS, nativefixturecompile-only. Neednative/R6/Lunafresh, khônggameplayclaim/expectationlowering."
+    },
+    {
+      "t": "2026-10-04T22:57:08.399362Z",
+      "text": "#70gộpf4ebd0b sauLunaĐạt f40f89c+docschecks; V11BuildskipkhôngunitappPASS. #50head871 sửaCALL SPACE (StringLiteral).width theo maskedcd0+synthetic1.8.7/3.1.7, local110/20/6PASS/nativefixturecompile-only. Cầnnative/R6/Lunafresh, chưaclaimVXrecovery; R6cd0 supersededkhônggreen."
+    },
+    {
+      "t": "2026-10-04T22:57:08.399362Z",
+      "text": "R6@00bfe hoàn tất: XP372/Ace381 mức1PASS; VX439 FAILNoMethodError96:1633 (width/String) sauNewGame, đãqua slice137:118. Native11314836860 slice mutation+marker/orange/PixelCopyPASS; compile1570errorkhônggameplay. Headcd0 sửaLuna trigger/probe-missing/privacy20, thu masked1633; khôngđổiexpectfail/threshold."
+    },
+    {
+      "t": "2026-10-04T22:57:08.399362Z",
+      "text": "Head00bfe sửa slice! (/Regexp/) !=nil trongRAM: MRI1.8.7 so sánh kếtquả, MRI3.1.7 đưaBoolean vàoarg; proofmasked137:118 + synthetic thật. GuardmộtCALL/mộtline/literalRegexp/nilcomparison, commonbudgetgiữnguyên, nativefixtureStringmutation mới. Local98/19/6PASS; CI/R6/native pending, khôngđổiexpectfail."
+    },
+    {
+      "t": "2026-10-04T20:34:41.826757Z",
+      "text": "R6@808 đã xem ảnh/log/verdict11313582885: VX trướcphím cótitle, sauNewGame FAIL slice! TypeError137:118; XP370/Ace372 mức1PASS. Đã vượt Range957. Head131 guardconstants/proof/diagnostic mới, local87/18/6PASS; không đổiexpectfail. Bằng chứngClass.constants lexical1.8.7 đã chạy thật, khôngclaim1.8.1/fullSDK."
+    },
+    {
+      "t": "2026-10-04T20:17:40.250832Z",
+      "text": "808 Build37230428845/CodeQL37230428849/native37230428853 SUCCESS; native11312749848 kiểm predicate Integer/Range identity/exclusive+eval/accessor/orange/PixelCopy thật. R6pending. Fixture1.8.7 thật xác nhận Class.constants đọc constants lexical trongclassbody qua Module.singleton rb_mod_s_constants; 3.1.7 không, chưađo1.8.1. Guard Class.constants override đang chuẩn bị, không push hủy R6."
+    },
+    {
+      "t": "2026-10-04T20:02:06.172666Z",
+      "text": "#50 head808 sửa đúng khác biệt parser predicate-spacing Ruby1.8.7→3.1.7 trên RAM, local82Ruby18/18privacy/6probe PASS. Proof8a7: XP360/Ace373 mức1, VX65 FAIL957, native attempt2 đạt; attempt1 không có report, không claim sửa startup. Cần CI808/native/R6/Luna. Sửa headline/M1 PM cũ theo Luna4fb, giữ phần trăm chưa đo lại và lịch sử."
+    },
+    {
+      "t": "2026-10-04T19:44:34.082693Z",
+      "text": "#50 đã merge main345 giữparent; head8a7 chỉ diagnostic CI-only ngoài game, không appasset phát hành. Build/CodeQL xanh. Native lần1 đỏ thiếu XP report trước control, đã xem artifact11312638669, rerun nguyên assert cùng head. R6/probe chưa xong; không claim VX recovery. #70 đồng bộ snapshot thực tế, Gemini/SOL012 giữ cổng."
+    },
+    {
+      "t": "2026-10-04T18:56:34.359703Z",
+      "text": "Đã đọc Luna18:51 và ảnh/log/verdict R6@46b: XP266/Ace294 đạt mức1, VX64 vẫn FAIL ArgumentError96:957 sau setter934. Native accessor17/23/eval/PixelCopy thật PASS. #50 head84aa chỉ thu Range masked/proof; PM70 sửa trạng thái theo Luna7e. Chưa merge50/70; không đổi expect_fail."
+    },
+    {
+      "t": "2026-10-04T18:06:36Z",
+      "text": "Gộp#21/3453741 sau LunaĐạt đúngd275: giữaudit snapshotlịch sử, BuildmiễnV11docs-only ghiđúng. #50head94e chỉthêm maskedinspect895/915 tìm nguồn accessor; download/hash bằngreadtoken đãPASS@3554, cònCI/native/R6latest."
+    },
+    {
+      "t": "2026-10-04T17:56:53Z",
+      "text": "Đọc artifact11310460101/11309546982: XP358/Ace379PASSmức1, VX65FAIL NoMethodError96:934, nativeevalcontext+PixelCopyPASS. Xử lý Luna17:46: #50head3554 chỉreadtoken/artifactRGSS7ghimhash, CI đang chạy. #70 sửa trạngthái hoàn tất, cầnreview mới. #21 LunaĐạt snapshot, chưaBuild; SOL012/Gemini giữcổng."
+    },
+    {
+      "t": "2026-10-04T17:13:20Z",
+      "text": "Đãxemảnh/log/verdict635:VX runtimeeval96:951FAIL, khôngsuycompile0lỗi=gameplay. #50head7bf bọcđốisốeval tại callsite trongRAM/boundedAST+cache, 55testsPASSlocal; nativefixture/R6 đang chạy. Luna khôngcóreviewmới khi kiểm16:48, chưamerge50/70."
+    },
+    {
+      "t": "2026-10-04T16:10:35Z",
+      "text": "V446357e07: Build37215280550 xanh, diagnostic11308302026 xác nhận157scriptVX/0SyntaxError dưới sharedbudget512/64MiB. Runtime chưa xong, Luna cầnheadmới. Git/gh môi trường401; connector cònhoạt động, khôngđọc/sửa token."
+    },
+    {
+      "t": "2026-10-04T15:51:52Z",
+      "text": "Gộp#66 sau Luna+CI; R6 đúng9df XP/Ace PASSmức1, VXFAIL/còn1SyntaxError. #50 sửa shared64MiB bytebudget theo Luna, test28+privacy6 localPASS, CI mới đang chạy. Lịch kiểmtra60phút enabled/chốngtrùng; Gemini standby."
+    },
+    {
+      "t": "2026-10-04T14:13:00Z",
+      "text": "Gộp#58coroutines/#67pins/#56setupjava/#55setupgcloud theoLuna+CI+PMreview riêng. #64đóng vì57đãgộp. V44 Buildmới xanh, runtimechờ. Tái sinh landing byte-identical/15assetverify, sửa generator thiếuassets ởcheckout sạch."
+    },
+    {
+      "t": "2026-10-04T11:36:00Z",
+      "text": "Tiếp quản: gộp#63/#61/#60/#46/#57/#51/#44 sau Luna/CI. Snapshot12core công khai; PR#67 pinconfig và#58 coroutines1.9.0 CI xanh chờreview. V44 VXshape xanh, runtime đang chạy. GeminiF01/F02 chưa kích hoạt."
+    },
+    {
+      "text": "Lệnh chủ dự án: Sol tiếp quản tạm PM/Sonnet; Luna tiếp L07/L09; Gemini Flash chuẩn bị F01/F02, chưa kích hoạt. Issue65.",
+      "t": "2026-10-04T10:55:29Z"
+    },
+    {
+      "t": "2026-10-04T08:40:00Z",
+      "text": "Sol gộp 6 PR đã duyệt: V39 bản tin tự động, V40, V41 Dependabot + CodeQL, V42 kiểm định kỳ, V32 workflow chụp lõi, V21 D4. Dependabot mở 3 PR đầu tiên → giao Sol xử lý theo luật (bản lớn chờ PM)."
+    },
+    {
+      "t": "2026-10-04T08:09:00Z",
+      "text": "V46: phiên Sonnet bị bộ kiểm duyệt chặn sửa file skill; sếp đổi chế độ phiên, Sonnet đã sửa xong và chuyển PR #51 sang sẵn sàng."
+    },
+    {
+      "t": "2026-10-04T08:09:00Z",
+      "text": "PM xem bằng chứng 3 game RPG Maker thật trên máy ảo: XP chơi tới hội thoại; VX lỗi cú pháp Ruby 1.8; VX Ace thiếu user32 → V44. Yêu cầu Sol sửa job tự kết luận (#44) và bớt quyền token (#46)."
+    },
+    {
+      "t": "2026-10-04T07:41:00Z",
+      "text": "Sếp xác nhận khóa ký đã có trong GitHub Secrets → V38 xong. Giao Sol chạy thử ký trên GitHub và so chứng thư (V43 bước 1)."
+    },
+    {
+      "t": "2026-10-04T07:40:00Z",
+      "text": "Đo hạn mức thật: mỗi lượt kiểm của PM ~15 triệu token, gần hết là đọc lại ngữ cảnh dài. Giao Sonnet V46 (đúc skill, phiên mới) để chạy lượt kiểm trong phiên gọn, đích giảm ≥50%."
+    },
+    {
+      "t": "2026-10-04T07:36:00Z",
+      "text": "GitHub Pages chạy (landing tải app). Gộp V36, L10, Ren'Py P2. PM duyệt 8 PR, trả lời 4 thư hỏi của Sol, giao Sonnet V44, Sol V45. V38 kẹt: không tìm thấy file khóa ký."
+    },
+    {
+      "t": "2026-10-04T05:04:00Z",
+      "text": "Gộp V35, V37, phần mã V32. PM duyệt V36 (ONScripter cài được), L10 (script bản tin), Ren'Py 8 P2. Sol mở V42 (kiểm hằng ngày) và đang dựng thử Symbian (S0)."
+    },
+    {
+      "t": "2026-10-04T04:33:00Z",
+      "text": "Mở thêm trang tiến độ công khai: ai có link đều xem được, không cần đăng nhập."
+    },
+    {
+      "t": "2026-10-04T04:31:00Z",
+      "text": "Luna gộp hướng dẫn thử nhanh theo module (L08) và bắt đầu tiền duyệt PR. PM yêu cầu sửa script bản tin (L10); PR Ren'Py 8 chờ Sonnet ghi số APK."
+    },
+    {
+      "t": "2026-10-04T03:59:00Z",
+      "text": "Sol mở 4 PR (V32, V36, S0, V37). PM duyệt V37 và phần mã V32; trả lời 2 thư hỏi của Sol (cho phép S0, game thử V25, tự đăng lõi lên repo packs); V36 yêu cầu sửa nhỏ. Ren'Py 8 P2 chờ Luna tiền duyệt."
+    },
+    {
+      "t": "2026-10-04T03:26:00Z",
+      "text": "Gộp V30, V33, V34. PM duyệt V35 sau khi kiểm lại gói thật. Sol mở PR V37 (CI kiểm gói thật), Sonnet mở PR Ren'Py 8 P2."
+    },
+    {
+      "t": "2026-10-04T03:24:00Z",
+      "text": "Theo lệnh tận dụng GitHub: giao Sol V39 (bản tin tự động), V40 (thử máy ảo ARM), V41 (CodeQL, Dependabot), V42 (kiểm hằng ngày); Luna L10 (script bản tin); V43 phát hành trên GitHub khi có secret."
+    },
+    {
+      "t": "2026-10-04T02:58:00Z",
+      "text": "Đọc câu trả lời của sếp trên trang: Q1 làm engine song song → mở lại V17 (Sonnet), thêm S0 Symbian (Sol); Q2 → V38 Sonnet gửi file khóa; Q6 → ghi Máy thật cho máy cổ điển và game Java."
+    },
+    {
+      "t": "2026-10-04T02:55:00Z",
+      "text": "Phân vai mới: Sonnet chỉ code lõi (V21, V22, V25, V32, phần config của V31 chuyển Sol). Thêm V37 (CI kiểm gói thật), L07 (Luna tiền duyệt PR), L08, L09. Luna gộp L05, L06. PM chuyển sang kiểm 30 phút/lần."
+    },
+    {
+      "t": "2026-10-04T02:44:00Z",
+      "text": "Trang tiến độ đổi cách trình bày: thêm mục trả lời câu hỏi, chia tiến độ theo 12 module game và 7 chức năng app. Q3 không cần quyết nữa (V28 đã gộp)."
+    },
+    {
+      "t": "2026-10-04T02:37:00Z",
+      "text": "Sol cũ để lại bàn giao (PR #22, 08:11) rồi dừng; V28–V35 đều do Sol mới làm, không trùng. Gộp V28, V29, L02, L04. PM duyệt V34, L05, L06; yêu cầu sửa V35 (gói 3DS thật không qua kiểm). Thêm V36 (gói ONS)."
+    },
+    {
+      "t": "2026-10-04T01:37:00Z",
+      "text": "Sol mở 4 PR (#23–#26: V28, V29, V30, V33), PM duyệt cả 4 (#26 chờ bài kiểm xanh). Luna gộp H04–H07, L01, L03; PR #18 (L02) duyệt."
+    },
+    {
+      "t": "2026-10-04T01:10:00Z",
+      "text": "V19 xong (báo lỗi RPG Maker đúng engine), V20 xong (PR #22 gộp). Prompt mới cho Sol/Luna: đọc thư 60 phút, tự làm dài; giao thêm V34, V35, L05, L06."
+    },
+    {
+      "t": "2026-10-04T00:52:00Z",
+      "text": "Sonnet sửa quyền Emulator Test để đọc được gói RPG Maker bản nháp (V19)."
+    },
+    {
+      "t": "2026-10-04T00:06:00Z",
+      "text": "Bản rà soát sửa lại: bỏ phần pháp lý (sếp tự lo), còn 19 phát hiện. PM cập nhật phản hồi, hủy việc kiểm kê giấy phép."
+    },
+    {
+      "t": "2026-10-03T23:43:00Z",
+      "text": "Sonnet làm V31: K10 chặt, release mặc định là bản thử. Sol xong phần 4 V20 (PR #22 duyệt)."
+    },
+    {
+      "t": "2026-10-03T23:22:00Z",
+      "text": "Rà soát độc lập O03 nộp báo cáo: XA ĐÀ NẶNG, 23 phát hiện. PM đồng ý, gỡ link game thương mại khỏi repo, chia 8 việc sửa, đóng băng engine mới chờ sếp."
+    },
+    {
+      "t": "2026-10-03T22:42:00Z",
+      "text": "Sonnet phát hành 0.7.4 (sửa Kirikiri). PM miễn kiểm CI, đã gửi APK cho sếp thử. Duyệt 6 PR của Luna, đóng 4 PR trùng của Haiku. Sol gộp PR #6, #8."
+    },
+    {
+      "t": "2026-10-03T15:53:00Z",
+      "text": "Sonnet đẩy V26 (chọn đúng karanoshojo.xp3, config 32, có test). PM duyệt, yêu cầu kiểm nạp bản vá Việt hóa trước khi phát hành."
+    },
+    {
+      "t": "2026-10-03T15:31:00Z",
+      "text": "Sonnet chưa đọc thư V26 (chưa gộp nhánh PM từ 20:00) → PM nhắn thẳng phiên Sonnet, yêu cầu làm V26 trước."
+    },
+    {
+      "t": "2026-10-03T15:14:00Z",
+      "text": "PR #7 (V24) đã gộp. Sonnet đẩy V19 (đạt một phần) và phần đọc tombstone của V20. PR #6 Build xanh."
+    },
+    {
+      "t": "2026-10-03T14:56:00Z",
+      "text": "PM đọc danh sách file Kara no Shoujo (bản Android): kho chính là karanoshojo.xp3, không có data.xp3 → Monika mở nhầm bản vá. Đã ghi cách sửa cho Sonnet."
+    },
+    {
+      "t": "2026-10-03T14:41:00Z",
+      "text": "Sếp: game thử là Kara no Shoujo; Kirikiri cần mở được cả .xp3 lẫn .exe → ghi vào V26."
+    },
+    {
+      "t": "2026-10-03T14:32:00Z",
+      "text": "Sonnet đẩy V19: báo cáo lỗi nhận đúng engine RPG Maker/Kirikiri (Build xanh)."
+    },
+    {
+      "t": "2026-10-03T14:31:00Z",
+      "text": "G7: sếp thử 0.7.3, Kirikiri báo \"Cannot find storage startup.tjs\". Giao Sonnet V26 (pm-hoi-002), gộp V18."
+    },
+    {
+      "t": "2026-10-03T13:58:00Z",
+      "text": "V23 xong. PM duyệt PR #8 (H02). Phát hiện engines-rgss-6 lỡ công khai, đã nhờ sếp xóa."
+    }
+  ],
+  "modules": [
+    {
+      "id": "libretro",
+      "group": "game",
+      "name": "Máy chơi game cổ điển",
+      "scope": "GB/GBC, GBA, NDS, NES, SNES, Mega Drive, Master System, Game Gear, PC Engine, N64, PS1, PSP, Dreamcast, Atari, WonderSwan, Neo Geo Pocket, RPG Maker 2000/2003 (20 hệ, lõi libretro)",
+      "steps": {
+        "build": "xong",
+        "auto": "dang",
+        "phone": "xong",
+        "release": "xong"
+      },
+      "note": "Ghim12coreGB/GBA/NES config33 đã gộp#67 từ snapshotcores-gb-gba-nes-1 đúngrunphát hành. Các core khác giữlegacy. ROM thật/syncCloudflare chưa kiểm."
+    },
+    {
+      "id": "3ds",
+      "group": "game",
+      "name": "3DS (Azahar)",
+      "scope": "Nintendo 3DS, engine Azahar đóng kèm APK (chỉ máy 64-bit)",
+      "steps": {
+        "build": "xong",
+        "auto": "xong",
+        "phone": "cho",
+        "release": "xong"
+      },
+      "note": "Bản cài gói an toàn (V35) đã gộp; gói 3DS thật qua bài kiểm tự động trên mỗi PR (V37)."
+    },
+    {
+      "id": "j2me",
+      "group": "game",
+      "name": "Game Java (J2ME)",
+      "scope": "Game điện thoại Java .jar/.jad, J2ME Loader nhúng trong app",
+      "steps": {
+        "build": "xong",
+        "auto": "cho",
+        "phone": "xong",
+        "release": "xong"
+      },
+      "note": "Sếp đã chơi được trên điện thoại (04/10). Chưa có bài kiểm tự động riêng cho game Java."
+    },
+    {
+      "id": "kirikiri",
+      "group": "game",
+      "name": "Kirikiri",
+      "scope": "Visual novel .xp3 và .exe (krkr2 nhúng, gói tải khi cần)",
+      "steps": {
+        "build": "xong",
+        "auto": "dang",
+        "phone": "sep",
+        "release": "cho"
+      },
+      "note": "0.7.5 chưa có sửa startup.tjs; chờ #91/#93"
+    },
+    {
+      "id": "rgss",
+      "group": "game",
+      "name": "RPG Maker XP/VX/Ace",
+      "scope": "mkxp-z nhúng, gói rgss 64-bit và 32-bit",
+      "steps": {
+        "build": "xong",
+        "auto": "xong",
+        "phone": "cho",
+        "release": "sep"
+      },
+      "note": "3 game thật XP/VX/VX Ace chạy tới hội thoại trên máy ảo (V44). Có trong bản 0.7.5. Chờ sếp thử trên điện thoại."
+    },
+    {
+      "id": "web",
+      "group": "game",
+      "name": "Game web",
+      "scope": "Flash (Ruffle), RPG Maker MV/MZ, TyranoScript",
+      "steps": {
+        "build": "xong",
+        "auto": "cho",
+        "phone": "cho",
+        "release": "xong"
+      },
+      "note": "Có trong app. PM chưa có bằng chứng kiểm chạy game web tự động."
+    },
+    {
+      "id": "onscripter",
+      "group": "game",
+      "name": "ONScripter",
+      "scope": "Visual novel NScripter (onsyuri bản web)",
+      "steps": {
+        "build": "xong",
+        "auto": "xong",
+        "phone": "cho",
+        "release": "loi"
+      },
+      "note": "Gói đã cài được (V36 đã gộp). Chờ bản phát hành mới."
+    },
+    {
+      "id": "apk",
+      "group": "game",
+      "name": "Game Android (APK)",
+      "scope": "Cài APK, OBB, APK chia nhỏ",
+      "steps": {
+        "build": "xong",
+        "auto": "xong",
+        "phone": "cho",
+        "release": "xong"
+      },
+      "note": "Có test kiểm APK, OBB, APK chia nhỏ. Mở rộng repack/ADB đang hoãn (R15)."
+    },
+    {
+      "id": "external",
+      "group": "game",
+      "name": "Mở bằng app ngoài",
+      "scope": "Kirikiroid2, JoiPlay, ONScripter, EKA2L1",
+      "steps": {
+        "build": "xong",
+        "auto": "cho",
+        "phone": "cho",
+        "release": "sep"
+      },
+      "note": "Chờ sếp đưa link tải chính thức của các app này."
+    },
+    {
+      "id": "renpy8",
+      "group": "game",
+      "name": "Ren'Py 8",
+      "scope": "Visual novel Ren'Py 8, sẽ chạy trong app",
+      "steps": {
+        "build": "dang",
+        "auto": "cho",
+        "phone": "cho",
+        "release": "cho"
+      },
+      "note": "Đã có module Ren'Py trong app (P2) và màn chơi (P3, đã duyệt). Tiếp: đăng gói và bật trong config (V45)."
+    },
+    {
+      "id": "renpy7",
+      "group": "game",
+      "name": "Ren'Py 7",
+      "scope": "Visual novel Ren'Py 7",
+      "steps": {
+        "build": "cho",
+        "auto": "cho",
+        "phone": "cho",
+        "release": "cho"
+      },
+      "note": "Làm sau Ren'Py 8."
+    },
+    {
+      "id": "symbian",
+      "group": "game",
+      "name": "Symbian / N-Gage",
+      "scope": "Game Nokia Symbian, N-Gage",
+      "steps": {
+        "build": "xong",
+        "auto": "cho",
+        "phone": "cho",
+        "release": "cho"
+      },
+      "note": "S0 nativeCI đúng head đã PASS. Chỉ spike, chưa nhúng vào app/chơi game; nhập firmware chờG4A2."
+    },
+    {
+      "id": "feed",
+      "group": "app",
+      "name": "Đọc bài và thông báo",
+      "scope": "Bài viết aow.vn, thông báo bài mới, diễn đàn, cộng đồng, điểm danh",
+      "steps": {
+        "build": "xong",
+        "auto": "xong",
+        "phone": "cho",
+        "release": "xong"
+      },
+      "note": "Thông báo chạy trong app (IP Việt Nam) vì aow.vn chặn máy chủ nước ngoài."
+    },
+    {
+      "id": "library",
+      "group": "app",
+      "name": "Thư viện và tải game",
+      "scope": "Tải từ Pixeldrain và các host, giải nén zip/rar/7z có mật khẩu, nhận diện hệ máy, ảnh bìa",
+      "steps": {
+        "build": "xong",
+        "auto": "xong",
+        "phone": "cho",
+        "release": "xong"
+      },
+      "note": "Có test giải nén với file mẫu (RAR nhiều phần, 7z mật khẩu) và nhận diện game."
+    },
+    {
+      "id": "ingame",
+      "group": "app",
+      "name": "Trong lúc chơi",
+      "scope": "Tay cầm ảo theo hệ máy, 3 ô lưu, mã gian lận, dịch màn hình, RetroAchievements",
+      "steps": {
+        "build": "xong",
+        "auto": "xong",
+        "phone": "cho",
+        "release": "xong"
+      },
+      "note": "Có test giao diện lớp phủ trong game. Chế độ hardcore RetroAchievements chờ RAdmin duyệt (G6)."
+    },
+    {
+      "id": "patch",
+      "group": "app",
+      "name": "Vá Việt hóa ROM",
+      "scope": "IPS, BPS, UPS; ghi game mới vào thư mục riêng",
+      "steps": {
+        "build": "xong",
+        "auto": "xong",
+        "phone": "cho",
+        "release": "xong"
+      },
+      "note": "Chưa hỗ trợ xdelta, PPF, APS và ISO trên 256 MB."
+    },
+    {
+      "id": "config",
+      "group": "app",
+      "name": "Cấu hình từ xa và cài gói",
+      "scope": "Config tải từ Cloudflare, gói engine tải khi cần",
+      "steps": {
+        "build": "dang",
+        "auto": "xong",
+        "phone": "cho",
+        "release": "dang"
+      },
+      "note": "Đã gộp: kiểm config trước khi áp dụng (V34), cài gói an toàn (V35), GitHub tự kiểm gói thật (V37). Đồng bộ config lên Cloudflare đang hỏng vì thiếu secret (Q4)."
+    },
+    {
+      "id": "diag",
+      "group": "app",
+      "name": "Báo lỗi và chẩn đoán",
+      "scope": "Ghi crash, lỗi native, game chết; gửi báo cáo về máy chủ",
+      "steps": {
+        "build": "xong",
+        "auto": "xong",
+        "phone": "cho",
+        "release": "dang"
+      },
+      "note": "D4/D5/V22 đã gộp, fixtureAPI34+unit xanh. Worker chưa deploy; mànđenK3/máy thật/engine khác chưa kiểm."
+    },
+    {
+      "id": "ci",
+      "group": "app",
+      "name": "Phát hành, kiểm thử, tài liệu",
+      "scope": "Build, máy ảo CI, ký app, phát hành, tài liệu cho đội",
+      "steps": {
+        "build": "dang",
+        "auto": "dang",
+        "phone": "na",
+        "release": "dang"
+      },
+      "note": "V39/V42/V41 đã gộp, bot hồi phục; skillV46 qua5ZIP thật. Khóa ký được chủ dự án xác nhận có trong Secrets, không đọc giá trị. V43 ký/phát hành giữkẹtSOL012."
+    }
+  ],
+  "decisions": [
+    {
+      "code": "D1-D5",
+      "question": "5 đề xuất cải thiện",
+      "answer": "Sếp duyệt cả 5 (D1–D5) trên trang tiến độ",
+      "at": "2026-10-08T19:29:43Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "A16",
+      "question": "Thiết kế lại tay cầm/menu vào bản nào?",
+      "answer": "V70a (nút chung, lún, rung) + V70b (menu chung) vào 0.7.7 ổn định nếu xanh trước 10/10 20:00; V70c (tự chỉnh bố cục) vào 0.7.8",
+      "at": "2026-10-08T17:52:47Z",
+      "by": "PM (theo yêu cầu sếp)"
+    },
+    {
+      "code": "A15",
+      "question": "Dùng hạn mức đội ChatGPT thế nào?",
+      "answer": "Chạy tối đa tới hết hạn mức (sếp còn 1 lần đặt lại). Sol WIP 4, Luna/Luna Ultra 3, làm liên tục",
+      "at": "2026-10-08T17:47:10Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "A14",
+      "question": "Ai phát hành?",
+      "answer": "PM tự phát hành cả bản thử và bản ổn định khi đủ cổng tự động; không cần báo sếp",
+      "at": "2026-10-08T16:01Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "A8",
+      "question": "Luna Ultra có thuộc đội ChatGPT (nhiều hạn mức)?",
+      "answer": "Có — giao thêm duyệt lần hai và V62.",
+      "by": "Sếp",
+      "at": "2026-10-08T04:10:00Z"
+    },
+    {
+      "code": "A7",
+      "question": "Phát hành RC 0.7.7 (prerelease) tối T6?",
+      "answer": "Sếp duyệt (một lần, 08/10).",
+      "by": "Sếp",
+      "at": "2026-10-08T04:10:00Z"
+    },
+    {
+      "code": "R2",
+      "question": "Repo công khai: muốn người khác clone về không dựng lại được app. Chọn cách nào?",
+      "answer": "Tách phần riêng sang repo riêng, sao cho người hay AI đọc source công khai cũng không hiểu được quy trình và cơ chế của app",
+      "at": "2026-10-06T06:49:06.614Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "R1",
+      "question": "Firmware, ROM, link game: để ở đâu?",
+      "answer": "App nhận link (qua config từ xa); firmware/ROM không nằm trong repo công khai",
+      "at": "2026-10-06T06:48:02.435Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "G7B",
+      "question": "Thử Kara no Shoujo trên bản 0.7.6 (có bản sửa lỗi startup.tjs)",
+      "answer": "Vẫn lỗi startup.tjs trên 0.7.6, sếp đã bấm Báo lỗi game này",
+      "at": "2026-10-06T06:47:33.254Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "TAG",
+      "question": "Tạo release v0.7.6",
+      "answer": "Sếp đã tạo 05:34Z (prerelease, đúng commit 4a1486e)",
+      "at": "2026-10-06T05:34:12Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "T1",
+      "question": "Tắt lịch \"[PM kiểm thư] ngày B (:42)\" bị trùng (mỗi giờ mở một phiên trống, tốn hạn mức)?",
+      "answer": "Đã tắt (kiểm: enabled=false)",
+      "at": "2026-10-06T02:00:55.867Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "H1",
+      "question": "Sếp mở phiên Haiku 4.6 để thay Luna tới 10/10?",
+      "answer": "Đã mở phiên Haiku",
+      "at": "2026-10-06T01:58:29.555Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "A13",
+      "question": "Đồng ý phát hành 0.7.6 (bản thử, pre-release) ngay khi #93 (sửa lỗi Kara no Shoujo) được duyệt và gộp?",
+      "answer": "Đồng ý phát hành 0.7.6 (bản thử) 1 lần sau khi #93 gộp",
+      "at": "2026-10-06T01:58:26.581Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "Q4",
+      "question": "Đặt v0.7.4 là pre-release",
+      "answer": "Đã đặt (kiểm qua API: prerelease=true, 01:56Z 06/10)",
+      "at": "2026-10-06T01:56:46.214Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "G4A2",
+      "question": "Symbian: bản đầu có làm đủ 3 cách nhập firmware không?",
+      "answer": "Chỉ zip cấu hình sẵn trước. Sếp định tự lưu firmware cũ lên GitHub, người dùng có nhu cầu mới tải về. Đội không đưa firmware hay link firmware vào repo công khai/config khi sếp chưa chốt nơi lưu.",
+      "at": "2026-10-06T01:43:11.035Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "G7-ảnh",
+      "question": "Ảnh lỗi Kara no Shoujo",
+      "answer": "Hộp thoại \"0.7.3 Kirikiri — Cannot find storage startup.tjs\". Tiêu đề lấy từ versionName ⇒ máy đang chạy 0.7.3, bản sửa 0.7.4 chưa được thử",
+      "at": "2026-10-06T00:10:00Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "A8",
+      "question": "Chạy lại release.yml 1 lần cho v0.7.5 sau khi #88 gộp?",
+      "answer": "Đồng ý",
+      "at": "2026-10-06T00:10:00Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "G7",
+      "question": "Thử Kara no Shoujo bằng 0.7.4?",
+      "answer": "Không vào được game",
+      "at": "2026-10-05T15:46:16.623Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "A6",
+      "question": "Nova \"Đạt\" có tính như Luna \"Đạt\" để PM gộp?",
+      "answer": "Có (khi Luna chưa duyệt đúng head sau 2 giờ); tăng việc cho Nova",
+      "at": "2026-10-05T16:55:00Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "Q4",
+      "question": "Thêm secret CLOUDFLARE_API_TOKEN",
+      "answer": "Sếp đã thêm; Sync config chạy lại xanh (run 37261093978 lần 2, 15:56Z)",
+      "at": "2026-10-05T15:56:26Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "KEY",
+      "question": "File khóa ký app đang ở đâu?",
+      "answer": "Đã có trong GitHub Secrets (MONIKA_KEYSTORE_*, MONIKA_KEY_*), thêm khoảng 5 ngày trước. Từ nay ký và phát hành trên GitHub.",
+      "at": "2026-10-04T07:41:00Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "—",
+      "question": "Trang công khai cho người dùng?",
+      "answer": "Landing page tải app trên GitHub Pages (thay trang tiến độ công khai).",
+      "at": "2026-10-04T07:36:00Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "Q6",
+      "question": "Đã chơi được trên điện thoại phần nào?",
+      "answer": "Máy chơi game cổ điển và game Java.",
+      "at": "2026-10-04T02:54:25Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "Q5",
+      "question": "PM kiểm hộp thư 30 phút/lần ban ngày?",
+      "answer": "Đồng ý, 30 phút.",
+      "at": "2026-10-04T02:53:57Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "Q2",
+      "question": "Sao lưu khóa ký app?",
+      "answer": "Đồng ý. Sonnet gửi file khóa cho sếp (V38).",
+      "at": "2026-10-04T02:53:38Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "Q1",
+      "question": "Tạm dừng làm engine mới?",
+      "answer": "Không, cứ làm engine mới song song. Ren'Py 8 (V17) mở lại; Symbian dựng thử S0 giao Sol.",
+      "at": "2026-10-04T02:53:28Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "—",
+      "question": "Chia việc trong đội thế nào cho đỡ hạn mức?",
+      "answer": "Sonnet chỉ code lõi engine; Sol nhận việc app, CI, config, chẩn đoán; Luna nhận tài liệu, test, tiền duyệt PR.",
+      "at": "2026-10-04T02:55:00Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "Q3",
+      "question": "Tắt báo lỗi tự gửi nếu phần che dữ liệu chưa xong trước bản phát hành kế tiếp?",
+      "answer": "Không cần quyết nữa: phần che dữ liệu (V28) đã gộp.",
+      "at": "2026-10-04T02:44:00Z",
+      "by": "PM"
+    },
+    {
+      "code": "—",
+      "question": "Đội Sol, Luna làm việc thế nào?",
+      "answer": "Đọc thư 60 phút/lần, tự làm dài, PM duyệt qua PR.",
+      "at": "2026-10-04T00:50:00Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "—",
+      "question": "Phần pháp lý trong bản rà soát?",
+      "answer": "Sếp tự xử lý; đội bỏ việc kiểm kê giấy phép (O04).",
+      "at": "2026-10-04T00:06:00Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "G7",
+      "question": "Kirikiri mở game kiểu nào?",
+      "answer": "Hỗ trợ cả .xp3 và .exe.",
+      "at": "2026-10-03T14:41:00Z",
+      "by": "Sếp"
+    },
+    {
+      "code": "TIEP-QUAN-20261004",
+      "by": "Sếp",
+      "at": "2026-10-04T10:55:29Z",
+      "question": "Đội gặp sự cố, ai tiếp quản?",
+      "answer": "Sol thay Opus/Sonnet, phối hợp Luna tới22:00 05/10 GMT+7; chuẩn bị Gemini Flash tối nay."
+    },
+    {
+      "code": "TOK",
+      "question": "Cho Sonnet đọc báo lỗi Kara",
+      "answer": "Đã thêm CRASH_ADMIN_TOKEN",
+      "at": "2026-10-07T09:18:44Z",
+      "by": "Sếp"
+    }
+  ],
+  "progressBasis": "Phần trăm mốc giữ ước lượng PM cũ, chưa đo lại trong lượt tiếp quản.",
+  "blockers": [
+    {
+      "code": "V26",
+      "status": "sep",
+      "title": "0.7.6 vẫn lỗi Kara no Shoujo (startup.tjs)",
+      "who": "Sếp thêm CRASH_ADMIN_TOKEN vào môi trường cloud → Sonnet đọc báo cáo",
+      "next": "Từ vệt chẩn đoán xem xp3 nào có startup.tjs, resolver chọn gì; sửa rồi phát hành bản kế tiếp (cần sếp đồng ý).",
+      "links": [
+        {
+          "label": "Tải APK 0.7.6",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.6/AowVN-Monika-v0.7.6.apk",
+          "kind": "tai"
+        }
+      ],
+      "ask": "TOK"
+    },
+    {
+      "code": "V47",
+      "status": "dang",
+      "title": "App trong máy người dùng sắp thấy bản 0.7.5 (config 35 đã gộp)",
+      "who": "Sonnet kiểm đồng bộ Cloudflare và đo configVersion trên KV",
+      "next": "Khi 0.7.6 phát hành sẽ đổi config sang 0.7.6."
+    }
+  ],
+  "team": [
+    {
+      "id": "sep",
+      "name": "Sếp (Minh)",
+      "kind": "boss",
+      "status": "sep",
+      "role": "Chủ dự án: chốt hướng, duyệt phát hành, thử trên máy thật, giữ khóa ký và secret.",
+      "now": "Còn: ảnh thư mục plugin/ của Kara no Shoujo; khóa Cloudflare; đóng cảnh báo #22. (Có thể thử game bằng Kirikiroid2 chính thức.)",
+      "lastSeen": "2026-10-08T03:17:00Z",
+      "channel": "Chat với PM · trang này"
+    },
+    {
+      "id": "opus",
+      "name": "Opus",
+      "kind": "pm",
+      "model": "PM điều phối",
+      "status": "dang",
+      "role": "Giao việc, đọc hộp thư mỗi giờ, kiểm rủi ro rồi gộp PR, cập nhật trang này.",
+      "match": [
+        "pm"
+      ],
+      "lastSeen": "2026-10-08T10:18:00Z",
+      "channel": "Nhánh docs/opus-tra-loi",
+      "now": "Điều phối nước rút tới CN 11/10; gộp PR mỗi giờ phút :12."
+    },
+    {
+      "id": "sonnet",
+      "name": "Sonnet",
+      "kind": "dev",
+      "status": "dang",
+      "role": "Engine và luồng app khó (Kirikiri, RGSS, Ren'Py); duyệt dự phòng khi người duyệt vắng.",
+      "now": "V26b: báo rõ 'xp3 mã hóa' (hạn T7 12:00); #143 thư 005 chờ Luna.",
+      "match": [
+        "sonnet"
+      ],
+      "lastSeen": "2026-10-08T11:11:00Z",
+      "channel": "Phiên chính Sonnet"
+    },
+    {
+      "id": "sol",
+      "name": "Sol",
+      "kind": "dev",
+      "status": "dang",
+      "role": "App, CI, config, script, chẩn đoán lỗi. Quay lại sớm 07/10.",
+      "now": "Ưu tiên 0: V64 sửa bộ nhớ resolver Kirikiri (chặn RC). Sau đó V56 Test Lab, V60.",
+      "match": [
+        "sol"
+      ],
+      "lastSeen": "2026-10-08T05:00:00Z",
+      "channel": "Thư tra-loi-sol-*"
+    },
+    {
+      "id": "luna",
+      "name": "Luna",
+      "kind": "rev",
+      "status": "dang",
+      "role": "Tiền duyệt PR của Sol, Sonnet, Nova (L07), tài liệu, test, script.",
+      "now": "Nước rút: duyệt #118, #122 + lô của Sol; CHANGELOG 0.7.7; hướng dẫn người dùng.",
+      "match": [
+        "luna"
+      ],
+      "lastSeen": "2026-10-08T08:40:00Z",
+      "channel": "Thư tra-loi-luna-*"
+    },
+    {
+      "id": "nova",
+      "name": "Nova",
+      "kind": "dev",
+      "model": "Tài khoản khác, sếp quản",
+      "status": "dang",
+      "role": "V45 Ren'Py 8, test độ phủ, duyệt PR tài liệu",
+      "now": "V45 Ren'Py 8 (nhận từ Sol)",
+      "match": "Sonnet 5.5 xhigh (nâng 09/10)",
+      "lastSeen": "2026-10-08T03:44:00Z",
+      "channel": "Issue #90"
+    },
+    {
+      "id": "haiku",
+      "name": "Haiku",
+      "kind": "dev",
+      "status": "dang",
+      "role": "Test tăng độ phủ, script, sửa mã nhỏ/vừa có test; duyệt dự phòng PR của Luna.",
+      "now": "#138 browser đã gộp; chờ lô mới.",
+      "match": [
+        "haiku"
+      ],
+      "lastSeen": "2026-10-08T10:03:00Z",
+      "channel": "Issue #94",
+      "model": "Haiku 5.5 ultracode (nâng 08/10)"
+    },
+    {
+      "id": "luna-ultra",
+      "name": "Luna Ultra",
+      "kind": "rev",
+      "status": "dang",
+      "role": "Duyệt thứ hai: PR của Luna, Haiku, Haiku-2; rà giấy phép trước khi tách repo (V52).",
+      "now": "Hàng duyệt + duyệt lần hai V56/V58/V60; V61, V62 rồi V52b.",
+      "match": [
+        "luna ultra"
+      ],
+      "channel": "Issue #119",
+      "lastSeen": "2026-10-08T10:04:00Z"
+    },
+    {
+      "id": "haiku-2",
+      "name": "Haiku-2",
+      "kind": "dev",
+      "model": "Haiku 5.5 ultracode",
+      "status": "dang",
+      "role": "Test tăng độ phủ cho download, translate, notify, runner; sửa mã nhỏ/vừa có test.",
+      "now": "Lô H2f: test sâu download.",
+      "match": [
+        "haiku-2"
+      ],
+      "channel": "Issue #120",
+      "lastSeen": "2026-10-08T07:53:00Z"
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini Flash",
+      "kind": "aux",
+      "status": "dubi",
+      "role": "Dự bị cho việc F01/F02, chỉ chạy khi sếp báo sẵn sàng.",
+      "channel": "PROMPT-GEMINI-FLASH.md"
+    },
+    {
+      "id": "chrome",
+      "name": "Claude in Chrome",
+      "kind": "aux",
+      "status": "dubi",
+      "role": "Thao tác trên trình duyệt của sếp khi cần (vd. dựng Test Lab), không đọc khóa.",
+      "channel": "PROMPT-CHROME-TEST-LAB.md"
+    }
+  ],
+  "comms": [
+    {
+      "t": "2026-10-07T23:38:00Z",
+      "from": "opus",
+      "to": "sol",
+      "text": "Thư sol-013: 6 việc mới V48, V49, V53, V54, V50, V55."
+    },
+    {
+      "t": "2026-10-07T23:38:30Z",
+      "from": "opus",
+      "to": "luna",
+      "text": "Thư luna-005: duyệt gấp #107, #106."
+    },
+    {
+      "t": "2026-10-07T23:43:00Z",
+      "from": "luna",
+      "to": "sonnet",
+      "text": "#107 Cần sửa: phạm vi có thêm 2 tệp V29."
+    },
+    {
+      "t": "2026-10-07T23:44:00Z",
+      "from": "sonnet",
+      "to": "luna",
+      "text": "Mô tả #107 đã cập nhật; V29 đi cùng theo lệnh PM."
+    },
+    {
+      "t": "2026-10-07T23:44:30Z",
+      "from": "haiku",
+      "to": "opus",
+      "text": "#106 đã sửa Kirikiri và số phiên bản, chờ Luna."
+    },
+    {
+      "t": "2026-10-08T00:13:00Z",
+      "from": "opus",
+      "to": "luna",
+      "text": "PM xác nhận phạm vi #107 đúng lệnh."
+    },
+    {
+      "t": "2026-10-08T00:48:00Z",
+      "from": "luna",
+      "to": "sol",
+      "text": "6 PR #108–#113: Đạt."
+    },
+    {
+      "t": "2026-10-08T01:15:00Z",
+      "from": "opus",
+      "to": "sol",
+      "text": "Gộp 7 PR; giữ #110, chứng minh lối tắt game Java còn chạy."
+    },
+    {
+      "t": "2026-10-08T02:40:00Z",
+      "from": "luna",
+      "to": "sol",
+      "text": "#110 Đạt: trích dẫn AOSP khớp."
+    },
+    {
+      "t": "2026-10-08T03:15:00Z",
+      "from": "opus",
+      "to": "sonnet",
+      "text": "Nhờ duyệt thay Nova #114–#116."
+    },
+    {
+      "t": "2026-10-08T03:18:00Z",
+      "from": "sonnet",
+      "to": "opus",
+      "text": "#115, #116 Đạt; #114 Cần sửa."
+    },
+    {
+      "t": "2026-10-08T03:42:00Z",
+      "from": "nova",
+      "to": "opus",
+      "text": "Nova quay lại: N05 (#118) xong, tiếp V52a."
+    },
+    {
+      "t": "2026-10-08T03:43:00Z",
+      "from": "haiku",
+      "to": "opus",
+      "text": "#117, #121 chờ duyệt; nhãn Báo lỗi đang hard-code."
+    },
+    {
+      "t": "2026-10-08T03:50:00Z",
+      "from": "haiku-2",
+      "to": "opus",
+      "text": "#123, #124 xong; hỏi: bài thứ 6 trở đi có báo không?"
+    },
+    {
+      "t": "2026-10-08T03:50:30Z",
+      "from": "luna-ultra",
+      "to": "opus",
+      "text": "Luna Ultra đã vào ca."
+    },
+    {
+      "t": "2026-10-08T04:00:00Z",
+      "from": "opus",
+      "to": "haiku",
+      "text": "Đóng #121 vì trùng #118; sửa nhãn Chơi trong TESTER-NGOAI."
+    },
+    {
+      "t": "2026-10-08T04:00:30Z",
+      "from": "opus",
+      "to": "haiku-2",
+      "text": "Giữ giới hạn 5 bài/lượt, khóa bằng test."
+    },
+    {
+      "t": "2026-10-08T04:05:00Z",
+      "from": "opus",
+      "to": "sol",
+      "text": "Nước rút: V56 game thật trên Test Lab, RC 0.7.7, Ren'Py 8."
+    },
+    {
+      "t": "2026-10-08T04:12:00Z",
+      "from": "sep",
+      "to": "opus",
+      "text": "Gửi danh sách file Kara no Shoujo; duyệt RC 0.7.7."
+    },
+    {
+      "t": "2026-10-08T04:14:00Z",
+      "from": "opus",
+      "to": "sonnet",
+      "text": "Thư 005: phân tích file Kara no Shoujo (mã hóa hay thứ tự patch)."
+    },
+    {
+      "t": "2026-10-08T03:56:00Z",
+      "from": "luna-ultra",
+      "to": "luna",
+      "text": "#114 Cần sửa: đồng bộ với main, đánh dấu mốc lịch sử."
+    },
+    {
+      "t": "2026-10-08T04:02:00Z",
+      "from": "luna",
+      "to": "nova",
+      "text": "#122 Cần sửa; #118 nội dung ổn, chờ PM xem CI."
+    },
+    {
+      "t": "2026-10-08T04:04:00Z",
+      "from": "luna-ultra",
+      "to": "haiku-2",
+      "text": "#123 Đạt; #124 cần PM chốt giới hạn 5 bài."
+    },
+    {
+      "t": "2026-10-08T04:16:00Z",
+      "from": "opus",
+      "to": "haiku",
+      "text": "Nhận #117, đã gộp; phần browser để PR sau."
+    },
+    {
+      "t": "2026-10-08T04:47:00Z",
+      "from": "haiku-2",
+      "to": "opus",
+      "text": "#124 đã thêm test khóa giới hạn 5 bài."
+    },
+    {
+      "t": "2026-10-08T05:06:00Z",
+      "from": "luna-ultra",
+      "to": "haiku-2",
+      "text": "#124 Đạt."
+    },
+    {
+      "t": "2026-10-08T05:06:30Z",
+      "from": "luna-ultra",
+      "to": "luna",
+      "text": "#125 Cần sửa: cố định đồng hồ trong ProfileCoverageTest."
+    },
+    {
+      "t": "2026-10-08T05:16:00Z",
+      "from": "opus",
+      "to": "sol",
+      "text": "V63 ưu tiên 0: bản tin digest đỏ HTTP 403 trên main."
+    },
+    {
+      "t": "2026-10-08T05:49:00Z",
+      "from": "luna",
+      "to": "sol",
+      "text": "#127, #128: chờ CI xong trên head mới."
+    },
+    {
+      "t": "2026-10-08T06:08:00Z",
+      "from": "luna-ultra",
+      "to": "sol",
+      "text": "#128 duyệt lần hai: Đạt."
+    },
+    {
+      "t": "2026-10-08T06:06:00Z",
+      "from": "luna-ultra",
+      "to": "haiku-2",
+      "text": "#133 runner: Đạt."
+    },
+    {
+      "t": "2026-10-08T06:20:00Z",
+      "from": "opus",
+      "to": "sonnet",
+      "text": "Thư 006: V64 sửa bộ nhớ resolver, chặn RC."
+    },
+    {
+      "t": "2026-10-08T06:20:30Z",
+      "from": "opus",
+      "to": "sol",
+      "text": "#127 xung đột build.gradle.kts: gộp main."
+    },
+    {
+      "t": "2026-10-08T06:47:00Z",
+      "from": "luna",
+      "to": "sol",
+      "text": "#132 V63 Đạt; #129 V57 Cần sửa."
+    },
+    {
+      "t": "2026-10-08T06:51:00Z",
+      "from": "haiku-2",
+      "to": "opus",
+      "text": "Cả 3 PR đã gộp; notify 25,5% → 83,8%."
+    },
+    {
+      "t": "2026-10-08T07:16:00Z",
+      "from": "opus",
+      "to": "haiku-2",
+      "text": "Lô mới: test apkinstall.adb và gói gốc."
+    },
+    {
+      "t": "2026-10-08T08:03:00Z",
+      "from": "luna-ultra",
+      "to": "opus",
+      "text": "#134, #136: digest skipped có tính đạt không?"
+    },
+    {
+      "t": "2026-10-08T08:18:00Z",
+      "from": "opus",
+      "to": "luna-ultra",
+      "text": "digest/preview không chặn; đã gộp #134, #136."
+    },
+    {
+      "t": "2026-10-08T08:40:00Z",
+      "from": "luna",
+      "to": "sol",
+      "text": "#129, #135, #137: Đạt."
+    },
+    {
+      "t": "2026-10-08T09:17:00Z",
+      "from": "opus",
+      "to": "sol",
+      "text": "Đã gộp #129, #135, #137."
+    },
+    {
+      "t": "2026-10-08T10:03:00Z",
+      "from": "luna-ultra",
+      "to": "haiku",
+      "text": "#138 browser: Đạt."
+    },
+    {
+      "t": "2026-10-08T10:04:00Z",
+      "from": "luna-ultra",
+      "to": "haiku-2",
+      "text": "#139, #140 Cần sửa: giữ endSession, test xác định."
+    },
+    {
+      "t": "2026-10-08T10:18:00Z",
+      "from": "opus",
+      "to": "sol",
+      "text": "V64 chuyển sang Sol, ưu tiên 0, hạn T6 09:00."
+    },
+    {
+      "t": "2026-10-08T11:11:00Z",
+      "from": "sonnet",
+      "to": "opus",
+      "text": "Thư 005 xong (#143); đề xuất V26b báo rõ xp3 mã hóa."
+    },
+    {
+      "t": "2026-10-08T11:14:00Z",
+      "from": "opus",
+      "to": "sonnet",
+      "text": "Duyệt V26b, hạn T7 12:00."
+    }
+  ],
+  "overall": {
+    "done": 84,
+    "total": 108,
+    "pct": 78,
+    "at": "2026-10-08T19:29:19Z"
   },
-  {
-   "code": "M2",
-   "name": "Bản thử RC 0.7.7",
-   "due": "09/10 20:00",
-   "status": "xong"
+  "productivity": {
+    "since": "2026-10-07T23:30:00Z",
+    "at": "2026-10-08T19:29:19Z",
+    "pmMerges": 43,
+    "agents": [
+      {
+        "id": "luna",
+        "name": "Luna",
+        "opened": 9,
+        "merged": 8,
+        "open": 1,
+        "reviews": 36,
+        "changesAsked": 8,
+        "medianHours": 0.6
+      },
+      {
+        "id": "sol",
+        "name": "Sol",
+        "opened": 17,
+        "merged": 14,
+        "open": 3,
+        "reviews": 0,
+        "changesAsked": 0,
+        "medianHours": 1.4
+      },
+      {
+        "id": "luna-ultra",
+        "name": "Luna Ultra",
+        "opened": 5,
+        "merged": 2,
+        "open": 3,
+        "reviews": 35,
+        "changesAsked": 10,
+        "medianHours": 0.9
+      },
+      {
+        "id": "haiku-2",
+        "name": "Haiku-2",
+        "opened": 7,
+        "merged": 7,
+        "open": 0,
+        "reviews": 0,
+        "changesAsked": 0,
+        "medianHours": 0.4
+      },
+      {
+        "id": "haiku",
+        "name": "Haiku",
+        "opened": 6,
+        "merged": 5,
+        "open": 1,
+        "reviews": 1,
+        "changesAsked": 0,
+        "medianHours": 0.8
+      },
+      {
+        "id": "sonnet",
+        "name": "Sonnet",
+        "opened": 3,
+        "merged": 4,
+        "open": 1,
+        "reviews": 3,
+        "changesAsked": 1,
+        "medianHours": 11.0
+      },
+      {
+        "id": "nova",
+        "name": "Nova",
+        "opened": 4,
+        "merged": 2,
+        "open": 1,
+        "reviews": 0,
+        "changesAsked": 0,
+        "medianHours": 0.4
+      }
+    ],
+    "basis": "PR theo tiền tố nhánh; lượt duyệt theo dòng đầu comment 'X tiền duyệt'/'duyệt lần hai'. Không tính commit trực tiếp hay thư."
   },
-  {
-   "code": "M3",
-   "name": "Kirikiri/RGSS trên máy ARM thật, Ren'Py 8 sẵn sàng",
-   "due": "10/10 20:00",
-   "status": "dang"
+  "sprint": [
+    {
+      "code": "M1",
+      "name": "Gộp hết PR tồn có Đạt",
+      "due": "08/10 23:00",
+      "status": "xong"
+    },
+    {
+      "code": "M2",
+      "name": "Bản thử RC 0.7.7",
+      "due": "09/10 20:00",
+      "status": "xong"
+    },
+    {
+      "code": "M3",
+      "name": "Kirikiri/RGSS trên máy ARM thật, Ren'Py 8 sẵn sàng",
+      "due": "10/10 20:00",
+      "status": "dang"
+    },
+    {
+      "code": "M4",
+      "name": "Bản ổn định 0.7.7",
+      "due": "11/10 18:00",
+      "status": "dang"
+    }
+  ],
+  "productivityNotes": {
+    "sol": "Xuất sắc: nhiều PR nhất, ổn định",
+    "luna": "Tốt: gánh phần lớn lượt duyệt",
+    "luna-ultra": "Rất tốt: bắt lỗi chặn RC (V61)",
+    "haiku-2": "Tốt: PR nhỏ, gộp nhanh nhất",
+    "haiku": "Khá: ít việc nhưng đều đạt",
+    "sonnet": "Chậm: trung vị 11 giờ/PR",
+    "nova": "Vừa nâng lên Sonnet 5.5 xhigh, nhận V45"
   },
-  {
-   "code": "M4",
-   "name": "Bản ổn định 0.7.7",
-   "due": "11/10 18:00",
-   "status": "dang"
-  }
- ],
- "productivityNotes": {
-  "sol": "Xuất sắc: nhiều PR nhất, ổn định",
-  "luna": "Tốt: gánh phần lớn lượt duyệt",
-  "luna-ultra": "Rất tốt: bắt lỗi chặn RC (V61)",
-  "haiku-2": "Tốt: PR nhỏ, gộp nhanh nhất",
-  "haiku": "Khá: ít việc nhưng đều đạt",
-  "sonnet": "Chậm: trung vị 11 giờ/PR",
-  "nova": "Vừa nâng lên Sonnet 5.5 xhigh, nhận V45"
- },
- "improvements": [
-  {
-   "title": "Dồn Sol làm V56 (chạy game Kirikiri/RGSS thật trên Test Lab) đầu tiên sáng 09/10",
-   "detail": "Đây là rủi ro lớn nhất của M3 và M4: chưa có bằng chứng Kirikiri chạy được game trên máy thật. Nếu kết quả xấu, bản ổn định vẫn ra nhưng ghi Kirikiri là thử nghiệm.",
-   "impact": "cao",
-   "owner": "Sol",
-   "status": "đang giao",
-   "id": "D1"
-  },
-  {
-   "title": "Workflow phát hành tự tạo tag, để PM tự phát hành (A14)",
-   "detail": "Bỏ bước sếp bấm tạo release mỗi lần. Workflow tự chặn khi CI chưa xanh hoặc tag đã tồn tại. Tiết kiệm từ vài giờ chờ tới nửa ngày mỗi bản.",
-   "impact": "cao",
-   "owner": "Sol",
-   "status": "Sol nhận từ Sonnet, hạn 10/10 12:00",
-   "id": "D2"
-  },
-  {
-   "title": "Nova lên Sonnet 5.5 xhigh nhận V45 Ren'Py 8 để Sol dồn sức V56",
-   "detail": "Gỡ nút thắt M3: trước đây Sol ôm cả V56 lẫn V45. Nova cũng nhận duyệt PR tài liệu để Luna và Luna Ultra đỡ tải.",
-   "impact": "cao",
-   "owner": "Nova, Sol",
-   "status": "áp dụng 09/10",
-   "id": "D3"
-  },
-  {
-   "title": "PR đỏ CI quá 6 giờ thì tác giả phải sửa hoặc đóng",
-   "detail": "#125 (Luna) và #139 (Haiku-2) đỏ từ chiều, chiếm chỗ WIP. PM nhắc trong mỗi lượt kiểm; quá 12 giờ thì PM đóng và giao lại.",
-   "impact": "vừa",
-   "owner": "PM",
-   "status": "áp dụng từ 09/10",
-   "id": "D4"
-  },
-  {
-   "title": "Giao Sonnet việc lõi cỡ nhỏ, xong trong 1 lượt, và nhắn trực tiếp",
-   "detail": "Trung vị 11 giờ/PR, chậm nhất đội. Tách việc lõi thành phần nhỏ hơn; mọi việc gửi bằng send_message kèm tên thư, không chờ Sonnet tự đọc thư.",
-   "impact": "vừa",
-   "owner": "PM",
-   "status": "đang áp dụng",
-   "id": "D5"
-  }
- ]
+  "improvements": [
+    {
+      "title": "Dồn Sol làm V56 (chạy game Kirikiri/RGSS thật trên Test Lab) đầu tiên sáng 09/10",
+      "detail": "Đây là rủi ro lớn nhất của M3 và M4: chưa có bằng chứng Kirikiri chạy được game trên máy thật. Nếu kết quả xấu, bản ổn định vẫn ra nhưng ghi Kirikiri là thử nghiệm.",
+      "impact": "cao",
+      "owner": "Sol",
+      "status": "sếp duyệt 09/10 · đang giao",
+      "id": "D1"
+    },
+    {
+      "title": "Workflow phát hành tự tạo tag, để PM tự phát hành (A14)",
+      "detail": "Bỏ bước sếp bấm tạo release mỗi lần. Workflow tự chặn khi CI chưa xanh hoặc tag đã tồn tại. Tiết kiệm từ vài giờ chờ tới nửa ngày mỗi bản.",
+      "impact": "cao",
+      "owner": "Sol",
+      "status": "sếp duyệt 09/10 · Sol nhận từ Sonnet, hạn 10/10 12:00",
+      "id": "D2"
+    },
+    {
+      "title": "Nova lên Sonnet 5.5 xhigh nhận V45 Ren'Py 8 để Sol dồn sức V56",
+      "detail": "Gỡ nút thắt M3: trước đây Sol ôm cả V56 lẫn V45. Nova cũng nhận duyệt PR tài liệu để Luna và Luna Ultra đỡ tải.",
+      "impact": "cao",
+      "owner": "Nova, Sol",
+      "status": "sếp duyệt 09/10 · áp dụng 09/10",
+      "id": "D3"
+    },
+    {
+      "title": "PR đỏ CI quá 6 giờ thì tác giả phải sửa hoặc đóng",
+      "detail": "#125 (Luna) và #139 (Haiku-2) đỏ từ chiều, chiếm chỗ WIP. PM nhắc trong mỗi lượt kiểm; quá 12 giờ thì PM đóng và giao lại.",
+      "impact": "vừa",
+      "owner": "PM",
+      "status": "sếp duyệt 09/10 · áp dụng từ 09/10",
+      "id": "D4"
+    },
+    {
+      "title": "Giao Sonnet việc lõi cỡ nhỏ, xong trong 1 lượt, và nhắn trực tiếp",
+      "detail": "Trung vị 11 giờ/PR, chậm nhất đội. Tách việc lõi thành phần nhỏ hơn; mọi việc gửi bằng send_message kèm tên thư, không chờ Sonnet tự đọc thư.",
+      "impact": "vừa",
+      "owner": "PM",
+      "status": "sếp duyệt 09/10 · đang áp dụng",
+      "id": "D5"
+    }
+  ]
 }

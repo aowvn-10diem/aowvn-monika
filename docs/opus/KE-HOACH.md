@@ -104,7 +104,7 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | V70c | Trình sửa bố cục tay cầm (kéo, cỡ, độ mờ, theo hệ/game, mẫu dựng sẵn, mặc định trong config) | Sol | V70a | Test lưu/đọc bố cục; Luna Đạt | mở 09/10, hạn 12/10 20:00 (0.7.8) |
 | V71 | Sửa bộ kiểm thử máy ảo: Kirikiri x86 đánh dấu đã biết, RGSS thiếu dòng, job V33 gãy 5 unit test do fixture config | Sol | V33, V40 | Emulator Test API 30/34 + V33 xanh trên main, `ket-qua/V71.md` | mở 09/10 (thư sol-024), hạn 09/10 12:00 |
 | L14 | CHANGELOG + ghi chú phát hành bản ổn định 0.7.7 | Luna | L11 | Mỗi dòng trỏ PR | mở 09/10 (thư luna-010) |
-| L15 | TESTER-NGOAI + THU-NHANH cho 0.7.7 | Luna | N05, N08 | Tên nút khớp strings.xml | mở 09/10 (thư luna-010) |
+| L15 | TESTER-NGOAI + THU-NHANH cho 0.7.7 | Luna | N05, N08 | Tên nút khớp strings.xml | xong (PR #159) |
 | V26b | Hộp thoại NotFound: khi mọi xp3 đều có cờ "tên có vẻ băm/mã hóa" thì báo rõ "gói .xp3 mã hóa, lõi chưa hỗ trợ" thay cho "không tìm thấy startup.tjs"; giữ nút Báo lỗi; chuỗi trong strings.xml; có test | Sonnet | V26, #107 | Test xanh; Luna Đạt + Luna Ultra lần hai | xong (PR #144, 9dc9774) |
 | F01 | V21: chỉnh hình thức form báo lỗi theo token Monika, giữ hành vi/giao thức; chi tiết PROMPT-GEMINI-FLASH.md | Sol (nhận từ Gemini 09/10) | V21 D5#60 | Đủ5loại, Gửi/Hủy luôn thấy ở màn ngang; unit và ảnh3trạng thái xanh | mở 09/10 (thư sol-020) |
 | F02 | V21: ảnh/test bổ sung trạng thái không ảnh/đang gửi/màn ngang; chỉ thêm test | Gemini Flash (sau F01, chờ Sol giao head) | F01 | 3ảnh + assertdisabled/nútcuộn; không sửa app/workflow | chờ |
