@@ -41,10 +41,10 @@ fun gameReportAction(closeMenu: () -> Unit): SheetAction {
         scope.launch {
             val sent = withContext(Dispatchers.IO) {
                 val report = Diagnostics.recordUser(context, type, description, included)
-                Diagnostics.send(context, AppGraph.http, report, AppGraph.config.current.crash.endpoint)
+                Diagnostics.sendResult(context, AppGraph.http, report, AppGraph.config.current.crash.endpoint)
             }
             busy = false; open = false
-            Toast.makeText(context, if (sent) "Đã gửi báo lỗi. Cảm ơn bạn!" else "Đã lưu báo lỗi và chép phần chữ để bạn gửi cho AowVN.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, if (sent.ok) "Đã gửi báo lỗi. Cảm ơn bạn!" else "Gửi báo lỗi thất bại (${sent.error}). Đã lưu và chép phần chữ để bạn gửi cho AowVN.", Toast.LENGTH_LONG).show()
         }
     }
     return SheetAction("Báo lỗi game này", R.drawable.ic_fluent_document_24_regular) {

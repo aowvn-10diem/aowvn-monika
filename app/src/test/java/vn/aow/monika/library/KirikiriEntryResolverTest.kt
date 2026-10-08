@@ -56,6 +56,21 @@ class KirikiriEntryResolverTest {
         assertEquals(dir, r.entry)
     }
 
+    @Test fun notFoundLietKeTungXp3_coCoBangNeuTenBam() {
+        val dir = tmp.newFolder("Kara no Shoujo - AowVN.org")
+        val plain = put(dir, "data.xp3", listOf("img/a.png", "scn/a.ks", "b.png"))
+        put(dir, "hashed.xp3", listOf("3f9a1c", "77be02", "c0ffee", "a1b2c3", "d4e5f6", "0a0b0c", "1d1e1f"), pad = 2000)
+        val r = KirikiriEntryResolver.resolve(plain) as EntryResolution.NotFound
+        assertEquals(2, r.details.size)
+        val d = r.details.associateBy { it.substringBefore(' ') }
+        assertTrue(d.getValue("data.xp3").contains("3 mục") && d.getValue("data.xp3").contains("scn/a.ks"))
+        assertTrue(!d.getValue("data.xp3").contains("băm"))
+        val h = d.getValue("hashed.xp3")
+        assertTrue(h.contains("7 mục") && h.contains("3f9a1c|77be02|c0ffee|a1b2c3|d4e5f6") && !h.contains("0a0b0c"))
+        assertTrue(h.contains("[tên có vẻ băm/mã hóa]"))
+        assertTrue(r.details.all { it.length <= 280 })
+    }
+
     @Test fun docDuocMoiXp3MaKhongCoStartup_baoNotFound() {
         val dir = tmp.newFolder("Game thieu")
         val main = put(dir, "game.xp3", listOf("image/a.png"), v2 = true)
