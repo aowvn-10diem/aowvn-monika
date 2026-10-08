@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-08T10:14:43Z",
+  "updatedAt": "2026-10-08T11:12:21Z",
   "mainSha": "b870f2b",
   "app": "App 0.7.6 (bản thử) · config 36",
   "nextCheck": "2026-10-08T04:13:28Z",
@@ -838,6 +838,13 @@
       "owner": "Sol",
       "status": "xong",
       "note": ""
+    },
+    {
+      "code": "V26b",
+      "title": "Báo rõ \"xp3 mã hóa\" thay cho NotFound",
+      "owner": "Sonnet",
+      "status": "dang",
+      "note": "Hạn T7 12:00 VN, vào bản ổn định"
     }
   ],
   "gates": [
@@ -920,6 +927,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-08T11:12:21Z",
+      "text": "Sonnet trả thư 005 (#143): chưa kết luận mã hóa hay thứ tự patch; PM duyệt V26b (báo rõ xp3 mã hóa). Kênh Sonnet: send_message kèm tên thư"
+    },
     {
       "t": "2026-10-08T10:14:43Z",
       "text": "Gộp #138 (Haiku, browser 35,5→38,3%). V64 chuyển Sonnet → Sol vì chưa bắt đầu; RC 0.7.7 chờ V64. #139, #140 Cần sửa"
@@ -1843,7 +1854,7 @@
       "kind": "boss",
       "status": "sep",
       "role": "Chủ dự án: chốt hướng, duyệt phát hành, thử trên máy thật, giữ khóa ký và secret.",
-      "now": "Đã duyệt RC 0.7.7. Còn: secret Cloudflare, đóng cảnh báo #22, ảnh thư mục plugin/ của Kara no Shoujo.",
+      "now": "Còn: ảnh thư mục plugin/ của Kara no Shoujo; khóa Cloudflare; đóng cảnh báo #22. (Có thể thử game bằng Kirikiroid2 chính thức.)",
       "lastSeen": "2026-10-08T03:17:00Z",
       "channel": "Chat với PM · trang này"
     },
@@ -1867,11 +1878,11 @@
       "kind": "dev",
       "status": "dang",
       "role": "Engine và luồng app khó (Kirikiri, RGSS, Ren'Py); duyệt dự phòng khi người duyệt vắng.",
-      "now": "Phân tích file Kara no Shoujo (thư 005); V64 đã chuyển sang Sol.",
+      "now": "V26b: báo rõ 'xp3 mã hóa' (hạn T7 12:00); #143 thư 005 chờ Luna.",
       "match": [
         "sonnet"
       ],
-      "lastSeen": "2026-10-08T03:18:00Z",
+      "lastSeen": "2026-10-08T11:11:00Z",
       "channel": "Phiên chính Sonnet"
     },
     {
@@ -2230,6 +2241,18 @@
       "from": "opus",
       "to": "sol",
       "text": "V64 chuyển sang Sol, ưu tiên 0, hạn T6 09:00."
+    },
+    {
+      "t": "2026-10-08T11:11:00Z",
+      "from": "sonnet",
+      "to": "opus",
+      "text": "Thư 005 xong (#143); đề xuất V26b báo rõ xp3 mã hóa."
+    },
+    {
+      "t": "2026-10-08T11:14:00Z",
+      "from": "opus",
+      "to": "sonnet",
+      "text": "Duyệt V26b, hạn T7 12:00."
     }
   ]
 }
