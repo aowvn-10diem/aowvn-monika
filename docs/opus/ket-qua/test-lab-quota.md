@@ -9,3 +9,7 @@ SOL023: tối đa5/ngày, kể cả FAIL; máy thật chỉ cho engine cần ARM
 | 2026-10-08 | 37819533688 | test-lab-engine-games.yml | cubs37,grizzly37 | PM/SOL024: K1 PASS, K2 SIGSEGV; chưa Sol đọc toàn bộ evidence, không claim gameplay đạt | 9f35f8d2c0dbca0b864d0caedaf29e8de7f42482 | 2 |
 
 Tổng dự trữ bảo thủ8Oct=6, trong đó2 lịch sử chưa xác minh; dừng máy thật, không nói đã dùng chính xác6 hay vượt quota Firebase thực tế. Các ngày sau phải đối chiếu mọi run đã bắt đầu với sổ này trước khi chạy. Không ghi project/bucket/token/URL ký. Mỗi kết quả mới do Sol cập nhật bằng PR, không workflow push main.
+
+## CI chuẩn bị trên PR160
+
+Head293c044: policy/Build/Coverage SUCCESS; instrumentation run37828610683/job113487830295 FAIL trước GCP ở bước dựng app: `platforms;android-33` tải lỗi `Error on ZipFile unknown archive` (license đã accepted). Cập nhật cài SDK33 rõ ràng và đọc kiểm android.jar trước Gradle; không rerun máy thật hoặc chuyển CI/review cũ sang head sửa mới. Chờ CI exact head mới.

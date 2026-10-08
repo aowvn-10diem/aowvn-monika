@@ -52,8 +52,18 @@ jobs:
         with: {distribution: temurin, java-version: 17}
       - uses: gradle/actions/setup-gradle@v6
         with: {cache-provider: basic}
-      - name: Cài NDK trong catalog
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+      - name: Cài SDK33 của Kirikiri và NDK trong catalog
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-33" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+          # Fail here if SDK installation/download is incomplete, before Gradle or GCP.
+          python3 - <<'PY'
+          import os, zipfile
+          path = os.path.join(os.environ['ANDROID_HOME'], 'platforms/android-33/android.jar')
+          with zipfile.ZipFile(path) as jar:
+              assert 'android/content/Context.class' in jar.namelist()
+              assert jar.testzip() is None
+          print('Kirikiri compileSdk33 android.jar verified')
+          PY
       - name: Kiểm cửa thu bằng chứng (dữ liệu giả, không game)
         run: python3 scripts/test-testlab-evidence.py
       - name: Sinh game CI và xác minh engine pack
