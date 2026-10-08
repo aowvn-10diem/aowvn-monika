@@ -1,0 +1,49 @@
+name: Offline script tests (V57)
+
+on:
+  pull_request:
+    paths:
+      - scripts/**
+      - .github/workflows/script-tests.yml
+  push:
+    branches: [main]
+    paths:
+      - scripts/**
+      - .github/workflows/script-tests.yml
+
+permissions:
+  contents: read
+
+jobs:
+  n04-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Chạy đủ 5 test N04, báo lỗi sau khi chạy hết
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          cases = (
+              'test-cheats-index.py',
+              'test-crash-report-detail.py',
+              'test-gen-architecture.py',
+              'test-prepare-core-pins.py',
+              'test-verify-apk-cert.py',
+          )
+          failed = []
+          for case in cases:
+              print('::group::' + case, flush=True)
+              result = subprocess.run([sys.executable, str(Path('scripts') / case)])
+              print('::endgroup::', flush=True)
+              if result.returncode:
+                  failed.append(case)
+          print('N04 scripts: ' + str(len(cases)) + ' executed; failed=' + ','.join(failed))
+          raise SystemExit(1 if failed else 0)
+          PY
