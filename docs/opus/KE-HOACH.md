@@ -87,7 +87,7 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | V57 | Nối 5 test script N04 (#115) vào CI | Sol | N04 | Workflow chạy 5 test, xanh | **xong** (#129 gộp 32a4076) |
 | V58 | Chuẩn bị RC 0.7.7: tăng versionCode/Name, danh sách thay đổi từ v0.7.6; không chạy release.yml | Sol | — | PR xanh, Luna Đạt | **xong** (#128 gộp c6dee40: 0.7.7 / versionCode 42); RC chờ V64 |
 | V59 | Chuyển nhãn cứng của màn báo lỗi (`ui/GameReportUi.kt`) sang `strings.xml` | Sol | — | Test giao diện xanh, chữ không đổi | **xong** (#137 gộp 9d43dcd) |
-| V60 | Rà soát trước phát hành phía CI: periodic-check + Test Lab Robo trên head RC | Sol | V58 | `ket-qua/V60.md` | xong: periodic 37796099292 + Robo 37796105693 success trên 9dc9774 |
+| V60 | Rà soát trước phát hành phía CI: periodic-check + Test Lab Robo trên head RC | Sol | V58 | `ket-qua/V60.md` | xong (PR #146 gộp 3afa095) |
 | L11 | CHANGELOG 0.7.7 + ghi chú phát hành + cập nhật TEST-MAY-THAT | Luna | V58 | Mỗi dòng trỏ PR/commit | xong (PR #145); còn nit + thêm V26b sau #144 |
 | L12 | Sửa test phụ thuộc giờ nửa đêm (#116): cố định đồng hồ | Luna | N09 | Chạy 10 lần không đổi | đang: hạn 09/10 09:00 (thư luna-010) |
 | L13 | `docs/HUONG-DAN-NGUOI-DUNG.md` cho bản ổn định | Luna | — | Luna Ultra Đạt, tên nút khớp strings.xml | xong (PR #149) |
