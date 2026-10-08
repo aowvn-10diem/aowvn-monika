@@ -9,10 +9,10 @@
       "code": "RC077",
       "urgency": "cao",
       "kind": "one",
-      "question": "RC 0.7.7 đã đủ điều kiện (V64, V26b gộp; V60 xanh). Sếp nhắn thẳng Sonnet chạy phát hành prerelease từ main 3387671?",
-      "recommend": "Nhắn Sonnet ngay tối nay để kịp mốc M2 (09/10 20:00)",
+      "question": "Tạo release v0.7.7 trên GitHub (phiên AI bị chặn đẩy tag): Releases → Draft a new release → tag v0.7.7, target commit 33876712 → tick 'Set as a pre-release' → Publish",
+      "recommend": "Làm ngay để release.yml tự chạy; Sonnet kiểm bản sau đó",
       "options": [
-        "Đã nhắn Sonnet",
+        "Đã tạo release v0.7.7",
         "Để mai"
       ]
     },
@@ -952,6 +952,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-08T15:23Z",
+      "text": "Sonnet: không đẩy được tag v0.7.7 (proxy chặn). Chờ sếp tạo release v0.7.7 pre-release trên 33876712."
+    },
     {
       "t": "2026-10-08T15:14:25Z",
       "text": "V60 xanh: periodic-check 37796099292, Test Lab Robo 37796105693 trên 9dc9774. Gộp #147 (CHANGELOG thêm V26b). RC 0.7.7 sẵn sàng, chờ sếp ra lệnh Sonnet phát hành."
