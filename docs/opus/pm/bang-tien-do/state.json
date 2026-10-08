@@ -586,10 +586,10 @@
     {
       "code": "V45",
       "title": "Ren'Py 8: đăng gói và bật trong config (P4)",
-      "owner": "Sol",
-      "status": "cho",
+      "owner": "Nova",
+      "status": "dang",
       "module": "renpy8",
-      "note": "Phần B xong; phát hành renpy8 chờ sếp duyệt"
+      "note": "Nova (5.5 xhigh) nhận từ Sol; 2 PR nháp, hạn 10/10 20:00"
     },
     {
       "code": "V46",
@@ -955,6 +955,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-08T17:36:03Z",
+      "text": "Sếp nâng Nova lên Sonnet 5.5 xhigh. V45 Ren'Py 8 chuyển từ Sol sang Nova; Sol dồn V56 (hạn mới 10/10 12:00). Nova duyệt thêm PR tài liệu."
+    },
     {
       "t": "2026-10-08T17:27:57Z",
       "text": "Gộp #150 (quyền Artifact). V52a chuyển từ Nova sang Luna Ultra do quá hạn 23:00."
@@ -1992,11 +1996,9 @@
       "kind": "dev",
       "model": "Tài khoản khác, sếp quản",
       "status": "dang",
-      "role": "Test tăng độ phủ, tài liệu; PR của Nova do Luna duyệt.",
-      "now": "Quay lại 08/10: N05 (#118), V52a giấy phép (#122); tiếp N09 phần ui.screens, apkinstall.",
-      "match": [
-        "nova"
-      ],
+      "role": "V45 Ren'Py 8, test độ phủ, duyệt PR tài liệu",
+      "now": "V45 Ren'Py 8 (nhận từ Sol)",
+      "match": "Sonnet 5.5 xhigh (nâng 09/10)",
       "lastSeen": "2026-10-08T03:44:00Z",
       "channel": "Issue #90"
     },
@@ -2447,7 +2449,7 @@
     "haiku-2": "Tốt: PR nhỏ, gộp nhanh nhất",
     "haiku": "Khá: ít việc nhưng đều đạt",
     "sonnet": "Chậm: trung vị 11 giờ/PR",
-    "nova": "Chậm: #122 quá hạn, đã chuyển việc"
+    "nova": "Vừa nâng lên Sonnet 5.5 xhigh, nhận V45"
   },
   "improvements": [
     {
@@ -2455,42 +2457,40 @@
       "detail": "Đây là rủi ro lớn nhất của M3 và M4: chưa có bằng chứng Kirikiri chạy được game trên máy thật. Nếu kết quả xấu, bản ổn định vẫn ra nhưng ghi Kirikiri là thử nghiệm.",
       "impact": "cao",
       "owner": "Sol",
-      "status": "đang giao"
+      "status": "đang giao",
+      "id": "D1"
     },
     {
       "title": "Workflow phát hành tự tạo tag, để PM tự phát hành (A14)",
       "detail": "Bỏ bước sếp bấm tạo release mỗi lần. Workflow tự chặn khi CI chưa xanh hoặc tag đã tồn tại. Tiết kiệm từ vài giờ chờ tới nửa ngày mỗi bản.",
       "impact": "cao",
       "owner": "Sonnet",
-      "status": "đang làm, hạn 10/10 20:00"
+      "status": "đang làm, hạn 10/10 20:00",
+      "id": "D2"
+    },
+    {
+      "title": "Nova lên Sonnet 5.5 xhigh nhận V45 Ren'Py 8 để Sol dồn sức V56",
+      "detail": "Gỡ nút thắt M3: trước đây Sol ôm cả V56 lẫn V45. Nova cũng nhận duyệt PR tài liệu để Luna và Luna Ultra đỡ tải.",
+      "impact": "cao",
+      "owner": "Nova, Sol",
+      "status": "áp dụng 09/10",
+      "id": "D3"
     },
     {
       "title": "PR đỏ CI quá 6 giờ thì tác giả phải sửa hoặc đóng",
       "detail": "#125 (Luna) và #139 (Haiku-2) đỏ từ chiều, chiếm chỗ WIP. PM nhắc trong mỗi lượt kiểm; quá 12 giờ thì PM đóng và giao lại.",
       "impact": "vừa",
       "owner": "PM",
-      "status": "áp dụng từ 09/10"
-    },
-    {
-      "title": "Chia lại tải duyệt: Haiku duyệt PR tài liệu của Sol và Nova",
-      "detail": "Luna đang gánh 32 lượt duyệt cộng việc riêng (8 PR). Haiku còn dư sức (1 lượt duyệt). Luna giữ PR có mã.",
-      "impact": "vừa",
-      "owner": "PM",
-      "status": "đề xuất"
+      "status": "áp dụng từ 09/10",
+      "id": "D4"
     },
     {
       "title": "Giao Sonnet việc lõi cỡ nhỏ, xong trong 1 lượt, và nhắn trực tiếp",
       "detail": "Trung vị 11 giờ/PR, chậm nhất đội. Tách việc lõi thành phần nhỏ hơn; mọi việc gửi bằng send_message kèm tên thư, không chờ Sonnet tự đọc thư.",
       "impact": "vừa",
       "owner": "PM",
-      "status": "đang áp dụng"
-    },
-    {
-      "title": "Nova chỉ nhận 1 PR mỗi lúc, việc tài liệu hoặc test nhỏ",
-      "detail": "#122 quá hạn sau 2 lần Cần sửa, đã chuyển Luna Ultra. Giảm WIP để Nova hoàn thành trọn vẹn thay vì mở nhiều.",
-      "impact": "thấp",
-      "owner": "PM",
-      "status": "áp dụng từ 09/10"
+      "status": "đang áp dụng",
+      "id": "D5"
     }
   ]
 }

@@ -255,6 +255,14 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
 .imp .tag { justify-self: start; font-size: 12px; font-weight: 700; border-radius: var(--r-sm); padding: 2px 10px; background: var(--chip); color: var(--fg); }
 .imp .tag.cao { background: var(--stuck-bg); color: var(--stuck); }
 .imp .tag.vua { background: var(--run-bg); color: var(--run); }
+.imp .fb { display: grid; gap: 8px; margin-top: 6px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.imp .fb-opts { display: flex; gap: 8px; flex-wrap: wrap; }
+.imp .fb-opts .opt { width: auto; flex: 0 0 auto; }
+.imp .fb .send-row .btn { justify-self: start; }
+.imp .fb-said { font-size: 13.5px; color: var(--boss); font-weight: 600; }
+.imp .fb-said span { color: var(--fg); font-weight: 500; }
+.imp .fb-reply { font-size: 13.5px; color: var(--muted); }
+.imp .fb-reply b { color: var(--fg); }
 @media (max-width: 620px) {
   .ms { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .prod-row { grid-template-columns: 1fr 1fr; }
@@ -1044,17 +1052,61 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
     document.getElementById("ns-sub").textContent = "Từ " + when(p.since) + " · PM đã gộp " + (p.pmMerges || 0) + " PR";
     document.getElementById("ns-note").textContent = (p.basis || "") + " Trung vị = thời gian từ lúc mở PR tới lúc gộp.";
   }
+  var feedback = {}, fbDraft = {}, fbSaving = {}, fbErr = {};
+  var FB_LABEL = { duyet: "Duyệt", khong: "Không duyệt" };
+  function fbBox(x) {
+    var box = el("div", "fb"), fb = feedback[x.id];
+    if (fb && (fb.decision || fb.note)) {
+      var said = el("p", "fb-said", "Sếp: " + (FB_LABEL[fb.decision] || "Bình luận"));
+      if (fb.note) said.appendChild(el("span", "", " · " + fb.note));
+      box.appendChild(said);
+      if (fb.reply) { var r = el("p", "fb-reply"); r.appendChild(el("b", "", "PM: ")); r.appendChild(document.createTextNode(fb.reply)); box.appendChild(r); }
+      else box.appendChild(el("p", "fb-reply", "PM sẽ đọc ở lượt kiểm kế tiếp."));
+    }
+    if (PUBLIC || !db || readOnly) return box.childNodes.length ? box : null;
+    var d = fbDraft[x.id] || (fbDraft[x.id] = { decision: fb ? fb.decision || "" : "", note: "" });
+    var opts = el("div", "fb-opts"); opts.setAttribute("role", "radiogroup"); opts.setAttribute("aria-label", "Quyết định của sếp cho đề xuất này");
+    var send = el("button", "btn", fbSaving[x.id] ? "Đang lưu…" : "Gửi");
+    function refresh() { send.disabled = !!fbSaving[x.id] || !(d.decision || d.note.trim()); }
+    ["duyet", "khong"].forEach(function (k) {
+      var b = el("button", "opt", FB_LABEL[k]); b.type = "button"; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(d.decision === k));
+      b.addEventListener("click", function () { d.decision = d.decision === k ? "" : k; opts.querySelectorAll(".opt").forEach(function (o, i) { o.setAttribute("aria-checked", String(d.decision === ["duyet", "khong"][i])); }); refresh(); });
+      opts.appendChild(b);
+    });
+    box.appendChild(opts);
+    var ta = el("textarea", "note-in"); ta.rows = 2; ta.value = d.note; ta.placeholder = "Bình luận hoặc hướng khác cho PM (không bắt buộc)"; ta.setAttribute("aria-label", "Bình luận cho đề xuất: " + x.title);
+    ta.addEventListener("input", function () { d.note = ta.value; refresh(); });
+    box.appendChild(ta);
+    var row = el("div", "send-row"); send.type = "button"; row.appendChild(send);
+    if (fbErr[x.id]) row.appendChild(el("span", "msg err", fbErr[x.id]));
+    send.addEventListener("click", function () {
+      if (send.disabled) return;
+      fbSaving[x.id] = true; fbErr[x.id] = ""; renderImp(state);
+      var body = { id: x.id, title: x.title || "", decision: d.decision, note: d.note.trim(), at: new Date().toISOString(), status: "cho" };
+      db.doc("feedback/" + x.id).set(body).then(function () {
+        fbSaving[x.id] = false; fbDraft[x.id] = null; feedback[x.id] = body; renderImp(state);
+      }, function (e) {
+        fbSaving[x.id] = false;
+        fbErr[x.id] = e && e.code === "invalid_argument" ? "Tài khoản này không có quyền gửi." : "Chưa lưu được. Đợi ít phút rồi bấm Gửi lại.";
+        renderImp(state);
+      });
+    });
+    refresh();
+    box.appendChild(row);
+    return box;
+  }
   function renderImp(s) {
     var list = arr(s.improvements), box = document.getElementById("imp"); clear(box);
     if (!list.length) { box.appendChild(el("li", "empty", "Chưa có đề xuất.")); return; }
     list.forEach(function (x) {
       var li = el("li");
-      li.appendChild(el("span", "tag " + (x.impact === "cao" ? "cao" : x.impact === "vừa" ? "vua" : ""), "Tác động " + (x.impact || "thấp") + (x.owner ? " · " + x.owner : "") + (x.status ? " · " + x.status : "")));
+      li.appendChild(el("span", "tag " + (x.impact === "cao" ? "cao" : x.impact === "vừa" ? "vua" : ""), (x.id ? x.id + " · " : "") + "Tác động " + (x.impact || "thấp") + (x.owner ? " · " + x.owner : "") + (x.status ? " · " + x.status : "")));
       li.appendChild(el("b", "", x.title));
       if (x.detail) li.appendChild(el("p", "", x.detail));
+      if (x.id) { var f = fbBox(x); if (f) li.appendChild(f); }
       box.appendChild(li);
     });
-    document.getElementById("dx-sub").textContent = list.length + " đề xuất của PM";
+    document.getElementById("dx-sub").textContent = list.length + " đề xuất · sếp chọn Duyệt/Không duyệt hoặc để lại bình luận";
   }
 
   function render() {
@@ -1097,6 +1149,12 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
     db.collection("messages").onSnapshot(function (qs) {
       messages = qs.docs.map(function (doc) { var v = doc.data() || {}; v.id = doc.id; return v; }).filter(function (v) { return v.to && v.text; });
       if (state) renderTeam(state);
+    }, function () {});
+    db.collection("feedback").onSnapshot(function (qs) {
+      var next = {};
+      qs.docs.forEach(function (doc) { var v = doc.data(); if (v) next[doc.id] = v; });
+      feedback = next;
+      if (state) renderImp(state);
     }, function () {});
     db.collection("answers").onSnapshot(function (qs) {
       var next = {};
