@@ -90,7 +90,7 @@ Trạng thái: `chờ` · `đang làm` · `kẹt` (kèm số thư) · `xong` (k�
 | V60 | Rà soát trước phát hành phía CI: periodic-check + Test Lab Robo trên head RC | Sol | V58 | `ket-qua/V60.md` | xong: periodic 37796099292 + Robo 37796105693 success trên 9dc9774 |
 | L11 | CHANGELOG 0.7.7 + ghi chú phát hành + cập nhật TEST-MAY-THAT | Luna | V58 | Mỗi dòng trỏ PR/commit | xong (PR #145); còn nit + thêm V26b sau #144 |
 | L12 | Sửa test phụ thuộc giờ nửa đêm (#116): cố định đồng hồ | Luna | N09 | Chạy 10 lần không đổi | mở 08/10 (thư luna-007) |
-| L13 | `docs/HUONG-DAN-NGUOI-DUNG.md` cho bản ổn định | Luna | — | Luna Ultra Đạt, tên nút khớp strings.xml | mở 08/10 (thư luna-007) |
+| L13 | `docs/HUONG-DAN-NGUOI-DUNG.md` cho bản ổn định | Luna | — | Luna Ultra Đạt, tên nút khớp strings.xml | xong (PR #149) |
 | V61 | Rà soát trước phát hành phía mã: đọc diff `v0.7.6..<head RC>` tìm lỗi, rò rỉ khóa, vi phạm luật repo | Luna Ultra | V58 | `ket-qua/V61.md` bảng phát hiện, mỗi dòng có tệp/dòng | **xong** (#130 gộp 7f567da): 1 lỗi chặn RC → V64 |
 | V63 | Bản tin `digest`/`preview` đỏ HTTP 403 trên main và mọi PR: tìm gốc lỗi, thêm concurrency, bớt sự kiện kích hoạt, thử lại khi gặp 403/429, lỗi thì xanh có cảnh báo | Sol (ưu tiên 0) | V39 | 3 lượt main xanh | **xong** (#132 gộp 4dee745) |
 | V64 | **Chặn RC 0.7.7** (từ V61): `KirikiriEntryResolver` giữ chỉ mục mọi XP3 trong thư mục cùng lúc → nguy cơ hết bộ nhớ (Kara no Shoujo 6 XP3, 813 MB). Xử lý từng archive rồi bỏ, hoặc trần tổng; test thư mục giả nhiều archive | Sol (chuyển từ Sonnet 08/10 17:15 VN, chưa có commit) | V61 | Test xanh; Luna Đạt + Luna Ultra lần hai | xong (PR #142, 722bab0) |
