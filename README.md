@@ -2,7 +2,7 @@
 
 App Android "tất cả trong một" cho cộng đồng [aow.vn](https://www.aow.vn): đọc bài viết, nhận thông báo bài mới, tải game và chơi ngay trong app.
 
-**Mốc mã nguồn:** main [`51c1462`](https://github.com/aowvn-10diem/aowvn-monika/commit/51c14624f0e2680999dacdc859c2da3310fbf432) (07/10/2026) dùng app 0.7.6 (`versionCode` 41) và `configVersion` 36. Tag v0.7.6 là bản thử (pre-release); bản stable gần nhất là v0.7.3. Chơi game/ROM thật và thiết bị thật vẫn **[CHƯA KIỂM]**.
+**Mốc mã nguồn:** main [`59c1540`](https://github.com/aowvn-10diem/aowvn-monika/commit/59c15402174bdd23f38e759f11423a9353194f97) (08/10/2026) dùng app 0.7.6 (`versionCode` 41) và `configVersion` 36. Tag v0.7.6 là bản thử (pre-release); bản stable gần nhất là v0.7.3. Chơi game/ROM thật và thiết bị thật vẫn **[CHƯA KIỂM]**.
 
 Metadata gói trong config main: Azahar `662d412` (arm64-v8a), Kirikiri `6e61ce3-aow2` (arm64-v8a), RGSS `engines-rgss-6` (arm64-v8a), 7-Zip `16.02-2.02` (arm64-v8a và armeabi-v7a). Đây là phiên bản/ABI được cấu hình, không xác nhận tải gói hay chơi game thành công.
 
