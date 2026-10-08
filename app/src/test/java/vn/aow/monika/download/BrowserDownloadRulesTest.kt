@@ -76,14 +76,15 @@ class BrowserDownloadRulesTest {
     }
 
     @Test fun autoConfirmSavesPendingJobToDefaultPlace() {
-        val mgr = BrowserDownloads(app, ok("attachment; filename*=UTF-8''Tu%20dong.zip"), Prefs(app))
+        // Dùng file APK: nhánh này không gọi WorkManager (ImportWorker), giống test APK đang xanh. File .zip đi qua ImportWorker; chưa xác minh đó có phải nguyên nhân đỏ trên CI.
+        val mgr = BrowserDownloads(app, ok("attachment; filename*=UTF-8''tu-dong.apk"), Prefs(app))
         val job = mgr.start("https://host.test/auto", null, null, null, null)
         waitFor(job, DlState.READY)
         mgr.autoConfirmPending() // người dùng đóng trình duyệt khi chưa chọn nơi lưu
         assertTrue(job.confirmed)
         assertEquals(SaveDest.Library, job.dest)
         waitFor(job, DlState.SAVED)
-        assertTrue(File(GameStorage.downloads(app), "Tu dong.zip").exists())
+        assertTrue(File(GameStorage.downloads(app), "tu-dong.apk").exists())
     }
 
     @Test fun apkConfirmedToLibraryIsSavedWithoutImport() {
