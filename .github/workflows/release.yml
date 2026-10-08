@@ -6,6 +6,13 @@ on:
     tags: ["v*"]
   workflow_dispatch:
     inputs:
+      sha:
+        description: "V66: full SHA trên main, workflow tạo tag v<versionName> mới; CHỈ PM kích hoạt"
+        required: false
+      prerelease:
+        description: "Bản thử mặc định; bản ổn định chỉ khi PM đủ cổng"
+        type: boolean
+        default: true
       tag:
         description: "Tên bản phát hành (tag phải tồn tại; bỏ trống khi dry_run=true)"
         required: false
@@ -19,19 +26,78 @@ on:
         default: "false"
 
 permissions:
-  contents: write
+  contents: read
+  actions: read
+
+concurrency:
+  group: release-publication
+  cancel-in-progress: false
 
 jobs:
-  release:
+  preflight:
+    if: github.event_name != 'workflow_dispatch' || inputs.dry_run != true
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.guard.outputs.sha }}
+      tag: ${{ steps.guard.outputs.tag }}
+      create: ${{ steps.guard.outputs.create }}
+      prerelease: ${{ steps.guard.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0, persist-credentials: false}
+      - name: Fetch main for ancestor gate
+        run: git fetch origin refs/heads/main:refs/remotes/origin/main --tags
+      - name: Read-only exact SHA/CI/tag gate (V66)
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REQUESTED_SHA: ${{ inputs.sha }}
+          REQUESTED_TAG: ${{ inputs.tag }}
+          PRERELEASE: ${{ github.event_name != 'workflow_dispatch' || inputs.prerelease }}
+          STABLE: ${{ inputs.stable }}
+        run: python3 scripts/release-preflight.py
+  create_tag:
+    needs: preflight
+    permissions: {contents: write}
     if: github.event_name != 'workflow_dispatch' || inputs.dry_run != true
     runs-on: ubuntu-latest
     env:
-      TAG: ${{ inputs.tag || github.ref_name }}
+      TAG: ${{ needs.preflight.outputs.tag }}
+      SELECTED_SHA: ${{ needs.preflight.outputs.sha }}
     steps:
+      - name: Kiểm cấu hình ký trước khi tạo tag (V30)
+        id: before_tag_signing_guard
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MONIKA_KEYSTORE_BASE64 }}
+          MONIKA_KEYSTORE_PASSWORD: ${{ secrets.MONIKA_KEYSTORE_PASSWORD }}
+          MONIKA_KEY_ALIAS: ${{ secrets.MONIKA_KEY_ALIAS }}
+          MONIKA_KEY_PASSWORD: ${{ secrets.MONIKA_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in KEYSTORE_BASE64 MONIKA_KEYSTORE_PASSWORD MONIKA_KEY_ALIAS MONIKA_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then echo "::error::Thiếu cấu hình ký: $name"; exit 1; fi
+          done
+      - name: Tạo tag mới đúng SHA, không ghi đè/xóa (V66)
+        if: needs.preflight.outputs.create == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SELECTED_SHA: ${{ needs.preflight.outputs.sha }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          repo = 'repos/' + os.environ['GITHUB_REPOSITORY']
+          payload = json.dumps({'ref': 'refs/tags/' + os.environ['TAG'], 'sha': os.environ['SELECTED_SHA']})
+          # create-ref rejects existing refs atomically. Never update-ref(force), delete or git push.
+          subprocess.run(['gh', 'api', '--method', 'POST', repo + '/git/refs', '--input', '-'],
+                         input=payload, text=True, check=True, stdout=subprocess.DEVNULL)
+          PY
       - uses: actions/checkout@v4
         with:
-          ref: refs/tags/${{ inputs.tag || github.ref_name }}
+          ref: refs/tags/${{ needs.preflight.outputs.tag }}
           fetch-depth: 0
+          persist-credentials: false
       - name: Kiểm điều kiện ký và tag (V30)
         id: release_guard
         env:
@@ -46,6 +112,7 @@ jobs:
             if [ -z "${!name:-}" ]; then echo "::error::Thiếu cấu hình ký: $name"; exit 1; fi
           done
           test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/tags/$TAG^{commit}")" || { echo "::error::Checkout không đúng tag"; exit 1; }
+          test "$(git rev-parse HEAD)" = "$SELECTED_SHA" || { echo "::error::Tag đã đổi so với SHA qua cửa chặn CI"; exit 1; }
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -104,7 +171,7 @@ jobs:
           body_path: release-notes-${{ env.TAG }}.md
           generate_release_notes: true
           # Luật V31: bản chưa có kết quả thử trên máy thật luôn là prerelease.
-          prerelease: ${{ inputs.stable != 'true' }}
+          prerelease: ${{ needs.preflight.outputs.prerelease == 'true' }}
       - name: Up APK lên Pixeldrain (nếu có secret PIXELDRAIN_API_KEY)
         env:
           PIXELDRAIN_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
