@@ -82,7 +82,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 - Chọn tệp XP3 Kirikiri có `startup.tjs` ở gốc làm lối vào, thay vì nhầm sang tệp phụ. ([#93](https://github.com/aowvn-10diem/aowvn-monika/pull/93))
 - Khi không tìm thấy lối vào, ghi thêm chi tiết chỉ mục XP3 trong dấu vết chẩn đoán để người dùng gửi báo cáo lỗi. ([#91](https://github.com/aowvn-10diem/aowvn-monika/pull/91))
-- Bản thử này chưa xác nhận game Kirikiri chạy trên thiết bị thật; một báo cáo 0.7.6 vẫn gặp `NotFound` và nguyên nhân cụ thể **[CHƯA KIỂM]**. ([V26](opus/ket-qua/V26.md))
+- Bản thử này chưa xác nhận game Kirikiri chạy trên thiết bị thật; một ảnh màn hình app 0.7.6 vẫn cho thấy `NotFound` và nguyên nhân cụ thể **[CHƯA KIỂM]**. ([V26](opus/ket-qua/V26.md))
 
 ## [v0.7.5](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.5) (Bản thử — Pre-release)
 
