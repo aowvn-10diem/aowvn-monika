@@ -2,6 +2,7 @@
 import argparse
 import datetime as dt
 import json
+import os
 from pathlib import Path
 import subprocess
 
@@ -10,6 +11,12 @@ ENGINE_PREFIXES = ('app/src/main/java/vn/aow/monika/runner/',
                    'app/src/main/java/vn/aow/monika/library/',
                    'app/src/main/java/vn/aow/monika/pack/', 'kirikiri/', 'rgss/',
                    'renpy/', 'azahar/', 'libretrodroid/')
+
+
+def require_first_physical_attempt(raw_attempt):
+    # GitHub preserves RUN_ID on rerun. Never exclude that history and spend again.
+    if raw_attempt is None or not raw_attempt.isdecimal() or int(raw_attempt) != 1:
+        raise ValueError('Physical rerun forbidden: GITHUB_RUN_ATTEMPT must be 1; reconcile failed runs in ledger')
 
 
 def physical_gate(sha, checks, changed, rows, day, history_ids):
@@ -26,6 +33,14 @@ def physical_gate(sha, checks, changed, rows, day, history_ids):
     if used >= 5:
         raise ValueError('Daily physical quota exhausted (5); no retry')
     return used
+
+
+def last_physical_baseline(rows):
+    # A rejected/reserved request counts against budget but proves no engine was tested.
+    tested = [r for r in rows if not r.get('purpose', '').startswith('[DỰ TRỮ]')]
+    if not tested:
+        raise ValueError('Physical ledger has no tested baseline')
+    return tested[-1]['head']
 
 
 def ledger():
@@ -49,7 +64,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--physical', action='store_true')
     args = parser.parse_args()
-    repo = 'repos/' + __import__('os').environ['GITHUB_REPOSITORY']
+    if args.physical:
+        try:
+            require_first_physical_attempt(os.environ.get('GITHUB_RUN_ATTEMPT'))
+        except ValueError as error:
+            raise SystemExit('BLOCKED: ' + str(error))
+    repo = 'repos/' + os.environ['GITHUB_REPOSITORY']
     sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
     runs = gh(repo + '/actions/runs?head_sha=' + sha + '&per_page=100')['workflow_runs']
     if not args.physical:
@@ -60,13 +80,17 @@ def main():
     rows = ledger()
     if not rows:
         raise SystemExit('BLOCKED: physical ledger has no baseline')
-    baseline = rows[-1]['head']
+    try:
+        baseline = last_physical_baseline(rows)
+    except ValueError as error:
+        raise SystemExit('BLOCKED: ' + str(error))
     subprocess.run(['git', 'merge-base', '--is-ancestor', baseline, sha], check=True, capture_output=True)
     changed = subprocess.check_output(['git', 'diff', '--name-only', baseline, sha], text=True).splitlines()
     day = dt.datetime.now(dt.timezone.utc).date().isoformat()
+    # Current RUN_ID may be excluded only after proving this is its first attempt.
     # One bounded page each. Unknown/unrecorded started physical runs block, never disappear from budget.
     history = []
-    own = int(__import__('os').environ['GITHUB_RUN_ID'])
+    own = int(os.environ['GITHUB_RUN_ID'])
     for workflow in ('test-lab-engine-games.yml', 'test-lab.yml'):
         records = gh(repo + '/actions/workflows/' + workflow + '/runs?event=workflow_dispatch&per_page=100')['workflow_runs']
         if len(records) == 100 and records[-1]['created_at'][:10] >= day:
