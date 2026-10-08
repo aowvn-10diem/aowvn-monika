@@ -31,3 +31,8 @@ Mỗi người tự sửa lịch kiểm của mình sang đúng phút trên (upd
   - PR của Haiku, Haiku-2: Luna duyệt thay Luna Ultra.
   - PR của Luna: Haiku duyệt thay Luna Ultra.
 - Không ai đụng gói hay tệp của người khác. Thấy trùng việc thì dừng, báo PM.
+
+## Check CI nào bắt buộc (PM chốt 08/10, 15:20 giờ VN)
+- **Bắt buộc xanh** trên đúng head: `build`, `coverage`, `CodeQL`/`analyze`, và mọi job test hay kiểm khác của PR.
+- **Không chặn**: `digest` và `preview` (bản tin cho PM). Hai job này skipped, cancelled hay đỏ đều không tính, vì V63 cố ý cho chúng bỏ qua hoặc tự hủy khi có lượt mới.
+- Người duyệt ghi rõ trạng thái hai job này trong mục 1 nhưng vẫn kết luận "Đạt" nếu mọi check bắt buộc đã xanh.
