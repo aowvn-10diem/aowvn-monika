@@ -38,6 +38,8 @@ jobs:
           path: app/build/screenshots/
           if-no-files-found: ignore
           retention-days: 2   # hạn mức lưu trữ Actions từng đầy (14 GB artifact) → giữ ngắn
+      - name: Kiểm chính sách máy ảo (V71, không mạng/SDK)
+        run: python3 scripts/test-ci-emulator-policy.py
       - name: Kiểm major action (V50)
         run: python3 scripts/test-workflow-action-majors.py
       - name: Kiểm cửa chặn release (V30, chỉ dữ liệu giả)

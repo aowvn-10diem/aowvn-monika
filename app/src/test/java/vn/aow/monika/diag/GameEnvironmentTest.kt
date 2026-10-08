@@ -23,4 +23,12 @@ class GameEnvironmentTest {
             assertTrue(Diagnostics.envLine(app).contains("ci-env-v1")) // Một lần tại begin, không giả như đã tải bản mới.
         } finally { pack.deleteRecursively(); Diagnostics.end(app) }
     }
+    @Test fun cacheGl_khongDocGlKhiChuaCoContext_vaCacheKhiCoContext() {
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        var reads = 0
+        GameEnvironment.cacheGl(app, "test", hasContext = { false }, read = { reads++; "x" })
+        assertEquals("chưa có EGL context thì không được gọi glGetString (V56)", 0, reads)
+        GameEnvironment.cacheGl(app, "test", hasContext = { true }, read = { if (it == android.opengl.GLES20.GL_RENDERER) "Mali-G715" else "OpenGL ES 3.2" })
+        assertTrue(GameEnvironment.current(app).contains("cache(test): Mali-G715 / OpenGL ES 3.2"))
+    }
 }
