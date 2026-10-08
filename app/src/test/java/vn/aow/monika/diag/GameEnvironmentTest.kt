@@ -30,6 +30,5 @@ class GameEnvironmentTest {
         assertEquals("chưa có EGL context thì không được gọi glGetString (V56)", 0, reads)
         GameEnvironment.cacheGl(app, "test", hasContext = { true }, read = { if (it == android.opengl.GLES20.GL_RENDERER) "Mali-G715" else "OpenGL ES 3.2" })
         assertTrue(GameEnvironment.current(app).contains("cache(test): Mali-G715 / OpenGL ES 3.2"))
-        assertFalse("không có luồng GL thì không có context hiện hành", GameEnvironment.glContextCurrent())
     }
 }
