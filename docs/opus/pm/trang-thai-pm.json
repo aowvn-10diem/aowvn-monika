@@ -1,5 +1,5 @@
 {
-  "main": "8cad51b",
+  "main": "8befeb7",
   "branch": "2c4ddd3",
   "sol": {
     "V30": "xong#25",
@@ -81,7 +81,8 @@
     "113": "merged 59c1540",
     "114": "Sonnet Cần sửa 6a924c5 (HANDOFF #110, CHANGELOG ảnh)",
     "115": "merged a07e5c7",
-    "116": "merged 8cad51b"
+    "116": "merged 8cad51b",
+    "89": "merged 8befeb7 (V26 hồ sơ mã nguồn, docs)"
   },
   "idle": 0,
   "cadence": 60,
