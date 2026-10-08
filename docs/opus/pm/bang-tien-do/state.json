@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-08T20:59:51Z",
- "mainSha": "fc095be",
+ "updatedAt": "2026-10-08T21:30:15Z",
+ "mainSha": "6c48f03",
  "app": "App 0.7.7 (bản thử RC) · config 36",
- "nextCheck": "2026-10-08T20:58:59Z",
- "headline": "Sửa crash Kirikiri đã gộp; Test Lab chờ hạn mức ngày mới (15:05 giờ VN)",
+ "nextCheck": "2026-10-08T22:00:15Z",
+ "headline": "Đêm 09/10: V71 đã gộp; V66 chờ Luna; V56-quota cần sửa.",
  "needsBoss": [
   {
    "code": "G9",
@@ -879,7 +879,7 @@
    "title": "Workflow phát hành tự tạo tag (A14)",
    "owner": "Sol",
    "status": "dang",
-   "note": "A15 chạy tối đa, mở 09/10"
+   "note": "#161 Luna Ultra Đạt 8d328e5, chờ Luna kết luận lại."
   },
   {
    "code": "V67",
@@ -1025,6 +1025,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T21:30:15Z",
+   "text": "21:30Z không gộp. #161 Luna Ultra Đạt lần hai, chờ Luna. #160 Cần sửa (đếm quota). Giao Luna 012, Sol 025 (V68-a contents:write)."
+  },
   {
    "t": "2026-10-08T20:59:51Z",
    "text": "20:58Z gộp #158 V71 (emulator lọc ABI). Trả lời Cần PM xem #161: dispatch cấp repo + preflight là đủ."
