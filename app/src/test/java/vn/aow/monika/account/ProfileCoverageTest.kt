@@ -1,5 +1,6 @@
 package vn.aow.monika.account
 
+import android.os.SystemClock
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -21,9 +22,9 @@ class ProfileCoverageTest {
     private val vietnam = ZoneId.of("Asia/Ho_Chi_Minh")
 
     @Before fun freezeClock() {
-        // Move Robolectric's clock forward; its legacy shadow ignores attempts to set it backwards.
         val fixedNow = Instant.parse("2100-01-01T00:30:00Z").toEpochMilli()
-        ShadowSystemClock.advanceBy(Duration.ofMillis(fixedNow - ShadowSystemClock.currentTimeMillis()))
+        val millisToTarget = fixedNow - SystemClock.uptimeMillis()
+        ShadowSystemClock.advanceBy(Duration.ofMillis(millisToTarget))
     }
 
     @Test fun emptyAndNonPositiveCheckinAreNeverToday() {
