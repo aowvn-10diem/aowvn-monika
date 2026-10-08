@@ -1,6 +1,5 @@
 package vn.aow.monika.account
 
-import android.os.SystemClock
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -11,7 +10,6 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import org.robolectric.shadows.ShadowSystemClock
 import vn.aow.monika.ui.TestApp
-import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 
@@ -23,8 +21,7 @@ class ProfileCoverageTest {
 
     @Before fun freezeClock() {
         val fixedNow = Instant.parse("2100-01-01T00:30:00Z").toEpochMilli()
-        val millisToTarget = fixedNow - SystemClock.uptimeMillis()
-        ShadowSystemClock.advanceBy(Duration.ofMillis(millisToTarget))
+        ShadowSystemClock.setNanoTime(fixedNow * 1_000_000L)
     }
 
     @Test fun emptyAndNonPositiveCheckinAreNeverToday() {
