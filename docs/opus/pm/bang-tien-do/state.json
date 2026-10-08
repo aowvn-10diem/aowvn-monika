@@ -1,6 +1,6 @@
 {
- "updatedAt": "2026-10-08T03:13:28Z",
- "mainSha": "7dacebb",
+ "updatedAt": "2026-10-08T03:18:33Z",
+ "mainSha": "8cad51b",
  "app": "App 0.7.6 (bản thử) · config 36",
  "nextCheck": "2026-10-08T04:13:28Z",
  "headline": "Main 7dacebb: Sol xong 6/6 việc; #114–#116 của Luna chờ Sonnet duyệt thay Nova",
@@ -685,7 +685,7 @@
    "code": "N04",
    "title": "Nova: test cho script chưa có test",
    "owner": "Luna (từ Nova 07/10)",
-   "status": "cho",
+   "status": "xong",
    "note": "verify-apk-cert, prepare-core-pins, gen-architecture, crash-report-detail, cheats-index."
   },
   {
@@ -737,7 +737,7 @@
    "title": "Thêm test theo báo cáo độ phủ",
    "owner": "Luna · Sol (V54) · Nova",
    "status": "cho",
-   "note": "Sau V51",
+   "note": "#116 + #111 gộp; còn phần Nova",
    "module": ""
   },
   {
@@ -843,6 +843,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T03:18:33Z",
+   "text": "Sonnet duyệt thay Nova: gộp #115 N04 (a07e5c7), #116 N09 (8cad51b); #114 Cần sửa. Test Lab run 37721419669 đang chạy (sếp đã set khóa)"
+  },
   {
    "t": "2026-10-08T03:13:27Z",
    "text": "Gộp #110 V53 (7dacebb). Nova vắng >2h: nhờ Sonnet tiền duyệt #114–#116 của Luna"
