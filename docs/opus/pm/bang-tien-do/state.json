@@ -908,6 +908,34 @@
       "owner": "Luna",
       "status": "dang",
       "note": "A15 chạy tối đa, mở 09/10"
+    },
+    {
+      "code": "V69",
+      "title": "Lô UI/UX 7 điểm",
+      "owner": "Sol",
+      "status": "dang",
+      "note": "mở 09/10"
+    },
+    {
+      "code": "V70a",
+      "title": "Bộ nút chung + lún + rung",
+      "owner": "Sol",
+      "status": "dang",
+      "note": "mở 09/10"
+    },
+    {
+      "code": "V70b",
+      "title": "Menu trong game dùng chung",
+      "owner": "Luna",
+      "status": "dang",
+      "note": "mở 09/10"
+    },
+    {
+      "code": "V70c",
+      "title": "Tự chỉnh bố cục tay cầm (0.7.8)",
+      "owner": "Sol",
+      "status": "dang",
+      "note": "mở 09/10"
     }
   ],
   "gates": [
@@ -990,6 +1018,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-08T17:52:47Z",
+      "text": "V70: sếp giao thiết kế lại tay cầm và menu thống nhất (lún, rung, tự chỉnh). Spec thiet-ke/V70. Sol V70a+V70c, Luna V70b, Luna Ultra duyệt UX. A16: V70c sang 0.7.8."
+    },
     {
       "t": "2026-10-08T17:47:10Z",
       "text": "A15: đội ChatGPT chạy tối đa. Sol nhận V66 (workflow tự tạo tag, từ Sonnet), V67, F01/F02 (từ Gemini), N09-S, H02. Luna: L12, L14, L15, N09-L. Luna Ultra: V52a, V68, V52b. Sonnet chuyển sang lõi Kirikiri V18/V26."
@@ -1729,6 +1761,13 @@
     }
   ],
   "decisions": [
+    {
+      "code": "A16",
+      "question": "Thiết kế lại tay cầm/menu vào bản nào?",
+      "answer": "V70a (nút chung, lún, rung) + V70b (menu chung) vào 0.7.7 ổn định nếu xanh trước 10/10 20:00; V70c (tự chỉnh bố cục) vào 0.7.8",
+      "at": "2026-10-08T17:52:47Z",
+      "by": "PM (theo yêu cầu sếp)"
+    },
     {
       "code": "A15",
       "question": "Dùng hạn mức đội ChatGPT thế nào?",
