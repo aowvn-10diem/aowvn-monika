@@ -1,4 +1,4 @@
-# Checklist test trên máy thật — Aow Monika 0.7.7 (RC, chưa phát hành)
+# Checklist test trên máy thật — Aow Monika 0.7.7 (RC pre-release; chưa có bản ổn định)
 
 Cài bản **arm64** (đa số máy từ 2017 trở lên). Máy báo "không tương thích" → cài bản **armeabi-v7a**.
 Ghi kết quả vào cột cuối: ✅ đạt · ❌ lỗi (ghi ngắn lỗi gì, chụp màn hình nếu được) · ⏭ bỏ qua.
@@ -86,6 +86,18 @@ Mỗi hệ thử 1 game. Kiểm: **vào được game · có tiếng · phím �
 | 4.17 | Thoát game, vào lại (game có save trong game) | Save trong game còn | |
 | 4.18 | Tay cầm Bluetooth (nếu có) | Bấm được trong game | |
 
+### 4.19 Tay cầm ảo: hiệu ứng bấm, rung và bố cục (chỉ thử trên APK có tính năng)
+
+Các mục V70a/V70c này cần kiểm trên máy thật; giả lập CI không thay thế cảm nhận rung. Nếu APK chưa có mục **Tay cầm ảo** hoặc **Chỉnh phím**, ghi **[CHƯA KIỂM]** và bỏ qua thay vì đánh dấu đạt.
+
+| # | Thao tác | Kết quả mong đợi | KQ |
+|---|---|---|---|
+| 4.19.1 | Mở game có phím ảo, nhấn rồi thả D-pad và một nút hành động | Khi nhấn, nút thu còn 92% cỡ ban đầu và dịch xuống 2 dp, rồi bật lại; phím không bị kẹt sau khi thả | |
+| 4.19.2 | Cài đặt → Tay cầm ảo → tắt hiệu ứng bấm; nhấn nút rồi bật lại và thử | Khi tắt, không chạy hoạt ảnh lún; khi bật, hiệu ứng trở lại. Game vẫn nhận đúng phím | |
+| 4.19.3 | Cài đặt → Tay cầm ảo → thử Tắt/Nhẹ/Vừa/Mạnh; nhấn, thả rồi giữ một phím | Mức rung đổi theo lựa chọn; nhả rung nhẹ hơn hoặc tắt; Tắt/cài đặt rung khi chạm của Android tắt thì không rung; giữ phím không rung lặp | |
+| 4.19.4 | Mở **Chỉnh phím** nếu có; kéo nút, đổi cỡ 70–140%, độ mờ 20–100%, ẩn/hiện nút rồi chọn Xong | Giá trị nằm trong khoảng; bố cục nằm trong tầm ngón cái, không che phần chơi; mã phím trong game không đổi | |
+| 4.19.5 | Lưu bố cục theo hệ thống, ghi đè theo game; mở lại, thử preset Chuẩn/Gọn/Tay trái và **Về mặc định** | Bố cục theo phạm vi đã chọn được giữ; preset áp dụng được; khôi phục mặc định trả nút về vị trí gốc | |
+
 ## 5. Game Java (J2ME)
 
 | # | Thao tác | Kết quả mong đợi | KQ |
@@ -103,9 +115,9 @@ Mỗi hệ thử 1 game. Kiểm: **vào được game · có tiếng · phím �
 | 6.2 | Game Kirikiri / Ren'Py khi chưa cài app ngoài | Hiện hướng dẫn + nút tải app | |
 | 6.3 | Đã cài app ngoài → bấm Chơi | Mở đúng app ngoài | |
 
-## 6b. Kirikiri (visual novel .xp3) — mục tiêu thử ứng viên RC 0.7.7 (chưa phát hành)
+## 6b. Kirikiri (visual novel .xp3) — thử bản pre-release 0.7.7 (chưa có bản stable)
 
-Mốc mã nguồn: app 0.7.7 (`versionCode` 42), `configVersion` 36 trên main `722bab0` (ứng viên RC, chưa phát hành/tag). Đây là checklist chờ người thử; các ô KQ để trống không phải bằng chứng đã chạy.
+Mốc mã nguồn: app 0.7.7 (`versionCode` 42), `configVersion` 36 trên main `85269ea` (ứng viên RC, tag hiện là pre-release). Đây là checklist chờ người thử; các ô KQ để trống không phải bằng chứng đã chạy.
 
 Kirikiri nhúng sâu trong Monika (không phải app ngoài): màn chuẩn bị tự tải gói, menu Việt hóa, chạy ở tiến trình riêng.
 
