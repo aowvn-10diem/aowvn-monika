@@ -13,7 +13,8 @@ LIMIT = 1024 * 1024
 
 
 def read_json(url):
-    with urllib.request.urlopen(url, timeout=20) as response:
+    request = urllib.request.Request(url, headers={"User-Agent": "Monika-PeriodicCheck/1.0", "Accept": "application/json"})
+    with urllib.request.urlopen(request, timeout=20) as response:
         body = response.read(LIMIT + 1)
         if len(body) > LIMIT:
             raise ValueError("response_too_large")
