@@ -75,6 +75,22 @@ class Prefs(private val context: Context) {
         get() = sp.getString("motion_mode", "auto")!!
         set(value) = sp.edit().putString("motion_mode", value).apply()
 
+    /** Thiết lập chung do app ghi; tiến trình game chỉ đọc lúc mở lớp phủ. */
+    var controllerOptions: vn.aow.monika.ui.controls.ControllerOptions
+        get() = vn.aow.monika.ui.controls.ControllerOptions(
+            haptic = vn.aow.monika.ui.controls.HapticLevel.stored(sp.getString("controller_haptic", null)),
+            pressAnimation = sp.getBoolean("controller_press", true),
+            size = sp.getFloat("controller_size", 1f),
+            opacity = sp.getFloat("controller_opacity", 1f),
+            labels = sp.getBoolean("controller_labels", true),
+        ).bounded()
+        set(value) {
+            val v = value.bounded()
+            sp.edit().putString("controller_haptic", v.haptic.name).putBoolean("controller_press", v.pressAnimation)
+                .putFloat("controller_size", v.size).putFloat("controller_opacity", v.opacity)
+                .putBoolean("controller_labels", v.labels).apply()
+        }
+
     /** Đồng hồ của Prefs (ms). Mặc định là giờ hệ thống; test thay bằng đồng hồ giả để kiểm thời gian chơi. */
     internal var nowMillis: () -> Long = { System.currentTimeMillis() }
 
