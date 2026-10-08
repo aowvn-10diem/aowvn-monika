@@ -1,7 +1,7 @@
 # Giao tiếp với Opus
 
-> **Mục đích.** Tài liệu bàn giao để **Opus tham gia từ bên ngoài** (không cần đổi model của phiên đang làm) đọc là hiểu dự án, rồi **đưa phương án** cho các câu hỏi ở mục 7. Người thi công hiện tại là Claude Code (Sonnet); chủ repo ("sếp") quyết định cuối cùng.
-> Cập nhật trạng thái mã nguồn: 08/10/2026 UTC, main `59c1540`, app 0.7.6 (`versionCode` 41), `configVersion` 36. Release v0.7.6 là pre-release; stable gần nhất là v0.7.3. Chỗ ghi **[CHƯA KIỂM]** = chưa thử trên máy thật, đừng coi là chạy được.
+> **Mục đích.** Tài liệu bàn giao để **Opus tham gia từ bên ngoài** (không cần đổi model của phiên đang làm) đọc là hiểu dự án, rồi **đưa phương án** cho các câu hỏi ở mục 7. Người thi công app/CI/config hiện tại là Claude Code (Sonnet); các việc tài liệu và tiền duyệt theo phân vai PM mới nhất; chủ repo ("sếp") quyết định cuối cùng.
+> Cập nhật trạng thái mã nguồn: 08/10/2026 UTC, main `8befeb7`, app 0.7.6 (`versionCode` 41), `configVersion` 36. Release v0.7.6 là pre-release; stable gần nhất là v0.7.3. Chỗ ghi **[CHƯA KIỂM]** = chưa thử trên máy thật, đừng coi là chạy được.
 > Đọc kèm: `CLAUDE.md` (luật bắt buộc), `docs/KIEN-TRUC.md` (tự sinh), `docs/KIEN-TRUC-tay.md` (luồng + "sửa X mở file nào").
 
 ## 1. Dự án là gì
