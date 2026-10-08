@@ -101,12 +101,7 @@ class InAppBrowserActivity : ComponentActivity() {
 
     /** Tìm trong trang đang xem: Facebook → tìm trên Facebook; trang khác → tìm Google. Luôn mở ngay trong app. */
     private fun search(q: String) {
-        val t = q.trim()
-        if (t.isEmpty()) return
-        val url = when {
-            host.contains("facebook.com") -> "https://m.facebook.com/search/top/?q=" + Uri.encode(t)
-            else -> "https://www.google.com/search?q=" + Uri.encode(t)
-        }
+        val url = searchUrl(host, q) ?: return
         searching = false
         web?.loadUrl(url)
     }
@@ -254,8 +249,6 @@ class InAppBrowserActivity : ComponentActivity() {
         }
     }
 
-    private fun isFacebookHost(h: String) = h.contains("facebook.com") || h.contains("fb.com") || h.contains("messenger.com")
-
     // ---- Đính kèm ảnh chụp game khi đăng bài hỏi nhóm ----
     private var attachment by mutableStateOf<File?>(null)
 
@@ -302,7 +295,7 @@ class InAppBrowserActivity : ComponentActivity() {
                         if (done || u.isNullOrBlank() || u == "about:blank") return
                         done = true
                         val h = Uri.parse(u).host.orEmpty().lowercase()
-                        if (popupsOn && adOn && h.isNotEmpty() && AppGraph.adblock.blocks(h) && allow.none { h == it || h.endsWith(".$it") }) { blocked++ }
+                        if (popupsOn && adOn && h.isNotEmpty() && AppGraph.adblock.blocks(h) && !isAllowedHost(h, allow)) { blocked++ }
                         else view.post { view.loadUrl(u) }
                         view.post { tmp.destroy() }
                     }
@@ -342,7 +335,7 @@ class InAppBrowserActivity : ComponentActivity() {
                 // Không chặn gì trên Facebook (dễ hỏng đăng bài / tải ảnh).
                 if (isFacebookHost(this@InAppBrowserActivity.host)) return null
                 val h = request.url.host?.lowercase() ?: return null
-                if (allow.any { h == it || h.endsWith(".$it") }) return null
+                if (isAllowedHost(h, allow)) return null
                 // Trang chính: chỉ chặn khi KHÔNG do người dùng bấm (chuyển hướng quảng cáo / pop-under).
                 if (request.isForMainFrame && (request.hasGesture() || !popupsOn || h == startHost || !AppGraph.adblock.blocks(h))) return null
                 val page = this@InAppBrowserActivity.host
@@ -377,25 +370,17 @@ class InAppBrowserActivity : ComponentActivity() {
     }
 
     /** Loại tài nguyên đoán từ tiêu đề Accept / đuôi tệp (WebView không cho biết trực tiếp); 0 = không rõ. */
-    private fun typeOf(r: WebResourceRequest): Int {
-        val accept = r.requestHeaders["Accept"]?.lowercase().orEmpty()
-        val path = r.url.path?.lowercase().orEmpty()
-        return when {
-            accept.startsWith("text/css") || path.endsWith(".css") -> FilterEngine.STYLE
-            path.endsWith(".js") || path.endsWith(".mjs") -> FilterEngine.SCRIPT
-            accept.contains("text/html") -> if (r.isForMainFrame) 0 else FilterEngine.SUBDOC
-            accept.contains("image/") || Regex("""\.(png|jpe?g|gif|webp|avif|svg|ico)$""").containsMatchIn(path) -> FilterEngine.IMAGE
-            Regex("""\.(woff2?|ttf|otf)$""").containsMatchIn(path) -> FilterEngine.FONT
-            accept.startsWith("video/") || accept.startsWith("audio/") || Regex("""\.(mp4|webm|m3u8|mp3|ogg)$""").containsMatchIn(path) -> FilterEngine.MEDIA
-            else -> 0
-        }
-    }
+    private fun typeOf(r: WebResourceRequest): Int = resourceType(
+        r.url.path?.lowercase().orEmpty(),
+        r.requestHeaders["Accept"]?.lowercase().orEmpty(),
+        r.isForMainFrame,
+    )
 
     /** Ẩn khung quảng cáo còn sót bằng CSS (luật ẩn phần tử theo trang) và giữ lại nếu trang gỡ đi. */
     private fun hideAds(view: WebView) {
         if (!adOn || adState != AdState.ON || !cosmeticOn) return
         val h = host
-        if (h.isBlank() || isFacebookHost(h) || allow.any { h == it || h.endsWith(".$it") }) return
+        if (h.isBlank() || isFacebookHost(h) || isAllowedHost(h, allow)) return
         val css = AppGraph.adblock.cosmeticCss(h)
         if (css.isEmpty()) return
         val js = "(function(){var id='__monika_ab';function add(){if(document.getElementById(id))return;var s=document.createElement('style');s.id=id;" +
@@ -417,13 +402,6 @@ class InAppBrowserActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    private fun isFacebookApp(u: Uri, i: Intent): Boolean {
-        val scheme = u.scheme.orEmpty().lowercase()
-        val target = (i.`package` ?: "") + " " + (i.data?.scheme ?: "") + " " + (i.data?.host ?: "")
-        return scheme.startsWith("fb") || scheme == "messenger" || target.contains("facebook") || target.contains("fb") ||
-            u.toString().contains("com.facebook", ignoreCase = true)
-    }
-
     @Composable
     private fun ToolIcon(@androidx.annotation.DrawableRes icon: Int, desc: String, onClick: () -> Unit) {
         Box(Modifier.size(44.dp).clip(Radius.pill).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
@@ -434,6 +412,35 @@ class InAppBrowserActivity : ComponentActivity() {
     companion object {
         private const val EXTRA_URL = "url"
         private const val EXTRA_ATTACH = "attach"
+
+        internal fun searchUrl(host: String, q: String): String? {
+            val t = q.trim()
+            if (t.isEmpty()) return null
+            return if (host.contains("facebook.com")) "https://m.facebook.com/search/top/?q=" + Uri.encode(t)
+            else "https://www.google.com/search?q=" + Uri.encode(t)
+        }
+
+        internal fun isFacebookHost(h: String) = h.contains("facebook.com") || h.contains("fb.com") || h.contains("messenger.com")
+
+        internal fun isFacebookApp(u: Uri, i: Intent): Boolean {
+            val scheme = u.scheme.orEmpty().lowercase()
+            val target = (i.`package` ?: "") + " " + (i.data?.scheme ?: "") + " " + (i.data?.host ?: "")
+            return scheme.startsWith("fb") || scheme == "messenger" || target.contains("facebook") || target.contains("fb") ||
+                u.toString().contains("com.facebook", ignoreCase = true)
+        }
+
+        internal fun isAllowedHost(host: String, allow: Collection<String>): Boolean =
+            allow.any { host == it || host.endsWith(".$it") }
+
+        internal fun resourceType(path: String, accept: String, isMainFrame: Boolean): Int = when {
+            accept.startsWith("text/css") || path.endsWith(".css") -> FilterEngine.STYLE
+            path.endsWith(".js") || path.endsWith(".mjs") -> FilterEngine.SCRIPT
+            accept.contains("text/html") -> if (isMainFrame) 0 else FilterEngine.SUBDOC
+            accept.contains("image/") || Regex("""\.(png|jpe?g|gif|webp|avif|svg|ico)$""").containsMatchIn(path) -> FilterEngine.IMAGE
+            Regex("""\.(woff2?|ttf|otf)$""").containsMatchIn(path) -> FilterEngine.FONT
+            accept.startsWith("video/") || accept.startsWith("audio/") || Regex("""\.(mp4|webm|m3u8|mp3|ogg)$""").containsMatchIn(path) -> FilterEngine.MEDIA
+            else -> 0
+        }
 
         /** @param attach ảnh (vd. chụp màn hình game) tự đính kèm khi trang mở hộp chọn ảnh. */
         fun start(context: Context, url: String, attach: File? = null) {
