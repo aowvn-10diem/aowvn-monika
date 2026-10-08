@@ -178,7 +178,7 @@
     "tasks": "N00(thường trực),N01,N03,N04,N05,N02(sau 0.7.5),N06(thay L09),N07 — thư nova-001",
     "mailbox": "issue #90"
   },
-  "merge_rule": "Từ 08/10: PR Sol/Sonnet/Nova cần Luna 'Đạt'; PR Luna/Haiku/Haiku-2 cần Luna Ultra 'Đạt' (vắng >2h → Luna cho haiku*, Haiku cho luna/*); PR Luna Ultra cần Luna. + CI xanh + PM duyệt.",
+  "merge_rule": "Từ 08/10: PR Sol/Sonnet/Nova cần Luna 'Đạt'; PR Luna/Haiku/Haiku-2 cần Luna Ultra 'Đạt' (vắng >2h → Luna cho haiku*, Haiku cho luna/*); PR Luna Ultra cần Luna. + CI xanh + PM duyệt. | A17 (09/10 03:00): CodeQL/analyze chỉ bắt buộc khi PR đụng app/**, cloudflare/**, cấu hình CodeQL",
   "a8": "Sếp đồng ý 06/10: chạy lại release.yml 1 lần sau khi #88 gộp. ĐÃ DÙNG: run 37395509233 xanh 00:53Z 06/10, v0.7.5 prerelease, APK sha256 10fc3f99…7c64, chứng thư khớp. Không chạy thêm.",
   "tiep_quan": {
     "tu": "2026-10-06",
