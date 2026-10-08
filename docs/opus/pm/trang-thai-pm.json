@@ -193,5 +193,6 @@
   },
   "routine_messages": "Mỗi lượt: ArtifactData query collection messages where status=='cho' → chuyển vào hộp thư người nhận (#90 Nova, #94 Haiku, #119 Luna Ultra, #120 Haiku-2, thư tra-loi-* cho Sol/Luna, send_message Sonnet) → update status 'da-chuyen'; khi có trả lời ghi field reply + status 'da-tra-loi'.",
   "sprint": "Nước rút 08–11/10: docs/opus/hop-thu/nuoc-rut-0810.md; M1 08/10 23:00 VN, M2 RC 09/10 20:00, M3 10/10 20:00, M4 ổn định 11/10 18:00",
-  "sonnet_channel": "send_message kèm tên thư (Sonnet không tự quét tra-loi-*)"
+  "sonnet_channel": "send_message kèm tên thư (Sonnet không tự quét tra-loi-*)",
+  "release_rule": "A14 (08/10): PM tự phát hành thử + ổn định, không báo sếp. Cổng: CI bắt buộc xanh đúng SHA trên main; PR trên đường phát hành có Luna + Luna Ultra Đạt; V60 xanh; CHANGELOG có dòng phiên bản. Bản ổn định chỉ từ SHA đã ra bản thử >=12h không lỗi chặn. Không đụng khóa/secret."
 }

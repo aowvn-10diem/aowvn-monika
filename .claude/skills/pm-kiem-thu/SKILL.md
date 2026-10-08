@@ -50,3 +50,10 @@ Chỉ nhắn sếp khi cần quyết (1–2 dòng). Không đẩy thẳng main, 
 
 ## Đo token (kiểm kết quả skill)
 Trường `usage` trong `~/.claude/projects/-home-user/<phiên>.jsonl`. Đích: ≤ 7,5 triệu token/lượt kiểm (kỳ vọng 1–2 triệu), ngữ cảnh mỗi lần gọi < 100 nghìn token.
+
+## Phát hành (A14, sếp chốt 08/10)
+PM tự phát hành cả bản thử (prerelease) lẫn bản ổn định, không cần hỏi hay báo sếp; chỉ ghi `log` + `decisions` trên trang tiến độ.
+- **Cổng (đủ hết mới phát hành):** CI bắt buộc (build, coverage, CodeQL/analyze) xanh trên đúng SHA trên main; mọi PR đường phát hành có Luna + Luna Ultra Đạt; V60 (periodic-check + Test Lab Robo) xanh trên SHA đó; `docs/CHANGELOG.md` có mục phiên bản; `versionName/versionCode` đã tăng.
+- **Bản ổn định:** chỉ từ SHA đã ra bản thử ≥ 12 giờ, không có báo lỗi chặn mới.
+- **Cách chạy:** khi `release.yml` có `workflow_dispatch` tự tạo tag (PR sonnet/release-tag) → kích hoạt với SHA + `prerelease`. Trước đó: nhờ Sonnet chạy skill `phat-hanh-apk`. Sau khi chạy: Sonnet kiểm bằng `kiem-phat-hanh`.
+- **Vẫn cấm:** đụng khóa ký, mật khẩu, token, Secrets; ghi đè/xóa tag; phát hành từ nhánh khác main.

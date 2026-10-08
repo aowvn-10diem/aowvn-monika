@@ -6,17 +6,6 @@
   "headline": "RC 0.7.7 SẴN SÀNG: chờ sếp nhắn Sonnet phát hành (prerelease)",
   "needsBoss": [
     {
-      "code": "RC077",
-      "urgency": "cao",
-      "kind": "one",
-      "question": "Tạo release v0.7.7 trên GitHub (phiên AI bị chặn đẩy tag): Releases → Draft a new release → tag v0.7.7, target commit 33876712 → tick 'Set as a pre-release' → Publish",
-      "recommend": "Làm ngay để release.yml tự chạy; Sonnet kiểm bản sau đó",
-      "options": [
-        "Đã tạo release v0.7.7",
-        "Để mai"
-      ]
-    },
-    {
       "code": "G9",
       "urgency": "Nên làm",
       "kind": "one",
@@ -953,6 +942,10 @@
   ],
   "log": [
     {
+      "t": "2026-10-08T16:01Z",
+      "text": "A14: sếp giao PM tự phát hành (thử + ổn định). Sonnet sửa release.yml cho phép kích hoạt tự tạo tag + cổng tự động. v0.7.7 RC do sếp tạo release, run 37803788979."
+    },
+    {
       "t": "2026-10-08T15:23Z",
       "text": "Sonnet: không đẩy được tag v0.7.7 (proxy chặn). Chờ sếp tạo release v0.7.7 pre-release trên 33876712."
     },
@@ -1667,6 +1660,13 @@
     }
   ],
   "decisions": [
+    {
+      "code": "A14",
+      "question": "Ai phát hành?",
+      "answer": "PM tự phát hành cả bản thử và bản ổn định khi đủ cổng tự động; không cần báo sếp",
+      "at": "2026-10-08T16:01Z",
+      "by": "Sếp"
+    },
     {
       "code": "A8",
       "question": "Luna Ultra có thuộc đội ChatGPT (nhiều hạn mức)?",
