@@ -78,6 +78,14 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 - Có menu Monika tiếng Việt trong game Kirikiri với các lối tiếp tục, mở menu game, tua nhanh và thoát. ([92a65b2](https://github.com/aowvn-10diem/aowvn-monika/commit/92a65b22ece2f1346b61aa0875eb33da67a27d4d))
 - Gói Kirikiri phát hành kèm bản dịch giao diện và được tải riêng khi dùng. ([33f7ba0](https://github.com/aowvn-10diem/aowvn-monika/commit/33f7ba0bc27f9d1a721c22f9ff35ae85754f9282))
 
+## Ứng viên 0.7.7 (RC — chưa phát hành/tag)
+
+> Ghi chú chuẩn bị từ v0.7.6 đến main `722bab0`; chưa có tag hoặc bản phát hành v0.7.7.
+
+- Tại màn chuẩn bị Kirikiri, khi không tìm thấy lối vào, người dùng có thể gửi báo lỗi ngay; báo cáo có thêm tóm tắt các gói XP3 và màn hình nêu lý do nếu gửi không thành công. ([#107](https://github.com/aowvn-10diem/aowvn-monika/pull/107))
+- Bước kiểm lối vào Kirikiri có giới hạn chờ 8 giây; nếu đọc kho quá hạn, ứng dụng giữ lối vào đã chọn thay vì chờ vô hạn. ([#96](https://github.com/aowvn-10diem/aowvn-monika/pull/96))
+- Khi quét thư mục có nhiều gói XP3, bộ đọc xử lý từng chỉ mục rồi bỏ dữ liệu tạm trước khi đọc gói kế tiếp, giảm lượng chỉ mục cùng giữ trong bộ nhớ. ([#142](https://github.com/aowvn-10diem/aowvn-monika/pull/142))
+
 ## [v0.7.6](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.6) (Bản thử — Pre-release)
 
 - Chọn tệp XP3 Kirikiri có `startup.tjs` ở gốc làm lối vào, thay vì nhầm sang tệp phụ. ([#93](https://github.com/aowvn-10diem/aowvn-monika/pull/93))

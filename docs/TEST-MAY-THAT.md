@@ -1,4 +1,4 @@
-# Checklist test trên máy thật — Aow Monika 0.2.0
+# Checklist test trên máy thật — Aow Monika 0.7.7 (RC, chưa phát hành)
 
 Cài bản **arm64** (đa số máy từ 2017 trở lên). Máy báo "không tương thích" → cài bản **armeabi-v7a**.
 Ghi kết quả vào cột cuối: ✅ đạt · ❌ lỗi (ghi ngắn lỗi gì, chụp màn hình nếu được) · ⏭ bỏ qua.
@@ -31,7 +31,7 @@ Dùng game hoặc tệp đã có trên máy. Một số module cần mạng đ�
 | 1.1 | Cài APK, mở app | Mở được, không văng. Hiện màn Trang chủ có menu nổi phía dưới | |
 | 1.2 | Android 13+: app hỏi quyền thông báo → Cho phép | Không văng | |
 | 1.3 | Xoay ngang / dọc ở Trang chủ | Giao diện không vỡ, không văng | |
-| 1.4 | Cài đặt → xem dòng "Bản 0.2.0 · cấu hình v…" | Hiện đúng số bản | |
+| 1.4 | Cài đặt → xem dòng "Bản {versionName} · cấu hình v{configVersion}" | Hiện đúng số phiên bản và cấu hình của APK đang cài | |
 
 ## 2. Đọc bài & thông báo (cần mạng Việt Nam)
 
@@ -103,9 +103,9 @@ Mỗi hệ thử 1 game. Kiểm: **vào được game · có tiếng · phím �
 | 6.2 | Game Kirikiri / Ren'Py khi chưa cài app ngoài | Hiện hướng dẫn + nút tải app | |
 | 6.3 | Đã cài app ngoài → bấm Chơi | Mở đúng app ngoài | |
 
-## 6b. Kirikiri (visual novel .xp3) — mục tiêu thử 0.7.6 (pre-release)
+## 6b. Kirikiri (visual novel .xp3) — mục tiêu thử ứng viên RC 0.7.7 (chưa phát hành)
 
-Mốc mã nguồn: app 0.7.6 (`versionCode` 41), `configVersion` 36 trên main `ffe7e7e`. Đây là checklist chờ người thử; các ô KQ để trống không phải bằng chứng đã chạy.
+Mốc mã nguồn: app 0.7.7 (`versionCode` 42), `configVersion` 36 trên main `722bab0` (ứng viên RC, chưa phát hành/tag). Đây là checklist chờ người thử; các ô KQ để trống không phải bằng chứng đã chạy.
 
 Kirikiri nhúng sâu trong Monika (không phải app ngoài): màn chuẩn bị tự tải gói, menu Việt hóa, chạy ở tiến trình riêng.
 
