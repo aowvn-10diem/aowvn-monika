@@ -11,6 +11,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import org.robolectric.shadows.ShadowSystemClock
 import vn.aow.monika.ui.TestApp
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -24,8 +25,9 @@ class ProfileCoverageTest {
     private val fixedNow = Instant.parse("2100-01-01T00:30:00Z").toEpochMilli()
 
     @Before fun freezeClock() {
-        ShadowSystemClock.setCurrentTimeMillis(fixedNow)
-        assertEquals("test clock must be fixed", LocalDate.of(2100, 1, 1), LocalDate.now(utc))
+        ShadowSystemClock.advanceBy(Duration.ofMillis(fixedNow))
+        assertEquals("test clock must be fixed", fixedNow, System.currentTimeMillis())
+        assertEquals(LocalDate.of(2100, 1, 1), LocalDate.now(utc))
     }
 
     @Test fun emptyAndNonPositiveCheckinAreNeverToday() {
