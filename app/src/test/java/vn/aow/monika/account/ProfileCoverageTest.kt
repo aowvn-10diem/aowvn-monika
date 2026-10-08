@@ -1,20 +1,19 @@
 package vn.aow.monika.account
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
-import org.robolectric.shadows.ShadowSystemClock
 import vn.aow.monika.ui.TestApp
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = TestApp::class, sdk = [34])
@@ -22,34 +21,48 @@ import java.time.ZoneId
 class ProfileCoverageTest {
     private val vietnam = ZoneId.of("Asia/Ho_Chi_Minh")
     private val utc = ZoneId.of("UTC")
-    private val fixedNow = Instant.parse("2100-01-01T00:30:00Z").toEpochMilli()
 
-    @Before fun freezeClock() {
-        val advanceMillis = fixedNow - System.currentTimeMillis()
-        assertTrue("test clock must start before the fixed instant", advanceMillis >= 0)
-        ShadowSystemClock.advanceBy(Duration.ofMillis(advanceMillis))
-        assertEquals("test clock must be fixed", fixedNow, System.currentTimeMillis())
-        assertEquals(LocalDate.of(2100, 1, 1), LocalDate.now(utc))
+    private fun todayAtNoon(zone: ZoneId): Long =
+        LocalDate.now(zone).atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
+
+    // Put the current instant at 05:00 locally; six hours earlier is 23:00 yesterday.
+    private fun offsetAtLocalFive(now: Instant): ZoneOffset {
+        val utcSeconds = now.atOffset(ZoneOffset.UTC).toLocalTime().toSecondOfDay()
+        var offsetSeconds = 5 * 60 * 60 - utcSeconds
+        if (offsetSeconds < -12 * 60 * 60) offsetSeconds += 24 * 60 * 60
+        return ZoneOffset.ofTotalSeconds(offsetSeconds)
     }
 
     @Test fun emptyAndNonPositiveCheckinAreNeverToday() {
         assertFalse(Profile(0, 0, 0, 0).checkedInToday(vietnam))
         assertFalse(Profile(0, 0, 0, -1).checkedInToday(vietnam))
-        val yesterday = fixedNow - 2L * 24 * 60 * 60 * 1000
+        val yesterday = LocalDate.now(vietnam).minusDays(2).atTime(12, 0)
+            .atZone(vietnam).toInstant().toEpochMilli()
         assertFalse(Profile(0, 0, 0, yesterday).checkedInToday(vietnam))
     }
 
     @Test fun positiveTimestampUsesCalendarDateInProvidedZone() {
-        assertTrue(Profile(0, 0, 0, fixedNow).checkedInToday(vietnam))
-        assertTrue(Profile(0, 0, 0, fixedNow).checkedInToday(utc))
-        assertFalse(Profile(0, 0, 0, fixedNow - 2L * 24 * 60 * 60 * 1000).checkedInToday(vietnam))
+        assertTrue(Profile(0, 0, 0, todayAtNoon(vietnam)).checkedInToday(vietnam))
+        assertTrue(Profile(0, 0, 0, todayAtNoon(utc)).checkedInToday(utc))
+        val twoDaysAgo = LocalDate.now(vietnam).minusDays(2).atTime(12, 0)
+            .atZone(vietnam).toInstant().toEpochMilli()
+        assertFalse(Profile(0, 0, 0, twoDaysAgo).checkedInToday(vietnam))
     }
 
     @Test fun usesCalendarDateInProvidedZoneAcrossMidnight() {
-        val checkinAt00_30VietnamOnNewYear = Instant.parse("2099-12-31T17:30:00Z").toEpochMilli()
-        val profile = Profile(0, 0, 0, checkinAt00_30VietnamOnNewYear)
+        val now = Instant.now().truncatedTo(ChronoUnit.MINUTES)
+        val beforeMidnight = offsetAtLocalFive(now)
+        val afterMidnight = ZoneOffset.ofTotalSeconds(beforeMidnight.totalSeconds + 6 * 60 * 60)
+        val checkinSixHoursEarlier = now.minus(Duration.ofHours(6)).toEpochMilli()
+        val profile = Profile(0, 0, 0, checkinSixHoursEarlier)
 
-        assertTrue("check-in must use today's Vietnam date", profile.checkedInToday(vietnam))
-        assertFalse("the same instant must be yesterday in UTC", profile.checkedInToday(utc))
+        assertFalse(
+            "check-in must be yesterday before the zone's midnight",
+            profile.checkedInToday(beforeMidnight),
+        )
+        assertTrue(
+            "the same check-in must be today after the zone's midnight",
+            profile.checkedInToday(afterMidnight),
+        )
     }
 }
