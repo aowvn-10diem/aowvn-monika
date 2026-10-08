@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-08T16:28:08Z",
- "mainSha": "d687189",
+ "updatedAt": "2026-10-08T17:27:58Z",
+ "mainSha": "9f35f8d",
  "app": "App 0.7.6 (bản thử) · config 36",
- "nextCheck": "2026-10-08T17:28:08Z",
+ "nextCheck": "2026-10-08T18:27:58Z",
  "headline": "M2 xong. M4 còn: V56 Test Lab game thật, workflow tự tạo tag, bản ổn định 0.7.7",
  "needsBoss": [
   {
@@ -866,6 +866,13 @@
    "owner": "",
    "status": "xong",
    "note": "#149 gộp, Luna Ultra Đạt"
+  },
+  {
+   "code": "V52a",
+   "title": "V52a (Nova #122)",
+   "owner": "",
+   "status": "dang",
+   "note": "Quá hạn, chuyển Luna Ultra (luna-ultra/V52a), hạn 09/10 18:00"
   }
  ],
  "gates": [
@@ -948,6 +955,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T17:27:57Z",
+   "text": "Gộp #150 (quyền Artifact). V52a chuyển từ Nova sang Luna Ultra do quá hạn 23:00."
+  },
   {
    "t": "2026-10-08T16:28:08Z",
    "text": "Gộp #149 (L13 hướng dẫn người dùng). Nova đã sửa #122, chờ Luna duyệt lại. #146 (V60.md) chờ Luna."
