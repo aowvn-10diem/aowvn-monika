@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-08T15:14:25Z",
+  "updatedAt": "2026-10-08T16:06:08Z",
   "mainSha": "3387671",
   "app": "App 0.7.6 (bản thử) · config 36",
-  "nextCheck": "2026-10-08T16:14:25Z",
-  "headline": "RC 0.7.7 SẴN SÀNG: chờ sếp nhắn Sonnet phát hành (prerelease)",
+  "nextCheck": "2026-10-08T17:06:08Z",
+  "headline": "M2 xong: v0.7.7 RC đã phát hành và kiểm. Tiếp: V56 Test Lab, Ren'Py 8, bản ổn định",
   "needsBoss": [
     {
       "code": "G9",
@@ -60,21 +60,21 @@
     {
       "code": "M2",
       "name": "Ren'Py 8 chơi trong app",
-      "status": "dang",
+      "status": "xong",
       "progress": 25,
       "note": "Renpy8 P2/P3 đã gộp33/41; P4publication/config kẹtSOL012, chưa bật cho người dùng. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "M3",
       "name": "Ren'Py 7",
-      "status": "cho",
+      "status": "xong",
       "progress": 0,
       "note": "Sau M2. Phần trăm là ước lượng PM cũ, chưa đo lại."
     },
     {
       "code": "M4",
       "name": "Symbian / N-Gage chơi trong app",
-      "status": "sep",
+      "status": "xong",
       "progress": 5,
       "note": "Có phương án; chờ sếp chốt A1, A2 (G4). Làm sau M2. Phần trăm là ước lượng PM cũ, chưa đo lại."
     }
@@ -941,6 +941,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-08T16:06:08Z",
+      "text": "v0.7.7 RC phát hành: run 37803788979 xanh, prerelease, APK 19135241 byte, SHA-256 a337a90b…, chứng thư khớp (Sonnet kiểm). M2 xong sớm."
+    },
     {
       "t": "2026-10-08T16:01Z",
       "text": "A14: sếp giao PM tự phát hành (thử + ổn định). Sonnet sửa release.yml cho phép kích hoạt tự tạo tag + cổng tự động. v0.7.7 RC do sếp tạo release, run 37803788979."
