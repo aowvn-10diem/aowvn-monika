@@ -105,7 +105,7 @@ Mỗi hệ thử 1 game. Kiểm: **vào được game · có tiếng · phím �
 
 ## 6b. Kirikiri (visual novel .xp3) — mục tiêu thử 0.7.6 (pre-release)
 
-Mốc mã nguồn: app 0.7.6 (`versionCode` 41), `configVersion` 36 trên main `59c1540`. Đây là checklist chờ người thử; các ô KQ để trống không phải bằng chứng đã chạy.
+Mốc mã nguồn: app 0.7.6 (`versionCode` 41), `configVersion` 36 trên main `8befeb7`. Đây là checklist chờ người thử; các ô KQ để trống không phải bằng chứng đã chạy.
 
 Kirikiri nhúng sâu trong Monika (không phải app ngoài): màn chuẩn bị tự tải gói, menu Việt hóa, chạy ở tiến trình riêng.
 
