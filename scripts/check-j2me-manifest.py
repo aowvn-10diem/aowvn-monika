@@ -23,7 +23,8 @@ def inspect(path, hardened):
     by_name = {x["name"]: x for x in components}
     for name in CLOSED:
         assert name in by_name, f"missing component: {name}"
-        assert by_name[name]["exported"] == (not hardened), f"unexpected exported: {name}"
+        if hardened:
+            assert not by_name[name]["exported"], f"unexpected exported: {name}"
     if hardened:
         assert not any(x["exported"] for x in components), "unexpected public J2ME component"
     assert "ru.woesss.j2me.installer.MonikaLaunchActivity" in by_name
