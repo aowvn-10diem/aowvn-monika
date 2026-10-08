@@ -9,6 +9,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import vn.aow.monika.AppGraph
+import vn.aow.monika.feed.Post
 import java.util.concurrent.TimeUnit
 
 /**
@@ -27,18 +28,25 @@ class NewPostWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             return Result.success()
         }
         val subscribed = prefs.subscribedLabels
-        posts.filter { it.id !in seen }
-            .filter { subscribed.isEmpty() || it.labels.any(subscribed::contains) }
-            .take(MAX_PER_RUN)
-            .forEach { Notifier.newPost(applicationContext, it) }
-        // Giữ tối đa 200 mã để bộ nhớ không phình.
-        prefs.seenPostIds = (posts.map { it.id } + seen).take(200).toSet()
+        postsToNotify(posts, seen, subscribed).forEach { Notifier.newPost(applicationContext, it) }
+        prefs.seenPostIds = nextSeenIds(posts, seen)
         return Result.success()
     }
 
     companion object {
         private const val NAME = "new-post-check"
         private const val MAX_PER_RUN = 5
+        private const val MAX_SEEN = 200
+
+        /** Bài chưa thấy, đúng nhãn đã đăng ký (chưa đăng ký nhãn nào = nhận hết), tối đa [MAX_PER_RUN] bài. */
+        internal fun postsToNotify(posts: List<Post>, seen: Set<String>, subscribed: Set<String>): List<Post> =
+            posts.filter { it.id !in seen }
+                .filter { subscribed.isEmpty() || it.labels.any(subscribed::contains) }
+                .take(MAX_PER_RUN)
+
+        /** Mã bài mới trước, rồi mã cũ; giữ tối đa [MAX_SEEN] mã để bộ nhớ không phình. */
+        internal fun nextSeenIds(posts: List<Post>, seen: Set<String>): Set<String> =
+            (posts.map { it.id } + seen).take(MAX_SEEN).toSet()
 
         fun schedule(context: Context, minutes: Long) {
             val request = PeriodicWorkRequestBuilder<NewPostWorker>(minutes.coerceAtLeast(15), TimeUnit.MINUTES)

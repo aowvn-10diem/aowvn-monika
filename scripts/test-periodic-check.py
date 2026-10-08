@@ -16,6 +16,7 @@ def module(filename):
 
 issue = module('periodic-issue.py')
 links = module('check-config-links.py')
+remote = module('check-remote-config.py')
 
 
 class PeriodicTest(unittest.TestCase):
@@ -84,6 +85,31 @@ class PeriodicTest(unittest.TestCase):
             return {}
         issue.reconcile(api, 'o/r', {'unit': {'result': 'cancelled'}}, 'https://github.com/o/r/actions/runs/1', 'abc')
         self.assertIn('unit: cancelled', calls[0]['body'])
+
+    def test_remote_config_current_stale_and_invalid_without_network(self):
+        for actual, expected in [(7, 'stale'), (36, 'current'), (37, 'current'), (True, 'unknown'), ('36', 'unknown')]:
+            with self.subTest(actual=actual):
+                result = remote.compare(lambda url: {'configVersion': 36 if url == remote.MAIN_URL else actual}, 'https://fixture.test/config.json')
+                self.assertEqual(expected, result['status'])
+        def fail(url):
+            raise TimeoutError('fake secret must never enter report')
+        self.assertEqual({'status': 'unknown', 'remote_version': None, 'main_version': None, 'error': 'network_error'}, remote.compare(fail, 'https://fixture.test/config.json'))
+
+    def test_remote_stale_keeps_periodic_issue_open_with_versions(self):
+        calls = []
+        def api(method, path, data=None, paginate=False):
+            if method == 'GET':
+                return [[dict(number=7, state='closed', body=issue.MARKER)]]
+            calls.append(data)
+            return {}
+        green = {'unit': {'result': 'success'}}
+        issue.reconcile(api, 'o/r', green, 'https://github.com/o/r/actions/runs/1', 'abc', {'status': 'stale', 'remote_version': 7, 'main_version': 36, 'body': 'secret prose'})
+        self.assertEqual('open', calls[0]['state'])
+        self.assertIn('KV **7**, main **36**', calls[0]['body'])
+        self.assertNotIn('secret prose', calls[0]['body'])
+        calls.clear()
+        issue.reconcile(api, 'o/r', green, 'https://github.com/o/r/actions/runs/2', 'abc', {'status': 'current', 'remote_version': 36, 'main_version': 36})
+        self.assertIn('KV **36**, main **36**', calls[0]['body'])
 
     def test_link_failure_exit_and_machine_report_but_skips_are_not_errors(self):
         with tempfile.TemporaryDirectory() as d:

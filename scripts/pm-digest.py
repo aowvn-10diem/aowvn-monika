@@ -20,9 +20,33 @@ MAX_MARKDOWN_LINES = 40
 
 
 class GitHubAPIError(RuntimeError):
-    def __init__(self, status_code: int):
+    def __init__(self, status_code: int, *, headers=None, kind: str = "unknown"):
         super().__init__(f"GitHub API returned HTTP {status_code}.")
         self.status_code = status_code
+        # Whitelist numeric quota hints only: never retain/print arbitrary headers or response bodies.
+        def number(name):
+            value = str((headers or {}).get(name, (headers or {}).get(name.lower(), "")))
+            return int(value) if re.fullmatch(r"[0-9]{1,12}", value) else None
+        self.remaining = number("X-RateLimit-Remaining")
+        self.reset = number("X-RateLimit-Reset")
+        self.retry_after = number("Retry-After")
+        self.kind = ("rate-limit" if status_code == 429 or self.remaining == 0 else
+                     kind if kind in {"rate-limit", "secondary-rate-limit", "permission", "unknown"} else "unknown")
+
+    @classmethod
+    def from_http(cls, error):
+        try:
+            text = error.read(2048).decode("utf-8", errors="replace").lower()
+        except (OSError, AttributeError):
+            text = ""
+        kind = ("secondary-rate-limit" if "secondary rate limit" in text else
+                "rate-limit" if "api rate limit exceeded" in text else
+                "permission" if "resource not accessible" in text else "unknown")
+        return cls(error.code, headers=error.headers, kind=kind)
+
+    def diagnostic(self):
+        return {"http": self.status_code, "kind": self.kind, "remaining": self.remaining,
+                "reset_epoch": self.reset, "retry_after_seconds": self.retry_after}
 
 
 class GitHubAPI:
@@ -53,7 +77,7 @@ class GitHubAPI:
             with urllib.request.urlopen(request, timeout=30) as response:
                 return json.load(response), response.headers
         except urllib.error.HTTPError as error:
-            raise GitHubAPIError(error.code) from None
+            raise GitHubAPIError.from_http(error) from None
         except urllib.error.URLError:
             raise RuntimeError("GitHub API request failed.") from None
         except json.JSONDecodeError:
@@ -144,21 +168,34 @@ def timestamp(value: str | None) -> datetime:
     return parse_time(value) or datetime.min.replace(tzinfo=timezone.utc)
 
 
+# Tiền tố comment tiền duyệt → loại trong bản tin. Luna giữ "luna_tien_duyet" để consumer cũ không đổi schema.
+PREREVIEW_KINDS = (
+    ("Luna tiền duyệt", "luna_tien_duyet"),
+    ("Luna review L07", "luna_tien_duyet"),
+    ("Nova tiền duyệt", "nova_tien_duyet"),
+    ("Haiku tiền duyệt", "haiku_tien_duyet"),
+)
+PREREVIEW_PREFIXES = tuple(prefix for prefix, _ in PREREVIEW_KINDS)
+
+
 def classify_comment(comment: dict) -> dict:
     body = comment.get("body") if isinstance(comment.get("body"), str) else ""
     text = body.lstrip()
+    # Review templates wrap headings/verdicts in Markdown; inspect text, never export bodies.
+    text = re.sub(r"^[#*`\s]+", "", text)
     result = {"type": "khac"}
     if text.startswith("PM duyệt"):
         result["type"] = "pm_duyet"
     elif text.startswith("PM yêu cầu sửa"):
         result["type"] = "pm_sua"
-    elif text.startswith("Luna tiền duyệt") or text.startswith("Luna review L07"):
-        result["type"] = "luna_tien_duyet"
+    elif text.startswith(PREREVIEW_PREFIXES):
+        # Cùng một mẫu tiền duyệt cho Luna, Nova, Haiku; mỗi người một loại để bản tin biết ai đã duyệt.
+        result["type"] = next(kind for prefix, kind in PREREVIEW_KINDS if text.startswith(prefix))
         # Read the review header only: later prose may mention an older commit.
         header = text.splitlines()[0]
-        label = "commit" if text.startswith("Luna tiền duyệt") else "head"
+        label = "head" if text.startswith("Luna review L07") else "commit"
         sha = re.search(rf"\b{label}\s+`?([0-9a-f]{{7,40}})\b(?![0-9a-f])", header, re.IGNORECASE)
-        verdict = re.search(r"^Kết luận:\s*(Đạt|Cần sửa|Cần PM xem)", body, re.MULTILINE | re.IGNORECASE)
+        verdict = re.search(r"^[ \t*`]*Kết luận[*`]*:[ \t*`]*(Đạt|Cần sửa|Cần PM xem)", body, re.MULTILINE | re.IGNORECASE)
         if sha:
             result["sha"] = sha.group(1).lower()
         if verdict:

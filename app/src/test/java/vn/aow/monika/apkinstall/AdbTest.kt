@@ -2,7 +2,9 @@ package vn.aow.monika.apkinstall
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -108,5 +110,78 @@ class AdbTest {
         val end = ApkInstallFlow.executeAdb(r, s, device, checklist, allOff, readNow = { allOff }, obbDir = File(tmp.root, "obb")) {}
         assertEquals(UiState.Phase.FAILED, end.phase)
         assertTrue(s.commands.last().contains("adb_wifi_enabled 0"))
+    }
+
+    @Test fun installRejectsBadPackageName() {
+        val r = result()
+        assertThrows(IllegalArgumentException::class.java) {
+            runBlocking { AdbInstaller.install(FakeShell(::sh), "bad pkg;rm", r.parts, false) }
+        }
+    }
+
+    @Test fun installReportsWhenSessionCannotBeCreated() = runBlocking {
+        val r = result()
+        val s = FakeShell { c -> if (c.startsWith("pm install-create")) "Error: no space" else sh(c) }
+        assertTrue(AdbInstaller.install(s, r.packageName, r.parts, false) is InstallOutcome.Failure)
+        assertFalse(s.commands.any { it.startsWith("cmd package install-write") })
+    }
+
+    @Test fun installAbandonsSessionWhenPartIsRejected() = runBlocking {
+        val r = result()
+        val s = FakeShell { c -> if (c.startsWith("cmd package install-write")) "Failure [INSUFFICIENT_STORAGE]" else sh(c) }
+        assertTrue(AdbInstaller.install(s, r.packageName, r.parts, false) is InstallOutcome.Failure)
+        assertTrue(s.commands.contains("pm install-abandon 42"))
+        assertFalse(s.commands.any { it.startsWith("pm install-commit") })
+    }
+
+    @Test fun installReportsProgressToFull() = runBlocking {
+        val r = result()
+        val progress = ArrayList<Int>()
+        AdbInstaller.install(FakeShell(::sh), r.packageName, r.parts, false) { progress += it }
+        assertEquals(100, progress.last())
+    }
+
+    @Test fun pushDataRejectsPathsOutsideDataFolder() = runBlocking {
+        val bytes = ByteArray(5)
+        for (rel in listOf("../evil.bin", "/")) {
+            val r = AdbInstaller.pushData(FakeShell(::sh), "com.foo.game", listOf(DataFile(rel, Payload("x", 5) { bytes.inputStream() })))
+            assertTrue(r is AdbInstaller.DataResult.Failed)
+            assertEquals("Đường dẫn không hợp lệ: $rel", (r as AdbInstaller.DataResult.Failed).text)
+        }
+    }
+
+    @Test fun pushDataSkipsFilesAlreadyComplete() = runBlocking {
+        val bytes = ByteArray(500) { 1 }
+        val s = FakeShell { c -> if (c.startsWith("stat -c %s")) "500" else "" }
+        val r = AdbInstaller.pushData(s, "com.foo.game", listOf(DataFile("files/a.bin", Payload("a", 500) { bytes.inputStream() })))
+        assertTrue(r is AdbInstaller.DataResult.Ok)
+        assertEquals(500L, (r as AdbInstaller.DataResult.Ok).bytes)
+        assertFalse(s.commands.any { it.startsWith("cat >") })
+    }
+
+    @Test fun pushDataReportsShortCopy() = runBlocking {
+        val bytes = ByteArray(500) { 1 }
+        var stats = 0
+        val s = FakeShell { c -> if (c.startsWith("stat -c %s")) { stats++; if (stats == 1) "" else "10" } else "" }
+        val r = AdbInstaller.pushData(s, "com.foo.game", listOf(DataFile("files/a.bin", Payload("a", 500) { bytes.inputStream() })))
+        assertTrue(r is AdbInstaller.DataResult.Failed)
+        assertEquals("Chép thiếu dữ liệu: files/a.bin (10/500 byte)", (r as AdbInstaller.DataResult.Failed).text)
+    }
+
+    @Test fun cleanupTurnsOffOnlyWhatMonikaTurnedOn() = runBlocking {
+        val s = FakeShell()
+        AdbInstaller.cleanup(s, allOff)
+        assertEquals(1, s.commands.size)
+        assertTrue(s.commands.single().startsWith("settings put global adb_enabled 0"))
+        val kept = FakeShell()
+        AdbInstaller.cleanup(kept, DevState(true, true, true))
+        assertTrue(kept.commands.isEmpty())
+    }
+
+    @Test fun devStateAnyOnAndStoreDecodeEdges() {
+        assertFalse(allOff.anyOn)
+        assertTrue(DevState(false, false, true).anyOn)
+        assertNull(AdbInitialStore.decode(null))
+        assertNull(AdbInitialStore.decode("11"))
     }
 }

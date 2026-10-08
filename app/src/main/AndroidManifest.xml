@@ -33,6 +33,12 @@
         android:theme="@style/Theme.Monika"
         tools:targetApi="35">
 
+        <!-- V53: nội bộ cùng UID; VIEW .jar/.jad vẫn vào ui.MainActivity. -->
+        <activity android:name="ru.playsoftware.j2meloader.MainActivity"
+            android:exported="false" tools:node="merge" tools:replace="android:exported" />
+        <activity android:name="ru.playsoftware.j2meloader.config.ConfigActivity"
+            android:exported="false" tools:node="merge" tools:replace="android:exported" />
+
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="ocr,ocr_japanese" />
@@ -79,6 +85,12 @@
             android:name=".runner.EnginePrepActivity"
             android:exported="false"
             android:theme="@style/Theme.Monika.Fullscreen" />
+
+        <activity
+            android:name=".notify.NotificationOpenActivity"
+            android:exported="false"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay" />
 
         <activity
             android:name=".runner.RgssGameActivity"

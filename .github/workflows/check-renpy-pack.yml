@@ -25,13 +25,13 @@ jobs:
         run: |
           ./gradlew -p tools/pack-check test installDist --console=plain
           tools/pack-check/build/install/monika-pack-check/bin/monika-pack-check --archive renpy8 '${{ matrix.abi }}' "$RUNNER_TEMP/v45-pack/renpy8-${{ matrix.abi }}.zip" | tee "$RUNNER_TEMP/v45-pack/evidence/kotlin-check.txt"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: v45-renpy8-${{ matrix.abi }}
           path: ${{ runner.temp }}/v45-pack/renpy8-${{ matrix.abi }}.zip
           if-no-files-found: error
           retention-days: 3
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: v45-pack-evidence-${{ matrix.abi }}
@@ -68,7 +68,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
           script: bash scripts/ci-renpy-menu.sh "$RUNNER_TEMP/v45-engine/renpy8-arm64-v8a.zip" out/renpy-menu
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: v45-renpy-menu-api34

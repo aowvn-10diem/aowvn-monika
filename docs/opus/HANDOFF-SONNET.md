@@ -1,6 +1,6 @@
 # HANDOFF cho Sonnet (phiên thi công) — đọc file này đầu tiên khi phiên mới/phiên mất
 
-> Sao lưu 03/10/2026 (GMT+7). Mục đích: container của phiên có thể bị thu hồi (đã xảy ra một lần: mất bản clone cục bộ, Android SDK, vòng lặp nền, việc chưa commit). Mọi thứ cần để tiếp tục nằm trong repo này, **không có bí mật**.
+> Sao lưu 03/10/2026 (GMT+7); trạng thái repo cập nhật 08/10/2026 UTC theo main `b870f2ba09a1969babcb08b832d910e712bffcce` và nhánh PM `docs/opus-tra-loi` @ `efe03af53aae116614fa6caeb1ad43be71b12c47`. Mục đích: container của phiên có thể bị thu hồi (đã xảy ra một lần: mất bản clone cục bộ, Android SDK, vòng lặp nền, việc chưa commit). Mọi thứ cần để tiếp tục nằm trong repo này, **không có bí mật**.
 > Chủ dự án gọi là **"sếp"**. Đọc tiếp: `CLAUDE.md` (luật dự án) → `docs/opus/KE-HOACH.md` (bảng việc, nguồn sự thật) → `docs/opus/BANG-TIN.md` + `docs/opus/hop-thu/README.md` (kênh với Opus).
 
 ## 1. Cách làm việc với sếp (bắt buộc)
@@ -10,7 +10,7 @@
 - Gửi file cho sếp: `SendUserFile` (≤ 30 MiB) hoặc Pixeldrain (`scripts/pixeldrain-upload.sh`, key do sếp cấp, không ghi vào repo). Mỗi phiên bản Monika chỉ phát hành **một APK universal**.
 - Commit kết thúc bằng 2 dòng: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` và `Claude-Session: <URL phiên>`. Tiền tố commit việc: `[viec-<mã>]`; thư Opus: `[hỏi-opus]`, `[xong-opus]`.
 - Sếp **đã nhận việc công khai mã nguồn và giấy phép** (cổng G5, G8 trong KE-HOACH) — không hỏi lại, nhưng **không phát hành gói GPL mới lên repo packs công khai** cho tới khi sếp báo xong (dùng release riêng tư của repo này để thử).
-- Opus = PM thay sếp (chọn hướng, thứ tự, duyệt cổng). Sonnet = thi công việc khó. Haiku = việc nhẹ (dòng `Giao: Haiku` trong KE-HOACH). Việc ngoài kỹ thuật (tiền, pháp lý, khóa ký, máy thật, game thử) vẫn do sếp.
+- Opus = PM thay sếp (chọn hướng, thứ tự, duyệt cổng). Sonnet nhận phần app/CI/config. Phân vai nước rút hiện hành nằm trong [nuoc-rut-0810.md](https://github.com/aowvn-10diem/aowvn-monika/blob/efe03af53aae116614fa6caeb1ad43be71b12c47/docs/opus/hop-thu/nuoc-rut-0810.md), thư Luna 008 và issue #119; nó ưu tiên hơn dòng tạm cũ trong KE-HOACH. Theo lịch: Luna :55 rà PR Sol/Sonnet/Nova; Luna Ultra :58 rà PR Luna/Haiku/Haiku-2. Khi reviewer chờ quá 2 giờ, người dự phòng được nêu trong nuoc-rut thay. Luna phụ trách L07, L09/N07, N04, phần N09, L11–L13. PM comment #119 `6055694937`: preview/digest không chặn dù lỗi, skipped hay cancelled; Build, Coverage, CodeQL/analyze và các job test khác phải xanh. Việc ngoài kỹ thuật (pháp lý, khóa ký, máy thật, game thử, quyết định phát hành) vẫn cần sếp.
 
 ## 2. Môi trường & hạ tầng
 | Mục | Sự thật |
@@ -38,15 +38,15 @@
 
 - **Hạn mức lưu trữ Actions đã đầy một lần (03/10/2026, 14 GB artifact, chủ yếu APK debug 83 MB mỗi lần push):** đã xóa 370 artifact bằng `curl -X DELETE https://api.github.com/repos/aowvn-10diem/aowvn-monika/actions/artifacts/<id>` (proxy tự gắn quyền); GitHub tính lại hạn mức mỗi 6–12 giờ nên có thể còn chặn tải lên một lúc. Đã đặt retention ngắn + `continue-on-error` cho mọi `upload-artifact` — job không đỏ chỉ vì tải artifact lỗi. Workflow cần artifact ở job khác (hiện không có) sẽ phải dùng release.
 
-## 5. Trạng thái (cập nhật 04/10/2026)
-- **Phát hành:** v0.7.4 (versionCode 39; nguồn: `app/build.gradle.kts`). Cấu hình trong main hiện `configVersion` 34 (nguồn: `config/monika-config.json`); thay đổi cấu hình #67/#73 không tạo APK mới.
-- **RPG Maker XP/VX/Ace (V16/#73):** `systems.rgss.engine="rgss"` chọn engine nhúng; cấu hình ghim gói `engines-rgss-6` cho `arm64-v8a`. JoiPlay là dự phòng khi thiết bị không hỗ trợ ABI này; nếu tải gói lỗi, màn chuẩn bị báo lỗi để thử lại, không tự chuyển sang app ngoài. Gameplay máy thật, âm thanh, lưu/tải và FPS [CHƯA KIỂM].
-- **Đã xong:** E0, R0–R4, P0–P2, V09–V13. R2/R3 đã gộp main; kết quả thử R3 API 30/34 ở `docs/opus/ket-qua/R3.md`.
-- **Ren'Py 8:** P0/P1 đã có kết quả trong `docs/opus/ket-qua/P0.md`; P2 (module `:renpy`) đã gộp trong #33 và kết quả APK ở `docs/opus/ket-qua/P2.md`. P3 (#41) đã gộp: `RenpyGameActivity` chạy trong `:game`, gọi `RenpyBase.resolve(entry)`, dùng `EngineRoutes` → `PackManager.RENPY8` và `RenpyOverlay`. `config/monika-config.json` vẫn chọn `runner: external` + `joiplay`, nên route nhúng chưa bật; game Ren'Py thật [CHƯA KIỂM].
-- **Libretro V32:** Snapshot [cores-gb-gba-nes-1](https://github.com/aowvn-10diem/aowvn-monika-packs/releases/tag/cores-gb-gba-nes-1) đã phát hành qua [run 37196834615](https://github.com/aowvn-10diem/aowvn-monika/actions/runs/37196834615), gồm 12 ZIP + manifest, không đặt latest. PR [#67](https://github.com/aowvn-10diem/aowvn-monika/pull/67) đã gộp: cấu hình ghim URL/hash/version cho GB/GBA/NES theo 4 ABI, tăng configVersion 32→33 và giữ URL/version legacy; bằng chứng ở `docs/opus/ket-qua/V32.md`. Chơi game/ROM thật và đồng bộ Cloudflare [CHƯA KIỂM]. Không dispatch publish/deploy thêm.
-- **Thứ tự việc còn lại:** lấy từ kế hoạch PM hiện hành; ghi chú thứ tự cũ bên dưới không thay thế kế hoạch đó.
-- **Cổng sếp (KE-HOACH mục 4):** G1 (1 game RPG Maker XP), G2 (5 game R6 + máy thật), G3 (2 game Ren'Py 7/8), G4 (Symbian A1/A2), G5/G8 (công khai mã nguồn + giấy phép build file bản port mkxp-z — **sếp tự làm**), G6 (nhắn RAdmin duyệt client "AowMonika"), G7 (thử lại Kirikiri 0.7.4 trên máy thật với Kara no Shoujo; lỗi 0.7.3 vẫn được ghi trong kế hoạch).
-- **Haiku (việc nhẹ, dòng `Giao: Haiku`):** H01 (sửa đầu `GIAO-TIEP-VOI-OPUS.md`), H02 (gen-architecture), H03 (mục thử Kirikiri trong `TEST-MAY-THAT.md`).
+## 5. Trạng thái (cập nhật 08/10/2026)
+- **Mốc main:** `app/build.gradle.kts` đặt app 0.7.7 (`versionCode` 42); `config/monika-config.json` đặt `configVersion` 36 và bản cập nhật 0.7.6/code 41. Tag v0.7.7 chưa tồn tại; v0.7.6 là prerelease (06/10), stable gần nhất v0.7.3. Nguồn: main `b870f2b`, các tệp trên và [release v0.7.6](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.6).
+- **Gói theo config main:** Azahar `662d412` (arm64-v8a), Kirikiri `6e61ce3-aow2` (arm64-v8a), RGSS `engines-rgss-6` (arm64-v8a), 7-Zip `16.02-2.02` (arm64-v8a và armeabi-v7a). Đây là metadata cấu hình trong `modules`; không chứng minh gói tải được hay game chạy trên thiết bị.
+- **Kirikiri:** PR #86/#91/#93 bổ sung chẩn đoán lối vào và kiểm `startup.tjs`; ảnh app 0.7.6 vẫn ghi nhận nhánh `NotFound` cho một game. Nguyên nhân cụ thể, game/ROM khác, âm thanh, chạm, lưu/tải, tua nhanh và thiết bị thật **[CHƯA KIỂM]**; xem `docs/opus/ket-qua/V26.md`.
+- **RPG Maker XP/VX/Ace:** config dùng engine `rgss`, gói `engines-rgss-6` arm64 và `allowExternalApp: true`; JoiPlay là đường dự phòng khi không dùng được engine phù hợp. Gameplay, âm thanh, lưu/tải, FPS và máy 32-bit thật **[CHƯA KIỂM]**.
+- **Ren'Py:** config vẫn chọn `runner: external` + JoiPlay; route nhúng trong app chưa được bật. Game Ren'Py thật **[CHƯA KIỂM]**.
+- **Các thay đổi từ snapshot cũ `ffe7e7e` đã vào main:** #114 (L09/N07), #124 (test thông báo), #126 (hướng dẫn nút), #127 (V56), #128 (RC 0.7.7/code 42), #129 (nối 5 test script vào CI), #130/#131 (báo cáo V61/V62), #132 (V63), #133 (test runner), #134/#136 (test N09), #135 (dọn bytecode), #137 (chuỗi UI vào resources), #138 (tách helper trình duyệt và thêm test). Đây là mốc mã nguồn; không suy CI thành gameplay.
+- **PR đang mở snapshot `b870f2b`:** #139 N09-H2e (head `636fb36`, LunaUltra yêu cầu sửa số liệu coverage), #140 N09-H2f (head `7f05d59`, Build/Coverage fail một test), #125 L12 (head `05397f5`, thay đổi đồng hồ đang chờ xử lý) và #122 V52a (head `5835591`, đang chờ sửa câu GPL §6). Xác minh state/head/CI/comments trước khi hành động; snapshot này không vĩnh viễn.
+- **Cổng sếp:** các cổng máy thật, giấy phép, RAdmin và quyết định phát hành theo KE-HOACH hiện hành; không suy ra đã đạt từ build hoặc test tự sinh.
 
 ## 6. Tài nguyên đã sao lưu trong repo
 - Phương án Opus: `docs/opus/2026-10-03-nhung-renpy-rgss.md`, `2026-10-03-nhung-symbian-eka2l1.md`; thư: `docs/opus/hop-thu/`; kết quả: `docs/opus/ket-qua/{R0,R1,P0}.md`.
