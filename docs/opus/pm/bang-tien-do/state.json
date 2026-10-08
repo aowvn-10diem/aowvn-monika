@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-08T01:15:37Z",
- "mainSha": "59c1540",
+ "updatedAt": "2026-10-08T03:13:28Z",
+ "mainSha": "7dacebb",
  "app": "App 0.7.6 (bản thử) · config 36",
- "nextCheck": "2026-10-08T02:15:37Z",
- "headline": "Gộp 7 PR sáng 08/10; #110 chờ Sol kiểm lối tắt; #114–#116 của Luna chờ Nova",
+ "nextCheck": "2026-10-08T04:13:28Z",
+ "headline": "Main 7dacebb: Sol xong 6/6 việc; #114–#116 của Luna chờ Sonnet duyệt thay Nova",
  "needsBoss": [
   {
    "code": "G9",
@@ -752,8 +752,8 @@
    "code": "V53",
    "title": "Đóng thành phần j2me không cần mở từ ngoài (manifest :app)",
    "owner": "Sol",
-   "status": "dang",
-   "note": "#110 giữ: kiểm lối tắt ConfigActivity"
+   "status": "xong",
+   "note": "#110 gộp 7dacebb"
   },
   {
    "code": "V54",
@@ -843,6 +843,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T03:13:27Z",
+   "text": "Gộp #110 V53 (7dacebb). Nova vắng >2h: nhờ Sonnet tiền duyệt #114–#116 của Luna"
+  },
   {
    "t": "2026-10-08T01:15:37Z",
    "text": "Gộp 7 PR: #107 G7B, #106 N08, #108 V48, #109 V49, #111 V54, #112 V50, #113 V55. Giữ #110 (V53) kiểm lối tắt. Luna mở #114–#116 chờ Nova"
