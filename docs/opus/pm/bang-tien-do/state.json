@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-08T03:57:23Z",
+ "updatedAt": "2026-10-08T04:09:08Z",
  "mainSha": "8cad51b",
  "app": "App 0.7.6 (bản thử) · config 36",
  "nextCheck": "2026-10-08T04:13:28Z",
@@ -93,7 +93,7 @@
    "title": "Kirikiri không mở được game trên máy thật",
    "owner": "Sonnet",
    "status": "ket",
-   "note": "#107 gộp b1684f8: nút báo lỗi + toast mã HTTP; chờ sếp gửi file list/xp3filter",
+   "note": "Sếp gửi danh sách file 08/10: không có xp3filter.tjs; Sonnet phân tích (thư 005); chờ ảnh plugin/ + báo lỗi qua 0.7.7",
    "module": "kirikiri",
    "links": [
     {
@@ -858,6 +858,10 @@
  ],
  "log": [
   {
+   "t": "2026-10-08T04:09:08Z",
+   "text": "Sếp duyệt RC 0.7.7; gửi danh sách file Kara no Shoujo (không có xp3filter.tjs) → thư Sonnet 005. PM thêm SRI cho landing (alert 26)"
+  },
+  {
    "t": "2026-10-08T03:57:23Z",
    "text": "Nước rút tới CN 11/10: lịch kiểm lệch phút, Sol 6 việc (V56–V60), Luna 5 việc; trang tiến độ có sơ đồ Văn phòng"
   },
@@ -1513,6 +1517,20 @@
  ],
  "decisions": [
   {
+   "code": "A8",
+   "question": "Luna Ultra có thuộc đội ChatGPT (nhiều hạn mức)?",
+   "answer": "Có — giao thêm duyệt lần hai và V62.",
+   "by": "Sếp",
+   "at": "2026-10-08T04:10:00Z"
+  },
+  {
+   "code": "A7",
+   "question": "Phát hành RC 0.7.7 (prerelease) tối T6?",
+   "answer": "Sếp duyệt (một lần, 08/10).",
+   "by": "Sếp",
+   "at": "2026-10-08T04:10:00Z"
+  },
+  {
    "code": "R2",
    "question": "Repo công khai: muốn người khác clone về không dựng lại được app. Chọn cách nào?",
    "answer": "Tách phần riêng sang repo riêng, sao cho người hay AI đọc source công khai cũng không hiểu được quy trình và cơ chế của app",
@@ -1734,7 +1752,7 @@
    "kind": "boss",
    "status": "sep",
    "role": "Chủ dự án: chốt hướng, duyệt phát hành, thử trên máy thật, giữ khóa ký và secret.",
-   "now": "Hạn chót cuối tuần. Chờ quyết: phát hành RC 0.7.7, file Kara no Shoujo, secret Cloudflare, đóng cảnh báo.",
+   "now": "Đã duyệt RC 0.7.7. Còn: secret Cloudflare, đóng cảnh báo #22, ảnh thư mục plugin/ của Kara no Shoujo.",
    "lastSeen": "2026-10-08T03:17:00Z",
    "channel": "Chat với PM · trang này"
   },
@@ -1825,7 +1843,7 @@
    "kind": "rev",
    "status": "dang",
    "role": "Duyệt thứ hai: PR của Luna, Haiku, Haiku-2; rà giấy phép trước khi tách repo (V52).",
-   "now": "Hàng duyệt #114, #117, #123, #124; rồi V61 rà soát trước phát hành.",
+   "now": "Hàng duyệt + duyệt lần hai V56/V58/V60; V61, V62 rồi V52b.",
    "match": [
     "luna ultra"
    ],
@@ -1971,6 +1989,18 @@
    "from": "opus",
    "to": "sol",
    "text": "Nước rút: V56 game thật trên Test Lab, RC 0.7.7, Ren'Py 8."
+  },
+  {
+   "t": "2026-10-08T04:12:00Z",
+   "from": "sep",
+   "to": "opus",
+   "text": "Gửi danh sách file Kara no Shoujo; duyệt RC 0.7.7."
+  },
+  {
+   "t": "2026-10-08T04:14:00Z",
+   "from": "opus",
+   "to": "sonnet",
+   "text": "Thư 005: phân tích file Kara no Shoujo (mã hóa hay thứ tự patch)."
   }
  ]
 }
