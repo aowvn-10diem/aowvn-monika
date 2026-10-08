@@ -23,6 +23,8 @@ android {
         resourceConfigurations += listOf("vi")
         versionCode = 41
         versionName = "0.7.6"
+        // V56: runner chỉ nằm trong APK instrumentation, không thêm lối vào app phát hành.
+        testInstrumentationRunner = "vn.aow.monika.testlab.KirikiriArmRunner"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
         buildConfigField(
             "String", "REMOTE_CONFIG_URL",
@@ -86,6 +88,7 @@ android {
     // Bản cấu hình dự phòng đóng gói trong APK = đúng file config/ ở gốc repo (1 nguồn duy nhất).
     sourceSets["test"].resources.srcDir("../cloudflare/crash-worker/fixtures")
     sourceSets["main"].assets.srcDirs("src/main/assets", "../config")
+    sourceSets["androidTest"].assets.srcDir(layout.buildDirectory.dir("generated/v56-assets"))
 }
 
 // Test trên máy tính: lấy lib7-Zip-JBinding.so bản Linux (cùng bản 16.02) để chạy code 7-Zip của Android.
