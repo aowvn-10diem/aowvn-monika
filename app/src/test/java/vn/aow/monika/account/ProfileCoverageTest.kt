@@ -21,7 +21,8 @@ class ProfileCoverageTest {
     private val vietnam = ZoneId.of("Asia/Ho_Chi_Minh")
 
     @Before fun freezeClock() {
-        val fixedNow = Instant.parse("2000-01-01T00:30:00Z").toEpochMilli()
+        // Move Robolectric's clock forward; its legacy shadow ignores attempts to set it backwards.
+        val fixedNow = Instant.parse("2100-01-01T00:30:00Z").toEpochMilli()
         ShadowSystemClock.advanceBy(Duration.ofMillis(fixedNow - ShadowSystemClock.currentTimeMillis()))
     }
 
@@ -40,7 +41,7 @@ class ProfileCoverageTest {
     }
 
     @Test fun usesCalendarDateInProvidedZoneAcrossMidnight() {
-        val checkin = Instant.parse("1999-12-31T17:30:00Z").toEpochMilli()
+        val checkin = Instant.parse("2099-12-31T17:30:00Z").toEpochMilli()
         assertTrue(Profile(0, 0, 0, checkin).checkedInToday(vietnam))
         assertFalse(Profile(0, 0, 0, checkin).checkedInToday(ZoneId.of("UTC")))
     }
