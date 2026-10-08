@@ -103,7 +103,9 @@ Mỗi hệ thử 1 game. Kiểm: **vào được game · có tiếng · phím �
 | 6.2 | Game Kirikiri / Ren'Py khi chưa cài app ngoài | Hiện hướng dẫn + nút tải app | |
 | 6.3 | Đã cài app ngoài → bấm Chơi | Mở đúng app ngoài | |
 
-## 6b. Kirikiri (visual novel .xp3) — 0.7.3
+## 6b. Kirikiri (visual novel .xp3) — mục tiêu thử 0.7.6 (pre-release)
+
+Mốc mã nguồn: app 0.7.6 (`versionCode` 41), `configVersion` 36 trên main `ffe7e7e`. Đây là checklist chờ người thử; các ô KQ để trống không phải bằng chứng đã chạy.
 
 Kirikiri nhúng sâu trong Monika (không phải app ngoài): màn chuẩn bị tự tải gói, menu Việt hóa, chạy ở tiến trình riêng.
 
@@ -123,7 +125,7 @@ Kirikiri nhúng sâu trong Monika (không phải app ngoài): màn chuẩn bị 
 
 ## 6c. RPG Maker XP/VX/Ace (nhúng)
 
-Config 34 (`systems.rgss`: `engine: "rgss"`, `allowExternalApp: true`) chọn **engine RGSS nhúng** của Monika. Gói `engines-rgss-6` hiện chỉ có bản `arm64-v8a`; máy hỗ trợ ABI này tải gói rồi chạy trong Monika. Máy không có gói phù hợp mới dùng JoiPlay dự phòng. Chưa có bằng chứng engine chạy trên máy thật **[CHƯA KIỂM]**.
+Config 36 (`systems.rgss`: `engine: "rgss"`, `allowExternalApp: true`) chọn **engine RGSS nhúng** của Monika. Gói `engines-rgss-6` hiện chỉ có bản `arm64-v8a`; máy hỗ trợ ABI này tải gói rồi chạy trong Monika. Máy không có gói phù hợp mới dùng JoiPlay dự phòng. Chưa có bằng chứng engine chạy trên máy thật **[CHƯA KIỂM]**.
 
 | # | Thao tác | Kết quả mong đợi | KQ |
 |---|---|---|---|
