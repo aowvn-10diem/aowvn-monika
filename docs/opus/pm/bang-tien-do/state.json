@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-08T20:07:55Z",
+ "updatedAt": "2026-10-08T20:28:59Z",
  "mainSha": "fc095be",
  "app": "App 0.7.7 (bản thử RC) · config 36",
- "nextCheck": "2026-10-08T20:37:55Z",
- "headline": "Đã gộp sửa crash Kirikiri Android 17; Test Lab đang chạy lại K1–K8",
+ "nextCheck": "2026-10-08T20:58:59Z",
+ "headline": "Sửa crash Kirikiri đã gộp; Test Lab chờ hạn mức ngày mới (15:05 giờ VN)",
  "needsBoss": [
   {
    "code": "G9",
@@ -1025,6 +1025,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T20:28:59Z",
+   "text": "Test Lab V56 sau #157: run 37837095996 bị chặn (results bucket unavailable, nhiều khả năng hết 5 lượt/ngày). Hẹn chạy lại 09/10 08:05Z."
+  },
   {
    "t": "2026-10-08T20:07:55Z",
    "text": "Gộp #157: sửa crash Kirikiri trên Android 17 (Luna + Luna Ultra Đạt). Test Lab V56 chạy lại run 37837095996."
