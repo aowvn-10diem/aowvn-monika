@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-08T00:13:31Z",
- "mainSha": "51c1462",
+ "updatedAt": "2026-10-08T01:15:37Z",
+ "mainSha": "59c1540",
  "app": "App 0.7.6 (bản thử) · config 36",
- "nextCheck": "2026-10-08T00:38:30Z",
- "headline": "Sol và Luna quay lại: Luna gỡ nghẽn duyệt #107/#106, Sol nhận 6 việc",
+ "nextCheck": "2026-10-08T02:15:37Z",
+ "headline": "Gộp 7 PR sáng 08/10; #110 chờ Sol kiểm lối tắt; #114–#116 của Luna chờ Nova",
  "needsBoss": [
   {
    "code": "G9",
@@ -93,7 +93,7 @@
    "title": "Kirikiri không mở được game trên máy thật",
    "owner": "Sonnet",
    "status": "ket",
-   "note": "#107 chờ Luna kiểm lại (c364421)",
+   "note": "#107 gộp b1684f8: nút báo lỗi + toast mã HTTP; chờ sếp gửi file list/xp3filter",
    "module": "kirikiri",
    "links": [
     {
@@ -493,7 +493,7 @@
    "owner": "Luna (nhận lại 07/10)",
    "status": "lap",
    "module": "ci",
-   "note": "Ưu tiên #107, #106; PR của Luna do Nova duyệt"
+   "note": "Luna đã duyệt 9 PR trong 1 giờ"
   },
   {
    "code": "L08",
@@ -610,7 +610,7 @@
    "code": "V48",
    "title": "Bản tin nhận mẫu tiền duyệt Luna/Nova/Haiku",
    "owner": "Sol",
-   "status": "cho",
+   "status": "xong",
    "note": "#83 gộp 73313e2. Còn: nhận mẫu Nova."
   },
   {
@@ -618,7 +618,7 @@
    "title": "Phân loại 26 cảnh báo CodeQL",
    "owner": "Sol (nhận lại 07/10)",
    "status": "cho",
-   "note": "#84, #86 gộp; còn SRI, test ZIP, bảng đề xuất đóng",
+   "note": "#109 gộp; chờ sếp đóng tay alert theo bảng V49.md",
    "links": [
     {
      "label": "#86",
@@ -721,7 +721,7 @@
    "code": "N08",
    "title": "Checklist cho tester ngoài + mẫu báo lỗi GitHub + bảng Google Sheet",
    "owner": "Haiku soạn · Nova duyệt",
-   "status": "dang",
+   "status": "xong",
    "note": "#106 chờ Nova duyệt",
    "module": "",
    "links": [
@@ -752,21 +752,21 @@
    "code": "V53",
    "title": "Đóng thành phần j2me không cần mở từ ngoài (manifest :app)",
    "owner": "Sol",
-   "status": "cho",
-   "note": ""
+   "status": "dang",
+   "note": "#110 giữ: kiểm lối tắt ConfigActivity"
   },
   {
    "code": "V54",
    "title": "Test độ phủ azahar + cài gói",
    "owner": "Sol",
-   "status": "cho",
+   "status": "xong",
    "note": ""
   },
   {
    "code": "V55",
    "title": "Kiểm định kỳ: configVersion trên Worker so với main",
    "owner": "Sol",
-   "status": "cho",
+   "status": "xong",
    "note": ""
   }
  ],
@@ -843,6 +843,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T01:15:37Z",
+   "text": "Gộp 7 PR: #107 G7B, #106 N08, #108 V48, #109 V49, #111 V54, #112 V50, #113 V55. Giữ #110 (V53) kiểm lối tắt. Luna mở #114–#116 chờ Nova"
+  },
   {
    "t": "2026-10-08T00:13:31Z",
    "text": "Sol mở 6 PR (#108–#113: V48, V49, V53, V54, V50, V55) chờ Luna duyệt; Luna 'Cần sửa' #107 (phạm vi, PM đã xác nhận) và #106 (Haiku đã sửa 8df30a1)"
