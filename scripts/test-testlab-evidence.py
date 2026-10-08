@@ -70,8 +70,8 @@ class EvidenceContract(unittest.TestCase):
             root = Path(temp)
             result = root / 'transport.json'
             result.write_text('gs://private-fixture/transport')
-            def run_collect(destination):
-                with mock.patch.dict(evidence.os.environ, {'GITHUB_RUN_ID': '123', 'GITHUB_RUN_ATTEMPT': '1'}), \
+            def run_collect(destination, expected=2):
+                with mock.patch.dict(evidence.os.environ, {'GITHUB_RUN_ID': '123', 'GITHUB_RUN_ATTEMPT': '1', 'V56_EXPECTED_DEVICES': str(expected)}), \
                      mock.patch.object(evidence.subprocess, 'run', return_value=mock.Mock(returncode=0, stdout='\n'.join(listing))), \
                      mock.patch.object(evidence.subprocess, 'Popen', side_effect=FakeDownload), contextlib.redirect_stdout(io.StringIO()):
                     evidence.collect(result, root / 'stderr', destination)
@@ -81,6 +81,13 @@ class EvidenceContract(unittest.TestCase):
             self.assertEqual(2, len(report['devices']))
             self.assertFalse(list((root / 'ok').rglob('*.apk')))
             self.assertFalse(list((root / 'ok').rglob('*.zip')))
+            original_listing = listing
+            listing = [name for name in listing if '/grizzly/' not in name]
+            run_collect(root / 'one-device', expected=1)
+            self.assertEqual(1, len(json.loads((root / 'one-device/collection.json').read_text())['devices']))
+            with self.assertRaises(SystemExit):
+                run_collect(root / 'two-required', expected=2)
+            listing = original_listing
             del objects[prefix + 'cubs/artifacts/v56/K8-final.png']
             listing = list(objects)
             with self.assertRaises(SystemExit):

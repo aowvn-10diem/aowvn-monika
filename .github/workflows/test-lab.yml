@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       devices:
-        description: "Máy test, cách nhau bởi dấu ; (vd. model=oriole,version=33). Để trống = tự chọn 2 máy thật."
+        description: "Đúng một máy VIRTUAL model/version. Để trống = tự chọn một máy ảo, không dùng quota máy thật."
         required: false
         default: ""
       timeout:
@@ -17,11 +17,20 @@ on:
         required: false
         default: "5m"
 
+permissions: {contents: read, actions: read}
+concurrency:
+  group: testlab-budget
+  cancel-in-progress: false
+
 jobs:
   robo:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - name: Cửa exact Build (Robo chỉ máy ảo)
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: python3 scripts/testlab-preflight.py
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -35,40 +44,67 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - uses: google-github-actions/setup-gcloud@v3
-      - name: Chọn máy
+      - name: Chọn đúng một máy ảo
         id: dev
+        env:
+          DEVICES: ${{ inputs.devices }}
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
         run: |
-          if [ -n "${{ inputs.devices }}" ]; then
-            echo "args=$(echo '${{ inputs.devices }}' | tr ';' '\n' | sed 's/^/--device /' | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Tự chọn: 2 máy thật (PHYSICAL) có Android 8+ (minSdk 26), ưu tiên bản Android mới nhất.
-          gcloud firebase test android models list --project "${{ secrets.GCP_PROJECT_ID }}" \
-            --filter="form=PHYSICAL" --format=json > models.json
-          args=$(jq -r '[.[] | {id, v: ([.supportedVersionIds[] | tonumber] | map(select(. >= 26)) | max)} | select(.v != null)]
-                        | sort_by(-.v) | .[:2][] | "--device model=\(.id),version=\(.v)"' models.json | tr '\n' ' ')
-          echo "Máy đã chọn: $args"
-          echo "args=$args" >> "$GITHUB_OUTPUT"
-      - name: Chạy robot test
+          gcloud firebase test android models list --project "$GCP_PROJECT" --filter="form=VIRTUAL" --format=json > "$RUNNER_TEMP/virtual-models.json"
+          python3 - <<'PY'
+          import json, os, re
+          models = json.load(open(os.environ['RUNNER_TEMP'] + '/virtual-models.json'))
+          requested = os.environ['DEVICES'].strip()
+          if requested:
+              match = re.fullmatch(r'model=([A-Za-z0-9_-]+),version=(\d+)', requested)
+              assert match, 'Đúng một model/version, không shell arguments'
+              name, version = match.groups()
+              model = next(m for m in models if m['id'] == name and m['form'] == 'VIRTUAL')
+              assert version in model['supportedVersionIds'] and int(version) >= 26
+          else:
+              choices = [(int(v), m['id']) for m in models if m['form'] == 'VIRTUAL' for v in m['supportedVersionIds'] if int(v) >= 26]
+              version, name = max(choices)
+          args = 'model=%s,version=%s' % (name, version)
+          print('VIRTUAL ' + args)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('device=' + args + '\n')
+          PY
+      - name: Chạy Robo máy ảo (không quota máy thật)
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+          TIMEOUT: ${{ inputs.timeout }}
+          DEVICE: ${{ steps.dev.outputs.device }}
         run: |
-          gcloud firebase test android run --project "${{ secrets.GCP_PROJECT_ID }}" \
+          set +e
+          gcloud firebase test android run --project "$GCP_PROJECT" \
             --type robo \
             --app app/build/outputs/apk/release/app-universal-release.apk \
-            ${{ steps.dev.outputs.args }} \
-            --timeout "${{ inputs.timeout }}" \
+            --device "$DEVICE" --timeout "$TIMEOUT" \
             --results-dir "monika-${GITHUB_RUN_ID}" \
-            --format=json 2>&1 | tee result.txt
-      - name: Tải kết quả (ảnh chụp, log, video)
-        if: always()
-        run: |
-          # gcloud in ra link dạng .../storage/browser/<bucket>/monika-<id>/ → lấy tên bucket.
-          bucket=$(grep -oE 'storage/browser/[^/ ]+' result.txt | head -1 | cut -d/ -f3)
-          if [ -n "$bucket" ]; then gsutil -m cp -r "gs://$bucket/monika-${GITHUB_RUN_ID}" ./testlab || true; fi
-          grep -oE 'https://console.firebase.google.com[^ ]+' result.txt | head -1 | sed 's/^/Kết quả: /' >> "$GITHUB_STEP_SUMMARY" || true
+            --format=json > "$RUNNER_TEMP/robo-result.json" 2> "$RUNNER_TEMP/robo-error.txt"
+          code=$?
+          export RESULT_CODE="$code"
+          mkdir -p testlab
+          python3 - <<'PY'
+          import json, os, re
+          try:
+              results = json.load(open(os.environ['RUNNER_TEMP'] + '/robo-result.json'))
+          except (ValueError, OSError):
+              results = []
+          summary = {'exit_code': int(os.environ['RESULT_CODE']), 'results': []}
+          if isinstance(results, list):
+              for row in results:
+                  axis, outcome = row.get('axis_value', ''), row.get('outcome', '')
+                  if re.fullmatch(r'[A-Za-z0-9_-]{1,100}', axis) and outcome in ('Passed', 'Failed', 'Inconclusive', 'Skipped'):
+                      summary['results'].append({'axis': axis, 'outcome': outcome})
+          open('testlab/robo-summary.json', 'w').write(json.dumps(summary) + '\n')
+          print(json.dumps(summary))
+          PY
+          exit "$code"
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           retention-days: 3
-          name: testlab-ket-qua
+          name: testlab-summary-only
           path: testlab/
           if-no-files-found: ignore
