@@ -44,12 +44,9 @@ class GameLauncher(private val configRepo: ConfigRepository) {
                     vn.aow.monika.azahar.AzaharActivity.start(activity, entry, system.name, game.name, game.key)
                     return LaunchResult.Started
                 }
-                // Lõi user chọn trong Cài đặt (nếu còn trong config), không thì lõi mặc định.
-                val core = vn.aow.monika.AppGraph.prefs.coreOverride(system.id)?.takeIf { it in configRepo.current.cores }
-                    ?: system.core ?: return LaunchResult.Failed("Cấu hình hệ ${system.name} thiếu 'core'.")
-                // Lõi mặc định không chạy được trên kiến trúc máy này (vd. melondsds chỉ arm64) → dùng lõi thay thế đầu tiên chạy được.
-                val usable = if (vn.aow.monika.AppGraph.cores.supports(core)) core
-                    else system.altCores.firstOrNull { it != core && vn.aow.monika.AppGraph.cores.supports(it) } ?: core
+                val usable = pickCore(
+                    vn.aow.monika.AppGraph.prefs.coreOverride(system.id), configRepo.current.cores.keys, system.core, system.altCores,
+                ) { vn.aow.monika.AppGraph.cores.supports(it) } ?: return LaunchResult.Failed("Cấu hình hệ ${system.name} thiếu 'core'.")
                 RetroActivity.start(activity, usable, entry, system.name, game.name, system.pad, game.key, system.id)
                 LaunchResult.Started
             }
@@ -114,6 +111,18 @@ class GameLauncher(private val configRepo: ConfigRepository) {
             ?: return LaunchResult.Failed("Không mở được ${app.name}.")
         activity.startActivity(open)
         return LaunchResult.OpenedApp(app, (if (entry.isFile) entry.parentFile!! else entry).absolutePath)
+    }
+
+    companion object {
+        /**
+         * Chọn lõi libretro: lõi user chọn trong Cài đặt (nếu còn trong cấu hình) → lõi mặc định của hệ.
+         * Lõi đã chọn không chạy được trên máy này (vd. melondsds chỉ arm64) → lấy lõi thay thế đầu tiên chạy được.
+         * Trả null khi hệ không có lõi nào.
+         */
+        internal fun pickCore(override: String?, configured: Collection<String>, defaultCore: String?, altCores: List<String>, supports: (String) -> Boolean): String? {
+            val core = override?.takeIf { it in configured } ?: defaultCore ?: return null
+            return if (supports(core)) core else altCores.firstOrNull { it != core && supports(it) } ?: core
+        }
     }
 }
 
