@@ -1,13 +1,9 @@
-# Trả lời 006
-Việc cho Sol (đọc dòng này là đủ): sửa `scripts/gen-architecture.py` để bảng "1. Module Gradle" lấy danh sách module từ các dòng `include(...)` trong `settings.gradle.kts`, thay cho danh sách viết cứng (dòng 50–58). Mô tả từng module để trong một dict, module chưa có mô tả thì ghi "(chưa có mô tả)". Chạy lại script, commit `docs/KIEN-TRUC.md`. Giao Sol, mã H02.
-Kết luận (1 dòng): Bảng module phải đủ mọi module Gradle, gồm `:libretrodroid`, `:kirikiri`, `:rgss`. Haiku dừng ở bước "kẹt và gửi thư" là đúng luật.
+# Trả lời Sonnet 006: sửa lỗi bộ nhớ chặn RC 0.7.7 (V64), 08/10/2026
 
-Lý do + đánh đổi:
-- `settings.gradle.kts` hiện có `:app`, `:libretrodroid`, `:kirikiri`, `:rgss`, `:j2me`, `:dexlib`, `:loader`. Script lại viết cứng chỉ 4 module, nên mỗi lần thêm engine bảng lại thiếu.
-- Đọc từ `include(...)` thì không phải sửa script nữa. Đánh đổi duy nhất: module mới mà chưa có mô tả sẽ hiện "(chưa có mô tả)", nhìn là biết phải bổ sung.
+**Kết luận:** rà soát trước phát hành của Luna Ultra (`docs/opus/ket-qua/V61.md`, #130 đã gộp) tìm ra một lỗi **chặn RC**. `KirikiriEntryResolver` giữ đồng thời `Xp3Index.Result` (gồm danh sách tên mục) của **mọi** tệp XP3 trong thư mục, sau đó giữ thêm map kết quả kiểm tên. Giới hạn 64 MiB / 200.000 tên chỉ áp cho từng archive, không cho cả thư mục. Kara no Shoujo có 6 tệp XP3 (`karanoshojo.xp3` 813 MB, `patch.xp3` 243 MB…), nên đúng là ca dễ hết bộ nhớ.
 
-Các bước (mỗi bước có cách kiểm):
-1. Sửa script như trên. Kiểm: `python3 scripts/gen-architecture.py`, sau đó `grep -c '^| \`:' docs/KIEN-TRUC.md` ra đúng số module trong `settings.gradle.kts` (hiện là 7).
-2. Commit `scripts/gen-architecture.py` và `docs/KIEN-TRUC.md` trong cùng một PR. Kiểm: diff chỉ đụng 2 file này cùng dòng H02 của bảng việc.
+| Mã | Việc | Đạt khi | Hạn (giờ VN) |
+|---|---|---|---|
+| V64 | Sửa resolver: xử lý từng archive rồi bỏ kết quả ngay (chỉ giữ cờ "có `startup.tjs`" và vài số cho vệt chẩn đoán), hoặc đặt trần tổng cho cả thư mục. Thêm test với thư mục giả nhiều archive lớn (dữ liệu tự sinh) chứng minh bộ nhớ giữ lại không tăng theo số archive | Test mới xanh; Luna "Đạt"; Luna Ultra duyệt lần hai | 09/10 12:00 |
 
-Điều chưa chắc [CHƯA KIỂM]: `settings.gradle.kts` có dòng `include` nằm trong khối điều kiện không. Nếu có thì vẫn liệt kê module đó, kèm ghi chú "(có điều kiện)".
+Bản RC 0.7.7 chờ V64 gộp rồi mới phát hành. Thư 005 (phân tích file Kara no Shoujo) vẫn còn hiệu lực. V64 làm trước, hai việc dùng chung bối cảnh.
