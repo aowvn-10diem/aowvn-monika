@@ -53,7 +53,7 @@ class PackManifestIntegrityTest {
         assertThrows(IOException::class.java) { PackTransaction.validate(root, "main.bin", "web") }
     }
 
-    @Test fun downloadVerifiesSizeHashAndProgressWithoutNetwork() = runBlocking {
+    @Test fun downloadVerifiesSizeHashAndProgressWithoutNetwork() { runBlocking {
         val bytes = ByteArray(70000) { (it % 251).toByte() }
         val file = tmp.newFile(); val progress = mutableListOf<Long>()
         PackTransaction.download(ByteArrayInputStream(bytes), file, hash(bytes).uppercase(), bytes.size.toLong()) { progress += it }
@@ -62,7 +62,7 @@ class PackManifestIntegrityTest {
         assertTrue(progress.zipWithNext().all { (a, b) -> a < b })
         assertThrows(IOException::class.java) { runBlocking { PackTransaction.download(ByteArrayInputStream(bytes), file, hash(bytes), bytes.size + 1L) } }
         assertThrows(IOException::class.java) { runBlocking { PackTransaction.download(ByteArrayInputStream(bytes), file, "0".repeat(64)) } }
-    }
+    } }
 
     @Test fun flattenRejectsCollidingLibraryNames() {
         val archive = tmp.newFile("pack.zip")
@@ -74,7 +74,7 @@ class PackManifestIntegrityTest {
         assertThrows(IOException::class.java) { PackTransaction.unzip(archive, tmp.newFolder(), flatten = true) }
     }
 
-    @Test fun failedManifestValidationPreservesInstalledVersion() = runBlocking {
+    @Test fun failedManifestValidationPreservesInstalledVersion() { runBlocking {
         val target = File(tmp.newFolder(), "engine").apply { mkdirs() }
         File(target, "main.bin").writeText("known-good")
         File(target, "version").writeText("old")
@@ -88,5 +88,5 @@ class PackManifestIntegrityTest {
         assertEquals("known-good", File(target, "main.bin").readText())
         assertEquals("old", File(target, "version").readText())
         assertFalse(target.parentFile!!.listFiles()!!.any { it.name.startsWith(".engine.install-") })
-    }
+    } }
 }
