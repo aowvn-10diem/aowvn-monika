@@ -1,7 +1,7 @@
 # Giao tiếp với Opus
 
-> **Mục đích.** Tài liệu bàn giao để **Opus tham gia từ bên ngoài** (không cần đổi model của phiên đang làm) đọc là hiểu dự án, rồi **đưa phương án** cho các câu hỏi ở mục 7. Người thi công hiện tại là Claude Code (Sonnet); chủ repo ("sếp") quyết định cuối cùng.
-> Cập nhật: 03/10/2026 (GMT+7), bản app 0.7.3 (versionCode 38), `configVersion` 31. Chỗ ghi **[CHƯA KIỂM]** = chưa thử trên máy thật, đừng coi là chạy được.
+> **Mục đích.** Tài liệu bàn giao để **Opus tham gia từ bên ngoài** (không cần đổi model của phiên đang làm) đọc là hiểu dự án, rồi **đưa phương án** cho các câu hỏi ở mục 7. Người thi công app/CI/config hiện tại là Claude Code (Sonnet); các việc tài liệu và tiền duyệt theo phân vai PM mới nhất; chủ repo ("sếp") quyết định cuối cùng.
+> Cập nhật trạng thái mã nguồn: 08/10/2026 UTC, main `ffe7e7e`, app 0.7.6 (`versionCode` 41), `configVersion` 36. Release v0.7.6 là pre-release; stable gần nhất là v0.7.3. Chỗ ghi **[CHƯA KIỂM]** = chưa thử trên máy thật, đừng coi là chạy được.
 > Đọc kèm: `CLAUDE.md` (luật bắt buộc), `docs/KIEN-TRUC.md` (tự sinh), `docs/KIEN-TRUC-tay.md` (luồng + "sửa X mở file nào").
 
 ## 1. Dự án là gì
@@ -124,7 +124,7 @@ flowchart LR
 | RetroAchievements (đăng nhập, hardcore, thành tựu trong game) | Xong phần app | **[CHƯA KIỂM]** trong game thật; cần RAdmin duyệt client "AowMonika" cho hardcore |
 | Crash log theo thành phần (dedup, env, crumbs, ApplicationExitInfo) | Xong | Unit test |
 | Kirikiri (visual novel .xp3) nhúng trong Monika | Lõi dựng từ nguồn, lib nạp từ gói trong máy ảo không sập (API 30/34) | **[CHƯA KIỂM]** chơi game thật, âm thanh, chạm, lưu, tua nhanh |
-| Kirikiri tích hợp sâu (commit 92a65b2): màn chuẩn bị tự tải, menu Monika, Việt hóa 119 chuỗi | Mã xong, test xanh | Gói có bản dịch **đang dựng lại**; sau đó cập nhật `modules.kirikiri` + Emulator Test + phát hành 0.7.3 |
+| Kirikiri tích hợp sâu (commit 92a65b2): màn chuẩn bị, menu Monika, Việt hóa; gói `engines-kirikiri-14` arm64 ghim tại config | Mã và cấu hình đã có trên main; v0.7.6 bổ sung chọn/ghi chẩn đoán `startup.tjs` (#86/#91/#93) | Ảnh app 0.7.6 vẫn cho thấy `NotFound` ở một game; nguyên nhân cụ thể, gameplay, âm thanh và lưu/tải thật **[CHƯA KIỂM]**; xem `opus/ket-qua/V26.md` |
 | R0: Spike mkxp-z Android arm64 dựng được; APK thử chưa ký 11.298.693 byte | Xong | [Kết quả R0](opus/ket-qua/R0.md) |
 | R1: Gói `rgss` arm64-v8a 7,6 MiB và `armeabi-v7a` 7,1 MiB | Xong | [Kết quả R1](opus/ket-qua/R1.md); máy 32-bit thật **[CHƯA KIỂM]** |
 | R2: Module `:rgss` với 9 file Java SDL 2.26.3 đã đổi gói | Xong | [V08 trong bảng việc](opus/KE-HOACH.md#v08) |
@@ -134,7 +134,7 @@ flowchart LR
 | R5: Phím ảo và menu Monika cho RPG Maker; Emulator Test API 34 nhận phím Enter | Một phần | [Kết quả R5](opus/ket-qua/R5.md); chạm lớp phủ **[CHƯA KIỂM]** |
 | Repo mã nguồn | Công khai từ 03/10/2026 | [Cổng G5 trong bảng việc](opus/KE-HOACH.md#4-cổng-cần-sếp-quyết) |
 | ONScripter (web, Onsyuri), Ruffle, HTML5 | Có runner | **[CHƯA KIỂM]** máy thật |
-| Ren'Py, RPG Maker XP/VX/Ace, Symbian | Vẫn dùng app ngoài (JoiPlay, EKA2L1) | Chưa nhúng |
+| Ren'Py, RGSS, Symbian | Ren'Py vẫn chọn JoiPlay; RGSS có engine `engines-rgss-6` arm64 và JoiPlay dự phòng khi không dùng được ABI phù hợp; Symbian vẫn dùng EKA2L1 ngoài | Game Ren'Py/RGSS/Symbian thật và thiết bị thật **[CHƯA KIỂM]** |
 
 ## 5. Chưa làm / việc đang chờ
 1. Test máy thật cho toàn bộ (chủ repo làm).
