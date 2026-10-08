@@ -36,3 +36,15 @@ Mỗi người tự sửa lịch kiểm của mình sang đúng phút trên (upd
 - **Bắt buộc xanh** trên đúng head: `build`, `coverage`, `CodeQL`/`analyze`, và mọi job test hay kiểm khác của PR.
 - **Không chặn**: `digest` và `preview` (bản tin cho PM). Hai job này skipped, cancelled hay đỏ đều không tính, vì V63 cố ý cho chúng bỏ qua hoặc tự hủy khi có lượt mới.
 - Người duyệt ghi rõ trạng thái hai job này trong mục 1 nhưng vẫn kết luận "Đạt" nếu mọi check bắt buộc đã xanh.
+
+## Ca đêm 00:00–06:00 giờ VN (sếp chốt 09/10)
+Sếp ngủ và không dùng hạn mức trong khung này, nên ca đêm là lúc **tăng tốc mạnh nhất**.
+
+| Ai | Nhịp ca đêm | Làm gì |
+|---|---|---|
+| PM | 2 lượt/giờ (:27 đầy đủ, :57 nhanh) | Gộp PR "Đạt" + CI xanh ngay, giao việc kế cho người vừa xong |
+| Haiku | 2 lượt/giờ (:45, :15) | N09 test độ phủ, sửa "Cần sửa" ngay trong lượt |
+| Sonnet | 1 lượt/giờ (:33) | Việc lõi PM giao; mỗi lượt ít nhất 1 commit có test |
+| Sol, Luna, Luna Ultra, Nova, Haiku-2 | **Gấp đôi nhịp nếu công cụ cho phép** (thêm lượt ở phút +30 so với lịch ngày) | Mỗi lượt làm liền 2 việc nếu kịp, không ngồi chờ duyệt mới làm việc kế; người duyệt xử lý hết hàng chờ trong một lượt |
+
+Luật giữ nguyên: không phát hành ngoài A14, không đụng khóa/secret, giới hạn PR mở (Sol 3, người khác 2).
