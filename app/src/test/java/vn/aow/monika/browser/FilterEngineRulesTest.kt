@@ -29,6 +29,7 @@ class FilterEngineRulesTest {
         val fe = FilterEngine()
         assertTrue(fe.addLine("||ads.example.com^"))
         assertTrue(fe.blocks("https://ads.example.com/banner.js", "ads.example.com", "news.vn", FilterEngine.SCRIPT))
+        assertTrue(fe.blocks("https://cdn.ads.example.com/x.js", "cdn.ads.example.com", "news.vn", FilterEngine.SCRIPT))
         assertFalse(fe.blocks("https://example.com/", "example.com", "example.com", FilterEngine.SCRIPT))
     }
 
