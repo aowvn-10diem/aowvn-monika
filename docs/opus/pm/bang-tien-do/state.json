@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-08T12:15:05Z",
- "mainSha": "722bab0",
+ "updatedAt": "2026-10-08T13:15:12Z",
+ "mainSha": "d84c5e7",
  "app": "App 0.7.6 (bản thử) · config 36",
- "nextCheck": "2026-10-08T13:15:05Z",
- "headline": "V64 xong: RC 0.7.7 chỉ còn chờ V60 + CHANGELOG (09/10 12:00)",
+ "nextCheck": "2026-10-08T14:15:12Z",
+ "headline": "RC 0.7.7: CHANGELOG xong; chờ V60 + Luna Ultra duyệt bù V64 + V26b",
  "needsBoss": [
   {
    "code": "G9",
@@ -844,7 +844,21 @@
    "title": "Báo rõ \"xp3 mã hóa\" thay cho NotFound",
    "owner": "Sonnet",
    "status": "dang",
-   "note": "#144: Luna Cần sửa, phải gộp main sau V64"
+   "note": "#144 Luna Đạt 6ba8468, chờ Luna Ultra lần hai"
+  },
+  {
+   "code": "L11",
+   "title": "CHANGELOG 0.7.7 + ghi chú phát hành",
+   "owner": "",
+   "status": "xong",
+   "note": "#145 gộp; còn nit + thêm V26b"
+  },
+  {
+   "code": "V60",
+   "title": "Rà soát CI trước phát hành RC",
+   "owner": "",
+   "status": "dang",
+   "note": "#146: Sol chờ duyệt lần hai V64, PM bảo chạy song song"
   }
  ],
  "gates": [
@@ -927,6 +941,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T13:15:12Z",
+   "text": "Gộp #145 (CHANGELOG 0.7.7). PM nhận thiếu: #142 gộp khi chưa có Luna Ultra duyệt lần hai, đã giao duyệt bù. Luật A12: PR chỉ sửa tài liệu miễn check bắt buộc."
+  },
   {
    "t": "2026-10-08T12:15:05Z",
    "text": "Gộp #142 (V64, gỡ lỗi chặn RC 0.7.7) và #143 (V26 thư 005). Gọi sớm V60 (Sol) và L11 CHANGELOG (Luna), hạn 09/10 12:00. Sonnet gộp main vào #144."
