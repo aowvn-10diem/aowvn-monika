@@ -90,6 +90,25 @@ class DiagnosticsTest {
         assertEquals(true, Diagnostics.list(app).first().sent) // đánh dấu đã gửi
     }
 
+    private fun httpReturning(code: Int) = okhttp3.OkHttpClient.Builder().addInterceptor { chain ->
+        okhttp3.Response.Builder().request(chain.request()).protocol(okhttp3.Protocol.HTTP_1_1).code(code).message("x")
+            .body(okhttp3.ResponseBody.create(null, "{}")).build()
+    }.build()
+
+    @Test fun sendResultNamesHttpCodeNetworkErrorAndMissingEndpoint() {
+        fakeDeadSession("first-frame")
+        val r = Diagnostics.collect(app)!!
+        assertEquals(Diagnostics.SendResult(true), Diagnostics.sendResult(app, httpReturning(200), r, "https://example.test/report"))
+        val tooLarge = Diagnostics.sendResult(app, httpReturning(413), r, "https://example.test/report")
+        assertEquals(Diagnostics.SendResult(false, "HTTP 413"), tooLarge)
+        val broken = okhttp3.OkHttpClient.Builder().addInterceptor { throw java.io.IOException("mạng sập") }.build()
+        val net = Diagnostics.sendResult(app, broken, r, "https://example.test/report")
+        assertEquals(false, net.ok); assertEquals("IOException", net.error)
+        assertEquals("chưa cấu hình địa chỉ nhận", Diagnostics.sendResult(app, httpReturning(200), r, "").error)
+        // Thất bại vẫn chép phần chữ vào clipboard và ghi vệt report-send.
+        assertTrue(Breadcrumbs.read(app, android.os.Process.myPid()).any { it.contains("report-send") && it.contains("HTTP 413") })
+    }
+
     @Test fun clipboardFallbackWhenNoEndpoint() {
         fakeDeadSession("first-frame")
         val r = Diagnostics.collect(app)!!

@@ -1,0 +1,119 @@
+name: Báo lỗi (Tester ngoài)
+description: Báo cáo lỗi khi thử app trên thiết bị thực
+title: "[Lỗi] "
+labels: ["bug", "tester"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cảm ơn bạn đã thử app **AowVN Monika** và phát hiện lỗi. Vui lòng điền đầy đủ thông tin bên dưới để giúp chúng tôi sửa.
+
+  - type: input
+    id: device
+    attributes:
+      label: Thiết bị
+      description: "Ví dụ: Samsung Galaxy A12, OnePlus 9, Pixel 5"
+      placeholder: "Tên thiết bị, hãng sản xuất"
+    validations:
+      required: true
+
+  - type: input
+    id: android_version
+    attributes:
+      label: Phiên bản Android
+      description: "Ví dụ: Android 12, Android 11"
+      placeholder: "Android X.X"
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: Bản app AowVN Monika
+      description: "Xem trong app: Cài đặt → Về ứng dụng, hoặc phần thông tin app"
+      placeholder: "v<X.X.X>"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Hệ máy game
+      description: "Engine game bạn đang thử"
+      options:
+        - Kirikiri (KAG)
+        - RPG Maker (RGSS/RGSS2/RGSS3)
+        - Game Boy (GB)
+        - Game Boy Advance (GBA)
+        - NES
+        - Java (J2ME)
+        - ONScripter
+      multiple: false
+    validations:
+      required: true
+
+  - type: input
+    id: game_name
+    attributes:
+      label: Tên game
+      description: "Tên của game bạn đang chơi"
+      placeholder: "Ví dụ: Kara no Shoujo, Chronolapse"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Các bước tái hiện lỗi
+      description: "Mô tả chi tiết các bước để tái hiện lỗi"
+      placeholder: |
+        1. Mở app, chọn game X
+        2. Nhấp "Khởi động"
+        3. Chơi đến cảnh Y
+        4. Lỗi xuất hiện khi Z
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Kết quả mong muốn
+      description: "Bạn kỳ vọng gì sẽ xảy ra?"
+      placeholder: "App sẽ tải game, game sẽ chạy mà không bị tắt…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Kết quả thực tế
+      description: "Điều gì thực sự xảy ra? Có thông báo lỗi không?"
+      placeholder: "App báo: 'Không tìm thấy tệp startup.tjs', hoặc game bị tắt giữa chừng…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Nhật ký lỗi (nếu có)
+      description: "Sao chép thông báo lỗi từ app, hoặc nhật ký logcat nếu có (tùy chọn)"
+      placeholder: "Dán thông báo lỗi hoặc log tại đây"
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Ảnh chụp màn hình
+      description: "Tải lên ảnh chụp màn hình liên quan đến lỗi (tùy chọn)"
+      placeholder: "Nhấp 'Attach files' để tải ảnh"
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Thông tin thêm
+      description: "Bất kỳ chi tiết nào khác giúp ích cho việc sửa lỗi"
+      placeholder: "Ví dụ: lỗi chỉ xảy ra với thiết bị cứng nhất định, không xảy ra trên thiết bị khác…"

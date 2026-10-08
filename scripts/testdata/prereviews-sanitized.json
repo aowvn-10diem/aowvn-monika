@@ -1,0 +1,115 @@
+{
+  "captured_at": "2026-10-07T23:47:40.670278+00:00",
+  "reviews": [
+    {
+      "source": "https://github.com/aowvn-10diem/aowvn-monika/pull/76#issuecomment-5996097175",
+      "comment": {
+        "body": "Luna tiền duyệt (commit 791a02d)\nKết luận: Cần PM xem"
+      },
+      "expected": {
+        "type": "luna_tien_duyet",
+        "sha": "791a02d",
+        "conclusion": "Cần PM xem"
+      }
+    },
+    {
+      "source": "https://github.com/aowvn-10diem/aowvn-monika/pull/77#issuecomment-5996097487",
+      "comment": {
+        "body": "Luna tiền duyệt (commit d1b0cc2)\nKết luận: Đạt"
+      },
+      "expected": {
+        "type": "luna_tien_duyet",
+        "sha": "d1b0cc2",
+        "conclusion": "Đạt"
+      }
+    },
+    {
+      "source": "https://github.com/aowvn-10diem/aowvn-monika/pull/78#issuecomment-5996098088",
+      "comment": {
+        "body": "Luna tiền duyệt (commit 2ad4f37)\nKết luận: Cần PM xem"
+      },
+      "expected": {
+        "type": "luna_tien_duyet",
+        "sha": "2ad4f37",
+        "conclusion": "Cần PM xem"
+      }
+    },
+    {
+      "source": "https://github.com/aowvn-10diem/aowvn-monika/pull/85#issuecomment-5999003228",
+      "comment": {
+        "body": "Luna review L07 — head 169174e618c138468a208c5b73c89bc9ce5b2de9\nKết luận: Cần sửa"
+      },
+      "expected": {
+        "type": "luna_tien_duyet",
+        "sha": "169174e618c138468a208c5b73c89bc9ce5b2de9",
+        "conclusion": "Cần sửa"
+      }
+    },
+    {
+      "source": "https://github.com/aowvn-10diem/aowvn-monika/pull/85#issuecomment-5999031821",
+      "comment": {
+        "body": "Luna review L07 — head a786b2d270098595b1b5f6ad65539f5a665ae248\nKết luận: Cần PM xem"
+      },
+      "expected": {
+        "type": "luna_tien_duyet",
+        "sha": "a786b2d270098595b1b5f6ad65539f5a665ae248",
+        "conclusion": "Cần PM xem"
+      }
+    },
+    {
+      "source": "https://github.com/aowvn-10diem/aowvn-monika/pull/85#issuecomment-6006254806",
+      "comment": {
+        "body": "Nova tiền duyệt (commit a786b2d)\nKết luận: Đạt"
+      },
+      "expected": {
+        "type": "nova_tien_duyet",
+        "sha": "a786b2d",
+        "conclusion": "Đạt"
+      }
+    },
+    {
+      "source": "https://github.com/aowvn-10diem/aowvn-monika/pull/98#issuecomment-6010180019",
+      "comment": {
+        "body": "Nova tiền duyệt (commit 4f359b2)\nKết luận: Cần sửa"
+      },
+      "expected": {
+        "type": "nova_tien_duyet",
+        "sha": "4f359b2",
+        "conclusion": "Cần sửa"
+      }
+    },
+    {
+      "source": "https://github.com/aowvn-10diem/aowvn-monika/pull/106#issuecomment-6049102401",
+      "comment": {
+        "body": "Luna tiền duyệt (commit dd141bd)\nKết luận: Cần sửa"
+      },
+      "expected": {
+        "type": "luna_tien_duyet",
+        "sha": "dd141bd",
+        "conclusion": "Cần sửa"
+      }
+    },
+    {
+      "source": "https://github.com/aowvn-10diem/aowvn-monika/pull/87#issuecomment-6019802345",
+      "comment": {
+        "body": "Haiku tiền duyệt (commit 4f8341f)\nKết luận: **Đạt"
+      },
+      "expected": {
+        "type": "haiku_tien_duyet",
+        "sha": "4f8341f",
+        "conclusion": "Đạt"
+      }
+    },
+    {
+      "source": "https://github.com/aowvn-10diem/aowvn-monika/pull/92#issuecomment-6019801015",
+      "comment": {
+        "body": "Haiku tiền duyệt (commit 618401f)\nKết luận: **Đạt"
+      },
+      "expected": {
+        "type": "haiku_tien_duyet",
+        "sha": "618401f",
+        "conclusion": "Đạt"
+      }
+    }
+  ]
+}
