@@ -79,7 +79,12 @@ def collect(result, stderr, output):
                         continue
                 elif dest.suffix in ('.log', '.txt'):
                     dest.write_text(scrub(dest.read_text(errors='replace')))
-                total += dest.stat().st_size
+                exported_size = dest.stat().st_size
+                if exported_size > MAX_FILE or total + exported_size > MAX_TOTAL:
+                    dest.unlink(missing_ok=True)
+                    report['reason'] = 'redacted evidence exceeded byte budget'
+                    continue
+                total += exported_size
                 report['files'] += 1
             report['bytes'] = total
             summaries = list(output.rglob('summary.json'))
@@ -90,6 +95,19 @@ def collect(result, stderr, output):
                         value = json.loads(summary.read_text())
                         assert value['synthetic'] is True
                         assert [r['game'] for r in value['rows']] == [f'K{n}' for n in range(1, 9)]
+                        # Complete summaries alone do not prove images/logs actually arrived.
+                        required = ['metadata.json']
+                        for row in value['rows']:
+                            game = row['game']
+                            assert row['status'] in ('PASS', 'FAIL', 'BLOCKED')
+                            required += [game + '-final.png', game + '-pid.log', game + '-crash.log']
+                            if row['status'] == 'PASS' and game in ('K3', 'K5', 'K7', 'K8'):
+                                required.append(game + '.png')
+                            tombstone = row.get('tombstone', '')
+                            if tombstone.endswith('.pb'):
+                                assert NAMES.fullmatch(tombstone)
+                                required.append(tombstone)
+                        assert all((summary.parent / name).is_file() for name in required)
                         devices.append({'model': value['model'], 'sdk': value['sdk'], 'abi': value['abi'],
                                         'statuses': [r['status'] for r in value['rows']]})
                     report.update(collection='COLLECTED', devices=devices)
