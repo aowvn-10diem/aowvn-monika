@@ -15,8 +15,9 @@ Hướng dẫn này mô tả các thao tác có trong giao diện và các đị
 
 - **Trang chủ**: xem bài viết và game nổi bật từ aow.vn.
 - **Game**: khám phá bài viết về game.
-- **Thư viện**: xem game đã thêm trên máy, tìm kiếm/lọc và mở game.
-- **Tải xuống**: xem tiến trình tải và các tệp đã tải. Có thể mở từ nút menu ở thanh dưới hoặc lối tắt trên Trang chủ.
+- **Tìm kiếm**: tìm bài viết.
+- **Thư viện**: xem game đã thêm trên máy, tìm kiếm/lọc và mở game bằng nút **Chơi** trên ô game.
+- **Tải xuống**: xem tiến trình tải và các tệp đã tải. Có thể mở từ nút **Menu** ở thanh dưới hoặc lối tắt trên Trang chủ.
 
 Tải bài viết và tải tệp cần kết nối mạng. Thêm tệp đã có sẵn trên máy không cần tải game từ app.
 
@@ -28,7 +29,7 @@ Tải bài viết và tải tệp cần kết nối mạng. Thêm tệp đã có
 2. Mở **Menu thư viện** ở góc trên, chọn **Thêm game từ máy**.
 3. Trong bộ chọn tệp Android, chọn tệp game hoặc tệp nén. Có thể chọn nhiều tệp khi game được chia thành nhiều phần.
 4. Chờ tác vụ thêm/giải nén kết thúc; game đã nhận diện sẽ xuất hiện trong Thư viện.
-5. Chạm game để mở. Nếu app hỏi cài một ứng dụng ngoài hoặc chuẩn bị một thành phần, đọc thông báo và làm theo lựa chọn trên màn hình.
+5. Chạm **Chơi** trên ô game. Nút **⋯** hoặc giữ lâu trên ô sẽ mở menu game. Nếu app hỏi cài ứng dụng ngoài hoặc chuẩn bị một thành phần, đọc thông báo và làm theo lựa chọn trên màn hình.
 
 ZIP, RAR và 7z được hỗ trợ để giải nén. Một số cách giải nén có thể cần tải thành phần phụ. Nếu tệp có mật khẩu, mở menu của game, chọn **Giải nén**, nhập mật khẩu lấy từ nguồn bạn tải tệp rồi chọn **Giải nén**. Với bộ nén nhiều phần, hãy thêm đủ các phần; nếu app báo đang chờ phần tiếp theo, thêm các phần còn lại.
 
@@ -79,7 +80,9 @@ Các đuôi bên dưới là những đuôi đang khai báo trong cấu hình ma
 | RPG Maker XP/VX/Ace | Không khai báo đuôi đơn lẻ | RGSS nhúng khi máy có module phù hợp, có JoiPlay dự phòng theo cấu hình; chạy thật **[CHƯA KIỂM]** |
 | Symbian / N-Gage | .sis, .sisx, .ngage | Chuyển sang EKA2L1 theo cấu hình; hỗ trợ thực tế **[CHƯA KIỂM]** |
 
-Nếu game dùng lõi libretro, lõi mặc định lấy từ cấu hình; app có thể cung cấp lựa chọn lõi trong **Cài đặt**. Tên tệp chỉ giúp app phân loại ban đầu, không xác nhận ROM hợp lệ hay tương thích.
+Nếu game dùng lõi libretro, lõi mặc định lấy từ cấu hình. Với hệ có nhiều lõi, vào **Cài đặt → Lõi giả lập** để chọn lõi khác. Tên tệp chỉ giúp app phân loại ban đầu, không xác nhận ROM hợp lệ hay tương thích.
+
+Khi Azahar khả dụng, phần **Cài đặt → Nintendo 3DS** có nút **Chọn file .cia để cài**; phần mô tả trong app ghi rằng có thể cài game, bản cập nhật hoặc DLC vào bộ nhớ do Monika quản lý. Kết quả cài/chạy thực tế **[CHƯA KIỂM]**.
 
 ## Báo lỗi game
 
