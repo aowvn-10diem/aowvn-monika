@@ -5,7 +5,13 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import vn.aow.monika.ui.TestApp
 
+@RunWith(RobolectricTestRunner::class)
+@Config(application = TestApp::class, sdk = [34])
 class AchievementsPureHelpersTest {
     @Test fun translatesKnownAchievementTypesAndIgnoresUnknownTypes() {
         assertEquals("Cốt truyện", raTypeVi("progression"))

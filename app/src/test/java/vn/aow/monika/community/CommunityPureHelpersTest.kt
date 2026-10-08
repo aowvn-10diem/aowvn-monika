@@ -30,7 +30,7 @@ class CommunityPureHelpersTest {
     @Test fun extractsDistinctLinksAndRejectsShareAndNonCommunityUrls() {
         val html = """
             https://m.facebook.com/team-a/, https://fb.com/team-b
-            https://discordapp.com/invite/fixture-1 https://discord.com/invite/fixture-1
+            https://discord.com/invite/fixture-1 https://DISCORD.COM/invite/fixture-1
             https://facebook.com/share.php?x=1 https://example.invalid/community
         """.trimIndent()
         val links = Community.extract(html)
