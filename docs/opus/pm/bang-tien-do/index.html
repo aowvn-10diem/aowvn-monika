@@ -223,6 +223,56 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
 .s-vang { color: var(--stuck); background: var(--stuck-bg); }
 .s-dubi { color: var(--frost); background: var(--frost-bg); }
 
+/* Văn phòng: mỗi thành viên là một hình kéo thả được; đường nối = ai đang nhắn cho ai */
+.office-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; align-items: start; }
+.office { position: relative; width: 100%; aspect-ratio: 16 / 10; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; touch-action: none; user-select: none; }
+.zone { position: absolute; border-radius: 16px; background: var(--chip); padding: 8px 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+.zone.z-ngoai { background: transparent; border: 1.5px dashed var(--line); }
+.zone.z-sep { background: var(--boss-bg); }
+.zone.z-duyet { background: var(--frost-bg); }
+.zone.z-xuong { background: var(--run-bg); }
+.zone.z-dieuphoi { background: color-mix(in srgb, var(--g2) 12%, var(--surface)); }
+.zone-n { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.zone-c { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.wire { fill: none; stroke: var(--boss); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 4 6; }
+.wire.old { opacity: .28; }
+.wire.ask { stroke: var(--g2); }
+.pulse { fill: var(--boss); }
+.tok { position: absolute; width: 76px; margin-left: -38px; margin-top: -24px; display: grid; justify-items: center; gap: 2px; background: none; border: 0; padding: 0; cursor: grab; color: var(--fg); font: inherit; z-index: 2; }
+.tok:active { cursor: grabbing; }
+.tok.dragging { z-index: 5; }
+.tok .ava { width: 44px; height: 44px; font-size: 17px; box-shadow: 0 2px 6px rgba(0,0,0,.18); border: 2.5px solid var(--surface); position: relative; }
+.tok .ava::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--surface); background: var(--wait); }
+.tok.st-dang .ava::after { background: var(--ok); }
+.tok.st-vang .ava::after { background: var(--stuck); }
+.tok.st-sep .ava::after { background: var(--boss); }
+.tok.off .ava { opacity: .55; }
+.tok-n { font-size: 11.5px; font-weight: 700; white-space: nowrap; background: var(--surface); border-radius: 6px; padding: 0 5px; }
+.tok[aria-pressed="true"] .ava { outline: 3px solid var(--g3); outline-offset: 2px; }
+.bubble { position: absolute; z-index: 4; max-width: 170px; transform: translate(-50%, -100%); margin-top: -32px; background: var(--fg); color: var(--bg); font-size: 11.5px; line-height: 1.35; padding: 5px 8px; border-radius: 10px; pointer-events: none; }
+.bubble::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -5px; border: 5px solid transparent; border-bottom: 0; border-top-color: var(--fg); }
+.office-bar { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.office-bar .btn.ghost { font-size: 12.5px; padding: 2px 4px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.panel h3 { font-size: 16px; }
+.feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 340px; overflow-y: auto; }
+.feed li { display: grid; gap: 2px; font-size: 13px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.feed li:last-child { border-bottom: 0; }
+.feed .fw { font-weight: 700; }
+.feed .fw span { color: var(--muted); font-weight: 500; }
+.feed time { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.feed .ft { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .office-wrap { grid-template-columns: 1fr; }
+  .office { aspect-ratio: 4 / 5; }
+  .tok { width: 64px; margin-left: -32px; }
+  .tok .ava { width: 38px; height: 38px; font-size: 15px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tok:not(.dragging) { transition: left .6s cubic-bezier(.2,.8,.2,1), top .6s cubic-bezier(.2,.8,.2,1); }
+}
+
 /* Nhật ký */
 .log { list-style: none; margin: 0; padding: 0; display: grid; }
 .log li { display: grid; grid-template-columns: 7.5em 1fr; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); }
@@ -262,8 +312,15 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
   </div>
 
   <section class="sec" aria-labelledby="team-h" id="doi">
-    <div class="sec-h"><h2 id="team-h">Đội ngũ</h2><span class="count num" id="team-count"></span></div>
-    <div class="team" id="team-list"><p class="empty">Danh sách nhân viên AI và người đang tham gia dự án sẽ hiện ở đây: vai trò, việc đang cầm, lần hoạt động gần nhất.</p></div>
+    <div class="sec-h"><h2 id="team-h">Văn phòng</h2><span class="count num" id="team-count"></span></div>
+    <div class="office-bar">
+      <span>Kéo từng người để xếp chỗ (chỉ trên máy sếp). Bấm vào một người để xem việc và nhắn tin; đường nét đứt là tin nhắn gần nhất.</span>
+      <button class="btn ghost" type="button" id="office-reset">Xếp lại chỗ ngồi</button>
+    </div>
+    <div class="office-wrap">
+      <div class="office" id="office" aria-label="Sơ đồ văn phòng"><p class="empty">Sơ đồ văn phòng sẽ hiện khi trang tải xong dữ liệu.</p></div>
+      <aside class="panel" id="office-panel" aria-live="polite"></aside>
+    </div>
   </section>
 
   <section class="sec" aria-labelledby="b-h" id="nghen">
@@ -633,8 +690,19 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
     });
   }
 
-  /* ---------- Đội ngũ ---------- */
+  /* ---------- Văn phòng ---------- */
   var MEM_LABEL = { dang: ["Đang làm", "s-dang"], cho: ["Chờ việc", "s-cho"], vang: ["Vắng", "s-vang"], dubi: ["Dự bị", "s-dubi"], sep: ["Chủ dự án", "s-sep"] };
+  var ZONES = [
+    { id: "sep", name: "Phòng sếp", x: 0, y: 0, w: 31, h: 35 },
+    { id: "dieuphoi", name: "Bàn điều phối", x: 33, y: 0, w: 34, h: 35 },
+    { id: "duyet", name: "Phòng duyệt", x: 69, y: 0, w: 31, h: 74 },
+    { id: "xuong", name: "Xưởng mã", x: 0, y: 37, w: 67, h: 37 },
+    { id: "cho", name: "Phòng chờ", x: 0, y: 76, w: 49, h: 24 },
+    { id: "ngoai", name: "Ngoài văn phòng", x: 51, y: 76, w: 49, h: 24 }
+  ];
+  var POS_KEY = "monika-office-pos", selected = null, messages = [], msgDraft = "", msgSaving = false, msgErr = "";
+  var pos = {}; try { pos = JSON.parse(localStorage.getItem(POS_KEY) || "{}") || {}; } catch (e) { pos = {}; }
+  function savePos() { try { localStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch (e) {} }
   function ago(iso) {
     var t = new Date(iso).getTime(); if (isNaN(t)) return null;
     var m = Math.max(0, Math.round((Date.now() - t) / 60000));
@@ -645,42 +713,237 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
   function memTasks(m, s) {
     var keys = arr(m.match).map(function (k) { return String(k).toLowerCase(); });
     if (!keys.length) return [];
-    return arr(s.tasks).filter(function (t) {
-      var o = String(t.owner || "").toLowerCase();
-      return keys.some(function (k) { return o.indexOf(k) >= 0; });
-    });
+    return arr(s.tasks).filter(function (t) { var o = String(t.owner || "").toLowerCase(); return keys.some(function (k) { return o.indexOf(k) >= 0; }); });
   }
+  function zoneOf(m) {
+    if (m.zone) return m.zone;
+    if (m.status === "vang" || m.status === "dubi") return "ngoai";
+    if (m.status === "sep") return "sep";
+    if (m.kind === "pm") return "dieuphoi";
+    if (m.status === "cho") return "cho";
+    return m.kind === "rev" ? "duyet" : "xuong";
+  }
+  function memById(id) { return arr(state && state.team).find(function (m) { return m.id === id; }); }
+  function shortText(t, n) { t = String(t || ""); return t.length > n ? t.slice(0, n - 1) + "…" : t; }
+
+  // Vị trí mặc định: chia đều trong phòng, tính theo % khung.
+  function slotFor(team, office) {
+    var W = office.clientWidth || 800, H = office.clientHeight || 500, out = {};
+    ZONES.forEach(function (z) {
+      var ms = team.filter(function (m) { return zoneOf(m) === z.id; });
+      if (!ms.length) return;
+      var zw = z.w / 100 * W, zh = z.h / 100 * H;
+      var per = Math.max(1, Math.floor((zw - 16) / (W < 600 ? 70 : 84)));
+      var rows = Math.ceil(ms.length / per);
+      ms.forEach(function (m, i) {
+        var r = Math.floor(i / per), c = i % per, inRow = Math.min(per, ms.length - r * per);
+        var cx = z.x / 100 * W + zw * (c + 1) / (inRow + 1);
+        var top = 26, cy = z.y / 100 * H + top + (zh - top) * (r + 0.5) / rows;
+        out[m.id] = { x: cx / W * 100, y: cy / H * 100 };
+      });
+    });
+    return out;
+  }
+
   function renderTeam(s) {
-    var box = document.getElementById("team-list"); clear(box);
+    var office = document.getElementById("office"); if (!office) return;
+    clear(office);
     var team = arr(s.team);
     document.getElementById("team-count").textContent = team.length ? team.filter(function (m) { return m.status === "dang"; }).length + "/" + team.length + " đang làm" : "";
-    if (!team.length) { box.appendChild(el("p", "empty", "Chưa có danh sách đội ngũ.")); return; }
+    if (!team.length) { office.appendChild(el("p", "empty", "Chưa có danh sách đội ngũ.")); renderPanel(s); return; }
+    ZONES.forEach(function (z) {
+      var d = el("div", "zone z-" + z.id);
+      d.style.left = z.x + "%"; d.style.top = z.y + "%"; d.style.width = z.w + "%"; d.style.height = z.h + "%";
+      d.appendChild(el("span", "zone-n", z.name));
+      var n = team.filter(function (m) { return zoneOf(m) === z.id; }).length;
+      if (n) d.appendChild(el("span", "zone-c", String(n)));
+      office.appendChild(d);
+    });
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "wires"); svg.setAttribute("aria-hidden", "true");
+    office.appendChild(svg);
+    var slots = slotFor(team, office), where = {};
     team.forEach(function (m) {
-      var off = m.status === "vang" || m.status === "dubi";
-      var c = el("article", "mem" + (off ? " off" : ""));
-      var top = el("div", "mem-top");
-      top.appendChild(el("span", "ava k-" + (m.kind || "aux"), (m.name || "?").charAt(0).toUpperCase()));
-      var id = el("div", "mem-id"); id.appendChild(el("span", "mem-name", m.name || ""));
-      if (m.model) id.appendChild(el("span", "mem-model", m.model));
-      top.appendChild(id);
-      var lb = MEM_LABEL[m.status] || MEM_LABEL.cho; top.appendChild(el("span", "chip " + lb[1], lb[0]));
-      c.appendChild(top);
-      if (m.role) c.appendChild(el("p", "mem-role", m.role));
-      var tk = memTasks(m, s), open = tk.filter(function (t) { return t.status !== "xong"; });
-      if (m.now) { var n = el("p", "mem-now"); n.appendChild(el("b", null, "Đang: ")); n.appendChild(document.createTextNode(m.now)); c.appendChild(n); }
-      if (open.length) {
-        var cd = el("div", "mem-codes");
-        open.forEach(function (t) { var x = el("span", "code", t.code); x.title = t.title || ""; cd.appendChild(x); });
-        c.appendChild(cd);
+      var p = pos[m.id] || slots[m.id] || { x: 50, y: 50 }; where[m.id] = p;
+      var lb = MEM_LABEL[m.status] || MEM_LABEL.cho;
+      var b = el("button", "tok st-" + (m.status || "cho") + (m.status === "vang" || m.status === "dubi" ? " off" : ""));
+      b.type = "button"; b.id = "tok-" + m.id; b.dataset.id = m.id;
+      b.setAttribute("aria-pressed", String(selected === m.id));
+      b.setAttribute("aria-label", (m.name || m.id) + ", " + lb[0] + ". Bấm để xem việc và nhắn; mũi tên để di chuyển.");
+      b.style.left = p.x + "%"; b.style.top = p.y + "%";
+      b.appendChild(el("span", "ava k-" + (m.kind || "aux"), (m.name || "?").charAt(0).toUpperCase()));
+      b.appendChild(el("span", "tok-n", m.name || m.id));
+      attachDrag(b, office);
+      office.appendChild(b);
+    });
+    drawWires(s, office, svg, where);
+    renderPanel(s);
+  }
+
+  function commsAll(s) {
+    var list = arr(s.comms).map(function (c) { return { t: c.t, from: c.from, to: c.to, text: c.text, kind: c.kind || "" }; });
+    messages.forEach(function (m) { list.push({ t: m.at, from: "sep", to: m.to, text: m.text, kind: "ask", status: m.status, reply: m.reply }); });
+    list.sort(function (a, b) { return String(b.t).localeCompare(String(a.t)); });
+    return list;
+  }
+
+  function drawWires(s, office, svg, where) {
+    var W = office.clientWidth, H = office.clientHeight; if (!W || !H) return;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    var recent = commsAll(s).filter(function (c) { return where[c.from] && where[c.to] && c.from !== c.to; }).slice(0, 6);
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    recent.slice().reverse().forEach(function (c, i, all) {
+      var a = where[c.from], b = where[c.to];
+      var x1 = a.x / 100 * W, y1 = a.y / 100 * H, x2 = b.x / 100 * W, y2 = b.y / 100 * H;
+      var mx = (x1 + x2) / 2, my = (y1 + y2) / 2 - Math.min(80, Math.hypot(x2 - x1, y2 - y1) / 4);
+      var d = "M" + x1 + "," + y1 + " Q" + mx + "," + my + " " + x2 + "," + y2;
+      var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      var newest = i === all.length - 1;
+      path.setAttribute("d", d); path.setAttribute("class", "wire" + (c.kind === "ask" ? " ask" : "") + (newest || i >= all.length - 3 ? "" : " old"));
+      svg.appendChild(path);
+      if (newest && !reduce) {
+        var dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        dot.setAttribute("r", "5"); dot.setAttribute("class", "pulse");
+        var mo = document.createElementNS("http://www.w3.org/2000/svg", "animateMotion");
+        mo.setAttribute("dur", "2.4s"); mo.setAttribute("repeatCount", "indefinite"); mo.setAttribute("path", d);
+        dot.appendChild(mo); svg.appendChild(dot);
       }
-      var f = el("div", "mem-foot");
-      if (tk.length) f.appendChild(el("span", "num", open.length + " việc mở · " + (tk.length - open.length) + " đã xong"));
-      if (m.lastSeen) { var a = ago(m.lastSeen); if (a) f.appendChild(el("span", a.h >= 6 ? "late" : null, "Hoạt động " + a.txt)); }
-      if (m.channel) f.appendChild(el("span", null, m.channel));
-      c.appendChild(f);
-      box.appendChild(c);
+    });
+    // Bong bóng: tối đa 2 tin mới nhất, đặt trên đầu người gửi.
+    var seen = {};
+    recent.slice(0, 4).forEach(function (c) {
+      if (seen[c.from] || Object.keys(seen).length >= 2) return; seen[c.from] = 1;
+      var a = where[c.from], bub = el("div", "bubble", shortText(c.text, 64));
+      bub.style.left = a.x + "%"; bub.style.top = a.y + "%";
+      office.appendChild(bub);
     });
   }
+
+  function attachDrag(b, office) {
+    var start = null, moved = false;
+    b.addEventListener("pointerdown", function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      start = { x: e.clientX, y: e.clientY }; moved = false;
+      try { b.setPointerCapture(e.pointerId); } catch (x) {}
+    });
+    b.addEventListener("pointermove", function (e) {
+      if (!start) return;
+      if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) < 6) return;
+      moved = true; b.classList.add("dragging");
+      var r = office.getBoundingClientRect();
+      var x = Math.max(3, Math.min(97, (e.clientX - r.left) / r.width * 100));
+      var y = Math.max(5, Math.min(95, (e.clientY - r.top) / r.height * 100));
+      b.style.left = x + "%"; b.style.top = y + "%";
+      pos[b.dataset.id] = { x: x, y: y };
+    });
+    function end() {
+      if (!start) return; start = null; b.classList.remove("dragging");
+      if (moved) { savePos(); renderTeam(state); var f = document.getElementById(b.id); if (f) f.focus(); }
+      else select(b.dataset.id);
+    }
+    b.addEventListener("pointerup", end);
+    b.addEventListener("pointercancel", function () { start = null; b.classList.remove("dragging"); });
+    b.addEventListener("keydown", function (e) {
+      var k = { ArrowLeft: [-2, 0], ArrowRight: [2, 0], ArrowUp: [0, -3], ArrowDown: [0, 3] }[e.key];
+      if (k) {
+        e.preventDefault();
+        var p = pos[b.dataset.id] || { x: parseFloat(b.style.left), y: parseFloat(b.style.top) };
+        pos[b.dataset.id] = { x: Math.max(3, Math.min(97, p.x + k[0])), y: Math.max(5, Math.min(95, p.y + k[1])) };
+        savePos(); renderTeam(state); var f = document.getElementById(b.id); if (f) f.focus();
+      } else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(b.dataset.id); }
+    });
+  }
+
+  function select(id) {
+    selected = selected === id ? null : id; msgErr = ""; msgDraft = "";
+    renderTeam(state);
+    var f = document.getElementById("tok-" + id); if (f) f.focus();
+  }
+
+  var MSG_ST = { cho: ["Chờ PM chuyển", "s-sep"], "da-chuyen": ["PM đã chuyển", "s-dang"], "da-tra-loi": ["Đã trả lời", "s-xong"] };
+  function feedList(items) {
+    var ul = el("ul", "feed");
+    if (!items.length) { ul.appendChild(el("li", "calm", "Chưa có tin nhắn.")); return ul; }
+    items.slice(0, 25).forEach(function (c) {
+      var li = el("li"), fm = memById(c.from), tm = memById(c.to);
+      var w = el("div", "fw"); w.appendChild(document.createTextNode((fm ? fm.name : c.from) + " "));
+      w.appendChild(el("span", null, "→ " + (tm ? tm.name : c.to)));
+      if (c.status && MSG_ST[c.status]) { w.appendChild(document.createTextNode(" ")); w.appendChild(el("span", "chip " + MSG_ST[c.status][1], MSG_ST[c.status][0])); }
+      li.appendChild(w);
+      li.appendChild(el("span", "ft", c.text || ""));
+      if (c.reply) li.appendChild(el("span", "ft calm", "Trả lời: " + c.reply));
+      var t = el("time", null, when(c.t)); t.setAttribute("datetime", c.t || ""); li.appendChild(t);
+      ul.appendChild(li);
+    });
+    return ul;
+  }
+
+  function renderPanel(s) {
+    var box = document.getElementById("office-panel"); if (!box) return;
+    if (box.contains(document.activeElement) && document.activeElement.tagName === "TEXTAREA") return;
+    clear(box);
+    var m = selected && memById(selected), all = commsAll(s);
+    if (!m) {
+      box.appendChild(el("h3", null, "Tin nhắn trong đội"));
+      box.appendChild(el("p", "calm", "Bấm vào một người trên sơ đồ để xem việc của họ và nhắn tin."));
+      box.appendChild(feedList(all));
+      return;
+    }
+    var lb = MEM_LABEL[m.status] || MEM_LABEL.cho;
+    var top = el("div", "mem-top");
+    top.appendChild(el("span", "ava k-" + (m.kind || "aux"), (m.name || "?").charAt(0).toUpperCase()));
+    var id = el("div", "mem-id"); id.appendChild(el("span", "mem-name", m.name || "")); if (m.model) id.appendChild(el("span", "mem-model", m.model));
+    top.appendChild(id); top.appendChild(el("span", "chip " + lb[1], lb[0]));
+    box.appendChild(top);
+    if (m.role) box.appendChild(el("p", "mem-role", m.role));
+    if (m.now) { var n = el("p", "mem-now"); n.appendChild(el("b", null, "Đang: ")); n.appendChild(document.createTextNode(m.now)); box.appendChild(n); }
+    var tk = memTasks(m, s), open = tk.filter(function (t) { return t.status !== "xong"; });
+    if (open.length) { var cd = el("div", "mem-codes"); open.forEach(function (t) { var x = el("span", "code", t.code); x.title = t.title || ""; cd.appendChild(x); }); box.appendChild(cd); }
+    var f = el("div", "mem-foot");
+    if (tk.length) f.appendChild(el("span", "num", open.length + " việc mở · " + (tk.length - open.length) + " đã xong"));
+    if (m.lastSeen) { var a = ago(m.lastSeen); if (a) f.appendChild(el("span", a.h >= 6 ? "late" : null, "Hoạt động " + a.txt)); }
+    if (m.channel) f.appendChild(el("span", null, m.channel));
+    box.appendChild(f);
+
+    if (m.id !== "sep" && !PUBLIC) {
+      var ta = el("textarea", "note-in"); ta.id = "msg-" + m.id; ta.rows = 3; ta.value = msgDraft;
+      ta.placeholder = "Nhắn cho " + m.name + ". PM chuyển tin ở lượt kiểm tới."; ta.setAttribute("aria-label", "Tin nhắn cho " + m.name);
+      ta.disabled = readOnly || !db;
+      var row = el("div", "send-row"), send = el("button", "btn", msgSaving ? "Đang gửi…" : "Gửi tin");
+      send.type = "button"; send.id = "msg-send";
+      send.disabled = readOnly || !db || msgSaving || !msgDraft.trim();
+      ta.addEventListener("input", function () { msgDraft = ta.value; send.disabled = readOnly || !db || msgSaving || !msgDraft.trim(); });
+      send.addEventListener("click", function () { sendMsg(m); });
+      row.appendChild(send);
+      var hint = msgErr ? el("span", "msg err", msgErr) : (!db ? el("span", "msg", "Mở trang trong claude.ai (đã đăng nhập) để nhắn.") : (readOnly ? el("span", "msg", "Chỉ sếp gửi được tin nhắn.") : null));
+      if (hint) { hint.setAttribute("role", msgErr ? "alert" : "status"); row.appendChild(hint); }
+      box.appendChild(ta); box.appendChild(row);
+    }
+    box.appendChild(el("h3", null, "Tin gần đây của " + m.name));
+    box.appendChild(feedList(all.filter(function (c) { return c.from === m.id || c.to === m.id; })));
+    var back = el("button", "btn ghost", "Xem tin cả đội"); back.type = "button"; back.id = "panel-all";
+    back.addEventListener("click", function () { selected = null; renderTeam(state); });
+    box.appendChild(back);
+  }
+
+  function sendMsg(m) {
+    if (!db || msgSaving || !msgDraft.trim()) return;
+    msgSaving = true; msgErr = ""; renderPanel(state);
+    var id = "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    var body = { to: m.id, toName: m.name || m.id, text: msgDraft.trim().slice(0, 2000), at: new Date().toISOString(), status: "cho" };
+    db.doc("messages/" + id).set(body).then(function () {
+      msgSaving = false; msgDraft = ""; renderTeam(state);
+    }, function (e) {
+      msgSaving = false;
+      var code = e && e.code;
+      if (code === "invalid_argument") { readOnly = true; msgErr = "Tài khoản này không có quyền nhắn. Hãy mở trang bằng tài khoản claude.ai của sếp."; }
+      else msgErr = "Chưa gửi được tin. Đợi ít phút rồi bấm Gửi lại.";
+      renderPanel(state);
+    });
+  }
+
+  document.getElementById("office-reset").addEventListener("click", function () { pos = {}; savePos(); if (state) renderTeam(state); });
+  if (window.ResizeObserver) { var ro = new ResizeObserver(function () { if (state && !document.querySelector(".tok.dragging")) renderTeam(state); }); ro.observe(document.getElementById("office")); }
 
   function render() {
     if (!state) return;
@@ -719,6 +982,10 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
       state = snap.data() || {};
       render();
     }, function () { offline("Mất kết nối dữ liệu. Tải lại trang để xem bản mới nhất."); });
+    db.collection("messages").onSnapshot(function (qs) {
+      messages = qs.docs.map(function (doc) { var v = doc.data() || {}; v.id = doc.id; return v; }).filter(function (v) { return v.to && v.text; });
+      if (state) renderTeam(state);
+    }, function () {});
     db.collection("answers").onSnapshot(function (qs) {
       var next = {};
       qs.docs.forEach(function (doc) { var v = doc.data(); if (v) next[doc.id] = v; });
