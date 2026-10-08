@@ -873,6 +873,41 @@
       "owner": "",
       "status": "dang",
       "note": "Quá hạn, chuyển Luna Ultra (luna-ultra/V52a), hạn 09/10 18:00"
+    },
+    {
+      "code": "V66",
+      "title": "Workflow phát hành tự tạo tag (A14)",
+      "owner": "Sol",
+      "status": "dang",
+      "note": "A15 chạy tối đa, mở 09/10"
+    },
+    {
+      "code": "V67",
+      "title": "Rà báo lỗi người dùng RC 0.7.7",
+      "owner": "Sol",
+      "status": "dang",
+      "note": "A15 chạy tối đa, mở 09/10"
+    },
+    {
+      "code": "V68",
+      "title": "Rà soát trước bản ổn định",
+      "owner": "Luna Ultra",
+      "status": "dang",
+      "note": "A15 chạy tối đa, mở 09/10"
+    },
+    {
+      "code": "L14",
+      "title": "CHANGELOG bản ổn định 0.7.7",
+      "owner": "Luna",
+      "status": "dang",
+      "note": "A15 chạy tối đa, mở 09/10"
+    },
+    {
+      "code": "L15",
+      "title": "TESTER-NGOAI + THU-NHANH 0.7.7",
+      "owner": "Luna",
+      "status": "dang",
+      "note": "A15 chạy tối đa, mở 09/10"
     }
   ],
   "gates": [
@@ -955,6 +990,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-08T17:47:10Z",
+      "text": "A15: đội ChatGPT chạy tối đa. Sol nhận V66 (workflow tự tạo tag, từ Sonnet), V67, F01/F02 (từ Gemini), N09-S, H02. Luna: L12, L14, L15, N09-L. Luna Ultra: V52a, V68, V52b. Sonnet chuyển sang lõi Kirikiri V18/V26."
+    },
     {
       "t": "2026-10-08T17:36:03Z",
       "text": "Sếp nâng Nova lên Sonnet 5.5 xhigh. V45 Ren'Py 8 chuyển từ Sol sang Nova; Sol dồn V56 (hạn mới 10/10 12:00). Nova duyệt thêm PR tài liệu."
@@ -1691,6 +1730,13 @@
   ],
   "decisions": [
     {
+      "code": "A15",
+      "question": "Dùng hạn mức đội ChatGPT thế nào?",
+      "answer": "Chạy tối đa tới hết hạn mức (sếp còn 1 lần đặt lại). Sol WIP 4, Luna/Luna Ultra 3, làm liên tục",
+      "at": "2026-10-08T17:47:10Z",
+      "by": "Sếp"
+    },
+    {
       "code": "A14",
       "question": "Ai phát hành?",
       "answer": "PM tự phát hành cả bản thử và bản ổn định khi đủ cổng tự động; không cần báo sếp",
@@ -2334,13 +2380,13 @@
   ],
   "overall": {
     "done": 83,
-    "total": 98,
-    "pct": 85,
-    "at": "2026-10-08T17:30:08Z"
+    "total": 103,
+    "pct": 81,
+    "at": "2026-10-08T17:47:13Z"
   },
   "productivity": {
     "since": "2026-10-07T23:30:00Z",
-    "at": "2026-10-08T17:30:08Z",
+    "at": "2026-10-08T17:47:13Z",
     "pmMerges": 38,
     "agents": [
       {
@@ -2406,9 +2452,9 @@
       {
         "id": "nova",
         "name": "Nova",
-        "opened": 2,
+        "opened": 3,
         "merged": 1,
-        "open": 1,
+        "open": 2,
         "reviews": 0,
         "changesAsked": 0,
         "medianHours": 0.5
@@ -2464,8 +2510,8 @@
       "title": "Workflow phát hành tự tạo tag, để PM tự phát hành (A14)",
       "detail": "Bỏ bước sếp bấm tạo release mỗi lần. Workflow tự chặn khi CI chưa xanh hoặc tag đã tồn tại. Tiết kiệm từ vài giờ chờ tới nửa ngày mỗi bản.",
       "impact": "cao",
-      "owner": "Sonnet",
-      "status": "đang làm, hạn 10/10 20:00",
+      "owner": "Sol",
+      "status": "Sol nhận từ Sonnet, hạn 10/10 12:00",
       "id": "D2"
     },
     {
