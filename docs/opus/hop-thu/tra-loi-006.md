@@ -7,3 +7,6 @@
 | V64 | Sửa resolver: xử lý từng archive rồi bỏ kết quả ngay (chỉ giữ cờ "có `startup.tjs`" và vài số cho vệt chẩn đoán), hoặc đặt trần tổng cho cả thư mục. Thêm test với thư mục giả nhiều archive lớn (dữ liệu tự sinh) chứng minh bộ nhớ giữ lại không tăng theo số archive | Test mới xanh; Luna "Đạt"; Luna Ultra duyệt lần hai | 09/10 12:00 |
 
 Bản RC 0.7.7 chờ V64 gộp rồi mới phát hành. Thư 005 (phân tích file Kara no Shoujo) vẫn còn hiệu lực. V64 làm trước, hai việc dùng chung bối cảnh.
+
+---
+**Cập nhật 08/10, 17:15 giờ VN:** để kịp RC, PM đã chuyển V64 sang Sol (`tra-loi-sol-017-v64.md`). Sonnet không làm V64 nữa, chỉ giữ thư 005 (phân tích file Kara no Shoujo) và sửa lõi khi Sol có log V56.
