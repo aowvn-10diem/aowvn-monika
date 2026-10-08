@@ -10,6 +10,7 @@ on:
       - 'scripts/periodic-issue.py'
       - 'scripts/test-periodic-check.py'
       - 'scripts/check-config-links.py'
+      - 'scripts/check-remote-config.py'
 permissions:
   contents: read
 concurrency:
@@ -29,6 +30,20 @@ jobs:
           name: periodic-links
           path: out/
           retention-days: 3
+  remote-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      report: ${{ steps.compare.outputs.report }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - run: python3 scripts/test-periodic-check.py
+      - id: compare
+        run: python3 scripts/check-remote-config.py --output out/remote-config.json --github-output "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: {name: periodic-remote-config, path: out/remote-config.json, retention-days: 3}
   packs:
     uses: ./.github/workflows/check-packs.yml
   unit:
@@ -52,7 +67,7 @@ jobs:
           path: app/build/reports/tests/
           retention-days: 3
   issue:
-    needs: [links, packs, unit]
+    needs: [links, packs, unit, remote-config]
     if: always() && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -64,4 +79,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JOB_RESULTS: ${{ toJSON(needs) }}
+          REMOTE_CONFIG_REPORT: ${{ needs.remote-config.outputs.report || 'null' }}
         run: python3 scripts/periodic-issue.py
