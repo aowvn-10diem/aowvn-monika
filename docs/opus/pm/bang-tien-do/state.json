@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-08T03:37:37Z",
+  "updatedAt": "2026-10-08T03:39:57Z",
   "mainSha": "8cad51b",
   "app": "App 0.7.6 (bản thử) · config 36",
   "nextCheck": "2026-10-08T04:13:28Z",
@@ -789,8 +789,15 @@
       "code": "G9",
       "title": "Secrets Firebase Test Lab",
       "when": "Khi tiện",
-      "status": "dang",
-      "note": "Hỏi lại trên trang (G9): máy thật miễn phí của Google cho Kirikiri, RPG Maker."
+      "status": "xong",
+      "note": "Sếp thêm secret 08/10; run 37721419669 xanh, Robo Passed trên 2 máy thật API 37 (cubs, grizzly).",
+      "links": [
+        {
+          "kind": "run",
+          "label": "Run 37721419669",
+          "url": "https://github.com/aowvn-10diem/aowvn-monika/actions/runs/37721419669"
+        }
+      ]
     },
     {
       "code": "G8",
@@ -843,6 +850,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-08T03:39:57Z",
+      "text": "Test Lab chạy được: run 37721419669 xanh, robot 10 phút trên 2 máy thật API 37 (cubs, grizzly), cả hai Passed"
+    },
     {
       "t": "2026-10-08T03:37:37Z",
       "text": "Sếp nâng Haiku 4.6 → Haiku 5.5 ultracode; prompt PROMPT-HAIKU-55.md: test độ phủ cheats/browser, N05, duyệt dự phòng PR Luna"
