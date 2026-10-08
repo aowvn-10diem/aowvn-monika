@@ -18,6 +18,7 @@ BOT_REF = 'refs/heads/bot/trang-thai'
 REPOSITORY = 'aowvn-10diem/aowvn-monika'
 # Public repository ID measured from GitHub metadata/Link; never an input.
 REPOSITORY_ID = 1392088306
+READ_BUDGET = 160
 SENSITIVE_KEYS = {'body', 'email', 'path', 'token', 'authorization', 'password', 'secret', 'author', 'login'}
 
 class DigestUnavailable(RuntimeError):
@@ -66,20 +67,31 @@ class BoundedDigestAPI(digest.GitHubAPI):
     def __init__(self, repository, token):
         super().__init__(repository, token)
         self.cache = {}
+        self.commits = {}
         self.reads = 0
+        self.read_groups = {}
+        self.last_quota = None
 
     def _request_json(self, route):
         key = self._url(route)  # Security guards still fail hard, before soft transport handling.
         if key in self.cache:
             return self.cache[key]
         def request():
-            if self.reads >= 120:
-                raise DigestUnavailable('API read budget 120 exhausted; no partial digest published')
+            if self.reads >= READ_BUDGET:
+                raise DigestUnavailable(f'API read budget {READ_BUDGET} exhausted; no partial digest published')
             self.reads += 1
+            # Fixed categories only: no query, URL, ref, token or body in diagnostics.
+            path = urllib.parse.urlsplit(key).path[len(self.repository_path):]
+            group = ('commit-detail' if path.startswith('/commits/') and not path.endswith('/check-runs') else
+                     'checks' if path.endswith('/check-runs') else
+                     'pr-mail' if path.endswith(('/comments', '/reviews')) else
+                     'actions' if path.startswith('/actions/') else 'inventory')
+            self.read_groups[group] = self.read_groups.get(group, 0) + 1
             try:
                 data, headers = super(BoundedDigestAPI, self)._request_json(route)
+                self.last_quota = digest.GitHubAPIError(200, headers=headers).diagnostic()
                 if self.reads == 1:
-                    print('Digest API quota hints: ' + json.dumps(digest.GitHubAPIError(200, headers=headers).diagnostic()), file=sys.stderr)
+                    print('Digest API quota hints: ' + json.dumps(self.last_quota), file=sys.stderr)
                 return data, headers
             except RuntimeError as error:
                 if str(error) in {'GitHub API request failed.', 'GitHub API returned invalid JSON.'}:
@@ -106,8 +118,20 @@ class BoundedDigestAPI(digest.GitHubAPI):
         if route in {'/commits?sha=main&per_page=10', '/releases?per_page=10'}:
             data, _ = self._request_json(route)
             if not isinstance(data, list): raise RuntimeError('Danh sách commit/release không hợp lệ')
+            if route.startswith('/commits?'):
+                self.commits.update({item['sha']: item for item in data[:10] if isinstance(item, dict) and item.get('sha')})
             return data[:10]
         return super().list_all(route, field)
+
+    def fetch_commit(self, sha):
+        # Branch timestamps need only the same commit metadata already in the main inventory.
+        if sha not in self.commits:
+            self.commits[sha] = super().fetch_commit(sha)
+        return self.commits[sha]
+
+    def report_reads(self):
+        print('Digest API read summary: ' + json.dumps({'reads': self.reads, 'budget': READ_BUDGET,
+              'groups': self.read_groups, 'last_quota': self.last_quota}), file=sys.stderr)
 
 class GitDB:
     def __init__(self, token): self.token = token
@@ -150,7 +174,14 @@ def main(argv=None):
         if args.publish and args.fixture: raise RuntimeError('Không đăng fixture lên bot')
         token=os.environ.get('GITHUB_TOKEN','')
         if not args.fixture and (not token or os.environ.get('GITHUB_REPOSITORY')!=REPOSITORY): raise RuntimeError('Thiếu quyền hoặc repo không đúng')
-        data=json.loads(args.fixture.read_text()) if args.fixture else digest.build_digest(BoundedDigestAPI(REPOSITORY,token),REPOSITORY)
+        if args.fixture:
+            data = json.loads(args.fixture.read_text())
+        else:
+            api = BoundedDigestAPI(REPOSITORY, token)
+            try:
+                data = digest.build_digest(api, REPOSITORY)
+            finally:
+                api.report_reads()
         data=sanitize(data);args.out.mkdir(parents=True,exist_ok=True)
         (args.out/'digest.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
         (args.out/'digest.md').write_text(digest.render_markdown(data))

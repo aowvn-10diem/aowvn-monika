@@ -70,15 +70,28 @@ class RateLimitTest(unittest.TestCase):
 
     def test_read_cache_and_budget_preserve_security_guard(self):
         api = m.BoundedDigestAPI(m.REPOSITORY, '')
-        with mock.patch.object(m.digest.GitHubAPI, '_request_json', return_value=([1], {})) as request:
+        with mock.patch.object(m.digest.GitHubAPI, '_request_json', return_value=([1], {})) as request, \
+             contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(api._request_json('/commits/fake'), ([1], {}))
             self.assertEqual(api._request_json('/commits/fake'), ([1], {}))
             self.assertEqual(1, request.call_count)
-            api.reads = 120
+            api.reads = m.READ_BUDGET
             with self.assertRaises(m.DigestUnavailable):
                 api._request_json('/commits/new-fake')
         with self.assertRaises(RuntimeError):
             api._request_json('https://evil.invalid/repos/elsewhere')
+
+    def test_main_commit_metadata_reused_without_losing_branch_timestamp(self):
+        api = m.BoundedDigestAPI(m.REPOSITORY, '')
+        commit = {'sha': 'fake-sha', 'commit': {'committer': {'date': '2026-10-08T00:00:00Z'}}}
+        with mock.patch.object(m.digest.GitHubAPI, '_request_json', return_value=([commit], {})) as request, \
+             contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual([commit], api.list_all('/commits?sha=main&per_page=10'))
+            self.assertEqual(commit, api.fetch_commit('fake-sha'))
+            self.assertEqual(commit, api.fetch_commit('fake-sha'))
+        self.assertEqual(1, request.call_count)
+        self.assertEqual(1, api.reads)
+        self.assertEqual({'inventory': 1}, api.read_groups)
 
     def test_soft_warning_does_not_publish_partial_or_claim_new_snapshot(self):
         with tempfile.TemporaryDirectory() as temp:
