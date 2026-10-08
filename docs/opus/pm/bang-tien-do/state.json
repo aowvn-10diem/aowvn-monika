@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-07T23:38:30Z",
+ "updatedAt": "2026-10-08T00:13:31Z",
  "mainSha": "51c1462",
  "app": "App 0.7.6 (bản thử) · config 36",
  "nextCheck": "2026-10-08T00:38:30Z",
@@ -93,7 +93,7 @@
    "title": "Kirikiri không mở được game trên máy thật",
    "owner": "Sonnet",
    "status": "ket",
-   "note": "0.7.6 vẫn lỗi (G7B). Sonnet đọc báo cáo.",
+   "note": "#107 chờ Luna kiểm lại (c364421)",
    "module": "kirikiri",
    "links": [
     {
@@ -843,6 +843,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-08T00:13:31Z",
+   "text": "Sol mở 6 PR (#108–#113: V48, V49, V53, V54, V50, V55) chờ Luna duyệt; Luna 'Cần sửa' #107 (phạm vi, PM đã xác nhận) và #106 (Haiku đã sửa 8df30a1)"
+  },
   {
    "t": "2026-10-07T23:38:24Z",
    "text": "Sol, Luna quay lại sớm theo sếp: Luna tiền duyệt #107, #106 trước; Sol 6 việc (V48, V49, V53, V54, V50, V55)"
