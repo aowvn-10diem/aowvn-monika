@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-09T16:30:21Z",
- "mainSha": "c255624",
+ "updatedAt": "2026-10-09T17:29:03Z",
+ "mainSha": "f5b9815",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
- "headline": "0.7.8 đã vào main c255624; bản thử chờ sếp xác nhận",
+ "headline": "Main f5b9815 (0.7.8 + sửa test chập chờn); bản thử chờ sếp xác nhận",
  "needsBoss": [
   {
    "code": "G9",
@@ -1046,6 +1046,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-09T17:29:03Z",
+   "text": "Gộp #180 (sửa test chập chờn V69), #178 V52, #179 N09-L, #176 N09-N2 → main f5b9815. Haiku-2: N09-H cheats rồi download. #177 cần sửa. Bản thử v0.7.8 từ f5b9815 chờ sếp."
+  },
   {
    "t": "2026-10-09T16:30:21Z",
    "text": "Gộp #167 (c255624, 0.7.8), #174, #175, #151. V69UxTest chập chờn trên c255624 → giao Sol. L12 dừng tới sau v0.7.8. Bản thử v0.7.8 chờ sếp xác nhận (classifier chặn đọc preflight)."
