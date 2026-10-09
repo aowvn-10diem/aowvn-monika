@@ -1,6 +1,6 @@
 # V52 — Rà giấy phép thành phần của app (V52a + V52b, 08/10/2026)
 
-**Phạm vi:** mọi thành phần APK đóng gói hoặc tải thêm. V52b kiểm lại cây tại main `73ff04e4864549dae4cd3b929b20e93f2c55f8d9` và bổ sung giấy phép ở upstream đã ghim theo tag/commit, release metadata và ZIP tải thực tế. **Không** kết luận pháp lý vượt quá nội dung văn bản; khi không xác định được giấy phép, phạm vi áp dụng hoặc mối nối binary–source thì ghi `[CHƯA KIỂM]`. Việc tách thư mục nào sang repo private là quyết định của sếp (G5/G8); bảng chỉ chép nghĩa vụ thể hiện trong văn bản.
+**Phạm vi:** mọi thành phần APK đóng gói hoặc tải thêm. V52b lấy bằng chứng source/pack từ main `73ff04e4864549dae4cd3b929b20e93f2c55f8d9`; đối chiếu tới main hiện tại `b073a18140338eed2479754a93c95311d4b05588` (09/10, compare 17 commits) cho thấy thay đổi sau baseline chỉ ở workflow Test Lab, app unit tests, tài liệu Test Lab và scripts kiểm Test Lab; không đổi license files, source engine, dependency catalog hoặc `config/monika-config.json`. Cây cấp một và khai báo module được kiểm lại ở mục 5 trên SHA hiện tại. Báo cáo chỉ kết luận trong phạm vi văn bản đã đọc; giấy phép, phạm vi áp dụng hoặc mối nối binary–source không xác định được thì ghi `[CHƯA KIỂM]`. Quyết định tách thư mục sang repo private thuộc sếp (G5/G8).
 
 ## 1. Điều văn bản giấy phép nói (file trong repo và upstream đã ghim)
 | Giấy phép | File đã đọc | Điều đã đọc |
@@ -61,7 +61,7 @@ Cột "Để private?" chỉ ghi **điều văn bản cho phép/không nói**; k
 
 ## 5. Kiểm kê mọi thư mục cấp 1 và module Gradle
 
-Kiểm lại cây tại main `73ff04e4864549dae4cd3b929b20e93f2c55f8d9`: đầu ra `git ls-tree -d --name-only origin/main` có 22 thư mục cấp 1; module chính được khai báo tại `settings.gradle.kts:17-29`. Có 8 module trong build gốc (`:app`, `:libretrodroid`, `:kirikiri`, `:rgss`, `:renpy`, `:j2me`, `:dexlib`, `:loader`). `tools/pack-check` là Gradle project độc lập, có `settings.gradle.kts` riêng và không được include từ build gốc.
+Kiểm lại tại main `b073a18140338eed2479754a93c95311d4b05588`: sau `git fetch --depth=1 origin main`, lệnh `git ls-tree -d --name-only FETCH_HEAD` xuất 22 thư mục cấp một; các hàng bên dưới liệt kê từng tên. `settings.gradle.kts:17-29` khai báo 8 module build gốc (`:app`, `:libretrodroid`, `:kirikiri`, `:rgss`, `:renpy`, `:j2me`, `:dexlib`, `:loader`). `tools/pack-check` là Gradle project độc lập: có `settings.gradle.kts` riêng, không được include từ build gốc.
 
 Cột hệ quả chỉ nêu điều đã thấy trong văn bản giấy phép. Repo private tự nó không phải bằng chứng đã phân phối object code; khi GPL áp dụng cho bản nhị phân thì nghĩa vụ nguồn tương ứng vẫn cần xét. Không suy luận phạm vi GPL, khả năng tách repo hay giấy phép chưa có văn bản: các điểm đó ghi `[CHƯA KIỂM]`.
 
