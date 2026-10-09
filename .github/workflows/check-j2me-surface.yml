@@ -1,7 +1,7 @@
 name: J2ME manifest surface (V53)
 on:
   pull_request:
-    paths: [app/src/main/AndroidManifest.xml, scripts/check-j2me-manifest.py, .github/workflows/check-j2me-surface.yml]
+    paths: [app/src/main/AndroidManifest.xml, scripts/check-j2me-manifest.py, scripts/test-j2me-manifest.py, .github/workflows/check-j2me-surface.yml]
 permissions: {contents: read}
 jobs:
   merged-manifest:
@@ -21,6 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          python3 scripts/test-j2me-manifest.py
           mkdir -p out/v53
           cp app/src/main/AndroidManifest.xml "$RUNNER_TEMP/v53-head.xml"
           trap 'cp "$RUNNER_TEMP/v53-head.xml" app/src/main/AndroidManifest.xml' EXIT

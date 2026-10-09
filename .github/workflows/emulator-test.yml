@@ -46,8 +46,8 @@ jobs:
   emulator:
     needs: build
     runs-on: ubuntu-latest
-    # Release nháp (gói RGSS, luật V24) chỉ thấy được với quyền ghi contents.
-    permissions: { contents: write }
+    # Chỉ GET release/asset RGSS nháp đã có; contents:read đủ quyền.
+    permissions: { contents: read }
     strategy:
       fail-fast: false
       matrix:
@@ -151,8 +151,8 @@ jobs:
   user-path:
     if: ${{ inputs.user_path_only }}
     runs-on: ubuntu-latest
-    # GitHub yêu cầu quyền ghi để đọc asset draft; job này chỉ dùng GET.
-    permissions: { contents: write }
+    # Chỉ GET asset draft đã có; không tạo/sửa/xóa release hoặc tag.
+    permissions: { contents: read }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v6

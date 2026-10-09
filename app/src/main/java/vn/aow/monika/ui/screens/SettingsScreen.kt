@@ -127,6 +127,10 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     )
                 }
 
+                SettingGroup("controller", open, { open = it }, R.drawable.ic_fluent_xbox_controller_24_regular, primaryGradient(), "Tay cầm ảo", "Rung, hiệu ứng bấm và cỡ nút") {
+                    vn.aow.monika.ui.controls.ControllerSettings(AppGraph.prefs)
+                }
+
                 SettingGroup("translate", open, { open = it }, R.drawable.ic_fluent_globe_24_regular, primaryGradient(), "Dịch màn hình game", "Dùng khóa API của bạn · gói dịch offline sắp có") {
                     val ts = AppGraph.translateSettings
                     var provider by remember { mutableStateOf(ts.provider) }
