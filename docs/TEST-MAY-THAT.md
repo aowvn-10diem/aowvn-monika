@@ -95,9 +95,9 @@ Mở **Cài đặt → Tay cầm ảo** để đổi mức rung và hiệu ứng
 | 4.19.1 | Trong game có phím ảo, nhấn rồi thả D-pad và một nút hành động | Nút lún khi nhấn, trở lại khi nhả; game nhận đúng hai phím | |
 | 4.19.2 | Cài đặt → Tay cầm ảo → tắt **Hiệu ứng lún khi bấm**, mở lại game rồi nhấn một phím | Nút không lún; game vẫn nhận phím | |
 | 4.19.3 | Cài đặt → Tay cầm ảo → **Rung khi nhấn: Tắt**, mở lại game rồi nhấn một phím | Không rung; game vẫn nhận phím | |
-| 4.19.4 | Đổi **Rung khi nhấn** sang **Nhẹ**, mở lại game rồi nhấn một phím | Cảm nhận được rung nhẹ khi nhấn | |
-| 4.19.5 | Đổi **Rung khi nhấn** sang **Vừa**, mở lại game rồi nhấn một phím | Cảm nhận được mức rung vừa | |
-| 4.19.6 | Đổi **Rung khi nhấn** sang **Mạnh**, mở lại game rồi nhấn một phím | Cảm nhận được mức rung mạnh hơn các mức Nhẹ và Vừa | |
+| 4.19.4 | Đổi **Rung khi nhấn** sang **Nhẹ**, mở lại game rồi nhấn một phím | Máy hỗ trợ chỉnh biên độ: rung Nhẹ, thấp nhất. Máy không hỗ trợ dùng chung phản hồi dự phòng cho cả ba mức; ghi model máy và để **[CHƯA KIỂM]** nếu chưa xác nhận được khác biệt cường độ | |
+| 4.19.5 | Đổi **Rung khi nhấn** sang **Vừa**, mở lại game rồi nhấn một phím | Máy hỗ trợ chỉnh biên độ: rung Vừa, mạnh hơn Nhẹ và nhẹ hơn Mạnh. Máy không hỗ trợ dùng chung phản hồi dự phòng cho cả ba mức; ghi model máy và để **[CHƯA KIỂM]** nếu chưa xác nhận được khác biệt cường độ | |
+| 4.19.6 | Đổi **Rung khi nhấn** sang **Mạnh**, mở lại game rồi nhấn một phím | Máy hỗ trợ chỉnh biên độ: rung Mạnh, mạnh hơn Nhẹ và Vừa. Máy không hỗ trợ dùng chung phản hồi dự phòng cho cả ba mức; ghi model máy và để **[CHƯA KIỂM]** nếu chưa xác nhận được khác biệt cường độ | |
 | 4.19.7 | Tắt **rung khi chạm** trong cài đặt Android, đặt rung game ở Mạnh, mở lại game rồi nhấn một phím | Không rung khi cài đặt Android tắt rung chạm; game vẫn nhận phím | |
 | 4.19.8 | Khi máy dọc, vào game rồi đổi **Cỡ nút chung** trong Cài đặt → Tay cầm ảo | Cỡ D-pad và nút hành động đổi theo thanh chỉnh; mọi nút còn thấy và bấm được | |
 | 4.19.9 | Khi máy dọc, đổi **Độ mờ chung** trong Cài đặt → Tay cầm ảo rồi vào game | Nút mờ/đậm theo mức chọn và vẫn nhìn, bấm được | |
