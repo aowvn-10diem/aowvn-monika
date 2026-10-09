@@ -86,3 +86,4 @@ Hạn mức hằng tuần của Opus đặt lại vào **12/10 22:00** giờ VN.
 - [A20] Bản thử 2 giờ không lỗi chặn → bản ổn định; ra mắt kèm danh sách thử thực tế.
 - Đội ChatGPT im ≥ 3 giờ (`im-lang.py` thoát mã 2): báo sếp **một lần** mỗi đợt. Sếp chỉ còn 1 lượt đặt lại, và chỉ dùng khi hạn mức **hằng tuần** đã hết.
 - [A21] Luna im ≥ 3 giờ thì Nova thay Luna tiền duyệt PR của Sol/Nova (dòng đầu "Nova tiền duyệt thay Luna (A21)"); Luna Ultra giữ lượt thứ hai, nên PR đường phát hành vẫn có 2 người độc lập.
+- [A22] Mô tả PR sai hoặc cũ (SHA, trạng thái check, link bằng chứng) là nit, không chặn gộp; kết luận theo mã, test, check thật trên đúng head.
