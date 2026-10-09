@@ -1,5 +1,7 @@
 # Bàn giao 09/10/2026: kịch bản khi Opus, Sonnet, Haiku 1 hết hạn mức
 
+**ĐANG HIỆU LỰC từ 09/10 14:10 giờ VN (sếp chốt):** PM Opus, Sonnet, Haiku 1 đã ngắt, mọi lịch của họ đã tắt. Sếp bật PM mới (prompt `docs/opus/hop-thu/PROMPT-OPUS-PM-PHU.md`). Tới khi PM mới ghi tiếp quản ở #119, Sol làm PM tạm thời. Test Lab 15:05 giao Sol (hoặc PM mới). Main lúc bàn giao: `3b2329e`. #167 (bump 0.7.8) đã Luna Ultra Đạt phần CHANGELOG, chờ Luna; gộp sau cùng, sau V70b.
+
 **Cập nhật 08:05 (sếp):** PM Opus **vẫn làm tiếp** tới khi hết hạn mức; Sonnet và Haiku 1 đã dừng. Kịch bản dưới đây **chỉ kích hoạt** khi PM Opus im: không có commit trên `docs/opus-tra-loi`, không comment `[PM` và không gộp PR nào trong **2 giờ** (06:00–23:00) hoặc **3 giờ** (ban đêm). Khi đó Sol ghi một dòng ở issue #119 "PM im từ <giờ>, Sol nhận PM tạm thời" rồi làm theo mục 4. PM Opus quay lại thì ghi ở #119 và nhận lại.
 
 **Kết luận:** khi kích hoạt, đội còn **Sol, Luna, Luna Ultra, Haiku-2, Nova**. Sếp có thể thêm **Opus phụ** làm PM dự phòng (prompt: `docs/opus/hop-thu/PROMPT-OPUS-PM-PHU.md`). Khi chưa có Opus phụ, **Sol làm PM tạm thời** theo đúng các luật dưới đây. Đích không đổi: **bản ổn định v0.7.8 trước 11/10 18:00**, dự kiến khoảng 10/10 22:00.
