@@ -86,17 +86,23 @@ Mỗi hệ thử 1 game. Kiểm: **vào được game · có tiếng · phím �
 | 4.17 | Thoát game, vào lại (game có save trong game) | Save trong game còn | |
 | 4.18 | Tay cầm Bluetooth (nếu có) | Bấm được trong game | |
 
-### 4.19 Tay cầm ảo: hiệu ứng bấm, rung và bố cục (chỉ thử trên APK có tính năng)
+### 4.19 Tay cầm ảo V70a: rung, hiệu ứng bấm và bố cục (thử trên máy thật)
 
-Các mục V70a/V70c này cần kiểm trên máy thật; giả lập CI không thay thế cảm nhận rung. Nếu APK chưa có mục **Tay cầm ảo** hoặc **Chỉnh phím**, ghi **[CHƯA KIỂM]** và bỏ qua thay vì đánh dấu đạt.
+Mở **Cài đặt → Tay cầm ảo** để đổi mức rung và hiệu ứng lún. Mỗi thay đổi rung áp dụng khi mở game tiếp theo. Dùng game đã có trên máy; cảm giác rung và cách bố trí cần kiểm trực tiếp trên thiết bị.
 
 | # | Thao tác | Kết quả mong đợi | KQ |
 |---|---|---|---|
-| 4.19.1 | Mở game có phím ảo, nhấn rồi thả D-pad và một nút hành động | Khi nhấn, nút thu còn 92% cỡ ban đầu và dịch xuống 2 dp, rồi bật lại; phím không bị kẹt sau khi thả | |
-| 4.19.2 | Cài đặt → Tay cầm ảo → tắt hiệu ứng bấm; nhấn nút rồi bật lại và thử | Khi tắt, không chạy hoạt ảnh lún; khi bật, hiệu ứng trở lại. Game vẫn nhận đúng phím | |
-| 4.19.3 | Cài đặt → Tay cầm ảo → thử Tắt/Nhẹ/Vừa/Mạnh; nhấn, thả rồi giữ một phím | Mức rung đổi theo lựa chọn; nhả rung nhẹ hơn hoặc tắt; Tắt/cài đặt rung khi chạm của Android tắt thì không rung; giữ phím không rung lặp | |
-| 4.19.4 | Mở **Chỉnh phím** nếu có; kéo nút, đổi cỡ 70–140%, độ mờ 20–100%, ẩn/hiện nút rồi chọn Xong | Giá trị nằm trong khoảng; mỗi vùng chạm ≥48 dp; trên nền sáng, tương phản nút ≥3:1; nhãn không bị cắt; bố cục nằm trong tầm ngón cái, không che phần chơi; mã phím trong game không đổi | |
-| 4.19.5 | Lưu bố cục theo hệ thống, ghi đè theo game; mở lại, thử preset Chuẩn/Gọn/Tay trái và **Về mặc định** | Bố cục theo phạm vi đã chọn được giữ; preset áp dụng được; khôi phục mặc định trả nút về vị trí gốc | |
+| 4.19.1 | Trong game có phím ảo, nhấn rồi thả D-pad và một nút hành động | Nút lún khi nhấn, trở lại khi nhả; game nhận đúng hai phím | |
+| 4.19.2 | Cài đặt → Tay cầm ảo → tắt **Hiệu ứng lún khi bấm**, mở lại game rồi nhấn một phím | Nút không lún; game vẫn nhận phím | |
+| 4.19.3 | Cài đặt → Tay cầm ảo → **Rung khi nhấn: Tắt**, mở lại game rồi nhấn một phím | Không rung; game vẫn nhận phím | |
+| 4.19.4 | Đổi **Rung khi nhấn** sang **Nhẹ**, mở lại game rồi nhấn một phím | Cảm nhận được rung nhẹ khi nhấn | |
+| 4.19.5 | Đổi **Rung khi nhấn** sang **Vừa**, mở lại game rồi nhấn một phím | Cảm nhận được mức rung vừa | |
+| 4.19.6 | Đổi **Rung khi nhấn** sang **Mạnh**, mở lại game rồi nhấn một phím | Cảm nhận được mức rung mạnh hơn các mức Nhẹ và Vừa | |
+| 4.19.7 | Tắt **rung khi chạm** trong cài đặt Android, đặt rung game ở Mạnh, mở lại game rồi nhấn một phím | Không rung khi cài đặt Android tắt rung chạm; game vẫn nhận phím | |
+| 4.19.8 | Khi máy dọc, vào game rồi đổi **Cỡ nút chung** trong Cài đặt → Tay cầm ảo | Cỡ D-pad và nút hành động đổi theo thanh chỉnh; mọi nút còn thấy và bấm được | |
+| 4.19.9 | Khi máy dọc, đổi **Độ mờ chung** trong Cài đặt → Tay cầm ảo rồi vào game | Nút mờ/đậm theo mức chọn và vẫn nhìn, bấm được | |
+| 4.19.10 | Xoay máy ngang trong game rồi nhấn các nút ở D-pad và nhóm hành động | Bố cục nằm trong màn hình, các nút chạm được và không che phần chơi chính | |
+| 4.19.11 | Cài đặt → Tay cầm ảo → **Về mặc định**, mở lại game và nhấn một phím | Cỡ nút, độ mờ, rung và hiệu ứng trở về mặc định; game nhận phím | |
 
 ## 5. Game Java (J2ME)
 
