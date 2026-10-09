@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-09T00:46:01Z",
+ "updatedAt": "2026-10-09T00:56:33Z",
  "mainSha": "ab0011e",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T01:15:04Z",
@@ -957,6 +957,13 @@
    "owner": "Luna Ultra",
    "status": "dang",
    "note": "Comment #119 ngày 09/10."
+  },
+  {
+   "code": "V74",
+   "title": "Danh sách thử thực tế cho tester cộng đồng (v0.7.8)",
+   "owner": "PM",
+   "status": "dang",
+   "note": "Sếp giao 09/10: phát kèm bản ổn định."
   }
  ],
  "gates": [
@@ -1039,6 +1046,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-09T00:56:33Z",
+   "text": "07:55 VN [A20] sếp chốt: bản thử 2 giờ không lỗi chặn → ổn định. Giao V74 danh sách thử thực tế."
+  },
   {
    "t": "2026-10-09T00:46:01Z",
    "text": "07:45 VN gọi lại đội ChatGPT (sol-026, luna-013, #119). [A19] bản ổn định mang số v0.7.8 vì tag v0.7.7 đã là bản thử."
@@ -2063,6 +2074,20 @@
    "question": "Cho Sonnet đọc báo lỗi Kara",
    "answer": "Đã thêm CRASH_ADMIN_TOKEN",
    "at": "2026-10-07T09:18:44Z",
+   "by": "Sếp"
+  },
+  {
+   "code": "A19",
+   "question": "Tag v0.7.7 đã là bản thử, bản ổn định đặt số gì?",
+   "answer": "Bản ổn định mang số v0.7.8 (versionCode 43); V70c sang bản sau.",
+   "at": "2026-10-09T00:56:33Z",
+   "by": "PM"
+  },
+  {
+   "code": "A20",
+   "question": "Bản thử phải chạy bao lâu trước khi thành ổn định?",
+   "answer": "2 giờ không có lỗi chặn (trước là 12 giờ). Ra mắt kèm danh sách thử thực tế cho tester cộng đồng.",
+   "at": "2026-10-09T00:56:33Z",
    "by": "Sếp"
   }
  ],

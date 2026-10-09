@@ -9,6 +9,6 @@
 | 3 | V69 | 7 điểm UI/UX trong thư 021 | như thư 021 | 10/10 20:00 |
 | 4 | V70c | Trình sửa bố cục, làm song song, vào bản sau ổn định | như thư 022 | 12/10 20:00 |
 
-**[A19]** Tag `v0.7.7` đã là bản thử (tạo 08/10 lúc 22:48 giờ VN, commit `3387671`, chưa có bản sửa crash Kirikiri trên Android 17 và chưa có V70a). `release.yml` (V66) tạo tag theo `versionName` và không cho ghi đè tag cũ. Vì vậy bản ổn định sẽ mang số **v0.7.8**: PM cắt bản thử v0.7.8 sau mốc V70a/V70b (10/10 20:00), rồi chuyển thành bản ổn định sau ít nhất 12 giờ không có lỗi chặn. V70c chuyển sang bản kế tiếp.
+**[A19]** Tag `v0.7.7` đã là bản thử (tạo 08/10 lúc 22:48 giờ VN, commit `3387671`, chưa có bản sửa crash Kirikiri trên Android 17 và chưa có V70a). `release.yml` (V66) tạo tag theo `versionName` và không cho ghi đè tag cũ. Vì vậy bản ổn định sẽ mang số **v0.7.8**: PM cắt bản thử v0.7.8 sau mốc V70a/V70b (10/10 20:00), rồi chuyển thành bản ổn định sau ít nhất **2 giờ** không có lỗi chặn [A20]. V70c chuyển sang bản kế tiếp.
 
 WIP tối đa 4 PR mở. Chạy `./gradlew testDebugUnitTest` trước mỗi push có mã.
