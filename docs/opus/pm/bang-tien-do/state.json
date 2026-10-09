@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-09T01:47:18Z",
- "mainSha": "d0abe49",
+ "updatedAt": "2026-10-09T02:14:00Z",
+ "mainSha": "b073a18",
  "app": "App 0.7.7 (bản thử RC) · config 36",
- "nextCheck": "2026-10-09T02:17:18Z",
+ "nextCheck": "2026-10-09T03:14:00Z",
  "headline": "Bàn giao 09/10: Sol PM tạm thời; đích v0.7.8 ổn định ~10/10 22:00.",
  "needsBoss": [
   {
@@ -737,7 +737,7 @@
    "title": "Thêm test theo báo cáo độ phủ",
    "owner": "Luna · Sol · Haiku · Haiku-2 · Nova",
    "status": "cho",
-   "note": "Gộp #166 de5a3c7, #169 (AdBlockStore) d0abe49.",
+   "note": "Gộp #170 (Haiku-2, AccountApiTest) b073a18.",
    "module": ""
   },
   {
@@ -1046,6 +1046,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-09T02:14:00Z",
+   "text": "09:13 VN gộp #170. Luna quay lại; #163 V70a head mới 0c4d6b1 chờ duyệt lại."
+  },
   {
    "t": "2026-10-09T01:47:18Z",
    "text": "08:47 VN gộp #169. [A21] Nova thay Luna khi Luna im ≥ 3 giờ (Luna im ~4 giờ)."
