@@ -115,9 +115,9 @@ Các mục V70a/V70c này cần kiểm trên máy thật; giả lập CI không 
 | 6.2 | Game Kirikiri / Ren'Py khi chưa cài app ngoài | Hiện hướng dẫn + nút tải app | |
 | 6.3 | Đã cài app ngoài → bấm Chơi | Mở đúng app ngoài | |
 
-## 6b. Kirikiri (visual novel .xp3) — thử bản pre-release 0.7.7 (chưa có bản stable)
+## 6b. Kirikiri (visual novel .xp3) — thử bản v0.7.8 (chưa có bản stable)
 
-Mốc mã nguồn: app 0.7.7 (`versionCode` 42), `configVersion` 36 trên main `85269ea` (ứng viên RC, tag hiện là pre-release). Đây là checklist chờ người thử; các ô KQ để trống không phải bằng chứng đã chạy.
+Bản thử: v0.7.8, có sửa crash Kirikiri trên Android 17 (`8b158f5`). Mốc mã nguồn cũ: app 0.7.7 (`versionCode` 42), `configVersion` 36 trên main `85269ea` (ứng viên RC, tag hiện là pre-release). Đây là checklist chờ người thử; các ô KQ để trống không phải bằng chứng đã chạy.
 
 Kirikiri nhúng sâu trong Monika (không phải app ngoài): màn chuẩn bị tự tải gói, menu Việt hóa, chạy ở tiến trình riêng.
 
