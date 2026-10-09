@@ -35,9 +35,10 @@ fun SupportStrip(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var hiddenUntil by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(AppGraph.prefs.supportHiddenUntil) }
     androidx.compose.runtime.LaunchedEffect(hiddenUntil) {
-        val remaining = hiddenUntil - System.currentTimeMillis()
+        val deadline = hiddenUntil
+        val remaining = deadline - System.currentTimeMillis()
         if (remaining > 0) kotlinx.coroutines.delay(remaining)
-        hiddenUntil = 0L
+        if (hiddenUntil == deadline) hiddenUntil = 0L
     }
     if (hiddenUntil > System.currentTimeMillis()) return
     val cfg by AppGraph.config.config.collectAsState()

@@ -49,10 +49,12 @@ class V69UxTest {
     @Test fun hideSupportPersistsSevenDaysAndExpiredHideIsVisible() {
         AppGraph.prefs.supportHiddenUntil = System.currentTimeMillis() - 1
         rule.setContent { MonikaTheme { SupportStrip() } }
+        rule.mainClock.advanceTimeBy(32)
         rule.onNodeWithText("Ẩn 7 ngày").assertExists()
         rule.shot("v69-support-visible")
         val before = System.currentTimeMillis()
         rule.onNodeWithText("Ẩn 7 ngày").performClick()
+        rule.mainClock.advanceTimeBy(32)
         rule.onNodeWithText("Ẩn 7 ngày").assertDoesNotExist()
         val until = Prefs(rule.activity).supportHiddenUntil
         assertTrue(until >= before + SUPPORT_HIDE_MILLIS)
@@ -75,9 +77,11 @@ class V69UxTest {
         val labels = (1..20).map { "Hệ máy " + it }
         lateinit var scroll: androidx.compose.foundation.lazy.LazyListState
         rule.setContent { MonikaTheme { scroll = rememberLazyListState(); ChipBar(labels, labels.first(), { it }, {}, scroll = scroll) } }
+        rule.mainClock.advanceTimeBy(32)
         rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
         rule.shot("v69-chip-more")
         rule.runOnIdle { kotlinx.coroutines.runBlocking { scroll.scrollToItem(labels.lastIndex) } }
+        rule.mainClock.advanceTimeBy(32)
         rule.onNodeWithText(labels.last()).assertIsDisplayed()
         rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertDoesNotExist()
         rule.shot("v69-chip-end")
