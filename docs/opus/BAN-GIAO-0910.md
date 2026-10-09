@@ -33,7 +33,7 @@ Mọi giờ trong tài liệu này là giờ VN (UTC+7), trừ khi ghi UTC.
 | **Luna Ultra** | Issue #119 | Tiền duyệt PR của Luna và Haiku-2; duyệt lần hai mọi PR đường phát hành (V70a, V68-a, V72); V73 bảng cổng phát hành |
 | **Haiku-2** | Issue #120 | **Nhận toàn bộ việc của Haiku 1**: N09-H (test tăng độ phủ, bỏ qua phần browser cần tách UI), sửa #166 nếu bị yêu cầu, H03 |
 | **Nova** | Issue #90 | Sửa #151 ngay, rồi V45b; tiền duyệt PR chỉ sửa tài liệu (A12) |
-| Opus, Sonnet, Haiku 1 | — | Dừng. Lịch của họ đã tắt (mục 6) |
+| Sonnet, Haiku 1 | — | Dừng, lịch đã tắt (mục 6). Opus (PM chính) làm tiếp tới khi hết hạn mức |
 
 **Việc của Sonnet chuyển giao:** V26 (lõi Kirikiri, đang kẹt) và V06 (lặp) **hoãn sau v0.7.8**. Lỗi chặn ở lõi native trong lúc bản thử chạy thì Opus phụ (hoặc sếp) quyết: lùi tính năng bằng config (`config/monika-config.json`, tăng `configVersion`) thay vì sửa C/C++ gấp.
 
