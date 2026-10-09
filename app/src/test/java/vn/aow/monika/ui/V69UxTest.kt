@@ -27,8 +27,7 @@ import vn.aow.monika.ui.theme.*
 @Config(application = TestApp::class, sdk = [34], qualifiers = "w393dp-h851dp-xxhdpi")
 class V69UxTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
-    @Before fun setup() { rule.mainClock.autoAdvance = false; AppGraph.prefs.supportHiddenUntil = 0L }
-    @After fun reset() { AppGraph.prefs.supportHiddenUntil = 0L }
+    @Before fun setup() { rule.mainClock.autoAdvance = false }
 
     @Test fun loadingUsesSkeletonNotAnEndlessBlankSpinner() {
         rule.setContent { MonikaTheme { FeedStatus(true) {} } }
@@ -47,8 +46,10 @@ class V69UxTest {
     }
 
     @Test fun hideSupportPersistsSevenDaysAndExpiredHideIsVisible() {
-        AppGraph.prefs.supportHiddenUntil = System.currentTimeMillis() - 1
-        rule.setContent { MonikaTheme { SupportStrip() } }
+        // One context for writer and fresh reader; AppGraph lazy prefs can outlive a Robolectric Application.
+        val prefs = Prefs(rule.activity)
+        prefs.supportHiddenUntil = System.currentTimeMillis() - 1
+        rule.setContent { MonikaTheme { SupportStrip(prefs = prefs) } }
         rule.mainClock.advanceTimeBy(32)
         rule.onNodeWithText("Ẩn 7 ngày").assertExists()
         rule.shot("v69-support-visible")
@@ -57,7 +58,7 @@ class V69UxTest {
         rule.mainClock.advanceTimeBy(32)
         rule.onNodeWithText("Ẩn 7 ngày").assertDoesNotExist()
         val until = Prefs(rule.activity).supportHiddenUntil
-        assertTrue(until >= before + SUPPORT_HIDE_MILLIS)
+        assertTrue("persisted=$until must be at least ${before + SUPPORT_HIDE_MILLIS}", until >= before + SUPPORT_HIDE_MILLIS)
         assertTrue(until <= System.currentTimeMillis() + SUPPORT_HIDE_MILLIS)
         rule.shot("v69-support-hidden")
     }

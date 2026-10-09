@@ -21,6 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import vn.aow.monika.AppGraph
+import vn.aow.monika.Prefs
 import vn.aow.monika.R
 import vn.aow.monika.browser.InAppBrowserActivity
 import vn.aow.monika.ui.theme.Monika
@@ -31,9 +32,9 @@ import vn.aow.monika.ui.theme.Radius
  * Cùng địa chỉ với thẻ lớn ở Trang chủ: `donateUrl`, trống thì dùng `voteUrl` trong config.
  */
 @Composable
-fun SupportStrip(modifier: Modifier = Modifier) {
+fun SupportStrip(modifier: Modifier = Modifier, prefs: Prefs = AppGraph.prefs) {
     val context = LocalContext.current
-    var hiddenUntil by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(AppGraph.prefs.supportHiddenUntil) }
+    var hiddenUntil by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(prefs.supportHiddenUntil) }
     androidx.compose.runtime.LaunchedEffect(hiddenUntil) {
         val deadline = hiddenUntil
         val remaining = deadline - System.currentTimeMillis()
@@ -58,7 +59,7 @@ fun SupportStrip(modifier: Modifier = Modifier) {
         androidx.compose.material3.Text("Ẩn 7 ngày", style = Monika.type.caption, color = c.textSecondary,
             modifier = Modifier.heightIn(min = 48.dp).clickable {
                 hiddenUntil = System.currentTimeMillis() + SUPPORT_HIDE_MILLIS
-                AppGraph.prefs.supportHiddenUntil = hiddenUntil
+                prefs.supportHiddenUntil = hiddenUntil
             }.padding(horizontal = 8.dp, vertical = 12.dp))
         androidx.compose.material3.Text("Ủng hộ", style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight), color = c.accentCoral)
     }
