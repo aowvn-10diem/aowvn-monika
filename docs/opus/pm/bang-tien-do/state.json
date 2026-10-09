@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-09T15:53:20Z",
- "mainSha": "3b2329e",
+ "updatedAt": "2026-10-09T16:30:21Z",
+ "mainSha": "c255624",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
- "headline": "PM mới; #167 chờ Nova + Luna Ultra trên 6c2afd9 → bản thử v0.7.8",
+ "headline": "0.7.8 đã vào main c255624; bản thử chờ sếp xác nhận",
  "needsBoss": [
   {
    "code": "G9",
@@ -1046,6 +1046,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-09T16:30:21Z",
+   "text": "Gộp #167 (c255624, 0.7.8), #174, #175, #151. V69UxTest chập chờn trên c255624 → giao Sol. L12 dừng tới sau v0.7.8. Bản thử v0.7.8 chờ sếp xác nhận (classifier chặn đọc preflight)."
+  },
   {
    "t": "2026-10-09T15:53:20Z",
    "text": "[A23] Sếp dừng Luna; Luna 3 (ChatGPT, mô hình Luna Ultra) thay toàn tuyến Luna, hộp thư #119. Prompt: docs/opus/hop-thu/PROMPT-LUNA-3.md. Haiku-2 giao N09-H achievements + H03 sửa 6b thành v0.7.8 (#120)."
