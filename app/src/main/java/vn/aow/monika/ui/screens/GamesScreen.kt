@@ -160,7 +160,6 @@ fun GamesScreen(onOpen: (Post) -> Unit, focusSearch: Boolean = false, vm: FeedVi
                     }
                 }
             }
-            item { SupportStrip(Modifier.padding(horizontal = 16.dp)) }
             item {
                 ChipBar(listOf<String?>(null) + cfg.feedLabels(), vm.label, { it?.let(::shortLabel) ?: "Tất cả" }, vm::selectLabel, accent = true)
             }
@@ -172,10 +171,8 @@ fun GamesScreen(onOpen: (Post) -> Unit, focusSearch: Boolean = false, vm: FeedVi
             item {
                 Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
                     when {
-                        vm.loading -> Spinner()
-                        vm.error != null -> EmptyState(R.drawable.fluent3d_newspaper, "Không tải được bài viết", vm.error.orEmpty()) {
-                            DarkButton("Thử lại", { vm.load(reset = vm.posts.isEmpty()) })
-                        }
+                        vm.loading -> FeedStatus(true) { vm.load(reset = vm.posts.isEmpty()) }
+                        vm.error != null -> FeedStatus(false) { vm.load(reset = vm.posts.isEmpty()) }
                         vm.posts.isEmpty() -> EmptyState(R.drawable.fluent3d_newspaper, "Không có kết quả", "Thử từ khóa khác.")
                         !vm.endReached -> SoftPillButton("Xem thêm bài", { vm.load(reset = false) })
                     }

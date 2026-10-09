@@ -12,6 +12,10 @@ class Prefs(private val context: Context) {
      */
     private val gsp = context.getSharedPreferences("monika_game", Context.MODE_PRIVATE)
 
+    var supportHiddenUntil: Long
+        get() = sp.getLong("support_hidden_until", 0L)
+        set(value) = sp.edit().putLong("support_hidden_until", value).apply()
+
     /** Mã các bài đã thấy, để biết bài nào mới. Rỗng = chưa chạy lần nào. */
     var seenPostIds: Set<String>
         get() = sp.getStringSet("seen_post_ids", emptySet())!!.toSet()
