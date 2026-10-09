@@ -75,20 +75,40 @@ class V69UxTest {
     }
 
     @Test fun chipFadeDisappearsAtTheEnd() {
-        // This component has no repeating animation: advance frames while waiting for real layout.
-        rule.mainClock.autoAdvance = true
+        // Keep the manual clock used by the screenshot suite: Robolectric can fail
+        // setContent's automatic idle wait before this LazyRow has its first layout.
         val labels = (1..20).map { "Hệ máy " + it }
         lateinit var scroll: androidx.compose.foundation.lazy.LazyListState
         rule.setContent { MonikaTheme { scroll = rememberLazyListState(); ChipBar(labels, labels.first(), { it }, {}, scroll = scroll) } }
-        rule.waitUntil(timeoutMillis = 2_000) {
+        fun awaitLayout(condition: () -> Boolean) {
+            rule.waitUntil(timeoutMillis = 2_000) {
+                rule.mainClock.advanceTimeByFrame()
+                rule.waitForIdle()
+                condition()
+            }
+            // Layout changes can invalidate the overflow hint for the next frame.
+            rule.mainClock.advanceTimeByFrame()
+            rule.waitForIdle()
+        }
+        awaitLayout {
             scroll.layoutInfo.totalItemsCount == labels.size && scroll.canScrollForward
         }
         rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
         rule.shot("v69-chip-more")
-        rule.runOnIdle { kotlinx.coroutines.runBlocking { scroll.scrollToItem(labels.lastIndex) } }
-        rule.waitUntil(timeoutMillis = 2_000) { !scroll.canScrollForward }
-        rule.onNodeWithText(labels.last()).assertIsDisplayed()
-        rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertDoesNotExist()
+
+        // Repeat both directions to exercise layout/recomposition without blocking
+        // the UI thread on scrollToItem's suspend work or using animation timing.
+        repeat(3) { pass ->
+            if (pass > 0) {
+                rule.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
+                awaitLayout { scroll.firstVisibleItemIndex == 0 && scroll.canScrollForward }
+                rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
+            }
+            rule.onNode(hasScrollToIndexAction()).performScrollToIndex(labels.lastIndex)
+            awaitLayout { !scroll.canScrollForward }
+            rule.onNodeWithText(labels.last()).assertIsDisplayed()
+            rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertDoesNotExist()
+        }
         rule.shot("v69-chip-end")
     }
 
