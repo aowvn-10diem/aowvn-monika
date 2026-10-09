@@ -251,7 +251,6 @@ fun LibraryScreen(onSettings: () -> Unit) {
             },
             right = { CircleButton(R.drawable.ic_fluent_grid_24_regular, "Menu thư viện", { libMenu = true }) },
         )
-        SupportStrip(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp))
         LazyVerticalGrid(
             GridCells.Fixed(2), Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance),
@@ -296,8 +295,11 @@ fun LibraryScreen(onSettings: () -> Unit) {
             } else if (games.isEmpty()) item(span = { GridItemSpan(2) }) {
                 EmptyState(
                     R.drawable.fluent3d_video_game, "Chưa có game",
-                    "Tải game ở tab Game, hoặc thêm file (.zip .rar .7z .nds .gba .iso…) có sẵn trong máy.\n\nThư mục: ${GameStorage.games(context).absolutePath}",
-                ) { GradientButton("Thêm game từ máy", { picker.launch(arrayOf("*/*")) }, icon = R.drawable.ic_fluent_folder_add_24_regular) }
+                    "Tải game ở tab Game, hoặc thêm file (.zip .rar .7z .nds .gba .iso…) có sẵn trong máy.",
+                ) {
+                    LibraryFolderLabel(GameStorage.games(context).absolutePath)
+                    GradientButton("Thêm game từ máy", { picker.launch(arrayOf("*/*")) }, icon = R.drawable.ic_fluent_folder_add_24_regular)
+                }
             } else item(span = { GridItemSpan(2) }) {
                 Text("Thư viện", style = Monika.type.sectionTitle, color = c.text, modifier = Modifier.padding(top = 4.dp))
             }

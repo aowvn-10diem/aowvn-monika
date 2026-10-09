@@ -1,5 +1,10 @@
 package vn.aow.monika.ui.theme
 
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.foundation.lazy.rememberLazyListState
+
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -181,9 +186,11 @@ fun <T> ChipBar(
     onSelect: (T) -> Unit,
     accent: Boolean = false,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
+    scroll: androidx.compose.foundation.lazy.LazyListState = rememberLazyListState(),
 ) {
     val c = Monika.colors
-    LazyRow(contentPadding = contentPadding, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    ChipOverflowHint(scroll) {
+    LazyRow(state = scroll, contentPadding = contentPadding, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(items) { item ->
             val on = item == selected
             val interaction = remember { MutableInteractionSource() }
@@ -203,6 +210,7 @@ fun <T> ChipBar(
                 Text(label(item), style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight), color = if (on) Color.White else c.chipText, maxLines = 1)
             }
         }
+    }
     }
 }
 
@@ -332,8 +340,29 @@ fun Screen(content: @Composable BoxScope.() -> Unit) {
 val DockClearance = 110.dp
 
 @Composable
+fun dockContentClearance(insets: androidx.compose.foundation.layout.WindowInsets = androidx.compose.foundation.layout.WindowInsets.navigationBars): Dp = DockClearance +
+    with(androidx.compose.ui.platform.LocalDensity.current) {
+        insets.getBottom(this).toDp()
+    }
+
+
+@Composable
 fun Modifier.dockOffset(visible: Boolean): Modifier {
     val motion = Monika.motion
     val y by animateDpAsState(if (visible) 0.dp else 120.dp, tween(motion.normal.coerceAtLeast(1), easing = motion.easing), label = "dock")
     return offset(y = y)
+}
+
+/** Fade chỉ xuất hiện khi còn mục bên phải; lớp vẽ không nhận chạm/che gesture. */
+@Composable
+fun ChipOverflowHint(state: androidx.compose.foundation.lazy.LazyListState, content: @Composable () -> Unit) {
+    val c = Monika.colors
+    Box(Modifier.fillMaxWidth()) {
+        content()
+        if (state.canScrollForward) Box(Modifier.matchParentSize()) {
+            Box(Modifier.align(Alignment.CenterEnd).width(32.dp).fillMaxHeight()
+                .background(Brush.horizontalGradient(listOf(c.bg.copy(alpha = 0f), c.bg)))
+                .semantics { contentDescription = "Còn hệ máy bên phải" })
+        }
+    }
 }

@@ -106,7 +106,9 @@ class FeedRepository(
     }
 
     private suspend fun getJson(url: String): JsonElement = withContext(Dispatchers.IO) {
-        http.newCall(Request.Builder().url(url).build()).execute().use { response ->
+        val call = http.newCall(Request.Builder().url(url).build())
+        call.timeout().timeout(10, java.util.concurrent.TimeUnit.SECONDS)
+        call.execute().use { response ->
             check(response.isSuccessful) { "Không tải được bài viết (HTTP ${response.code})" }
             Json.parseToJsonElement(response.body!!.string())
         }

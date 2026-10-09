@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,12 +27,19 @@ import vn.aow.monika.ui.theme.Monika
 import vn.aow.monika.ui.theme.Radius
 
 /**
- * Thanh kêu gọi ủng hộ/vote AowVN, đặt ngay dưới tiêu đề ở MỌI tab (một dòng gọn, bấm là mở trang ủng hộ).
+ * Thanh kêu gọi ủng hộ/vote AowVN, đặt ngay dưới tiêu đề ở Trang chủ và Cài đặt (một dòng gọn, bấm là mở trang ủng hộ).
  * Cùng địa chỉ với thẻ lớn ở Trang chủ: `donateUrl`, trống thì dùng `voteUrl` trong config.
  */
 @Composable
 fun SupportStrip(modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    var hiddenUntil by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(AppGraph.prefs.supportHiddenUntil) }
+    androidx.compose.runtime.LaunchedEffect(hiddenUntil) {
+        val remaining = hiddenUntil - System.currentTimeMillis()
+        if (remaining > 0) kotlinx.coroutines.delay(remaining)
+        hiddenUntil = 0L
+    }
+    if (hiddenUntil > System.currentTimeMillis()) return
     val cfg by AppGraph.config.config.collectAsState()
     val url = cfg.account.donateUrl.ifBlank { cfg.account.voteUrl }
     val c = Monika.colors
@@ -46,6 +54,13 @@ fun SupportStrip(modifier: Modifier = Modifier) {
             "Ủng hộ / vote cho AowVN để Monika miễn phí mãi", style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight),
             color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
         )
+        androidx.compose.material3.Text("Ẩn 7 ngày", style = Monika.type.caption, color = c.textSecondary,
+            modifier = Modifier.heightIn(min = 48.dp).clickable {
+                hiddenUntil = System.currentTimeMillis() + SUPPORT_HIDE_MILLIS
+                AppGraph.prefs.supportHiddenUntil = hiddenUntil
+            }.padding(horizontal = 8.dp, vertical = 12.dp))
         androidx.compose.material3.Text("Ủng hộ", style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight), color = c.accentCoral)
     }
 }
+
+internal const val SUPPORT_HIDE_MILLIS = 7L * 24 * 60 * 60 * 1000

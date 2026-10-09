@@ -28,6 +28,15 @@ class CoreOptionsTest {
 }
 
 class CoreOptionTextTest {
+    @org.junit.Test fun translatedRendererKeepsWireValuesAndUnknownFallback() {
+        val cfg = vn.aow.monika.config.ConfigRepository.parse(java.io.File("../config/monika-config.json").readText())
+        val o = CoreOptions.parse("renderer", "Threaded software renderer; disabled|enabled", "enabled", cfg.coreOptionText)!!
+        assertEquals("Vẽ 3D đa luồng (mượt hơn)", o.label)
+        assertEquals("Bật", o.display()); assertEquals("disabled", o.next())
+        val unknown = CoreOptions.parse("unknown", "Unknown option; custom|other", "custom", cfg.coreOptionText)!!
+        assertEquals("Unknown option", unknown.label); assertEquals("custom", unknown.display())
+    }
+
     @org.junit.Test fun translatesFromBundledConfig() {
         val cfg = vn.aow.monika.config.ConfigRepository.parse(java.io.File("../config/monika-config.json").readText())
         val o = vn.aow.monika.runner.CoreOptions.parse("desmume_screens_layout", "Screen Layout; top/bottom|left/right|hybrid/top", "left/right", cfg.coreOptionText)!!
