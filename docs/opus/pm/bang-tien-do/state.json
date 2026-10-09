@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-09T07:10:30Z",
+ "updatedAt": "2026-10-09T15:45:44Z",
  "mainSha": "3b2329e",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
- "headline": "V70a (bộ nút mới) đã vào main. Còn V70b + bump 0.7.8 là cắt bản thử v0.7.8.",
+ "headline": "PM mới; #167 chờ Nova + Luna Ultra trên 6c2afd9 → bản thử v0.7.8",
  "needsBoss": [
   {
    "code": "G9",
@@ -1046,6 +1046,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-09T15:45:44Z",
+   "text": "Opus PM mới tiếp quản 22:44 (#119). #167 head mới 6c2afd9 (CHANGELOG có V69, V70b dời); giao Nova thay Luna (A21, Luna im 7,1 giờ) + Luna Ultra duyệt lần hai. Lịch PM mới: trig_01TJvZPEawkeT7awsGW88XLc (ngày :12), trig_01CKjE1xNGhUFsoE4meZvabB (đêm :27)."
+  },
   {
    "t": "2026-10-09T07:10:30Z",
    "text": "14:10 VN PM Opus ngắt theo lệnh sếp; Sonnet, Haiku 1 đã ngắt. Chờ PM mới; Sol PM tạm thời."
