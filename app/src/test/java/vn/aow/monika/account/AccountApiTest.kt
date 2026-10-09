@@ -248,10 +248,54 @@ class AccountApiTest {
 
     @Test fun accountCallsNeedSignIn() {
         val api = rig(OkHttpClient()).second
+        assertNull(api.cachedProfile())
         assertThrows(AowApi.NotSignedIn::class.java) { runBlocking { api.profile() } }
         assertThrows(AowApi.NotSignedIn::class.java) { runBlocking { api.checkin(vietnam) } }
         assertThrows(AowApi.NotSignedIn::class.java) { runBlocking { api.saveReview("1", true, "x", null) } }
         assertThrows(AowApi.NotSignedIn::class.java) { runBlocking { api.deleteReview("1") } }
+    }
+
+    @Test fun cachedProfileRoundTripsAndRejectsMalformedValues() {
+        val acc = rig(OkHttpClient()).first
+        val profile = Profile(21, 5, 8, 1234L)
+
+        assertNull(acc.cachedProfile("coverage-cache"))
+        acc.cacheProfile("coverage-cache", profile)
+        assertEquals(profile, acc.cachedProfile("coverage-cache"))
+
+        app.getSharedPreferences("account", Context.MODE_PRIVATE).edit()
+            .putString("profile-coverage-bad-number", "21|x|8|1234")
+            .putString("profile-coverage-short", "21|5|8")
+            .apply()
+        assertNull(acc.cachedProfile("coverage-bad-number"))
+        assertNull(acc.cachedProfile("coverage-short"))
+    }
+
+    @Test fun checkinFastRestoresCachedProfileWhenNetworkFails() {
+        val session = Session("coverage-u1", "", "", "", "tok", System.currentTimeMillis() + 60 * 60_000, "ref")
+        val fake = Fake { throw IOException("offline") }
+        storeSession(session)
+        val (acc, api) = rig(fake.client)
+        val before = Profile(9, 4, 7, 0L)
+        acc.cacheProfile(session.uid, before)
+
+        val error = assertThrows(IOException::class.java) { runBlocking { api.checkinFast(vietnam) } }
+
+        assertEquals("offline", error.message)
+        assertEquals(listOf("GET"), fake.seen.map { it.method })
+        assertEquals(before, acc.cachedProfile(session.uid))
+        assertEquals(before, api.cachedProfile())
+    }
+
+    @Test fun missingRemoteProfileLoadsAsZeroesAndCachesIt() = runBlocking {
+        val session = Session("coverage-u2", "", "", "", "tok", System.currentTimeMillis() + 60 * 60_000, "ref")
+        val fake = Fake { _ -> 200 to "null" }
+        storeSession(session)
+        val (acc, api) = rig(fake.client)
+
+        assertEquals(Profile(0, 0, 0, 0L), api.profile())
+        assertEquals(Profile(0, 0, 0, 0L), acc.cachedProfile(session.uid))
+        assertEquals("GET", fake.seen.single().method)
     }
 
     // ---------- Donate ----------
