@@ -80,11 +80,14 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 ## v0.7.8
 
-> Đang chuẩn bị, chưa tạo tag hoặc phát hành. Ghi chú hiện đối chiếu các thay đổi đã gộp từ tag v0.7.7 (`3387671`) đến main `3b2329e`. Bộ nút ảo V70a đã gộp; menu V70b còn chờ, sẽ bổ sung theo commit thực (hoặc loại khỏi mục này khi PM chốt phạm vi).
+> Đang chuẩn bị, chưa tạo tag hoặc phát hành. Ghi chú hiện đối chiếu các thay đổi đã gộp từ tag v0.7.7 (`3387671`) đến main `d52a150`. Bộ nút ảo V70a và lô giao diện V69 đã gộp; menu V70b được PM dời sang bản sau.
 
 - Sửa đường thu thông tin đồ họa Kirikiri: không gọi trình điều khiển khi chưa có ngữ cảnh EGL, tránh nguồn gây dừng ứng dụng đã thấy trên Android 17. Kiểm lại game trên máy ARM sau sửa còn **[CHƯA KIỂM]**. ([8b158f5](https://github.com/aowvn-10diem/aowvn-monika/commit/8b158f59cad9e3b64034f0d4f448e6fbdb894738))
 
 - Bộ nút ảo dùng chung có hiệu ứng lún, bốn mức rung và mục Tay cầm ảo trong Cài đặt; giữ mã phím, hỗ trợ tắt hiệu ứng và tôn trọng cài đặt rung Android. ([0b4cdd2](https://github.com/aowvn-10diem/aowvn-monika/commit/0b4cdd284b3231dcb2430da0cf595d3d3cd9ed13))
+
+- Khi danh sách game tải chậm hoặc lỗi, có trạng thái chờ và nút thử lại; Thư viện hiển thị đường dẫn gọn và cho sao chép đường dẫn đầy đủ. ([62c7c7e](https://github.com/aowvn-10diem/aowvn-monika/commit/62c7c7e758e3f67735deacd579634c52a059a251))
+- Thẻ ủng hộ chỉ hiện ở Trang chủ và Cài đặt, có thể ẩn bảy ngày; thanh dưới chừa khoảng cho nội dung và tùy chọn giả lập thêm bản dịch tiếng Việt. ([62c7c7e](https://github.com/aowvn-10diem/aowvn-monika/commit/62c7c7e758e3f67735deacd579634c52a059a251))
 
 ## v0.7.7
 

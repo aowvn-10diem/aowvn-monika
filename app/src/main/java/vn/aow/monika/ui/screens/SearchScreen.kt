@@ -147,7 +147,6 @@ fun SearchScreen(onOpenPost: (Post) -> Unit, onOpenLibrary: () -> Unit) {
                 }
             }
 
-            item { SupportStrip(Modifier.padding(horizontal = 16.dp)) }
             if (q.isEmpty()) {
                 if (history.isNotEmpty()) {
                     item { SearchSection("Tìm gần đây", "Xóa") { AppGraph.prefs.searchHistory = emptyList(); history = emptyList() } }
