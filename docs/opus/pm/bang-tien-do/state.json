@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-09T01:13:09Z",
- "mainSha": "de5a3c7",
+ "updatedAt": "2026-10-09T01:47:18Z",
+ "mainSha": "d0abe49",
  "app": "App 0.7.7 (bản thử RC) · config 36",
- "nextCheck": "2026-10-09T02:13:09Z",
+ "nextCheck": "2026-10-09T02:17:18Z",
  "headline": "Bàn giao 09/10: Sol PM tạm thời; đích v0.7.8 ổn định ~10/10 22:00.",
  "needsBoss": [
   {
@@ -737,7 +737,7 @@
    "title": "Thêm test theo báo cáo độ phủ",
    "owner": "Luna · Sol · Haiku · Haiku-2 · Nova",
    "status": "cho",
-   "note": "Gộp #166 N09-H1f (AdBlockTest, browser 38,9%) de5a3c7.",
+   "note": "Gộp #166 de5a3c7, #169 (AdBlockStore) d0abe49.",
    "module": ""
   },
   {
@@ -921,7 +921,7 @@
    "title": "Bộ nút chung + lún + rung",
    "owner": "Sol",
    "status": "dang",
-   "note": "#163 CI xanh, chờ Luna tiền duyệt."
+   "note": "#163: Luna Ultra Cần sửa 2 điểm UX (tương phản nút A 1,58:1; vùng chạm Pill 48 dp < 72 dp). Sol sửa."
   },
   {
    "code": "V70b",
@@ -1046,6 +1046,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-09T01:47:18Z",
+   "text": "08:47 VN gộp #169. [A21] Nova thay Luna khi Luna im ≥ 3 giờ (Luna im ~4 giờ)."
+  },
   {
    "t": "2026-10-09T01:13:09Z",
    "text": "08:13 VN gộp #166 (Haiku, Luna Ultra Đạt). Luna chưa tiền duyệt #163/#164/#165/#167."
@@ -2097,6 +2101,13 @@
    "answer": "2 giờ không có lỗi chặn (trước là 12 giờ). Ra mắt kèm danh sách thử thực tế cho tester cộng đồng.",
    "at": "2026-10-09T00:56:33Z",
    "by": "Sếp"
+  },
+  {
+   "code": "A21",
+   "question": "Luna im lâu, ai tiền duyệt thay?",
+   "answer": "Luna im ≥ 3 giờ thì Nova thay Luna tiền duyệt PR của Sol/Nova; Luna Ultra giữ lượt thứ hai để PR đường phát hành vẫn có 2 người độc lập.",
+   "at": "2026-10-09T01:47:18Z",
+   "by": "PM"
   }
  ],
  "progressBasis": "Phần trăm mốc giữ ước lượng PM cũ, chưa đo lại trong lượt tiếp quản.",
