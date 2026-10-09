@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-10-09T03:13:11Z",
-  "mainSha": "b073a18",
+  "updatedAt": "2026-10-09T04:14:30Z",
+  "mainSha": "3b2329e",
   "app": "App 0.7.7 (bản thử RC) · config 36",
-  "nextCheck": "2026-10-09T03:14:00Z",
-  "headline": "Bàn giao 09/10: Sol PM tạm thời; đích v0.7.8 ổn định ~10/10 22:00.",
+  "nextCheck": "2026-10-09T05:14:30Z",
+  "headline": "V70a (bộ nút mới) đã vào main. Còn V70b + bump 0.7.8 là cắt bản thử v0.7.8.",
   "needsBoss": [
     {
       "code": "G9",
@@ -744,8 +744,8 @@
       "code": "V52",
       "title": "Tách repo: phần riêng sang repo private, rà giấy phép GPL trước",
       "owner": "Luna Ultra (rà giấy phép) · PM lập kế hoạch",
-      "status": "dang",
-      "note": "Sếp chốt R2 06/10",
+      "status": "xong",
+      "note": "#165 gộp 1a27ff5.",
       "module": ""
     },
     {
@@ -893,7 +893,7 @@
       "title": "Rà soát trước bản ổn định",
       "owner": "Luna Ultra",
       "status": "xong",
-      "note": "#156 gộp 73ff04e. Phát hiện contents:write thừa ở emulator-test.yml → Sol V68-a."
+      "note": "V68-a #164 gộp 47b7a9f (emulator-test.yml contents: read)."
     },
     {
       "code": "L14",
@@ -920,8 +920,8 @@
       "code": "V70a",
       "title": "Bộ nút chung + lún + rung",
       "owner": "Sol",
-      "status": "dang",
-      "note": "#163: Luna Ultra Cần sửa 2 điểm UX (tương phản nút A 1,58:1; vùng chạm Pill 48 dp < 72 dp). Sol sửa."
+      "status": "xong",
+      "note": "#163 gộp 0b4cdd2 (Luna + Luna Ultra Đạt 0c4d6b1). Vào bản v0.7.8."
     },
     {
       "code": "V70b",
@@ -949,14 +949,14 @@
       "title": "Chuẩn bị bản ổn định v0.7.8: versionCode 43, CHANGELOG (không tag)",
       "owner": "Sol",
       "status": "dang",
-      "note": "Thư sol-026. PM gộp sau cùng, sau V70a/V70b."
+      "note": "#167 Luna + Luna Ultra Đạt 2e17c43. PM giữ, gộp sau cùng; Sol bổ sung V70a (+V70b nếu kịp) vào CHANGELOG."
     },
     {
       "code": "V73",
       "title": "Bảng cổng phát hành v0.7.8 (A14) đối chiếu main",
       "owner": "Luna Ultra",
-      "status": "dang",
-      "note": "Comment #119 ngày 09/10."
+      "status": "xong",
+      "note": "#168 gộp 3b2329e. Cần làm mới snapshot main trước khi cắt bản thử."
     },
     {
       "code": "V74",
@@ -1046,6 +1046,10 @@
     }
   ],
   "log": [
+    {
+      "t": "2026-10-09T04:14:30Z",
+      "text": "11:14 VN gộp #163 V70a, #164 V68-a, #165 V52, #168 V73. Giữ #167 (bump 0.7.8) tới sau V70b."
+    },
     {
       "t": "2026-10-09T03:13:11Z",
       "text": "10:15 VN [A22] mô tả PR là nit. Nhắc Luna #164/#167, Luna Ultra #163."
@@ -2557,15 +2561,15 @@
     }
   ],
   "overall": {
-    "done": 89,
+    "done": 92,
     "total": 111,
-    "pct": 80,
-    "at": "2026-10-09T03:13:14Z"
+    "pct": 83,
+    "at": "2026-10-09T04:14:33Z"
   },
   "productivity": {
     "since": "2026-10-07T23:30:00Z",
-    "at": "2026-10-09T03:13:14Z",
-    "pmMerges": 55,
+    "at": "2026-10-09T04:14:33Z",
+    "pmMerges": 59,
     "agents": [
       {
         "id": "luna",
@@ -2573,16 +2577,16 @@
         "opened": 9,
         "merged": 8,
         "open": 1,
-        "reviews": 51,
-        "changesAsked": 15,
+        "reviews": 54,
+        "changesAsked": 13,
         "medianHours": 0.6
       },
       {
         "id": "luna-ultra",
         "name": "Luna Ultra",
         "opened": 7,
-        "merged": 5,
-        "open": 2,
+        "merged": 7,
+        "open": 0,
         "reviews": 44,
         "changesAsked": 12,
         "medianHours": 3.6
@@ -2591,11 +2595,11 @@
         "id": "sol",
         "name": "Sol",
         "opened": 20,
-        "merged": 17,
-        "open": 3,
+        "merged": 19,
+        "open": 1,
         "reviews": 0,
         "changesAsked": 0,
-        "medianHours": 1.4
+        "medianHours": 1.7
       },
       {
         "id": "haiku",
