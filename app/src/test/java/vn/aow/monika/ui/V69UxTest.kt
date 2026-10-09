@@ -75,14 +75,18 @@ class V69UxTest {
     }
 
     @Test fun chipFadeDisappearsAtTheEnd() {
+        // This component has no repeating animation: advance frames while waiting for real layout.
+        rule.mainClock.autoAdvance = true
         val labels = (1..20).map { "Hệ máy " + it }
         lateinit var scroll: androidx.compose.foundation.lazy.LazyListState
         rule.setContent { MonikaTheme { scroll = rememberLazyListState(); ChipBar(labels, labels.first(), { it }, {}, scroll = scroll) } }
-        rule.mainClock.advanceTimeBy(32)
+        rule.waitUntil(timeoutMillis = 2_000) {
+            scroll.layoutInfo.totalItemsCount == labels.size && scroll.canScrollForward
+        }
         rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
         rule.shot("v69-chip-more")
         rule.runOnIdle { kotlinx.coroutines.runBlocking { scroll.scrollToItem(labels.lastIndex) } }
-        rule.mainClock.advanceTimeBy(32)
+        rule.waitUntil(timeoutMillis = 2_000) { !scroll.canScrollForward }
         rule.onNodeWithText(labels.last()).assertIsDisplayed()
         rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertDoesNotExist()
         rule.shot("v69-chip-end")
