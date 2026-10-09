@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-09T00:56:33Z",
+ "updatedAt": "2026-10-09T00:59:25Z",
  "mainSha": "ab0011e",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T01:15:04Z",
@@ -962,8 +962,8 @@
    "code": "V74",
    "title": "Danh sách thử thực tế cho tester cộng đồng (v0.7.8)",
    "owner": "PM",
-   "status": "dang",
-   "note": "Sếp giao 09/10: phát kèm bản ổn định."
+   "status": "xong",
+   "note": "docs/TEST-THUC-TE.md + phiếu tick https://claude.ai/artifact/A6H8zoG6KZkTVAW5L8xM6a (riêng tư, sếp chia sẻ)."
   }
  ],
  "gates": [
