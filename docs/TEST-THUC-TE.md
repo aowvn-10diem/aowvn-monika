@@ -133,7 +133,7 @@ Mỗi hệ thử 1 game. Kiểm 4 ý: **vào được game · có tiếng · ph�
 
 **Cách gửi:**
 1. Lỗi trong một game: mở menu trong game → **Báo lỗi game này** → điền rồi bấm **Gửi báo lỗi**. App tự kèm thông tin máy và bản app. Nếu gửi thất bại, chép nội dung đã lưu và gửi kèm ảnh chụp.
-2. Lỗi khác hoặc gửi cả bảng kết quả: gửi về **[nơi nhận: sếp điền]** theo mẫu dưới.
+2. Lỗi khác hoặc gửi cả bảng kết quả: gửi lên **Discord của AowVN** theo mẫu dưới, kèm ảnh chụp nếu có.
 
 ```
 Máy: ______ · Android: ______ · RAM: ______ · Bản app: ______
