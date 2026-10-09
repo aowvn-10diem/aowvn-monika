@@ -1,7 +1,10 @@
 package vn.aow.monika.account
 
+import android.os.SystemClock
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -21,9 +24,17 @@ import java.time.temporal.ChronoUnit
 class ProfileCoverageTest {
     private val vietnam = ZoneId.of("Asia/Ho_Chi_Minh")
     private val utc = ZoneId.of("UTC")
+    private val fixedNow = Instant.parse("2026-10-09T12:00:00Z")
+
+    @Before
+    fun fixSystemClock() {
+        val fixedMillis = fixedNow.toEpochMilli()
+        assertTrue("Robolectric must accept the fixed time", SystemClock.setCurrentTimeMillis(fixedMillis))
+        assertEquals("System.currentTimeMillis must use the fixed time", fixedMillis, System.currentTimeMillis())
+    }
 
     private fun todayAtNoon(zone: ZoneId): Long =
-        LocalDate.now(zone).atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
+        fixedNow.atZone(zone).toLocalDate().atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
 
     // Put the current instant at 05:00 locally; six hours earlier is 23:00 yesterday.
     private fun offsetAtLocalFive(now: Instant): ZoneOffset {
@@ -36,7 +47,7 @@ class ProfileCoverageTest {
     @Test fun emptyAndNonPositiveCheckinAreNeverToday() {
         assertFalse(Profile(0, 0, 0, 0).checkedInToday(vietnam))
         assertFalse(Profile(0, 0, 0, -1).checkedInToday(vietnam))
-        val yesterday = LocalDate.now(vietnam).minusDays(2).atTime(12, 0)
+        val yesterday = fixedNow.atZone(vietnam).toLocalDate().minusDays(2).atTime(12, 0)
             .atZone(vietnam).toInstant().toEpochMilli()
         assertFalse(Profile(0, 0, 0, yesterday).checkedInToday(vietnam))
     }
@@ -44,13 +55,13 @@ class ProfileCoverageTest {
     @Test fun positiveTimestampUsesCalendarDateInProvidedZone() {
         assertTrue(Profile(0, 0, 0, todayAtNoon(vietnam)).checkedInToday(vietnam))
         assertTrue(Profile(0, 0, 0, todayAtNoon(utc)).checkedInToday(utc))
-        val twoDaysAgo = LocalDate.now(vietnam).minusDays(2).atTime(12, 0)
+        val twoDaysAgo = fixedNow.atZone(vietnam).toLocalDate().minusDays(2).atTime(12, 0)
             .atZone(vietnam).toInstant().toEpochMilli()
         assertFalse(Profile(0, 0, 0, twoDaysAgo).checkedInToday(vietnam))
     }
 
     @Test fun usesCalendarDateInProvidedZoneAcrossMidnight() {
-        val now = Instant.now().truncatedTo(ChronoUnit.MINUTES)
+        val now = fixedNow.truncatedTo(ChronoUnit.MINUTES)
         val beforeMidnight = offsetAtLocalFive(now)
         val afterMidnight = ZoneOffset.ofTotalSeconds(beforeMidnight.totalSeconds + 6 * 60 * 60)
         val checkinSixHoursEarlier = now.minus(Duration.ofHours(6)).toEpochMilli()
