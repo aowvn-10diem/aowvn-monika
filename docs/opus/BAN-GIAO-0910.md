@@ -1,6 +1,8 @@
-# Bàn giao 09/10/2026 (08:00 giờ VN): Opus, Sonnet, Haiku 1 dừng vì hết hạn mức
+# Bàn giao 09/10/2026: kịch bản khi Opus, Sonnet, Haiku 1 hết hạn mức
 
-**Kết luận:** từ giờ đội còn **Sol, Luna, Luna Ultra, Haiku-2, Nova**. Sếp có thể thêm **Opus phụ** làm PM dự phòng (prompt: `docs/opus/hop-thu/PROMPT-OPUS-PM-PHU.md`). Khi chưa có Opus phụ, **Sol làm PM tạm thời** theo đúng các luật dưới đây. Đích không đổi: **bản ổn định v0.7.8 trước 11/10 18:00**, dự kiến khoảng 10/10 22:00.
+**Cập nhật 08:05 (sếp):** PM Opus **vẫn làm tiếp** tới khi hết hạn mức; Sonnet và Haiku 1 đã dừng. Kịch bản dưới đây **chỉ kích hoạt** khi PM Opus im: không có commit trên `docs/opus-tra-loi`, không comment `[PM` và không gộp PR nào trong **2 giờ** (06:00–23:00) hoặc **3 giờ** (ban đêm). Khi đó Sol ghi một dòng ở issue #119 "PM im từ <giờ>, Sol nhận PM tạm thời" rồi làm theo mục 4. PM Opus quay lại thì ghi ở #119 và nhận lại.
+
+**Kết luận:** khi kích hoạt, đội còn **Sol, Luna, Luna Ultra, Haiku-2, Nova**. Sếp có thể thêm **Opus phụ** làm PM dự phòng (prompt: `docs/opus/hop-thu/PROMPT-OPUS-PM-PHU.md`). Khi chưa có Opus phụ, **Sol làm PM tạm thời** theo đúng các luật dưới đây. Đích không đổi: **bản ổn định v0.7.8 trước 11/10 18:00**, dự kiến khoảng 10/10 22:00.
 
 Mọi giờ trong tài liệu này là giờ VN (UTC+7), trừ khi ghi UTC.
 
@@ -56,14 +58,17 @@ Mọi giờ trong tài liệu này là giờ VN (UTC+7), trừ khi ghi UTC.
 
 | Khi (giờ VN) | Việc | Ai |
 |---|---|---|
-| 09/10 15:05 | Chạy lại Test Lab V56 trên máy ARM thật (1 thiết bị; quota free 5 lượt/ngày, đã đếm theo mọi lượt chạy) | Sol (lịch cũ của PM đã tắt) |
+| 09/10 15:05 | Chạy lại Test Lab V56 trên máy ARM thật (1 thiết bị; quota free 5 lượt/ngày, đã đếm theo mọi lượt chạy) | PM Opus (lịch đã hẹn); Sol nếu PM im |
 | 10/10 12:00 | V73 bảng cổng phát hành; PR (a) V45 gộp | Luna Ultra; Nova |
 | 10/10 20:00 | Hạn V70a, V70b, V45b. Cắt bản thử v0.7.8 | Sol/Luna/Nova; PM |
 | 10/10 ~22:00 | 2 giờ không lỗi chặn → bản ổn định v0.7.8 | PM |
 | 11/10 18:00 | Hạn chót cứng của bản ổn định | — |
 | 12/10 20:00 | V70c tự chỉnh bố cục (bản sau) | Sol |
 
-## 6. Lịch tự động đã tắt (bật lại khi Opus có hạn mức)
+## 6. Lịch tự động
+Lịch của PM Opus (ngày :12, đêm :27, đêm nhanh :57, chạy lại Test Lab 15:05) **vẫn bật**. Lịch của Sonnet và Haiku 1 đã tắt:
+
+### Danh sách lịch (để bật/tắt)
 Tắt bằng `update_trigger enabled=false`, không xóa:
 - PM ngày `trig_015WwbYtSvWe2Cm48yXemN6n`, PM đêm `trig_01Q7BiVvi3bbBTyHDf6NU38j`, PM đêm nhanh `trig_01SQv152WqxuScJXhhVy38HS`
 - Chạy lại Test Lab `trig_01CWEkgHwz47iv4mat1yoG6R` (giao Sol ở mục 5)
