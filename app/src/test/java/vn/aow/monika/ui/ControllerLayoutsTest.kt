@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -42,6 +43,17 @@ class ControllerLayoutsTest {
         rule.onNodeWithContentDescription("Nút $label").performTouchInput { click(center) }
         rule.waitForIdle()
         assertEquals(listOf(KeyEvent.ACTION_DOWN to key, KeyEvent.ACTION_UP to key), events)
+        if (layout == PadLayout.N64) {
+            val a = rule.onNodeWithContentDescription("Nút A").fetchSemanticsNode().boundsInWindow
+            val b = rule.onNodeWithContentDescription("Nút B").fetchSemanticsNode().boundsInWindow
+            listOf("C ▲", "C ◀", "C ▼", "C ▶").forEach {
+                val node = rule.onNodeWithContentDescription("Nút $it").assertIsDisplayed()
+                val c = node.fetchSemanticsNode().boundsInWindow
+                assertFalse("Vùng chạm A/C chồng nhau", a.overlaps(c))
+                assertFalse("Vùng chạm B/C chồng nhau", b.overlaps(c))
+            }
+            rule.onNodeWithContentDescription("Nút START").assertIsDisplayed()
+        }
         rule.shot("v70a-${layout.name.lowercase()}-$orientation")
     }
 

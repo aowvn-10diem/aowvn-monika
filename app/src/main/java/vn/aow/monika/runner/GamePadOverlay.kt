@@ -64,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -349,10 +350,11 @@ internal fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) 
     val faceWidth = when (layout) { PadLayout.N64 -> 224f; PadLayout.GEN -> 216f; PadLayout.GB, PadLayout.GBA, PadLayout.RPG -> 160f; else -> 180f }
     val fit = ((maxWidth.value - 16f) / (150f + faceWidth)).coerceIn(.7f, 1.4f)
     val options = stored.copy(size = stored.size.coerceAtMost(fit))
+    val compact = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     androidx.compose.runtime.CompositionLocalProvider(LocalControllerOptions provides options, LocalControllerTurbo provides state.turbo) {
     val useStick = layout.hasStick && (state.stickMode ?: layout.stickDefault)
-    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 8.dp, vertical = 16.dp).alpha(if (state.editing) 1f else state.opacity * options.opacity)) {
-        ShoulderRow(layout, send)
+    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 8.dp, vertical = if (compact) 8.dp else 16.dp).alpha(if (state.editing) 1f else state.opacity * options.opacity)) {
+        ShoulderRow(layout, send, compact)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Movable(state, state.dpadOffset, { state.dpadOffset += it }) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -370,7 +372,7 @@ internal fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) 
             Spacer(Modifier.weight(1f))
             Movable(state, state.faceOffset, { state.faceOffset += it }) { FaceButtons(layout, send, motion) }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(if (compact) 8.dp else 12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             PillKey("SELECT", KeyEvent.KEYCODE_BUTTON_SELECT, send)
             Spacer(Modifier.width(12.dp))
@@ -384,7 +386,7 @@ internal fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) 
 
 /** Hàng nút vai phía trên, theo từng hệ. */
 @Composable
-private fun ShoulderRow(layout: PadLayout, send: (Int, Int) -> Unit) {
+private fun ShoulderRow(layout: PadLayout, send: (Int, Int) -> Unit, compact: Boolean) {
     when (layout) {
         PadLayout.GB, PadLayout.RPG -> return
         PadLayout.GEN -> Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -396,19 +398,25 @@ private fun ShoulderRow(layout: PadLayout, send: (Int, Int) -> Unit) {
         else -> {
             val twoLeft = when (layout) { PadLayout.PS -> "L2" to "L"; PadLayout.N64 -> "Z" to "L"; PadLayout.DC -> "LT" to null; PadLayout.N3DS -> "ZL" to "L"; else -> null to "L" }
             val twoRight = when (layout) { PadLayout.PS -> "R2" to "R"; PadLayout.DC -> "RT" to null; PadLayout.N3DS -> "ZR" to "R"; else -> null to "R" }
-            Row(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    twoLeft.first?.let { PillKey(it, KeyEvent.KEYCODE_BUTTON_L2, send) }
-                    twoLeft.second?.let { PillKey(it, KeyEvent.KEYCODE_BUTTON_L1, send) }
-                }
+            Row(Modifier.fillMaxWidth().padding(bottom = if (compact) 4.dp else 12.dp)) {
+                ShoulderGroup(twoLeft, KeyEvent.KEYCODE_BUTTON_L2, KeyEvent.KEYCODE_BUTTON_L1, send, compact)
                 Spacer(Modifier.weight(1f))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
-                    twoRight.first?.let { PillKey(it, KeyEvent.KEYCODE_BUTTON_R2, send) }
-                    twoRight.second?.let { PillKey(it, KeyEvent.KEYCODE_BUTTON_R1, send) }
-                }
+                ShoulderGroup(twoRight, KeyEvent.KEYCODE_BUTTON_R2, KeyEvent.KEYCODE_BUTTON_R1, send, compact)
             }
         }
     }
+}
+
+/** Màn ngang xếp hai nút vai cạnh nhau để vùng chạm 72 dp không đẩy phím dưới ra màn. */
+@Composable
+private fun ShoulderGroup(labels: Pair<String?, String?>, firstKey: Int, secondKey: Int,
+    send: (Int, Int) -> Unit, compact: Boolean) {
+    val buttons: @Composable () -> Unit = {
+        labels.first?.let { PillKey(it, firstKey, send) }
+        labels.second?.let { PillKey(it, secondKey, send) }
+    }
+    if (compact) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { buttons() }
+    else Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) { buttons() }
 }
 
 @Composable
@@ -449,8 +457,9 @@ private fun FaceButtons(layout: PadLayout, send: (Int, Int) -> Unit, motion: (In
         }
         PadLayout.N64 -> Box(Modifier.size(width = 224.dp, height = 190.dp)) {
             Box(Modifier.align(Alignment.TopEnd)) { CKeys(motion) }
-            RoundKey("B", left, send, Modifier.align(Alignment.BottomStart).padding(bottom = 34.dp))
-            RoundKey("A", bottom, send, Modifier.align(Alignment.BottomEnd))
+            // C giữ ma trận 2×2 bên phải; A/B bên trái, không chồng vùng chạm 72 dp.
+            RoundKey("B", left, send, Modifier.align(Alignment.TopStart))
+            RoundKey("A", bottom, send, Modifier.align(Alignment.BottomStart))
         }
     }
 }

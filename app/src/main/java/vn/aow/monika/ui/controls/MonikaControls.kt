@@ -129,7 +129,7 @@ private fun PressControl(
     }
     val diameter = 64.dp * options.size
     val touch = (diameter + 8.dp).coerceAtLeast(72.dp)
-    val bounds = if (pill) Modifier.heightIn(min = 48.dp).width((if (label.length > 2) 96.dp else 72.dp) * options.size.coerceAtLeast(1f))
+    val bounds = if (pill) Modifier.heightIn(min = 72.dp).width((if (label.length > 2) 96.dp else 72.dp) * options.size.coerceAtLeast(1f))
         else Modifier.size(touch)
     Box(modifier.then(bounds).then(interaction), contentAlignment = Alignment.Center) {
         val face = if (pill) Modifier.fillMaxWidth().height(40.dp) else Modifier.size(diameter)
@@ -138,8 +138,10 @@ private fun PressControl(
             .shadow(if (animate && !pressed) 6.dp else 0.dp, shape)
             .clip(shape)
             .background(if (primary && usable && !pressed) primaryGradient() else Brush.linearGradient(listOf(surface, surface)))
-            .border(if (visualState == ControlVisualState.TURBO) 2.dp else 1.dp,
-                if (visualState == ControlVisualState.TURBO) c.accentOrange else c.glassBorder, shape)
+            // Giữ gradient chính; đường bao than vẫn rõ trên nền sáng khi overlay mờ mặc định.
+            .border(if (primary || visualState == ControlVisualState.TURBO) 2.dp else 1.dp,
+                if (primary && usable) c.surfaceDark
+                else if (visualState == ControlVisualState.TURBO) c.accentOrange else c.glassBorder, shape)
             .drawWithContent {
                 drawContent()
                 if (turbo) drawArc(c.accentPink, rotation - 90f, 70f, false,

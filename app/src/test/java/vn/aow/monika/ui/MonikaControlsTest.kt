@@ -1,11 +1,23 @@
 package vn.aow.monika.ui
 
 import androidx.activity.ComponentActivity
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -15,6 +27,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import vn.aow.monika.ui.controls.*
 import vn.aow.monika.ui.theme.*
+import vn.aow.monika.runner.InGameState
+import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -22,6 +36,45 @@ import vn.aow.monika.ui.theme.*
 class MonikaControlsTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
     @Before fun clock() { rule.mainClock.autoAdvance = false }
+
+    @Test fun primaryOutlineHasThreeToOneContrastAtDefaultOverlayOpacity() {
+        rule.setContent { MonikaTheme {
+            Box(Modifier.fillMaxSize().background(Monika.colors.bg)) {
+                Column(Modifier.padding(32.dp).alpha(InGameState().opacity)) {
+                    MonikaKey("A", {}, primary = true)
+                }
+            }
+        } }
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.shot("v70a-tuong-phan-nen-sang")
+        val bounds = rule.onNodeWithContentDescription("Nút A").fetchSemanticsNode().boundsInWindow
+        val density = rule.activity.resources.displayMetrics.density
+        val image = BitmapFactory.decodeFile(File("build/screenshots/v70a-tuong-phan-nen-sang.png").absolutePath)
+        // Điểm giữa viền trên, cách mép tròn 1 dp; nền bên phải cách vùng chạm 16 dp.
+        val rimY = bounds.top + (bounds.height - 64f * density) / 2f + density
+        val rim = Color(image.getPixel(bounds.center.x.toInt(), rimY.toInt())).luminance()
+        val background = Color(image.getPixel((bounds.right + 16f * density).toInt(), bounds.center.y.toInt())).luminance()
+        val contrast = (maxOf(rim, background) + .05f) / (minOf(rim, background) + .05f)
+        println("V70a primary outline/light background contrast=$contrast:1 at default overlay opacity")
+        assertTrue("Đường bao nút chính cần tương phản >=3:1, đo được $contrast", contrast >= 3f)
+        image.recycle()
+    }
+
+    @Test fun pillHasSeventyTwoDpTouchTargetOutsideItsFortyDpFace() {
+        val edges = mutableListOf<Boolean>()
+        rule.setContent { MonikaTheme {
+            CompositionLocalProvider(LocalControllerOptions provides ControllerOptions(size = .7f, haptic = HapticLevel.OFF)) {
+                MonikaPill("START", { edges += it })
+            }
+        } }
+        rule.mainClock.advanceTimeBy(1_000)
+        val pill = rule.onNodeWithContentDescription("Nút START")
+        pill.assertHeightIsAtLeast(72.dp).assertWidthIsAtLeast(72.dp)
+        rule.shot("v70a-pill-vung-cham72")
+        pill.performTouchInput { click(Offset(center.x, 1f)) }
+        rule.waitForIdle()
+        assertEquals(listOf(true, false), edges)
+    }
 
     @Test fun holdHasOneDownAndCancelAlwaysReleases() {
         val edges = mutableListOf<Boolean>()
