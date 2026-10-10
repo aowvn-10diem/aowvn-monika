@@ -20,6 +20,8 @@ Sonnet: chỉ code lõi engine (Kirikiri, mkxp-z, Azahar, Ren'Py, J2ME Loader); 
 1. **Đồng bộ**: `git fetch origin main docs/opus-tra-loi`, checkout `docs/opus-tra-loi`, đọc `trang-thai-pm.json`.
 2. **Bản tin rẻ nhất** (V39): `git show origin/bot/trang-thai:docs/trang-thai/digest.md`. Chưa có nhánh/file đó thì bước 4 dùng `pr-tom-tat.sh`.
 3. **Câu trả lời của sếp**: ArtifactData `list` url `https://claude.ai/artifact/7UC9kqrWqv3GNUhhtt4z5d`, collection `answers`. Câu có `at` khác `answers_seen[mã]` thì: làm theo; bỏ khỏi `needsBoss`; thêm vào `decisions` `{code,question,answer,at,by:"Sếp"}`; ghi log; lưu `answers_seen`. Câu **KEY** (khóa ký): tuyệt đối không tạo khóa, không xin sếp dán khóa hay mật khẩu.
+3b. **Ý kiến của sếp về đề xuất**: ArtifactData `query` collection `feedback` where `status == "cho"`. Mỗi mục (id D1…, `decision` duyet|khong, `note`): làm theo (duyệt → áp dụng, giao việc; không duyệt → bỏ hoặc đổi hướng theo ghi chú), rồi `update` mục đó `status: "da-doc"`, `reply: "<PM làm gì, 1 dòng>"`; ghi `decisions` + `log`; sửa `improvements[].status` trong state.
+3c. **Đội ChatGPT im lặng?** `python3 $S/im-lang.py` (mã thoát 2 = Sol, Luna, Luna Ultra đều im ≥ 3 giờ). Khi im lặng mà hàng việc còn: thêm `needsBoss` `RESET-GPT` (urgency cao, kèm link `docs/opus/hop-thu/PROMPT-CHROME-RESET-CHATGPT.md`) và gửi PushNotification cho sếp, **một lần** cho mỗi đợt im lặng (ghi `trang-thai-pm.json.reset_gpt_alert`). PM không tự điều khiển trình duyệt. Sếp chỉ còn **1 lượt đặt lại**; Chrome chỉ bấm khi giới hạn **hằng tuần** đã hết.
 4. **Tóm tắt PR**: `$S/pr-tom-tat.sh` → mỗi PR mở 1 dòng `#số | nhánh | sha | CI theo head | Luna(sha[ CŨ]): Kết luận`. "CŨ" = Luna duyệt commit cũ hơn head. Search API và /pages API bị proxy chặn: chỉ dùng `gh api repos/...`.
 5. **Duyệt (Luna trước)**: Luna "Đạt" + CI xanh trên head → PM chỉ xem phần rủi ro (quyền workflow, secret, manifest, config, cài gói, báo lỗi), rồi comment `PM duyệt` hoặc `PM yêu cầu sửa: …`. Luna "Cần sửa/Cần PM xem", Luna CŨ hoặc CI đỏ → chưa duyệt. Mọi comment GitHub kết thúc bằng footer:
    ```
@@ -35,6 +37,7 @@ Sonnet: chỉ code lõi engine (Kirikiri, mkxp-z, Azahar, Ren'Py, J2ME Loader); 
       - `task V46 --status dang|xong|lap|cho|ket|sep --note "…"` (việc mới cần `--title`; status ngoài danh sách bị từ chối)
       - `module <id> build|auto|phone|release xong|dang|cho|sep|loi|na`
       - `log "…"` · `meta --main <sha> --headline "…" --next-check-min 30` · `show`
+   1b. Lượt đầu mỗi 3 giờ (hoặc khi có PR gộp): `python3 $S/nang-suat.py` đo lại năng suất từng agent + % việc xong (ghi `productivity`, `overall`). Sửa `sprint` (mốc M1–M4) và `improvements` (đề xuất PM) bằng tay khi đổi.
    2. ArtifactData `set` `board/state` (nội dung = `state.json`, kèm `if_version` = `dashboard_version`); lưu `dashboard_version` mới vào `trang-thai-pm.json`, đặt `idle` = 0.
    3. Commit `KE-HOACH.md` + `docs/opus/pm/` và push `docs/opus-tra-loi`.
 10. **Nhịp & lịch**: ban ngày (06:00–23:00 GMT+7) 30 phút; rảnh ≥ 4 lượt liền thì 60 phút; ban đêm 60 phút. Trigger `trig_01Nk2NQXsfxm8hQLAZAo4ZsS`; sau V46, PM đổi sang "phiên mới mỗi lượt" (`create_new_session_on_fire`, prompt: "Dùng skill pm-kiem-thu") → chế độ đó tự bắn lại, không cần `send_later`.
@@ -50,3 +53,10 @@ Chỉ nhắn sếp khi cần quyết (1–2 dòng). Không đẩy thẳng main, 
 
 ## Đo token (kiểm kết quả skill)
 Trường `usage` trong `~/.claude/projects/-home-user/<phiên>.jsonl`. Đích: ≤ 7,5 triệu token/lượt kiểm (kỳ vọng 1–2 triệu), ngữ cảnh mỗi lần gọi < 100 nghìn token.
+
+## Phát hành (A14, sếp chốt 08/10)
+PM tự phát hành cả bản thử (prerelease) lẫn bản ổn định, không cần hỏi hay báo sếp; chỉ ghi `log` + `decisions` trên trang tiến độ.
+- **Cổng (đủ hết mới phát hành):** CI bắt buộc (build, coverage, CodeQL/analyze) xanh trên đúng SHA trên main; mọi PR đường phát hành có Luna + Luna Ultra Đạt; V60 (periodic-check + Test Lab Robo) xanh trên SHA đó; `docs/CHANGELOG.md` có mục phiên bản; `versionName/versionCode` đã tăng.
+- **Bản ổn định (A20, sếp chốt 09/10):** chỉ từ SHA đã ra bản thử **≥ 2 giờ**, không có lỗi chặn mới. Lỗi chặn = app văng khi mở; không tải/giải nén được game; một hệ máy được hỗ trợ không mở được game nào; mất save; phím ảo không ăn. Bản ổn định phát hành kèm danh sách thử thực tế `docs/TEST-THUC-TE.md` cho tester cộng đồng.
+- **Cách chạy:** khi `release.yml` có `workflow_dispatch` tự tạo tag (PR sonnet/release-tag) → kích hoạt với SHA + `prerelease`. Trước đó: nhờ Sonnet chạy skill `phat-hanh-apk`. Sau khi chạy: Sonnet kiểm bằng `kiem-phat-hanh`.
+- **Vẫn cấm:** đụng khóa ký, mật khẩu, token, Secrets; ghi đè/xóa tag; phát hành từ nhánh khác main.
