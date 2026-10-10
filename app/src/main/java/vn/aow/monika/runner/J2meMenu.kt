@@ -66,7 +66,7 @@ object J2meMenu : J2meRuntime.MenuPresenter {
 }
 
 /** Icon dự phòng cho mục menu J2ME chưa có icon riêng (test giữ cho mọi mục của menu gốc đều có icon riêng). */
-internal const val J2ME_MENU_FALLBACK_ICON = R.drawable.ic_fluent_more_horizontal_24_regular
+internal val J2ME_MENU_FALLBACK_ICON = R.drawable.ic_fluent_more_horizontal_24_regular
 
 /**
  * Mục menu J2ME → nút trong menu Monika: "Chơi tiếp" lên đầu, "Thoát" xuống cuối, còn lại giữ thứ tự J2ME gửi
