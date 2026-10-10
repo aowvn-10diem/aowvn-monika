@@ -1,5 +1,5 @@
 {
-  "configVersion": 39,
+  "configVersion": 40,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 41,
@@ -1034,14 +1034,58 @@
         "melonds_jit_enable": "enabled",
         "melonds_sysfile_mode": "builtin",
         "melonds_render_mode": "software",
-        "melonds_threaded_renderer": "enabled"
+        "melonds_threaded_renderer": "enabled",
+        "melonds_number_of_screen_layouts": "1",
+        "melonds_screen_layout1": "top-bottom",
+        "melonds_hybrid_ratio": "2",
+        "melonds_screen_gap": "0"
       },
       "perf": {
         "lite": {
           "melonds_threaded_renderer": "disabled"
         }
       },
-      "lowLatencyAudio": false
+      "lowLatencyAudio": false,
+      "screen": {
+        "title": "Nintendo DS (lõi melonDS DS)",
+        "layoutKey": "melonds_screen_layout1",
+        "layouts": [
+          {
+            "id": "stacked",
+            "label": "Trên – dưới",
+            "value": "top-bottom"
+          },
+          {
+            "id": "side",
+            "label": "Cạnh nhau",
+            "value": "left-right"
+          },
+          {
+            "id": "focus",
+            "label": "Một màn lớn",
+            "value": "hybrid-bottom",
+            "usesRatio": true
+          }
+        ],
+        "defaultLayout": "stacked",
+        "ratioKey": "melonds_hybrid_ratio",
+        "ratios": [
+          {
+            "id": "2",
+            "label": "2 : 1",
+            "value": "2"
+          },
+          {
+            "id": "3",
+            "label": "3 : 1",
+            "value": "3"
+          }
+        ],
+        "defaultRatio": "2",
+        "gapKey": "melonds_screen_gap",
+        "gapMax": 32,
+        "defaultGap": 0
+      }
     }
   },
   "webPlayers": {
