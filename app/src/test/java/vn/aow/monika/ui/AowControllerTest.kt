@@ -75,7 +75,8 @@ class AowControllerTest {
                 for (face in AowButtonState.entries.map { palette.buttonPalette(AowButtonStyle.DARK, it).face } + c.aow.padSurface) {
                     val a = c.aow.onDark.copy(alpha = .65f).compositeOver(frame).luminance()
                     val b = face.copy(alpha = .65f).compositeOver(frame).luminance()
-                    assertTrue("Chữ trắng phải >=4.5:1 ở độ mờ 65%", (maxOf(a,b)+.05f)/(minOf(a,b)+.05f) >= 4.5f)
+                    val contrast = (maxOf(a,b)+.05f)/(minOf(a,b)+.05f)
+                    assertTrue("Chữ trắng phải >=4.5:1 ở độ mờ 65%, đo được $contrast", contrast >= 4.5f)
                 }
             }
         } }

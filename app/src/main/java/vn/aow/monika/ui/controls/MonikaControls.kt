@@ -67,7 +67,7 @@ enum class ControlVisualState { RELEASED, PRESSED, HELD, TURBO, DISABLED }
 /** Tông đỏ nhấn đậm hơn trên overlay trong suốt, giữ nhãn trắng >=4.5:1 ở 65%. */
 internal fun AowColors.controllerColors(pad: Boolean = false) = copy(
     dark = if (pad) padSurface else dark,
-    darkPressed = lerp(darkPressed, dark, .25f),
+    darkPressed = lerp(darkPressed, dark, .5f),
     disabledDark = padSurface,
 )
 
