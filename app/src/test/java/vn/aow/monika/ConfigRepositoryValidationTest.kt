@@ -36,6 +36,14 @@ class ConfigRepositoryValidationTest {
             .forEach { it.deleteRecursively() }
     }
 
+    @Test fun oldCacheWithoutExperimentalFlagFallsBackToBundledWarning() {
+        assertEquals(39, bundled)
+        cache.writeText(valid(38))
+        val current = repo().current
+        assertEquals(39, current.configVersion)
+        assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
+    }
+
     @Test fun downgradeFromRunningVersionIsRejectedAndOldBytesAreKept() = runBlocking {
         val r = repo(); val high = bundled + 10
         reply = valid(high); assertTrue(r.refresh(true).isSuccess)
