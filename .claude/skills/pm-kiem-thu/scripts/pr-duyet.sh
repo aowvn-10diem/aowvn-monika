@@ -9,3 +9,8 @@ for p in $(gh api "$R/pulls?state=open&per_page=30" --jq ".[]|select(.number>=$F
   gh api $R/pulls/$p/reviews --jq '.[-1:][]|"  R \(.commit_id[0:7]) \(.body|split("\n")[0][0:24]) => \(.body|capture("Kết luận:\\s*(?<k>[^\n]{0,50})")?.k // "?")"'
   gh api "$R/issues/$p/comments" --jq '[.[]|select(.body|test("tiền duyệt|lần hai"))][-1:][]|"  C \(.body|split("\n")[0][0:40]) => \(.body|capture("Kết luận:\\s*(?<k>[^\n]{0,50})")?.k // "?")"'
 done
+# Lần đẩy gần nhất theo người (nhánh sol/ nova/ haiku2/ luna3/ luna-ultra/): biết ai đang làm dù chưa mở PR.
+git fetch -q origin '+refs/heads/*:refs/remotes/origin/*' 2>/dev/null
+for a in sol nova haiku2 luna3 luna-ultra; do
+  git for-each-ref --sort=-committerdate --count=1 --format="  đẩy cuối $a: %(committerdate:iso8601) %(refname:lstrip=3) %(objectname:short)" "refs/remotes/origin/$a/"
+done
