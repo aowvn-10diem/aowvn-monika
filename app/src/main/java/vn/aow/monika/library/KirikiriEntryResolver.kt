@@ -13,7 +13,7 @@ sealed class EntryResolution {
         val dirName: String,
         val why: String,
         val details: List<String> = emptyList(),
-        /** Mọi xp3 đều có tên mục không phải .tjs/.ks (xem [KirikiriEntryResolver.looksEncrypted]) → nhiều khả năng kho mã hóa (V26b). */
+        /** Mọi xp3 đều có dấu hiệu tên băm và không có script đọc được; đây là heuristic, không phải xác minh mã hóa. */
         val encrypted: Boolean = false,
     ) : EntryResolution()
 }
@@ -111,15 +111,24 @@ object KirikiriEntryResolver {
     private const val MAX_DETAIL_FILES = 8
     private const val MAX_SAMPLE_NAMES = 5
 
-    /** Kho có mục nhưng không tên nào là *.tjs / *.ks → tên có vẻ băm/mã hóa. Chỉ mục bị cắt ([Xp3Index.Result.Names.complete] = false) hoặc không đọc được thì false. */
+    // Chỉ tên cơ sở không có phần mở rộng, 6–64 ký tự hex có cả chữ và số mới là bằng chứng tên băm.
+    // Kho chỉ chứa tài nguyên có tên thông thường không đủ để kết luận.
+    private val HASHED_NAME = Regex("[0-9a-fA-F]{6,64}")
+
+    /** Chỉ mục đầy đủ, không có *.tjs/*.ks và có tên giống băm. Chỉ là dấu hiệu, không đọc nội dung hay xác minh mã hóa. */
     internal fun looksEncrypted(result: Xp3Index.Result?): Boolean {
         val names = (result as? Xp3Index.Result.Names)?.takeIf { it.complete }?.names ?: return false
-        return names.isNotEmpty() && names.none { it.endsWith(".tjs", true) || it.endsWith(".ks", true) }
+        if (names.isEmpty() || names.any { it.endsWith(".tjs", true) || it.endsWith(".ks", true) }) return false
+        return names.any { name ->
+            val basename = name.replace('\\', '/').substringAfterLast('/')
+            HASHED_NAME.matches(basename) && basename.any { it in '0'..'9' } &&
+                basename.any { it in 'a'..'f' || it in 'A'..'F' }
+        }
     }
 
     /**
      * Một dòng chẩn đoán cho crumb (≤ 280 ký tự): tên xp3, dung lượng, số mục, 5 tên đầu, và cờ "tên có vẻ băm/mã hóa" khi
-     * không có tên dạng *.tjs / *.ks nào (V26/G7B). Chỉ tên cơ sở của chính xp3 và tên mục trong kho, không đường dẫn máy.
+     * có dấu hiệu tên băm và không có *.tjs / *.ks nào. Chỉ tên cơ sở của chính xp3 và tên mục trong kho, không đường dẫn máy.
      */
     internal fun describe(file: File, result: Xp3Index.Result?): String {
         val mb = "%.1f".format(java.util.Locale.ROOT, file.length() / 1_048_576.0)
