@@ -1,7 +1,12 @@
 package vn.aow.monika.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import org.junit.Assert.assertEquals
@@ -12,6 +17,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import vn.aow.monika.runner.CoreOption
+import vn.aow.monika.runner.HEADER_HIDE_MS
+import vn.aow.monika.runner.HEADER_TAG
 import vn.aow.monika.runner.InGameOverlay
 import vn.aow.monika.runner.InGameState
 import vn.aow.monika.runner.PadLayout
@@ -91,5 +98,59 @@ class InGameTest {
         rule.onNodeWithText("Bố cục 2 màn hình").performClick()
         rule.waitForIdle()
         assertEquals("melonds_screen_layout" to "Left/Right", changed)
+    }
+
+    private fun ndsOverlay(state: InGameState, autoHide: Boolean = true, showPad: Boolean = true) = rule.setContent {
+        MonikaTheme {
+            InGameOverlay(
+                state = state, system = "Nintendo DS", title = "Game thử NDS", layout = PadLayout.NDS, showPad = showPad,
+                send = { _, _ -> }, onBack = {}, onSave = {}, onLoad = {}, onTurbo = {}, onOpacity = {}, onEditDone = {},
+                autoHideHeader = autoHide,
+            )
+        }
+    }
+
+    /** V78b: tiêu đề NDS hiện lúc mới vào, tự ẩn khi đang chơi, chạm mép trên thì hiện lại rồi lại tự ẩn. */
+    @Test fun ndsHeaderAutoHidesAndRevealsOnTopEdge() {
+        ndsOverlay(InGameState())
+        rule.mainClock.advanceTimeBy(500)
+        rule.onNodeWithTag(HEADER_TAG).assertIsDisplayed()
+        rule.shot("v78b-nds-header-shown")
+        rule.mainClock.advanceTimeBy(HEADER_HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertDoesNotExist()
+        rule.shot("v78b-nds-header-hidden")
+        // Chạm sát mép trên.
+        rule.onRoot().performTouchInput { down(Offset(width / 2f, 8f)); up() }
+        rule.mainClock.advanceTimeBy(500)
+        rule.onNodeWithTag(HEADER_TAG).assertIsDisplayed()
+        rule.mainClock.advanceTimeBy(HEADER_HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertDoesNotExist()
+    }
+
+    /** V78b: mở menu thì tiêu đề hiện lại và giữ nguyên cho tới khi đóng menu. */
+    @Test fun ndsHeaderStaysWhileMenuOpen() {
+        val state = InGameState()
+        ndsOverlay(state)
+        rule.mainClock.advanceTimeBy(HEADER_HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertDoesNotExist()
+        rule.runOnIdle { state.menuOpen = true }
+        rule.mainClock.advanceTimeBy(HEADER_HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertExists()
+        rule.runOnIdle { state.menuOpen = false }
+        rule.mainClock.advanceTimeBy(HEADER_HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertDoesNotExist()
+    }
+
+    /** V78b: chưa vào game (đang tải) thì không ẩn; hệ khác (không bật tự ẩn) luôn hiện. */
+    @Test fun headerNeverHidesBeforeGameRunsOrWhenAutoHideOff() {
+        ndsOverlay(InGameState(), showPad = false)
+        rule.mainClock.advanceTimeBy(HEADER_HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertExists()
+    }
+
+    @Test fun otherSystemsKeepHeader() {
+        overlay(InGameState(), PadLayout.GBA)
+        rule.mainClock.advanceTimeBy(HEADER_HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertExists()
     }
 }

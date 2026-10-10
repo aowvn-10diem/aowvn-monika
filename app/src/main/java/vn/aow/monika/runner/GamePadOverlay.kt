@@ -51,6 +51,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -65,6 +67,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -115,7 +118,7 @@ const val STICK_RIGHT = 1
 
 fun padFor(core: String, override: String?): PadLayout = override?.let { runCatching { PadLayout.valueOf(it.uppercase()) }.getOrNull() }
     ?: when (core) {
-        "desmume", "melonds" -> PadLayout.NDS
+        "desmume", "melonds", "melondsds" -> PadLayout.NDS
         "gambatte", "fceumm", "nestopia", "prosystem", "stella2014", "handy", "mednafen_pce_fast", "mednafen_wswan", "mednafen_ngp" -> PadLayout.GB
         "snes9x", "bsnes" -> PadLayout.SNES
         "genesis_plus_gx", "picodrive" -> PadLayout.GEN
@@ -154,7 +157,21 @@ class InGameState {
 
     /** Tên kiểu hiển thị đang dùng (vd. "LCD cổ điển"); null = lõi này không có nhiều kiểu → không hiện nút. */
     var styleLabel by mutableStateOf<String?>(null)
+
+    /** V78b: thanh tiêu đề đang hiện (chỉ có nghĩa khi `autoHideHeader`). Tự ẩn sau [HEADER_HIDE_MS] khi đang chơi. */
+    var headerShown by mutableStateOf(true)
+    /** Mỗi lần chạm mép trên tăng 1 → hiện lại tiêu đề và đếm lại thời gian tự ẩn. */
+    var headerPulse by mutableIntStateOf(0)
+    /** Hiện ngay (đặt trạng thái đồng bộ, không chờ hiệu ứng nền) rồi đếm lại giờ tự ẩn. */
+    fun revealHeader() { headerShown = true; headerPulse++ }
 }
+
+/** V78b: thời gian (ms) tiêu đề chờ trước khi tự ẩn lúc đang chơi. */
+const val HEADER_HIDE_MS = 3000L
+/** testTag của thanh tiêu đề trong game (test giao diện). */
+const val HEADER_TAG = "in-game-header"
+/** V78b: dải mép trên (dp) chạm vào thì hiện lại tiêu đề. */
+private val HEADER_REVEAL_EDGE = 40.dp
 
 /** Vùng an toàn phía trên: thanh trạng thái ∪ camera/cutout (cả khi thanh trạng thái bị ẩn), và 2 bên cạnh cutout khi máy ngang. */
 private val SafeTop: WindowInsets
@@ -184,15 +201,29 @@ fun InGameOverlay(
     onMotion: (Int, Float, Float) -> Unit = { _, _, _ -> },
     /** Nút riêng của từng giả lập (vd. "Mã cheat" của 3DS), đặt trước "Chơi tiếp". */
     extraActions: List<SheetAction> = emptyList(),
+    /** V78b: ẩn thanh tiêu đề khi đang chơi (NDS); chạm mép trên hoặc mở menu thì hiện lại. */
+    autoHideHeader: Boolean = false,
 ) {
     // Nút Back của máy: mở menu (thay vì thoát ngay, dễ bấm nhầm khi đang chơi); đang chỉnh phím → xong.
     androidx.activity.compose.BackHandler(enabled = !state.menuOpen && state.options == null) {
         if (state.editing) { state.editing = false; onEditDone() } else state.menuOpen = true
     }
+    // V78b: tiêu đề hiện lúc đang tải / mở menu / chỉnh phím / bảng tùy chọn; đang chơi thì ẩn sau HEADER_HIDE_MS.
+    // Chạm mép trên (headerPulse đổi) hiện lại và đếm lại.
+    val pinned = state.menuOpen || state.editing || state.options != null || !showPad
+    // Hiện = không tự ẩn, hoặc đang ghim (menu...), hoặc chưa tới giờ ẩn — tính thẳng khi vẽ, không phụ thuộc hiệu ứng nền.
+    val headerVisible = !autoHideHeader || pinned || state.headerShown
+    LaunchedEffect(autoHideHeader, pinned, state.headerPulse) {
+        if (!autoHideHeader || pinned) { state.headerShown = true; return@LaunchedEffect }
+        kotlinx.coroutines.delay(HEADER_HIDE_MS)
+        state.headerShown = false
+    }
     Box(Modifier.fillMaxSize()) {
         // Header kính mờ
         // Né camera / "con nhộng" (display cutout) + thanh trạng thái — lúc chơi game thanh trạng thái bị ẩn nên phải dùng cutout.
-        Row(Modifier.fillMaxWidth().windowInsetsPadding(SafeTop).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        // Hiện/ẩn thẳng bằng điều kiện (AnimatedVisibility không vào lại được trong test Robolectric: 2 test đỏ ở CI).
+        if (headerVisible) {
+        Row(Modifier.testTag(HEADER_TAG).fillMaxWidth().windowInsetsPadding(SafeTop).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             GlassCircle(R.drawable.ic_fluent_arrow_left_24_regular, "Thoát", onBack)
             Spacer(Modifier.width(10.dp))
             Row(
@@ -207,6 +238,14 @@ fun InGameOverlay(
             }
             Spacer(Modifier.width(10.dp))
             GlassCircle(R.drawable.ic_fluent_grid_24_regular, "Menu", { state.menuOpen = !state.menuOpen }, active = state.menuOpen)
+        }
+        }
+        // Tiêu đề đang ẩn: dải mỏng sát mép trên bắt cú chạm để hiện lại (không nằm trên màn cảm ứng dưới của NDS).
+        if (autoHideHeader && !headerVisible) {
+            Box(
+                Modifier.align(Alignment.TopCenter).fillMaxWidth().height(HEADER_REVEAL_EDGE)
+                    .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); state.revealHeader() } },
+            )
         }
 
         state.toast?.let {
