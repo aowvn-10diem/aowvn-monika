@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-10T08:13:26Z",
- "mainSha": "0acd449",
+ "updatedAt": "2026-10-10T11:13:31Z",
+ "mainSha": "60fbffb",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
- "headline": "Sửa gấp V75–V79 cho bản ổn định v0.7.9 (hạn 10/10 22:00)",
+ "headline": "Bản thử v0.7.9 đã ra (60fbffb); chờ sếp test và chốt ổn định",
  "needsBoss": [
   {
    "code": "G9",
@@ -1004,8 +1004,8 @@
    "code": "V80",
    "title": "Bump 44/0.7.9 + CHANGELOG",
    "owner": "",
-   "status": "dang",
-   "note": "Sếp giao 10/10 sau thử bản thử v0.7.8; owner Sol; hạn 10/10 22:00 (A25)"
+   "status": "xong",
+   "note": "#192 gộp 60fbffb"
   },
   {
    "code": "V81",
@@ -1123,6 +1123,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-10T11:13:31Z",
+   "text": "Bản thử v0.7.9: run 38047062383 xanh, tag v0.7.9=60fbffb, APK 19153177 byte, SHA-256 922357a3…cc0a5c khớp, chứng thư khớp. Chờ sếp test máy thật."
+  },
   {
    "t": "2026-10-10T00:45:29Z",
    "text": "[A26] Kirikiri vẫn lỗi trên máy sếp (v0.7.8); gắn nhãn thử nghiệm qua config trong v0.7.9 (V81, Sol). Log crash cần CRASH_ADMIN_TOKEN, PM chưa đọc."
