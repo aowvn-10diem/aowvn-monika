@@ -138,11 +138,14 @@ class DeviceScannerTest {
     }
 
     @Test fun modernAndroidOnlyScansAfterAllFilesAccessIsActuallyGranted() {
-        org.robolectric.shadows.ShadowEnvironment.setIsExternalStorageManager(false)
+        val ops = org.robolectric.Shadows.shadowOf(context.getSystemService(android.app.AppOpsManager::class.java))
+        fun access(mode: Int) = ops.setMode(android.app.AppOpsManager.OPSTR_MANAGE_EXTERNAL_STORAGE,
+            android.os.Process.myUid(), context.packageName, mode)
+        access(android.app.AppOpsManager.MODE_ERRORED)
         assertFalse(DeviceScanner(context).canScanAll())
-        org.robolectric.shadows.ShadowEnvironment.setIsExternalStorageManager(true)
+        access(android.app.AppOpsManager.MODE_ALLOWED)
         assertTrue(DeviceScanner(context).canScanAll())
-        org.robolectric.shadows.ShadowEnvironment.setIsExternalStorageManager(false)
+        access(android.app.AppOpsManager.MODE_ERRORED)
     }
 
     @Test @Config(sdk = [28]) fun oldAndroidRequiresActualReadPermission() {
