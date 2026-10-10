@@ -144,6 +144,12 @@ class AowPixelButtonTest {
         node.assertIsSelected()
         rule.runOnIdle { enabled.value = false }
         rule.mainClock.advanceTimeBy(1_000)
+        rule.waitUntil(timeoutMillis = 2_000) {
+            rule.mainClock.advanceTimeByFrame(); rule.waitForIdle()
+            val semantics = node.fetchSemanticsNode().config
+            semantics.contains(SemanticsProperties.Disabled) &&
+                semantics.getOrNull(SemanticsProperties.StateDescription) == "Vô hiệu"
+        }
         try {
             node.assertIsNotEnabled()
             node.performTouchInput { click(center) }
