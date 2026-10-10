@@ -64,6 +64,8 @@ import vn.aow.monika.achievements.GameAchievementsSheet
 import vn.aow.monika.R
 import vn.aow.monika.config.ExternalApp
 import vn.aow.monika.library.Game
+import vn.aow.monika.library.LibraryDocument
+import vn.aow.monika.library.documentViewIntent
 import vn.aow.monika.library.GameStorage
 import vn.aow.monika.library.ExtractProgress
 import vn.aow.monika.library.Importer
@@ -104,6 +106,8 @@ fun LibraryScreen(onSettings: () -> Unit) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val c = Monika.colors
     var scanned by remember { mutableStateOf(AppGraph.library.cached) } // null = đang quét lần đầu
+    var documents by remember { mutableStateOf(AppGraph.library.cachedDocuments) }
+    var documentToDelete by remember { mutableStateOf<LibraryDocument?>(null) }
     val games = scanned.orEmpty()
     var reloadKey by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
@@ -134,7 +138,9 @@ fun LibraryScreen(onSettings: () -> Unit) {
     val infoTick by AppGraph.gameInfo.updated.collectAsState()
     LaunchedEffect(reloadKey, playedTick, infoTick) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            scanned = withContext(Dispatchers.IO) { AppGraph.library.list() }
+            val listed = withContext(Dispatchers.IO) { AppGraph.library.list() to AppGraph.library.cachedDocuments }
+            documents = listed.second
+            scanned = listed.first
             // Tải sẵn lõi giả lập cho các hệ đang có game (ngầm) → bấm Chơi vào game ngay.
             AppGraph.app.let { app -> (app as? vn.aow.monika.MonikaApp)?.scope?.launch(Dispatchers.IO) { AppGraph.cores.prefetch(coreIdsOf(scanned.orEmpty())) } }
             // Tự tìm tên + ảnh cho game chưa có (đọc trong file game, rồi tra aow.vn) — xong thì infoTick đổi → vẽ lại.
@@ -271,7 +277,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
             subtitle = when {
                 scanned == null -> "Đang quét…"
                 deviceScanning -> "Đang quét máy… ($scanDirs thư mục)"
-                else -> "${games.size} game trong máy"
+                else -> "${games.size} game trong máy" + if (documents.isNotEmpty()) " · ${documents.size} tài liệu" else ""
             },
             right = { CircleButton(R.drawable.ic_fluent_grid_24_regular, "Menu thư viện", { libMenu = true }) },
         )
@@ -320,7 +326,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
             }
             if (scanned == null) item(span = { GridItemSpan(2) }) {
                 Box(Modifier.fillMaxWidth().height(240.dp), Alignment.Center) { Spinner() }
-            } else if (games.isEmpty()) item(span = { GridItemSpan(2) }) {
+            } else if (games.isEmpty() && documents.isEmpty()) item(span = { GridItemSpan(2) }) {
                 EmptyState(
                     R.drawable.fluent3d_video_game, "Chưa có game",
                     "Tải game ở tab Game, hoặc thêm file (.zip .rar .7z .nds .gba .iso…) có sẵn trong máy.",
@@ -328,7 +334,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
                     LibraryFolderLabel(GameStorage.games(context).absolutePath)
                     GradientButton("Thêm game từ máy", { picker.launch(arrayOf("*/*")) }, icon = R.drawable.ic_fluent_folder_add_24_regular)
                 }
-            } else item(span = { GridItemSpan(2) }) {
+            } else if (games.isNotEmpty()) item(span = { GridItemSpan(2) }) {
                 Text("Thư viện", style = Monika.type.sectionTitle, color = c.text, modifier = Modifier.padding(top = 4.dp))
             }
             if (shown.isEmpty() && games.isNotEmpty()) item(span = { GridItemSpan(2) }) {
@@ -342,6 +348,21 @@ fun LibraryScreen(onSettings: () -> Unit) {
                     g, onPlay = { play(g) }, onExtract = { password = ""; toExtract = g }, onMenu = { vn.aow.monika.runner.GamePreload.warm(context, g); gameMenu = g },
                     onRedownload = { redownload(context, g) }, onRequestAccess = ::requestScanAccess,
                 )
+            }
+            val shownDocuments = documents.filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
+            if (shownDocuments.isNotEmpty()) item(span = { GridItemSpan(2) }) {
+                Text("Tài liệu", style = Monika.type.sectionTitle, color = c.text, modifier = Modifier.padding(top = 4.dp))
+            }
+            items(shownDocuments, key = { "document:${it.key}" }, span = { GridItemSpan(2) }) { document ->
+                LibraryDocumentCard(document, onOpen = {
+                    try {
+                        context.startActivity(documentViewIntent(context, document))
+                    } catch (_: android.content.ActivityNotFoundException) {
+                        info = "Chưa có ứng dụng mở loại tài liệu này. Hãy cài ứng dụng đọc tài liệu rồi thử lại."
+                    } catch (_: Exception) {
+                        info = "Chưa mở được tài liệu. Kiểm tra quyền đọc tệp rồi thử lại."
+                    }
+                }, onDelete = { documentToDelete = document })
             }
         }
       }
@@ -405,6 +426,23 @@ fun LibraryScreen(onSettings: () -> Unit) {
             confirmButton = { DarkButton("Đóng", { needApp = null }) },
             title = { Text("Cần cài ${app.name}", style = Monika.type.sectionTitle) },
             text = { ExternalAppDetails(app, installed = false) },
+            containerColor = c.surface, shape = Radius.large,
+        )
+    }
+    documentToDelete?.let { document ->
+        AlertDialog(
+            onDismissRequest = { documentToDelete = null },
+            title = { Text("Xóa tài liệu?", style = Monika.type.cardTitle) },
+            text = { Text("Xóa \"${document.name}\" khỏi máy. Các tệp khác trong thư mục được giữ lại.", style = Monika.type.body, color = c.text) },
+            confirmButton = { GradientButton("Xóa", {
+                documentToDelete = null
+                scope.launch {
+                    val ok = withContext(Dispatchers.IO) { AppGraph.library.deleteDocument(document) }
+                    if (!ok) info = "Chưa xóa được tài liệu. Kiểm tra quyền đọc tệp rồi thử lại."
+                    reloadKey++
+                }
+            }, height = 44.dp) },
+            dismissButton = { DarkButton("Hủy", { documentToDelete = null }) },
             containerColor = c.surface, shape = Radius.large,
         )
     }
