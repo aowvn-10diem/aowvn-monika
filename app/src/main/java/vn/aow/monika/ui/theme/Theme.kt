@@ -63,6 +63,9 @@ data class MonikaColors(
     val success: Color = Color(0xFF29B765),
     val warning: Color = Color(0xFFFFAD35),
     val danger: Color = Color(0xFFF25962),
+    // Tay cầm nằm trên ảnh game: mặt sáng cố định cho cả theme sáng/tối.
+    val controlSurface: Color = Color(0xFFF7F2EC),
+    val controlInk: Color = Color(0xFF181719),
     val isDark: Boolean,
 )
 
