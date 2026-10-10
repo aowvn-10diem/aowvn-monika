@@ -46,8 +46,12 @@ class ControllerLayoutsTest {
         rule.runOnIdle { aow.value = true }
         rule.mainClock.advanceTimeBy(1_000)
         rule.onNodeWithContentDescription("Nút $label").performTouchInput { click(center) }
+        // Clock tay: vẽ lại sau ACTION_UP trước khi lưu ảnh trạng thái đã nhả.
+        rule.mainClock.advanceTimeBy(1_000)
         rule.waitForIdle()
         assertEquals(listOf(KeyEvent.ACTION_DOWN to key, KeyEvent.ACTION_UP to key), events)
+        rule.onNodeWithContentDescription("Nút $label").assert(SemanticsMatcher.expectValue(
+            androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Sẵn sàng"))
         if (layout == PadLayout.N64) {
             val a = rule.onNodeWithContentDescription("Nút A").fetchSemanticsNode().boundsInWindow
             val b = rule.onNodeWithContentDescription("Nút B").fetchSemanticsNode().boundsInWindow
