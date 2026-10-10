@@ -71,6 +71,14 @@ class DsScreenTest {
         assertEquals(listOf("melonds_screen_layout1", "melonds_hybrid_ratio", "melonds_screen_gap"), DsScreen.keys(screen))
     }
 
+    @Test fun hugeGapMaxFromConfigIsCapped() {
+        val wild = screen.copy(gapMax = 1_000_000)
+        assertEquals(DsScreen.GAP_LIMIT, DsScreen.gapMax(wild))
+        assertEquals(DsScreen.GAP_LIMIT, DsScreen.current(wild, mapOf("melonds_screen_gap" to "999999")).gap)
+        assertFalse(DsScreen.showsGap(screen.copy(gapMax = 0)))
+        assertFalse(DsScreen.showsGap(screen.copy(gapKey = "")))
+    }
+
     @Test fun otherCoresHaveNoScreenSection() {
         assertTrue(cfg.cores.filterKeys { it != "melondsds" }.values.all { it.screen == null })
     }

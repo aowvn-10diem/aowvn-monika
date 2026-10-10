@@ -50,7 +50,7 @@ fun ScreenSettings(coreId: String, screen: CoreScreen, defaults: Map<String, Str
         Text("$label: ${drag.roundToInt()} px", style = Monika.type.bodyStrong, color = c.text)
         Slider(
             drag, { drag = it }, modifier = Modifier.semantics { contentDescription = label },
-            valueRange = 0f..screen.gapMax.toFloat(), steps = (screen.gapMax - 1).coerceAtLeast(0),
+            valueRange = 0f..DsScreen.gapMax(screen).toFloat(), steps = (DsScreen.gapMax(screen) - 1).coerceAtLeast(0),
             onValueChangeFinished = { write(DsScreen.gapValue(screen, drag.roundToInt())) },
             colors = SliderDefaults.colors(thumbColor = c.surfaceDark, activeTrackColor = c.accentOrange, inactiveTrackColor = c.track),
         )
