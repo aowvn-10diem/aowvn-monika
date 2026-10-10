@@ -221,10 +221,8 @@ fun InGameOverlay(
     Box(Modifier.fillMaxSize()) {
         // Header kính mờ
         // Né camera / "con nhộng" (display cutout) + thanh trạng thái — lúc chơi game thanh trạng thái bị ẩn nên phải dùng cutout.
-        AnimatedVisibility(
-            visible = headerVisible,
-            enter = fadeIn(tween(Monika.motion.normal)), exit = fadeOut(tween(Monika.motion.normal)),
-        ) {
+        // Hiện/ẩn thẳng bằng điều kiện (AnimatedVisibility không vào lại được trong test Robolectric: 2 test đỏ ở CI).
+        if (headerVisible) {
         Row(Modifier.testTag(HEADER_TAG).fillMaxWidth().windowInsetsPadding(SafeTop).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             GlassCircle(R.drawable.ic_fluent_arrow_left_24_regular, "Thoát", onBack)
             Spacer(Modifier.width(10.dp))
