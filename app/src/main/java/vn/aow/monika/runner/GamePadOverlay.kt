@@ -162,7 +162,8 @@ class InGameState {
     var headerShown by mutableStateOf(true)
     /** Mỗi lần chạm mép trên tăng 1 → hiện lại tiêu đề và đếm lại thời gian tự ẩn. */
     var headerPulse by mutableIntStateOf(0)
-    fun revealHeader() { headerPulse++ }
+    /** Hiện ngay (đặt trạng thái đồng bộ, không chờ hiệu ứng nền) rồi đếm lại giờ tự ẩn. */
+    fun revealHeader() { headerShown = true; headerPulse++ }
 }
 
 /** V78b: thời gian (ms) tiêu đề chờ trước khi tự ẩn lúc đang chơi. */
@@ -210,18 +211,18 @@ fun InGameOverlay(
     // V78b: tiêu đề hiện lúc đang tải / mở menu / chỉnh phím / bảng tùy chọn; đang chơi thì ẩn sau HEADER_HIDE_MS.
     // Chạm mép trên (headerPulse đổi) hiện lại và đếm lại.
     val pinned = state.menuOpen || state.editing || state.options != null || !showPad
+    // Hiện = không tự ẩn, hoặc đang ghim (menu...), hoặc chưa tới giờ ẩn — tính thẳng khi vẽ, không phụ thuộc hiệu ứng nền.
+    val headerVisible = !autoHideHeader || pinned || state.headerShown
     LaunchedEffect(autoHideHeader, pinned, state.headerPulse) {
-        state.headerShown = true
-        if (autoHideHeader && !pinned) {
-            kotlinx.coroutines.delay(HEADER_HIDE_MS)
-            state.headerShown = false
-        }
+        if (!autoHideHeader || pinned) { state.headerShown = true; return@LaunchedEffect }
+        kotlinx.coroutines.delay(HEADER_HIDE_MS)
+        state.headerShown = false
     }
     Box(Modifier.fillMaxSize()) {
         // Header kính mờ
         // Né camera / "con nhộng" (display cutout) + thanh trạng thái — lúc chơi game thanh trạng thái bị ẩn nên phải dùng cutout.
         AnimatedVisibility(
-            visible = state.headerShown,
+            visible = headerVisible,
             enter = fadeIn(tween(Monika.motion.normal)), exit = fadeOut(tween(Monika.motion.normal)),
         ) {
         Row(Modifier.testTag(HEADER_TAG).fillMaxWidth().windowInsetsPadding(SafeTop).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -242,7 +243,7 @@ fun InGameOverlay(
         }
         }
         // Tiêu đề đang ẩn: dải mỏng sát mép trên bắt cú chạm để hiện lại (không nằm trên màn cảm ứng dưới của NDS).
-        if (autoHideHeader && !state.headerShown) {
+        if (autoHideHeader && !headerVisible) {
             Box(
                 Modifier.align(Alignment.TopCenter).fillMaxWidth().height(HEADER_REVEAL_EDGE)
                     .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); state.revealHeader() } },

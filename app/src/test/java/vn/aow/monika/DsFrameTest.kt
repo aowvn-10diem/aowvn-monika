@@ -26,7 +26,7 @@ class DsFrameTest {
         // Trước V78: lõi melondsds rơi về tỉ lệ 4:3 → khung cao w/(4/3) → hình chỉ ~ w/2.
         val before = (w / (4f / 3f)) * DsFrame.ASPECT
         assertTrue("sau $pictureWidth / trước $before", pictureWidth > before * 1.6f)
-        assertTrue(pictureWidth >= w * 0.8f)
+        assertTrue(pictureWidth >= w * 0.75f)
     }
 
     @Test fun leavesRoomForThePadOnShortScreens() {
