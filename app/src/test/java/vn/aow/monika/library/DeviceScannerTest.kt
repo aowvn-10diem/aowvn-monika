@@ -137,15 +137,16 @@ class DeviceScannerTest {
         assertTrue(scanner.found().isEmpty())
     }
 
-    @Test fun modernAndroidOnlyScansAfterAllFilesAccessIsActuallyGranted() {
-        val ops = org.robolectric.Shadows.shadowOf(context.getSystemService(android.app.AppOpsManager::class.java))
-        fun access(mode: Int) = ops.setMode("android:manage_external_storage",
-            android.os.Process.myUid(), context.packageName, mode)
-        access(android.app.AppOpsManager.MODE_ERRORED)
+    @Test @Config(shadows = [AllFilesEnvironmentShadow::class])
+    fun modernAndroidOnlyScansAfterAllFilesAccessIsActuallyGranted() {
+        // Robolectric 4.16.1 has no manager-access setter. Model this Android API's
+        // result explicitly, keeping both deny/grant assertions on the real scanner.
+        AllFilesEnvironmentShadow.granted = false
         assertFalse(DeviceScanner(context).canScanAll())
-        access(android.app.AppOpsManager.MODE_ALLOWED)
+        AllFilesEnvironmentShadow.granted = true
         assertTrue(DeviceScanner(context).canScanAll())
-        access(android.app.AppOpsManager.MODE_ERRORED)
+        AllFilesEnvironmentShadow.granted = false
+        assertFalse(DeviceScanner(context).canScanAll())
     }
 
     @Test @Config(sdk = [28]) fun oldAndroidRequiresActualReadPermission() {
@@ -154,5 +155,15 @@ class DeviceScannerTest {
         assertFalse(DeviceScanner(context).canScanAll())
         app.grantPermissions(android.Manifest.permission.READ_EXTERNAL_STORAGE)
         assertTrue(DeviceScanner(context).canScanAll())
+    }
+}
+
+@org.robolectric.annotation.Implements(Environment::class)
+class AllFilesEnvironmentShadow : org.robolectric.shadows.ShadowEnvironment() {
+    companion object {
+        @JvmField var granted = false
+        @JvmStatic @org.robolectric.annotation.Implementation(minSdk = 30)
+        fun isExternalStorageManager(): Boolean = granted
+        @JvmStatic @org.robolectric.annotation.Resetter fun resetAccess() { granted = false }
     }
 }

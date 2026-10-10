@@ -54,7 +54,11 @@ class LibraryStorageAccessTest {
         rule.onNodeWithText("Cấp quyền quét game").assertIsDisplayed()
         rule.onNodeWithText("Tự tìm game trong máy").assertDoesNotExist()
         rule.runOnIdle { granted.value = true }
-        rule.mainClock.advanceTimeBy(1_000)
+        rule.waitUntil(timeoutMillis = 2_000) {
+            rule.mainClock.advanceTimeByFrame()
+            rule.waitForIdle()
+            rule.onAllNodesWithText("Cấp quyền quét game").fetchSemanticsNodes().isEmpty()
+        }
         rule.onNodeWithText("Cấp quyền quét game").assertDoesNotExist()
         assertEquals(1, requests)
         rule.shot("v79-da-cap-quyen")
