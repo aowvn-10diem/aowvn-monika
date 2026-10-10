@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -46,8 +47,11 @@ class MonikaControlsTest {
     @Test fun controlsOnLightGameFrame() = contrastFixture("sang")
     @Test fun controlsOnMixedGameFrame() = contrastFixture("game")
 
-    private fun contrastFixture(backdrop: String) {
-        val held = mutableStateOf(false)
+    @Test fun heldControlsOnDarkGameFrame() = contrastFixture("toi", held = true)
+    @Test fun heldControlsOnLightGameFrame() = contrastFixture("sang", held = true)
+    @Test fun heldControlsOnMixedGameFrame() = contrastFixture("game", held = true)
+
+    private fun contrastFixture(backdrop: String, held: Boolean = false) {
         rule.setContent { MonikaTheme {
             val c = Monika.colors
             Box(Modifier.fillMaxSize().background(if (backdrop == "sang") c.bgWarm else c.surfaceDark)) {
@@ -59,7 +63,7 @@ class MonikaControlsTest {
                     }
                 }
                 CompositionLocalProvider(LocalMonikaMotion provides MonikaMotion(PerformanceTier.OFF)) {
-                    val state = if (held.value) ControlVisualState.HELD else ControlVisualState.RELEASED
+                    val state = if (held) ControlVisualState.HELD else ControlVisualState.RELEASED
                     Column(Modifier.padding(24.dp).alpha(InGameState().opacity), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             MonikaPill("L", {}, visualState = state)
@@ -81,11 +85,27 @@ class MonikaControlsTest {
         rule.mainClock.advanceTimeBy(1_000)
         listOf("L", "R", "A", "B", "SELECT", "START").forEach { rule.onNodeWithContentDescription("Nút $it").assertIsDisplayed() }
         rule.onNodeWithContentDescription("Phím hướng, hỗ trợ đi chéo").assertIsDisplayed()
-        rule.shot("v75-$backdrop-tha")
-        rule.runOnIdle { held.value = true }
-        rule.mainClock.advanceTimeBy(1_000)
-        rule.onNodeWithContentDescription("Nút B").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Đang giữ"))
-        rule.shot("v75-$backdrop-giu")
+        rule.onNodeWithContentDescription("Nút B").assert(SemanticsMatcher.expectValue(
+            androidx.compose.ui.semantics.SemanticsProperties.StateDescription, if (held) "Đang giữ" else "Sẵn sàng"))
+        rule.shot("v75-$backdrop-${if (held) "giu" else "tha"}")
+    }
+
+    @Test fun releasedControlTextKeepsContrastOnLightAndDarkFramesInBothThemes() {
+        var checked = false
+        rule.setContent { MonikaTheme {
+            val base = Monika.colors
+            for (c in listOf(base, base.copy(isDark = true))) {
+                for (frame in listOf(c.bgWarm, c.surfaceDark)) {
+                    val opacity = InGameState().opacity
+                    val face = c.controlSurface.copy(alpha = opacity).compositeOver(frame).luminance()
+                    val ink = c.controlInk.copy(alpha = opacity).compositeOver(frame).luminance()
+                    val contrast = (maxOf(face, ink) + .05f) / (minOf(face, ink) + .05f)
+                    assertTrue("Nhãn phím ở độ mờ mặc định cần >=4.5:1, đo $contrast", contrast >= 4.5f)
+                }
+            }
+            checked = true
+        } }
+        rule.runOnIdle { assertTrue(checked) }
     }
 
     @Test fun primaryOutlineHasThreeToOneContrastAtDefaultOverlayOpacity() {

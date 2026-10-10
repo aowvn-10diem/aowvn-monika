@@ -133,15 +133,14 @@ private fun PressControl(
         else Modifier.size(touch)
     Box(modifier.then(bounds).then(interaction), contentAlignment = Alignment.Center) {
         val face = if (pill) Modifier.fillMaxWidth().height(40.dp) else Modifier.size(diameter)
-        val surface = when { !usable -> c.surfaceDarkSoft; pressed -> c.surfaceDark; else -> c.glass }
+        val surface = when { !usable -> c.surfaceDarkSoft; pressed -> c.surfaceDark; else -> c.controlSurface }
         Box(face.graphicsLayer { scaleX = scale; scaleY = scale; translationY = sink.dp.toPx() }
             .shadow(if (animate && !pressed) 6.dp else 0.dp, shape)
             .clip(shape)
             .background(if (primary && usable && !pressed) primaryGradient() else Brush.linearGradient(listOf(surface, surface)))
-            // Giữ gradient chính; đường bao than vẫn rõ trên nền sáng khi overlay mờ mặc định.
-            .border(if (primary || visualState == ControlVisualState.TURBO) 2.dp else 1.dp,
-                if (primary && usable) c.surfaceDark
-                else if (visualState == ControlVisualState.TURBO) c.accentOrange else c.glassBorder, shape)
+            // Hai vòng sáng/tối: ảnh game sáng hoặc tối đều còn một đường bao rõ.
+            .border(4.dp, if (turbo) c.accentOrange else c.textOnDark, shape)
+            .border(2.dp, c.controlInk, shape)
             .drawWithContent {
                 drawContent()
                 if (turbo) drawArc(c.accentPink, rotation - 90f, 70f, false,
@@ -150,7 +149,7 @@ private fun PressControl(
             },
             contentAlignment = Alignment.Center) {
             if (options.labels) Text(label, style = if (pill) Monika.type.caption else Monika.type.sectionTitle,
-                color = if (primary && usable && !pressed) c.surfaceDark else if (usable) c.textOnDark else c.textOnDarkSecondary)
+                color = if (usable && !pressed) c.controlInk else if (usable) c.textOnDark else c.textOnDarkSecondary)
         }
     }
 }
@@ -200,13 +199,14 @@ fun MonikaDPad(send: (Int, Int) -> Unit, modifier: Modifier = Modifier) {
             translationY = if (active.isNotEmpty() && animate) 2.dp.toPx() else 0f
         }, contentAlignment = Alignment.Center) {
         Box(Modifier.fillMaxSize().shadow(if (animate && active.isEmpty()) 6.dp else 0.dp, CrossShape)
-            .clip(CrossShape).background(c.glass).border(1.dp, c.glassBorder, CrossShape))
+            .clip(CrossShape).background(if (active.isEmpty()) c.controlSurface else c.surfaceDark)
+            .border(4.dp, c.textOnDark, CrossShape).border(2.dp, c.controlInk, CrossShape))
         listOf("▲" to KeyEvent.KEYCODE_DPAD_UP, "▼" to KeyEvent.KEYCODE_DPAD_DOWN,
             "◀" to KeyEvent.KEYCODE_DPAD_LEFT, "▶" to KeyEvent.KEYCODE_DPAD_RIGHT).forEachIndexed { index, (text, key) ->
             val distance = 50.dp * options.size
             val offset = when (index) { 0 -> Modifier.offset(y = -distance); 1 -> Modifier.offset(y = distance)
                 2 -> Modifier.offset(x = -distance); else -> Modifier.offset(x = distance) }
-            Text(text, style = Monika.type.button, color = if (key in active) c.accentOrange else c.textOnDark,
+            Text(text, style = Monika.type.button, color = if (key in active) c.accentOrange else if (active.isNotEmpty()) c.textOnDark else c.controlInk,
                 modifier = offset.semantics {
                     contentDescription = when (index) { 0 -> "Hướng lên"; 1 -> "Hướng xuống"; 2 -> "Hướng trái"; else -> "Hướng phải" }
                     role = Role.Button
@@ -231,7 +231,7 @@ fun MonikaStick(onMove: (Float, Float) -> Unit, modifier: Modifier = Modifier) {
         stiffness = 39.48f / (motion.normal / 1000f).let { it * it }) else tween(0)
     val x by animateFloatAsState(knob.x, returnSpec, label = "Hồi tâm X")
     val y by animateFloatAsState(knob.y, returnSpec, label = "Hồi tâm Y")
-    Box(modifier.size(148.dp * options.size).clip(Radius.pill).background(c.glass).border(1.dp, c.glassBorder, Radius.pill)
+    Box(modifier.size(148.dp * options.size).clip(Radius.pill).background(c.controlSurface).border(4.dp, c.textOnDark, Radius.pill).border(2.dp, c.controlInk, Radius.pill)
         .semantics { contentDescription = "Cần analog" }
         .pointerInput(options) {
             awaitEachGesture {
@@ -257,6 +257,6 @@ fun MonikaStick(onMove: (Float, Float) -> Unit, modifier: Modifier = Modifier) {
             }
         }, contentAlignment = Alignment.Center) {
         Box(Modifier.offset { IntOffset(x.roundToInt(), y.roundToInt()) }.size(64.dp * options.size)
-            .clip(Radius.pill).background(primaryGradient()).border(1.dp, c.glassBorder, Radius.pill))
+            .clip(Radius.pill).background(primaryGradient()).border(4.dp, c.textOnDark, Radius.pill).border(2.dp, c.controlInk, Radius.pill))
     }
 }
