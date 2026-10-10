@@ -5,6 +5,11 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
@@ -36,6 +41,52 @@ import java.io.File
 class MonikaControlsTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
     @Before fun clock() { rule.mainClock.autoAdvance = false }
+
+    @Test fun controlsOnDarkGameFrame() = contrastFixture("toi")
+    @Test fun controlsOnLightGameFrame() = contrastFixture("sang")
+    @Test fun controlsOnMixedGameFrame() = contrastFixture("game")
+
+    private fun contrastFixture(backdrop: String) {
+        val held = mutableStateOf(false)
+        rule.setContent { MonikaTheme {
+            val c = Monika.colors
+            Box(Modifier.fillMaxSize().background(if (backdrop == "sang") c.bgWarm else c.surfaceDark)) {
+                if (backdrop == "game") Canvas(Modifier.fillMaxSize()) {
+                    val tile = 64.dp.toPx()
+                    for (x in 0..(size.width / tile).toInt()) for (y in 0..(size.height / tile).toInt()) {
+                        drawRect(if ((x + y) % 2 == 0) c.accentBlue else c.surfaceDark,
+                            Offset(x * tile, y * tile), Size(tile, tile))
+                    }
+                }
+                CompositionLocalProvider(LocalMonikaMotion provides MonikaMotion(PerformanceTier.OFF)) {
+                    val state = if (held.value) ControlVisualState.HELD else ControlVisualState.RELEASED
+                    Column(Modifier.padding(24.dp).alpha(InGameState().opacity), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            MonikaPill("L", {}, visualState = state)
+                            MonikaPill("R", {}, visualState = state)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            MonikaDPad({ _, _ -> })
+                            Column { MonikaKey("A", {}, primary = true, visualState = state); MonikaKey("B", {}, visualState = state) }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            MonikaPill("SELECT", {}, visualState = state)
+                            MonikaPill("START", {}, visualState = state)
+                        }
+                        MonikaStick({ _, _ -> })
+                    }
+                }
+            }
+        } }
+        rule.mainClock.advanceTimeBy(1_000)
+        listOf("L", "R", "A", "B", "SELECT", "START").forEach { rule.onNodeWithContentDescription("Nút $it").assertIsDisplayed() }
+        rule.onNodeWithContentDescription("Phím hướng, hỗ trợ đi chéo").assertIsDisplayed()
+        rule.shot("v75-$backdrop-tha")
+        rule.runOnIdle { held.value = true }
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithContentDescription("Nút B").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Đang giữ"))
+        rule.shot("v75-$backdrop-giu")
+    }
 
     @Test fun primaryOutlineHasThreeToOneContrastAtDefaultOverlayOpacity() {
         rule.setContent { MonikaTheme {
