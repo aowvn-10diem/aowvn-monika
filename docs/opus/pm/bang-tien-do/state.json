@@ -1,6 +1,6 @@
 {
- "updatedAt": "2026-10-10T12:13:41Z",
- "mainSha": "60fbffb",
+ "updatedAt": "2026-10-10T13:13:51Z",
+ "mainSha": "b94415f",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
  "headline": "Bản thử v0.7.9 đã ra (60fbffb); chờ sếp test và chốt ổn định",
@@ -1130,6 +1130,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-10T13:13:51Z",
+   "text": "Gộp #193 V85a fb5edac, #182 3bcc30c, #194 V52b, #195 V62 → main b94415f."
+  },
   {
    "t": "2026-10-10T11:15:29Z",
    "text": "[A28] Sếp: làm nốt + tăng tốc. Đích bản thử v0.8.0 (V78+V83+V85+#182) 11/10 10:00. Lịch kiểm 20' cho đội; PM thêm trigger :42 (trig_01U165ByF84kygj2UC7ZNHfr)."
