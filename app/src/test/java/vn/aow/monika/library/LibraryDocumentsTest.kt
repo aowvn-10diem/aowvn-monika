@@ -8,7 +8,6 @@ import org.junit.Assert.*
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.config.MonikaConfig
 import vn.aow.monika.config.SystemDef
 import vn.aow.monika.ui.TestApp
@@ -72,7 +71,7 @@ class LibraryDocumentsTest {
 
     @Test fun deletingOneDocumentPreservesSiblingsAndGame() {
         val app = ApplicationProvider.getApplicationContext<Application>()
-        val library = GameLibrary(app, ConfigRepository(app))
+        val library = GameLibrary(app, vn.aow.monika.AppGraph.config)
         val folder = dir("Suppression", "Guide.pdf", "other.txt", "fixture.gba")
         val document = LibraryDocument(File(folder, "Guide.pdf"))
         assertTrue(library.deleteDocument(document)); assertFalse(document.file.exists())
