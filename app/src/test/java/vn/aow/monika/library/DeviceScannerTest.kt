@@ -137,7 +137,19 @@ class DeviceScannerTest {
         assertTrue(scanner.found().isEmpty())
     }
 
-    @Test @Config(sdk = [28]) fun oldAndroidAlwaysCanScanAll() {
+    @Test fun modernAndroidOnlyScansAfterAllFilesAccessIsActuallyGranted() {
+        org.robolectric.shadows.ShadowEnvironment.setIsExternalStorageManager(false)
+        assertFalse(DeviceScanner(context).canScanAll())
+        org.robolectric.shadows.ShadowEnvironment.setIsExternalStorageManager(true)
+        assertTrue(DeviceScanner(context).canScanAll())
+        org.robolectric.shadows.ShadowEnvironment.setIsExternalStorageManager(false)
+    }
+
+    @Test @Config(sdk = [28]) fun oldAndroidRequiresActualReadPermission() {
+        val app = org.robolectric.Shadows.shadowOf(context as android.app.Application)
+        app.denyPermissions(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+        assertFalse(DeviceScanner(context).canScanAll())
+        app.grantPermissions(android.Manifest.permission.READ_EXTERNAL_STORAGE)
         assertTrue(DeviceScanner(context).canScanAll())
     }
 }
