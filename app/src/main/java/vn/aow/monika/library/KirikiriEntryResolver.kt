@@ -115,7 +115,7 @@ object KirikiriEntryResolver {
     // Kho chỉ chứa tài nguyên có tên thông thường không đủ để kết luận.
     private val HASHED_NAME = Regex("[0-9a-fA-F]{6,64}")
 
-    /** Chỉ mục đầy đủ, không có *.tjs/*.ks và có tên giống băm. Chỉ là dấu hiệu, không đọc nội dung hay xác minh mã hóa. */
+    /** Chỉ mục đầy đủ, không có script đuôi .tjs hoặc .ks và có tên giống băm. Chỉ là dấu hiệu, không xác minh mã hóa. */
     internal fun looksEncrypted(result: Xp3Index.Result?): Boolean {
         val names = (result as? Xp3Index.Result.Names)?.takeIf { it.complete }?.names ?: return false
         if (names.isEmpty() || names.any { it.endsWith(".tjs", true) || it.endsWith(".ks", true) }) return false
