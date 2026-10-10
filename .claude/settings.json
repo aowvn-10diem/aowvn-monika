@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git push origin v*)"
+      "Bash(git push origin v*)",
+      "ArtifactData",
+      "Artifact"
     ]
   }
 }

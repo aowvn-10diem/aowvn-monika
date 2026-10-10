@@ -1,5 +1,5 @@
 {
-  "configVersion": 36,
+  "configVersion": 38,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 41,
@@ -603,6 +603,7 @@
       "Language": "Ngôn ngữ máy NDS",
       "Randomize MAC Address": "Đổi ngẫu nhiên địa chỉ MAC",
       "Enable DSi SD Card": "Bật thẻ nhớ DSi",
+      "Threaded software renderer": "Vẽ 3D đa luồng (mượt hơn)",
       "Threaded Software Renderer": "Vẽ 3D đa luồng (mượt hơn)",
       "OpenGL Renderer (Restart)": "Vẽ 3D bằng OpenGL (mở lại game)",
       "OpenGL Internal Resolution": "OpenGL: Độ phân giải nội bộ",
@@ -768,6 +769,7 @@
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mgba_libretro_android.so.zip",
       "options": {
+        "mgba_color_correction": "OFF",
         "mgba_interframe_blending": "mix_smart",
         "mgba_frameskip": "disabled"
       },
@@ -785,7 +787,7 @@
             "integer": true,
             "grid": 0.3,
             "options": {
-              "mgba_color_correction": "GBA",
+              "mgba_color_correction": "OFF",
               "mgba_interframe_blending": "lcd_ghosting_fast"
             }
           },

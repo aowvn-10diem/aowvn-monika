@@ -39,6 +39,21 @@ class Guards(unittest.TestCase):
     def repo(self):
         self.git('init'); self.git('config', 'user.name', 'Fixture'); self.git('config', 'user.email', 'fixture@example.test')
         self.git('commit', '--allow-empty', '-m', 'fixture'); self.git('tag', 'v1.2.3')
+        self.env['SELECTED_SHA'] = self.git('rev-parse', 'HEAD').stdout.strip()
+
+    def test_tag_moved_after_ci_cannot_replace_selected_sha(self):
+        self.repo()
+        self.git('commit', '--allow-empty', '-m', 'unverified replacement')
+        self.git('tag', '-f', 'v1.2.3')  # Isolated fake repo, not a GitHub tag.
+        self.assertNotEqual(self.run_guard('release_guard').returncode, 0)
+
+    def test_missing_signing_fields_stop_before_tag_creation(self):
+        for key in ('KEYSTORE_BASE64', 'MONIKA_KEYSTORE_PASSWORD', 'MONIKA_KEY_ALIAS', 'MONIKA_KEY_PASSWORD'):
+            old = self.env.pop(key)
+            result = self.run_guard('before_tag_signing_guard')
+            self.env[key] = old
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn('fixture-only', result.stdout + result.stderr)
 
     def test_missing_each_signing_field_stops_dispatch_and_push(self):
         for event in ('workflow_dispatch', 'push'):
@@ -95,7 +110,7 @@ class Guards(unittest.TestCase):
             self.assertIn(f'{digest}  {name}', notes)
 
     def test_workflow_checks_tag_and_guards_before_publish(self):
-        self.assertIn('ref: refs/tags/${{ inputs.tag || github.ref_name }}', TEXT)
+        self.assertIn('ref: refs/tags/${{ needs.preflight.outputs.tag }}', TEXT)
         self.assertLess(TEXT.index('id: release_guard'), TEXT.index('Giải mã khóa ký'))
         self.assertLess(TEXT.index('id: apk_guard'), TEXT.index('softprops/action-gh-release'))
         self.assertIn('body_path: release-notes-${{ env.TAG }}.md', TEXT)
@@ -127,6 +142,53 @@ class Guards(unittest.TestCase):
         self.assertIn("if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true",dry)
         self.assertIn('python3 scripts/verify-apk-cert.py',dry)
         self.assertLess(dry.index('id: dry_guard'),dry.index('secrets.MONIKA_KEYSTORE_BASE64'))
+
+class ExactHeadGate(unittest.TestCase):
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('preflight', WORKFLOW.parents[2] / 'scripts/release-preflight.py')
+        self.gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.gate)
+        self.sha = 'a' * 40
+        self.runs = [dict(id=i, name=name, head_sha=self.sha, conclusion='success')
+                     for i, name in enumerate(('Build', 'Coverage', 'CodeQL (V41)'), 1)]
+        self.analyze = [dict(name='analyze (' + lang + ')', conclusion='success')
+                        for lang in ('java-kotlin', 'javascript-typescript')]
+
+    def check(self, **overrides):
+        args = dict(sha=self.sha, on_main=True, tag_exists=False, create=True,
+                    runs=self.runs, analyze=self.analyze)
+        args.update(overrides)
+        return self.gate.validate(**args)
+
+    def test_green_exact_head_allows_preflight_without_mutation(self):
+        self.assertIsNone(self.check())
+
+    def test_existing_tag_and_non_main_are_blocked(self):
+        for override in (dict(tag_exists=True), dict(on_main=False), dict(sha='bad; echo x')):
+            with self.assertRaises(ValueError): self.check(**override)
+
+    def test_old_head_green_cannot_replace_selected_head(self):
+        with self.assertRaises(ValueError): self.check(sha='b' * 40)
+
+    def test_new_failed_or_cancelled_build_blocks_older_green(self):
+        for state in ('failure', 'cancelled', None):
+            with self.assertRaises(ValueError):
+                self.check(runs=self.runs + [dict(id=9, name='Build', head_sha=self.sha, conclusion=state)])
+
+    def test_each_required_workflow_and_analyze_are_mandatory(self):
+        for missing in ('Build', 'Coverage', 'CodeQL (V41)'):
+            with self.assertRaises(ValueError): self.check(runs=[r for r in self.runs if r['name'] != missing])
+        for jobs in ([], self.analyze[:1], [dict(name=j['name'], conclusion='skipped') for j in self.analyze]):
+            with self.assertRaises(ValueError): self.check(analyze=jobs)
+
+    def test_only_tag_creating_job_has_contents_write_and_preflight_has_no_secrets(self):
+        self.assertEqual(1, TEXT.count('contents: write'))
+        before = TEXT.split('  create_tag:', 1)[0]
+        self.assertNotIn('secrets.', before)
+        self.assertIn('permissions: {contents: write}', TEXT.split('  create_tag:', 1)[1])
+        self.assertIn('default: true', TEXT)
+
 
 if __name__ == '__main__':
     unittest.main()

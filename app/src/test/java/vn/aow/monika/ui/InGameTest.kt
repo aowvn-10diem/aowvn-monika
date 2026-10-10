@@ -31,12 +31,19 @@ class InGameTest {
         rule.setContent {
             MonikaTheme {
                 InGameOverlay(
-                    state = state, system = "Nintendo DS", title = "Pokemon Việt Hóa", layout = layout, showPad = true,
+                    state = state, system = controllerName(layout), title = "Game thử " + controllerName(layout), layout = layout, showPad = true,
                     send = { _, _ -> }, onBack = {}, onSave = {}, onLoad = {}, onTurbo = {}, onOpacity = {}, onEditDone = {},
                     onOptionChange = onOptionChange,
                 )
             }
         }.also { rule.mainClock.advanceTimeBy(1_000) }
+
+    private fun controllerName(layout: PadLayout) = when (layout) {
+        PadLayout.NDS -> "Nintendo DS"; PadLayout.GBA -> "Game Boy Advance"; PadLayout.PS -> "PlayStation"
+        PadLayout.SNES -> "Super Nintendo"; PadLayout.GEN -> "Mega Drive"; PadLayout.N64 -> "Nintendo 64"
+        PadLayout.DC -> "Dreamcast"; PadLayout.PSP -> "PSP"; PadLayout.N3DS -> "Nintendo 3DS"
+        else -> layout.name
+    }
 
     @Test fun padNds() { overlay(InGameState(), PadLayout.NDS); rule.shot("6-tay-cam-nds") }
     @Test fun padGba() { overlay(InGameState(), PadLayout.GBA); rule.shot("7-tay-cam-gba") }
@@ -74,14 +81,14 @@ class InGameTest {
     @Test fun optionsPanel() {
         val s = InGameState().apply {
             options = listOf(
-                CoreOption("melonds_screen_layout", "Screen Layout", listOf("Top/Bottom", "Left/Right", "Hybrid"), "Top/Bottom"),
-                CoreOption("melonds_threaded_renderer", "Threaded software renderer", listOf("disabled", "enabled"), "enabled"),
+                vn.aow.monika.runner.CoreOptions.parse("melonds_screen_layout", "Screen Layout; Top/Bottom|Left/Right|Hybrid", "Top/Bottom", vn.aow.monika.AppGraph.config.current.coreOptionText)!!,
+                vn.aow.monika.runner.CoreOptions.parse("melonds_threaded_renderer", "Threaded software renderer; disabled|enabled", "enabled", vn.aow.monika.AppGraph.config.current.coreOptionText)!!,
             )
         }
         var changed: Pair<String, String>? = null
         overlay(s, PadLayout.NDS) { o, v -> changed = o.key to v }
         rule.shot("10-tuy-chon-gia-lap")
-        rule.onNodeWithText("Screen Layout").performClick()
+        rule.onNodeWithText("Bố cục 2 màn hình").performClick()
         rule.waitForIdle()
         assertEquals("melonds_screen_layout" to "Left/Right", changed)
     }

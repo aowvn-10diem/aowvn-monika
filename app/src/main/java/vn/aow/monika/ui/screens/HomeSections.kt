@@ -97,7 +97,9 @@ internal fun SystemChips(onPick: (String) -> Unit) {
     val c = Monika.colors
     Column(Modifier.padding(top = 4.dp)) {
         SectionHeader("Duyệt theo hệ máy")
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val scroll = androidx.compose.foundation.lazy.rememberLazyListState()
+        vn.aow.monika.ui.theme.ChipOverflowHint(scroll) {
+        LazyRow(state = scroll, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(labels, key = { it }) { label ->
                 Row(
                     Modifier.clip(Radius.pill).background(c.chip).clickable { onPick(label) }.padding(horizontal = 14.dp, vertical = 9.dp),
@@ -108,6 +110,7 @@ internal fun SystemChips(onPick: (String) -> Unit) {
                 }
             }
         }
+    }
     }
 }
 

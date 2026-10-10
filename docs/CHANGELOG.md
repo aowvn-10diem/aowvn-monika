@@ -78,6 +78,33 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 - Có menu Monika tiếng Việt trong game Kirikiri với các lối tiếp tục, mở menu game, tua nhanh và thoát. ([92a65b2](https://github.com/aowvn-10diem/aowvn-monika/commit/92a65b22ece2f1346b61aa0875eb33da67a27d4d))
 - Gói Kirikiri phát hành kèm bản dịch giao diện và được tải riêng khi dùng. ([33f7ba0](https://github.com/aowvn-10diem/aowvn-monika/commit/33f7ba0bc27f9d1a721c22f9ff35ae85754f9282))
 
+## v0.7.8
+
+> Đang chuẩn bị, chưa tạo tag hoặc phát hành. Ghi chú hiện đối chiếu các thay đổi đã gộp từ tag v0.7.7 (`3387671`) đến main `d52a150`. Bộ nút ảo V70a và lô giao diện V69 đã gộp; menu V70b được PM dời sang bản sau.
+
+- Sửa đường thu thông tin đồ họa Kirikiri: không gọi trình điều khiển khi chưa có ngữ cảnh EGL, tránh nguồn gây dừng ứng dụng đã thấy trên Android 17. Kiểm lại game trên máy ARM sau sửa còn **[CHƯA KIỂM]**. ([8b158f5](https://github.com/aowvn-10diem/aowvn-monika/commit/8b158f59cad9e3b64034f0d4f448e6fbdb894738))
+
+- Bộ nút ảo dùng chung có hiệu ứng lún, bốn mức rung và mục Tay cầm ảo trong Cài đặt; giữ mã phím, hỗ trợ tắt hiệu ứng và tôn trọng cài đặt rung Android. ([0b4cdd2](https://github.com/aowvn-10diem/aowvn-monika/commit/0b4cdd284b3231dcb2430da0cf595d3d3cd9ed13))
+
+- Khi danh sách game tải chậm hoặc lỗi, có trạng thái chờ và nút thử lại; Thư viện hiển thị đường dẫn gọn và cho sao chép đường dẫn đầy đủ. ([62c7c7e](https://github.com/aowvn-10diem/aowvn-monika/commit/62c7c7e758e3f67735deacd579634c52a059a251))
+- Thẻ ủng hộ chỉ hiện ở Trang chủ và Cài đặt, có thể ẩn bảy ngày; thanh dưới chừa khoảng cho nội dung và tùy chọn giả lập thêm bản dịch tiếng Việt. ([62c7c7e](https://github.com/aowvn-10diem/aowvn-monika/commit/62c7c7e758e3f67735deacd579634c52a059a251))
+
+## v0.7.7
+
+> [Bản thử — Pre-release](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.7), phát hành ngày 08/10/2026 tại commit `3387671`. Các thay đổi dưới đây nằm giữa tag v0.7.6 (`4a1486e`) và tag v0.7.7; bản thử chưa xác nhận game Kirikiri chạy ổn trên máy ARM.
+
+- Tại màn chuẩn bị Kirikiri, khi không tìm thấy lối vào, có thể gửi báo lỗi ngay; báo cáo thêm tóm tắt các gói XP3 và thông báo nêu lý do nếu gửi không thành công. ([731c8aa](https://github.com/aowvn-10diem/aowvn-monika/commit/731c8aa951896b609f434bfb7b1d2d71687b03b6), [c364421](https://github.com/aowvn-10diem/aowvn-monika/commit/c364421ccefdd144524f7edc3742fa4780334663))
+- Bước kiểm lối vào Kirikiri có giới hạn chờ 8 giây; nếu đọc kho quá hạn, ứng dụng giữ lối vào đã chọn thay vì chờ vô hạn. ([0896613](https://github.com/aowvn-10diem/aowvn-monika/commit/08966138f15f5d44cdcc697c14d821a164007437))
+- Khi quét thư mục có nhiều gói XP3, bộ đọc xử lý từng chỉ mục rồi bỏ dữ liệu tạm trước khi đọc gói kế tiếp, giảm lượng chỉ mục cùng giữ trong bộ nhớ. ([cce4929](https://github.com/aowvn-10diem/aowvn-monika/commit/cce4929dc056d6e93f32217db299221c4816b612))
+- Khi không tìm thấy lối vào và chỉ mục đầy đủ cho thấy các gói `.xp3` có vẻ mã hóa, ứng dụng thông báo đây là khả năng chưa xác nhận và lõi Kirikiri hiện chưa hỗ trợ loại gói đó. ([147e70a](https://github.com/aowvn-10diem/aowvn-monika/commit/147e70a70aa3117baea496c477108bdda35c071b))
+- Thông báo "Đã tải xong" mở được tệp lưu qua kho đa phương tiện hoặc trình chọn tệp Android, ngoài tệp do Monika tự cung cấp. ([6675158](https://github.com/aowvn-10diem/aowvn-monika/commit/66751589ca89461f69d0ee859df48dd6c287cf83))
+
+## [v0.7.6](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.6) (Bản thử — Pre-release)
+
+- Chọn tệp XP3 Kirikiri có `startup.tjs` ở gốc làm lối vào, thay vì nhầm sang tệp phụ. ([#93](https://github.com/aowvn-10diem/aowvn-monika/pull/93))
+- Khi không tìm thấy lối vào, ghi thêm chi tiết chỉ mục XP3 trong dấu vết chẩn đoán để người dùng gửi báo cáo lỗi. ([#91](https://github.com/aowvn-10diem/aowvn-monika/pull/91))
+- Bản thử này chưa xác nhận game Kirikiri chạy trên thiết bị thật; một ảnh màn hình app 0.7.6 vẫn cho thấy `NotFound` và nguyên nhân cụ thể **[CHƯA KIỂM]**. ([V26](opus/ket-qua/V26.md))
+
 ## [v0.7.5](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.5) (Bản thử — Pre-release)
 
 - Nút "Báo lỗi game này" cho phép người dùng gửi báo cáo lỗi trực tiếp từ menu trong game, kèm thông tin chi tiết về engine và thành phần. ([#60](https://github.com/aowvn-10diem/aowvn-monika/pull/60), [b65c315](https://github.com/aowvn-10diem/aowvn-monika/commit/b65c315))

@@ -36,6 +36,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -76,8 +77,11 @@ private data class QuickAction(val title: String, val subtitle: String, @Drawabl
 fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
     val c = Monika.colors
     val context = LocalContext.current
+    var refresh by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val bottomClearance = vn.aow.monika.ui.theme.dockContentClearance()
     // Hiện ngay bản đã lưu (lần trước), rồi tải bản mới ở nền → quay lại Trang chủ không phải chờ.
-    val posts by produceState<Result<List<Post>>?>(AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }) {
+    val posts by produceState<Result<List<Post>>?>(AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }, refresh) {
+        value = AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }
         val fresh = runCatching { AppGraph.feed.fetchList(HOME_KEY, max = 12) }
         if (fresh.isSuccess || value == null) value = fresh
         vn.aow.monika.ui.Inbox.tick.value++ // Có bài mới → chấm đỏ trên nút Menu.
@@ -97,7 +101,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
     }
 
     Screen {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DockClearance)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomClearance)) {
             item {
                 // Header gọn: logo Monika bên trái, avatar bên phải (menu + thông báo nằm ở nút Menu dưới đáy).
                 Row(
@@ -111,10 +115,8 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
             }
             val list = posts?.getOrNull()
             when {
-                posts == null -> item { Box(Modifier.fillMaxWidth().height(330.dp), Alignment.Center) { Spinner() } }
-                list.isNullOrEmpty() -> item {
-                    EmptyState(R.drawable.fluent3d_newspaper, "Chưa tải được bài viết", posts?.exceptionOrNull()?.message ?: "Kiểm tra kết nối mạng.")
-                }
+                posts == null -> item { FeedStatus(true) { refresh++ } }
+                list.isNullOrEmpty() -> item { FeedStatus(false) { refresh++ } }
                 else -> item { HeroCarousel(list.take(3), onOpenPost) }
             }
             continueGame?.let { g ->
@@ -142,7 +144,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
             }
             item { ForumSection() }
             item { CommunitySection() }
-            item { DonateBanner() }
+            // Một thẻ SupportStrip ở đầu trang; không lặp thẻ Donate ở cuối.
         }
     }
 }

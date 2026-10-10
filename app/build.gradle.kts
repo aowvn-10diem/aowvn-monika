@@ -21,8 +21,10 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 41
-        versionName = "0.7.6"
+        versionCode = 43
+        versionName = "0.7.8"
+        // V56: runner chỉ nằm trong APK instrumentation, không thêm lối vào app phát hành.
+        testInstrumentationRunner = "vn.aow.monika.testlab.KirikiriArmRunner"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
         buildConfigField(
             "String", "REMOTE_CONFIG_URL",
@@ -86,6 +88,7 @@ android {
     // Bản cấu hình dự phòng đóng gói trong APK = đúng file config/ ở gốc repo (1 nguồn duy nhất).
     sourceSets["test"].resources.srcDir("../cloudflare/crash-worker/fixtures")
     sourceSets["main"].assets.srcDirs("src/main/assets", "../config")
+    sourceSets["androidTest"].assets.srcDir(layout.buildDirectory.dir("generated/v56-assets"))
 }
 
 // Test trên máy tính: lấy lib7-Zip-JBinding.so bản Linux (cùng bản 16.02) để chạy code 7-Zip của Android.

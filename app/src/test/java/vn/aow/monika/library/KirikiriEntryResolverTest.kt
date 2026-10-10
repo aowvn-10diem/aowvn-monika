@@ -71,6 +71,25 @@ class KirikiriEntryResolverTest {
         assertTrue(r.details.all { it.length <= 280 })
     }
 
+    @Test fun notFoundDanhDauMaHoaChiKhiMoiXp3DeuCoCo() {
+        val all = tmp.newFolder("enc")
+        val a = put(all, "a.xp3", listOf("3f9a1c", "77be02"))
+        put(all, "patch.xp3", listOf("c0ffee", "a1b2c3"), pad = 500)
+        assertTrue((KirikiriEntryResolver.resolve(a) as EntryResolution.NotFound).encrypted)
+        val mixed = tmp.newFolder("mix")
+        val m = put(mixed, "a.xp3", listOf("3f9a1c", "77be02"))
+        put(mixed, "patch.xp3", listOf("scn/b.ks"), pad = 500)
+        assertTrue(!(KirikiriEntryResolver.resolve(m) as EntryResolution.NotFound).encrypted)
+    }
+
+    @Test fun looksEncrypted_nhanDienTheoTenMuc() {
+        assertTrue(!KirikiriEntryResolver.looksEncrypted(null))
+        assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(emptyList(), true)))
+        assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(listOf("a.png", "Scn/B.KS"), true)))
+        assertTrue(KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(listOf("a.png", "3f9a1c"), true)))
+        assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(listOf("a.png", "3f9a1c"), false))) // chỉ mục bị cắt: không kết luận
+    }
+
     @Test fun docDuocMoiXp3MaKhongCoStartup_baoNotFound() {
         val dir = tmp.newFolder("Game thieu")
         val main = put(dir, "game.xp3", listOf("image/a.png"), v2 = true)
@@ -99,4 +118,20 @@ class KirikiriEntryResolverTest {
         val r = KirikiriEntryResolver.resolve(dir) as EntryResolution.Use
         assertEquals(good.name, r.entry.name)
     }
+    @Test fun nhieuKhoThuongCoStartup_chonKhoLonNhatTruBanVa() {
+        val dir = tmp.newFolder("multiple-normal")
+        val wrong = put(dir, "extra.xp3", listOf("image/a.png"))
+        put(dir, "small.xp3", listOf("startup.tjs"), pad = 100)
+        val largest = put(dir, "large.xp3", listOf("startup.tjs"), pad = 2000)
+        put(dir, "patch.xp3", listOf("startup.tjs"), pad = 5000)
+        assertEquals(largest, (KirikiriEntryResolver.resolve(wrong) as EntryResolution.Use).entry)
+    }
+
+    @Test fun khoKhongDocDuoc_khongCanKhoThuongKhacCoStartup() {
+        val dir = tmp.newFolder("unreadable-with-startup")
+        val wrong = File(dir, "broken.xp3").also { it.writeBytes(ByteArray(500) { 3 }) }
+        val good = put(dir, "data.xp3", listOf("startup.tjs"))
+        assertEquals(good, (KirikiriEntryResolver.resolve(wrong) as EntryResolution.Use).entry)
+    }
+
 }

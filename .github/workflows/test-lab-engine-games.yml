@@ -1,0 +1,131 @@
+name: Test Lab ARM game (V56)
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/test-lab-engine-games.yml
+      - scripts/prepare-testlab-games.py
+      - scripts/collect-testlab-evidence.py
+      - scripts/test-testlab-evidence.py
+      - scripts/testlab-preflight.py
+      - scripts/test-testlab-preflight.py
+      - app/src/androidTest/**
+      - app/build.gradle.kts
+      - config/monika-config.json
+  workflow_dispatch:
+    inputs:
+      device:
+        type: choice
+        options: [cubs, grizzly]
+        default: cubs
+        description: "Một máy ARM; chọn grizzly xen kẽ theo ngày, không chạy lại khi hết quota"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: testlab-budget
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Cửa manual main
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+        run: test "$EVENT" != workflow_dispatch || test "$REF" = refs/heads/main
+      - name: Cửa exact Build, thay đổi engine và hạn mức5 UTC
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/testlab-preflight.py --physical
+      - uses: actions/setup-java@v6
+        with: {distribution: temurin, java-version: 17}
+      - uses: gradle/actions/setup-gradle@v6
+        with: {cache-provider: basic}
+      - name: Cài SDK33 của Kirikiri và NDK trong catalog
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-33" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+          # Fail here if SDK installation/download is incomplete, before Gradle or GCP.
+          python3 - <<'PY'
+          import os, zipfile
+          path = os.path.join(os.environ['ANDROID_HOME'], 'platforms/android-33/android.jar')
+          with zipfile.ZipFile(path) as jar:
+              assert 'android/content/Context.class' in jar.namelist()
+              assert jar.testzip() is None
+          print('Kirikiri compileSdk33 android.jar verified')
+          PY
+      - name: Kiểm cửa thu bằng chứng (dữ liệu giả, không game)
+        run: python3 scripts/test-testlab-evidence.py
+      - name: Sinh game CI và xác minh engine pack
+        run: python3 scripts/prepare-testlab-games.py --output app/build/generated/v56-assets --head "$(git rev-parse HEAD)"
+      - name: Build app debug và instrumentation (không release/sign/publish)
+        run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
+      # PR chỉ biên dịch; không có GCP Secrets, máy thật hay artifact APK/game trên PR.
+      - uses: google-github-actions/auth@v2
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v3
+        if: github.event_name == 'workflow_dispatch'
+      - name: Xác nhận một máy PHYSICAL, API 37 và ARM64
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+          DEVICE_MODEL: ${{ inputs.device }}
+        run: |
+          gcloud firebase test android models list --project "$GCP_PROJECT" --format=json > "$RUNNER_TEMP/v56-models.json"
+          python3 - <<'PY'
+          import json, os
+          models = json.load(open(os.environ['RUNNER_TEMP'] + '/v56-models.json'))
+          for name in (os.environ['DEVICE_MODEL'],):
+              assert name in ('cubs', 'grizzly')
+              model = next(m for m in models if m['id'] == name)
+              assert model['form'] == 'PHYSICAL', name
+              assert '37' in model['supportedVersionIds'], name
+              assert 'arm64-v8a' in model.get('supportedAbis', []), name
+              print(name + ': PHYSICAL / API37 / arm64-v8a')
+          PY
+      - name: Chạy K1–K8 trên một máy ARM thật (một cách instrumentation)
+        id: physical
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+          DEVICE_MODEL: ${{ inputs.device }}
+        run: |
+          set +e
+          gcloud firebase test android run --project "$GCP_PROJECT" \
+            --type instrumentation \
+            --app app/build/outputs/apk/debug/app-universal-debug.apk \
+            --test app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
+            --test-runner-class vn.aow.monika.testlab.KirikiriArmRunner \
+            --device "model=$DEVICE_MODEL,version=37" \
+            --timeout 12m --no-record-video \
+            --directories-to-pull /sdcard/Android/data/com.aow.monika/files/v56 \
+            --results-dir "v56-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --format=json > "$RUNNER_TEMP/v56-result.json" 2> "$RUNNER_TEMP/v56-result.stderr"
+          code=$?
+          echo "$code" > "$RUNNER_TEMP/v56-exit.txt"
+          echo "Kết thúc Test Lab, exit=$code; kết quả được thu riêng, không in thông tin GCP."
+          exit "$code"
+      - name: Thu ảnh/log/tombstone V56 có giới hạn, bỏ APK/game/credential
+        if: always() && github.event_name == 'workflow_dispatch'
+        env:
+          V56_EXPECTED_DEVICES: "1"
+        run: python3 scripts/collect-testlab-evidence.py --result "$RUNNER_TEMP/v56-result.json" --stderr "$RUNNER_TEMP/v56-result.stderr" --output v56-evidence
+      - uses: actions/upload-artifact@v7
+        if: always() && github.event_name == 'workflow_dispatch'
+        with:
+          name: v56-arm-evidence
+          path: v56-evidence/
+          retention-days: 2
+          if-no-files-found: error

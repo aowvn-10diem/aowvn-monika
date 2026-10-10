@@ -1,6 +1,6 @@
-# Hướng dẫn thử app — Tester ngoài
+# Hướng dẫn thử app 0.7.7 (bản thử) — Tester ngoài
 
-Cảm ơn bạn đã giúp thử app **AowVN Monika**. Bên dưới là các bước để kiểm tra từng loại game được hỗ trợ.
+Cảm ơn bạn đã giúp thử app **AowVN Monika**. v0.7.7 hiện là bản thử (pre-release), chưa phải bản ổn định. Bên dưới là các bước để kiểm tra từng loại game được hỗ trợ.
 
 ---
 
@@ -10,10 +10,11 @@ Kirikiri là engine chạy game visual novel (VN) với tệp startup.tjs.
 
 **Bước thử:**
 1. Mở app, chọn thư mục chứa game Kirikiri.
-2. Nếu app phát hiện startup.tjs, game sẽ tải. Nếu không, app sẽ báo lỗi.
-3. Nhấp "Khởi động" để chạy game.
-4. Kiểm tra: game hiển thị, có thể tương tác (bấm, swipe, chọn menu).
-5. Nếu gặp lỗi, từ màn hình game, bấm nút menu → "Báo lỗi game này" → ghi thông tin.
+2. Chọn tệp `.xp3` hoặc thư mục game. Nếu hiện cảnh báo không tìm thấy `startup.tjs` hoặc gói `.xp3` có vẻ mã hóa, ghi lại đúng thông báo. Trường hợp mã hóa chỉ là dấu hiệu **chưa xác nhận**; lõi Kirikiri hiện chưa hỗ trợ loại đó.
+3. Tại cảnh báo, bấm **Báo lỗi game này** để mở biểu mẫu; có thể chụp màn hình cảnh báo làm bằng chứng.
+4. Nếu không có cảnh báo, nhấp **Chơi** để chạy game.
+5. Kiểm tra: game hiển thị, có thể tương tác (bấm, vuốt, chọn menu).
+6. Nếu gặp lỗi khi chơi, từ màn hình game bấm menu → **Báo lỗi game này** → ghi thông tin.
 
 ---
 
@@ -24,7 +25,7 @@ RPG Maker là engine phát triển game RPG (Data.system.bin, cấu hình RGSS h
 **Bước thử:**
 1. Mở app, chọn thư mục game RPG Maker.
 2. App sẽ kiểm tra loại RGSS (1/2/3) từ tệp game.
-3. Nhấp "Khởi động" để chạy game.
+3. Nhấp "Chơi" để chạy game.
 4. Kiểm tra: màn hình game hiển thị, nhân vật di chuyển, chiêu thức/item hoạt động.
 5. Nếu gặp lỗi, từ màn hình game, bấm nút menu → "Báo lỗi game này" → ghi thông tin.
 
@@ -63,7 +64,7 @@ ONScripter là engine chạy game với script (.ons hoặc tệp startup chỉ 
 **Bước thử:**
 1. Mở app, chọn thư mục game ONScripter.
 2. App sẽ kiểm tra và xác nhận engine ONScripter.
-3. Nhấp "Khởi động" để chạy game.
+3. Nhấp "Chơi" để chạy game.
 4. Kiểm tra: game hiển thị, có thể đọc cốt truyện, menu tương tác.
 5. Nếu gặp lỗi, từ màn hình game, bấm nút menu → "Báo lỗi game này" → ghi thông tin.
 
@@ -76,3 +77,7 @@ Từ bất kỳ màn hình chơi game nào, bạn có thể báo lỗi:
 - Hoặc: từ màn hình chính app → chọn game → nút "Báo lỗi game này" (dưới cùng).
 
 Mẫu issue sẽ tự động hiển thị. Vui lòng điền đầy đủ: máy, phiên bản Android, bản app, các bước tái hiện, kết quả, ảnh chụp màn hình nếu có.
+
+Trong cảnh báo Kirikiri, nút **Báo lỗi game này** mở biểu mẫu; nút gửi là **Gửi báo lỗi**. Nếu app báo gửi thất bại, hãy chép nội dung đã lưu và gửi kèm ảnh cảnh báo. Không gửi tệp game.
+
+Tên nút đối chiếu `app/src/main/res/values/strings.xml`: `engine_entry_not_found`, `engine_entry_encrypted`, `game_report_title`, `game_report_send`, `game_report_send_failed`.
