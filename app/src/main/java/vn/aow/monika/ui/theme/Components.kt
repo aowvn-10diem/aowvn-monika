@@ -448,7 +448,7 @@ fun AowPixelSurface(
         if (state == AowButtonState.PRESSED && motion.enabled) AowPixelMetrics.press else 0.dp,
         tween(motion.fast.coerceAtLeast(1)), label = "aow-pixel-press",
     )
-    Box(modifier.padding(bottom = AowPixelMetrics.shadow)) {
+    Box(modifier.padding(bottom = AowPixelMetrics.shadow), propagateMinConstraints = true) {
         Box(Modifier.matchParentSize().offset(y = AowPixelMetrics.shadow).clip(shape).background(c.outline))
         Box(
             Modifier.offset(y = press).clip(shape).background(palette.face)
@@ -486,7 +486,7 @@ fun AowPixelButton(
         AowButtonState.DISABLED -> "Vô hiệu"
     }
     AowPixelSurface(state, modifier.heightIn(min = AowPixelMetrics.buttonHeight)
-        .semantics {
+        .semantics(mergeDescendants = true) {
             stateDescription = description
             this.selected = selected || focused
             if (!enabled) disabled()

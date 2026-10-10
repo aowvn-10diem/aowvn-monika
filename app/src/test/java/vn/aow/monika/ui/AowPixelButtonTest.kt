@@ -1,5 +1,7 @@
 package vn.aow.monika.ui
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.BitmapFactory
 import java.io.File
 import androidx.compose.ui.graphics.Color
@@ -71,7 +73,8 @@ class AowPixelButtonTest {
                                         AowButtonState.PRESSED -> "NHẤN"
                                         AowButtonState.DISABLED -> "VÔ HIỆU"
                                     }, color = label, style = Monika.type.button,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp))
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp)
+                                            .testTag("label-$state-$style"))
                                 }
                             }
                         }
@@ -84,7 +87,24 @@ class AowPixelButtonTest {
         rule.mainClock.advanceTimeBy(1_000)
         rule.onAllNodesWithText("TIẾP TỤC", substring = false).assertCountEquals(2)
         rule.onNodeWithText("KHÔNG KHẢ DỤNG").assertIsNotEnabled().assertIsDisplayed()
-        repeat(3) { rule.mainClock.advanceTimeByFrame(); rule.waitForIdle() }
+        // Chờ glyph thực vẽ trên decorView, không chỉ có node semantics từ layout.
+        rule.waitUntil(timeoutMillis = 2_000) {
+            rule.mainClock.advanceTimeByFrame(); rule.waitForIdle()
+            val view = rule.activity.window.decorView
+            val bmp = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            rule.runOnUiThread { view.invalidate(); view.draw(Canvas(bmp)) }
+            try {
+                AowButtonState.entries.all { state ->
+                    val box = rule.onNodeWithTag("label-$state-DARK", useUnmergedTree = true)
+                        .fetchSemanticsNode().boundsInWindow
+                    var ink = 0
+                    for (y in box.top.toInt().coerceAtLeast(0) until box.bottom.toInt().coerceAtMost(bmp.height))
+                        for (x in box.left.toInt().coerceAtLeast(0) until box.right.toInt().coerceAtMost(bmp.width))
+                            if (Color(bmp.getPixel(x, y)).luminance() > .9f) ink++
+                    ink >= 10
+                }
+            } finally { bmp.recycle() }
+        }
         val name = "v85a-${tier.name.lowercase()}-${if (dark) "toi" else "sang"}"
         rule.shot(name)
         val bounds = rule.onNodeWithTag("SELECTED-ORANGE").fetchSemanticsNode().boundsInWindow
@@ -124,7 +144,13 @@ class AowPixelButtonTest {
         node.assertIsSelected()
         rule.runOnIdle { enabled.value = false }
         rule.mainClock.advanceTimeBy(1_000)
-        node.assertIsNotEnabled().performTouchInput { click(center) }
+        try {
+            node.assertIsNotEnabled()
+            node.performTouchInput { click(center) }
+        } catch (e: AssertionError) {
+            println("V85a transition: ${e.message}\n${node.printToString()}")
+            throw e
+        }
         assertEquals(1, clicks)
     }
 }
