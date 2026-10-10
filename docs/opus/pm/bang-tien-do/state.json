@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-10T11:15:29Z",
+ "updatedAt": "2026-10-10T12:13:41Z",
  "mainSha": "60fbffb",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
@@ -991,7 +991,7 @@
    "title": "NDS: màn hình to + tiêu đề tự ẩn + mục Màn hình trong Cài đặt",
    "owner": "",
    "status": "dang",
-   "note": "Sếp giao 10/10 sau thử bản thử v0.7.8; owner Nova; hạn 10/10 22:00 (A25)"
+   "note": "V78c #191 gộp 608b12a; V78a+b #189 còn 2 test đỏ"
   },
   {
    "code": "V79",
