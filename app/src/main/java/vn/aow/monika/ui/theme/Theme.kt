@@ -67,6 +67,30 @@ data class MonikaColors(
     val controlSurface: Color = Color(0xFFF7F2EC),
     val controlInk: Color = Color(0xFF181719),
     val isDark: Boolean,
+    val aow: AowColors = AowColors(),
+)
+
+/** Token vẽ lại từ ui-kit AowVN; nhãn cam dùng mực đen để đạt 4.5:1. */
+@Immutable
+data class AowColors(
+    val orange: Color = Color(0xFFFD4C0F),
+    val orangeLight: Color = Color(0xFFFC5217),
+    val orangeSelected: Color = Color(0xFFEA2D01),
+    val orangePressed: Color = Color(0xFFD92501),
+    val dark: Color = Color(0xFF171919),
+    val darkPressed: Color = Color(0xFF8E0F01),
+    val disabled: Color = Color(0xFF79797A),
+    val disabledDark: Color = Color(0xFF575859),
+    val outline: Color = Color.Black,
+    val focus: Color = Color(0xFFFFF61F),
+    val padSurface: Color = Color(0xFF282C2F),
+    val ink: Color = Color.Black,
+    val onDark: Color = Color.White,
+    val outerRim: Color = Color(0xFFFEFEFA),
+    val xboxA: Color = Color(0xFF6CE12C),
+    val xboxB: Color = Color(0xFFFF362A),
+    val xboxX: Color = Color(0xFF1C97FB),
+    val xboxY: Color = Color(0xFFF8DA03),
 )
 
 private val LightColors = MonikaColors(
