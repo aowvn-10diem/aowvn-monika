@@ -385,6 +385,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
         )
         GameMenuSheet(gameMenu, { gameMenu = null }, pinned,
             onPatched = { reloadKey++ },
+            onRequestAccess = ::requestScanAccess,
             onPlay = { play(it) },
             onExtract = { password = ""; toExtract = it },
             onDelete = { toDelete = it },
@@ -601,7 +602,7 @@ private fun redownload(context: android.content.Context, g: Game) {
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
     game: Game?, onDismiss: () -> Unit, pinned: Set<String>, onPatched: () -> Unit,
-    onPlay: (Game) -> Unit, onExtract: (Game) -> Unit, onDelete: (Game) -> Unit, onTogglePin: (Game) -> Unit,
+    onPlay: (Game) -> Unit, onExtract: (Game) -> Unit, onDelete: (Game) -> Unit, onTogglePin: (Game) -> Unit, onRequestAccess: () -> Unit,
 ) {
     val context = LocalContext.current
     // Giữ game cuối cùng để menu vẫn có nội dung khi đang trượt xuống.
@@ -646,7 +647,7 @@ private fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
                 SheetAction(if (g.key in pinned) "Bỏ giữ lại" else "Giữ lại", if (g.key in pinned) R.drawable.ic_fluent_heart_24_filled else R.drawable.ic_fluent_heart_24_regular) { onTogglePin(g) }
             )
             raGameId?.let { id -> add(SheetAction("Thành tựu RetroAchievements", R.drawable.ic_fluent_star_24_regular) { raOpen = id }) }
-            if (g.locked) add(SheetAction("Cấp quyền", R.drawable.ic_fluent_lock_closed_24_regular) { requestScanAccess() })
+            if (g.locked) add(SheetAction("Cấp quyền", R.drawable.ic_fluent_lock_closed_24_regular, onClick = onRequestAccess))
             add(SheetAction(if (g.external) "Ẩn khỏi Thư viện" else "Xóa game", R.drawable.ic_fluent_delete_24_regular) { onDelete(g) })
         },
         header = if (g == null) null else ({
