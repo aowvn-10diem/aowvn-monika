@@ -57,6 +57,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.AppCompatCheckBox;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.Lifecycle;
 import androidx.preference.PreferenceManager;
 
@@ -98,7 +100,6 @@ public class MicroActivity extends AppCompatActivity {
 	private static final int ORIENTATION_LANDSCAPE = 3;
 
 	private Displayable current;
-	private boolean actionBarEnabled;
 	private boolean statusBarEnabled;
 	private MicroLoader microLoader;
 	private String appName;
@@ -115,9 +116,9 @@ public class MicroActivity extends AppCompatActivity {
 		binding = ActivityMicroBinding.inflate(getLayoutInflater());
 		setContentView(binding.getRoot());
 		setSupportActionBar(binding.toolbar);
+		setupMonikaMenuButton();
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-		actionBarEnabled = sp.getBoolean(PREF_TOOLBAR, false);
 		statusBarEnabled = sp.getBoolean(PREF_STATUSBAR, false);
 		if (sp.getBoolean(PREF_KEEP_SCREEN, false)) {
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -151,7 +152,7 @@ public class MicroActivity extends AppCompatActivity {
 		SkinLayer skinLayer = SkinLayer.getInstance();
 		if (skinLayer != null) {
 			binding.overlay.addLayer(skinLayer);
-			if (!statusBarEnabled && !actionBarEnabled) {
+			if (!statusBarEnabled) {
 				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
 					WindowManager.LayoutParams attributes = getWindow().getAttributes();
 					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -280,14 +281,6 @@ public class MicroActivity extends AppCompatActivity {
 		builder.show();
 	}
 
-	private float getToolBarHeight() {
-		TypedValue typedValue = new TypedValue();
-		if (getTheme().resolveAttribute(androidx.appcompat.R.attr.actionBarSize, typedValue, true)) {
-			return typedValue.getDimension(getResources().getDisplayMetrics());
-		}
-		return 0;
-	}
-
 	private void hideSystemUI() {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
 			int flags = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
@@ -400,6 +393,32 @@ public class MicroActivity extends AppCompatActivity {
 		}
 	}
 
+	/** Aow Monika: nút menu nổi duy nhất trên màn chơi — bấm = mở menu Monika (đẩy khỏi tai thỏ / thanh trạng thái). */
+	private void setupMonikaMenuButton() {
+		final android.widget.ImageButton button = binding.monikaMenuButton;
+		button.setOnClickListener(v -> openOptionsMenu());
+		final int base = (int) (10 * getResources().getDisplayMetrics().density);
+		ViewCompat.setOnApplyWindowInsetsListener(button, (v, insets) -> {
+			androidx.core.graphics.Insets bars = insets.getInsets(
+					WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+			android.view.ViewGroup.MarginLayoutParams lp = (android.view.ViewGroup.MarginLayoutParams) v.getLayoutParams();
+			lp.topMargin = base + bars.top;
+			lp.setMarginEnd(base + bars.right);
+			v.setLayoutParams(lp);
+			return insets;
+		});
+	}
+
+	/** Dự phòng khi app chính chưa gắn {@link J2meRuntime#menuPresenter}: menu gốc, neo vào nút menu nổi. */
+	private void showFallbackMenu() {
+		android.widget.PopupMenu popup = new android.widget.PopupMenu(this, binding.monikaMenuButton);
+		Menu menu = popup.getMenu();
+		onCreateOptionsMenu(menu);
+		onPrepareOptionsMenu(menu);
+		popup.setOnMenuItemClickListener(this::onOptionsItemSelected);
+		popup.show();
+	}
+
 	public void showExitConfirmation() {
 		J2meRuntime.MenuPresenter presenter = J2meRuntime.menuPresenter;
 		if (presenter != null) {
@@ -459,11 +478,7 @@ public class MicroActivity extends AppCompatActivity {
 			showMonikaMenu(presenter);
 			return;
 		}
-		if (!actionBarEnabled &&
-				Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && current instanceof Canvas) {
-			showSystemUI();
-		}
-		super.openOptionsMenu();
+		showFallbackMenu();
 	}
 
 	@Override
@@ -497,10 +512,6 @@ public class MicroActivity extends AppCompatActivity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.midlet_displayable, menu);
-		if (actionBarEnabled) {
-			menu.findItem(R.id.action_ime_keyboard).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-			menu.findItem(R.id.action_take_screenshot).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-		}
 		if (inputMethodManager == null) {
 			menu.findItem(R.id.action_ime_keyboard).setVisible(false);
 		}
@@ -771,22 +782,13 @@ public class MicroActivity extends AppCompatActivity {
 			int toolbarHeight = 0;
 			if (next instanceof Canvas) {
 				hideSystemUI();
-				if (!actionBarEnabled) {
-					actionBar.hide();
-				} else {
-					final String title = next.getTitle();
-					actionBar.setTitle(title == null ? appName : title);
-					toolbarHeight = (int) (getToolBarHeight() / 1.5);
-					layoutParams.height = toolbarHeight;
-				}
 			} else {
 				showSystemUI();
-				actionBar.show();
-				final String title = next != null ? next.getTitle() : null;
-				actionBar.setTitle(title == null ? appName : title);
-				toolbarHeight = (int) getToolBarHeight();
-				layoutParams.height = toolbarHeight;
 			}
+			// Aow Monika: không còn thanh công cụ trên đầu (cả màn chơi lẫn Form/List); mọi chức năng nằm trong
+			// menu Monika, mở bằng nút menu nổi (monikaMenuButton) hoặc phím Back/Menu.
+			actionBar.hide();
+			layoutParams.height = 0;
 			binding.overlay.setLocation(0, toolbarHeight);
 			binding.toolbar.setLayoutParams(layoutParams);
 			if (next != null) {

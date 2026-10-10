@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Aow Monika: nút menu nổi trên màn chơi Java — tròn, than kính mờ, viền sáng mảnh; nhấn = gradient cam–hồng. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="oval">
+            <gradient android:angle="0" android:startColor="#E0621E" android:endColor="#D9487F" />
+            <stroke android:width="1dp" android:color="#55FFFFFF" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#CC202124" />
+            <stroke android:width="1dp" android:color="#33FFFFFF" />
+        </shape>
+    </item>
+</selector>

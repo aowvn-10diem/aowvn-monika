@@ -39,6 +39,7 @@ sau đó chạy. Game chạy trong tiến trình riêng `:midlet` (như bản g�
 | `installer/MonikaLaunchActivity.java` (mới) + `J2meRuntime.openGameIntent` | Màn "chuẩn bị game" kiểu Monika: tự cài lần đầu, tự chạy; không qua danh sách app/hộp thoại cài | Game Java mở như 1 phần của Monika |
 | `Config.startApp`, `ConfigActivity` | Game mới: tạo cấu hình mặc định rồi chạy luôn (không bắt vào màn cài đặt riêng) | Bớt bước thừa |
 | `MicroActivity` + chuỗi `monika_*` | Hộp thoại thoát: "Thoát về Aow Monika?" / Chơi tiếp / Cài đặt game | Thoát là về Monika |
+| `MicroActivity`, `res/layout/activity_micro.xml`, `J2meRuntime.init` (V77) | Bỏ thanh công cụ trên đầu màn chơi (cả Canvas lẫn Form/List; bỏ mặc định `pref_actionbar_switch`). Thay bằng MỘT nút menu nổi `monika_menu_button` (góc trên phải, tránh tai thỏ/thanh trạng thái) mở menu Monika; menu này gom đủ mục của menu J2ME gốc (thoát, lưu log, khóa xoay, bàn phím hệ thống, chụp màn hình, giới hạn FPS, tùy chọn phím ảo). Không đổi bàn phím ảo | Menu nằm một chỗ, thanh trên đầu không chiếm chỗ màn game |
 | `VirtualKeyboard` `TYPE_MONIKA`, `ProfileModel.vkType` | Bàn phím mặc định: trái bàn số 3×4, phải L ↑ R / ← OK → / ↓ Menu; màu theo nhóm phím | Giống cảm giác điện thoại, dễ bấm |
 | `res/values*/colors.xml`, `styles.xml`, `drawable/bg_*.xml`, `font/manrope.ttf` | Bảng màu Monika, nút viên thuốc gradient, thẻ/hộp thoại bo lớn, font Manrope | Giao diện đồng bộ Monika |
 
