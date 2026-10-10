@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-10T00:42:42Z",
+ "updatedAt": "2026-10-10T00:45:29Z",
  "mainSha": "f5b9815",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
@@ -1006,6 +1006,13 @@
    "owner": "",
    "status": "dang",
    "note": "Sếp giao 10/10 sau thử bản thử v0.7.8; owner Sol; hạn 10/10 22:00 (A25)"
+  },
+  {
+   "code": "V81",
+   "title": "Kirikiri gắn nhãn thử nghiệm qua config",
+   "owner": "",
+   "status": "dang",
+   "note": "A26 sếp chốt; Sol; hạn 10/10 16:00"
   }
  ],
  "gates": [
@@ -1088,6 +1095,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-10T00:45:29Z",
+   "text": "[A26] Kirikiri vẫn lỗi trên máy sếp (v0.7.8); gắn nhãn thử nghiệm qua config trong v0.7.9 (V81, Sol). Log crash cần CRASH_ADMIN_TOKEN, PM chưa đọc."
+  },
   {
    "t": "2026-10-10T00:42:42Z",
    "text": "[A25] Sếp thử v0.7.8 trên máy, giao 5 việc gấp V75–V79 (+V80 bump). Bản ổn định = v0.7.9. Sol/Nova làm; Luna 3, Haiku-2 tiền duyệt, Luna Ultra lần hai."
