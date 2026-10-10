@@ -35,6 +35,13 @@ object KirikiriDiag {
         }, "kirikiri-diag-log").apply { isDaemon = true }.start()
     }
 
+    /** Văn bản hỗ trợ thủ công, giới hạn cùng 8 giây và chỉ chứa metadata như breadcrumb. */
+    internal fun reportText(entryPath: String?): String {
+        val lines = vn.aow.monika.library.TimedCall.run(TIMEOUT_MS, "kirikiri-diag-copy") { describe(entryPath) }
+            ?: listOf("Không đọc được thông tin Kirikiri trong ${TIMEOUT_MS / 1000} giây")
+        return Diagnostics.scrub(null, lines.joinToString("\n")).take(8 * 1024)
+    }
+
     /** Tách riêng để kiểm thử: trả về các dòng vệt cho một đường dẫn lối vào. */
     internal fun describe(entryPath: String?): List<String> {
         if (entryPath.isNullOrBlank()) return listOf("không có đường dẫn (vào trình duyệt file của Kirikiri)")

@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -31,30 +32,43 @@ private fun Context.activity(): Activity? = when (this) {
 
 /** Dùng trong menu game; không chụp trước khi người chơi bấm action này. */
 @Composable
-fun gameReportAction(closeMenu: () -> Unit): SheetAction {
+fun gameReportAction(gameTitle: String? = null, component: String? = null,
+                     extraDetail: String = "", closeMenu: () -> Unit): SheetAction {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var open by remember { mutableStateOf(false) }
     var image by remember { mutableStateOf<Diagnostics.ReportImage?>(null) }
     var busy by remember { mutableStateOf(false) }
-    if (open) GameReportDialog(image, busy, { if (!busy) open = false }) { type, description, included ->
-        busy = true
+    var sendError by remember { mutableStateOf<String?>(null) }
+    if (open) GameReportDialog(image, busy, { if (!busy) open = false }, sendError) { type, description, included ->
+        busy = true; sendError = null
         scope.launch {
-            val sent = withContext(Dispatchers.IO) {
-                val report = Diagnostics.recordUser(context, type, description, included)
-                Diagnostics.sendResult(context, AppGraph.http, report, AppGraph.config.current.crash.endpoint)
-            }
-            busy = false; open = false
-            Toast.makeText(context, if (sent.ok) context.getString(R.string.game_report_sent)
-                else context.getString(R.string.game_report_send_failed, sent.error), Toast.LENGTH_LONG).show()
+            try {
+                val sent = withContext(Dispatchers.IO) {
+                    safelySendUserReport {
+                        val report = Diagnostics.recordUser(context, type, description, included,
+                            gameTitle = gameTitle, component = component, extraDetail = extraDetail)
+                        Diagnostics.sendResult(context, AppGraph.http, report, AppGraph.config.current.crash.endpoint)
+                    }
+                }
+                if (sent.ok) {
+                    open = false
+                    Toast.makeText(context, context.getString(R.string.game_report_sent), Toast.LENGTH_LONG).show()
+                } else {
+                    // Giữ bản nháp để thử lại; lỗi tạo/lưu báo cáo cũng có lý do thay vì mắc ở "Đang gửi".
+                    sendError = context.getString(R.string.game_report_send_failed, sent.error ?: "lỗi không rõ")
+                }
+            } finally { busy = false }
         }
     }
     return SheetAction(stringResource(R.string.game_report_title), R.drawable.ic_fluent_document_24_regular) {
         closeMenu()
         scope.launch {
             delay(220) // Menu đóng trước fallback PixelCopy Window.
-            image = context.activity()?.let { UserGameReport.capture(it) }
-            open = true
+            image = try { context.activity()?.let { UserGameReport.capture(it) } }
+                catch (e: CancellationException) { throw e }
+                catch (_: Exception) { null } // Vẫn mở form chữ nếu không chụp được màn chuẩn bị.
+            sendError = null; open = true
         }
     }
 }
@@ -67,11 +81,11 @@ private class ReportDraft(initialType: String) {
 
 @Composable
 internal fun GameReportDialog(image: Diagnostics.ReportImage?, busy: Boolean, onClose: () -> Unit,
-                              onSend: (String, String, Diagnostics.ReportImage?) -> Unit) {
+                              error: String? = null, onSend: (String, String, Diagnostics.ReportImage?) -> Unit) {
     val initialType = stringResource(R.string.game_report_type_other)
     val draft = remember { ReportDraft(initialType) }
     AlertDialog(onDismissRequest = { if (!busy) onClose() }, title = { Text(stringResource(R.string.game_report_title)) },
-        text = { GameReportFields(draft, image, busy) },
+        text = { GameReportContent(draft, image, busy, error) },
         confirmButton = { GameReportSubmit(draft, image, busy, onSend) },
         dismissButton = { TextButton(enabled = !busy, onClick = onClose) { Text(stringResource(R.string.game_report_cancel)) } })
 }
@@ -79,15 +93,24 @@ internal fun GameReportDialog(image: Diagnostics.ReportImage?, busy: Boolean, on
 /** Test cùng trường + nút gửi, không phụ thuộc cửa sổ Dialog của Robolectric. */
 @Composable
 internal fun GameReportForm(image: Diagnostics.ReportImage?, busy: Boolean, onClose: () -> Unit,
-                            onSend: (String, String, Diagnostics.ReportImage?) -> Unit) {
+                            error: String? = null, onSend: (String, String, Diagnostics.ReportImage?) -> Unit) {
     val initialType = stringResource(R.string.game_report_type_other)
     val draft = remember { ReportDraft(initialType) }
     Column {
-        GameReportFields(draft, image, busy)
+        GameReportContent(draft, image, busy, error)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(enabled = !busy, onClick = onClose) { Text(stringResource(R.string.game_report_cancel)) }
             GameReportSubmit(draft, image, busy, onSend)
         }
+    }
+}
+
+@Composable
+private fun GameReportContent(draft: ReportDraft, image: Diagnostics.ReportImage?, busy: Boolean, error: String?) {
+    Column {
+        GameReportFields(draft, image, busy)
+        error?.let { Text(it, style = vn.aow.monika.ui.theme.Monika.type.caption,
+            color = vn.aow.monika.ui.theme.Monika.colors.danger, modifier = Modifier.padding(top = 8.dp)) }
     }
 }
 
@@ -115,3 +138,8 @@ private fun GameReportSubmit(draft: ReportDraft, image: Diagnostics.ReportImage?
         Text(stringResource(if (busy) R.string.game_report_sending else R.string.game_report_send))
     }
 }
+
+/** Bắt cả khâu tạo/lưu báo cáo, không chỉ lỗi HTTP; hủy màn hình vẫn hủy coroutine. */
+internal fun safelySendUserReport(send: () -> Diagnostics.SendResult): Diagnostics.SendResult = try { send() }
+catch (e: CancellationException) { throw e }
+catch (e: Exception) { Diagnostics.SendResult(false, e.javaClass.simpleName.ifBlank { "lỗi tạo báo cáo" }) }

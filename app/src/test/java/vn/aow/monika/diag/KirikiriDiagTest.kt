@@ -45,4 +45,19 @@ class KirikiriDiagTest {
         assertTrue(lines.any { it.contains("startup.tjs rời=true") })
         assertEquals(1, KirikiriDiag.describe(null).size)
     }
+    @Test fun manualCopyUsesSameMetadataWithoutPathsOrArchiveContents() {
+        val dir = tmp.newFolder("game-copy")
+        Xp3Fixture.xp3(dir, listOf("scripts/main.ks"), compressed = true).renameTo(File(dir, "data.xp3"))
+        Xp3Fixture.xp3(dir, listOf("startup.tjs"), compressed = false).renameTo(File(dir, "patch.xp3"))
+        File(dir, "game.exe").writeBytes(ByteArray(3_072))
+        val entry = File(dir, "data.xp3").path
+        val copy = KirikiriDiag.reportText(entry)
+        assertEquals(KirikiriDiag.describe(entry).joinToString("\n"), copy)
+        assertTrue(copy.contains("xp3 data.xp3") && copy.contains("startup.tjs@gốc=false"))
+        assertTrue(copy.contains("xp3 patch.xp3") && copy.contains("startup.tjs@gốc=true"))
+        assertTrue(copy.contains("exe game.exe 3KB"))
+        assertFalse(copy.contains(tmp.root.path) || copy.contains("scripts/main.ks"))
+        assertTrue(copy.length <= 8 * 1024)
+    }
+
 }

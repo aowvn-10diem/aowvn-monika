@@ -42,4 +42,36 @@ class GameReportUiTest {
         rule.mainClock.advanceTimeBy(100)
         rule.runOnIdle { assertEquals(Triple("Lỗi khác","",null),submitted) }
     }
+    @Test fun failedSendShowsReasonKeepsDraftAndAllowsRetry() {
+        val error = androidx.compose.runtime.mutableStateOf<String?>(null)
+        var sends = 0
+        var lastDescription = ""
+        rule.setContent { MonikaTheme {
+            androidx.compose.material3.Surface {
+            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier) {
+            GameReportForm(null, false, {}, error.value) { _, description, _ ->
+                sends++; lastDescription = description
+                error.value = "Chưa gửi được báo lỗi (HTTP 503). Bạn có thể thử lại."
+            }
+            } }
+        } }
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithText("Mô tả thêm (tùy chọn)").performTextInput("Không có startup.tjs")
+        rule.mainClock.advanceTimeBy(1_000)
+        repeat(3) { rule.mainClock.advanceTimeByFrame(); rule.waitForIdle() }
+        rule.onNodeWithText("Gửi báo lỗi").performClick()
+        rule.waitUntil(timeoutMillis = 2_000) {
+            rule.mainClock.advanceTimeByFrame(); rule.waitForIdle()
+            rule.onAllNodesWithText("Chưa gửi được báo lỗi (HTTP 503). Bạn có thể thử lại.").fetchSemanticsNodes().isNotEmpty()
+        }
+        rule.onNodeWithText("Chưa gửi được báo lỗi (HTTP 503). Bạn có thể thử lại.").assertIsDisplayed()
+        rule.onNodeWithText("Gửi báo lỗi").assertIsEnabled()
+        rule.onNodeWithText("Không có startup.tjs").assertExists()
+        rule.mainClock.advanceTimeBy(1_000)
+        repeat(3) { rule.mainClock.advanceTimeByFrame(); rule.waitForIdle() }
+        rule.shot("v82-send-error")
+        rule.onNodeWithText("Gửi báo lỗi").performClick()
+        assertEquals(2, sends); assertEquals("Không có startup.tjs", lastDescription)
+    }
+
 }
