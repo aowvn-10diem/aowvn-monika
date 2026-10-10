@@ -21,7 +21,12 @@ class DeviceScanner(private val context: Context) {
     private val sp = context.getSharedPreferences("device_scan", Context.MODE_PRIVATE)
 
     /** Có quyền thấy file của app khác không. */
-    fun canScanAll(): Boolean = Build.VERSION.SDK_INT < 30 || runCatching { Environment.isExternalStorageManager() }.getOrDefault(false)
+    fun canScanAll(): Boolean = when {
+        Build.VERSION.SDK_INT >= 30 -> runCatching { Environment.isExternalStorageManager() }.getOrDefault(false)
+        Build.VERSION.SDK_INT >= 23 -> androidx.core.content.ContextCompat.checkSelfPermission(context,
+            android.Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        else -> true
+    }
 
     val lastScan get() = sp.getLong("last", 0L)
 
