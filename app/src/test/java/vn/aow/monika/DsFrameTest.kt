@@ -19,7 +19,7 @@ class DsFrameTest {
         assertEquals((w / DsFrame.ASPECT).toInt(), tall)
     }
 
-    @Test fun framePicturesAtLeastNinetyPercentOfWidthOnATypicalPhone() {
+    @Test fun framePictureNearlyFillsWidthOnATypicalPhone() {
         val top = (DsFrame.TOP_GAP_DP * 2.75f).toInt() + 90
         val frameH = DsFrame.portraitHeight(w, h, top, reserve)
         val pictureWidth = frameH * DsFrame.ASPECT // lõi giữ tỉ lệ 2:3 trong khung
