@@ -440,6 +440,8 @@ fun AowPixelSurface(
 ) {
     val c = Monika.colors.aow
     val palette = c.buttonPalette(style, state)
+    val rimWidth = if (state == AowButtonState.SELECTED) AowPixelMetrics.focus else AowPixelMetrics.rim
+    val rimColor = if (state == AowButtonState.SELECTED) c.focus else c.outerRim
     val motion = Monika.motion
     val press by animateDpAsState(
         if (state == AowButtonState.PRESSED && motion.enabled) AowPixelMetrics.press else 0.dp,
@@ -449,9 +451,8 @@ fun AowPixelSurface(
         Box(Modifier.matchParentSize().offset(y = AowPixelMetrics.shadow).clip(shape).background(c.outline))
         Box(
             Modifier.offset(y = press).clip(shape).background(palette.face)
-                .border(AowPixelMetrics.outline + AowPixelMetrics.rim, c.outline, shape)
-                .border(AowPixelMetrics.rim, c.outerRim, shape)
-                .then(if (state == AowButtonState.SELECTED) Modifier.border(AowPixelMetrics.focus, c.focus, shape) else Modifier),
+                .border(AowPixelMetrics.outline + rimWidth, c.outline, shape)
+                .border(rimWidth, rimColor, shape),
             contentAlignment = Alignment.Center,
         ) { content(palette.label) }
     }

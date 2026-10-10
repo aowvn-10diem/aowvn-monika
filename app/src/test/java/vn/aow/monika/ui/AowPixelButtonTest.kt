@@ -1,5 +1,8 @@
 package vn.aow.monika.ui
 
+import android.graphics.BitmapFactory
+import java.io.File
+import androidx.compose.ui.graphics.Color
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -60,7 +63,7 @@ class AowPixelButtonTest {
                     AowButtonState.entries.forEach { state ->
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             AowButtonStyle.entries.forEach { style ->
-                                AowPixelSurface(state, Modifier.weight(1f), style) { label ->
+                                AowPixelSurface(state, Modifier.weight(1f).testTag("$state-$style"), style) { label ->
                                     Text(when (state) {
                                         AowButtonState.NORMAL -> "THƯỜNG"
                                         AowButtonState.SELECTED -> "CHỌN"
@@ -81,7 +84,17 @@ class AowPixelButtonTest {
         rule.onAllNodesWithText("TIẾP TỤC", substring = false).assertCountEquals(2)
         rule.onNodeWithText("KHÔNG KHẢ DỤNG").assertIsNotEnabled().assertIsDisplayed()
         repeat(3) { rule.mainClock.advanceTimeByFrame(); rule.waitForIdle() }
-        rule.shot("v85a-${tier.name.lowercase()}-${if (dark) "toi" else "sang"}")
+        val name = "v85a-${tier.name.lowercase()}-${if (dark) "toi" else "sang"}"
+        rule.shot(name)
+        val bounds = rule.onNodeWithTag("SELECTED-ORANGE").fetchSemanticsNode().boundsInWindow
+        val density = rule.activity.resources.displayMetrics.density
+        val image = BitmapFactory.decodeFile(File("build/screenshots/$name.png").absolutePath)
+        try {
+            val inner = Color(image.getPixel(bounds.center.x.toInt(), (bounds.top + 4f*density).toInt()))
+            val outer = Color(image.getPixel(bounds.center.x.toInt(), (bounds.top + 2f*density).toInt()))
+            assertTrue("Viền đen phải còn bên trong viền chọn vàng", inner.luminance() < .01f)
+            assertTrue("Viền chọn vàng phải sáng", outer.luminance() > .7f)
+        } finally { image.recycle() }
     }
 
     @Test fun pressCancelDisabledAndSelectionRetainClickContract() {
