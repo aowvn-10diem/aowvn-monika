@@ -101,10 +101,14 @@ class AowPixelButtonTest {
                     AowButtonStyle.entries.all { style ->
                         val box = rule.onNodeWithTag("label-$state-$style", useUnmergedTree = true)
                             .fetchSemanticsNode().boundsInWindow
+                        // Semantics có thể bao cả padding của Text. Loại mép để
+                        // pixel viền trắng/đen không bị tính nhầm thành glyph.
+                        val inset = minOf(8f * rule.activity.resources.displayMetrics.density,
+                            minOf(box.width, box.height) / 4f)
                         val white = style == AowButtonStyle.DARK || state == AowButtonState.PRESSED
                         var ink = 0
-                        for (y in box.top.toInt().coerceAtLeast(0) until box.bottom.toInt().coerceAtMost(bmp.height))
-                            for (x in box.left.toInt().coerceAtLeast(0) until box.right.toInt().coerceAtMost(bmp.width)) {
+                        for (y in (box.top + inset).toInt().coerceAtLeast(0) until (box.bottom - inset).toInt().coerceAtMost(bmp.height))
+                            for (x in (box.left + inset).toInt().coerceAtLeast(0) until (box.right - inset).toInt().coerceAtMost(bmp.width)) {
                                 val light = Color(bmp.getPixel(x, y)).luminance()
                                 if (if (white) light > .9f else light < .01f) ink++
                             }
