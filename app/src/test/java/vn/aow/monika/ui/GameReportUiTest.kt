@@ -47,10 +47,13 @@ class GameReportUiTest {
         var sends = 0
         var lastDescription = ""
         rule.setContent { MonikaTheme {
-            GameReportDialog(null, false, {}, error.value) { _, description, _ ->
+            androidx.compose.material3.Surface {
+            androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier) {
+            GameReportForm(null, false, {}, error.value) { _, description, _ ->
                 sends++; lastDescription = description
                 error.value = "Chưa gửi được báo lỗi (HTTP 503). Bạn có thể thử lại."
             }
+            } }
         } }
         rule.mainClock.advanceTimeBy(1_000)
         rule.onNodeWithText("Mô tả thêm (tùy chọn)").performTextInput("Không có startup.tjs")
@@ -66,20 +69,9 @@ class GameReportUiTest {
         rule.onNodeWithText("Không có startup.tjs").assertExists()
         rule.mainClock.advanceTimeBy(1_000)
         repeat(3) { rule.mainClock.advanceTimeByFrame(); rule.waitForIdle() }
-        shotDialog("v82-send-error")
+        rule.shot("v82-send-error")
         rule.onNodeWithText("Gửi báo lỗi").performClick()
         assertEquals(2, sends); assertEquals("Không có startup.tjs", lastDescription)
     }
 
-    private fun shotDialog(name: String) {
-        val dialog = requireNotNull(org.robolectric.shadows.ShadowDialog.getLatestDialog())
-        assertTrue(dialog.isShowing)
-        val view = requireNotNull(dialog.window).decorView
-        assertTrue(view.width > 0 && view.height > 0)
-        val bitmap = android.graphics.Bitmap.createBitmap(view.width, view.height, android.graphics.Bitmap.Config.ARGB_8888)
-        rule.runOnUiThread { view.draw(android.graphics.Canvas(bitmap)) }
-        val target = java.io.File("build/screenshots/$name.png").apply { parentFile!!.mkdirs() }
-        target.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
-        bitmap.recycle()
-    }
 }
