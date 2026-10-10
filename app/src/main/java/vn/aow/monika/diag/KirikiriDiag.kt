@@ -7,11 +7,14 @@ import java.io.File
 /**
  * V26: ghi vệt (breadcrumb) về lối vào game Kirikiri lúc mở, để báo cáo lỗi "Cannot find storage startup.tjs" có đủ dữ kiện:
  * lối vào truyền cho engine (chỉ tên file + tên thư mục game, không ghi đường dẫn đầy đủ), tên + dung lượng mỗi .xp3/.exe trong thư mục game, và xp3 nào có `startup.tjs` ở gốc.
- * Chỉ ghi tên file/dung lượng/kết quả kiểm, KHÔNG ghi nội dung game. Mỗi dòng ≤ 200 ký tự (giới hạn của Breadcrumbs).
+ * Chỉ ghi metadata, gồm tối đa 5 tên mục mẫu cho cả lượt (chỉ tên cuối, không đường dẫn hay nội dung game).
+ * Mỗi dòng ≤ 200 ký tự (giới hạn của Breadcrumbs).
  */
 object KirikiriDiag {
     private const val TAG = "kirikiri-entry"
     private const val MAX_FILES = 12
+    private const val MAX_SAMPLE_NAMES = 5
+    private const val MAX_SAMPLE_LENGTH = 24
 
     /** Giới hạn thời gian cho cả lượt chẩn đoán; quá hạn thì chỉ ghi một dòng và bỏ, không chờ thêm. */
     private const val TIMEOUT_MS = 8_000L
@@ -53,16 +56,28 @@ object KirikiriDiag {
         val files = dir?.listFiles().orEmpty().filter { it.isFile }
         val startupLoose = files.any { it.name.equals("startup.tjs", ignoreCase = true) }
         out += "thư mục có startup.tjs rời=$startupLoose; ${files.count { it.extension.equals("xp3", true) }} xp3, ${files.count { it.extension.equals("exe", true) }} exe"
+        var samplesLeft = MAX_SAMPLE_NAMES
         files.filter { it.extension.equals("xp3", true) || it.extension.equals("exe", true) }
             .sortedBy { it.name.lowercase() }.take(MAX_FILES).forEach { f ->
-                out += if (f.extension.equals("xp3", true)) "xp3 ${f.name} ${sizeOf(f)} ${startupOf(f)}" else "exe ${f.name} ${sizeOf(f)}"
+                if (f.extension.equals("xp3", true)) {
+                    val index = Xp3Index.read(f)
+                    out += "xp3 ${f.name} ${sizeOf(f)} ${startupOf(index)}"
+                    if (index is Xp3Index.Result.Names && samplesLeft > 0) {
+                        val samples = index.names.asSequence().map { name ->
+                            name.replace('\\', '/').substringAfterLast('/')
+                                .filterNot { it.isISOControl() }.take(MAX_SAMPLE_LENGTH)
+                        }.filter { it.isNotBlank() }.take(samplesLeft).toList()
+                        if (samples.isNotEmpty()) out += "mẫu mục: ${samples.joinToString(" | ")}"
+                        samplesLeft -= samples.size
+                    }
+                } else out += "exe ${f.name} ${sizeOf(f)}"
             }
         return out
     }
 
     private fun sizeOf(f: File) = if (f.isFile) "${f.length() / 1024}KB" else ""
 
-    private fun startupOf(f: File): String = when (val r = Xp3Index.read(f)) {
+    private fun startupOf(r: Xp3Index.Result): String = when (r) {
         is Xp3Index.Result.Names -> "mục=${r.names.size}${if (r.complete) "" else "+"} startup.tjs@gốc=${Xp3Index.hasRootStartup(r.names)}"
         is Xp3Index.Result.Unreadable -> "chỉ mục không đọc được (${r.reason})"
     }
