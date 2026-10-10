@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-09T19:28:05Z",
+ "updatedAt": "2026-10-10T00:18:06Z",
  "mainSha": "f5b9815",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
- "headline": "Main f5b9815 (0.7.8 + sửa test chập chờn); bản thử chờ sếp xác nhận",
+ "headline": "Bản thử v0.7.8 đã ra (f5b9815); chờ sếp chốt bản ổn định",
  "needsBoss": [
   {
    "code": "G9",
@@ -1046,6 +1046,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-10T00:18:06Z",
+   "text": "Bản thử v0.7.8 phát hành: run 38007551979 xanh, tag v0.7.8 = f5b9815, prerelease=true, APK 19294980 byte, SHA-256 a25a3106…275a0c khớp SHA256SUMS + digest, chứng thư c46902e9…d45ab20c khớp."
+  },
   {
    "t": "2026-10-09T19:28:05Z",
    "text": "#182: Luna Ultra tìm lỗi thật Downloader.kt:72 (dấu + trong filename* thành cách); giao Haiku-2 sửa + test hồi quy, vào sau v0.7.8."
