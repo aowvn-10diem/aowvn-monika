@@ -379,6 +379,7 @@
     },
     {
       "id": "kirikiri",
+      "experimental": true,
       "name": "Kirikiri (KAG)",
       "runner": "external",
       "externalApp": "kirikiroid2",

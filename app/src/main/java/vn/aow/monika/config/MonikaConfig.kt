@@ -204,6 +204,8 @@ data class SystemDef(
     val entryPick: String = "first",
     /** Với entryPick = paired: đuôi file đi kèm, vd. ["exe"] (karanoshojo.exe ↔ karanoshojo.xp3). */
     val entryPairExt: List<String> = emptyList(),
+    /** Gắn nhãn và hỏi trước khi mở hệ thử nghiệm. Config cũ giữ hành vi cũ. */
+    val experimental: Boolean = false,
 )
 
 @Serializable

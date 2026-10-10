@@ -10,6 +10,8 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import vn.aow.monika.config.SystemDef
+import org.junit.Assert.assertFalse
 import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.download.LinkResolver
 import vn.aow.monika.library.GameDetector
@@ -152,6 +154,14 @@ class ConfigTest {
         display.styles.forEach { (id, style) ->
             assertEquals(id, "OFF", style.options["mgba_color_correction"])
         }
+    }
+
+    @Test
+    fun `co thu nghiem config-first va config cu giu mac dinh false`() {
+        assertTrue(cfg.systems.single { it.id == "kirikiri" }.experimental)
+        assertTrue(cfg.systems.filter { it.id != "kirikiri" }.none { it.experimental })
+        val old = Json.decodeFromString(SystemDef.serializer(), """{"id":"old","name":"Hệ cũ","runner":"external"}""")
+        assertFalse(old.experimental)
     }
 
     @Test

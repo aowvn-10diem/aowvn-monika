@@ -214,15 +214,16 @@ fun LibraryScreen(onSettings: () -> Unit) {
         }
     }
 
-    fun play(game: Game) {
-        when (val r = AppGraph.launcher.launch(activity, game)) {
+    val play = rememberGameLaunch { game, r ->
+        when (r) {
             is LaunchResult.NeedApp -> needApp = r.app
             is LaunchResult.OpenedApp -> { AppGraph.prefs.markPlayed(game.key); info = "Đã mở ${r.app.name}. Trong app đó, chọn thư mục:\n${r.gamePath}" }
             is LaunchResult.Failed -> info = r.message
             LaunchResult.Started -> AppGraph.prefs.markPlayed(game.key)
+            is LaunchResult.NeedExperimentalConfirmation -> Unit // thành phần chung đã giữ lại trước khi gọi callback
         }
     }
-    playRef[0] = ::play
+    playRef[0] = play
 
     // Bộ lọc: Tất cả · Chơi gần đây · Chơi thường xuyên · Theo hệ máy (bấm → menu chọn hệ).
     val prefs = AppGraph.prefs
@@ -326,7 +327,8 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     systems.forEach { (name, count) ->
                         SheetRow(
-                            name, subtitle = "$count game", icon = R.drawable.ic_fluent_xbox_controller_24_regular,
+                            name + (if (games.any { it.system?.name == name && gameIsExperimental(it) }) " · Thử nghiệm" else ""),
+                            subtitle = "$count game", icon = R.drawable.ic_fluent_xbox_controller_24_regular,
                             trailing = if (filter == FILTER_SYSTEM && systemFilter == name) ({ SheetChip("Đang xem", true) {} }) else null,
                             onClick = { systemFilter = name; filter = FILTER_SYSTEM; systemSheet = false },
                         )
@@ -461,7 +463,7 @@ internal fun ContinueCard(g: Game, onPlay: () -> Unit) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(g.name, style = Monika.type.sectionTitle, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    g.system?.let { Tag(it.name, onDark = true) }
+                    g.system?.let { Tag(it.name, onDark = true); ExperimentalTag(gameIsExperimental(g), onDark = true) }
                     val t = AppGraph.prefs.playTime(g.key)
                     Tag(if (t > 0) "⏱ ${formatPlayTime(t)}" else "Việt hóa", onDark = true)
                 }
@@ -523,6 +525,7 @@ private fun GameTile(g: Game, onPlay: () -> Unit, onExtract: () -> Unit, onMenu:
             }
         }
         Spacer(Modifier.height(8.dp))
+        ExperimentalTag(gameIsExperimental(g))
         Text(g.name, style = Monika.type.bodyStrong, color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Text(
             when {
