@@ -25,6 +25,12 @@ import java.nio.file.Files
 class ConfigTest {
     private val cfg = ConfigRepository.parse(File("../config/monika-config.json").readText())
 
+    @Test fun documentExtensionsAreConfigFirstWithOldJsonDefault() {
+        assertEquals(listOf("pdf", "doc", "docx", "txt", "epub"), cfg.documentExtensions)
+        assertEquals(cfg.documentExtensions, ConfigRepository.parse("{}").documentExtensions)
+        assertEquals(listOf("md"), ConfigRepository.parse("""{"documentExtensions":["md"]}""").documentExtensions)
+    }
+
     private fun configLiterals(element: JsonElement, path: String = ""): List<Pair<String, JsonElement>> = when (element) {
         is JsonObject -> element.entries.flatMap { (key, value) ->
             val childPath = if (path.isEmpty()) key else "$path.$key"
@@ -129,7 +135,7 @@ class ConfigTest {
 
     @Test
     fun `rgss ghim goi cong khai va van giu Joiplay du phong`() {
-        assertEquals(39, cfg.configVersion)
+        assertEquals(40, cfg.configVersion)
         val module = cfg.modules["rgss"] ?: error("modules.rgss thiếu")
         assertEquals("engines-rgss-6", module.version)
         assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/engines-rgss-6/rgss-arm64-v8a.zip", module.url)
@@ -147,7 +153,7 @@ class ConfigTest {
     fun `GBA tat color correction o mac dinh goc va moi style`() {
         val core = cfg.cores.getValue("mgba")
         val display = requireNotNull(core.display)
-        assertEquals(39, cfg.configVersion)
+        assertEquals(40, cfg.configVersion)
         assertEquals("OFF", core.options["mgba_color_correction"])
         assertEquals("lcd", display.default)
         assertTrue(display.styles.isNotEmpty())
