@@ -1,9 +1,9 @@
 {
- "updatedAt": "2026-10-10T00:18:06Z",
+ "updatedAt": "2026-10-10T00:42:42Z",
  "mainSha": "f5b9815",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
- "headline": "Bản thử v0.7.8 đã ra (f5b9815); chờ sếp chốt bản ổn định",
+ "headline": "Sửa gấp V75–V79 cho bản ổn định v0.7.9 (hạn 10/10 22:00)",
  "needsBoss": [
   {
    "code": "G9",
@@ -964,6 +964,48 @@
    "owner": "PM",
    "status": "xong",
    "note": "docs/TEST-THUC-TE.md + phiếu tick https://claude.ai/artifact/A6H8zoG6KZkTVAW5L8xM6a (riêng tư, sếp chia sẻ)."
+  },
+  {
+   "code": "V75",
+   "title": "Nút ảo trùng màu nền: tăng tương phản",
+   "owner": "",
+   "status": "dang",
+   "note": "Sếp giao 10/10 sau thử bản thử v0.7.8; owner Sol; hạn 10/10 22:00 (A25)"
+  },
+  {
+   "code": "V76",
+   "title": "GBA: tắt mgba_color_correction mặc định (configVersion 38)",
+   "owner": "",
+   "status": "dang",
+   "note": "Sếp giao 10/10 sau thử bản thử v0.7.8; owner Sol; hạn 10/10 22:00 (A25)"
+  },
+  {
+   "code": "V77",
+   "title": "J2ME: bỏ thanh menu trên, gộp menu J2ME vào menu Monika",
+   "owner": "",
+   "status": "dang",
+   "note": "Sếp giao 10/10 sau thử bản thử v0.7.8; owner Nova; hạn 10/10 22:00 (A25)"
+  },
+  {
+   "code": "V78",
+   "title": "NDS: màn hình to + tiêu đề tự ẩn + mục Màn hình trong Cài đặt",
+   "owner": "",
+   "status": "dang",
+   "note": "Sếp giao 10/10 sau thử bản thử v0.7.8; owner Nova; hạn 10/10 22:00 (A25)"
+  },
+  {
+   "code": "V79",
+   "title": "Thư viện: xin quyền quét game lần đầu",
+   "owner": "",
+   "status": "dang",
+   "note": "Sếp giao 10/10 sau thử bản thử v0.7.8; owner Sol; hạn 10/10 22:00 (A25)"
+  },
+  {
+   "code": "V80",
+   "title": "Bump 44/0.7.9 + CHANGELOG",
+   "owner": "",
+   "status": "dang",
+   "note": "Sếp giao 10/10 sau thử bản thử v0.7.8; owner Sol; hạn 10/10 22:00 (A25)"
   }
  ],
  "gates": [
@@ -1046,6 +1088,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-10T00:42:42Z",
+   "text": "[A25] Sếp thử v0.7.8 trên máy, giao 5 việc gấp V75–V79 (+V80 bump). Bản ổn định = v0.7.9. Sol/Nova làm; Luna 3, Haiku-2 tiền duyệt, Luna Ultra lần hai."
+  },
   {
    "t": "2026-10-10T00:18:06Z",
    "text": "Bản thử v0.7.8 phát hành: run 38007551979 xanh, tag v0.7.8 = f5b9815, prerelease=true, APK 19294980 byte, SHA-256 a25a3106…275a0c khớp SHA256SUMS + digest, chứng thư c46902e9…d45ab20c khớp."
