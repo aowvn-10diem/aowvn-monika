@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-10T04:12:30Z",
+ "updatedAt": "2026-10-10T04:19:11Z",
  "mainSha": "f2223c2",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
@@ -1034,6 +1034,13 @@
    "owner": "",
    "status": "dang",
    "note": "Sol; vào v0.7.9; GameLibrary.kt:84-88 nhận mọi thư mục là game"
+  },
+  {
+   "code": "V85",
+   "title": "Bộ nút ảo mọi giả lập theo asset AowVN chung",
+   "owner": "",
+   "status": "cho",
+   "note": "Sol; spec docs/opus/thiet-ke/ui-kit-aowvn/README.md; sau v0.7.9 trừ khi sếp đổi"
   }
  ],
  "gates": [
