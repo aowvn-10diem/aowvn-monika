@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
@@ -484,7 +485,11 @@ fun AowPixelButton(
         AowButtonState.DISABLED -> "Vô hiệu"
     }
     AowPixelSurface(state, modifier.heightIn(min = AowPixelMetrics.buttonHeight)
-        .semantics { stateDescription = description; this.selected = selected || focused }
+        .semantics {
+            stateDescription = description
+            this.selected = selected || focused
+            if (!enabled) disabled()
+        }
         .clickable(interactionSource, null, enabled = enabled, role = Role.Button, onClick = onClick), style) { label ->
         Row(Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
