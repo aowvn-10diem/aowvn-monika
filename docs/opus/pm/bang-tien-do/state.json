@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-10T11:13:31Z",
+ "updatedAt": "2026-10-10T11:15:29Z",
  "mainSha": "60fbffb",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
@@ -1025,8 +1025,8 @@
    "code": "V83",
    "title": "Kirikiri: test thư mục lồng + báo rõ game mã hóa + mẫu tên mục trong diag",
    "owner": "",
-   "status": "cho",
-   "note": "Sau v0.7.9; Sol; dữ kiện Kara no Shoujo: karanoshojo.xp3 813MB, patch*.xp3, không data.xp3, lồng 1 cấp"
+   "status": "dang",
+   "note": "A28: Sol, song song V85b"
   },
   {
    "code": "V84",
@@ -1039,8 +1039,15 @@
    "code": "V85",
    "title": "Bộ nút ảo mọi giả lập theo asset AowVN chung",
    "owner": "",
+   "status": "dang",
+   "note": "A28: tách V85a (Sol, token+shape), V85b (Sol, pad libretro), V85c (Nova, overlay khác); đích v0.8.0 11/10 10:00"
+  },
+  {
+   "code": "V86",
+   "title": "Bump 0.8.0 (45) + CHANGELOG",
+   "owner": "",
    "status": "cho",
-   "note": "Sol; spec docs/opus/thiet-ke/ui-kit-aowvn/README.md; sau v0.7.9 trừ khi sếp đổi"
+   "note": "Sol, sau cùng"
   }
  ],
  "gates": [
@@ -1123,6 +1130,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-10T11:15:29Z",
+   "text": "[A28] Sếp: làm nốt + tăng tốc. Đích bản thử v0.8.0 (V78+V83+V85+#182) 11/10 10:00. Lịch kiểm 20' cho đội; PM thêm trigger :42 (trig_01U165ByF84kygj2UC7ZNHfr)."
+  },
   {
    "t": "2026-10-10T11:13:31Z",
    "text": "Bản thử v0.7.9: run 38047062383 xanh, tag v0.7.9=60fbffb, APK 19153177 byte, SHA-256 922357a3…cc0a5c khớp, chứng thư khớp. Chờ sếp test máy thật."
