@@ -15,7 +15,7 @@ class DsFrameTest {
 
     @Test fun twoScreensFillWidthWhenThereIsRoom() {
         // Màn cao: đủ chỗ cho khung cao 1,5× chiều rộng.
-        val tall = DsFrame.portraitHeight(w, 3200, top = 80, padReservePx = reserve)
+        val tall = DsFrame.portraitHeight(w, 3200, topPx = 80, padReservePx = reserve)
         assertEquals((w / DsFrame.ASPECT).toInt(), tall)
     }
 
