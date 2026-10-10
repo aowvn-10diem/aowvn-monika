@@ -88,26 +88,39 @@ class AowPixelButtonTest {
         rule.mainClock.advanceTimeBy(1_000)
         rule.onAllNodesWithText("TIẾP TỤC", substring = false).assertCountEquals(2)
         rule.onNodeWithText("KHÔNG KHẢ DỤNG").assertIsNotEnabled().assertIsDisplayed()
-        // Chờ glyph thực vẽ trên decorView, không chỉ có node semantics từ layout.
+        // Lưu chính frame đã kiểm glyph: lần draw thứ hai có thể dùng display-list
+        // chưa đầy đủ trong Robolectric native graphics.
+        var captured: Bitmap? = null
         rule.waitUntil(timeoutMillis = 2_000) {
             rule.mainClock.advanceTimeByFrame(); rule.waitForIdle()
             val view = rule.activity.window.decorView
             val bmp = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
             rule.runOnUiThread { view.invalidate(); view.draw(Canvas(bmp)) }
-            try {
+            val ready = try {
                 AowButtonState.entries.all { state ->
-                    val box = rule.onNodeWithTag("label-$state-DARK", useUnmergedTree = true)
-                        .fetchSemanticsNode().boundsInWindow
-                    var ink = 0
-                    for (y in box.top.toInt().coerceAtLeast(0) until box.bottom.toInt().coerceAtMost(bmp.height))
-                        for (x in box.left.toInt().coerceAtLeast(0) until box.right.toInt().coerceAtMost(bmp.width))
-                            if (Color(bmp.getPixel(x, y)).luminance() > .9f) ink++
-                    ink >= 10
+                    AowButtonStyle.entries.all { style ->
+                        val box = rule.onNodeWithTag("label-$state-$style", useUnmergedTree = true)
+                            .fetchSemanticsNode().boundsInWindow
+                        val white = style == AowButtonStyle.DARK || state == AowButtonState.PRESSED
+                        var ink = 0
+                        for (y in box.top.toInt().coerceAtLeast(0) until box.bottom.toInt().coerceAtMost(bmp.height))
+                            for (x in box.left.toInt().coerceAtLeast(0) until box.right.toInt().coerceAtMost(bmp.width)) {
+                                val light = Color(bmp.getPixel(x, y)).luminance()
+                                if (if (white) light > .9f else light < .01f) ink++
+                            }
+                        ink >= 10
+                    }
                 }
-            } finally { bmp.recycle() }
+            } catch (e: Throwable) { bmp.recycle(); throw e }
+            if (ready) captured = bmp else bmp.recycle()
+            ready
         }
         val name = "v85a-${tier.name.lowercase()}-${if (dark) "toi" else "sang"}"
-        rule.shot(name)
+        val bitmap = requireNotNull(captured)
+        try {
+            File("build/screenshots/$name.png").apply { parentFile!!.mkdirs() }
+                .outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        } finally { bitmap.recycle() }
         val bounds = rule.onNodeWithTag("SELECTED-ORANGE").fetchSemanticsNode().boundsInWindow
         val density = rule.activity.resources.displayMetrics.density
         val image = BitmapFactory.decodeFile(File("build/screenshots/$name.png").absolutePath)
