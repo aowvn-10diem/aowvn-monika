@@ -433,13 +433,16 @@ object Diagnostics {
     }
 
     /** Người chơi chủ động báo lỗi, không gộp làm mất mô tả/ảnh của lần gửi khác. */
-    fun recordUser(c: Context, type: String, description: String, image: ReportImage?): Report {
+    fun recordUser(c: Context, type: String, description: String, image: ReportImage?,
+                   gameTitle: String? = null, component: String? = null, extraDetail: String = ""): Report {
         val now = System.currentTimeMillis()
-        val session = read(c)?.takeIf { it.pid == Process.myPid() }?.copy(lastAlive = now)
-        val report = Report(id = now, time = now, kind = "user", title = "Báo lỗi game: ${session?.game.orEmpty().ifBlank { "game" }}",
-            app = appLine(), device = deviceLine(), session = session, reason = type, detail = description,
+        // Màn chuẩn bị chưa mở engine: tên game/engine rõ ràng không phải session đang chạy.
+        val session = if (gameTitle != null || component != null) null
+            else read(c)?.takeIf { it.pid == Process.myPid() }?.copy(lastAlive = now)
+        val report = Report(id = now, time = now, kind = "user", title = "Báo lỗi game: ${gameTitle ?: session?.game.orEmpty().ifBlank { "game" }}",
+            app = appLine(), device = deviceLine(), session = session, reason = type, detail = listOf(extraDetail, description).filter { it.isNotBlank() }.joinToString("\n\n"),
             log = UserGameReport.recentLog(Process.myPid()), fromGame = true,
-            component = session?.kind?.let { "engine:$it" }.orEmpty(), env = envLine(c),
+            component = component ?: session?.kind?.let { "engine:$it" }.orEmpty(), env = envLine(c),
             crumbs = Breadcrumbs.read(c, Process.myPid()), image = image)
         val safe = json.decodeFromString(Report.serializer(), reportJson(c, report))
         save(c, safe); return safe

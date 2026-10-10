@@ -58,4 +58,17 @@ class UserGameReportTest {
         val r=report(image()).copy(kind="handled")
         assertNull(Diagnostics.sanitized(app,r).image)
     }
+    @Test fun entryFailureHasExplicitGameAndEngineWithoutPretendingSessionStarted() {
+        val info = "xp3 data.xp3 2KB startup.tjs@gốc=false\nexe game.exe 3KB"
+        val r = Diagnostics.recordUser(app, "Không lên hình", "Thiếu startup.tjs", null,
+            gameTitle = "Kara no Shoujo", component = "engine:kirikiri", extraDetail = info)
+        assertEquals("Báo lỗi game: Kara no Shoujo", r.title)
+        assertEquals("engine:kirikiri", r.component)
+        assertTrue(r.detail.contains(info) && r.detail.contains("Thiếu startup.tjs"))
+        assertNull(r.session)
+        val saved = Diagnostics.list(app).first { it.id == r.id }
+        assertEquals(r.detail, saved.detail)
+        assertFalse(Diagnostics.reportJson(app, saved).contains(app.filesDir.path))
+    }
+
 }
