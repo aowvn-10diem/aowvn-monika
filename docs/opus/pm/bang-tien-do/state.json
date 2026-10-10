@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-10T00:45:29Z",
+ "updatedAt": "2026-10-10T01:03:39Z",
  "mainSha": "f5b9815",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
@@ -1013,6 +1013,13 @@
    "owner": "",
    "status": "dang",
    "note": "A26 sếp chốt; Sol; hạn 10/10 16:00"
+  },
+  {
+   "code": "V82",
+   "title": "Kirikiri: nút Báo lỗi không gửi được + nút Sao chép thông tin lỗi",
+   "owner": "",
+   "status": "dang",
+   "note": "Sol; hạn 10/10 16:00; ảnh sếp: Kara no Shoujo báo thiếu startup.tjs"
   }
  ],
  "gates": [
