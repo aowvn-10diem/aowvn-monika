@@ -2,6 +2,14 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.0 — Nháp, chưa phát hành
+
+> Khung theo [PM A29](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6099303176). Danh sách cuối chốt lúc 07:30 ngày 11/10/2026 giờ Việt Nam, trước mốc bản thử 08:00. Chỉ ghi tính năng đã gộp vào `main` cùng liên kết commit thật; phần chưa gộp chuyển sang v0.8.1. V78, V83, V85b và V85c chưa được xác nhận có trong bản này.
+
+- Bộ nút dùng chung có bảng màu AowVN, viền pixel, bóng cứng và các trạng thái nhấn, chọn, vô hiệu hóa; hỗ trợ ba mức hiệu ứng. ([fb5edac](https://github.com/aowvn-10diem/aowvn-monika/commit/fb5edac0f1d885142839ffe05a0b43339d75522c))
+
+<!-- V86: bổ sung các mục V78 / V83 / V85b / V85c và #182 chỉ từ commit đã gộp, sau khi chốt phạm vi A29. Chưa chuyển READY bằng khung này. -->
+
 ## [v0.6.0](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.6.0)
 
 - Kết nối RetroAchievements bằng tài khoản web API và xem hồ sơ của mình. ([cba6e15](https://github.com/aowvn-10diem/aowvn-monika/commit/cba6e15372c78b8652a37c019c78f37ab352579a))
