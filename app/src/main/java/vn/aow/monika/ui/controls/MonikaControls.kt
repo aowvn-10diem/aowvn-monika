@@ -35,10 +35,22 @@ import vn.aow.monika.Prefs
 import vn.aow.monika.ui.theme.Monika
 import vn.aow.monika.ui.theme.Radius
 import vn.aow.monika.ui.theme.primaryGradient
+import vn.aow.monika.ui.theme.AowButtonState
+import vn.aow.monika.ui.theme.AowPixelShape
+import vn.aow.monika.ui.theme.AowPixelSurface
+import vn.aow.monika.ui.theme.AowPixelMetrics
+import vn.aow.monika.ui.theme.LocalMonikaColors
+import vn.aow.monika.ui.theme.LocalMonikaMotion
+import vn.aow.monika.ui.theme.MonikaMotion
+import vn.aow.monika.ui.theme.PerformanceTier
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.Color
 import kotlin.math.roundToInt
 
 val LocalControllerOptions = staticCompositionLocalOf { ControllerOptions() }
 val LocalControllerTurbo = staticCompositionLocalOf { false }
+/** V85b chỉ bật cho VirtualPad; overlay do Nova phụ trách giữ kiểu hiện có. */
+val LocalAowControllerStyle = staticCompositionLocalOf { false }
 
 /** Game chỉ đọc file thiết lập chính, không ghi đè SharedPreferences từ tiến trình :game. */
 @Composable
@@ -50,6 +62,22 @@ fun ControllerOptionsProvider(content: @Composable () -> Unit) {
 
 enum class ControlVisualState { RELEASED, PRESSED, HELD, TURBO, DISABLED }
 
+/** V70a vẫn điều khiển lún/rung; surface V85a chỉ vẽ mặt, viền và bóng. */
+@Composable
+private fun AowControlFace(state: AowButtonState, modifier: Modifier, shape: Shape,
+    pad: Boolean = false, content: @Composable BoxScope.(Color) -> Unit) {
+    val base = Monika.colors
+    // Mặt vô hiệu là xám than để chữ trắng vẫn đạt 4.5:1 ở độ mờ mặc định 65%.
+    val colors = base.copy(aow = base.aow.copy(
+        dark = if (pad) base.aow.padSurface else base.aow.dark,
+        disabledDark = base.aow.padSurface,
+    ))
+    CompositionLocalProvider(LocalMonikaColors provides colors,
+        LocalMonikaMotion provides MonikaMotion(PerformanceTier.OFF)) {
+        AowPixelSurface(state, modifier, shape = shape, content = content)
+    }
+}
+
 /** Nút chung nhận cạnh nhấn/nhả; không tự đổi mã phím hay tạo nhịp turbo xuống engine. */
 @Composable
 fun MonikaKey(
@@ -59,7 +87,8 @@ fun MonikaKey(
     primary: Boolean = false,
     enabled: Boolean = true,
     visualState: ControlVisualState = ControlVisualState.RELEASED,
-) = PressControl(label, onPress, modifier, primary, enabled, visualState, pill = false)
+    selected: Boolean = false,
+) = PressControl(label, onPress, modifier, primary, enabled, visualState, pill = false, selected = selected)
 
 @Composable
 fun MonikaPill(
@@ -68,16 +97,18 @@ fun MonikaPill(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     visualState: ControlVisualState = ControlVisualState.RELEASED,
-) = PressControl(label, onPress, modifier, false, enabled, visualState, pill = true)
+    selected: Boolean = false,
+) = PressControl(label, onPress, modifier, false, enabled, visualState, pill = true, selected = selected)
 
 @Composable
 private fun PressControl(
     label: String, onPress: (Boolean) -> Unit, modifier: Modifier, primary: Boolean,
-    enabled: Boolean, visualState: ControlVisualState, pill: Boolean,
+    enabled: Boolean, visualState: ControlVisualState, pill: Boolean, selected: Boolean,
 ) {
     val c = Monika.colors
     val motion = Monika.motion
     val options = LocalControllerOptions.current
+    val aow = LocalAowControllerStyle.current
     val view = LocalView.current
     val callback by rememberUpdatedState(onPress)
     var touching by remember { mutableStateOf(false) }
@@ -88,7 +119,7 @@ private fun PressControl(
         tween(if (animate) motion.fast else 0, easing = motion.easing), label = "Lún nút")
     val sink by animateFloatAsState(if (pressed && animate) 2f else 0f,
         tween(if (animate) motion.fast else 0, easing = motion.easing), label = "Dịch nút")
-    val shape = Radius.pill
+    val shape = if (aow && pill) AowPixelShape else Radius.pill
     val turbo = visualState == ControlVisualState.TURBO
     val rotation = if (turbo && motion.enabled) {
         val transition = rememberInfiniteTransition(label = "Viền tua nhanh")
@@ -103,6 +134,7 @@ private fun PressControl(
         stateDescription = when {
             !usable -> "Đã tắt"
             visualState == ControlVisualState.TURBO -> "Tua nhanh"
+            selected -> "Đang chọn"
             pressed -> "Đang giữ"
             else -> "Sẵn sàng"
         }
@@ -132,6 +164,29 @@ private fun PressControl(
     val bounds = if (pill) Modifier.heightIn(min = 72.dp).width((if (label.length > 2) 96.dp else 72.dp) * options.size.coerceAtLeast(1f))
         else Modifier.size(touch)
     Box(modifier.then(bounds).then(interaction), contentAlignment = Alignment.Center) {
+        if (aow) {
+            val state = when {
+                !usable -> AowButtonState.DISABLED
+                pressed -> AowButtonState.PRESSED
+                turbo || selected -> AowButtonState.SELECTED
+                else -> AowButtonState.NORMAL
+            }
+            val face = if (pill) Modifier.fillMaxWidth().height(40.dp + AowPixelMetrics.shadow)
+                else Modifier.width(diameter).height(diameter + AowPixelMetrics.shadow)
+            AowControlFace(state, face.graphicsLayer {
+                scaleX = scale; scaleY = scale; translationY = sink.dp.toPx()
+            }.drawWithContent {
+                drawContent()
+                if (turbo) drawArc(c.aow.focus, rotation - 90f, 70f, false,
+                    topLeft = Offset(1.dp.toPx(), 1.dp.toPx()),
+                    size = size.copy(width = size.width - 2.dp.toPx(), height = size.height - 2.dp.toPx()),
+                    style = Stroke(2.dp.toPx()))
+            }, shape) { ink ->
+                if (options.labels) Text(label,
+                    style = if (pill) Monika.type.caption else Monika.type.sectionTitle, color = ink)
+            }
+            return@Box
+        }
         val face = if (pill) Modifier.fillMaxWidth().height(40.dp) else Modifier.size(diameter)
         val surface = when { !usable -> c.surfaceDarkSoft; pressed -> c.surfaceDark; else -> c.controlSurface }
         Box(face.graphicsLayer { scaleX = scale; scaleY = scale; translationY = sink.dp.toPx() }
@@ -164,6 +219,7 @@ private val CrossShape = GenericShape { size, _ ->
 @Composable
 fun MonikaDPad(send: (Int, Int) -> Unit, modifier: Modifier = Modifier) {
     val c = Monika.colors
+    val aow = LocalAowControllerStyle.current
     val view = LocalView.current
     val options = LocalControllerOptions.current
     val callback by rememberUpdatedState(send)
@@ -198,7 +254,9 @@ fun MonikaDPad(send: (Int, Int) -> Unit, modifier: Modifier = Modifier) {
             scaleX = scale; scaleY = scale
             translationY = if (active.isNotEmpty() && animate) 2.dp.toPx() else 0f
         }, contentAlignment = Alignment.Center) {
-        Box(Modifier.fillMaxSize().shadow(if (animate && active.isEmpty()) 6.dp else 0.dp, CrossShape)
+        if (aow) AowControlFace(if (active.isEmpty()) AowButtonState.NORMAL else AowButtonState.PRESSED,
+            Modifier.fillMaxSize(), CrossShape, pad = true) {}
+        else Box(Modifier.fillMaxSize().shadow(if (animate && active.isEmpty()) 6.dp else 0.dp, CrossShape)
             .clip(CrossShape).background(if (active.isEmpty()) c.controlSurface else c.surfaceDark)
             .border(2.dp, c.controlInk, CrossShape).border(4.dp, c.textOnDark, CrossShape))
         listOf("▲" to KeyEvent.KEYCODE_DPAD_UP, "▼" to KeyEvent.KEYCODE_DPAD_DOWN,
@@ -206,7 +264,7 @@ fun MonikaDPad(send: (Int, Int) -> Unit, modifier: Modifier = Modifier) {
             val distance = 50.dp * options.size
             val offset = when (index) { 0 -> Modifier.offset(y = -distance); 1 -> Modifier.offset(y = distance)
                 2 -> Modifier.offset(x = -distance); else -> Modifier.offset(x = distance) }
-            Text(text, style = Monika.type.button, color = if (key in active) c.accentOrange else if (active.isNotEmpty()) c.textOnDark else c.controlInk,
+            Text(text, style = Monika.type.button, color = if (aow) c.aow.onDark else if (key in active) c.accentOrange else if (active.isNotEmpty()) c.textOnDark else c.controlInk,
                 modifier = offset.semantics {
                     contentDescription = when (index) { 0 -> "Hướng lên"; 1 -> "Hướng xuống"; 2 -> "Hướng trái"; else -> "Hướng phải" }
                     role = Role.Button
@@ -220,6 +278,7 @@ fun MonikaDPad(send: (Int, Int) -> Unit, modifier: Modifier = Modifier) {
 @Composable
 fun MonikaStick(onMove: (Float, Float) -> Unit, modifier: Modifier = Modifier) {
     val c = Monika.colors
+    val aow = LocalAowControllerStyle.current
     val motion = Monika.motion
     val view = LocalView.current
     val options = LocalControllerOptions.current
@@ -231,7 +290,9 @@ fun MonikaStick(onMove: (Float, Float) -> Unit, modifier: Modifier = Modifier) {
         stiffness = 39.48f / (motion.normal / 1000f).let { it * it }) else tween(0)
     val x by animateFloatAsState(knob.x, returnSpec, label = "Hồi tâm X")
     val y by animateFloatAsState(knob.y, returnSpec, label = "Hồi tâm Y")
-    Box(modifier.size(148.dp * options.size).clip(Radius.pill).background(c.controlSurface).border(2.dp, c.controlInk, Radius.pill).border(4.dp, c.textOnDark, Radius.pill)
+    val legacyFace = if (aow) Modifier else Modifier.clip(Radius.pill).background(c.controlSurface)
+        .border(2.dp, c.controlInk, Radius.pill).border(4.dp, c.textOnDark, Radius.pill)
+    Box(modifier.size(148.dp * options.size).then(legacyFace)
         .semantics { contentDescription = "Cần analog" }
         .pointerInput(options) {
             awaitEachGesture {
@@ -256,7 +317,12 @@ fun MonikaStick(onMove: (Float, Float) -> Unit, modifier: Modifier = Modifier) {
                 } finally { touching = false; knob = Offset.Zero; gestureCallback(0f, 0f) }
             }
         }, contentAlignment = Alignment.Center) {
-        Box(Modifier.offset { IntOffset(x.roundToInt(), y.roundToInt()) }.size(64.dp * options.size)
+        if (aow) {
+            AowControlFace(AowButtonState.NORMAL, Modifier.fillMaxSize(), Radius.pill, pad = true) {}
+            AowControlFace(if (touching) AowButtonState.PRESSED else AowButtonState.NORMAL,
+                Modifier.offset { IntOffset(x.roundToInt(), y.roundToInt()) }
+                    .width(64.dp * options.size).height(64.dp * options.size + AowPixelMetrics.shadow), Radius.pill) {}
+        } else Box(Modifier.offset { IntOffset(x.roundToInt(), y.roundToInt()) }.size(64.dp * options.size)
             .clip(Radius.pill).background(primaryGradient()).border(2.dp, c.controlInk, Radius.pill).border(4.dp, c.textOnDark, Radius.pill))
     }
 }
