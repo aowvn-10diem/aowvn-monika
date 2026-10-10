@@ -139,7 +139,7 @@ class DeviceScannerTest {
 
     @Test fun modernAndroidOnlyScansAfterAllFilesAccessIsActuallyGranted() {
         val ops = org.robolectric.Shadows.shadowOf(context.getSystemService(android.app.AppOpsManager::class.java))
-        fun access(mode: Int) = ops.setMode(android.app.AppOpsManager.OPSTR_MANAGE_EXTERNAL_STORAGE,
+        fun access(mode: Int) = ops.setMode("android:manage_external_storage",
             android.os.Process.myUid(), context.packageName, mode)
         access(android.app.AppOpsManager.MODE_ERRORED)
         assertFalse(DeviceScanner(context).canScanAll())
