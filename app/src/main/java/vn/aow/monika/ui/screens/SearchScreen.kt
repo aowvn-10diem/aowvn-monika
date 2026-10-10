@@ -79,6 +79,9 @@ import java.text.Normalizer
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SearchScreen(onOpenPost: (Post) -> Unit, onOpenLibrary: () -> Unit) {
+    val launchGame = rememberGameLaunch { g, result ->
+        if (result == vn.aow.monika.runner.LaunchResult.Started) AppGraph.prefs.markPlayed(g.key) else onOpenLibrary()
+    }
     val c = Monika.colors
     val context = LocalContext.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -176,8 +179,7 @@ fun SearchScreen(onOpenPost: (Post) -> Unit, onOpenLibrary: () -> Unit) {
                     item { SearchSection("Trong Thư viện của bạn", "Mở Thư viện", onOpenLibrary) }
                     items(s.games, key = { "g" + it.key }) { g -> GameRow(g) {
                         AppGraph.prefs.addSearch(q)
-                        val activity = context as? android.app.Activity ?: return@GameRow
-                        if (AppGraph.launcher.launch(activity, g) == vn.aow.monika.runner.LaunchResult.Started) AppGraph.prefs.markPlayed(g.key) else onOpenLibrary()
+                        launchGame(g)
                     } }
                 }
                 if (s.posts.isNotEmpty()) {
@@ -286,6 +288,7 @@ private fun GameRow(g: Game, onPlay: () -> Unit) {
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
+            ExperimentalTag(gameIsExperimental(g))
             Text(g.name, style = Monika.type.bodyStrong, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(g.system?.name ?: "Trong Thư viện", style = Monika.type.caption, color = c.textSecondary)
         }

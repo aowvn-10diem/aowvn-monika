@@ -1,5 +1,5 @@
 {
-  "configVersion": 38,
+  "configVersion": 39,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 41,
@@ -379,6 +379,7 @@
     },
     {
       "id": "kirikiri",
+      "experimental": true,
       "name": "Kirikiri (KAG)",
       "runner": "external",
       "externalApp": "kirikiroid2",
