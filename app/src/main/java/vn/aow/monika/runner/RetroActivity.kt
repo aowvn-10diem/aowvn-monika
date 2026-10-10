@@ -76,6 +76,8 @@ class RetroActivity : ComponentActivity() {
     }
     private val cheatPicker = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { u -> if (u != null) cheats.importFile(u) }
     private var aspect = 4f / 3f
+    /** Bố cục tay cầm của game đang chạy (NDS → khung to hết chiều rộng + tiêu đề tự ẩn, V78). */
+    private var padLayout = PadLayout.GBA
 
     /** Kiểu hiển thị (lõi có khai báo `display` trong config): bộ lọc + co giãn số nguyên + lưới LCD + tùy chọn lõi. */
     private var core = ""
@@ -109,6 +111,7 @@ class RetroActivity : ComponentActivity() {
         Diagnostics.begin(this, "libretro", coreId, AppGraph.cores.info(coreId), File(gamePath).name, systemName)
         val title = intent.getStringExtra(EXTRA_TITLE) ?: File(gamePath).nameWithoutExtension
         val layout = padFor(coreId, intent.getStringExtra(EXTRA_PAD))
+        padLayout = layout
         aspect = AppGraph.config.current.cores[coreId]?.aspectRatio ?: DEFAULT_ASPECT[coreId] ?: 4f / 3f
         val prefs = AppGraph.prefs
         val tier = EmuTier.detect(this, prefs.emuPerf)
@@ -193,6 +196,7 @@ class RetroActivity : ComponentActivity() {
                     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
                     InGameOverlay(
                         state = ui, system = systemName, title = title, layout = layout, showPad = ready,
+                        autoHideHeader = layout == PadLayout.NDS,
                         send = { action, k -> retroView?.sendKeyEvent(action, k) },
                         onBack = { finish() },
                         onSave = { saveState() },
@@ -337,7 +341,8 @@ class RetroActivity : ComponentActivity() {
     }
 
     /**
-     * Dọc: game sát trên (dưới header), cao theo tỉ lệ hệ máy, tối đa 58% màn. Ngang: phủ màn (lõi tự giữ tỉ lệ).
+     * Dọc: game sát trên (dưới header), cao theo tỉ lệ hệ máy, tối đa 58% màn (NDS: hết chiều rộng, chừa chỗ tay cầm — [DsFrame]).
+     * Ngang: phủ màn (lõi tự giữ tỉ lệ).
      * Kiểu hiển thị có `integer` + lõi khai báo `native`: khung game = đúng bội số nguyên n × (rộng×cao gốc), căn giữa ngang →
      * điểm ảnh vuông đều, không nhòe/gợn; lưới LCD phủ lên khít từng điểm ảnh.
      */
@@ -354,8 +359,11 @@ class RetroActivity : ComponentActivity() {
         // Khung game nằm dưới header; header đã bị đẩy xuống nếu máy có camera/cutout ở trên.
         val cutoutTop = androidx.core.view.ViewCompat.getRootWindowInsets(root)
             ?.getInsets(WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.statusBars())?.top ?: 0
-        val top = (76 * dm.density).toInt() + cutoutTop
-        val maxH = (dm.heightPixels * 0.58f).toInt()
+        // V78a: NDS (2 màn chồng dọc) lấy tối đa chiều rộng; tiêu đề tự ẩn nên phủ lên khung thay vì đẩy khung xuống.
+        val ds = padLayout == PadLayout.NDS
+        val top = if (ds) (DsFrame.TOP_GAP_DP * dm.density).toInt() + cutoutTop else (76 * dm.density).toInt() + cutoutTop
+        val maxH = if (ds) DsFrame.portraitHeight(dm.widthPixels, dm.heightPixels, top, (DsFrame.PAD_RESERVE_DP * dm.density).toInt(), aspect)
+            else (dm.heightPixels * 0.58f).toInt()
         intScale = if (wantInt) DisplayStyles.integerScale(dm.widthPixels, maxH, nat!![0], nat[1]) else 0
         if (intScale > 0) return FrameLayout.LayoutParams(intScale * nat!![0], intScale * nat[1], Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = top }
         val h = (dm.widthPixels / aspect).toInt().coerceAtMost(maxH)
@@ -558,7 +566,7 @@ class RetroActivity : ComponentActivity() {
 
         /** Tỉ lệ khung hình mặc định theo lõi (config `cores.<id>.aspectRatio` ghi đè được). NDS = 2 màn chồng dọc. */
         private val DEFAULT_ASPECT = mapOf(
-            "desmume" to 256f / 384f, "melonds" to 256f / 384f,
+            "desmume" to DsFrame.ASPECT, "melonds" to DsFrame.ASPECT, "melondsds" to DsFrame.ASPECT,
             "mgba" to 3f / 2f, "gambatte" to 10f / 9f,
             "pcsx_rearmed" to 4f / 3f, "ppsspp" to 480f / 272f, "easyrpg" to 4f / 3f,
         )
