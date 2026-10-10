@@ -1,6 +1,6 @@
 {
- "updatedAt": "2026-10-10T04:19:11Z",
- "mainSha": "f2223c2",
+ "updatedAt": "2026-10-10T05:13:04Z",
+ "mainSha": "54ba15b",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
  "headline": "Sửa gấp V75–V79 cho bản ổn định v0.7.9 (hạn 10/10 22:00)",
@@ -997,8 +997,8 @@
    "code": "V79",
    "title": "Thư viện: xin quyền quét game lần đầu",
    "owner": "",
-   "status": "dang",
-   "note": "Sếp giao 10/10 sau thử bản thử v0.7.8; owner Sol; hạn 10/10 22:00 (A25)"
+   "status": "xong",
+   "note": "#185 gộp 54ba15b"
   },
   {
    "code": "V80",
