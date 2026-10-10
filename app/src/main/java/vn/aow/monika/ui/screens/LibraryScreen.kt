@@ -214,7 +214,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 }
             }
         } else {
-            legacyAccess.launch(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE, android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
+            legacyAccess.launch(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE))
         }
     }
     // Đọc lại quyền mỗi khi quay từ cài đặt Android; chỉ quét khi quyền thực sự đã được cấp.
