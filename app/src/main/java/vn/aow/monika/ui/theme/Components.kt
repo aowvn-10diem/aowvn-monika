@@ -452,8 +452,9 @@ fun AowPixelSurface(
         Box(Modifier.matchParentSize().offset(y = AowPixelMetrics.shadow).clip(shape).background(c.outline))
         Box(
             Modifier.offset(y = press).clip(shape).background(palette.face)
-                .border(AowPixelMetrics.outline + rimWidth, c.outline, shape)
-                .border(rimWidth, rimColor, shape),
+                // Border ngoài vẽ sau border trong: giữ vòng vàng/sáng ngoài và đen bên trong.
+                .border(rimWidth, rimColor, shape)
+                .border(AowPixelMetrics.outline + rimWidth, c.outline, shape),
             contentAlignment = Alignment.Center,
         ) { content(palette.label) }
     }
