@@ -1,5 +1,6 @@
 {
-  "configVersion": 40,
+  "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
+  "configVersion": 41,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 41,

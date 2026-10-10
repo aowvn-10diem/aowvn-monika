@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.*
 import org.junit.Before
@@ -58,11 +59,11 @@ class ScreenSettingsUiTest {
         assertEquals("3", saved()["melonds_hybrid_ratio"])
         rule.shot("v78c-man-hinh-mot-man-lon")
 
-        rule.onNodeWithContentDescription("Khoảng cách giữa hai màn").performTouchInput { swipeRight() }
+        rule.onNodeWithContentDescription("Khoảng cách giữa hai màn")
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(12f) }
         rule.mainClock.advanceTimeBy(500)
-        val gap = saved()["melonds_screen_gap"]?.toInt()
-        assertNotNull(gap)
-        assertTrue("gap=$gap", gap!! in 28..core.screen!!.gapMax)
+        assertEquals("12", saved()["melonds_screen_gap"])
+        rule.onNodeWithText("Khoảng cách giữa hai màn: 12 px").assertExists()
     }
 
     @Test fun resetDropsOnlyManagedKeys() {

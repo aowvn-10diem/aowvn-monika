@@ -37,10 +37,18 @@ class ConfigRepositoryValidationTest {
     }
 
     @Test fun oldCacheWithoutExperimentalFlagFallsBackToBundledWarning() {
-        assertEquals(40, bundled)
-        cache.writeText(valid(39))
+        assertEquals(41, bundled)
+        cache.writeText(valid(38))
         val current = repo().current
-        assertEquals(40, current.configVersion)
+        assertEquals(41, current.configVersion)
+        assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
+    }
+
+    @Test fun cache39FallsBackToBundledDocumentConfiguration() {
+        cache.writeText("""{"configVersion":39,"documentExtensions":[]}""")
+        val current = repo().current
+        assertEquals(41, current.configVersion)
+        assertEquals(listOf("pdf", "doc", "docx", "txt", "epub"), current.documentExtensions)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
 

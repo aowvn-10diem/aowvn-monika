@@ -19,6 +19,7 @@
             android:layout_height="wrap_content"
             android:background="?attr/colorPrimary"
             android:descendantFocusability="blocksDescendants"
+            android:visibility="gone"
             android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
             app:popupTheme="@style/AppTheme.NoActionBar"
             tools:title="MIDlet Title" />
@@ -35,5 +36,20 @@
         android:id="@+id/overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <!-- Aow Monika: MỘT nút menu nổi; bấm = mở menu Monika (thay thanh công cụ trên đầu). -->
+    <ImageButton
+        android:id="@+id/monika_menu_button"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="10dp"
+        android:alpha="0.7"
+        android:background="@drawable/bg_monika_menu_button"
+        android:contentDescription="@string/monika_menu_button"
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_monika_menu" />
 
 </FrameLayout>
