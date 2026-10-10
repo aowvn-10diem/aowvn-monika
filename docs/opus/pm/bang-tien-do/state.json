@@ -1,6 +1,6 @@
 {
- "updatedAt": "2026-10-10T16:06:33Z",
- "mainSha": "73a1a0f",
+ "updatedAt": "2026-10-10T18:28:12Z",
+ "mainSha": "49bdbd5",
  "app": "App 0.7.7 (bản thử RC) · config 36",
  "nextCheck": "2026-10-09T06:14:32Z",
  "headline": "Bản thử v0.7.9 đã ra (60fbffb); chờ sếp test và chốt ổn định",
@@ -1025,8 +1025,8 @@
    "code": "V83",
    "title": "Kirikiri: test thư mục lồng + báo rõ game mã hóa + mẫu tên mục trong diag",
    "owner": "",
-   "status": "dang",
-   "note": "A28: Sol, song song V85b"
+   "status": "xong",
+   "note": "#197 gộp 49bdbd5"
   },
   {
    "code": "V84",
