@@ -39,12 +39,14 @@ import vn.aow.monika.ui.theme.AowButtonState
 import vn.aow.monika.ui.theme.AowPixelShape
 import vn.aow.monika.ui.theme.AowPixelSurface
 import vn.aow.monika.ui.theme.AowPixelMetrics
+import vn.aow.monika.ui.theme.AowColors
 import vn.aow.monika.ui.theme.LocalMonikaColors
 import vn.aow.monika.ui.theme.LocalMonikaMotion
 import vn.aow.monika.ui.theme.MonikaMotion
 import vn.aow.monika.ui.theme.PerformanceTier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import kotlin.math.roundToInt
 
 val LocalControllerOptions = staticCompositionLocalOf { ControllerOptions() }
@@ -62,16 +64,20 @@ fun ControllerOptionsProvider(content: @Composable () -> Unit) {
 
 enum class ControlVisualState { RELEASED, PRESSED, HELD, TURBO, DISABLED }
 
+/** Tông đỏ nhấn đậm hơn trên overlay trong suốt, giữ nhãn trắng >=4.5:1 ở 65%. */
+internal fun AowColors.controllerColors(pad: Boolean = false) = copy(
+    dark = if (pad) padSurface else dark,
+    darkPressed = lerp(darkPressed, dark, .25f),
+    disabledDark = padSurface,
+)
+
 /** V70a vẫn điều khiển lún/rung; surface V85a chỉ vẽ mặt, viền và bóng. */
 @Composable
 private fun AowControlFace(state: AowButtonState, modifier: Modifier, shape: Shape,
     pad: Boolean = false, content: @Composable BoxScope.(Color) -> Unit) {
     val base = Monika.colors
     // Mặt vô hiệu là xám than để chữ trắng vẫn đạt 4.5:1 ở độ mờ mặc định 65%.
-    val colors = base.copy(aow = base.aow.copy(
-        dark = if (pad) base.aow.padSurface else base.aow.dark,
-        disabledDark = base.aow.padSurface,
-    ))
+    val colors = base.copy(aow = base.aow.controllerColors(pad))
     CompositionLocalProvider(LocalMonikaColors provides colors,
         LocalMonikaMotion provides MonikaMotion(PerformanceTier.OFF)) {
         AowPixelSurface(state, modifier, shape = shape, content = content)
@@ -134,8 +140,8 @@ private fun PressControl(
         stateDescription = when {
             !usable -> "Đã tắt"
             visualState == ControlVisualState.TURBO -> "Tua nhanh"
-            selected -> "Đang chọn"
             pressed -> "Đang giữ"
+            selected -> "Đang chọn"
             else -> "Sẵn sàng"
         }
         if (usable) onClick {

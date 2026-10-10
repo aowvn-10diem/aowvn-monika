@@ -71,7 +71,8 @@ class AowControllerTest {
         rule.setContent { MonikaTheme {
             val c = Monika.colors
             for (frame in listOf(c.bgWarm, c.surfaceDark)) {
-                for (face in listOf(c.aow.dark, c.aow.darkPressed, c.aow.padSurface)) {
+                val palette = c.aow.controllerColors()
+                for (face in AowButtonState.entries.map { palette.buttonPalette(AowButtonStyle.DARK, it).face } + c.aow.padSurface) {
                     val a = c.aow.onDark.copy(alpha = .65f).compositeOver(frame).luminance()
                     val b = face.copy(alpha = .65f).compositeOver(frame).luminance()
                     assertTrue("Chữ trắng phải >=4.5:1 ở độ mờ 65%", (maxOf(a,b)+.05f)/(minOf(a,b)+.05f) >= 4.5f)
