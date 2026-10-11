@@ -13,6 +13,19 @@ import vn.aow.monika.library.Xp3Fixture
 class KirikiriDiagTest {
     @get:Rule val tmp = TemporaryFolder()
 
+    @Test fun malformedEmbeddedEntryReportsUnfinishedIndexInsteadOfMissingStartup() {
+        val dir = tmp.newFolder("malformed-diag")
+        for (damage in Xp3Fixture.IndexDamage.values()) Xp3Fixture.exeWithBrokenEntry(dir, damage)
+        val lines = KirikiriDiag.describe(dir.path).filter { it.startsWith("exe ") }
+        assertEquals(Xp3Fixture.IndexDamage.values().size, lines.size)
+        for (line in lines) {
+            assertTrue(line.contains("xp3 nhúng=true offset=64 mục=1+ startup.tjs@gốc=?"))
+            assertTrue(line.contains("chỉ mục chưa hoàn chỉnh"))
+            assertFalse(line.contains("startup.tjs@gốc=false"))
+            assertTrue(line.length <= 200)
+        }
+    }
+
     @Test fun karaNoShoujo_ghiXp3NaoCoStartupTjs() {
         val dir = tmp.newFolder("Kara no Shoujo - AowVN.org")
         Xp3Fixture.xp3(dir, listOf("scn/main.ks", "image/bg.png"), compressed = true).renameTo(File(dir, "karanoshojo.xp3"))

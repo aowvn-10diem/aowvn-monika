@@ -8,6 +8,35 @@ import java.util.zip.Deflater
 
 /** Dựng XP3 tự sinh cho test (không dùng file game thật). */
 object Xp3Fixture {
+    enum class IndexDamage { SHORT_SUBCHUNK, OVERLONG_NAME, SHORT_INFO, MISSING_INFO }
+
+    /** Mục main.ks đọc được trước mục startup.tjs bị hỏng; kích thước chỉ mục ngoài vẫn hợp lệ. */
+    fun exeWithBrokenEntry(dir: File, damage: IndexDamage): File {
+        val file = exe(dir, listOf("main.ks", "startup.tjs"), compressed = false, name = "$damage.exe")
+        val bytes = file.readBytes()
+        val b = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        val index = 64 + b.getLong(64 + 11).toInt()
+        val first = index + 9
+        val second = first + 12 + b.getLong(first + 4).toInt()
+        var end = bytes.size
+        when (damage) {
+            IndexDamage.SHORT_SUBCHUNK -> {
+                b.putLong(second + 4, 2)
+                end = second + 12 + 2
+            }
+            IndexDamage.OVERLONG_NAME -> b.putShort(second + 12 + 12 + 20, 0x7fff.toShort())
+            IndexDamage.SHORT_INFO -> {
+                b.putLong(second + 12 + 4, 20)
+                b.putLong(second + 4, 32L)
+                end = second + 12 + 12 + 20
+            }
+            IndexDamage.MISSING_INFO -> "junk".toByteArray().copyInto(bytes, second + 12)
+        }
+        b.putLong(index + 1, (end - index - 9).toLong())
+        file.writeBytes(bytes.copyOf(end))
+        return file
+    }
+
     fun le(n: Long, bytes: Int): ByteArray = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(n).array().copyOf(bytes)
 
     private fun entry(name: String): ByteArray {

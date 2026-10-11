@@ -12,6 +12,17 @@ import org.junit.rules.TemporaryFolder
 class KirikiriEntryResolverTest {
     @get:Rule val tmp = TemporaryFolder()
 
+    @Test fun malformedEmbeddedEntryKeepsResolutionAndUnknownStartupDetail() {
+        for (damage in Xp3Fixture.IndexDamage.values()) {
+            val dir = tmp.newFolder(damage.name)
+            val exe = Xp3Fixture.exeWithBrokenEntry(dir, damage)
+            assertTrue(KirikiriEntryResolver.resolve(exe) is EntryResolution.Keep)
+            val detail = KirikiriEntryResolver.describe(exe, Xp3Index.read(exe))
+            assertTrue(detail.contains("startup.tjs@gốc=? chỉ mục chưa hoàn chỉnh"))
+            assertFalse(detail.contains("startup.tjs@gốc=false"))
+        }
+    }
+
     @Test fun unfinishedEmbeddedIndexDetailDoesNotReportMissingStartup() {
         val dir = tmp.newFolder("unfinished-detail")
         val pending = Xp3Fixture.exe(dir, listOf("main.ks"), continuation = true, name = "pending.exe")

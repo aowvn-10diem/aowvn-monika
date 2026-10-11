@@ -163,19 +163,26 @@ object Xp3Index {
             val end = (start + len).toInt()
             if (tag == "File") {
                 var p = start
+                var hasInfo = false
                 while (p + 12 <= end) {
                     val sub = String(data, p, 4, Charsets.ISO_8859_1)
                     val slen = b.getLong(p + 4)
                     val s = p + 12
                     if (slen < 0 || slen > end - s) { complete = false; break }
-                    if (sub == "info" && slen >= 22) {
-                        val chars = b.getShort(s + 20).toInt() and 0xFFFF
-                        if (s + 22 + chars * 2 <= s + slen) {
-                            names.add(String(data, s + 22, chars * 2, Charsets.UTF_16LE).replace('\\', '/'))
+                    if (sub == "info") {
+                        if (slen < 22) complete = false
+                        else {
+                            val chars = b.getShort(s + 20).toInt() and 0xFFFF
+                            if (22 + chars * 2 <= slen) {
+                                names.add(String(data, s + 22, chars * 2, Charsets.UTF_16LE).replace('\\', '/'))
+                                hasInfo = true
+                            } else complete = false
                         }
                     }
                     p = (s + slen).toInt()
                 }
+                // File phải có info hợp lệ; đuôi subchunk bị cắt không chứng minh thiếu startup.
+                if (p != end || !hasInfo) complete = false
                 if (names.size >= MAX_NAMES) { complete = false; break }
             }
             pos = end

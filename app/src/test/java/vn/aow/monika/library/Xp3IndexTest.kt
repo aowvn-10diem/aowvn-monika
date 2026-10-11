@@ -16,6 +16,17 @@ class Xp3IndexTest {
     @get:Rule val tmp = TemporaryFolder()
     private fun xp3(names: List<String>, compressed: Boolean, v2: Boolean = false) = Xp3Fixture.xp3(tmp.root, names, compressed, v2)
 
+    @Test fun malformedEmbeddedEntryKeepsReadablePrefixButNotComplete() {
+        for (damage in Xp3Fixture.IndexDamage.values()) {
+            val exe = Xp3Fixture.exeWithBrokenEntry(tmp.root, damage)
+            val result = Xp3Index.read(exe) as Xp3Index.Result.Names
+            assertEquals(listOf("main.ks"), result.names)
+            assertEquals(64L, result.archiveOffset)
+            assertFalse(result.complete)
+            assertNull(Xp3Index.hasRootStartup(exe))
+        }
+    }
+
     @Test fun indexThoVaNen_v1_docDuTen() {
         for (compressed in listOf(false, true)) {
             val r = Xp3Index.read(xp3(listOf("startup.tjs", "scn/main.ks", "Bản đồ.png"), compressed)) as Xp3Index.Result.Names
