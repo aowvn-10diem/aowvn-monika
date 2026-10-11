@@ -78,4 +78,18 @@ class AowKeyPaletteTest {
         assertTrue("OK thường trên nền tối: $okNormalOnDark", okNormalOnDark < 4.5)
         assertTrue("OK nhấn trên nền sáng: $okPressedOnLight", okPressedOnLight < 4.5)
     }
+
+    /** PM 11/10: vkAlpha = 0 không được làm bàn phím Monika biến mất; kiểu khác vẫn ẩn khi độ mờ 0 như bản gốc. */
+    @Test fun monikaKeysStayVisibleEvenWhenOpacityIsZero() {
+        assertTrue(AowKeyPalette.keysVisible(false, 0, true))      // Monika, vkAlpha = 0 → vẫn vẽ
+        assertTrue(AowKeyPalette.keysVisible(false, 140, true))
+        assertFalse(AowKeyPalette.keysVisible(false, 0, false))    // kiểu khác, vkAlpha = 0 → ẩn như cũ
+        assertTrue(AowKeyPalette.keysVisible(false, 1, false))
+        assertTrue(AowKeyPalette.keysVisible(true, 0, false))      // đang sửa bố cục luôn hiện
+        // Mã vẽ thật phải đi qua đúng hàm này (không còn so vkAlpha trực tiếp).
+        val src = java.io.File("../j2me/src/main/java/javax/microedition/lcdui/keyboard/VirtualKeyboard.java").readText()
+        assertTrue(src.contains("AowKeyPalette.keysVisible(layoutEditMode != LAYOUT_EOF, settings.vkAlpha, paintsAowKeys())"))
+        assertFalse("không còn điều kiện vkAlpha > 0 cũ trong paint()", src.contains("layoutEditMode != LAYOUT_EOF || settings.vkAlpha > 0"))
+        assertTrue(src.contains("MONIKA_STYLE && layoutVariant == TYPE_MONIKA && settings.vkButtonShape != SHAPE_RECT"))
+    }
 }

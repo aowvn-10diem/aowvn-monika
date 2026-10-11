@@ -566,6 +566,11 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		return layoutVariant == TYPE_MONIKA;
 	}
 
+	/** Phím kiểu Monika (mặt đục, AowKeyPalette) đang được dùng: cùng điều kiện với `VirtualKey.paint` → `paintMonikaPhone`. */
+	private boolean paintsAowKeys() {
+		return MONIKA_STYLE && layoutVariant == TYPE_MONIKA && settings.vkButtonShape != SHAPE_RECT;
+	}
+
 	private Runnable layoutListener;
 
 	/** Aow Monika (V90): báo mỗi khi bàn phím bố trí lại (xoay máy, đổi cỡ) để nút menu nổi đổi chỗ theo. */
@@ -1069,7 +1074,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	@Override
 	public void paint(CanvasWrapper g) {
 		if (layoutVariant == TYPE_MONIKA && screen != null) paintMonikaSkin(g);
-		if (visible && (layoutEditMode != LAYOUT_EOF || settings.vkAlpha > 0)) {
+		// V85c: phím kiểu Monika luôn đục và bỏ qua vkAlpha → luôn vẽ, kể cả khi vkAlpha = 0 (AowKeyPalette.keysVisible).
+		if (visible && AowKeyPalette.keysVisible(layoutEditMode != LAYOUT_EOF, settings.vkAlpha, paintsAowKeys())) {
 			for (VirtualKey key : keypad) {
 				if (key.visible) {
 					key.paint(g);

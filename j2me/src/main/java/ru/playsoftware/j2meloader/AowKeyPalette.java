@@ -31,6 +31,15 @@ public final class AowKeyPalette {
 	 */
 	public static final int FACE_ALPHA = 0xFF;
 
+	/**
+	 * Có vẽ bàn phím ảo không. Bản gốc J2ME Loader ẩn hẳn bàn phím khi `vkAlpha` = 0 (độ mờ 0 = vô hình). Phím kiểu Monika luôn đục
+	 * ([FACE_ALPHA]) và bỏ qua `vkAlpha`, nên phải luôn được vẽ: nếu không, `vkAlpha` = 0 làm bàn phím Monika biến mất (V85c, PM 11/10).
+	 * @param editing đang ở chế độ sửa bố cục phím; @param aowKeys đang dùng phím kiểu Monika (không áp `vkAlpha`).
+	 */
+	public static boolean keysVisible(boolean editing, int vkAlpha, boolean aowKeys) {
+		return editing || vkAlpha > 0 || aowKeys;
+	}
+
 	/** Mặt phím: phím thường = than đá `PAD_SURFACE`; phím chính (OK) = cam. Nhấn: đỏ sẫm / cam sẫm. */
 	public static int face(boolean primary, boolean pressed) {
 		if (primary) return pressed ? ORANGE_PRESSED : ORANGE;
