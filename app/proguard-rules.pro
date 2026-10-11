@@ -51,3 +51,8 @@
     public static ** vibrateStop();
     public static ** inMultiWindow(android.app.Activity);
 }
+
+# V89: callback tiến độ gọi theo tên onStage từ JNI (kể cả lớp triển khai ngoài package thư viện).
+-keepclassmembers class * implements com.swordfish.libretrodroid.LibretroDroid$StartupListener {
+    public void onStage(java.lang.String);
+}

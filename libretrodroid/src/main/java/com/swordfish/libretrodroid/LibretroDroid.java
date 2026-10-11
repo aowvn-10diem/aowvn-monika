@@ -94,7 +94,9 @@ public class LibretroDroid {
         String language
     );
 
+    public interface StartupListener { void onStage(String stage); }
     public static native void loadGameFromPath(String gameFilePath);
+    public static native void loadGameFromPathWithProgress(String gameFilePath, StartupListener listener);
     public static native void loadGameFromBytes(byte[] gameFileBytes);
     public static native void loadGameFromVirtualFiles(List<DetachedVirtualFile> virtualFiles);
     public static native void resume();

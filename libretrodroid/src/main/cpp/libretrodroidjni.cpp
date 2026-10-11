@@ -416,6 +416,30 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_create(
     }
 }
 
+// Callback cục bộ trên cùng luồng JNI; không giữ jobject sau khi hàm kết thúc.
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_loadGameFromPathWithProgress(
+    JNIEnv* env, jclass obj, jstring gameFilePath, jobject listener
+) {
+    auto gamePath = JniString(env, gameFilePath);
+    jclass cls = listener ? env->GetObjectClass(listener) : nullptr;
+    jmethodID method = cls ? env->GetMethodID(cls, "onStage", "(Ljava/lang/String;)V") : nullptr;
+    if (env->ExceptionCheck()) { if (cls) env->DeleteLocalRef(cls); return; }
+    auto progress = [&](const char* stage) {
+        if (!method || env->ExceptionCheck()) return;
+        jstring value = env->NewStringUTF(stage);
+        if (!value) return;
+        env->CallVoidMethod(listener, method, value);
+        env->DeleteLocalRef(value);
+    };
+    try {
+        LibretroDroid::getInstance().loadGameFromPath(gamePath.stdString(), progress);
+    } catch (std::exception &exception) {
+        LOGE("Error in loadGameFromPath: %s", exception.what());
+        if (!env->ExceptionCheck()) JavaUtils::throwRetroException(env, ERROR_LOAD_GAME);
+    }
+    if (cls) env->DeleteLocalRef(cls);
+}
+
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_loadGameFromPath(
     JNIEnv* env,
     jclass obj,
