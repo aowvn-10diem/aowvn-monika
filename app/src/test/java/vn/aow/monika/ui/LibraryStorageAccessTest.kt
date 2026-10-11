@@ -67,12 +67,18 @@ class LibraryStorageAccessTest {
         // Returning without granting retains the explicit button and does not re-open the dialog.
         rule.onNodeWithText("Cấp quyền quét game").assertIsDisplayed()
         rule.onNodeWithText("Tự tìm game trong máy").assertDoesNotExist()
-        rule.runOnUiThread { granted.value = true }
-        rule.mainClock.advanceTimeBy(1_000)
-        rule.waitUntil(timeoutMillis = 2_000) {
-            rule.mainClock.advanceTimeByFrame()
+        // With a frozen clock, waitForIdle ignores pending recompositions. The
+        // permission snapshot and finite press animation must settle before we
+        // poll semantics; advancing one frame per wall-clock poll races Android.
+        rule.mainClock.autoAdvance = true
+        try {
+            rule.runOnIdle { granted.value = true }
             rule.waitForIdle()
-            rule.onAllNodesWithText("Cấp quyền quét game").fetchSemanticsNodes().isEmpty()
+            rule.waitUntil(timeoutMillis = 2_000) {
+                rule.onAllNodesWithText("Cấp quyền quét game").fetchSemanticsNodes().isEmpty()
+            }
+        } finally {
+            rule.mainClock.autoAdvance = false
         }
         rule.onNodeWithText("Cấp quyền quét game").assertDoesNotExist()
         assertEquals(1, requests)
