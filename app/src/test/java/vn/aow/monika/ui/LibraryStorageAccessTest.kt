@@ -67,18 +67,11 @@ class LibraryStorageAccessTest {
         // Returning without granting retains the explicit button and does not re-open the dialog.
         rule.onNodeWithText("Cấp quyền quét game").assertIsDisplayed()
         rule.onNodeWithText("Tự tìm game trong máy").assertDoesNotExist()
-        // With a frozen clock, waitForIdle ignores pending recompositions. The
-        // permission snapshot and finite press animation must settle before we
-        // poll semantics; advancing one frame per wall-clock poll races Android.
-        rule.mainClock.autoAdvance = true
-        try {
-            rule.runOnIdle { granted.value = true }
-            rule.waitForIdle()
-            rule.waitUntil(timeoutMillis = 2_000) {
-                rule.onAllNodesWithText("Cấp quyền quét game").fetchSemanticsNodes().isEmpty()
-            }
-        } finally {
-            rule.mainClock.autoAdvance = false
+        // Mutate without a global idle barrier: the frame helper drains Android
+        // and applies the snapshot before advancing the frozen Compose clock.
+        rule.runOnUiThread { granted.value = true }
+        rule.awaitComposeLayout {
+            rule.onAllNodesWithText("Cấp quyền quét game").fetchSemanticsNodes().isEmpty()
         }
         rule.onNodeWithText("Cấp quyền quét game").assertDoesNotExist()
         assertEquals(1, requests)

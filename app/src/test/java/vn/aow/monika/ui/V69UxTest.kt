@@ -80,40 +80,29 @@ class V69UxTest {
         val labels = (1..20).map { "Hệ máy " + it }
         lateinit var scroll: androidx.compose.foundation.lazy.LazyListState
         rule.setContent { MonikaTheme { scroll = rememberLazyListState(); ChipBar(labels, labels.first(), { it }, {}, scroll = scroll) } }
-        rule.mainClock.autoAdvance = true
-        try {
-            fun awaitLayout(condition: () -> Boolean) {
-                // Auto advancement drains snapshot/recomposition and Android layout
-                // together. There is no infinite animation or timer in this fixture.
-                rule.waitForIdle()
-                rule.waitUntil(timeoutMillis = 2_000, condition = condition)
-            }
-            awaitLayout {
-                scroll.layoutInfo.totalItemsCount == labels.size && scroll.canScrollForward &&
-                    rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isNotEmpty()
-            }
-            rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
-            rule.shot("v69-chip-more")
-
-            // Repeat both directions to exercise layout/recomposition without blocking
-            // the UI thread on scrollToItem's suspend work or using animation timing.
-            repeat(3) { pass ->
-                if (pass > 0) {
-                    rule.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
-                    awaitLayout { scroll.firstVisibleItemIndex == 0 && scroll.canScrollForward &&
-                        rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isNotEmpty() }
-                    rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
-                }
-                rule.onNode(hasScrollToIndexAction()).performScrollToIndex(labels.lastIndex)
-                awaitLayout { !scroll.canScrollForward &&
-                    rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isEmpty() }
-                rule.onNodeWithText(labels.last()).assertIsDisplayed()
-                rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertDoesNotExist()
-            }
-            rule.shot("v69-chip-end")
-        } finally {
-            rule.mainClock.autoAdvance = false
+        fun awaitLayout(condition: () -> Boolean) = rule.awaitComposeLayout(condition)
+        awaitLayout {
+            scroll.layoutInfo.totalItemsCount == labels.size && scroll.canScrollForward &&
+                rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isNotEmpty()
         }
+        rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
+        rule.shot("v69-chip-more")
+
+        // Keep all three round trips; scrollToIndex does not animate scrolling.
+        repeat(3) { pass ->
+            if (pass > 0) {
+                rule.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
+                awaitLayout { scroll.firstVisibleItemIndex == 0 && scroll.canScrollForward &&
+                    rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isNotEmpty() }
+                rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
+            }
+            rule.onNode(hasScrollToIndexAction()).performScrollToIndex(labels.lastIndex)
+            awaitLayout { !scroll.canScrollForward &&
+                rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isEmpty() }
+            rule.onNodeWithText(labels.last()).assertIsDisplayed()
+            rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertDoesNotExist()
+        }
+        rule.shot("v69-chip-end")
     }
 
     @Test fun dockPaddingAddsNavigationInset() {
