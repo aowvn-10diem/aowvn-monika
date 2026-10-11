@@ -1,6 +1,6 @@
 # LibretroDroid nhúng (GPLv3)
 
-Module `:libretrodroid` là **bản chép nguyên của LibretroDroid 0.14.0** (https://github.com/Swordfish90/LibretroDroid, tag `0.14.0`, GPLv3), thay cho bản AAR từ JitPack. Lý do: thêm RetroAchievements trong game (cần đọc bộ nhớ lõi + chạy `rcheevos` mỗi khung hình) — API gốc không có.
+Module `:libretrodroid` lấy source làm nền từ Swordfish90/LibretroDroid tag `0.14.0` (GPLv3), thay cho bản AAR từ JitPack. Đây không còn là bản chép nguyên: dự án đã thêm RetroAchievements và các chỉnh sửa V89 được liệt kê dưới đây. Lý do nhúng source ban đầu là thêm RetroAchievements trong game (cần đọc bộ nhớ lõi + chạy `rcheevos` mỗi khung hình) — API gốc không có.
 
 ## Nguồn đã chép
 | Phần | Nguồn | Commit |
@@ -15,7 +15,8 @@ Module `:libretrodroid` là **bản chép nguyên của LibretroDroid 0.14.0** (
 - `AndroidManifest.xml`: bỏ thuộc tính `package` (đã có `namespace`).
 - CI: các workflow cài thêm `cmake;3.22.1` cạnh NDK 22.1.
 - `CMakeLists.txt`: biên dịch rcheevos (glob `rcheevos/src/**/*.c`, bỏ `rc_client_raintegration.c`), `-DRC_CLIENT_SUPPORTS_HASH`.
+- V89 (#204, merge `be45e327b6448c939f1bc185ffe307dc31c3a776`): thêm tiến độ `loadGameFromPath` qua callback native/JNI (`libretrodroid.cpp`, `libretrodroid.h`, `libretrodroidjni.cpp`, `LibretroDroid.java`); `GLRetroView`/`GLRetroViewData` hỗ trợ callback trạng thái và khởi tạo tùy chọn trên GL thread, rồi xếp việc destroy sau khi nạp. Bằng chứng: [PR #204](https://github.com/aowvn-10diem/aowvn-monika/pull/204).
 - Quy ước: mọi sửa trong mã nguồn đặt chú thích `Aow Monika:` để dễ gộp khi nâng cấp bản gốc.
 
 ## Kế hoạch tiếp
-Xem `docs/plan-retroachievements.md` giai đoạn 2 (mục 2.2 rcheevos → 2.7). **Bước 2.1 (commit này) chỉ nhúng, chưa sửa native**; phải xanh build + Emulator Test trước khi sang 2.2.
+Xem `docs/plan-retroachievements.md` giai đoạn 2 (mục 2.2 rcheevos → 2.7). Bước 2.1 ghi trạng thái lúc nhập module ban đầu. Main hiện tại đã có thay đổi native/JNI cho V89 (#204), liệt kê ở mục sửa đổi bên trên; nội dung này không phải bước kế tiếp của kế hoạch rcheevos.
