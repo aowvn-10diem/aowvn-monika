@@ -155,4 +155,41 @@ class KirikiriEntryResolverTest {
         assertEquals(good, (KirikiriEntryResolver.resolve(wrong) as EntryResolution.Use).entry)
     }
 
+    @Test fun sixArchivesWithoutStartupUseEmbeddedExe() {
+        val dir = tmp.newFolder("embedded")
+        val main = put(dir, "karanoshojo.xp3", listOf("$$$ This is a protected archive $$$", "scn/main.ks"))
+        for (i in 0..4) put(dir, "patch$i.xp3", listOf("scn/patch.ks"))
+        File(dir, "Uninstall.exe").writeBytes(byteArrayOf(0x4d, 0x5a) + ByteArray(128))
+        val exe = Xp3Fixture.exe(dir, listOf("Startup.TJS"), name = "karanoshojo.exe")
+        val result = KirikiriEntryResolver.resolve(main) as EntryResolution.Use
+        assertEquals(exe, result.entry)
+        assertTrue(result.why.contains("XP3 nhúng"))
+        assertEquals(exe, (KirikiriEntryResolver.resolve(exe) as EntryResolution.Use).entry)
+    }
+    @Test fun embeddedHashedNamesReportUnsupportedWithoutConfusingProtectionMarker() {
+        val dir = tmp.newFolder("embedded-hashed")
+        val main = put(dir, "game.xp3", listOf("scn/main.ks"))
+        Xp3Fixture.exe(dir, listOf("3f9a1c", "a1b2c3"))
+        assertTrue((KirikiriEntryResolver.resolve(main) as EntryResolution.NotFound).encrypted)
+        Xp3Fixture.exe(dir, listOf("$$$ This is a protected archive $$$", "scn/main.ks"))
+        assertFalse((KirikiriEntryResolver.resolve(main) as EntryResolution.NotFound).encrypted)
+    }
+    @Test fun invalidEmbeddedIndexDoesNotProveEncryptionOrMissingStartup() {
+        val dir = tmp.newFolder("embedded-bad")
+        val main = put(dir, "game.xp3", listOf("scn/a.ks"))
+        val exe = Xp3Fixture.exe(dir, listOf("startup.tjs"))
+        val bytes = exe.readBytes()
+        java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).putLong(75, Long.MAX_VALUE)
+        exe.writeBytes(bytes)
+        assertTrue(KirikiriEntryResolver.resolve(main) is EntryResolution.Keep)
+    }
+    @Test fun unalignedArchiveDoesNotGetPassedToCurrentEngine() {
+        val dir = tmp.newFolder("unaligned")
+        val main = put(dir, "game.xp3", listOf("scn/a.ks"))
+        Xp3Fixture.exe(dir, listOf("startup.tjs"), offset = 65)
+        val r = KirikiriEntryResolver.resolve(main) as EntryResolution.NotFound
+        assertFalse(r.encrypted)
+        assertTrue(r.unsupportedReason!!.contains("16 byte"))
+    }
+
 }

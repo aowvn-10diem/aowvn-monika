@@ -70,7 +70,12 @@ object KirikiriDiag {
                         if (samples.isNotEmpty()) out += "mẫu mục: ${samples.joinToString(" | ")}"
                         samplesLeft -= samples.size
                     }
-                } else out += "exe ${f.name} ${sizeOf(f)}"
+                } else {
+                    val index = Xp3Index.read(f)
+                    val offset = index.archiveOffset
+                    out += ("exe ${f.name.take(48)} ${sizeOf(f)} xp3 nhúng=${offset != null}" +
+                        if (offset != null) " offset=$offset ${startupOf(index)}" else " offset=— mục=— startup.tjs@gốc=—").take(200)
+                }
             }
         return out
     }
@@ -79,6 +84,6 @@ object KirikiriDiag {
 
     private fun startupOf(r: Xp3Index.Result): String = when (r) {
         is Xp3Index.Result.Names -> "mục=${r.names.size}${if (r.complete) "" else "+"} startup.tjs@gốc=${Xp3Index.hasRootStartup(r.names)}"
-        is Xp3Index.Result.Unreadable -> "chỉ mục không đọc được (${r.reason})"
+        is Xp3Index.Result.Unreadable -> "mục=? startup.tjs@gốc=? chỉ mục không đọc được (${r.reason})"
     }
 }

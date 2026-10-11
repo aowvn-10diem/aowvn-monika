@@ -88,4 +88,16 @@ class KirikiriDiagTest {
         assertFalse(lines.any { it.contains('\n') || it.contains('\t') || it.contains("/") })
     }
 
+    @Test fun exeMetadataIncludesEmbeddedOffsetCountAndRootStartup() {
+        val dir = tmp.newFolder("embedded-diag")
+        val exe = Xp3Fixture.exe(dir, listOf("startup.tjs", "script/a.ks"), name = "karanoshojo.exe")
+        File(dir, "Uninstall.exe").writeBytes(byteArrayOf(0x4d, 0x5a) + ByteArray(128))
+        val lines = KirikiriDiag.describe(exe.path)
+        val line = lines.first { it.startsWith("exe karanoshojo.exe") }
+        assertTrue(line.contains("xp3 nhúng=true offset=64 mục=2 startup.tjs@gốc=true"))
+        assertTrue(lines.any { it.startsWith("exe Uninstall.exe") && it.contains("xp3 nhúng=false") })
+        assertTrue(lines.all { it.length <= 200 })
+        assertFalse(lines.any { it.contains(tmp.root.path) || it.contains("script/a.ks") })
+    }
+
 }

@@ -15,6 +15,8 @@ sealed class EntryResolution {
         val details: List<String> = emptyList(),
         /** Mọi xp3 đều có dấu hiệu tên băm và không có script đọc được; đây là heuristic, không phải xác minh mã hóa. */
         val encrypted: Boolean = false,
+        /** Lý do engine chưa hỗ trợ đã xác minh từ định dạng, không suy đoán mã hóa. */
+        val unsupportedReason: String? = null,
     ) : EntryResolution()
 }
 
@@ -38,11 +40,15 @@ object KirikiriEntryResolver {
         if (entry == null) return EntryResolution.Keep("không có lối vào (để engine tự hỏi)")
         val dir = if (entry.isDirectory) entry else entry.parentFile ?: return EntryResolution.Keep("không có thư mục cha")
         val isXp3Entry = entry.isFile && entry.extension.equals("xp3", true)
-        if (entry.isFile && !isXp3Entry) return EntryResolution.Keep("lối vào không phải xp3 (${entry.extension}), giữ nguyên")
+        val isExeEntry = entry.isFile && entry.extension.equals("exe", true)
+        if (entry.isFile && !isXp3Entry && !isExeEntry) return EntryResolution.Keep("lối vào không phải xp3 (${entry.extension}), giữ nguyên")
 
         val patch = patchPatterns.map { Regex(it, RegexOption.IGNORE_CASE) }
         fun isPatch(f: File) = patch.any { it.matches(f.name) }
-        val xp3s = dir.listFiles().orEmpty().filter { it.isFile && it.extension.equals("xp3", true) }
+        val files = dir.listFiles().orEmpty().filter { it.isFile }
+        val xp3s = files.filter { it.extension.equals("xp3", true) }
+        val exes = files.filter { it.extension.equals("exe", true) }.sortedWith(
+            compareByDescending<File> { it.nameWithoutExtension.equals(entry.nameWithoutExtension, true) }.thenBy { it.name.lowercase() })
         // V64: không giữ Result/Names qua lần đọc kế tiếp. Chỉ giữ ứng viên và
         // tối đa 8 dòng chẩn đoán; chỉ mục lớn vẫn chịu cap riêng của Xp3Index.
         var selectedHasStartup = false
@@ -79,6 +85,32 @@ object KirikiriEntryResolver {
 
         // 2. Kho khác có startup.tjs: ưu tiên kho thường (lớn nhất); bản vá chỉ khi là kho duy nhất lộ startup.tjs.
         bestNormal?.let { return EntryResolution.Use(it, "xp3 ${it.name} có startup.tjs ở gốc, xp3 đang chọn thì không/không rõ") }
+
+        var embeddedCandidate: File? = null
+        var embeddedCount = 0
+        var embeddedEncrypted = false
+        var embeddedUnknown = false
+        var embeddedUnaligned = false
+        for (file in exes) {
+            val summary = readSummary(file)
+            if (summary.offset == null) continue
+            embeddedCount++
+            details.add(file.name to summary.detail)
+            details.sortBy { it.first }
+            if (details.size > MAX_DETAIL_FILES) details.removeAt(details.lastIndex)
+            if (summary.hasStartup == null) embeddedUnknown = true
+            if (summary.looksEncrypted) embeddedEncrypted = true
+            if (summary.hasStartup == true) {
+                if (summary.offset % 16 != 0L) embeddedUnaligned = true
+                else if (embeddedCandidate == null) embeddedCandidate = file
+                else if (!embeddedCandidate.nameWithoutExtension.equals(entry.nameWithoutExtension, true) &&
+                    !file.nameWithoutExtension.equals(entry.nameWithoutExtension, true)) {
+                    return EntryResolution.Keep("nhiều exe có startup.tjs, không tự chọn")
+                }
+            }
+        }
+
+        embeddedCandidate?.let { return EntryResolution.Use(it, "exe ${it.name} có XP3 nhúng chứa startup.tjs ở gốc") }
         if (startupCount == 1) {
             val only = checkNotNull(firstWithStartup)
             return EntryResolution.Use(only, "chỉ ${only.name} (bản vá) lộ startup.tjs ở gốc")
@@ -90,22 +122,31 @@ object KirikiriEntryResolver {
             return EntryResolution.Use(dir, "thư mục có startup.tjs rời")
         }
 
+        if (embeddedUnknown) return EntryResolution.Keep("exe có XP3 nhúng nhưng chỉ mục không đọc đủ; có thể mã hóa/định dạng lạ, chưa xác minh")
+        if (embeddedUnaligned) return EntryResolution.NotFound(dir.name, "XP3 nhúng lệch căn 16 byte",
+            details.map { it.second }, unsupportedReason = "XP3 nhúng không căn 16 byte. Engine Kirikiri hiện tại chưa hỗ trợ game này.")
+        if (embeddedEncrypted && allReadable) return EntryResolution.NotFound(dir.name, "XP3 nhúng có dấu hiệu tên băm/mã hóa, chưa hỗ trợ",
+            details.map { it.second }, encrypted = true)
+
         // 4. Đọc được chỉ mục của mọi xp3 mà không đâu có startup.tjs → báo lỗi rõ. Có xp3 không đọc được (mã hóa/định dạng lạ) → giữ nguyên.
-        if (xp3s.isNotEmpty() && allReadable) {
-            return EntryResolution.NotFound(dir.name, "đọc chỉ mục ${xp3s.size} xp3, không có startup.tjs ở gốc, không có startup.tjs rời",
-                details.map { it.second }, encrypted = allEncrypted)
+        if ((xp3s.isNotEmpty() || embeddedCount > 0) && allReadable) {
+            return EntryResolution.NotFound(dir.name, "đọc chỉ mục ${xp3s.size} xp3, " + (if (embeddedCount > 0) "$embeddedCount XP3 nhúng, " else "") +
+                    "không có startup.tjs ở gốc, không có startup.tjs rời",
+                details.map { it.second }, encrypted = allEncrypted && xp3s.isNotEmpty())
         }
         return EntryResolution.Keep(if (xp3s.isEmpty()) "thư mục không có xp3" else "có xp3 không đọc được chỉ mục, giữ nguyên")
     }
 
-    private data class IndexSummary(val hasStartup: Boolean?, val detail: String, val looksEncrypted: Boolean)
+    private data class IndexSummary(val hasStartup: Boolean?, val detail: String, val looksEncrypted: Boolean, val offset: Long?)
 
     // Result và toàn bộ tên chỉ sống trong scope này; dòng detail đã cắt ngắn,
     // không trả danh sách tên hoặc closure giữ Result về vòng lặp resolve.
     private fun readSummary(file: File): IndexSummary {
         val result = Xp3Index.read(file)
-        val hasStartup = (result as? Xp3Index.Result.Names)?.let { Xp3Index.hasRootStartup(it.names) }
-        return IndexSummary(hasStartup, describe(file, result), looksEncrypted(result))
+        val hasStartup = (result as? Xp3Index.Result.Names)?.let {
+            if (Xp3Index.hasRootStartup(it.names)) true else if (it.complete) false else null
+        }
+        return IndexSummary(hasStartup, describe(file, result), looksEncrypted(result), result.archiveOffset)
     }
 
     private const val MAX_DETAIL_FILES = 8
@@ -132,10 +173,11 @@ object KirikiriEntryResolver {
      */
     internal fun describe(file: File, result: Xp3Index.Result?): String {
         val mb = "%.1f".format(java.util.Locale.ROOT, file.length() / 1_048_576.0)
-        val names = (result as? Xp3Index.Result.Names) ?: return "${file.name} ${mb}MB: không đọc được chỉ mục"
+        val embedded = if (file.extension.equals("exe", true)) " xp3 nhúng=${result?.archiveOffset != null} offset=${result?.archiveOffset}" else ""
+        val names = (result as? Xp3Index.Result.Names) ?: return "${file.name} ${mb}MB$embedded: không đọc được chỉ mục"
         val sample = names.names.take(MAX_SAMPLE_NAMES).joinToString("|") { it.take(40) }
         val flag = if (looksEncrypted(names)) " [tên có vẻ băm/mã hóa]" else ""
         val more = if (names.complete) "" else "+"
-        return "${file.name} ${mb}MB: ${names.names.size}$more mục, mẫu: $sample$flag".take(280)
+        return "${file.name} ${mb}MB$embedded: ${names.names.size}$more mục, startup.tjs@gốc=${Xp3Index.hasRootStartup(names.names)}, mẫu: $sample$flag".take(280)
     }
 }

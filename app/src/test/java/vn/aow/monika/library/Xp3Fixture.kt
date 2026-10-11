@@ -43,4 +43,11 @@ object Xp3Fixture {
         return File(dir, "t${System.nanoTime()}.xp3").also { it.writeBytes(out.toByteArray()) }
     }
 
+    /** MZ giả + XP3 nguyên vẹn: offset chỉ mục trong XP3 vẫn tương đối với chữ ký. */
+    fun exe(dir: File, names: List<String>, compressed: Boolean = true, v2: Boolean = false,
+        offset: Int = 64, name: String = "game.exe"): File {
+        val archive = xp3(dir, names, compressed, v2)
+        val prefix = ByteArray(offset).apply { this[0] = 0x4d; this[1] = 0x5a }
+        return File(dir, name).also { it.writeBytes(prefix + archive.readBytes()); archive.delete() }
+    }
 }
