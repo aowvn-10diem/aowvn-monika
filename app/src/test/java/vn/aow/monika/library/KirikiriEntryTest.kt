@@ -4,6 +4,7 @@ import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -27,6 +28,44 @@ class KirikiriEntryTest {
         val g = GameDetector.detect(dir, cfg)
         assertEquals("kirikiri", g.system?.id)
         assertEquals("karanoshojo.xp3", g.entry?.name)
+    }
+
+    @Test fun karaNoShoujoNestedBesideImageAndTextKeepsInnerEntryAndEncryptedDiagnosis() {
+        val outer = tmp.newFolder("Game", "AowVN.org-Kara-No-Shoujo (2)")
+        file(outer, "cover.png"); file(outer, "Huong dan.txt")
+        val inner = File(outer, "Kara no Shoujo - AowVN.org").apply { mkdirs() }
+        val main = File(inner, "karanoshojo.xp3")
+        Xp3Fixture.xp3(inner, listOf("3f9a1c", "77be02"), compressed = true, filler = 5000).renameTo(main)
+        (1..5).forEach { i ->
+            Xp3Fixture.xp3(inner, listOf("c0ffee", "a1b2c3"), compressed = i % 2 == 0)
+                .renameTo(File(inner, if (i == 1) "patch.xp3" else "patch$i.xp3"))
+        }
+        file(inner, "karanoshojo.exe", 300); file(inner, "Uninstall.exe", 200)
+        file(inner, "plugin/layerExBTOA.dll"); file(inner, "KnS.ico"); file(inner, "Walk.doc")
+
+        val detected = GameDetector.detect(outer, cfg)
+        assertEquals("kirikiri", detected.system?.id)
+        assertEquals(main, detected.entry)
+        assertEquals(outer, detected.dir)
+        assertEquals(inner, detected.entry?.parentFile)
+        val resolution = KirikiriEntryResolver.resolve(detected.entry) as EntryResolution.NotFound
+        assertEquals(inner.name, resolution.dirName)
+        assertEquals(6, resolution.details.size)
+        assertTrue(resolution.encrypted)
+        assertTrue(!File(inner, "data.xp3").exists())
+    }
+
+    @Test fun nestedReadableScriptsWithoutRootStartupRemainGenericMissingEntry() {
+        val outer = tmp.newFolder("nested-plain")
+        file(outer, "cover.png"); file(outer, "readme.txt")
+        val inner = File(outer, "game").apply { mkdirs() }
+        val main = File(inner, "main.xp3")
+        Xp3Fixture.xp3(inner, listOf("scenario/main.ks", "scripts/startup.tjs"), compressed = true).renameTo(main)
+        val detected = GameDetector.detect(outer, cfg)
+        assertEquals(main, detected.entry)
+        val resolution = KirikiriEntryResolver.resolve(detected.entry) as EntryResolution.NotFound
+        assertEquals(inner.name, resolution.dirName)
+        assertTrue(!resolution.encrypted)
     }
 
     @Test fun coDataXp3ThiUuTienDataXp3() {
