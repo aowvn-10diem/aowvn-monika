@@ -137,37 +137,35 @@ class RetroActivity : ComponentActivity() {
         stateFile = File(File(filesDir, "states").apply { mkdirs() }, "$saveKey.state")
         refreshSlots()
 
-        // Màn chờ: tên game + vòng quay + trạng thái, giữ tới khi game vẽ khung hình đầu tiên (không còn màn đen).
-        val status = TextView(this).apply {
-            text = "Đang chuẩn bị…"
-            setTextColor(Color.parseColor("#C8C5CB"))
-            gravity = Gravity.CENTER
-            textSize = 14f
+        val startup = StartupProgress(android.os.SystemClock::elapsedRealtime) { message ->
+            Diagnostics.crumb(this, "libretro-startup", message)
         }
-        val loading = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setBackgroundColor(Color.parseColor("#141315"))
-            addView(TextView(this@RetroActivity).apply {
-                text = title; setTextColor(Color.WHITE); textSize = 18f; gravity = Gravity.CENTER
-                setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(48, 0, 48, 24)
-            })
-            addView(android.widget.ProgressBar(this@RetroActivity).apply {
-                indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#FF7A32"))
-            })
-            addView(status.apply { setPadding(48, 24, 48, 0) })
+        var startupText by mutableStateOf(startup.text())
+        var slowStartup by mutableStateOf(false)
+        var fallbackText by mutableStateOf<String?>(null)
+        var fallbackAction: () -> Unit = {}
+        val loading = ComposeView(this).apply {
+            setContent { MonikaTheme {
+                RetroStartup(title, startupText, slowStartup, onCopy = {
+                    val detail = "Lõi: $coreId\nROM: ${megabytes(File(gamePath).length())}\n" +
+                        AppGraph.cores.info(coreId) + "\n" + startup.describe()
+                    val text = Diagnostics.startupInfo(this@RetroActivity, detail)
+                    val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Chẩn đoán khởi động", text))
+                    showToast("Đã sao chép chẩn đoán")
+                }, fallback = fallbackText, onFallback = { fallbackAction() })
+            } }
         }
-        // Lõi lỗi (báo lỗi nạp game / không lên hình sau 30 giây): lập báo cáo + tự gửi về AowVN, đồng thời HỎI người chơi có đổi sang lõi khác không.
-        val fallbackBtn = android.widget.Button(this).apply {
-            visibility = android.view.View.GONE; isAllCaps = false; setTextColor(Color.WHITE)
-            background = android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(0xFFFFB052.toInt(), 0xFFFF7F78.toInt(), 0xFFE95CC8.toInt())).apply { cornerRadius = 999f }
+        fun updateStartup(stage: String, text: String) {
+            startup.update(stage, text)
+            lifecycleScope.launch { if (!loadingGone) startupText = startup.text() }
         }
-        loading.addView(fallbackBtn, android.widget.LinearLayout.LayoutParams(MATCH_PARENT, 132).apply { setMargins(64, 36, 64, 0) })
         var failureHandled = false
         fun onCoreFailure(what: String, detail: String) {
             if (failureHandled || loadingGone) return
             failureHandled = true
+            startup.finish()
+            slowStartup = false
             val cr = AppGraph.config.current.crash
             val rep = Diagnostics.recordCoreFailure(this@RetroActivity, what, detail)
             Diagnostics.autoSend(this@RetroActivity, AppGraph.http, rep, cr.endpoint, cr.autoSend, AppGraph.prefs.autoSendCrash)
@@ -175,11 +173,10 @@ class RetroActivity : ComponentActivity() {
             val alt = AppGraph.config.current.systems.firstOrNull { it.id == sid }?.altCores
                 ?.firstOrNull { it != coreId && it in AppGraph.config.current.cores && AppGraph.cores.supports(it) }
             if (alt != null) {
-                status.text = status.text.toString() + "\n\nLõi $coreId chưa chạy được game này. Bạn có muốn thử lõi $alt không?" +
+                startupText = startupText + "\n\nLõi $coreId chưa chạy được game này. Bạn có muốn thử lõi $alt không?" +
                     if (cr.autoSend && AppGraph.prefs.autoSendCrash) "\n(Đã tự gửi báo lỗi về AowVN, có thể tắt trong Cài đặt.)" else ""
-                fallbackBtn.text = "Đổi sang lõi $alt và mở lại"
-                fallbackBtn.visibility = android.view.View.VISIBLE
-                fallbackBtn.setOnClickListener {
+                fallbackText = "Đổi sang lõi $alt và mở lại"
+                fallbackAction = {
                     AppGraph.prefs.setCoreOverride(sid, alt)
                     start(this@RetroActivity, alt, File(gamePath), systemName, title, intent.getStringExtra(EXTRA_PAD), intent.getStringExtra(PlayClock.EXTRA_KEY), sid)
                     finish()
@@ -187,7 +184,6 @@ class RetroActivity : ComponentActivity() {
             }
         }
         root = FrameLayout(this).apply {
-            setBackgroundColor(Color.parseColor("#141315"))
             addView(loading, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
         }
         val overlay = ComposeView(this).apply {
@@ -196,11 +192,11 @@ class RetroActivity : ComponentActivity() {
                     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
                     InGameOverlay(
                         state = ui, system = systemName, title = title, layout = layout, showPad = ready,
-                        send = { action, k -> retroView?.sendKeyEvent(action, k) },
+                        send = { action, k -> if (ready) retroView?.sendKeyEvent(action, k) },
                         onBack = { finish() },
                         onSave = { saveState() },
                         onLoad = { loadState() },
-                        onTurbo = { ui.speed = ui.speed % 4 + 1; retroView?.frameSpeed = ui.speed },
+                        onTurbo = { if (ready) { ui.speed = ui.speed % 4 + 1; retroView?.frameSpeed = ui.speed } },
                         onOpacity = {
                             ui.opacity = when { ui.opacity < 0.4f -> 0.65f; ui.opacity < 0.9f -> 1f; else -> 0.3f }
                             AppGraph.prefs.padOpacity = ui.opacity
@@ -211,10 +207,10 @@ class RetroActivity : ComponentActivity() {
                             prefs.setPadOffset("face", ui.faceOffset.x, ui.faceOffset.y)
                             showToast("Đã lưu vị trí phím")
                         },
-                        onOptions = { openOptions(coreId) },
+                        onOptions = { if (ready) openOptions(coreId) },
                         onAsk = { askGroup(title, systemName) },
                         onMotion = { src, x, y ->
-                            retroView?.sendMotionEvent(if (src == STICK_RIGHT) GLRetroView.MOTION_SOURCE_ANALOG_RIGHT else GLRetroView.MOTION_SOURCE_ANALOG_LEFT, x, y, 0)
+                            if (ready) retroView?.sendMotionEvent(if (src == STICK_RIGHT) GLRetroView.MOTION_SOURCE_ANALOG_RIGHT else GLRetroView.MOTION_SOURCE_ANALOG_LEFT, x, y, 0)
                         },
                         onOptionChange = { o, v ->
                             retroView?.updateVariables(Variable(o.key, v))
@@ -231,7 +227,7 @@ class RetroActivity : ComponentActivity() {
                                 raSheet = vn.aow.monika.achievements.parseInGameAchievements(com.swordfish.libretrodroid.RetroAchievements.describeJson()); raSheetOpen = true
                             } else null,
                             ui.styleLabel?.let { label ->
-                                vn.aow.monika.ui.theme.SheetAction("Kiểu hình: $label", vn.aow.monika.R.drawable.ic_fluent_eye_24_regular) { cycleDisplayStyle() }
+                                vn.aow.monika.ui.theme.SheetAction("Kiểu hình: $label", vn.aow.monika.R.drawable.ic_fluent_eye_24_regular) { if (ready) cycleDisplayStyle() }
                             },
                             vn.aow.monika.ui.theme.SheetAction("Dịch khung này", vn.aow.monika.R.drawable.ic_fluent_globe_24_regular) { translateFrame() },
                             vn.aow.monika.ui.theme.SheetAction("Mã cheat", vn.aow.monika.R.drawable.ic_fluent_document_24_regular) { if (raActive) showToast("Hardcore: không dùng mã cheat khi chơi game có thành tựu") else cheats.show() },
@@ -249,9 +245,9 @@ class RetroActivity : ComponentActivity() {
         fun dismissLoading() {
             if (loadingGone) return
             loadingGone = true
+            startup.finish()
             android.util.Log.i(LOG_TAG, "loading-dismissed core=$coreId") // CI (scripts/ci-emulator-games.sh) đọc dòng này để biết game đã lên hình
-            loading.animate().alpha(0f).setDuration(160).withEndAction { if (loading.parent != null) root.removeView(loading) }.start()
-            loading.postDelayed({ if (loading.parent != null) root.removeView(loading) }, 500)
+            root.removeView(loading)
         }
         setContentView(root)
         // Biết vùng camera/cutout rồi mới đặt lại vị trí khung game.
@@ -262,14 +258,34 @@ class RetroActivity : ComponentActivity() {
         root.addView(overlay, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
 
         lifecycleScope.launch {
-            val core = runCatching { AppGraph.cores.ensureCore(coreId) { status.text = it } }.getOrElse {
-                status.text = "Không tải được lõi giả lập.\n${it.message}\n\nKiểm tra mạng rồi mở lại game."
+            if (startup.awaitSoftTimeout() && !loadingGone) {
+                slowStartup = true
+                Diagnostics.crumb(this@RetroActivity, "libretro-startup", "soft-timeout\n" + startup.describe())
+            }
+        }
+        lifecycleScope.launch {
+            val core = runCatching { AppGraph.cores.ensureCore(coreId, onProgress = { updateStartup(it.stage, it.text) }) }.getOrElse {
+                startup.finish()
+                startupText = "Không tải được lõi giả lập.\n${it.message}\n\nKiểm tra mạng rồi mở lại game."
                 Diagnostics.stage(this@RetroActivity, "core-download-failed")
                 return@launch
             }
             Diagnostics.coreInfo(this@RetroActivity, AppGraph.cores.info(coreId))
             Diagnostics.stage(this@RetroActivity, "core-ready")
+            updateStartup("game-prepare", "Đang chuẩn bị ROM: ${megabytes(File(gamePath).length())}")
             val data = GLRetroViewData(this@RetroActivity).apply {
+                initializeOnGlThread = true
+                startupListener = com.swordfish.libretrodroid.LibretroDroid.StartupListener { stage ->
+                    val message = when (stage) {
+                        "core-init" -> "Lõi đang khởi tạo (retro_init)…"
+                        "rom-read" -> "Đang nạp ROM: ${megabytes(File(gamePath).length())}"
+                        "core-load-game" -> "Lõi đang khởi tạo game (retro_load_game) · ROM ${megabytes(File(gamePath).length())}"
+                        "core-after-load" -> "Đang chuẩn bị âm thanh và thành tựu…"
+                        "core-video" -> "Đang khởi tạo hình ảnh…"
+                        else -> "Đang chờ khung hình đầu tiên…"
+                    }
+                    updateStartup(stage, message)
+                }
                 coreFilePath = core.absolutePath
                 gameFilePath = gamePath
                 // Thành tựu RetroAchievements: chỉ khi đã bật trong game + hệ máy hỗ trợ (xem achievements/RaInGame).
@@ -291,7 +307,7 @@ class RetroActivity : ComponentActivity() {
                 variables = CoreOptions.initial(this@RetroActivity, coreId, def?.options.orEmpty() + tierOptions + style?.options.orEmpty())
                     .map { (k, v) -> Variable(k, v) }.toTypedArray()
             }
-            status.text = "Đang khởi động game…"
+            updateStartup("surface-wait", "Đang chuẩn bị khung game…")
             Diagnostics.stage(this@RetroActivity, "loading-game") // lõi nạp file game ngay sau dòng này — chết ở đây = lõi hoặc file game hỏng
             val view = GLRetroView(this@RetroActivity, data)
             lifecycle.addObserver(view)
@@ -300,7 +316,6 @@ class RetroActivity : ComponentActivity() {
             // Lưới LCD nằm ngay trên khung game, dưới màn chờ và lớp giao diện.
             gridView = LcdGridView(this@RetroActivity).also { root.addView(it, 1, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)) }
             applyLayout()
-            ready = true
             Diagnostics.stage(this@RetroActivity, "view-created")
             launch { if (cheats.prepare()) showToast("Đã tìm thấy mã cheat cho game này (Menu → Mã cheat)", 2800) }
             launch { while (true) { delay(15_000); Diagnostics.heartbeat(this@RetroActivity) } }
@@ -308,6 +323,7 @@ class RetroActivity : ComponentActivity() {
                 view.getGLRetroEvents().collect { e ->
                     if (e is GLRetroView.GLRetroEvents.FrameRendered && !firstFrame) {
                         firstFrame = true
+                        ready = true
                         view.queueEvent { vn.aow.monika.diag.GameEnvironment.cacheGl(this@RetroActivity) }
                         Diagnostics.stage(this@RetroActivity, "first-frame")
                         if (!raWanted) cheats.applyAll() // lõi đã nạp game → áp các mã đang bật (hardcore: không áp cheat)
@@ -316,22 +332,11 @@ class RetroActivity : ComponentActivity() {
                 }
             }
             launch {
-                delay(15_000)
-                if (!loadingGone) status.text = "Game nặng, đang nạp… (lần đầu có thể lâu hơn)"
-                delay(15_000)
-                if (!loadingGone) {
-                    Diagnostics.stage(this@RetroActivity, "no-first-frame-30s")
-                    android.util.Log.w(LOG_TAG, "no-first-frame-30s core=$coreId")
-                    status.text = "Game chưa lên hình sau 30 giây.\nBấm Quay lại rồi mở lại; nếu vẫn vậy hãy đổi lõi ở Cài đặt, hoặc gửi báo lỗi."
-                    onCoreFailure("không lên hình sau 30 giây", "no-first-frame-30s core=$coreId")
-                }
-            }
-            launch {
                 view.getGLRetroErrors().collect { code ->
                     Diagnostics.stage(this@RetroActivity, "core-error-$code")
                     android.util.Log.w(LOG_TAG, "error code=$code core=$coreId")
                     // Lỗi khi nạp game: ghi thẳng lên màn chờ (không chỉ thông báo nhanh) để người chơi biết vì sao không vào được.
-                    if (!loadingGone) status.text = "Không vào được game (mã lỗi $code).\nFile game hỏng hoặc lõi không hợp. Bấm Quay lại để thoát."
+                    if (!loadingGone) startupText = "Không vào được game (mã lỗi $code).\nFile game hỏng hoặc lõi không hợp. Bấm Quay lại để thoát."
                     showToast("Lỗi chạy game (mã $code). File game hỏng hoặc lõi không hợp.", 4000)
                     onCoreFailure("lõi báo lỗi mã $code", "error code=$code core=$coreId")
                 }
@@ -546,6 +551,7 @@ class RetroActivity : ComponentActivity() {
     }
 
     private fun saveSram() {
+        if (!firstFrame) return
         val view = retroView ?: return
         runCatching {
             val bytes = view.serializeSRAM()

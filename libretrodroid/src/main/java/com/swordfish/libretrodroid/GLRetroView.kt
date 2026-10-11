@@ -73,6 +73,7 @@ class GLRetroView(
 
     private val openGLESVersion: Int
 
+    private var isCoreCreated = false
     private var isGameLoaded = false
     private var isEmulationReady = false
     private var isAborted = false
@@ -82,7 +83,7 @@ class GLRetroView(
 
     private val rumbleEventsSubject = MutableSharedFlow<RumbleEvent>()
 
-    private var lifecycle: Lifecycle? = null
+    @Volatile private var lifecycle: Lifecycle? = null
 
     init {
         openGLESVersion = getGLESVersion(context)
@@ -95,6 +96,11 @@ class GLRetroView(
     @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
     fun onCreate(lifecycleOwner: LifecycleOwner) = catchExceptions {
         lifecycle = lifecycleOwner.lifecycle
+        if (!data.initializeOnGlThread) createCore()
+    }
+
+    private fun createCore() {
+        data.startupListener?.onStage("core-init")
         LibretroDroid.create(
             openGLESVersion,
             data.coreFilePath,
@@ -110,13 +116,17 @@ class GLRetroView(
             data.immersiveMode,
             getDeviceLanguage()
         )
+        isCoreCreated = true
         LibretroDroid.setRumbleEnabled(data.rumbleEventsEnabled)
         LibretroDroid.setViewportAlignment(data.viewportAlignment.value)
+        data.startupListener?.onStage("core-created")
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     fun onDestroy() = catchExceptions {
-        LibretroDroid.destroy()
+        // Không destroy song song với retro_init/retro_load_game đang chạy trên GL.
+        if (data.initializeOnGlThread) queueEvent { if (isCoreCreated) LibretroDroid.destroy() }
+        else LibretroDroid.destroy()
         lifecycle = null
     }
 
@@ -343,6 +353,7 @@ class GLRetroView(
     // These functions are called from the GL thread.
     private fun initializeCore() = catchExceptions {
         if (isGameLoaded) return@catchExceptions
+        if (data.initializeOnGlThread) createCore()
         // Aow Monika: cấu hình RetroAchievements trước khi nạp game (native bật sau retro_load_game).
         data.achievements?.let { RetroAchievements.configure(it) }
         when {
@@ -354,8 +365,10 @@ class GLRetroView(
             LibretroDroid.unserializeSRAM(data.saveRAMState)
             data.saveRAMState = null
         }
+        data.startupListener?.onStage("core-video")
         LibretroDroid.onSurfaceCreated()
         isGameLoaded = true
+        data.startupListener?.onStage("first-frame-wait")
 
         KtUtils.runOnUIThread {
             lifecycle?.addObserver(RenderLifecycleObserver())
@@ -373,7 +386,7 @@ class GLRetroView(
     }
 
     private fun loadGameFromPath(gameFilePath: String) {
-        LibretroDroid.loadGameFromPath(gameFilePath)
+        LibretroDroid.loadGameFromPathWithProgress(gameFilePath, data.startupListener)
     }
 
     private fun catchExceptions(block: () -> Unit) {

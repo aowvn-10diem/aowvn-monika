@@ -86,6 +86,21 @@ class CorePinTest {
         assertFalse(noArtifact.supports("gambatte")); assertTrue(noArtifact.missing(listOf("gambatte")).isEmpty())
         assertTrue(runCatching { noArtifact.ensureCore("gambatte") }.isFailure); assertTrue(requests.isEmpty())
     } }
+    @Test fun cacheSkipsNetworkAndReportsCacheForLegacyAndPinned() = runBlocking { onMain {
+        for (pinned in listOf(false, true)) {
+            dir.deleteRecursively(); requests.clear()
+            val manager = CoreManager(app, http(), cfg("one", hash(payload), pinned = pinned))
+            val steps = mutableListOf<CoreProgress>()
+            manager.ensureCore("gambatte", onProgress = { steps += it })
+            assertEquals(1, requests.size)
+            assertTrue(steps.any { it.stage == "core-download" && it.bytes > 0 })
+            assertTrue(steps.any { it.stage == "core-unzip" })
+            steps.clear()
+            manager.ensureCore("gambatte", onProgress = { steps += it })
+            assertEquals(1, requests.size)
+            assertEquals(listOf("core-check", "core-cache"), steps.map { it.stage })
+        }
+    } }
     @Test fun legacyConfigKeepsUrlAndVersionBehavior() = runBlocking { onMain {
         val legacy = CoreManager(app, http(), cfg("unused", "", pinned = false))
         assertTrue(legacy.supports("gambatte")); legacy.ensureCore("gambatte")
