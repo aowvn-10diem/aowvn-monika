@@ -23,6 +23,7 @@
 #include <EGL/egl.h>
 
 #include <string>
+#include <functional>
 #include <vector>
 #include <unordered_set>
 #include <mutex>
@@ -102,7 +103,7 @@ public:
     // Aow Monika: cấu hình RetroAchievements (gọi trước khi nạp game); Achievements dựng sau retro_load_game.
     void configureAchievements(const Achievements::Config& config);
 
-    void loadGameFromPath(const std::string &gamePath);
+    void loadGameFromPath(const std::string &gamePath, const std::function<void(const char*)>& progress = {});
     void loadGameFromBytes(const int8_t *data, size_t size);
     void loadGameFromVirtualFiles(std::vector<VFSFile> virtualFiles);
 

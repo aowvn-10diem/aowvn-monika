@@ -20,6 +20,10 @@ package com.swordfish.libretrodroid
 import android.content.Context
 
 class GLRetroViewData(context: Context) {
+    /** Callback trên luồng native/GL; bên gọi tự chuyển về UI. */
+    var startupListener: LibretroDroid.StartupListener? = null
+    /** Giữ luồng UI đáp ứng trong retro_init; mặc định cũ cho các client khác. */
+    var initializeOnGlThread: Boolean = false
     var coreFilePath: String? = null
     var gameFilePath: String? = null
     var gameFileBytes: ByteArray? = null

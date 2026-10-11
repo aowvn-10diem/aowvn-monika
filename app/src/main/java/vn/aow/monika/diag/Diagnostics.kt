@@ -143,6 +143,11 @@ object Diagnostics {
     /** Ghi 1 sự kiện vào vệt (gọn): Diagnostics.crumb(ctx, "pack", "tải sevenzip 45%"). */
     fun crumb(c: Context, tag: String, msg: String) = Breadcrumbs.add(c, tag, msg)
 
+    /** Sao chép chẩn đoán timeout mềm; không lập báo cáo lỗi hay gửi mạng. */
+    internal fun startupInfo(c: Context, detail: String): String = scrub(c,
+        listOf("Chẩn đoán khởi động", appLine(), deviceLine(), envLine(c), detail,
+            Breadcrumbs.read(c, Process.myPid()).joinToString("\n")).joinToString("\n"))
+
     /** Nhịp sống: biết game còn chạy tới lúc nào (Android cũ không cho hỏi lý do chết). */
     fun heartbeat(c: Context) {
         val s = read(c) ?: return
