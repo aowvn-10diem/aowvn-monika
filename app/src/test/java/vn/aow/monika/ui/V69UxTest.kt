@@ -80,39 +80,40 @@ class V69UxTest {
         val labels = (1..20).map { "Hệ máy " + it }
         lateinit var scroll: androidx.compose.foundation.lazy.LazyListState
         rule.setContent { MonikaTheme { scroll = rememberLazyListState(); ChipBar(labels, labels.first(), { it }, {}, scroll = scroll) } }
-        fun awaitLayout(condition: () -> Boolean) {
-            rule.waitUntil(timeoutMillis = 2_000) {
-                rule.mainClock.advanceTimeByFrame()
+        rule.mainClock.autoAdvance = true
+        try {
+            fun awaitLayout(condition: () -> Boolean) {
+                // Auto advancement drains snapshot/recomposition and Android layout
+                // together. There is no infinite animation or timer in this fixture.
                 rule.waitForIdle()
-                condition()
+                rule.waitUntil(timeoutMillis = 2_000, condition = condition)
             }
-            // Layout changes can invalidate the overflow hint for the next frame.
-            rule.mainClock.advanceTimeByFrame()
-            rule.waitForIdle()
-        }
-        awaitLayout {
-            scroll.layoutInfo.totalItemsCount == labels.size && scroll.canScrollForward &&
-                rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isNotEmpty()
-        }
-        rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
-        rule.shot("v69-chip-more")
+            awaitLayout {
+                scroll.layoutInfo.totalItemsCount == labels.size && scroll.canScrollForward &&
+                    rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isNotEmpty()
+            }
+            rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
+            rule.shot("v69-chip-more")
 
-        // Repeat both directions to exercise layout/recomposition without blocking
-        // the UI thread on scrollToItem's suspend work or using animation timing.
-        repeat(3) { pass ->
-            if (pass > 0) {
-                rule.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
-                awaitLayout { scroll.firstVisibleItemIndex == 0 && scroll.canScrollForward &&
-                    rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isNotEmpty() }
-                rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
+            // Repeat both directions to exercise layout/recomposition without blocking
+            // the UI thread on scrollToItem's suspend work or using animation timing.
+            repeat(3) { pass ->
+                if (pass > 0) {
+                    rule.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
+                    awaitLayout { scroll.firstVisibleItemIndex == 0 && scroll.canScrollForward &&
+                        rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isNotEmpty() }
+                    rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
+                }
+                rule.onNode(hasScrollToIndexAction()).performScrollToIndex(labels.lastIndex)
+                awaitLayout { !scroll.canScrollForward &&
+                    rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isEmpty() }
+                rule.onNodeWithText(labels.last()).assertIsDisplayed()
+                rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertDoesNotExist()
             }
-            rule.onNode(hasScrollToIndexAction()).performScrollToIndex(labels.lastIndex)
-            awaitLayout { !scroll.canScrollForward &&
-                rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isEmpty() }
-            rule.onNodeWithText(labels.last()).assertIsDisplayed()
-            rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertDoesNotExist()
+            rule.shot("v69-chip-end")
+        } finally {
+            rule.mainClock.autoAdvance = false
         }
-        rule.shot("v69-chip-end")
     }
 
     @Test fun dockPaddingAddsNavigationInset() {
