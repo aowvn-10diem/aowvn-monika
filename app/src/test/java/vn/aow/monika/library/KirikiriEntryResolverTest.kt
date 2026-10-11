@@ -12,6 +12,30 @@ import org.junit.rules.TemporaryFolder
 class KirikiriEntryResolverTest {
     @get:Rule val tmp = TemporaryFolder()
 
+    @Test fun unfinishedEmbeddedIndexDetailDoesNotReportMissingStartup() {
+        val dir = tmp.newFolder("unfinished-detail")
+        val pending = Xp3Fixture.exe(dir, listOf("main.ks"), continuation = true, name = "pending.exe")
+        val broken = Xp3Fixture.exe(dir, listOf("startup.tjs"), compressed = false, name = "broken.exe")
+        broken.writeBytes(broken.readBytes().dropLast(1).toByteArray())
+        for (exe in listOf(pending, broken)) {
+            val line = KirikiriEntryResolver.describe(exe, Xp3Index.read(exe))
+            assertTrue(line.contains("xp3 nhúng=true offset=64"))
+            assertTrue(line.contains("startup.tjs@gốc=?"))
+            assertTrue(line.contains("chỉ mục chưa hoàn chỉnh"))
+            assertFalse(line.contains("startup.tjs@gốc=false") || line.contains("thiếu startup.tjs"))
+            assertTrue(line.length <= 280)
+            assertTrue(KirikiriEntryResolver.resolve(exe) is EntryResolution.Keep)
+        }
+    }
+
+    @Test fun unfinishedEmbeddedIndexWithKnownStartupCanStillBeSelected() {
+        val dir = tmp.newFolder("unfinished-known-startup")
+        val exe = Xp3Fixture.exe(dir, listOf("Startup.TJS"), continuation = true)
+        val line = KirikiriEntryResolver.describe(exe, Xp3Index.read(exe))
+        assertTrue(line.contains("startup.tjs@gốc=true chỉ mục chưa hoàn chỉnh"))
+        assertEquals(exe, (KirikiriEntryResolver.resolve(exe) as EntryResolution.Use).entry)
+    }
+
     private fun put(dir: File, name: String, names: List<String>, compressed: Boolean = true, v2: Boolean = false, pad: Int = 0): File {
         val f = Xp3Fixture.xp3(dir, names, compressed, v2, filler = 100 + pad)
         return File(dir, name).also { f.renameTo(it) }

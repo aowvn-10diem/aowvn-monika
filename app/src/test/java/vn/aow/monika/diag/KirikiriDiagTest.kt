@@ -100,4 +100,31 @@ class KirikiriDiagTest {
         assertFalse(lines.any { it.contains(tmp.root.path) || it.contains("script/a.ks") })
     }
 
+    @Test fun unfinishedEmbeddedIndexDoesNotReportMissingStartup() {
+        val dir = tmp.newFolder("unfinished-diag")
+        val pending = Xp3Fixture.exe(dir, listOf("main.ks"), continuation = true, name = "pending.exe")
+        val broken = Xp3Fixture.exe(dir, listOf("startup.tjs"), compressed = false, name = "broken.exe")
+        broken.writeBytes(broken.readBytes().dropLast(1).toByteArray())
+        val lines = KirikiriDiag.describe(pending.path).filter { it.startsWith("exe ") }
+
+        assertEquals(2, lines.size)
+        for (line in lines) {
+            assertTrue(line.contains("xp3 nhúng=true offset=64"))
+            assertTrue(line.contains("startup.tjs@gốc=?"))
+            assertTrue(line.contains("chỉ mục chưa hoàn chỉnh"))
+            assertFalse(line.contains("startup.tjs@gốc=false") || line.contains("thiếu startup.tjs"))
+            assertTrue(line.length <= 200)
+        }
+        assertTrue(lines.first { it.startsWith("exe pending.exe") }.contains("mục=1+"))
+        assertTrue(lines.first { it.startsWith("exe broken.exe") }.contains("mục=?"))
+        assertEquals(KirikiriDiag.describe(pending.path).joinToString("\n"), KirikiriDiag.reportText(pending.path))
+    }
+
+    @Test fun startupAlreadySeenRemainsTrueEvenWhenEmbeddedIndexIsUnfinished() {
+        val dir = tmp.newFolder("unfinished-with-startup")
+        val exe = Xp3Fixture.exe(dir, listOf("Startup.TJS"), continuation = true)
+        val line = KirikiriDiag.describe(exe.path).first { it.startsWith("exe ") }
+        assertTrue(line.contains("mục=1+ startup.tjs@gốc=true chỉ mục chưa hoàn chỉnh"))
+    }
+
 }

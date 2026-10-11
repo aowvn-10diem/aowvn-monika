@@ -143,9 +143,7 @@ object KirikiriEntryResolver {
     // không trả danh sách tên hoặc closure giữ Result về vòng lặp resolve.
     private fun readSummary(file: File): IndexSummary {
         val result = Xp3Index.read(file)
-        val hasStartup = (result as? Xp3Index.Result.Names)?.let {
-            if (Xp3Index.hasRootStartup(it.names)) true else if (it.complete) false else null
-        }
+        val hasStartup = Xp3Index.hasRootStartup(result)
         return IndexSummary(hasStartup, describe(file, result), looksEncrypted(result), result.archiveOffset)
     }
 
@@ -174,10 +172,12 @@ object KirikiriEntryResolver {
     internal fun describe(file: File, result: Xp3Index.Result?): String {
         val mb = "%.1f".format(java.util.Locale.ROOT, file.length() / 1_048_576.0)
         val embedded = if (file.extension.equals("exe", true)) " xp3 nhúng=${result?.archiveOffset != null} offset=${result?.archiveOffset}" else ""
-        val names = (result as? Xp3Index.Result.Names) ?: return "${file.name} ${mb}MB$embedded: không đọc được chỉ mục"
+        val names = (result as? Xp3Index.Result.Names) ?: return "${file.name} ${mb}MB$embedded: startup.tjs@gốc=? chỉ mục chưa hoàn chỉnh (không đọc được chỉ mục)".take(280)
         val sample = names.names.take(MAX_SAMPLE_NAMES).joinToString("|") { it.take(40) }
         val flag = if (looksEncrypted(names)) " [tên có vẻ băm/mã hóa]" else ""
         val more = if (names.complete) "" else "+"
-        return "${file.name} ${mb}MB$embedded: ${names.names.size}$more mục, startup.tjs@gốc=${Xp3Index.hasRootStartup(names.names)}, mẫu: $sample$flag".take(280)
+        val startup = Xp3Index.hasRootStartup(names)?.toString() ?: "?"
+        val incomplete = if (names.complete) "" else " chỉ mục chưa hoàn chỉnh"
+        return "${file.name} ${mb}MB$embedded: ${names.names.size}$more mục, startup.tjs@gốc=$startup$incomplete, mẫu: $sample$flag".take(280)
     }
 }

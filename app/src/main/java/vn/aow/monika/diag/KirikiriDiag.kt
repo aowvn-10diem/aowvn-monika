@@ -83,7 +83,7 @@ object KirikiriDiag {
     private fun sizeOf(f: File) = if (f.isFile) "${f.length() / 1024}KB" else ""
 
     private fun startupOf(r: Xp3Index.Result): String = when (r) {
-        is Xp3Index.Result.Names -> "mục=${r.names.size}${if (r.complete) "" else "+"} startup.tjs@gốc=${Xp3Index.hasRootStartup(r.names)}"
-        is Xp3Index.Result.Unreadable -> "mục=? startup.tjs@gốc=? chỉ mục không đọc được (${r.reason})"
+        is Xp3Index.Result.Names -> "mục=${r.names.size}${if (r.complete) "" else "+"} startup.tjs@gốc=${Xp3Index.hasRootStartup(r)?.toString() ?: "?"}${if (r.complete) "" else " chỉ mục chưa hoàn chỉnh"}"
+        is Xp3Index.Result.Unreadable -> "mục=? startup.tjs@gốc=? chỉ mục chưa hoàn chỉnh; chỉ mục không đọc được (${r.reason})"
     }
 }

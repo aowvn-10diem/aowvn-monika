@@ -76,8 +76,10 @@ object Xp3Index {
         return unaligned
     }
 
-    /** true/false nếu đọc được chỉ mục; null nếu không biết (không đọc được chỉ mục). */
-    fun hasRootStartup(file: File): Boolean? = (read(file) as? Result.Names)?.let {
+    /** Chỉ trả false khi đọc hết chỉ mục; phần chưa đọc/hỏng không chứng minh thiếu startup. */
+    fun hasRootStartup(file: File): Boolean? = hasRootStartup(read(file))
+
+    internal fun hasRootStartup(result: Result?): Boolean? = (result as? Result.Names)?.let {
         if (hasRootStartup(it.names)) true else if (it.complete) false else null
     }
 
