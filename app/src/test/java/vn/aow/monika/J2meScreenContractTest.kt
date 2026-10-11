@@ -59,4 +59,30 @@ class J2meScreenContractTest {
         val missing = leaves.filter { j2meMenuIcon(it) == J2ME_MENU_FALLBACK_ICON }
         assertEquals("Mục menu J2ME chưa có icon trong menu Monika: $missing", emptyList<String>(), missing)
     }
+
+    /**
+     * V85c / A33: khi dùng bàn phím Monika (mặt phím luôn đục) thanh "Độ mờ" và "Ép độ mờ" phải bị khóa kèm ghi chú
+     * "Bàn phím Monika luôn đục để dễ đọc", không để cài đặt chết im lặng; kiểu bàn phím khác giữ nguyên.
+     * Robolectric không mở được `ConfigActivity`, nên đọc thẳng layout, chuỗi và mã nguồn.
+     */
+    @Test fun opacityIsLockedWithNoteWhenMonikaKeyboardIsUsed() {
+        val config = parse("layout/activity_config.xml")
+        val note = config.elements("TextView").single { it.attr("id") == "@+id/tvOpacityNote" }
+        assertEquals("@string/monika_keyboard_opaque", note.attr("text"))
+        assertEquals("gone", note.attr("visibility")) // chỉ hiện khi dùng bàn phím Monika
+        val force = config.elements("com.google.android.material.switchmaterial.SwitchMaterial").single { it.attr("id") == "@+id/cxVKForceOpacity" }
+        assertEquals("@id/tvOpacityNote", force.attr("layout_constraintTop_toBottomOf").ifEmpty {
+            force.getAttributeNS("http://schemas.android.com/apk/res-auto", "layout_constraintTop_toBottomOf")
+        })
+        val text = parse("values/strings.xml").elements("string").single { it.getAttribute("name") == "monika_keyboard_opaque" }.textContent
+        assertEquals("Bàn phím Monika luôn đục để dễ đọc", text)
+        // Khóa gắn với đúng kiểu bàn phím Monika, gọi lúc nạp cấu hình và mỗi khi bật/tắt nhóm phím ảo; kiểu khác không bị khóa.
+        val src = File("../j2me/src/main/java/ru/playsoftware/j2meloader/config/ConfigActivity.java").readText()
+        val body = src.substringAfter("private void applyMonikaOpacityLock()").substringBefore("\n\t}\n")
+        assertTrue(body.contains("AowKeyPalette.opaqueKeys(VirtualKeyboard.MONIKA_STYLE,") && body.contains("params.vkType == VirtualKeyboard.TYPE_MONIKA"))
+        assertTrue(body.contains("sbVKAlpha.setEnabled(!monika)") && body.contains("cxVKForceOpacity.setEnabled(!monika)"))
+        assertTrue(body.contains("tvOpacityNote.setVisibility(monika &&"))
+        assertTrue("phải gọi khóa ở ít nhất 2 chỗ (nạp cấu hình + bật/tắt bàn phím ảo)",
+            Regex("applyMonikaOpacityLock\\(\\);").findAll(src).count() >= 2)
+    }
 }

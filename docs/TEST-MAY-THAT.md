@@ -113,6 +113,7 @@ Mở **Cài đặt → Tay cầm ảo** để đổi mức rung và hiệu ứng
 | 5.3 | Chơi vài phút, thoát, vào lại | Không văng, save còn | |
 | 5.4 | Game 3D (nếu có) | Chạy được | |
 | 5.5 | Nút menu (V90): vào game ở màn dọc rồi xoay ngang | Dọc: nút tròn nằm ở hàng dưới cùng của bàn phím, bên phải (dưới phím Menu); ngang: dưới phím ← của cụm phím bên phải. Không đè lên màn hình game ở cả hai hướng; bấm nút mở menu Monika (có Chụp màn hình) | |
+| 5.6 | Cài đặt game Java (V85c): mở **Cài đặt game** khi đang dùng bàn phím Monika, mục phím ảo | Thanh "Độ mờ" và "Ép độ mờ" bị mờ/khóa, hiện ghi chú "Bàn phím Monika luôn đục để dễ đọc"; đổi sang kiểu bàn phím khác thì thanh dùng được lại. Phím ảo đọc rõ trên cả nền sáng và tối | |
 
 ## 6. APK & app ngoài
 

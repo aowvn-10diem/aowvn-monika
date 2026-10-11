@@ -772,6 +772,20 @@
                 app:layout_constraintStart_toEndOf="@+id/barrierInputConfig"
                 app:layout_constraintTop_toBottomOf="@+id/cxVKFeedback" />
 
+            <!-- Aow Monika (V85c): ghi chú khi bàn phím Monika đang dùng (mặt phím luôn đục nên thanh Độ mờ bị khóa). -->
+            <TextView
+                android:id="@+id/tvOpacityNote"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="5dp"
+                android:text="@string/monika_keyboard_opaque"
+                android:textColor="?attr/textColorSecondary"
+                android:textSize="13sp"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvOpacity" />
+
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/cxVKForceOpacity"
                 style="@style/SwitchStyle"
@@ -782,7 +796,7 @@
                 android:text="@string/PREF_VK_FORCE_OPACITY"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvOpacity" />
+                app:layout_constraintTop_toBottomOf="@id/tvOpacityNote" />
             <!-- End keys opacity -->
 
             <!-- Keys hider -->

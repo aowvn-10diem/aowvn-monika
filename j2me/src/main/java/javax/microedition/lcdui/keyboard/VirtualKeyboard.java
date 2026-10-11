@@ -42,6 +42,7 @@ import javax.microedition.lcdui.graphics.CanvasWrapper;
 import javax.microedition.lcdui.overlay.Overlay;
 import javax.microedition.shell.MicroActivity;
 import javax.microedition.util.ContextHolder;
+import ru.playsoftware.j2meloader.AowKeyPalette;
 
 import ru.playsoftware.j2meloader.config.Config;
 import ru.playsoftware.j2meloader.config.ProfileModel;
@@ -69,7 +70,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	public static final int LAYOUT_TYPE = 3;
 
 	private static final int SHAPE_OVAL = 0;
-	private static final int SHAPE_RECT = 1;
+	public static final int SHAPE_RECT = 1;
 	public static final int SHAPE_ROUND_RECT = 2;
 
 	public static final int TYPE_CUSTOM = 0;
@@ -563,6 +564,11 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	public boolean isMonika() {
 		return layoutVariant == TYPE_MONIKA;
+	}
+
+	/** Phím kiểu Monika (mặt đục, AowKeyPalette) đang được dùng: cùng điều kiện với `VirtualKey.paint` → `paintMonikaPhone`. */
+	private boolean paintsAowKeys() {
+		return AowKeyPalette.opaqueKeys(MONIKA_STYLE, layoutVariant == TYPE_MONIKA, settings.vkButtonShape == SHAPE_RECT);
 	}
 
 	private Runnable layoutListener;
@@ -1068,7 +1074,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	@Override
 	public void paint(CanvasWrapper g) {
 		if (layoutVariant == TYPE_MONIKA && screen != null) paintMonikaSkin(g);
-		if (visible && (layoutEditMode != LAYOUT_EOF || settings.vkAlpha > 0)) {
+		// V85c: phím kiểu Monika luôn đục và bỏ qua vkAlpha → luôn vẽ, kể cả khi vkAlpha = 0 (AowKeyPalette.keysVisible).
+		if (visible && AowKeyPalette.keysVisible(layoutEditMode != LAYOUT_EOF, settings.vkAlpha, paintsAowKeys())) {
 			for (VirtualKey key : keypad) {
 				if (key.visible) {
 					key.paint(g);
@@ -1496,43 +1503,74 @@ public class VirtualKeyboard implements Overlay, Runnable {
 			g.setTextBold(false);
 		}
 
+		private final android.graphics.Path aowPath = new android.graphics.Path();
+
+		/** Hình chữ nhật góc bậc (2 bậc mỗi góc, không đường cong) như `AowPixelShape` của app. */
+		private void aowShape(RectF r, float step) {
+			float s = Math.min(step, Math.min(r.width(), r.height()) / 4f);
+			float l = r.left, t = r.top, rt = r.right, b = r.bottom;
+			android.graphics.Path p = aowPath;
+			p.reset();
+			p.moveTo(l + 2 * s, t);
+			p.lineTo(rt - 2 * s, t);
+			p.lineTo(rt - 2 * s, t + s); p.lineTo(rt - s, t + s); p.lineTo(rt - s, t + 2 * s); p.lineTo(rt, t + 2 * s);
+			p.lineTo(rt, b - 2 * s);
+			p.lineTo(rt - s, b - 2 * s); p.lineTo(rt - s, b - s); p.lineTo(rt - 2 * s, b - s); p.lineTo(rt - 2 * s, b);
+			p.lineTo(l + 2 * s, b);
+			p.lineTo(l + 2 * s, b - s); p.lineTo(l + s, b - s); p.lineTo(l + s, b - 2 * s); p.lineTo(l, b - 2 * s);
+			p.lineTo(l, t + 2 * s);
+			p.lineTo(l + s, t + 2 * s); p.lineTo(l + s, t + s); p.lineTo(l + 2 * s, t + s);
+			p.close();
+		}
+
+		private void fillAow(CanvasWrapper g, RectF r, float step, int color) {
+			aowShape(r, step);
+			g.setFillColor(color);
+			g.fillPath(aowPath);
+		}
+
 		/**
-		 * Aow Monika: phím kiểu điện thoại tối màu, viền màu theo nhóm (giống giả lập Java trên web):
-		 * 2/4/6/8 vàng (hướng đi), 5 đỏ (bắn), L/R tím, mũi tên xanh, OK xanh đặc; số có chữ ABC nhỏ bên dưới.
+		 * Aow Monika (V85c): phím theo bộ nút AowVN — mặt than đá `PAD_SURFACE` (phím OK: cam), góc bậc, viền đen 2dp + vành sáng 1dp,
+		 * bóng cứng 1 bậc phía dưới; nhấn: mặt đỏ sẫm + lún 2dp. Màu lấy từ {@link AowKeyPalette} (khớp `Monika.colors.aow`).
+		 * Số có chữ ABC nhỏ bên dưới như cũ. Bố cục và mã phím không đổi.
 		 */
 		private void paintMonikaPhone(CanvasWrapper g, int alpha) {
-			float density = ContextHolder.getAppContext().getResources().getDisplayMetrics().density;
-			int[] c = monikaColors(keyCode);
+			float d = ContextHolder.getAppContext().getResources().getDisplayMetrics().density;
+			boolean primary = keyCode == Canvas.KEY_FIRE;
+			// V85c: mặt phím luôn đục (AowKeyPalette.FACE_ALPHA): alpha < 255 trộn màu mặt phím với nền làm tụt tương phản dưới 4.5:1.
+			int a = AowKeyPalette.FACE_ALPHA << 24;
+			float step = 3 * d;
+			float shadow = 3 * d;
+			float press = selected ? 2 * d : 0;
 			face.set(rect);
-			face.inset(4 * density, 4 * density);
-			if (selected) face.inset(density, density);
-			float radius = 12 * density;
-			int a = Math.max(alpha >>> 24, 0xC0); // bàn phím nằm ngoài khung game → đậm hơn cho dễ nhìn
-			boolean filled = keyCode == Canvas.KEY_FIRE;
-			if (filled || selected) {
-				// Quầng sáng quanh phím OK / phím đang nhấn (như đèn nền bàn phím).
-				depth.set(face);
-				depth.inset(-3 * density, -3 * density);
-				g.setFillColor(0x55000000 | (c[1] & 0xFFFFFF));
-				g.fillRoundRect(depth, radius + 3 * density, radius + 3 * density);
-			}
-			g.setFillColor((a << 24) | (selected || filled ? c[1] : c[0]));
-			g.fillRoundRect(face, radius, radius);
-			g.setDrawColor((a << 24) | (selected ? c[2] : c[1]));
-			g.setStrokeWidth(1.5f * density);
-			g.drawRoundRect(face, radius, radius);
-			g.setStrokeWidth(0);
-			String text = keyCode == Canvas.KEY_FIRE ? "OK" : label;
+			face.inset(3 * d, 3 * d);
+			face.bottom -= shadow; // chừa chỗ cho bóng cứng
+			// 1) Bóng cứng 1 bậc phía dưới (đứng yên khi nhấn).
+			depth.set(face);
+			depth.offset(0, shadow);
+			fillAow(g, depth, step, a | (AowKeyPalette.OUTLINE & 0xFFFFFF));
+			// 2) Vành sáng 1dp ngoài cùng → viền đen 2dp → mặt phím (lún khi nhấn).
+			depth.set(face);
+			depth.offset(0, press);
+			fillAow(g, depth, step, a | (AowKeyPalette.OUTER_RIM & 0xFFFFFF));
+			depth.inset(d, d);
+			fillAow(g, depth, step, a | (AowKeyPalette.OUTLINE & 0xFFFFFF));
+			depth.inset(2 * d, 2 * d);
+			fillAow(g, depth, step, a | (AowKeyPalette.face(primary, selected) & 0xFFFFFF));
+			// 3) Nhãn.
+			int label = AowKeyPalette.label(primary, selected);
+			String text = primary ? "OK" : this.label;
 			String sub = monikaLetters(keyCode);
-			g.setTextColor(0xFF000000 | (selected || filled ? 0xFFFFFF : c[2]));
-			g.setTextBold(filled);
+			float cx = depth.centerX(), cy = depth.centerY();
+			g.setTextColor(label);
+			g.setTextBold(primary);
 			if (sub == null) {
-				g.drawString(text, face.centerX(), face.centerY());
+				g.drawString(text, cx, cy);
 			} else {
-				g.drawString(text, face.centerX(), face.centerY() - face.height() * 0.12f);
+				g.drawString(text, cx, cy - depth.height() * 0.12f);
 				g.setTextScale(0.45f);
-				g.setTextColor(0xA0000000 | (selected ? 0xFFFFFF : c[2]));
-				g.drawString(sub, face.centerX(), face.centerY() + face.height() * 0.26f);
+				g.setTextColor(AowKeyPalette.subLabel(primary, selected)); // màu đục đã trộn, không dùng alpha
+				g.drawString(sub, cx, cy + depth.height() * 0.26f);
 				g.setTextScale(1f);
 			}
 			g.setTextBold(false);
@@ -1646,24 +1684,6 @@ public class VirtualKeyboard implements Overlay, Runnable {
 			if (activity != null) {
 				activity.runOnUiThread(activity::showExitConfirmation);
 			}
-		}
-	}
-
-	/** Aow Monika: {nền, viền, chữ} của từng nhóm phím trong bàn phím kiểu Monika. */
-	private static int[] monikaColors(int keyCode) {
-		switch (keyCode) {
-			case Canvas.KEY_NUM2: case Canvas.KEY_NUM4: case Canvas.KEY_NUM6: case Canvas.KEY_NUM8:
-				return new int[]{0x2A2412, 0x9C7A26, 0xFFD65A};
-			case Canvas.KEY_NUM5:
-				return new int[]{0x3A1418, 0xB3313B, 0xFF6068};
-			case Canvas.KEY_SOFT_LEFT: case Canvas.KEY_SOFT_RIGHT:
-				return new int[]{0x241A3D, 0x6D4AD8, 0xC7A6FF};
-			case Canvas.KEY_UP: case Canvas.KEY_DOWN: case Canvas.KEY_LEFT: case Canvas.KEY_RIGHT:
-				return new int[]{0x0F2530, 0x1F5568, 0x46D2F5};
-			case Canvas.KEY_FIRE:
-				return new int[]{0x0F2530, 0x16BFE0, 0xFFFFFF};
-			default:
-				return new int[]{0x151D27, 0x2C4152, 0x46C8F0};
 		}
 	}
 
