@@ -19,14 +19,15 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import vn.aow.monika.config.ConfigRepository
+import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
 data class Profile(val points: Long, val streak: Int, val progress: Int, val lastCheckin: Long) {
     /** Hôm nay (giờ máy) đã điểm danh chưa. */
-    fun checkedInToday(zone: ZoneId = ZoneId.systemDefault()) =
-        lastCheckin > 0 && Instant.ofEpochMilli(lastCheckin).atZone(zone).toLocalDate() == LocalDate.now(zone)
+    fun checkedInToday(zone: ZoneId = ZoneId.systemDefault(), clock: Clock = Clock.systemDefaultZone()) =
+        lastCheckin > 0 && Instant.ofEpochMilli(lastCheckin).atZone(zone).toLocalDate() == LocalDate.now(clock.withZone(zone))
 }
 
 data class CheckinResult(val profile: Profile, val pointAwarded: Boolean, val already: Boolean)
@@ -40,7 +41,12 @@ data class Review(
  * Dữ liệu tài khoản AowVN qua REST của Firebase Realtime Database — cùng đường dẫn, cùng cấu trúc với web aow.vn
  * (đọc từ mã trang /p/vote-game.html, KHÔNG theo tài liệu cũ vì tài liệu lệch với dữ liệu thật).
  */
-class AowApi(private val http: OkHttpClient, private val config: ConfigRepository, private val account: Account) {
+class AowApi(
+    private val http: OkHttpClient,
+    private val config: ConfigRepository,
+    private val account: Account,
+    private val clock: Clock = Clock.systemDefaultZone(),
+) {
     private val json = Json { ignoreUnknownKeys = true }
     private val base get() = config.current.account.databaseUrl.trimEnd('/')
 
@@ -95,7 +101,7 @@ class AowApi(private val http: OkHttpClient, private val config: ConfigRepositor
     suspend fun checkinFast(zone: ZoneId = ZoneId.systemDefault()): CheckinResult {
         val uid = account.session.value?.uid ?: throw NotSignedIn()
         val before = cachedProfile()
-        if (before != null && !before.checkedInToday(zone)) publish(uid, nextCheckin(before, System.currentTimeMillis(), zone).profile)
+        if (before != null && !before.checkedInToday(zone, clock)) publish(uid, nextCheckin(before, clock.millis(), zone).profile)
         return try { checkin(zone).also { publish(uid, it.profile) } } catch (e: Exception) { before?.let { publish(uid, it) }; throw e }
     }
 
@@ -105,8 +111,8 @@ class AowApi(private val http: OkHttpClient, private val config: ConfigRepositor
     suspend fun checkin(zone: ZoneId = ZoneId.systemDefault()): CheckinResult {
         val s = account.session.value ?: throw NotSignedIn()
         val p = profile()
-        if (p.checkedInToday(zone)) return CheckinResult(p, pointAwarded = false, already = true)
-        val next = nextCheckin(p, System.currentTimeMillis(), zone)
+        if (p.checkedInToday(zone, clock)) return CheckinResult(p, pointAwarded = false, already = true)
+        val next = nextCheckin(p, clock.millis(), zone)
         call("PATCH", "users/${s.uid}", auth = true, body = buildJsonObject {
             put("checkin/lastCheckinTime", next.profile.lastCheckin)
             put("checkin/streak", next.profile.streak)
@@ -132,7 +138,7 @@ class AowApi(private val http: OkHttpClient, private val config: ConfigRepositor
 
     suspend fun saveReview(postId: String, recommended: Boolean, content: String, createdAt: Long?) {
         val s = account.session.value ?: throw NotSignedIn()
-        val now = System.currentTimeMillis()
+        val now = clock.millis()
         call("PUT", "post_reviews/$postId/${s.uid}", auth = true, body = buildJsonObject {
             put("uid", s.uid)
             put("displayName", s.name.ifBlank { s.email.substringBefore('@').ifBlank { "Game thủ AowVN" } })

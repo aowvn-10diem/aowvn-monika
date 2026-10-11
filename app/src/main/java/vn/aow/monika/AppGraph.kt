@@ -8,6 +8,7 @@ import vn.aow.monika.feed.FeedRepository
 import vn.aow.monika.library.GameLibrary
 import vn.aow.monika.runner.CoreManager
 import vn.aow.monika.runner.GameLauncher
+import java.time.Clock
 import java.util.concurrent.TimeUnit
 
 /**
@@ -53,7 +54,8 @@ object AppGraph {
     /** File mở từ app khác ("Mở bằng Aow Monika") đang chờ màn Thư viện nhận vào. */
     val pendingImports = kotlinx.coroutines.flow.MutableStateFlow<List<android.net.Uri>>(emptyList())
     val account by lazy { vn.aow.monika.account.Account(app, http, config) }
-    val aow by lazy { vn.aow.monika.account.AowApi(http, config, account) }
+    val clock: Clock by lazy { Clock.systemDefaultZone() }
+    val aow by lazy { vn.aow.monika.account.AowApi(http, config, account, clock) }
     val ra by lazy { vn.aow.monika.achievements.RaAccount(app, raApi) }
     val raApi by lazy { vn.aow.monika.achievements.RaApi(http) }
     val raIndex by lazy { vn.aow.monika.achievements.RaGameIndex(app, raApi, ra) }

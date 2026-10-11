@@ -6,6 +6,8 @@ import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
@@ -25,6 +27,8 @@ import org.robolectric.annotation.Config
 import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.ui.TestApp
 import java.io.IOException
+import java.time.Clock
+import java.time.Instant
 import java.time.ZoneId
 
 /** Đăng nhập, phiên và API tài khoản AowVN, không mạng: máy chủ giả trong bộ nhớ ghi lại mọi yêu cầu. */
@@ -48,10 +52,10 @@ class AccountApiTest {
         }.build()
     }
 
-    private fun rig(http: OkHttpClient): Pair<Account, AowApi> {
+    private fun rig(http: OkHttpClient, clock: Clock = Clock.systemDefaultZone()): Pair<Account, AowApi> {
         val config = ConfigRepository(app, OkHttpClient())
         val acc = Account(app, http, config)
-        return acc to AowApi(http, config, acc)
+        return acc to AowApi(http, config, acc, clock)
     }
 
     /** Giả lập bước mở trang đăng nhập: ghi state và thời điểm như [Account.startLogin]. */
@@ -195,6 +199,30 @@ class AccountApiTest {
         assertTrue(r.already)
         assertFalse(r.pointAwarded)
         assertEquals(listOf("GET"), fake.seen.map { it.method })
+    }
+
+    @Test fun injectedClockControlsCheckinDateAndWrittenTimestamp() = runBlocking {
+        // UTC is still yesterday while Vietnam has crossed midnight.
+        val now = Instant.parse("2020-01-02T17:01:00Z")
+        val previous = Instant.parse("2020-01-02T16:59:00Z").toEpochMilli()
+        val fixed = Clock.fixed(now, ZoneId.of("UTC"))
+        val fake = Fake { req ->
+            if (req.method == "GET") (200 to """{"points":3,"checkin":{"streak":2,"progress":5,"lastCheckinTime":$previous}}""")
+            else (200 to "null")
+        }
+        val (acc, api) = rig(fake.client, fixed)
+        signIn(acc)
+        assertTrue(api.checkin(ZoneId.of("UTC")).already)
+        assertEquals(listOf("GET"), fake.seen.map { it.method })
+        val result = api.checkinFast(vietnam)
+        assertFalse(result.already)
+        assertEquals(Profile(3, 3, 6, now.toEpochMilli()), result.profile)
+        assertEquals(result.profile, api.cachedProfile())
+        assertEquals(listOf("GET", "GET", "PATCH"), fake.seen.map { it.method })
+        val buffer = okio.Buffer()
+        fake.seen.last().body!!.writeTo(buffer)
+        val patch = Json.parseToJsonElement(buffer.readUtf8()).jsonObject
+        assertEquals(now.toEpochMilli(), patch["checkin/lastCheckinTime"]!!.jsonPrimitive.content.toLong())
     }
 
     // ---------- Đánh giá bản dịch ----------
