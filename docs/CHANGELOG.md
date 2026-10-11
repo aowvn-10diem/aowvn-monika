@@ -2,9 +2,19 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
-## v0.8.1 — Chưa phát hành
+## v0.8.2 (Bản thử)
 
-> Đang chuẩn bị bản thử theo [PM A32](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6105776093); chưa tạo tag hoặc phát hành. Danh sách dưới đây đối chiếu các PR đã gộp vào main `a8a8823`; chưa thử trên máy thật.
+> Bản thử ngày 11/10/2026. Danh sách đối chiếu các PR đã gộp vào main `4b672c5`; chưa thử trên máy thật.
+
+- Khi mở game libretro (gồm Nintendo DS) lâu, màn chờ hiện từng bước thay vì chỉ "Đang khởi động game…": tải lõi (MB, %), giải nén, nạp ROM (MB), khởi tạo lõi và hình ảnh. Sau 60 giây màn chờ hiện nút "Sao chép chẩn đoán" và game vẫn tiếp tục nạp, không tự báo lỗi hay đổi lõi; thời gian từng bước được ghi vào chẩn đoán. Nguyên nhân thật khiến NDS khởi động lâu và hành vi trên máy thật còn **[CHƯA KIỂM]**. ([be45e32](https://github.com/aowvn-10diem/aowvn-monika/commit/be45e327b6448c939f1bc185ffe307dc31c3a776))
+- Nội bộ, không đổi giao diện: điểm danh hằng ngày và mốc thời gian đánh giá dùng một đồng hồ chung có thể thay khi kiểm thử; cách tính ngày theo múi giờ giữ nguyên. ([04dfd6b](https://github.com/aowvn-10diem/aowvn-monika/commit/04dfd6b4f4bc3c1776e9b10054d911852c56d08f))
+- Kirikiri: khi các tệp xp3 rời đều không có `startup.tjs` nhưng script nằm trong XP3 nhúng ngay trong tệp exe, Monika nhận XP3 nhúng đó thay vì báo không tìm thấy tệp khởi động; chẩn đoán ghi thêm thông tin XP3 nhúng. Kirikiri vẫn là bản thử nghiệm; chạy game thật trên máy còn **[CHƯA KIỂM]**. ([4b672c5](https://github.com/aowvn-10diem/aowvn-monika/commit/4b672c579bffba374193b7da32557b7247884b45))
+
+> Sang bản sau (v0.8.3): [#200](https://github.com/aowvn-10diem/aowvn-monika/pull/200) (V85c bàn phím ảo J2ME theo bộ nút AowVN; mặt phím luôn đục nên thanh "Độ mờ" và "Ép độ mờ" bị khóa kèm ghi chú khi dùng bàn phím Monika).
+
+## [v0.8.1](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.1) (Bản thử — Pre-release)
+
+> Phát hành ngày 11/10/2026 (UTC), đánh dấu pre-release. Danh sách đối chiếu các PR đã gộp vào main `a8a8823`; chưa thử trên máy thật.
 
 - Nintendo DS ở màn dọc xếp kiểu DraStic: hai màn hình game ở trên cùng và rộng hơn trước (khoảng ba phần tư chiều ngang trên máy 393 dp, trước đó khoảng một nửa), bàn phím ảo bên dưới, thanh tên game và nút quay lại/menu thu thành một hàng gọn sát đáy; phía trên màn hình game không còn thanh nào. Lõi NDS mặc định melonDS DS dùng đúng tay cầm NDS (có X/Y) thay vì tay cầm GBA. Bố cục ngang giữ nguyên; kích thước thật trên máy còn **[CHƯA KIỂM]**. ([b116a93](https://github.com/aowvn-10diem/aowvn-monika/commit/b116a939f14b379b258e4e7cde117c93d10083be))
 - Thanh tên game, nút menu và chip gợi ý như "D-pad → Cần" tự ẩn sau vài giây khi đang chơi ở các giả lập libretro (gồm NDS, PSP, GBA), Kirikiri, RPG Maker, Ren'Py và game web; chạm vùng mép (hoặc góc phải trên với nút menu) hoặc mở menu thì hiện lại rồi lại tự ẩn. ([b116a93](https://github.com/aowvn-10diem/aowvn-monika/commit/b116a939f14b379b258e4e7cde117c93d10083be))
