@@ -1,11 +1,9 @@
 package vn.aow.monika.ui
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import org.junit.Before
 import org.junit.Rule
@@ -17,6 +15,7 @@ import org.robolectric.annotation.GraphicsMode
 import vn.aow.monika.runner.AutoHide
 import vn.aow.monika.runner.InGameState
 import vn.aow.monika.runner.MENU_BUTTON_TAG
+import vn.aow.monika.runner.REVEAL_EDGE_TAG
 import vn.aow.monika.runner.RenpyOverlay
 import vn.aow.monika.runner.KirikiriOverlay
 import vn.aow.monika.runner.PadLayout
@@ -90,8 +89,8 @@ class EngineOverlayTest {
         rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
         rule.onNodeWithTag(MENU_BUTTON_TAG).assertDoesNotExist()
         rule.shot("$name-nut-an")
-        // Chạm đúng góc phải trên (nơi nút từng nằm) → hiện lại, rồi lại tự ẩn.
-        rule.onRoot().performTouchInput { down(Offset(width - 40f, 40f)); up() }
+        // V92: cùng selector với Maestro → chạm đúng vùng A31 để hiện lại, rồi lại tự ẩn.
+        rule.onNodeWithTag(REVEAL_EDGE_TAG).assertIsDisplayed().performTouchInput { click() }
         rule.waitForIdle()
         rule.mainClock.advanceTimeBy(500)
         rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
