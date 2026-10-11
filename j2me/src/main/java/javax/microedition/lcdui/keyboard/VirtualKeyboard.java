@@ -70,7 +70,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	public static final int LAYOUT_TYPE = 3;
 
 	private static final int SHAPE_OVAL = 0;
-	private static final int SHAPE_RECT = 1;
+	public static final int SHAPE_RECT = 1;
 	public static final int SHAPE_ROUND_RECT = 2;
 
 	public static final int TYPE_CUSTOM = 0;
@@ -568,7 +568,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	/** Phím kiểu Monika (mặt đục, AowKeyPalette) đang được dùng: cùng điều kiện với `VirtualKey.paint` → `paintMonikaPhone`. */
 	private boolean paintsAowKeys() {
-		return MONIKA_STYLE && layoutVariant == TYPE_MONIKA && settings.vkButtonShape != SHAPE_RECT;
+		return AowKeyPalette.opaqueKeys(MONIKA_STYLE, layoutVariant == TYPE_MONIKA, settings.vkButtonShape == SHAPE_RECT);
 	}
 
 	private Runnable layoutListener;

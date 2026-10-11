@@ -79,7 +79,7 @@ class J2meScreenContractTest {
         // Khóa gắn với đúng kiểu bàn phím Monika, gọi lúc nạp cấu hình và mỗi khi bật/tắt nhóm phím ảo; kiểu khác không bị khóa.
         val src = File("../j2me/src/main/java/ru/playsoftware/j2meloader/config/ConfigActivity.java").readText()
         val body = src.substringAfter("private void applyMonikaOpacityLock()").substringBefore("\n\t}\n")
-        assertTrue(body.contains("params.vkType == VirtualKeyboard.TYPE_MONIKA"))
+        assertTrue(body.contains("AowKeyPalette.opaqueKeys(VirtualKeyboard.MONIKA_STYLE,") && body.contains("params.vkType == VirtualKeyboard.TYPE_MONIKA"))
         assertTrue(body.contains("sbVKAlpha.setEnabled(!monika)") && body.contains("cxVKForceOpacity.setEnabled(!monika)"))
         assertTrue(body.contains("tvOpacityNote.setVisibility(monika &&"))
         assertTrue("phải gọi khóa ở ít nhất 2 chỗ (nạp cấu hình + bật/tắt bàn phím ảo)",

@@ -77,6 +77,7 @@ import javax.microedition.shell.MicroActivity;
 import javax.microedition.util.ContextHolder;
 
 import kotlin.io.FilesKt;
+import ru.playsoftware.j2meloader.AowKeyPalette;
 import ru.playsoftware.j2meloader.R;
 import ru.playsoftware.j2meloader.config.model.Size;
 import ru.playsoftware.j2meloader.databinding.ActivityConfigBinding;
@@ -219,6 +220,17 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
 				} catch (NumberFormatException e) {
 					s.clear();
 				}
+			}
+		});
+		// V85c: đổi hình phím (chữ nhật ↔ khác) làm đổi việc phím có đục hay theo vkAlpha → cập nhật khóa "Độ mờ" ngay.
+		binding.spButtonsShape.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+			@Override
+			public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+				applyMonikaOpacityLock();
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> parent) {
 			}
 		});
 		binding.spGraphicsMode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -585,7 +597,10 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
 	 * Giá trị đã lưu (params.vkAlpha) không bị đổi, dùng lại khi người chơi đổi sang kiểu khác.
 	 */
 	private void applyMonikaOpacityLock() {
-		boolean monika = params != null && params.vkType == VirtualKeyboard.TYPE_MONIKA;
+		// Cùng điều kiện với bộ vẽ (VirtualKeyboard.paintsAowKeys): Monika + hình phím KHÔNG phải chữ nhật (hình chữ nhật vẫn theo vkAlpha).
+		boolean monika = AowKeyPalette.opaqueKeys(VirtualKeyboard.MONIKA_STYLE,
+				params != null && params.vkType == VirtualKeyboard.TYPE_MONIKA,
+				binding.spButtonsShape.getSelectedItemPosition() == VirtualKeyboard.SHAPE_RECT);
 		float alpha = monika ? 0.4f : 1f;
 		binding.sbVKAlpha.setEnabled(!monika);
 		binding.cxVKForceOpacity.setEnabled(!monika);
@@ -638,7 +653,6 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
 		boolean showVk = params.showKeyboard;
 		binding.cxIsShowKeyboard.setChecked(showVk);
 		binding.groupVkConfig.setVisibility(showVk ? View.VISIBLE : View.GONE);
-		applyMonikaOpacityLock();
 		binding.cxVKFeedback.setChecked(params.vkFeedback);
 		binding.cxVKForceOpacity.setChecked(params.vkForceOpacity);
 		binding.cxTouchInput.setChecked(params.touchInput);
@@ -647,6 +661,7 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
 
 		binding.spLayout.setSelection(params.keyCodesLayout);
 		binding.spButtonsShape.setSelection(params.vkButtonShape);
+		applyMonikaOpacityLock(); // sau khi hình phím đã chọn: khóa phụ thuộc cả kiểu bàn phím lẫn hình phím
 		binding.sbVKAlpha.setProgress(params.vkAlpha);
 		int vkHideDelay = params.vkHideDelay;
 		binding.tfVKHideDelay.setText(vkHideDelay > 0 ? Integer.toString(vkHideDelay) : "");

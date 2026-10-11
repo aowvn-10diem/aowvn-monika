@@ -90,6 +90,36 @@ class AowKeyPaletteTest {
         val src = java.io.File("../j2me/src/main/java/javax/microedition/lcdui/keyboard/VirtualKeyboard.java").readText()
         assertTrue(src.contains("AowKeyPalette.keysVisible(layoutEditMode != LAYOUT_EOF, settings.vkAlpha, paintsAowKeys())"))
         assertFalse("không còn điều kiện vkAlpha > 0 cũ trong paint()", src.contains("layoutEditMode != LAYOUT_EOF || settings.vkAlpha > 0"))
-        assertTrue(src.contains("MONIKA_STYLE && layoutVariant == TYPE_MONIKA && settings.vkButtonShape != SHAPE_RECT"))
+        assertTrue(src.contains("AowKeyPalette.opaqueKeys(MONIKA_STYLE, layoutVariant == TYPE_MONIKA, settings.vkButtonShape == SHAPE_RECT)"))
+    }
+
+    /**
+     * Hồi quy (Luna Ultra / Haiku-2): Monika + hình chữ nhật + vkAlpha = 0. Khóa "Độ mờ" và bộ vẽ dùng CÙNG `opaqueKeys`, nên
+     * không bao giờ xảy ra "phím bị ẩn mà thanh Độ mờ lại bị khóa" (người dùng không có cách bật lại).
+     */
+    @Test fun lockAndRendererShareOneConditionSoKeysNeverHideWhileOpacityIsLocked() {
+        // Hình chữ nhật dùng nét vẽ gốc (theo vkAlpha) → không đục, không khóa; vkAlpha = 0 ẩn phím nhưng thanh Độ mờ còn dùng được.
+        val rect = AowKeyPalette.opaqueKeys(true, true, true)
+        assertFalse(rect)
+        assertFalse(AowKeyPalette.keysVisible(false, 0, rect))
+        // Hình tròn/bo góc (mặc định): đục, khóa Độ mờ, phím luôn hiện kể cả vkAlpha = 0.
+        val round = AowKeyPalette.opaqueKeys(true, true, false)
+        assertTrue(round)
+        assertTrue(AowKeyPalette.keysVisible(false, 0, round))
+        // Kiểu bàn phím khác Monika, hoặc tắt MONIKA_STYLE: không khóa.
+        assertFalse(AowKeyPalette.opaqueKeys(true, false, false))
+        assertFalse(AowKeyPalette.opaqueKeys(false, true, false))
+        // Bất biến trên mọi tổ hợp: phím bị ẩn ⇒ thanh Độ mờ KHÔNG bị khóa.
+        for (style in listOf(false, true)) for (monika in listOf(false, true)) for (rectShape in listOf(false, true)) for (alpha in listOf(0, 1, 140, 255)) {
+            val locked = AowKeyPalette.opaqueKeys(style, monika, rectShape)
+            val shown = AowKeyPalette.keysVisible(false, alpha, locked)
+            assertTrue("style=$style monika=$monika rect=$rectShape alpha=$alpha: phím ẩn mà Độ mờ bị khóa", shown || !locked)
+        }
+        // Mã thật dùng đúng hàm này ở cả hai chỗ.
+        val config = java.io.File("../j2me/src/main/java/ru/playsoftware/j2meloader/config/ConfigActivity.java").readText()
+        val lock = config.substringAfter("private void applyMonikaOpacityLock()").substringBefore("\n\t}\n")
+        assertTrue(lock.contains("AowKeyPalette.opaqueKeys(VirtualKeyboard.MONIKA_STYLE,"))
+        assertTrue(lock.contains("spButtonsShape.getSelectedItemPosition() == VirtualKeyboard.SHAPE_RECT"))
+        assertTrue("đổi hình phím phải cập nhật khóa ngay", config.contains("binding.spButtonsShape.setOnItemSelectedListener"))
     }
 }

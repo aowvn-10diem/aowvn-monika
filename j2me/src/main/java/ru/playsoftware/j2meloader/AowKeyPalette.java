@@ -32,6 +32,16 @@ public final class AowKeyPalette {
 	public static final int FACE_ALPHA = 0xFF;
 
 	/**
+	 * Phím kiểu Monika (mặt đục, bỏ qua `vkAlpha`) có đang áp dụng không. MỘT điều kiện cho cả bộ vẽ ({@code VirtualKeyboard.paintsAowKeys})
+	 * và khóa thanh "Độ mờ" trong Cài đặt game, để màn hình không hứa "luôn đục" khi bộ vẽ thực ra vẫn theo `vkAlpha`.
+	 * Hình chữ nhật dùng nét vẽ gốc (có alpha) nên không tính (V85c, Luna Ultra/Haiku-2).
+	 * @param monikaStyle cờ {@code VirtualKeyboard.MONIKA_STYLE}; @param monikaKeyboard kiểu bàn phím là Monika; @param rectShape hình phím là chữ nhật.
+	 */
+	public static boolean opaqueKeys(boolean monikaStyle, boolean monikaKeyboard, boolean rectShape) {
+		return monikaStyle && monikaKeyboard && !rectShape;
+	}
+
+	/**
 	 * Có vẽ bàn phím ảo không. Bản gốc J2ME Loader ẩn hẳn bàn phím khi `vkAlpha` = 0 (độ mờ 0 = vô hình). Phím kiểu Monika luôn đục
 	 * ([FACE_ALPHA]) và bỏ qua `vkAlpha`, nên phải luôn được vẽ: nếu không, `vkAlpha` = 0 làm bàn phím Monika biến mất (V85c, PM 11/10).
 	 * @param editing đang ở chế độ sửa bố cục phím; @param aowKeys đang dùng phím kiểu Monika (không áp `vkAlpha`).
