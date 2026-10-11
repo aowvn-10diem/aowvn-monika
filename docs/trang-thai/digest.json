@@ -1,0 +1,954 @@
+{
+  "generated_at": "2026-10-11T00:12:54.608720Z",
+  "repository": "aowvn-10diem/aowvn-monika",
+  "main": {
+    "sha": "49bdbd59e06da3e18063976a9df44a261c33b082",
+    "commits": [
+      {
+        "sha": "49bdbd5",
+        "title": "Merge pull request #197 from aowvn-10diem/sol/V83",
+        "at": "2026-10-10T18:28:05Z"
+      },
+      {
+        "sha": "a655058",
+        "title": "fix(V83): avoid nested comment marker in KDoc",
+        "at": "2026-10-10T16:49:36Z"
+      },
+      {
+        "sha": "91bcc38",
+        "title": "fix(V83): require hashed names before encryption diagnosis",
+        "at": "2026-10-10T16:45:43Z"
+      },
+      {
+        "sha": "73a1a0f",
+        "title": "Merge pull request #196 from aowvn-10diem/sol/V85b",
+        "at": "2026-10-10T16:06:23Z"
+      },
+      {
+        "sha": "2c4ad34",
+        "title": "V83: khóa thư mục Kirikiri lồng và thêm mẫu tên mục chẩn đoán",
+        "at": "2026-10-10T15:56:42Z"
+      },
+      {
+        "sha": "c1f6ace",
+        "title": "[viec-V85b] Ảnh tay cầm đợi frame nhả phím, kiểm trạng thái sẵn sàng",
+        "at": "2026-10-10T15:01:15Z"
+      },
+      {
+        "sha": "d595863",
+        "title": "[viec-V85b] Đủ tương phản 4.5 trên nền game sáng ở 65 phần trăm",
+        "at": "2026-10-10T14:57:31Z"
+      },
+      {
+        "sha": "99640ce",
+        "title": "[viec-V85b] Giữ tương phản chữ trạng thái nhấn ở độ mờ mặc định",
+        "at": "2026-10-10T14:50:13Z"
+      },
+      {
+        "sha": "876a968",
+        "title": "[viec-V85b] Dùng mặt nút Aow cho tay cầm libretro, giữ tín hiệu và rung",
+        "at": "2026-10-10T14:46:35Z"
+      },
+      {
+        "sha": "b94415f",
+        "title": "Merge pull request #195 from aowvn-10diem/luna-ultra/V62-refresh-20261010",
+        "at": "2026-10-10T13:13:40Z"
+      }
+    ]
+  },
+  "open_prs": [
+    {
+      "number": 198,
+      "title": "V86: nháp 45 <đường-dẫn>",
+      "branch": "sol/V86",
+      "head_sha": "edf6eba655014c850e7c53a0d8fb39507426a1e1",
+      "mergeable_state": null,
+      "check_runs": {
+        "CodeQL": "success",
+        "digest": "skipped",
+        "preview": "success",
+        "analyze (java-kotlin)": "success",
+        "build": "success",
+        "analyze (javascript-typescript)": "success",
+        "coverage": "success",
+        "prepare": "success",
+        "build#2": "success",
+        "build#3": "success"
+      },
+      "comments": [
+        {
+          "type": "khac",
+          "at": "2026-10-10T18:40:50Z"
+        },
+        {
+          "type": "khac",
+          "at": "2026-10-10T16:56:44Z"
+        },
+        {
+          "type": "khac",
+          "at": "2026-10-10T16:14:37Z"
+        }
+      ]
+    },
+    {
+      "number": 189,
+      "title": "[viec-V78] NDS: hai màn hình to hết chiều rộng, tiêu đề tự ẩn khi đang chơi (a)+(b)",
+      "branch": "nova/V78",
+      "head_sha": "e3efc6a85e679e5a956e4a9341829d8d1073e3b4",
+      "mergeable_state": null,
+      "check_runs": {
+        "CodeQL": "success",
+        "digest": "skipped",
+        "preview": "cancelled",
+        "analyze (javascript-typescript)": "success",
+        "analyze (java-kotlin)": "success",
+        "coverage": "failure",
+        "build": "failure",
+        "build#2": "success",
+        "build#3": "failure"
+      },
+      "comments": [
+        {
+          "type": "khac",
+          "at": "2026-10-10T18:02:03Z"
+        },
+        {
+          "type": "haiku_tien_duyet",
+          "sha": "e3efc6a",
+          "conclusion": "Cần sửa",
+          "at": "2026-10-10T15:50:56Z"
+        },
+        {
+          "type": "khac",
+          "at": "2026-10-10T15:41:08Z"
+        }
+      ]
+    },
+    {
+      "number": 173,
+      "title": "PM: Opus nhận lại PM; Sol dừng tiếp quản, quay về phần việc riêng (thư sol-010)",
+      "branch": "docs/opus-tra-loi",
+      "head_sha": "3d54cef3fc6c44e0cc83a4683baeb154a9604eeb",
+      "mergeable_state": null,
+      "check_runs": {
+        "digest": "skipped",
+        "preview": "success",
+        "report-build-status": "success",
+        "deploy": "success",
+        "coverage": "success",
+        "build": "success",
+        "build#2": "success"
+      },
+      "comments": [
+        {
+          "type": "khac",
+          "at": "2026-10-10T18:40:52Z"
+        },
+        {
+          "type": "khac",
+          "at": "2026-10-10T15:41:10Z"
+        },
+        {
+          "type": "khac",
+          "at": "2026-10-10T12:41:12Z"
+        }
+      ]
+    },
+    {
+      "number": 125,
+      "title": "[viec-L12] Cố định đồng hồ test check-in",
+      "branch": "luna/N09-profile-clock-20261008-review",
+      "head_sha": "e735c259dd4ebca27ba08b1337bf5db05f435162",
+      "mergeable_state": null,
+      "check_runs": {
+        "CodeQL": "success",
+        "build": "success",
+        "policy": "success",
+        "build#2": "success",
+        "digest": "skipped",
+        "analyze (java-kotlin)": "success",
+        "coverage": "success",
+        "analyze (javascript-typescript)": "success",
+        "preview": "success",
+        "build#3": "success"
+      },
+      "comments": [
+        {
+          "type": "khac",
+          "at": "2026-10-10T11:57:36Z"
+        },
+        {
+          "type": "khac",
+          "at": "2026-10-10T04:25:05Z"
+        },
+        {
+          "type": "khac",
+          "at": "2026-10-10T04:15:39Z"
+        }
+      ]
+    }
+  ],
+  "merged_24h": [
+    {
+      "number": 197,
+      "title": "V83: khóa thư mục Kirikiri lồng và thêm mẫu tên mục chẩn đoán",
+      "merged_at": "2026-10-10T18:28:06Z",
+      "merge_commit_sha": "49bdbd59e06da3e18063976a9df44a261c33b082"
+    },
+    {
+      "number": 196,
+      "title": "[viec-V85b] Tay cầm libretro dùng mặt nút Aow, giữ mã phím và rung",
+      "merged_at": "2026-10-10T16:06:24Z",
+      "merge_commit_sha": "73a1a0f99100c76d499380085f032834737690e1"
+    },
+    {
+      "number": 195,
+      "title": "[viec-V62] Cập nhật đối chiếu tài liệu theo main 0.7.9",
+      "merged_at": "2026-10-10T13:13:41Z",
+      "merge_commit_sha": "b94415fe00c81ce863165b38775eae6e2d778a47"
+    },
+    {
+      "number": 194,
+      "title": "[viec-V52] Cập nhật bằng chứng RAR và kiểm kê Ren'Py",
+      "merged_at": "2026-10-10T13:13:38Z",
+      "merge_commit_sha": "b7fa917038e1dfeac8adec10c606b773ef6dc7c4"
+    },
+    {
+      "number": 182,
+      "title": "[viec-N09-H] Test tên file tải về: UTF-8 từ Content-Disposition, thay ký tự cấm, dự phòng từ URL (gói download)",
+      "merged_at": "2026-10-10T13:13:36Z",
+      "merge_commit_sha": "3bcc30cb21ad33b84d3423fb5f548ca1a5cf4db6"
+    },
+    {
+      "number": 193,
+      "title": "[viec-V85a] Token AowVN và nút pixel bốn trạng thái",
+      "merged_at": "2026-10-10T13:13:33Z",
+      "merge_commit_sha": "fb5edac0f1d885142839ffe05a0b43339d75522c"
+    },
+    {
+      "number": 191,
+      "title": "[viec-V78] NDS (c): Cài đặt → Màn hình (bố cục, tỉ lệ, khoảng cách), configVersion 41",
+      "merged_at": "2026-10-10T12:13:31Z",
+      "merge_commit_sha": "608b12a9cad8950fd95816ae96bbd8a893dd2d6d"
+    },
+    {
+      "number": 192,
+      "title": "[viec-V80] Chuẩn bị 0.7.9 (44) và ghi thay đổi đã gộp",
+      "merged_at": "2026-10-10T10:51:27Z",
+      "merge_commit_sha": "60fbffbda9e7e8d3850003ec1fc451c4299e1d73"
+    },
+    {
+      "number": 188,
+      "title": "[viec-V77] Game Java: bỏ thanh menu trên đầu, một nút menu nổi mở menu Monika",
+      "merged_at": "2026-10-10T08:13:17Z",
+      "merge_commit_sha": "0acd4499357a0351a3e54aeb37f470caf0d7d876"
+    },
+    {
+      "number": 190,
+      "title": "[viec-V84] Tách tài liệu khỏi game trong Thư viện",
+      "merged_at": "2026-10-10T08:13:15Z",
+      "merge_commit_sha": "d0dff94da14de6f8ccd9335c6b08e737e8a7ff96"
+    },
+    {
+      "number": 187,
+      "title": "[viec-V82] Báo lỗi có phản hồi và sao chép chẩn đoán entry",
+      "merged_at": "2026-10-10T06:13:31Z",
+      "merge_commit_sha": "14c94e2ee270f8d3bdb7bd0000fa9ab1c2303b15"
+    },
+    {
+      "number": 186,
+      "title": "[viec-V81] Cảnh báo Kirikiri thử nghiệm theo config",
+      "merged_at": "2026-10-10T06:13:29Z",
+      "merge_commit_sha": "16efdaa245af7387a701e2251e1b9ec336a31da0"
+    },
+    {
+      "number": 185,
+      "title": "[viec-V79] Thư viện giải thích và xin quyền quét game một lần",
+      "merged_at": "2026-10-10T05:12:59Z",
+      "merge_commit_sha": "54ba15b8b2d8757055072e78ac40a23207697a10"
+    },
+    {
+      "number": 184,
+      "title": "[viec-V75] Tăng tương phản toàn bộ tay cầm ảo",
+      "merged_at": "2026-10-10T02:13:03Z",
+      "merge_commit_sha": "f2223c2fd7069d11f24458569f561cec83d91ba6"
+    },
+    {
+      "number": 183,
+      "title": "[viec-V76] GBA mặc định tắt color correction",
+      "merged_at": "2026-10-10T02:13:01Z",
+      "merge_commit_sha": "98d4d63b58a91a55a5e6408a8a6eaa0109d87986"
+    }
+  ],
+  "branches": [
+    {
+      "name": "sol/V83",
+      "commit_sha": "a65505810e0fa32f6899da6cc8329928c9966dea",
+      "last_commit_at": "2026-10-10T16:49:36Z"
+    },
+    {
+      "name": "sol/V86",
+      "commit_sha": "edf6eba655014c850e7c53a0d8fb39507426a1e1",
+      "last_commit_at": "2026-10-10T15:56:43Z"
+    },
+    {
+      "name": "sol/V85b",
+      "commit_sha": "c1f6ace9d528ab48d0ce1f166f960f53e3ced308",
+      "last_commit_at": "2026-10-10T15:01:15Z"
+    },
+    {
+      "name": "sol/V85a",
+      "commit_sha": "19b686194322f7043a5302e50c9c7a4f9c497601",
+      "last_commit_at": "2026-10-10T12:37:02Z"
+    },
+    {
+      "name": "sol/V80",
+      "commit_sha": "9836a21f690893a57a6efda699b98eb8fe70e828",
+      "last_commit_at": "2026-10-10T10:33:56Z"
+    },
+    {
+      "name": "sol/V84",
+      "commit_sha": "e78b9fbfc8aebdf3edae2a25d536225729b44ef7",
+      "last_commit_at": "2026-10-10T06:58:25Z"
+    },
+    {
+      "name": "sol/V82",
+      "commit_sha": "31aaa007838f9e2c49ab0c8b4a710fef33efe251",
+      "last_commit_at": "2026-10-10T04:48:54Z"
+    },
+    {
+      "name": "sol/V81",
+      "commit_sha": "cc8a711e421f99f20bbe69c080877869a050a537",
+      "last_commit_at": "2026-10-10T04:48:50Z"
+    },
+    {
+      "name": "luna/N09-profile-clock-20261008-review",
+      "commit_sha": "e735c259dd4ebca27ba08b1337bf5db05f435162",
+      "last_commit_at": "2026-10-10T04:15:16Z"
+    },
+    {
+      "name": "sol/V79",
+      "commit_sha": "e15c11d4603da0fdb823621063707f89dd01045c",
+      "last_commit_at": "2026-10-10T02:52:55Z"
+    },
+    {
+      "name": "sol/V75",
+      "commit_sha": "cf5180ff9f83a2ea6efdf5704e9c9091ee0ad9d2",
+      "last_commit_at": "2026-10-10T01:03:20Z"
+    },
+    {
+      "name": "sol/V76",
+      "commit_sha": "9fc53426ab1b2f401b6052e4b74910ce87c5fe1d",
+      "last_commit_at": "2026-10-10T00:50:30Z"
+    },
+    {
+      "name": "sol/V69-flake",
+      "commit_sha": "0635e9cb04f110bd6693c16340f750e1063dd09b",
+      "last_commit_at": "2026-10-09T16:48:17Z"
+    },
+    {
+      "name": "sol/V72-phat-hanh",
+      "commit_sha": "6c2afd9a1fb67add5d8cd420bfcdbb4ca2bd52c5",
+      "last_commit_at": "2026-10-09T15:43:15Z"
+    },
+    {
+      "name": "sol/V69",
+      "commit_sha": "e11778fc408c61149a27ce16c3320aabcdd174a0",
+      "last_commit_at": "2026-10-09T05:10:40Z"
+    },
+    {
+      "name": "sol/V70a",
+      "commit_sha": "0c4d6b154c885d9fe6e00cff1a7016215895ec83",
+      "last_commit_at": "2026-10-09T01:56:52Z"
+    },
+    {
+      "name": "sol/V68-quyen",
+      "commit_sha": "2909070eafb2527f79be9a416b8981495c04724a",
+      "last_commit_at": "2026-10-08T22:00:26Z"
+    },
+    {
+      "name": "sol/V56-quota",
+      "commit_sha": "d285b5b56020072bbc961d520936cb6f1cf36cb2",
+      "last_commit_at": "2026-10-08T21:43:57Z"
+    },
+    {
+      "name": "sol/V66",
+      "commit_sha": "8d328e5113891ed163a189a9e587f4740f150a17",
+      "last_commit_at": "2026-10-08T21:03:20Z"
+    },
+    {
+      "name": "sol/V71",
+      "commit_sha": "d453baff42119107ea3d0bca45af254ab0e4f02c",
+      "last_commit_at": "2026-10-08T20:00:57Z"
+    },
+    {
+      "name": "luna/L15-docs-20261008",
+      "commit_sha": "f1f93569553a98e082eeecd4b1a1120850952ce5",
+      "last_commit_at": "2026-10-08T19:06:18Z"
+    },
+    {
+      "name": "sonnet/V56-gl",
+      "commit_sha": "cda68a6001651f6920f4aa6b85937c869d524585",
+      "last_commit_at": "2026-10-08T18:36:27Z"
+    },
+    {
+      "name": "luna/L13-huong-dan-nguoi-dung-20261008",
+      "commit_sha": "448f70491b1b75b872e4629b3c88393b60a24a0d",
+      "last_commit_at": "2026-10-08T15:44:22Z"
+    },
+    {
+      "name": "sol/V60",
+      "commit_sha": "58bcf645de227e184fb1a82f9fb82cbce42d6310",
+      "last_commit_at": "2026-10-08T15:14:04Z"
+    },
+    {
+      "name": "luna/L11-v26b-docs-20261008",
+      "commit_sha": "50795a37275870a031cf55c5b220f6eb89fe93e7",
+      "last_commit_at": "2026-10-08T14:41:07Z"
+    },
+    {
+      "name": "luna/L11-release-notes-20261008",
+      "commit_sha": "e7924efc28b4ff8c964900b5055b7e43fa4930ed",
+      "last_commit_at": "2026-10-08T12:51:42Z"
+    },
+    {
+      "name": "sonnet/V26b",
+      "commit_sha": "6ba846810cb857501a45f905beb728d523f1738a",
+      "last_commit_at": "2026-10-08T12:15:41Z"
+    },
+    {
+      "name": "sonnet/V26-thu005",
+      "commit_sha": "41922f4d2299c3c379b4ed21b2119afc2a98bccb",
+      "last_commit_at": "2026-10-08T11:56:14Z"
+    },
+    {
+      "name": "sol/V64",
+      "commit_sha": "cce4929dc056d6e93f32217db299221c4816b612",
+      "last_commit_at": "2026-10-08T10:53:30Z"
+    },
+    {
+      "name": "luna/L09-refresh-20261008",
+      "commit_sha": "9263ae2dd03e23d29977e65f9aa76df44c436681",
+      "last_commit_at": "2026-10-08T10:48:04Z"
+    },
+    {
+      "name": "sol/V59",
+      "commit_sha": "9c47b625a092566e2675c9490a61fd0946daf6ec",
+      "last_commit_at": "2026-10-08T07:57:34Z"
+    },
+    {
+      "name": "sol/V65",
+      "commit_sha": "c32d61d99ba878f07b6f7f655c40520c87911169",
+      "last_commit_at": "2026-10-08T07:52:00Z"
+    },
+    {
+      "name": "sol/V57",
+      "commit_sha": "68d3d2e45e81e376e539ce76fb09fca19e51192a",
+      "last_commit_at": "2026-10-08T07:50:33Z"
+    },
+    {
+      "name": "sol/V56",
+      "commit_sha": "05f8e95a282571def888c43b9db5ee07c7d49002",
+      "last_commit_at": "2026-10-08T06:49:15Z"
+    },
+    {
+      "name": "sol/V58",
+      "commit_sha": "54da37019f379f8e512a7fad301a4668f061f00b",
+      "last_commit_at": "2026-10-08T05:48:54Z"
+    },
+    {
+      "name": "sol/V63",
+      "commit_sha": "2eac5d799dd6a27953a5277ca6c4abd86360a818",
+      "last_commit_at": "2026-10-08T05:42:44Z"
+    },
+    {
+      "name": "luna/L09-N07-20261008",
+      "commit_sha": "7e3f9a439e4e7b9781b33583ffee007d7f818f2a",
+      "last_commit_at": "2026-10-08T04:18:59Z"
+    },
+    {
+      "name": "luna/N09-profile-clock-20261008",
+      "commit_sha": "7b35adc3cf0c52c2f3eae4cb3a01b13736628576",
+      "last_commit_at": "2026-10-08T03:56:08Z"
+    },
+    {
+      "name": "sol/V53",
+      "commit_sha": "44308bd5623da8479d43d0f61b10eb9c8464179a",
+      "last_commit_at": "2026-10-08T01:46:44Z"
+    },
+    {
+      "name": "luna/N09-coverage-20261008",
+      "commit_sha": "17149c5a516902546c400d4c5597dcbd40e02a9e",
+      "last_commit_at": "2026-10-08T01:11:42Z"
+    },
+    {
+      "name": "luna/N04-offline-tests-20261008",
+      "commit_sha": "ab2063866648e1bfe7088c0ccf016e21ff6bf016",
+      "last_commit_at": "2026-10-08T01:05:09Z"
+    },
+    {
+      "name": "sonnet/V26-kirikiri",
+      "commit_sha": "c4fe61f9b4018dc621f991f6477e885375e069ae",
+      "last_commit_at": "2026-10-08T00:49:21Z"
+    },
+    {
+      "name": "sol/V54",
+      "commit_sha": "6f8ea548a4c69229226712d5c781338754b8f77b",
+      "last_commit_at": "2026-10-08T00:06:38Z"
+    },
+    {
+      "name": "sol/V55",
+      "commit_sha": "c22907a8f190d65f9b15f4cefaf33bbfe3a9df5a",
+      "last_commit_at": "2026-10-08T00:03:00Z"
+    },
+    {
+      "name": "sol/V50",
+      "commit_sha": "367c7813e157efcb1548bbf64ef74d494f24a8b2",
+      "last_commit_at": "2026-10-08T00:02:45Z"
+    },
+    {
+      "name": "sol/V49",
+      "commit_sha": "e3bc3fff92d21003ea01124f5ef3d7e4fdbbfb70",
+      "last_commit_at": "2026-10-07T23:50:34Z"
+    },
+    {
+      "name": "sol/V48",
+      "commit_sha": "ed0cb62ad98efdc35f7eb0272283a34116c71066",
+      "last_commit_at": "2026-10-07T23:49:29Z"
+    },
+    {
+      "name": "sonnet/G7B-report",
+      "commit_sha": "c364421ccefdd144524f7edc3742fa4780334663",
+      "last_commit_at": "2026-10-07T10:17:28Z"
+    },
+    {
+      "name": "sol/V49-notification",
+      "commit_sha": "66751589ca89461f69d0ee859df48dd6c287cf83",
+      "last_commit_at": "2026-10-06T08:15:08Z"
+    },
+    {
+      "name": "sonnet/V50-release",
+      "commit_sha": "f17719fee569d30b993024c7a94ab92844358843",
+      "last_commit_at": "2026-10-06T08:14:33Z"
+    },
+    {
+      "name": "sonnet/V43-cfg076",
+      "commit_sha": "a114ceefaf9bc50f0d2d2386fbf94886a66a0b10",
+      "last_commit_at": "2026-10-06T06:28:57Z"
+    },
+    {
+      "name": "sonnet/V51",
+      "commit_sha": "34e2a26929c85585062e9a641dde2e1469a87007",
+      "last_commit_at": "2026-10-06T06:28:38Z"
+    },
+    {
+      "name": "sonnet/V50",
+      "commit_sha": "e7b0865e6e9fc243536e4a14845141d6ba561d5c",
+      "last_commit_at": "2026-10-06T05:15:19Z"
+    },
+    {
+      "name": "sonnet/V47-run",
+      "commit_sha": "6893ed642ece30f4fa9df9ab0e418792d991d41f",
+      "last_commit_at": "2026-10-06T05:14:24Z"
+    },
+    {
+      "name": "sonnet/V43-076",
+      "commit_sha": "b9963b41328e20e37d685ae96fb02a9acf3e8196",
+      "last_commit_at": "2026-10-06T01:58:15Z"
+    },
+    {
+      "name": "sonnet/V26-timeout",
+      "commit_sha": "08966138f15f5d44cdcc697c14d821a164007437",
+      "last_commit_at": "2026-10-06T01:57:57Z"
+    },
+    {
+      "name": "sonnet/V31-app",
+      "commit_sha": "51914a32b78cb1d89f09793d2e6e5e851fdbe35b",
+      "last_commit_at": "2026-10-06T01:53:59Z"
+    },
+    {
+      "name": "sonnet/V26-entry",
+      "commit_sha": "5fe1a1f4215d763dace46aa05edfe6270d50ca28",
+      "last_commit_at": "2026-10-06T01:15:47Z"
+    },
+    {
+      "name": "sonnet/V26-diag",
+      "commit_sha": "b9b77227e60dff63e4473a3f3eb0473a77402c69",
+      "last_commit_at": "2026-10-06T00:17:10Z"
+    },
+    {
+      "name": "sonnet/V43-guard",
+      "commit_sha": "2328baf037edecb31bd80eca7be70cf136476669",
+      "last_commit_at": "2026-10-05T17:22:41Z"
+    },
+    {
+      "name": "sol/V45-B",
+      "commit_sha": "a786b2d270098595b1b5f6ad65539f5a665ae248",
+      "last_commit_at": "2026-10-05T16:48:31Z"
+    },
+    {
+      "name": "sol/V47",
+      "commit_sha": "f14a5c553463d8e4be06d2b942056a525d3db2e2",
+      "last_commit_at": "2026-10-05T15:57:42Z"
+    },
+    {
+      "name": "sonnet/V43-075",
+      "commit_sha": "66418933906b90190aad5749d0327faef87c42dd",
+      "last_commit_at": "2026-10-05T15:30:34Z"
+    },
+    {
+      "name": "luna/L09-rgss-docs-34",
+      "commit_sha": "45499269c5c45857c0a2fef0feb81d0da1b79f0e",
+      "last_commit_at": "2026-10-05T04:53:30Z"
+    },
+    {
+      "name": "luna/L09-handoff-g7-074",
+      "commit_sha": "26d23d6ef32238c40d80dee992d06f8d496439e8",
+      "last_commit_at": "2026-10-05T02:55:10Z"
+    },
+    {
+      "name": "sol/V16",
+      "commit_sha": "f52400b0aada684a5f08b368882b2f9c1a69ad1a",
+      "last_commit_at": "2026-10-05T02:12:18Z"
+    },
+    {
+      "name": "sol/V43",
+      "commit_sha": "74521303ce2fa7c21895ef2e137158947b4d18da",
+      "last_commit_at": "2026-10-05T01:58:54Z"
+    },
+    {
+      "name": "sonnet/V44-rgss-compat",
+      "commit_sha": "f740ad89f0a2f722ed766e23144c6154ae6be7d3",
+      "last_commit_at": "2026-10-05T00:50:31Z"
+    },
+    {
+      "name": "luna/L09-packs-release-link",
+      "commit_sha": "58d63f43b02376bb5c5770503702af68b16baa4c",
+      "last_commit_at": "2026-10-04T14:52:53Z"
+    },
+    {
+      "name": "luna/L09-v32-handoff",
+      "commit_sha": "ccf9621198aa815b12cda4cc06be2ee4f4cca26f",
+      "last_commit_at": "2026-10-04T13:50:40Z"
+    },
+    {
+      "name": "sol/V32-config",
+      "commit_sha": "2463be536dbd12dc6973ef54887c62b463e7b538",
+      "last_commit_at": "2026-10-04T11:04:33Z"
+    },
+    {
+      "name": "sol/V25",
+      "commit_sha": "bccefc973290e121afa7f0353863b82668c30400",
+      "last_commit_at": "2026-10-04T11:01:01Z"
+    },
+    {
+      "name": "sol/V21-D5",
+      "commit_sha": "b381a09cc0cb8ce9f131db53cf494aec259f6667",
+      "last_commit_at": "2026-10-04T09:57:33Z"
+    },
+    {
+      "name": "sol/V41-standing",
+      "commit_sha": "ebbb176965af9b23849701f5908f63e0d7019fd9",
+      "last_commit_at": "2026-10-04T09:38:37Z"
+    },
+    {
+      "name": "sol/V22",
+      "commit_sha": "e0db854a11870fcb0c94ecf58351b54df16199eb",
+      "last_commit_at": "2026-10-04T09:35:06Z"
+    },
+    {
+      "name": "sonnet/V46",
+      "commit_sha": "5054133253630804721e81ab156a8d1567b57761",
+      "last_commit_at": "2026-10-04T09:21:27Z"
+    },
+    {
+      "name": "sol/V39-pagination",
+      "commit_sha": "8c182b2814f74791f61b433bfc839b115eff2114",
+      "last_commit_at": "2026-10-04T09:02:50Z"
+    },
+    {
+      "name": "sol/V45",
+      "commit_sha": "1fdb2e727a38923421d7dab13de6bfc19345b208",
+      "last_commit_at": "2026-10-04T09:00:51Z"
+    },
+    {
+      "name": "sol/V32-publish-fix",
+      "commit_sha": "34175039b1459c9263a53222f34a5c18faeb754d",
+      "last_commit_at": "2026-10-04T08:54:52Z"
+    },
+    {
+      "name": "sol/S0",
+      "commit_sha": "8ca2464672882ec6db53b0c177cbcb7cd1dd5edb",
+      "last_commit_at": "2026-10-04T08:49:56Z"
+    },
+    {
+      "name": "luna/L09-v32-release-docs",
+      "commit_sha": "8408f33989dae19d04d981e288cea098cc562d66",
+      "last_commit_at": "2026-10-04T08:47:56Z"
+    },
+    {
+      "name": "luna/LUNA-002-answer",
+      "commit_sha": "2cee32dc58828001a6349b4a36baada368ecbb72",
+      "last_commit_at": "2026-10-04T08:38:02Z"
+    },
+    {
+      "name": "luna/LUNA-002",
+      "commit_sha": "972e57ea6749080538c40253adb1b22a5417c239",
+      "last_commit_at": "2026-10-04T08:24:54Z"
+    },
+    {
+      "name": "luna/L09-renpy-p3",
+      "commit_sha": "a15adf1db5a6338f270298d4ecc08236a724db34",
+      "last_commit_at": "2026-10-04T07:58:03Z"
+    },
+    {
+      "name": "sol/V42",
+      "commit_sha": "ed73dbe92ec8340d9fc8607457ef582cbe0ea7fe",
+      "last_commit_at": "2026-10-04T07:07:23Z"
+    },
+    {
+      "name": "luna/L09",
+      "commit_sha": "a52762401761ea05910961eb67c32e40cf265998",
+      "last_commit_at": "2026-10-04T06:09:22Z"
+    },
+    {
+      "name": "sol/V39",
+      "commit_sha": "814653075b9109288834525cae31b4a8ce1d38b0",
+      "last_commit_at": "2026-10-04T05:53:33Z"
+    },
+    {
+      "name": "sol/V21",
+      "commit_sha": "07aa682dac3196a0bcc342af2a4c455362a96142",
+      "last_commit_at": "2026-10-04T05:38:52Z"
+    },
+    {
+      "name": "sol/V32-publish",
+      "commit_sha": "7e909027bf878c87a5cbcdb671a8492bd6165153",
+      "last_commit_at": "2026-10-04T05:25:31Z"
+    },
+    {
+      "name": "sol/V40",
+      "commit_sha": "74f1b1da846d1e7b8ff565c434047677949dac7a",
+      "last_commit_at": "2026-10-04T05:12:03Z"
+    },
+    {
+      "name": "sonnet/V17-P3",
+      "commit_sha": "988843edd61b49017da43b072535c2e9e28ea34e",
+      "last_commit_at": "2026-10-04T05:10:08Z"
+    },
+    {
+      "name": "sol/V41",
+      "commit_sha": "49e5ccb2be1df5070fb1372adadbc2c1dc76d3e2",
+      "last_commit_at": "2026-10-04T05:09:16Z"
+    },
+    {
+      "name": "sol/V36",
+      "commit_sha": "f51889e58cfaca38275254e2ba9c39c416051aef",
+      "last_commit_at": "2026-10-04T04:51:41Z"
+    },
+    {
+      "name": "sol/V32",
+      "commit_sha": "edc0a7b669736768f47a4c6f8aed6306468aa2ae",
+      "last_commit_at": "2026-10-04T04:49:54Z"
+    },
+    {
+      "name": "luna/L10",
+      "commit_sha": "5907417fe6ecdc5acd902732ef3367259512d950",
+      "last_commit_at": "2026-10-04T04:46:45Z"
+    },
+    {
+      "name": "sonnet/V17-P2",
+      "commit_sha": "10a15a2d395435b46a724ba37cc0487199d080b9",
+      "last_commit_at": "2026-10-04T04:30:57Z"
+    },
+    {
+      "name": "luna/L08",
+      "commit_sha": "ab10f9bfb6d904c37db7446bc1c207482212d6ea",
+      "last_commit_at": "2026-10-04T04:20:28Z"
+    },
+    {
+      "name": "luna/L04-handoff",
+      "commit_sha": "270195fcf248246ece04cffc54e4d4e3b8994918",
+      "last_commit_at": "2026-10-04T03:41:44Z"
+    },
+    {
+      "name": "sol/V37",
+      "commit_sha": "230ba187e7a9fd82cedda5394d44d33fdd23ddee",
+      "last_commit_at": "2026-10-04T03:25:22Z"
+    },
+    {
+      "name": "sol/V35",
+      "commit_sha": "b71be757a5f9321343be633634af8a03701624e3",
+      "last_commit_at": "2026-10-04T03:19:02Z"
+    },
+    {
+      "name": "sol/V33",
+      "commit_sha": "ba68d0f58b7255873efc72218b232b70f73878d1",
+      "last_commit_at": "2026-10-04T02:09:15Z"
+    },
+    {
+      "name": "sol/V30",
+      "commit_sha": "30666b8aa1b91e3bc328a7e527e0957bf1ef219c",
+      "last_commit_at": "2026-10-04T02:08:22Z"
+    },
+    {
+      "name": "sol/V34",
+      "commit_sha": "be5d962ba0ee054aad9f7a6fa976430386e3aade",
+      "last_commit_at": "2026-10-04T01:43:02Z"
+    },
+    {
+      "name": "sol/V29",
+      "commit_sha": "73c886c4ea22ef3461261fca9c5df94114e8834a",
+      "last_commit_at": "2026-10-04T01:42:45Z"
+    },
+    {
+      "name": "sol/V28",
+      "commit_sha": "246f31d507e6f6c77746fadd1a4ec8821602150d",
+      "last_commit_at": "2026-10-04T01:42:16Z"
+    },
+    {
+      "name": "luna/L06",
+      "commit_sha": "728baa5e81346ed0101462c1c646a16f9da0e6e2",
+      "last_commit_at": "2026-10-04T01:39:57Z"
+    },
+    {
+      "name": "luna/L05",
+      "commit_sha": "e610a48ae776d33218200e7ab5318c8f2926afd8",
+      "last_commit_at": "2026-10-04T01:35:53Z"
+    },
+    {
+      "name": "luna/L04",
+      "commit_sha": "6d7f613e2f817a99e196257a251973237a763068",
+      "last_commit_at": "2026-10-04T01:28:56Z"
+    },
+    {
+      "name": "luna/L02",
+      "commit_sha": "dca46e3260a69d8cfc8b48bf47118dde838a0231",
+      "last_commit_at": "2026-10-04T01:20:05Z"
+    },
+    {
+      "name": "luna/L01",
+      "commit_sha": "be390ac8859d0d867aec32453f84cad4a1742931",
+      "last_commit_at": "2026-10-04T01:13:56Z"
+    },
+    {
+      "name": "sol/V20-4",
+      "commit_sha": "a0069f7a2dabf9393fc6a0a97cccf02ac9e92a08",
+      "last_commit_at": "2026-10-03T23:00:36Z"
+    },
+    {
+      "name": "luna/L03",
+      "commit_sha": "11c62b7753f0d5afa7444f8a14d166b03ed96a82",
+      "last_commit_at": "2026-10-03T22:25:16Z"
+    },
+    {
+      "name": "luna/H06",
+      "commit_sha": "1e78ddaf3fbe1bcfe5294041fbb325a683747f2b",
+      "last_commit_at": "2026-10-03T22:17:01Z"
+    },
+    {
+      "name": "luna/H07",
+      "commit_sha": "e81def9a617134b26a642d4a647d8decef762fa8",
+      "last_commit_at": "2026-10-03T22:05:19Z"
+    },
+    {
+      "name": "luna/H05",
+      "commit_sha": "0e88dc30a998a3936872319a19369f2df4a3fee3",
+      "last_commit_at": "2026-10-03T22:01:51Z"
+    },
+    {
+      "name": "sol/hoi-003",
+      "commit_sha": "1a16983c666764a78747fbdc3ff442f5acb7903b",
+      "last_commit_at": "2026-10-03T22:00:38Z"
+    },
+    {
+      "name": "luna/H04",
+      "commit_sha": "a6c16b8d05905b3f723475ec2b37750991ba6505",
+      "last_commit_at": "2026-10-03T21:58:18Z"
+    },
+    {
+      "name": "sol/V20",
+      "commit_sha": "3d65049fe7dac48c9f59fa8dbb51552c667a3a0f",
+      "last_commit_at": "2026-10-03T14:57:09Z"
+    },
+    {
+      "name": "sol/V24",
+      "commit_sha": "75e96d319ca895cf72933411d2f0cd944aa41ec2",
+      "last_commit_at": "2026-10-03T13:48:45Z"
+    },
+    {
+      "name": "sol/H02",
+      "commit_sha": "119f838ffa3306f99fbd80416ab531d8ed44e470",
+      "last_commit_at": "2026-10-03T13:46:23Z"
+    },
+    {
+      "name": "sol/V23",
+      "commit_sha": "08b7d348608689f18a171997d84e13ffca30653d",
+      "last_commit_at": "2026-10-03T13:10:57Z"
+    }
+  ],
+  "failed_runs_24h": [
+    {
+      "name": "Coverage",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika/actions/runs/38066305415"
+    }
+  ],
+  "releases": [
+    {
+      "tag": "engines-rgss-7",
+      "prerelease": false,
+      "draft": true
+    },
+    {
+      "tag": "v0.7.9",
+      "prerelease": true,
+      "draft": false
+    },
+    {
+      "tag": "v0.7.8",
+      "prerelease": true,
+      "draft": false
+    },
+    {
+      "tag": "v0.7.7",
+      "prerelease": true,
+      "draft": false
+    },
+    {
+      "tag": "v0.7.6",
+      "prerelease": true,
+      "draft": false
+    },
+    {
+      "tag": "v0.7.5",
+      "prerelease": true,
+      "draft": false
+    },
+    {
+      "tag": "v0.7.4",
+      "prerelease": true,
+      "draft": false
+    },
+    {
+      "tag": "engines-rgss-6",
+      "prerelease": false,
+      "draft": false
+    },
+    {
+      "tag": "v0.7.3",
+      "prerelease": false,
+      "draft": false
+    },
+    {
+      "tag": "v0.7.2",
+      "prerelease": false,
+      "draft": false
+    }
+  ],
+  "code_scanning_open": 24,
+  "sync_config": {
+    "conclusion": "success",
+    "url": "https://github.com/aowvn-10diem/aowvn-monika/actions/runs/38051180893",
+    "at": "2026-10-10T12:13:41Z"
+  }
+}
