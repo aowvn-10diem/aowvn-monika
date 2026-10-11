@@ -17,10 +17,12 @@ import java.util.zip.Inflater
  */
 object Xp3Index {
     sealed class Result {
+        /** Offset tuyệt đối chữ ký XP3; null khi không tìm thấy chữ ký. */
+        abstract val archiveOffset: Long?
         /** [names] giữ nguyên hoa/thường, dùng '/' làm dấu phân cách; [complete] = false nếu bị cắt bởi giới hạn. */
-        class Names(val names: List<String>, val complete: Boolean) : Result()
+        class Names(val names: List<String>, val complete: Boolean, override val archiveOffset: Long = 0) : Result()
         /** Không đọc được (không phải XP3, định dạng lạ, hỏng, quá lớn…). [reason] là mã ngắn, không có nội dung game. */
-        class Unreadable(val reason: String) : Result()
+        class Unreadable(val reason: String, override val archiveOffset: Long? = null) : Result()
     }
 
     private val MAGIC = byteArrayOf(0x58, 0x50, 0x33, 0x0d, 0x0a, 0x20, 0x0a, 0x1a, 0x8b.toByte(), 0x67, 0x01)
@@ -28,22 +30,66 @@ object Xp3Index {
     const val MAX_INDEX_BYTES = 64L * 1024 * 1024
     private const val MAX_NAMES = 200_000
 
-    fun read(file: File): Result = try {
-        RandomAccessFile(file, "r").use { raf -> readIndex(raf) }
-    } catch (e: Exception) {
-        Result.Unreadable("lỗi đọc: ${e.javaClass.simpleName}")
+    fun read(file: File): Result {
+        var offset: Long? = null
+        return try {
+            RandomAccessFile(file, "r").use { raf ->
+                offset = archiveOffset(raf)
+                val base = offset ?: return@use Result.Unreadable("không có chữ ký XP3")
+                when (val result = readIndex(raf, base)) {
+                    is Result.Names -> Result.Names(result.names, result.complete, base)
+                    is Result.Unreadable -> Result.Unreadable(result.reason, base)
+                }
+            }
+        } catch (e: Exception) {
+            Result.Unreadable("lỗi đọc: ${e.javaClass.simpleName}", offset)
+        }
     }
 
-    /** true/false nếu đọc được chỉ mục; null nếu không biết (không đọc được chỉ mục). */
-    fun hasRootStartup(file: File): Boolean? = (read(file) as? Result.Names)?.let { hasRootStartup(it.names) }
+    /** Quét MZ theo khối nhỏ, có overlap; ưu tiên chữ ký căn 16 byte giống engine hiện tại.
+     * Chữ ký lệch căn chỉ để chẩn đoán, resolver không truyền nó cho engine.
+     */
+    private fun archiveOffset(raf: RandomAccessFile): Long? {
+        if (raf.length() < MAGIC.size) return null
+        val head = ByteArray(MAGIC.size); raf.seek(0); raf.readFully(head)
+        if (head.contentEquals(MAGIC)) return 0
+        if (head[0] != 0x4d.toByte() || head[1] != 0x5a.toByte()) return null
+        val buffer = ByteArray(64 * 1024 + MAGIC.size - 1)
+        var position = 16L
+        var unaligned: Long? = null
+        while (position < raf.length()) {
+            if (Thread.currentThread().isInterrupted) throw java.io.InterruptedIOException()
+            val count = minOf(buffer.size.toLong(), raf.length() - position).toInt()
+            raf.seek(position); raf.readFully(buffer, 0, count)
+            for (i in 0..count - MAGIC.size) {
+                if (buffer[i] != MAGIC[0]) continue
+                var k = 1
+                while (k < MAGIC.size && buffer[i + k] == MAGIC[k]) k++
+                if (k == MAGIC.size) {
+                    val found = position + i
+                    if (found % 16 == 0L) return found
+                    if (unaligned == null) unaligned = found
+                }
+            }
+            position += 64 * 1024
+        }
+        return unaligned
+    }
+
+    /** Chỉ trả false khi đọc hết chỉ mục; phần chưa đọc/hỏng không chứng minh thiếu startup. */
+    fun hasRootStartup(file: File): Boolean? = hasRootStartup(read(file))
+
+    internal fun hasRootStartup(result: Result?): Boolean? = (result as? Result.Names)?.let {
+        if (hasRootStartup(it.names)) true else if (it.complete) false else null
+    }
 
     fun hasRootStartup(names: List<String>): Boolean = names.any { it.equals("startup.tjs", ignoreCase = true) }
 
-    private fun readIndex(raf: RandomAccessFile): Result {
+    private fun readIndex(raf: RandomAccessFile, archiveOffset: Long): Result {
         val size = raf.length()
-        if (size < MAGIC.size + 8) return Result.Unreadable("quá ngắn")
-        val head = ByteArray(0x28.coerceAtMost(size.toInt()))
-        raf.seek(0); raf.readFully(head)
+        if (size - archiveOffset < MAGIC.size + 8) return Result.Unreadable("quá ngắn")
+        val head = ByteArray(minOf(0x28L, size - archiveOffset).toInt())
+        raf.seek(archiveOffset); raf.readFully(head)
         if (!head.copyOf(MAGIC.size).contentEquals(MAGIC)) return Result.Unreadable("không phải XP3")
         val b = ByteBuffer.wrap(head).order(ByteOrder.LITTLE_ENDIAN)
         var indexPos = b.getLong(MAGIC.size)
@@ -52,19 +98,21 @@ object Xp3Index {
             if ((head[0x17].toInt() and 0xFF) != 0x80) return Result.Unreadable("v2 lạ")
             indexPos = b.getLong(0x20)
         }
-        if (indexPos <= 0 || indexPos >= size) return Result.Unreadable("vị trí chỉ mục ngoài file")
+        if (indexPos <= 0 || indexPos >= size - archiveOffset) return Result.Unreadable("vị trí chỉ mục ngoài file")
+        indexPos += archiveOffset
         raf.seek(indexPos)
-        val flag = raf.readUnsignedByte() and 0x07
+        val indexFlag = raf.readUnsignedByte()
+        val flag = indexFlag and 0x07
         val data: ByteArray = when (flag) {
             0 -> {
                 val len = readLong(raf)
-                if (len < 0 || len > MAX_INDEX_BYTES || indexPos + 9 + len > size) return Result.Unreadable("chỉ mục thô quá lớn/hỏng")
+                if (len < 0 || len > MAX_INDEX_BYTES || len > size - indexPos - 9) return Result.Unreadable("chỉ mục thô quá lớn/hỏng")
                 ByteArray(len.toInt()).also { raf.readFully(it) }
             }
             1 -> {
                 val packed = readLong(raf)
                 val raw = readLong(raf)
-                if (packed < 0 || raw < 0 || packed > MAX_INDEX_BYTES || raw > MAX_INDEX_BYTES || indexPos + 17 + packed > size) {
+                if (packed < 0 || raw < 0 || packed > MAX_INDEX_BYTES || raw > MAX_INDEX_BYTES || packed > size - indexPos - 17) {
                     return Result.Unreadable("chỉ mục nén quá lớn/hỏng")
                 }
                 val z = ByteArray(packed.toInt()).also { raf.readFully(it) }
@@ -72,7 +120,10 @@ object Xp3Index {
             }
             else -> return Result.Unreadable("cờ chỉ mục lạ")
         }
-        return parseEntries(data)
+        val entries = parseEntries(data)
+        // Có khối chỉ mục tiếp theo chưa đọc: không được kết luận không có startup.
+        return if (entries is Result.Names && indexFlag and 0x80 != 0)
+            Result.Names(entries.names, false) else entries
     }
 
     private fun readLong(raf: RandomAccessFile): Long {
@@ -108,27 +159,35 @@ object Xp3Index {
             val tag = String(data, pos, 4, Charsets.ISO_8859_1)
             val len = b.getLong(pos + 4)
             val start = pos + 12
-            if (len < 0 || start + len > data.size) { complete = false; break }
+            if (len < 0 || len > data.size - start) { complete = false; break }
             val end = (start + len).toInt()
             if (tag == "File") {
                 var p = start
+                var hasInfo = false
                 while (p + 12 <= end) {
                     val sub = String(data, p, 4, Charsets.ISO_8859_1)
                     val slen = b.getLong(p + 4)
                     val s = p + 12
-                    if (slen < 0 || s + slen > end) break
-                    if (sub == "info" && slen >= 22) {
-                        val chars = b.getShort(s + 20).toInt() and 0xFFFF
-                        if (s + 22 + chars * 2 <= s + slen) {
-                            names.add(String(data, s + 22, chars * 2, Charsets.UTF_16LE).replace('\\', '/'))
+                    if (slen < 0 || slen > end - s) { complete = false; break }
+                    if (sub == "info") {
+                        if (slen < 22) complete = false
+                        else {
+                            val chars = b.getShort(s + 20).toInt() and 0xFFFF
+                            if (22 + chars * 2 <= slen) {
+                                names.add(String(data, s + 22, chars * 2, Charsets.UTF_16LE).replace('\\', '/'))
+                                hasInfo = true
+                            } else complete = false
                         }
                     }
                     p = (s + slen).toInt()
                 }
+                // File phải có info hợp lệ; đuôi subchunk bị cắt không chứng minh thiếu startup.
+                if (p != end || !hasInfo) complete = false
                 if (names.size >= MAX_NAMES) { complete = false; break }
             }
             pos = end
         }
+        if (pos != data.size) complete = false
         return Result.Names(names, complete)
     }
 }

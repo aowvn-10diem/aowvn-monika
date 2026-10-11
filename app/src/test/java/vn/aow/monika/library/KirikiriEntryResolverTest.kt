@@ -1,6 +1,7 @@
 package vn.aow.monika.library
 
 import java.io.File
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -10,6 +11,41 @@ import org.junit.rules.TemporaryFolder
 /** V26: chọn xp3 có startup.tjs ở gốc bằng chỉ mục XP3 tự sinh (không dùng file game thật). */
 class KirikiriEntryResolverTest {
     @get:Rule val tmp = TemporaryFolder()
+
+    @Test fun malformedEmbeddedEntryKeepsResolutionAndUnknownStartupDetail() {
+        for (damage in Xp3Fixture.IndexDamage.values()) {
+            val dir = tmp.newFolder(damage.name)
+            val exe = Xp3Fixture.exeWithBrokenEntry(dir, damage)
+            assertTrue(KirikiriEntryResolver.resolve(exe) is EntryResolution.Keep)
+            val detail = KirikiriEntryResolver.describe(exe, Xp3Index.read(exe))
+            assertTrue(detail.contains("startup.tjs@gốc=? chỉ mục chưa hoàn chỉnh"))
+            assertFalse(detail.contains("startup.tjs@gốc=false"))
+        }
+    }
+
+    @Test fun unfinishedEmbeddedIndexDetailDoesNotReportMissingStartup() {
+        val dir = tmp.newFolder("unfinished-detail")
+        val pending = Xp3Fixture.exe(dir, listOf("main.ks"), continuation = true, name = "pending.exe")
+        val broken = Xp3Fixture.exe(dir, listOf("startup.tjs"), compressed = false, name = "broken.exe")
+        broken.writeBytes(broken.readBytes().dropLast(1).toByteArray())
+        for (exe in listOf(pending, broken)) {
+            val line = KirikiriEntryResolver.describe(exe, Xp3Index.read(exe))
+            assertTrue(line.contains("xp3 nhúng=true offset=64"))
+            assertTrue(line.contains("startup.tjs@gốc=?"))
+            assertTrue(line.contains("chỉ mục chưa hoàn chỉnh"))
+            assertFalse(line.contains("startup.tjs@gốc=false") || line.contains("thiếu startup.tjs"))
+            assertTrue(line.length <= 280)
+            assertTrue(KirikiriEntryResolver.resolve(exe) is EntryResolution.Keep)
+        }
+    }
+
+    @Test fun unfinishedEmbeddedIndexWithKnownStartupCanStillBeSelected() {
+        val dir = tmp.newFolder("unfinished-known-startup")
+        val exe = Xp3Fixture.exe(dir, listOf("Startup.TJS"), continuation = true)
+        val line = KirikiriEntryResolver.describe(exe, Xp3Index.read(exe))
+        assertTrue(line.contains("startup.tjs@gốc=true chỉ mục chưa hoàn chỉnh"))
+        assertEquals(exe, (KirikiriEntryResolver.resolve(exe) as EntryResolution.Use).entry)
+    }
 
     private fun put(dir: File, name: String, names: List<String>, compressed: Boolean = true, v2: Boolean = false, pad: Int = 0): File {
         val f = Xp3Fixture.xp3(dir, names, compressed, v2, filler = 100 + pad)
@@ -153,6 +189,43 @@ class KirikiriEntryResolverTest {
         val wrong = File(dir, "broken.xp3").also { it.writeBytes(ByteArray(500) { 3 }) }
         val good = put(dir, "data.xp3", listOf("startup.tjs"))
         assertEquals(good, (KirikiriEntryResolver.resolve(wrong) as EntryResolution.Use).entry)
+    }
+
+    @Test fun sixArchivesWithoutStartupUseEmbeddedExe() {
+        val dir = tmp.newFolder("embedded")
+        val main = put(dir, "karanoshojo.xp3", listOf("$$$ This is a protected archive $$$", "scn/main.ks"))
+        for (i in 0..4) put(dir, "patch$i.xp3", listOf("scn/patch.ks"))
+        File(dir, "Uninstall.exe").writeBytes(byteArrayOf(0x4d, 0x5a) + ByteArray(128))
+        val exe = Xp3Fixture.exe(dir, listOf("Startup.TJS"), name = "karanoshojo.exe")
+        val result = KirikiriEntryResolver.resolve(main) as EntryResolution.Use
+        assertEquals(exe, result.entry)
+        assertTrue(result.why.contains("XP3 nhúng"))
+        assertEquals(exe, (KirikiriEntryResolver.resolve(exe) as EntryResolution.Use).entry)
+    }
+    @Test fun embeddedHashedNamesReportUnsupportedWithoutConfusingProtectionMarker() {
+        val dir = tmp.newFolder("embedded-hashed")
+        val main = put(dir, "game.xp3", listOf("scn/main.ks"))
+        Xp3Fixture.exe(dir, listOf("3f9a1c", "a1b2c3"))
+        assertTrue((KirikiriEntryResolver.resolve(main) as EntryResolution.NotFound).encrypted)
+        Xp3Fixture.exe(dir, listOf("$$$ This is a protected archive $$$", "scn/main.ks"))
+        assertFalse((KirikiriEntryResolver.resolve(main) as EntryResolution.NotFound).encrypted)
+    }
+    @Test fun invalidEmbeddedIndexDoesNotProveEncryptionOrMissingStartup() {
+        val dir = tmp.newFolder("embedded-bad")
+        val main = put(dir, "game.xp3", listOf("scn/a.ks"))
+        val exe = Xp3Fixture.exe(dir, listOf("startup.tjs"))
+        val bytes = exe.readBytes()
+        java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN).putLong(75, Long.MAX_VALUE)
+        exe.writeBytes(bytes)
+        assertTrue(KirikiriEntryResolver.resolve(main) is EntryResolution.Keep)
+    }
+    @Test fun unalignedArchiveDoesNotGetPassedToCurrentEngine() {
+        val dir = tmp.newFolder("unaligned")
+        val main = put(dir, "game.xp3", listOf("scn/a.ks"))
+        Xp3Fixture.exe(dir, listOf("startup.tjs"), offset = 65)
+        val r = KirikiriEntryResolver.resolve(main) as EntryResolution.NotFound
+        assertFalse(r.encrypted)
+        assertTrue(r.unsupportedReason!!.contains("16 byte"))
     }
 
 }

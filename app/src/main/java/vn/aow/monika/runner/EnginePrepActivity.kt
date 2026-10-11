@@ -165,7 +165,7 @@ class EnginePrepActivity : ComponentActivity() {
                     Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "không tìm thấy lối vào: ${r.why}")
                     r.details.forEach { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", it) }
                     Diagnostics.recordHandled(this@EnginePrepActivity, "engine:$engine", "không có startup.tjs trong ${r.dirName}: ${r.why}")
-                    status = getString(if (r.encrypted) R.string.engine_entry_encrypted else R.string.engine_entry_not_found, r.dirName)
+                    status = r.unsupportedReason ?: getString(if (r.encrypted) R.string.engine_entry_encrypted else R.string.engine_entry_not_found, r.dirName)
                     reportInfo = null; reportable = true
                     started = false
                     reportInfo = withContext(Dispatchers.IO) { vn.aow.monika.diag.KirikiriDiag.reportText(entry?.absolutePath) }

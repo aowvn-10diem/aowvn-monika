@@ -16,6 +16,17 @@ class Xp3IndexTest {
     @get:Rule val tmp = TemporaryFolder()
     private fun xp3(names: List<String>, compressed: Boolean, v2: Boolean = false) = Xp3Fixture.xp3(tmp.root, names, compressed, v2)
 
+    @Test fun malformedEmbeddedEntryKeepsReadablePrefixButNotComplete() {
+        for (damage in Xp3Fixture.IndexDamage.values()) {
+            val exe = Xp3Fixture.exeWithBrokenEntry(tmp.root, damage)
+            val result = Xp3Index.read(exe) as Xp3Index.Result.Names
+            assertEquals(listOf("main.ks"), result.names)
+            assertEquals(64L, result.archiveOffset)
+            assertFalse(result.complete)
+            assertNull(Xp3Index.hasRootStartup(exe))
+        }
+    }
+
     @Test fun indexThoVaNen_v1_docDuTen() {
         for (compressed in listOf(false, true)) {
             val r = Xp3Index.read(xp3(listOf("startup.tjs", "scn/main.ks", "Bản đồ.png"), compressed)) as Xp3Index.Result.Names
@@ -53,4 +64,33 @@ class Xp3IndexTest {
         f.writeBytes(bytes)
         assertFalse(Xp3Index.read(f) is Xp3Index.Result.Names)
     }
+    @Test fun mzEmbeddedXp3RelativeOffsetsRawZlibAndV2() {
+        for (compressed in listOf(false, true)) for (v2 in listOf(false, true)) {
+            val exe = Xp3Fixture.exe(tmp.root, listOf("startup.tjs", "scn/a.ks"), compressed, v2, offset = 5 * 1024 * 1024)
+            val r = Xp3Index.read(exe) as Xp3Index.Result.Names
+            assertEquals(5L * 1024 * 1024, r.archiveOffset)
+            assertEquals(listOf("startup.tjs", "scn/a.ks"), r.names)
+            assertTrue(r.complete)
+        }
+    }
+    @Test fun magicAcrossScanBoundaryAndUnalignedIsDiagnosable() {
+        // Scan bắt đầu ở 16; chữ ký tại 65549 cắt qua biên khối 65552.
+        val exe = Xp3Fixture.exe(tmp.root, listOf("startup.tjs"), offset = 65549)
+        val r = Xp3Index.read(exe) as Xp3Index.Result.Names
+        assertEquals(65549L, r.archiveOffset)
+        assertEquals(true, Xp3Index.hasRootStartup(exe))
+    }
+    @Test fun signatureNeedsMzAndInvalidEmbeddedOffsetKeepsEvidence() {
+        val exe = Xp3Fixture.exe(tmp.root, listOf("startup.tjs"))
+        val bytes = exe.readBytes()
+        ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).putLong(64 + 11, Long.MAX_VALUE)
+        exe.writeBytes(bytes)
+        val bad = Xp3Index.read(exe) as Xp3Index.Result.Unreadable
+        assertEquals(64L, bad.archiveOffset)
+        bytes[0] = 0; exe.writeBytes(bytes)
+        assertNull(Xp3Index.read(exe).archiveOffset)
+        File(tmp.root, "ordinary.exe").also { it.writeBytes(byteArrayOf(0x4d, 0x5a) + ByteArray(128)) }
+            .let { assertNull(Xp3Index.read(it).archiveOffset) }
+    }
+
 }
