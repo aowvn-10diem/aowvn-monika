@@ -1,7 +1,10 @@
 package vn.aow.monika.account
 
+import android.os.SystemClock
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -11,40 +14,42 @@ import vn.aow.monika.ui.TestApp
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
-import java.time.temporal.ChronoUnit
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = TestApp::class, sdk = [34])
 @LooperMode(LooperMode.Mode.LEGACY)
 class ProfileCoverageTest {
-    /** Mốc lấy lúc chạy; offset thử được neo để giờ địa phương tránh sát nửa đêm. */
-    private fun now(): Instant = Instant.now().truncatedTo(ChronoUnit.MINUTES)
+    /** Future fixed time lets Robolectric's monotonic legacy clock move forward to this exact instant. */
+    private val fixedNow = Instant.parse("2100-01-01T05:00:00Z")
 
-    /** Tạo một múi giờ mà chính thời điểm thử đang là 05:00, không phụ thuộc giờ máy chạy CI. */
-    private fun offsetAtLocalFive(now: Instant): ZoneOffset {
-        val utcSeconds = now.atOffset(ZoneOffset.UTC).toLocalTime().toSecondOfDay()
-        var offsetSeconds = 5 * 60 * 60 - utcSeconds
-        if (offsetSeconds < -12 * 60 * 60) offsetSeconds += 24 * 60 * 60
-        return ZoneOffset.ofTotalSeconds(offsetSeconds)
+    @Before fun freezeClock() {
+        val fixedMillis = fixedNow.toEpochMilli()
+        assertTrue(
+            "Robolectric should move its clock forward to the fixed test time",
+            SystemClock.setCurrentTimeMillis(fixedMillis),
+        )
+        assertEquals(
+            "java.time must observe the fixed Robolectric clock",
+            fixedMillis,
+            System.currentTimeMillis(),
+        )
     }
 
     @Test fun emptyAndNonPositiveCheckinAreNeverToday() {
-        val instant = now()
-        val zone = offsetAtLocalFive(instant)
+        val zone = ZoneOffset.ofHours(7)
 
         assertFalse(Profile(0, 0, 0, 0).checkedInToday(zone))
         assertFalse(Profile(0, 0, 0, -1).checkedInToday(zone))
 
-        val twoDaysAgo = instant.minus(Duration.ofDays(2)).toEpochMilli()
+        val twoDaysAgo = fixedNow.minus(Duration.ofDays(2)).toEpochMilli()
         assertFalse(Profile(0, 0, 0, twoDaysAgo).checkedInToday(zone))
     }
 
     @Test fun positiveTimestampUsesTheProvidedZoneAndCalendarDate() {
-        val instant = now()
-        val beforeMidnight = offsetAtLocalFive(instant)
-        val afterMidnight = ZoneOffset.ofTotalSeconds(beforeMidnight.totalSeconds + 6 * 60 * 60)
-        val recentCheckin = instant.minus(Duration.ofHours(1)).toEpochMilli()
-        val twoDaysAgo = instant.minus(Duration.ofDays(2)).toEpochMilli()
+        val beforeMidnight = ZoneOffset.UTC
+        val afterMidnight = ZoneOffset.ofHours(6)
+        val recentCheckin = fixedNow.minus(Duration.ofMinutes(30)).toEpochMilli()
+        val twoDaysAgo = fixedNow.minus(Duration.ofDays(2)).toEpochMilli()
 
         assertTrue(Profile(0, 0, 0, recentCheckin).checkedInToday(beforeMidnight))
         assertTrue(Profile(0, 0, 0, recentCheckin).checkedInToday(afterMidnight))
@@ -52,10 +57,9 @@ class ProfileCoverageTest {
     }
 
     @Test fun theSameTimestampChangesDateAcrossTheProvidedZonesMidnight() {
-        val instant = now()
-        val beforeMidnight = offsetAtLocalFive(instant)
-        val afterMidnight = ZoneOffset.ofTotalSeconds(beforeMidnight.totalSeconds + 6 * 60 * 60)
-        val checkinSixHoursEarlier = instant.minus(Duration.ofHours(6)).toEpochMilli()
+        val beforeMidnight = ZoneOffset.UTC
+        val afterMidnight = ZoneOffset.ofHours(6)
+        val checkinSixHoursEarlier = fixedNow.minus(Duration.ofHours(6)).toEpochMilli()
         val profile = Profile(0, 0, 0, checkinSixHoursEarlier)
 
         assertFalse(
