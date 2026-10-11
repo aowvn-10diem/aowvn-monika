@@ -2,7 +2,19 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
-## v0.8.0 — Chưa phát hành
+## v0.8.1 — Chưa phát hành
+
+> Đang chuẩn bị bản thử theo [PM A32](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6105776093); chưa tạo tag hoặc phát hành. Danh sách dưới đây đối chiếu các PR đã gộp vào main `a8a8823`; chưa thử trên máy thật.
+
+- Nintendo DS ở màn dọc xếp kiểu DraStic: hai màn hình game ở trên cùng và rộng hơn trước (khoảng ba phần tư chiều ngang trên máy 393 dp, trước đó khoảng một nửa), bàn phím ảo bên dưới, thanh tên game và nút quay lại/menu thu thành một hàng gọn sát đáy; phía trên màn hình game không còn thanh nào. Lõi NDS mặc định melonDS DS dùng đúng tay cầm NDS (có X/Y) thay vì tay cầm GBA. Bố cục ngang giữ nguyên; kích thước thật trên máy còn **[CHƯA KIỂM]**. ([b116a93](https://github.com/aowvn-10diem/aowvn-monika/commit/b116a939f14b379b258e4e7cde117c93d10083be))
+- Thanh tên game, nút menu và chip gợi ý như "D-pad → Cần" tự ẩn sau vài giây khi đang chơi ở các giả lập libretro (gồm NDS, PSP, GBA), Kirikiri, RPG Maker, Ren'Py và game web; chạm vùng mép (hoặc góc phải trên với nút menu) hoặc mở menu thì hiện lại rồi lại tự ẩn. ([b116a93](https://github.com/aowvn-10diem/aowvn-monika/commit/b116a939f14b379b258e4e7cde117c93d10083be))
+- Game Java: nút menu nổi chuyển xuống ô trống của bàn phím ảo (dọc: hàng dưới cùng bên phải; ngang: dưới phím ←) để không đè lên màn hình game; khi không có bàn phím Monika thì ở góc trên phải và mờ hẳn sau vài giây. Bố cục và mã phím không đổi; vị trí thật trên máy còn **[CHƯA KIỂM]**. ([801752e](https://github.com/aowvn-10diem/aowvn-monika/commit/801752e8cd191742e046c63f915952a6bd3be823))
+
+> Sang bản sau (chưa gộp vào main khi chốt phạm vi): V85c bàn phím ảo J2ME theo bộ nút AowVN ([#200](https://github.com/aowvn-10diem/aowvn-monika/pull/200)), V88 Kirikiri xp3 nhúng trong exe, V89 NDS khởi động lâu (hiện bước tải/nạp, timeout, chẩn đoán).
+
+## [v0.8.0](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.0) (Bản thử — Pre-release)
+
+> Phát hành ngày 11/10/2026 (UTC), đánh dấu pre-release.
 
 - Chỉnh bố cục, tỉ lệ và khoảng cách hai màn Nintendo DS trong Cài đặt → Màn hình; lựa chọn có hiệu lực khi mở game tiếp theo. ([608b12a](https://github.com/aowvn-10diem/aowvn-monika/commit/608b12a9cad8950fd95816ae96bbd8a893dd2d6d))
 - Bộ nút dùng chung có bảng màu AowVN, viền pixel, bóng cứng và các trạng thái nhấn, chọn, vô hiệu hóa; hỗ trợ ba mức hiệu ứng. ([fb5edac](https://github.com/aowvn-10diem/aowvn-monika/commit/fb5edac0f1d885142839ffe05a0b43339d75522c))
