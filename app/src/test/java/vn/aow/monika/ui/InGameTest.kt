@@ -1,10 +1,16 @@
 package vn.aow.monika.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -12,6 +18,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import vn.aow.monika.runner.CoreOption
+import vn.aow.monika.runner.AutoHide
+import vn.aow.monika.runner.HEADER_TAG
 import vn.aow.monika.runner.InGameOverlay
 import vn.aow.monika.runner.InGameState
 import vn.aow.monika.runner.PadLayout
@@ -91,5 +99,104 @@ class InGameTest {
         rule.onNodeWithText("Bố cục 2 màn hình").performClick()
         rule.waitForIdle()
         assertEquals("melonds_screen_layout" to "Left/Right", changed)
+    }
+
+    /** A31: tự ẩn ở mọi giả lập — hiện lúc vào game, ẩn sau AutoHide.HIDE_MS, chạm mép hiện lại rồi lại tự ẩn, mở menu thì giữ. */
+    private fun assertAutoHides(layout: PadLayout, edgeBottom: Boolean = false, shotName: String? = null) {
+        val state = InGameState()
+        overlay(state, layout)
+        rule.onNodeWithTag(HEADER_TAG).assertIsDisplayed()
+        shotName?.let { rule.shot("$it-hien") }
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertDoesNotExist()
+        shotName?.let { rule.shot("$it-an") }
+        // Chạm sát mép (NDS dọc: mép dưới; còn lại: mép trên).
+        rule.onRoot().performTouchInput { down(Offset(width / 2f, if (edgeBottom) height - 8f else 8f)); up() }
+        // Trạng thái đổi từ trình xử lý chạm: Robolectric chỉ áp dụng khi looper rảnh (waitForIdle) trước khi chạy khung hình.
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(500)
+        rule.onNodeWithTag(HEADER_TAG).assertIsDisplayed()
+        // Lần ẩn thứ hai: giờ đếm chạy lại sau khi hiện lại.
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertDoesNotExist()
+        // Mở menu: hiện lại và giữ nguyên tới khi đóng menu, rồi lại tự ẩn.
+        rule.runOnIdle { state.menuOpen = true }
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertExists()
+        rule.runOnIdle { state.menuOpen = false }
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertDoesNotExist()
+    }
+
+    @Test fun ndsPortraitHeaderAtBottomAutoHides() = assertAutoHides(PadLayout.NDS, edgeBottom = true, shotName = "v89-nds-doc")
+
+    @Test @Config(qualifiers = "w851dp-h393dp-land-xxhdpi")
+    fun pspLandscapeHeaderAutoHidesAndDoesNotCoverGame() = assertAutoHides(PadLayout.PSP, shotName = "v89-psp-ngang")
+
+    @Test fun gbaHeaderAutoHides() = assertAutoHides(PadLayout.GBA)
+
+    /** A30: NDS dọc — thanh tên/menu nằm sát đáy, dưới bàn phím ảo; hệ khác giữ ở đầu màn hình. */
+    @Test fun ndsHeaderSitsAtTheBottomOthersAtTheTop() {
+        overlay(InGameState(), PadLayout.NDS)
+        val rootH = rule.onRoot().fetchSemanticsNode().boundsInRoot.height
+        val nds = rule.onNodeWithTag(HEADER_TAG).fetchSemanticsNode().boundsInRoot
+        assertTrue("NDS dọc: thanh phải ở nửa dưới, top=${nds.top} / $rootH", nds.top > rootH * 0.8f)
+        // Bàn phím ảo không bị thanh đè: hàng SELECT/START nằm trên thanh.
+        val start = rule.onNodeWithText("START").fetchSemanticsNode().boundsInRoot
+        assertTrue("START (bottom=${start.bottom}) phải nằm trên thanh (top=${nds.top})", start.bottom <= nds.top + 1f)
+    }
+
+    @Test fun headerAtTopForOtherSystems() {
+        overlay(InGameState(), PadLayout.GBA)
+        val rootH = rule.onRoot().fetchSemanticsNode().boundsInRoot.height
+        assertTrue(rule.onNodeWithTag(HEADER_TAG).fetchSemanticsNode().boundsInRoot.top < rootH * 0.2f)
+    }
+
+    /** Chưa vào game (đang tải) thì không ẩn; tắt tự ẩn thì luôn hiện. */
+    @Test fun headerNeverHidesBeforeGameRunsOrWhenAutoHideOff() {
+        rule.setContent {
+            MonikaTheme {
+                InGameOverlay(
+                    state = InGameState(), system = "Nintendo DS", title = "Game thử NDS", layout = PadLayout.NDS, showPad = false,
+                    send = { _, _ -> }, onBack = {}, onSave = {}, onLoad = {}, onTurbo = {}, onOpacity = {}, onEditDone = {},
+                )
+            }
+        }
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertExists()
+    }
+
+    @Test fun autoHideOffKeepsHeader() {
+        rule.setContent {
+            MonikaTheme {
+                InGameOverlay(
+                    state = InGameState(), system = "Game Boy Advance", title = "Game thử", layout = PadLayout.GBA, showPad = true,
+                    send = { _, _ -> }, onBack = {}, onSave = {}, onLoad = {}, onTurbo = {}, onOpacity = {}, onEditDone = {},
+                    autoHideHeader = false,
+                )
+            }
+        }
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(HEADER_TAG).assertExists()
+    }
+
+    /** A31: chip gợi ý "D-pad → Cần" (PSP) tự mờ cùng thanh tên game: đang ẩn thì không bấm được, chạm mép hiện lại thì bấm được. */
+    @Test fun stickHintChipFadesWithHeader() {
+        val state = InGameState()
+        overlay(state, PadLayout.PSP)
+        rule.onNodeWithText("Cần → D-pad").assertIsDisplayed()
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        // Mờ hẳn: chạm vào chip không đổi chế độ.
+        rule.onNodeWithText("Cần → D-pad").performClick()
+        rule.waitForIdle()
+        assertEquals(null, state.stickMode)
+        rule.onRoot().performTouchInput { down(Offset(width / 2f, 8f)); up() }
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(500)
+        rule.onNodeWithText("Cần → D-pad").performClick()
+        rule.waitForIdle()
+        assertEquals(false, state.stickMode)
     }
 }
