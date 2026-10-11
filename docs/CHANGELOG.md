@@ -2,7 +2,13 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
-## v0.8.0 — Chưa phát hành
+## v0.8.1 — Chưa phát hành
+
+> Đang chuẩn bị bản thử theo [PM A32](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6105776093): mốc cắt 17:00 giờ VN ngày 11/10/2026, chưa tạo tag hoặc phát hành. Danh sách thay đổi được điền lúc 16:30 từ các PR đã gộp vào main; PR nào chưa đủ hai lượt Đạt và CI xanh lúc cắt thì sang v0.8.2.
+
+## [v0.8.0](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.0) (Bản thử — Pre-release)
+
+> Phát hành ngày 11/10/2026 (UTC), đánh dấu pre-release.
 
 - Chỉnh bố cục, tỉ lệ và khoảng cách hai màn Nintendo DS trong Cài đặt → Màn hình; lựa chọn có hiệu lực khi mở game tiếp theo. ([608b12a](https://github.com/aowvn-10diem/aowvn-monika/commit/608b12a9cad8950fd95816ae96bbd8a893dd2d6d))
 - Bộ nút dùng chung có bảng màu AowVN, viền pixel, bóng cứng và các trạng thái nhấn, chọn, vô hiệu hóa; hỗ trợ ba mức hiệu ứng. ([fb5edac](https://github.com/aowvn-10diem/aowvn-monika/commit/fb5edac0f1d885142839ffe05a0b43339d75522c))
