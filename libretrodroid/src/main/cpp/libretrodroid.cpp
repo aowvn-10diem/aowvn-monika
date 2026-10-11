@@ -309,7 +309,8 @@ void LibretroDroid::create(
     rumble = std::make_unique<Rumble>();
 }
 
-void LibretroDroid::loadGameFromPath(const std::string& gamePath) {
+void LibretroDroid::loadGameFromPath(const std::string& gamePath, const std::function<void(const char*)>& progress) {
+    if (progress) progress("rom-read");
     LOGD("Performing libretrodroid loadGameFromPath");
     struct retro_system_info system_info {};
     core->retro_get_system_info(&system_info);
@@ -327,6 +328,7 @@ void LibretroDroid::loadGameFromPath(const std::string& gamePath) {
         game_info.size = file.size;
     }
 
+    if (progress) progress("core-load-game");
     bool result = core->retro_load_game(&game_info);
     if (!result) {
         LOGE("Cannot load game. Leaving.");
@@ -334,6 +336,7 @@ void LibretroDroid::loadGameFromPath(const std::string& gamePath) {
     }
 
     currentGamePath = gamePath; // Aow Monika: RetroAchievements cần đường dẫn để băm game
+    if (progress) progress("core-after-load");
     afterGameLoad();
 }
 

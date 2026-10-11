@@ -77,43 +77,59 @@ class CoreManager(
         var ok = 0
         todo.forEachIndexed { i, id ->
             onProgress(id, i + 1, todo.size, 0)
-            val done = runCatching { ensureCore(id) { st -> st.substringAfterLast(' ').removeSuffix("%").toIntOrNull()?.let { onProgress(id, i + 1, todo.size, it) } } }
+            val done = runCatching { ensureCore(id, onProgress = { st -> st.percent?.let { onProgress(id, i + 1, todo.size, it) } }) }
             if (done.isSuccess) ok++
         }
         return ok
     }
 
     /** Khóa theo tiến trình (Mutex) rồi khóa theo file (giữa tiến trình chính và tiến trình :game) → không ghi đè lõi của nhau. */
-    suspend fun ensureCore(id: String, onStatus: (String) -> Unit = {}): File = withContext(Dispatchers.IO) {
-        PackTransaction.locked(coreDir(id)) { ensureCoreLocked(id, onStatus) }
+    suspend fun ensureCore(id: String, onProgress: (CoreProgress) -> Unit = {}, onStatus: (String) -> Unit = {}): File = withContext(Dispatchers.IO) {
+        PackTransaction.locked(coreDir(id)) { ensureCoreLocked(id, onProgress, onStatus) }
     }
 
-    private suspend fun ensureCoreLocked(id: String, onStatus: (String) -> Unit): File = withContext(Dispatchers.IO) {
+    private suspend fun ensureCoreLocked(id: String, onProgress: (CoreProgress) -> Unit, onStatus: (String) -> Unit): File = withContext(Dispatchers.IO) {
         val def = configRepo.current.cores[id] ?: throw IOException("Cấu hình chưa có lõi '$id'")
         if (!def.supportsAbi()) {
             val allowed = if (def.artifacts.isEmpty()) def.abis else def.artifacts.keys.filter { def.abis.isEmpty() || it in def.abis }
             throw IOException("Lõi này chỉ chạy trên máy ${allowed.joinToString(" / ")} (máy bạn: $abi).")
         }
+        suspend fun emit(progress: CoreProgress) {
+            onProgress(progress)
+            withContext(Dispatchers.Main) { onStatus(progress.text) }
+        }
+        emit(CoreProgress("core-check"))
         val wantedVersion = def.wantedVersion()
         val artifact = def.artifacts[abi]
         val so = File(coreDir(id), "${id}_libretro_android.so")
         if (!so.exists() || installedVersion(id) != wantedVersion) {
-            withContext(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)…") }
+            emit(CoreProgress("core-download"))
             if (artifact == null) {
                 coreDir(id).mkdirs()
                 val tmp = File(coreDir(id), "download.tmp").apply { delete() }
-                var lastPct = -1
+                val archive = File(coreDir(id), "download.zip")
                 var serverDate = ""
-                download(def.url.replace("{abi}", abi), { serverDate = it }, { pct ->
-                    if (pct != lastPct) { lastPct = pct; kotlinx.coroutines.runBlocking(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)… $pct%") } }
-                }) { zip ->
-                    while (true) {
-                        val entry = zip.nextEntry ?: throw IOException("Gói lõi không chứa file .so")
-                        if (entry.name.endsWith(".so")) {
-                            tmp.outputStream().use { zip.copyTo(it) }
-                            break
+                try {
+                    http.newCall(Request.Builder().url(def.url.replace("{abi}", abi)).build()).execute().use { response ->
+                        if (!response.isSuccessful) throw IOException("Tải lõi thất bại (HTTP ${response.code})")
+                        serverDate = response.header("Last-Modified").orEmpty()
+                        val body = response.body ?: throw IOException("Gói lõi không có nội dung")
+                        body.byteStream().use { input ->
+                            downloadCore(input, archive, body.contentLength()) { read, total -> emit(CoreProgress("core-download", read, total)) }
                         }
                     }
+                    emit(CoreProgress("core-unzip"))
+                    ZipInputStream(archive.inputStream().buffered()).use { zip ->
+                        while (true) {
+                            val entry = zip.nextEntry ?: throw IOException("Gói lõi không chứa file .so")
+                            if (entry.name.endsWith(".so")) {
+                                tmp.outputStream().use { zip.copyTo(it) }
+                                break
+                            }
+                        }
+                    }
+                } finally {
+                    archive.delete()
                 }
                 if (!tmp.renameTo(so)) throw IOException("Không lưu được lõi $id")
                 versionFile(id).writeText(def.version)
@@ -129,7 +145,7 @@ class CoreManager(
                 if (!expectedHash.matches(Regex("[a-fA-F0-9]{64}")) || wantedVersion.isBlank())
                     throw IOException("Ảnh chụp lõi thiếu hash/version")
                 PackTransaction.install(coreDir(id)) { archive, candidate ->
-                    var serverDate = ""; var lastPct = -1
+                    var serverDate = ""; var lastBytes = -1L; var lastPct = -1
                     http.newCall(Request.Builder().url(url).build()).execute().use { response ->
                         if (!response.isSuccessful) throw IOException("Tải lõi thất bại (HTTP ${response.code})")
                         serverDate = response.header("Last-Modified").orEmpty()
@@ -138,13 +154,14 @@ class CoreManager(
                         body.byteStream().use { input ->
                             PackTransaction.download(input, archive, expectedHash, total) { read ->
                                 val pct = if (total > 0) (read * 100 / total).toInt().coerceIn(0, 100) else -1
-                                if (pct >= 0 && pct != lastPct) {
-                                    lastPct = pct
-                                    withContext(Dispatchers.Main) { onStatus("Đang tải lõi giả lập (chỉ lần đầu)… $pct%") }
+                                if (pct != lastPct || read - lastBytes >= 256 * 1024 || read == total) {
+                                    lastPct = pct; lastBytes = read
+                                    emit(CoreProgress("core-download", read, total))
                                 }
                             }
                         }
                     }
+                    emit(CoreProgress("core-unzip"))
                     PackTransaction.unzip(archive, candidate)
                     PackTransaction.validate(candidate, so.name, abi)
                     File(candidate, "version").writeText(wantedVersion)
@@ -154,12 +171,14 @@ class CoreManager(
                     )
                 }
             }
+        } else {
+            emit(CoreProgress("core-cache", so.length(), so.length()))
         }
         def.systemFiles?.let { url ->
             // Một số lõi (PPSSPP...) cần thêm file hệ thống: font, dữ liệu...
             val marker = File(systemDir(), ".$id-$wantedVersion")
             if (!marker.exists()) {
-                withContext(Dispatchers.Main) { onStatus("Đang tải dữ liệu hệ thống cho $id…") }
+                emit(CoreProgress("system-download"))
                 download(url) { Importer.unzip(it, systemDir()) }
                 marker.writeText("ok")
             }
@@ -167,6 +186,23 @@ class CoreManager(
         // Đánh dấu vừa dùng → bộ dọn bộ đệm không xóa lõi đang dùng thường xuyên.
         coreDir(id).setLastModified(System.currentTimeMillis())
         so
+    }
+
+    private suspend fun downloadCore(input: java.io.InputStream, archive: File, total: Long, progress: suspend (Long, Long) -> Unit) {
+        archive.outputStream().use { output ->
+            val buffer = ByteArray(64 * 1024)
+            var read = 0L; var lastBytes = 0L; var lastPct = -1
+            while (true) {
+                val n = input.read(buffer)
+                if (n < 0) break
+                output.write(buffer, 0, n); read += n
+                val pct = if (total > 0) (read * 100 / total).toInt() else -1
+                if (pct != lastPct || read - lastBytes >= 256 * 1024) {
+                    lastPct = pct; lastBytes = read; progress(read, total)
+                }
+            }
+            progress(read, total)
+        }
     }
 
     private fun download(url: String, onHeaders: ((String) -> Unit)? = null, progress: ((Int) -> Unit)? = null, consume: (ZipInputStream) -> Unit) {
