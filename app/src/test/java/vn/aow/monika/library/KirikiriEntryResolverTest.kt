@@ -90,6 +90,27 @@ class KirikiriEntryResolverTest {
         assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(listOf("a.png", "3f9a1c"), false))) // chỉ mục bị cắt: không kết luận
     }
 
+    @Test fun resourceOnlyNamesDoNotClaimEncryption() {
+        val plainNames = listOf("image/title.png", "sound/theme.ogg", "readme.txt", "abcdef.png", "123456", "abcdef", "abc12")
+        assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(plainNames, true)))
+        val dir = tmp.newFolder("resources-only")
+        val main = put(dir, "game.xp3", plainNames)
+        val resolution = KirikiriEntryResolver.resolve(main) as EntryResolution.NotFound
+        assertTrue(!resolution.encrypted)
+        assertTrue(resolution.details.none { it.contains("[tên có vẻ băm/mã hóa]") })
+    }
+
+    @Test fun hashedNamesNeedCompleteIndexWithoutReadableScriptsInEveryArchive() {
+        val hashed = listOf("folder/3F9A1C", "C:\\private\\77BE02")
+        assertTrue(KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(hashed, true)))
+        assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(hashed, false)))
+        assertTrue(!KirikiriEntryResolver.looksEncrypted(Xp3Index.Result.Names(hashed + "scenario/MAIN.KS", true)))
+        val dir = tmp.newFolder("hash-and-resources")
+        val main = put(dir, "main.xp3", hashed)
+        put(dir, "patch.xp3", listOf("image/title.png", "sound/theme.ogg"))
+        assertTrue(!(KirikiriEntryResolver.resolve(main) as EntryResolution.NotFound).encrypted)
+    }
+
     @Test fun docDuocMoiXp3MaKhongCoStartup_baoNotFound() {
         val dir = tmp.newFolder("Game thieu")
         val main = put(dir, "game.xp3", listOf("image/a.png"), v2 = true)

@@ -2,13 +2,15 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
-## v0.8.0 — Nháp, chưa phát hành
+## v0.8.0 — Chưa phát hành
 
-> Khung theo [PM A29](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6099303176). Danh sách cuối chốt lúc 07:30 ngày 11/10/2026 giờ Việt Nam, trước mốc bản thử 08:00. Chỉ ghi tính năng đã gộp vào `main` cùng liên kết commit thật; phần chưa gộp chuyển sang v0.8.1. V78, V83, V85b và V85c chưa được xác nhận có trong bản này.
-
+- Chỉnh bố cục, tỉ lệ và khoảng cách hai màn Nintendo DS trong Cài đặt → Màn hình; lựa chọn có hiệu lực khi mở game tiếp theo. ([608b12a](https://github.com/aowvn-10diem/aowvn-monika/commit/608b12a9cad8950fd95816ae96bbd8a893dd2d6d))
 - Bộ nút dùng chung có bảng màu AowVN, viền pixel, bóng cứng và các trạng thái nhấn, chọn, vô hiệu hóa; hỗ trợ ba mức hiệu ứng. ([fb5edac](https://github.com/aowvn-10diem/aowvn-monika/commit/fb5edac0f1d885142839ffe05a0b43339d75522c))
+- Tay cầm libretro dùng mặt nút AowVN, giữ tín hiệu phím và rung; chữ nút đủ tương phản ở độ mờ mặc định. ([73a1a0f](https://github.com/aowvn-10diem/aowvn-monika/commit/73a1a0f99100c76d499380085f032834737690e1))
+- Chẩn đoán Kirikiri ghi tối đa năm mẫu tên mục ngắn; thông báo riêng khi chỉ mục đầy đủ có dấu hiệu tên băm và thiếu kịch bản đọc được, tránh nhận nhầm thư mục chỉ có tài nguyên. ([49bdbd5](https://github.com/aowvn-10diem/aowvn-monika/commit/49bdbd59e06da3e18063976a9df44a261c33b082))
+- Giữ dấu “+” trong tên tệp tải xuống lấy từ Content-Disposition dạng UTF-8, kể cả tên có dấu cách. ([3bcc30c](https://github.com/aowvn-10diem/aowvn-monika/commit/3bcc30cb21ad33b84d3423fb5f548ca1a5cf4db6))
 
-<!-- V86: bổ sung các mục V78 / V83 / V85b / V85c và #182 chỉ từ commit đã gộp, sau khi chốt phạm vi A29. Chưa chuyển READY bằng khung này. -->
+> V85c chưa gộp vào main tại thời điểm chốt danh sách, chuyển sang v0.8.1 theo [PM A29](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6099303176).
 
 ## [v0.6.0](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.6.0)
 

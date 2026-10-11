@@ -343,7 +343,8 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.awa
 }
 
 @Composable
-internal fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) -> Unit, motion: (Int, Float, Float) -> Unit, modifier: Modifier) {
+internal fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) -> Unit, motion: (Int, Float, Float) -> Unit, modifier: Modifier,
+    aowStyle: Boolean = true) {
     ControllerOptionsProvider {
     val stored = LocalControllerOptions.current
     BoxWithConstraints(modifier.fillMaxWidth()) {
@@ -351,7 +352,8 @@ internal fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) 
     val fit = ((maxWidth.value - 16f) / (150f + faceWidth)).coerceIn(.7f, 1.4f)
     val options = stored.copy(size = stored.size.coerceAtMost(fit))
     val compact = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-    androidx.compose.runtime.CompositionLocalProvider(LocalControllerOptions provides options, LocalControllerTurbo provides state.turbo) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalControllerOptions provides options, LocalControllerTurbo provides state.turbo,
+        LocalAowControllerStyle provides aowStyle) {
     val useStick = layout.hasStick && (state.stickMode ?: layout.stickDefault)
     Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 8.dp, vertical = if (compact) 8.dp else 16.dp).alpha(if (state.editing) 1f else state.opacity * options.opacity)) {
         ShoulderRow(layout, send, compact)

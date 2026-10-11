@@ -28,7 +28,8 @@ class KirikiriDiagTest {
         assertTrue(lines.any { it.startsWith("xp3 patch.xp3") && it.contains("startup.tjs@gốc=true") })
         assertTrue(lines.any { it.startsWith("exe karanoshojo.exe") })
         assertTrue(lines.all { it.length <= 200 })
-        assertFalse(lines.any { it.contains("main.ks") || it.contains("bg.png") }) // không lộ tên mục trong kho
+        assertTrue(lines.any { it.contains("mẫu mục: main.ks | bg.png") })
+        assertFalse(lines.any { it.contains("scn/main.ks") || it.contains("image/bg.png") })
     }
 
     @Test fun xp3HongHoacKhongPhaiXp3_ghiLyDoKhongVang() {
@@ -58,6 +59,33 @@ class KirikiriDiagTest {
         assertTrue(copy.contains("exe game.exe 3KB"))
         assertFalse(copy.contains(tmp.root.path) || copy.contains("scripts/main.ks"))
         assertTrue(copy.length <= 8 * 1024)
+    }
+
+    @Test fun sampleBudgetIsFiveAcrossArchivesWithOnlyBoundedBasenames() {
+        val dir = tmp.newFolder("hashed")
+        Xp3Fixture.xp3(dir, listOf("private/3f9a1c", "C:\\private\\77be02", "../c0ffee", "folder/" + "a".repeat(100)), compressed = true)
+            .renameTo(File(dir, "main.xp3"))
+        Xp3Fixture.xp3(dir, listOf("secret/a1b2c3", "secret/d4e5f6", "secret/0a0b0c"), compressed = false)
+            .renameTo(File(dir, "patch.xp3"))
+        val lines = KirikiriDiag.describe(File(dir, "main.xp3").path)
+        val samples = lines.filter { it.startsWith("mẫu mục: ") }.flatMap { it.removePrefix("mẫu mục: ").split(" | ") }
+        assertEquals(listOf("3f9a1c", "77be02", "c0ffee", "a".repeat(24), "a1b2c3"), samples)
+        assertFalse(lines.any { it.contains("private") || it.contains("secret") || it.contains("/") || it.contains('\\') })
+        assertTrue(lines.all { it.length <= 200 })
+        val copy = KirikiriDiag.reportText(File(dir, "main.xp3").path)
+        assertEquals(lines.joinToString("\n"), copy)
+        assertFalse(copy.contains("d4e5f6") || copy.contains("0a0b0c") || copy.contains(tmp.root.path))
+    }
+
+    @Test fun unreadableArchiveHasNoInventedSamplesAndControlCharactersCannotAddLines() {
+        val dir = tmp.newFolder("safe-samples")
+        File(dir, "broken.xp3").writeBytes(ByteArray(500) { 2 })
+        Xp3Fixture.xp3(dir, listOf("folder/hash\n\tvalue", "folder/"), compressed = false)
+            .renameTo(File(dir, "main.xp3"))
+        val lines = KirikiriDiag.describe(dir.path)
+        assertTrue(lines.any { it.startsWith("xp3 broken.xp3") && it.contains("chỉ mục không đọc được") })
+        assertEquals(listOf("mẫu mục: hashvalue"), lines.filter { it.startsWith("mẫu mục: ") })
+        assertFalse(lines.any { it.contains('\n') || it.contains('\t') || it.contains("/") })
     }
 
 }
