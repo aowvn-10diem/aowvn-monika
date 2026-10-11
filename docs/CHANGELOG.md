@@ -4,12 +4,13 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 ## v0.8.2 — Chưa phát hành
 
-> Đang chuẩn bị bản thử theo [PM A34](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6108620210): ra ngay khi #205 gộp, chưa tạo tag hoặc phát hành. Danh sách đối chiếu các PR đã gộp vào main `be45e32`; chưa thử trên máy thật.
+> Đang chuẩn bị bản thử theo [PM A34](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6108620210): ra ngay khi #205 gộp, chưa tạo tag hoặc phát hành. Danh sách đối chiếu các PR đã gộp vào main `00b1cd7`, riêng #205 được ghi trước theo PM và đổi sang liên kết commit khi gộp; chưa thử trên máy thật.
 
-- Khi mở game libretro (gồm Nintendo DS) lâu, màn chờ hiện từng bước thay vì chỉ "Đang khởi động game…": tải lõi (MB, %), giải nén, nạp ROM (MB), khởi tạo lõi và hình ảnh. Sau 60 giây màn chờ hiện nút "Sao chép chẩn đoán" và game vẫn tiếp tục nạp, không tự báo lỗi hay đổi lõi như mốc 30 giây trước đây; thời gian từng bước được ghi vào chẩn đoán. Nguyên nhân thật khiến NDS khởi động lâu và hành vi trên máy thật còn **[CHƯA KIỂM]**. ([be45e32](https://github.com/aowvn-10diem/aowvn-monika/commit/be45e327b6448c939f1bc185ffe307dc31c3a776))
+- Khi mở game libretro (gồm Nintendo DS) lâu, màn chờ hiện từng bước thay vì chỉ "Đang khởi động game…": tải lõi (MB, %), giải nén, nạp ROM (MB), khởi tạo lõi và hình ảnh. Sau 60 giây màn chờ hiện nút "Sao chép chẩn đoán" và game vẫn tiếp tục nạp, không tự báo lỗi hay đổi lõi; thời gian từng bước được ghi vào chẩn đoán. Nguyên nhân thật khiến NDS khởi động lâu và hành vi trên máy thật còn **[CHƯA KIỂM]**. ([be45e32](https://github.com/aowvn-10diem/aowvn-monika/commit/be45e327b6448c939f1bc185ffe307dc31c3a776))
 - Nội bộ, không đổi giao diện: điểm danh hằng ngày và mốc thời gian đánh giá dùng một đồng hồ chung có thể thay khi kiểm thử; cách tính ngày theo múi giờ giữ nguyên. ([04dfd6b](https://github.com/aowvn-10diem/aowvn-monika/commit/04dfd6b4f4bc3c1776e9b10054d911852c56d08f))
+- Kirikiri: khi các tệp xp3 rời đều không có `startup.tjs` nhưng script nằm trong XP3 nhúng ngay trong tệp exe, Monika nhận XP3 nhúng đó thay vì báo không tìm thấy tệp khởi động; chẩn đoán ghi thêm thông tin XP3 nhúng. Kirikiri vẫn là bản thử nghiệm; chạy game thật trên máy còn **[CHƯA KIỂM]**. ([#205](https://github.com/aowvn-10diem/aowvn-monika/pull/205), **chờ gộp**)
 
-> Chờ gộp, sẽ ghi khi vào main: #205 (V88 Kirikiri nhận XP3 nhúng trong exe), #200 (V85c bàn phím ảo J2ME theo bộ nút AowVN, kèm khóa "Độ mờ" khi dùng bàn phím Monika). PR nào chưa gộp lúc cắt sang v0.8.3.
+> Chờ gộp, sẽ ghi khi vào main: [#200](https://github.com/aowvn-10diem/aowvn-monika/pull/200) (V85c bàn phím ảo J2ME theo bộ nút AowVN; mặt phím luôn đục nên thanh "Độ mờ" và "Ép độ mờ" bị khóa kèm ghi chú khi dùng bàn phím Monika). PR nào chưa gộp lúc cắt sang v0.8.3.
 
 ## [v0.8.1](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.1) (Bản thử — Pre-release)
 
