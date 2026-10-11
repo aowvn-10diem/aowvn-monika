@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +49,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
@@ -363,6 +372,131 @@ fun ChipOverflowHint(state: androidx.compose.foundation.lazy.LazyListState, cont
             Box(Modifier.align(Alignment.CenterEnd).width(32.dp).fillMaxHeight()
                 .background(Brush.horizontalGradient(listOf(c.bg.copy(alpha = 0f), c.bg)))
                 .semantics { contentDescription = "Còn hệ máy bên phải" })
+        }
+    }
+}
+
+
+/** Bốn trạng thái dùng chung cho V85a/b/c; không đổi giao thức phím của overlay. */
+enum class AowButtonState { NORMAL, SELECTED, PRESSED, DISABLED }
+enum class AowButtonStyle { ORANGE, DARK }
+
+object AowPixelMetrics {
+    val cornerStep = 3.dp
+    val outline = 2.dp
+    val rim = 1.dp
+    val focus = 3.dp
+    val shadow = 4.dp
+    val press = 2.dp
+    val minTouch = 48.dp
+    val buttonHeight = 56.dp
+}
+
+/** Hai bậc vuông ở mỗi góc, tự thu nhỏ với kích thước nhỏ; không đường cong. */
+object AowPixelShape : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
+        val s = with(density) { AowPixelMetrics.cornerStep.toPx() }
+            .coerceAtMost(minOf(size.width, size.height) / 4f)
+        val w = size.width; val h = size.height
+        return Outline.Generic(Path().apply {
+            moveTo(2*s, 0f); lineTo(w-2*s, 0f)
+            lineTo(w-2*s, s); lineTo(w-s, s); lineTo(w-s, 2*s); lineTo(w, 2*s)
+            lineTo(w, h-2*s); lineTo(w-s, h-2*s); lineTo(w-s, h-s); lineTo(w-2*s, h-s)
+            lineTo(w-2*s, h); lineTo(2*s, h)
+            lineTo(2*s, h-s); lineTo(s, h-s); lineTo(s, h-2*s); lineTo(0f, h-2*s)
+            lineTo(0f, 2*s); lineTo(s, 2*s); lineTo(s, s); lineTo(2*s, s); close()
+        })
+    }
+}
+
+data class AowButtonPalette(val face: Color, val label: Color)
+
+fun AowColors.buttonPalette(style: AowButtonStyle, state: AowButtonState): AowButtonPalette {
+    val face = when (style) {
+        AowButtonStyle.ORANGE -> when (state) {
+            AowButtonState.NORMAL -> orange
+            AowButtonState.SELECTED -> orangeSelected
+            AowButtonState.PRESSED -> orangePressed
+            AowButtonState.DISABLED -> disabled
+        }
+        AowButtonStyle.DARK -> when (state) {
+            AowButtonState.NORMAL, AowButtonState.SELECTED -> dark
+            AowButtonState.PRESSED -> darkPressed
+            AowButtonState.DISABLED -> disabledDark
+        }
+    }
+    // Cam nhấn sẫm hơn: chữ trắng mới đủ tương phản; các mặt cam còn lại dùng đen.
+    val label = if (style == AowButtonStyle.DARK || state == AowButtonState.PRESSED) onDark else ink
+    return AowButtonPalette(face, label)
+}
+
+/** Mặt nút chung để overlay giữ vùng chạm, mã phím và rung riêng của V70a. */
+@Composable
+fun AowPixelSurface(
+    state: AowButtonState,
+    modifier: Modifier = Modifier,
+    style: AowButtonStyle = AowButtonStyle.DARK,
+    shape: Shape = AowPixelShape,
+    content: @Composable BoxScope.(Color) -> Unit,
+) {
+    val c = Monika.colors.aow
+    val palette = c.buttonPalette(style, state)
+    val rimWidth = if (state == AowButtonState.SELECTED) AowPixelMetrics.focus else AowPixelMetrics.rim
+    val rimColor = if (state == AowButtonState.SELECTED) c.focus else c.outerRim
+    val motion = Monika.motion
+    val press by animateDpAsState(
+        if (state == AowButtonState.PRESSED && motion.enabled) AowPixelMetrics.press else 0.dp,
+        tween(motion.fast.coerceAtLeast(1)), label = "aow-pixel-press",
+    )
+    Box(modifier.padding(bottom = AowPixelMetrics.shadow), propagateMinConstraints = true) {
+        Box(Modifier.matchParentSize().offset(y = AowPixelMetrics.shadow).clip(shape).background(c.outline))
+        Box(
+            Modifier.offset(y = press).clip(shape).background(palette.face)
+                // Border ngoài vẽ sau border trong: giữ vòng vàng/sáng ngoài và đen bên trong.
+                .border(rimWidth, rimColor, shape)
+                .border(AowPixelMetrics.outline + rimWidth, c.outline, shape),
+            contentAlignment = Alignment.Center,
+        ) { content(palette.label) }
+    }
+}
+
+/** Nút hành động có focus bàn phím, click/hủy chuẩn Compose và trạng thái vô hiệu. */
+@Composable
+fun AowPixelButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    style: AowButtonStyle = AowButtonStyle.ORANGE,
+    enabled: Boolean = true,
+    selected: Boolean = false,
+    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+) {
+    val pressed by interactionSource.collectIsPressedAsState()
+    val focused by interactionSource.collectIsFocusedAsState()
+    val state = when {
+        !enabled -> AowButtonState.DISABLED
+        pressed -> AowButtonState.PRESSED
+        selected || focused -> AowButtonState.SELECTED
+        else -> AowButtonState.NORMAL
+    }
+    val description = when (state) {
+        AowButtonState.NORMAL -> "Sẵn sàng"
+        AowButtonState.SELECTED -> "Đang chọn"
+        AowButtonState.PRESSED -> "Đang nhấn"
+        AowButtonState.DISABLED -> "Vô hiệu"
+    }
+    AowPixelSurface(state, modifier.heightIn(min = AowPixelMetrics.buttonHeight)
+        .semantics(mergeDescendants = true) {
+            stateDescription = description
+            this.selected = selected || focused
+            if (!enabled) disabled()
+        }
+        .clickable(interactionSource, null, enabled = enabled, role = Role.Button, onClick = onClick), style) { label ->
+        Row(Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(text.uppercase(java.util.Locale.ROOT), color = label, style = Monika.type.button,
+                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+            Text(">", color = label, style = Monika.type.button)
         }
     }
 }

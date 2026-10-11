@@ -91,7 +91,8 @@ class V69UxTest {
             rule.waitForIdle()
         }
         awaitLayout {
-            scroll.layoutInfo.totalItemsCount == labels.size && scroll.canScrollForward
+            scroll.layoutInfo.totalItemsCount == labels.size && scroll.canScrollForward &&
+                rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isNotEmpty()
         }
         rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
         rule.shot("v69-chip-more")
@@ -101,11 +102,13 @@ class V69UxTest {
         repeat(3) { pass ->
             if (pass > 0) {
                 rule.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
-                awaitLayout { scroll.firstVisibleItemIndex == 0 && scroll.canScrollForward }
+                awaitLayout { scroll.firstVisibleItemIndex == 0 && scroll.canScrollForward &&
+                    rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isNotEmpty() }
                 rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertExists()
             }
             rule.onNode(hasScrollToIndexAction()).performScrollToIndex(labels.lastIndex)
-            awaitLayout { !scroll.canScrollForward }
+            awaitLayout { !scroll.canScrollForward &&
+                rule.onAllNodesWithContentDescription("Còn hệ máy bên phải").fetchSemanticsNodes().isEmpty() }
             rule.onNodeWithText(labels.last()).assertIsDisplayed()
             rule.onNodeWithContentDescription("Còn hệ máy bên phải").assertDoesNotExist()
         }

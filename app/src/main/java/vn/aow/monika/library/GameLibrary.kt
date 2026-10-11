@@ -42,9 +42,17 @@ class GameLibrary(
     @Volatile var cached: List<Game>? = null
         private set
 
+    @Volatile var cachedDocuments: List<LibraryDocument> = emptyList()
+        private set
+
     val scanner = DeviceScanner(context)
 
-    fun list(): List<Game> = (internalGames() + externalGames()).map { g -> info?.apply(g) ?: g }.also { cached = it; prefetchFor(it) }
+    fun list(): List<Game> {
+        val internal = internalContents()
+        cachedDocuments = internal.documents
+        return (internal.games + externalGames()).map { g -> info?.apply(g) ?: g }
+            .also { cached = it; prefetchFor(it) }
+    }
 
     private val prefetched = HashSet<String>()
 
@@ -80,12 +88,21 @@ class GameLibrary(
         }
     }.getOrDefault(emptyList())
 
-    private fun internalGames(): List<Game> =
+    private fun internalContents(): LibraryContents = partitionLibrary(
         GameStorage.games(context).listFiles().orEmpty()
             .filter { it.isDirectory }
             .sortedByDescending { it.lastModified() }
             // 1 thư mục lỗi không được làm hỏng cả thư viện (và không bao giờ làm app crash).
-            .mapNotNull { dir -> runCatching { GameDetector.detect(dir, configRepo.current) }.getOrElse { Game(dir, dir.name, null, null, locked = true) } }
+            .mapNotNull { dir -> runCatching { GameDetector.detect(dir, configRepo.current) }.getOrElse { Game(dir, dir.name, null, null, locked = true) } },
+        configRepo.current,
+    )
+
+    /** Chỉ xóa đúng tệp tài liệu; không xóa thư mục có thể chứa game hay tài liệu khác. */
+    fun deleteDocument(document: LibraryDocument): Boolean {
+        val ok = runCatching { document.file.delete() || !document.file.exists() }.getOrDefault(false)
+        if (ok) cachedDocuments = cachedDocuments.filterNot { it.key == document.key }
+        return ok
+    }
 
     /** Game chơi gần nhất (đã nhận diện được hệ máy). */
     fun lastPlayed(prefs: vn.aow.monika.Prefs, from: List<Game>? = cached): Game? =

@@ -17,6 +17,7 @@ import java.io.File
 
 sealed interface LaunchResult {
     data object Started : LaunchResult
+    data class NeedExperimentalConfirmation(val systemName: String) : LaunchResult
     /** Máy chưa cài app ngoài cần thiết → UI hiện link tải + hướng dẫn. */
     data class NeedApp(val app: ExternalApp) : LaunchResult
     /** Đã mở app ngoài nhưng user cần tự chọn thư mục game trong app đó. */
@@ -30,11 +31,15 @@ sealed interface LaunchResult {
  */
 class GameLauncher(private val configRepo: ConfigRepository) {
 
-    fun launch(activity: Activity, game: Game): LaunchResult {
+    fun launch(activity: Activity, game: Game, experimentalConfirmed: Boolean = false): LaunchResult {
         val system = game.system ?: return LaunchResult.Failed(
             if (game.needsExtract) "Game chưa được giải nén. Bấm \"Giải nén\" (nhập mật khẩu nếu có)."
             else "Chưa nhận diện được loại game này."
         )
+        // Đọc cờ từ config hiện hành, kể cả thẻ game đang dùng bản system cũ trong cache.
+        val currentSystem = configRepo.current.systems.firstOrNull { it.id == system.id } ?: system
+        if (currentSystem.experimental && !experimentalConfirmed) return LaunchResult.NeedExperimentalConfirmation(
+            if (currentSystem.id == "kirikiri") "Kirikiri" else currentSystem.name)
         val entry = game.entry ?: game.dir
         return when (system.runner) {
             "libretro" -> {

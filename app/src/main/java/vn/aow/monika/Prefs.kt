@@ -12,6 +12,11 @@ class Prefs(private val context: Context) {
      */
     private val gsp = context.getSharedPreferences("monika_game", Context.MODE_PRIVATE)
 
+    /** Đã giới thiệu quyền quét ở lần đầu vào Thư viện; từ chối không bị hỏi lại. */
+    var libraryStorageExplained: Boolean
+        get() = sp.getBoolean("library_storage_explained", false)
+        set(value) = sp.edit().putBoolean("library_storage_explained", value).apply()
+
     var supportHiddenUntil: Long
         get() = sp.getLong("support_hidden_until", 0L)
         set(value) = sp.edit().putLong("support_hidden_until", value).apply()

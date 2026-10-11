@@ -51,6 +51,7 @@ class EnginePrepActivity : ComponentActivity() {
     private var ask by mutableStateOf(false)
     private var needAccess by mutableStateOf(false)
     private var reportable by mutableStateOf(false)
+    private var reportInfo by mutableStateOf<String?>(null)
     private var started = false
 
     private val engine: String get() = intent.getStringExtra(EXTRA_ENGINE).orEmpty()
@@ -65,14 +66,21 @@ class EnginePrepActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MonikaTheme {
-                Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF141315))) {
+                Box(Modifier.fillMaxSize().background(vn.aow.monika.ui.theme.Monika.colors.surfaceDark)) {
                     // Nút báo lỗi chỉ hiện khi không tìm thấy lối vào (V26/G7B); keepOpen để bấm không đóng màn hình.
-                    val reportAction = vn.aow.monika.ui.gameReportAction {}.copy(keepOpen = true)
+                    val reportAction = vn.aow.monika.ui.gameReportAction(gameTitle = title.ifBlank { label },
+                        component = "engine:$engine", extraDetail = reportInfo.orEmpty(), closeMenu = {})
+                        .copy(keepOpen = true, enabled = reportInfo != null)
+                    val errorActions = engineEntryFailureActions(reportInfo, reportAction) { text ->
+                        val copied = copyEngineEntryInfo(this@EnginePrepActivity, text)
+                        Toast.makeText(this@EnginePrepActivity, if (copied) "Đã sao chép thông tin lỗi" else "Không sao chép được thông tin lỗi", Toast.LENGTH_LONG).show()
+                    }
                     MonikaMenuSheet(
-                        true, { finish() }, actions = if (reportable) listOf(reportAction) else emptyList(),
+                        true, { finish() }, actions = if (reportable) errorActions else emptyList(),
                         title = title.ifBlank { label }, subtitle = status,
                         header = {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (reportable && reportInfo == null) Text("Đang đọc thông tin lỗi…", color = SheetColors.textSecondary)
                                 if (ask) {
                                     Text("Bạn đang dùng mạng di động. Thành phần $label chỉ tải một lần.", color = SheetColors.textSecondary)
                                     SheetChip("Tải luôn bằng 4G", true) { ask = false; download() }
@@ -158,8 +166,9 @@ class EnginePrepActivity : ComponentActivity() {
                     r.details.forEach { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", it) }
                     Diagnostics.recordHandled(this@EnginePrepActivity, "engine:$engine", "không có startup.tjs trong ${r.dirName}: ${r.why}")
                     status = getString(if (r.encrypted) R.string.engine_entry_encrypted else R.string.engine_entry_not_found, r.dirName)
-                    reportable = true
+                    reportInfo = null; reportable = true
                     started = false
+                    reportInfo = withContext(Dispatchers.IO) { vn.aow.monika.diag.KirikiriDiag.reportText(entry?.absolutePath) }
                 }
                 is EntryResolution.Keep -> { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "giữ nguyên: ${r.why}"); open(entry) }
                 null -> { Diagnostics.crumb(this@EnginePrepActivity, "engine-entry", "kiểm lối vào lỗi hoặc quá hạn, giữ nguyên"); open(entry) }

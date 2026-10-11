@@ -46,6 +46,9 @@ Thêm mật khẩu aow.vn hay dùng vào `archivePasswords` (ví dụ `["aowvn.o
 
 Sửa khối `app`: `latestVersionCode`, `latestVersionName`, `apkUrl`, `changelog`. User thấy thẻ "Có bản mới" ở tab Trình chạy.
 
+### 8. Mục "Màn hình" trong Cài đặt (NDS)
+`cores.<id>.screen` (hiện chỉ `melondsds`) quyết định mục **Cài đặt → Màn hình**: `layoutKey` + `layouts[]` (bố cục: `id`, `label`, `value` gửi cho lõi, `usesRatio` nếu bố cục cần tỉ lệ), `ratioKey` + `ratios[]`, `gapKey` + `gapMax` (khoảng cách hai màn, điểm ảnh). Mặc định nằm ở `cores.<id>.options` (tùy chọn lõi); lựa chọn của người chơi lưu cùng nơi với bảng "Tùy chọn giả lập" và có hiệu lực khi mở game tiếp theo. Khóa/giá trị phải có thật trong lõi (đổi lõi thì chạy `python3 scripts/audit-cores.py`). Thêm hệ máy mới có nhiều màn hình: chỉ cần thêm khối `screen`, không sửa mã.
+
 ## B. Phát hành bản app mới
 
 1. Tăng `versionCode` và `versionName` trong `app/build.gradle.kts`.

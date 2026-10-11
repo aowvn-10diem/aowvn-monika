@@ -61,10 +61,18 @@ class Downloader(
         val disposition = runCatching {
             http.newCall(Request.Builder().url(url).head().build()).execute().use { it.header("Content-Disposition") }
         }.getOrNull()
-        // Hỗ trợ cả filename*=UTF-8''... (tên tiếng Việt) mà URLUtil không đọc được.
-        val utf8Name = disposition?.let { Regex("""filename\*=(?:UTF-8|utf-8)''([^;]+)""").find(it)?.groupValues?.get(1) }
-            ?.let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrNull() }
-        (utf8Name ?: URLUtil.guessFileName(url, disposition, null)).replace(Regex("""[\\/:*?"<>|]"""), "_")
+        fileNameFrom(url, disposition)
+    }
+
+    companion object {
+        /** Tên file từ URL và Content-Disposition; tách ra để test không cần mạng. */
+        internal fun fileNameFrom(url: String, disposition: String?): String {
+            // Hỗ trợ cả filename*=UTF-8''... (tên tiếng Việt) mà URLUtil không đọc được.
+            val utf8Name = disposition?.let { Regex("""filename\*=(?:UTF-8|utf-8)''([^;]+)""").find(it)?.groupValues?.get(1) }
+                // URLDecoder coi "+" là dấu cách (ngữ nghĩa form); ở đây "+" là ký tự thật nên mã hóa trước khi giải.
+                ?.let { runCatching { java.net.URLDecoder.decode(it.replace("+", "%2B"), "UTF-8") }.getOrNull() }
+            return (utf8Name ?: URLUtil.guessFileName(url, disposition, null)).replace(Regex("""[\\/:*?"<>|]"""), "_")
+        }
     }
 }
 

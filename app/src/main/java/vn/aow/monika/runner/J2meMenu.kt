@@ -36,7 +36,6 @@ object J2meMenu : J2meRuntime.MenuPresenter {
         var shown = false
         val dismiss = { open = false }
         current = WeakReference(dismiss)
-        val ordered = entries.sortedBy { e -> when (e.key) { "monika_continue" -> 0; "action_exit_midlet" -> 2; else -> 1 } }
         view.setContent {
             MonikaTheme {
                 LaunchedEffect(Unit) { open = true }
@@ -54,9 +53,7 @@ object J2meMenu : J2meRuntime.MenuPresenter {
                 Box(Modifier.fillMaxSize()) {
                     MonikaMenuSheet(
                         open, dismiss, title = title, subtitle = subtitle,
-                        actions = listOf(reportAction) + ordered.map { e ->
-                            SheetAction(e.title, iconFor(e.key), highlight = e.key == "monika_continue" || e.checked) { picked = e.id }
-                        },
+                        actions = listOf(reportAction) + j2meMenuActions(entries) { picked = it },
                     )
                 }
             }
@@ -66,22 +63,34 @@ object J2meMenu : J2meRuntime.MenuPresenter {
 
     override fun askCommunity(activity: Activity, shot: android.graphics.Bitmap?, gameName: String?) =
         vn.aow.monika.community.AskGroup.ask(activity, shot, gameName.orEmpty().ifBlank { "game Java" }, "Java")
+}
 
-    private fun iconFor(key: String?): Int = when (key) {
-        "monika_ask" -> R.drawable.ic_fluent_people_community_24_regular
-        "monika_continue" -> R.drawable.ic_fluent_play_24_regular
-        "monika_settings" -> R.drawable.ic_fluent_settings_24_regular
-        "action_exit_midlet" -> R.drawable.ic_fluent_door_arrow_left_24_regular
-        "action_save_log" -> R.drawable.ic_fluent_document_24_regular
-        "action_lock_orientation" -> R.drawable.ic_fluent_arrow_rotate_clockwise_24_regular
-        "action_ime_keyboard" -> R.drawable.ic_fluent_keyboard_24_regular
-        "action_take_screenshot" -> R.drawable.ic_fluent_screenshot_24_regular
-        "action_limit_fps" -> R.drawable.ic_fluent_top_speed_24_regular
-        "action_layout_edit_mode" -> R.drawable.ic_fluent_xbox_controller_24_regular
-        "action_layout_scale_mode" -> R.drawable.ic_fluent_layer_24_regular
-        "action_layout_edit_finish" -> R.drawable.ic_fluent_checkmark_circle_24_filled
-        "action_layout_switch" -> R.drawable.ic_fluent_keyboard_24_regular
-        "action_hide_buttons" -> R.drawable.ic_fluent_eye_24_regular
-        else -> R.drawable.ic_fluent_more_horizontal_24_regular
+/** Icon dự phòng cho mục menu J2ME chưa có icon riêng (test giữ cho mọi mục của menu gốc đều có icon riêng). */
+internal val J2ME_MENU_FALLBACK_ICON = R.drawable.ic_fluent_more_horizontal_24_regular
+
+/**
+ * Mục menu J2ME → nút trong menu Monika: "Chơi tiếp" lên đầu, "Thoát" xuống cuối, còn lại giữ thứ tự J2ME gửi
+ * (gồm cả chụp màn hình, bàn phím, giới hạn FPS, tùy chọn phím ảo). [onPick] nhận id mục được chọn.
+ */
+internal fun j2meMenuActions(entries: List<J2meRuntime.MenuEntry>, onPick: (Int) -> Unit): List<SheetAction> =
+    entries.sortedBy { e -> when (e.key) { "monika_continue" -> 0; "action_exit_midlet" -> 2; else -> 1 } }.map { e ->
+        SheetAction(e.title, j2meMenuIcon(e.key), highlight = e.key == "monika_continue" || e.checked) { onPick(e.id) }
     }
+
+internal fun j2meMenuIcon(key: String?): Int = when (key) {
+    "monika_ask" -> R.drawable.ic_fluent_people_community_24_regular
+    "monika_continue" -> R.drawable.ic_fluent_play_24_regular
+    "monika_settings" -> R.drawable.ic_fluent_settings_24_regular
+    "action_exit_midlet" -> R.drawable.ic_fluent_door_arrow_left_24_regular
+    "action_save_log" -> R.drawable.ic_fluent_document_24_regular
+    "action_lock_orientation" -> R.drawable.ic_fluent_arrow_rotate_clockwise_24_regular
+    "action_ime_keyboard" -> R.drawable.ic_fluent_keyboard_24_regular
+    "action_take_screenshot" -> R.drawable.ic_fluent_screenshot_24_regular
+    "action_limit_fps" -> R.drawable.ic_fluent_top_speed_24_regular
+    "action_layout_edit_mode" -> R.drawable.ic_fluent_xbox_controller_24_regular
+    "action_layout_scale_mode" -> R.drawable.ic_fluent_layer_24_regular
+    "action_layout_edit_finish" -> R.drawable.ic_fluent_checkmark_circle_24_filled
+    "action_layout_switch" -> R.drawable.ic_fluent_keyboard_24_regular
+    "action_hide_buttons" -> R.drawable.ic_fluent_eye_24_regular
+    else -> J2ME_MENU_FALLBACK_ICON
 }

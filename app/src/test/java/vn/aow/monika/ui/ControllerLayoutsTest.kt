@@ -4,6 +4,7 @@ import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
@@ -34,15 +35,23 @@ class ControllerLayoutsTest {
 
     private fun layout(layout: PadLayout, label: String, key: Int, orientation: String) {
         val events = mutableListOf<Pair<Int, Int>>()
+        val aow = mutableStateOf(false)
         rule.setContent { MonikaTheme {
             Box(Modifier.fillMaxSize()) {
-                VirtualPad(layout, InGameState(), { a, k -> events += a to k }, { _, _, _ -> }, Modifier.align(Alignment.BottomCenter))
+                VirtualPad(layout, InGameState(), { a, k -> events += a to k }, { _, _, _ -> }, Modifier.align(Alignment.BottomCenter), aowStyle = aow.value)
             }
         } }
         rule.mainClock.advanceTimeBy(1_000)
+        rule.shot("v85b-truoc-${layout.name.lowercase()}-$orientation")
+        rule.runOnIdle { aow.value = true }
+        rule.mainClock.advanceTimeBy(1_000)
         rule.onNodeWithContentDescription("Nút $label").performTouchInput { click(center) }
+        // Clock tay: vẽ lại sau ACTION_UP trước khi lưu ảnh trạng thái đã nhả.
+        rule.mainClock.advanceTimeBy(1_000)
         rule.waitForIdle()
         assertEquals(listOf(KeyEvent.ACTION_DOWN to key, KeyEvent.ACTION_UP to key), events)
+        rule.onNodeWithContentDescription("Nút $label").assert(SemanticsMatcher.expectValue(
+            androidx.compose.ui.semantics.SemanticsProperties.StateDescription, "Sẵn sàng"))
         if (layout == PadLayout.N64) {
             val a = rule.onNodeWithContentDescription("Nút A").fetchSemanticsNode().boundsInWindow
             val b = rule.onNodeWithContentDescription("Nút B").fetchSemanticsNode().boundsInWindow
@@ -55,6 +64,7 @@ class ControllerLayoutsTest {
             rule.onNodeWithContentDescription("Nút START").assertIsDisplayed()
         }
         rule.shot("v70a-${layout.name.lowercase()}-$orientation")
+        rule.shot("v85b-sau-${layout.name.lowercase()}-$orientation")
     }
 
     @Test fun gbaPortrait() { layout(PadLayout.GBA, "A", KeyEvent.KEYCODE_BUTTON_B, "doc") }

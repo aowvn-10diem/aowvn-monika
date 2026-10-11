@@ -2,6 +2,16 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.0 — Chưa phát hành
+
+- Chỉnh bố cục, tỉ lệ và khoảng cách hai màn Nintendo DS trong Cài đặt → Màn hình; lựa chọn có hiệu lực khi mở game tiếp theo. ([608b12a](https://github.com/aowvn-10diem/aowvn-monika/commit/608b12a9cad8950fd95816ae96bbd8a893dd2d6d))
+- Bộ nút dùng chung có bảng màu AowVN, viền pixel, bóng cứng và các trạng thái nhấn, chọn, vô hiệu hóa; hỗ trợ ba mức hiệu ứng. ([fb5edac](https://github.com/aowvn-10diem/aowvn-monika/commit/fb5edac0f1d885142839ffe05a0b43339d75522c))
+- Tay cầm libretro dùng mặt nút AowVN, giữ tín hiệu phím và rung; chữ nút đủ tương phản ở độ mờ mặc định. ([73a1a0f](https://github.com/aowvn-10diem/aowvn-monika/commit/73a1a0f99100c76d499380085f032834737690e1))
+- Chẩn đoán Kirikiri ghi tối đa năm mẫu tên mục ngắn; thông báo riêng khi chỉ mục đầy đủ có dấu hiệu tên băm và thiếu kịch bản đọc được, tránh nhận nhầm thư mục chỉ có tài nguyên. ([49bdbd5](https://github.com/aowvn-10diem/aowvn-monika/commit/49bdbd59e06da3e18063976a9df44a261c33b082))
+- Giữ dấu “+” trong tên tệp tải xuống lấy từ Content-Disposition dạng UTF-8, kể cả tên có dấu cách. ([3bcc30c](https://github.com/aowvn-10diem/aowvn-monika/commit/3bcc30cb21ad33b84d3423fb5f548ca1a5cf4db6))
+
+> V85c chưa gộp vào main tại thời điểm chốt danh sách, chuyển sang v0.8.1 theo [PM A29](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6099303176).
+
 ## [v0.6.0](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.6.0)
 
 - Kết nối RetroAchievements bằng tài khoản web API và xem hồ sơ của mình. ([cba6e15](https://github.com/aowvn-10diem/aowvn-monika/commit/cba6e15372c78b8652a37c019c78f37ab352579a))
@@ -78,9 +88,21 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 - Có menu Monika tiếng Việt trong game Kirikiri với các lối tiếp tục, mở menu game, tua nhanh và thoát. ([92a65b2](https://github.com/aowvn-10diem/aowvn-monika/commit/92a65b22ece2f1346b61aa0875eb33da67a27d4d))
 - Gói Kirikiri phát hành kèm bản dịch giao diện và được tải riêng khi dùng. ([33f7ba0](https://github.com/aowvn-10diem/aowvn-monika/commit/33f7ba0bc27f9d1a721c22f9ff35ae85754f9282))
 
+## v0.7.9
+
+> Đang chuẩn bị, chưa tạo tag hoặc phát hành. Ghi chú đối chiếu các thay đổi đã gộp vào main `0acd449` theo quyết định PM: ra bản sớm, không chờ các phần NDS V78 còn chưa gộp. V78 và bộ giao diện V85 dành cho **bản sau**; sửa tên tệp tải về #182 chưa gộp nên chưa nằm trong bản này.
+
+- Nút tay cầm ảo có nền sáng, chữ tối và viền kép để dễ nhìn trên nền game; giữ trạng thái nhấn, hiệu ứng và các mức rung. ([f2223c2](https://github.com/aowvn-10diem/aowvn-monika/commit/f2223c2fd7069d11f24458569f561cec83d91ba6))
+- Game GBA mặc định tắt hiệu chỉnh màu và bộ lọc LCD GBA theo cấu hình. ([98d4d63](https://github.com/aowvn-10diem/aowvn-monika/commit/98d4d63b58a91a55a5e6408a8a6eaa0109d87986))
+- Game Java bỏ thanh menu trên đầu; một nút menu nổi mở menu Monika và các mục riêng của game Java. ([0acd449](https://github.com/aowvn-10diem/aowvn-monika/commit/0acd4499357a0351a3e54aeb37f470caf0d7d876))
+- Lần đầu vào Thư viện có giải thích quyền quét game và lựa chọn cấp quyền; nếu từ chối vẫn có thể thêm game thủ công, khi quay lại sau cấp quyền ứng dụng kiểm tra quyền thật trước khi quét. ([54ba15b](https://github.com/aowvn-10diem/aowvn-monika/commit/54ba15b8b2d8757055072e78ac40a23207697a10))
+- Kirikiri có nhãn thử nghiệm và cảnh báo ngắn trước mỗi lần mở game, cho phép tiếp tục hoặc hủy; chưa xác nhận game Kirikiri chạy ổn trên máy ARM. ([16efdaa](https://github.com/aowvn-10diem/aowvn-monika/commit/16efdaa245af7387a701e2251e1b9ec336a31da0))
+- Khi gửi báo lỗi thất bại, ứng dụng hiện lý do, giữ nội dung để thử lại và trả nút về trạng thái dùng được; màn lỗi chuẩn bị game có nút sao chép thông tin chẩn đoán đã che dữ liệu riêng. Nguyên nhân lỗi gửi trên điện thoại còn **[CHƯA KIỂM]**. ([14c94e2](https://github.com/aowvn-10diem/aowvn-monika/commit/14c94e2ee270f8d3bdb7bd0000fa9ab1c2303b15))
+- Thư viện tách thư mục chỉ chứa PDF/tài liệu thành nhóm Tài liệu, có thể mở bằng ứng dụng ngoài hoặc xóa riêng tệp; game kèm PDF vẫn giữ trong nhóm game. Mở tài liệu bằng ứng dụng ngoài trên thiết bị thật còn **[CHƯA KIỂM]**. ([d0dff94](https://github.com/aowvn-10diem/aowvn-monika/commit/d0dff94da14de6f8ccd9335c6b08e737e8a7ff96))
+
 ## v0.7.8
 
-> Đang chuẩn bị, chưa tạo tag hoặc phát hành. Ghi chú hiện đối chiếu các thay đổi đã gộp từ tag v0.7.7 (`3387671`) đến main `d52a150`. Bộ nút ảo V70a và lô giao diện V69 đã gộp; menu V70b được PM dời sang bản sau.
+> [Bản thử — Pre-release](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.8), phát hành ngày 10/10/2026 (UTC). Bộ nút ảo V70a và lô giao diện V69 đã gộp; menu V70b được PM dời sang bản sau. Bản thử chưa xác nhận game Kirikiri chạy ổn trên máy ARM.
 
 - Sửa đường thu thông tin đồ họa Kirikiri: không gọi trình điều khiển khi chưa có ngữ cảnh EGL, tránh nguồn gây dừng ứng dụng đã thấy trên Android 17. Kiểm lại game trên máy ARM sau sửa còn **[CHƯA KIỂM]**. ([8b158f5](https://github.com/aowvn-10diem/aowvn-monika/commit/8b158f59cad9e3b64034f0d4f448e6fbdb894738))
 

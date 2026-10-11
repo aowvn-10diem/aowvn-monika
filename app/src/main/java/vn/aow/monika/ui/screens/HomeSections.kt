@@ -106,7 +106,7 @@ internal fun SystemChips(onPick: (String) -> Unit) {
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Emoji("fluent3d_video_game", 18.dp)
-                    Text(shortLabel(label), style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight), color = c.text, maxLines = 1)
+                    Text(shortLabel(label) + (if (cfg.systems.any { it.experimental && (label in it.labels || label == it.name) }) " · Thử nghiệm" else ""), style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight), color = c.text, maxLines = 1)
                 }
             }
         }

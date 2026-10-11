@@ -36,6 +36,8 @@ data class MonikaConfig(
     val crash: CrashConfig = CrashConfig(),
     /** Module engine tải khi cần (thư viện native ngoài lõi libretro), vd. "azahar" cho 3DS. */
     val modules: Map<String, ModuleDef> = emptyMap(),
+    /** Tài liệu trong thư viện được mở bằng ứng dụng ngoài, không đưa vào danh sách game. */
+    val documentExtensions: List<String> = listOf("pdf", "doc", "docx", "txt", "epub"),
 ) {
     fun system(id: String): SystemDef? = systems.firstOrNull { it.id == id }
     fun externalApp(id: String): ExternalApp? = externalApps.firstOrNull { it.id == id }
@@ -204,6 +206,8 @@ data class SystemDef(
     val entryPick: String = "first",
     /** Với entryPick = paired: đuôi file đi kèm, vd. ["exe"] (karanoshojo.exe ↔ karanoshojo.xp3). */
     val entryPairExt: List<String> = emptyList(),
+    /** Gắn nhãn và hỏi trước khi mở hệ thử nghiệm. Config cũ giữ hành vi cũ. */
+    val experimental: Boolean = false,
 )
 
 @Serializable
@@ -243,6 +247,42 @@ data class CoreDef(
     val lowLatencyAudio: Boolean = true,
     /** Các "kiểu hiển thị" người chơi đổi được trong game (vd. GBA: LCD cổ điển / Sắc nét / Mượt). Null = chỉ dùng [shader]. */
     val display: CoreDisplay? = null,
+    /** Mục "Màn hình" trong Cài đặt Monika cho lõi nhiều màn hình (NDS): bố cục, tỉ lệ, khoảng cách. Null = không có mục. */
+    val screen: CoreScreen? = null,
+)
+
+/**
+ * Cách Cài đặt Monika → "Màn hình" ghi vào tùy chọn lõi (V78c). Mỗi lựa chọn của người chơi chỉ là một giá trị của
+ * một khóa tùy chọn libretro; khóa/giá trị phải có thật trong lõi (kiểm bằng `scripts/audit-cores.py`).
+ */
+@Serializable
+data class CoreScreen(
+    /** Tên hiện ở đầu mục. */
+    val title: String = "",
+    /** Khóa tùy chọn lõi chứa bố cục các màn hình. Trống = không có lựa chọn bố cục. */
+    val layoutKey: String = "",
+    val layouts: List<ScreenChoice> = emptyList(),
+    /** [ScreenChoice.id] bố cục mặc định; không khớp thì lấy bố cục đầu tiên. */
+    val defaultLayout: String = "",
+    /** Khóa tùy chọn tỉ lệ màn lớn / màn nhỏ. Trống = không có lựa chọn tỉ lệ. */
+    val ratioKey: String = "",
+    val ratios: List<ScreenChoice> = emptyList(),
+    val defaultRatio: String = "",
+    /** Khóa tùy chọn khoảng cách giữa hai màn (giá trị là số điểm ảnh). Trống = không có lựa chọn khoảng cách. */
+    val gapKey: String = "",
+    /** Khoảng cách tối đa (điểm ảnh) cho thanh kéo; nhỏ hơn 1 = không có thanh kéo. */
+    val gapMax: Int = 0,
+    val defaultGap: Int = 0,
+)
+
+/** 1 lựa chọn trong mục "Màn hình": [id] ổn định để lưu/tham chiếu, [value] là giá trị gửi cho lõi. */
+@Serializable
+data class ScreenChoice(
+    val id: String,
+    val label: String,
+    val value: String,
+    /** Bố cục này dùng tỉ lệ màn lớn / nhỏ (vd. Hybrid) nên hiện lựa chọn tỉ lệ khi được chọn. */
+    val usesRatio: Boolean = false,
 )
 
 /** Màn hình của máy gốc + các kiểu hiển thị của lõi. Hết kiểu cuối thì quay lại kiểu đầu tiên trong [styles]. */

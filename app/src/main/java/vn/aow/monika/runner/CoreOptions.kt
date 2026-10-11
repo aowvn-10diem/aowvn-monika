@@ -50,6 +50,11 @@ object CoreOptions {
         prefs(context, coreId).edit().putString(key, value).apply()
     }
 
+    /** Bỏ lựa chọn tay của vài khóa → quay về mặc định trong config. */
+    fun remove(context: Context, coreId: String, keys: Collection<String>) {
+        prefs(context, coreId).edit().apply { keys.forEach { remove(it) } }.apply()
+    }
+
     fun reset(context: Context, coreId: String) {
         prefs(context, coreId).edit().clear().apply()
     }

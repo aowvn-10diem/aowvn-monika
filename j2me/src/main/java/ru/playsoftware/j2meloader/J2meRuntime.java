@@ -57,10 +57,7 @@ public final class J2meRuntime {
 		ContextHolder.setApplication(app);
 		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(app);
 		sp.registerOnSharedPreferenceChangeListener(THEME_LISTENER);
-		// Như EmulatorApplication của JL-Mod: lần đầu chọn hiện thanh công cụ nếu máy không có phím menu cứng.
-		if (!sp.contains(Constants.PREF_TOOLBAR)) {
-			sp.edit().putBoolean(Constants.PREF_TOOLBAR, !android.view.ViewConfiguration.get(app).hasPermanentMenuKey()).apply();
-		}
+		// Aow Monika: không còn thanh công cụ trên đầu màn chơi (nút menu nổi + menu Monika thay thế) nên bỏ mặc định PREF_TOOLBAR.
 		applyNightMode(sp.getString(Constants.PREF_THEME, null));
 		AppCompatDelegate.setCompatVectorFromResourcesEnabled(true);
 	}

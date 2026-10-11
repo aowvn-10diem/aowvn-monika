@@ -131,6 +131,13 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     vn.aow.monika.ui.controls.ControllerSettings(AppGraph.prefs)
                 }
 
+                // V78c: mục "Màn hình" cho lõi nhiều màn hình (NDS); nội dung lấy từ config `cores.<id>.screen`.
+                cfg.cores.filterValues { it.screen != null }.forEach { (coreId, def) ->
+                    SettingGroup("screen-$coreId", open, { open = it }, R.drawable.ic_fluent_phone_24_regular, primaryGradient(), "Màn hình", "Bố cục, tỉ lệ và khoảng cách hai màn hình NDS") {
+                        vn.aow.monika.ui.controls.ScreenSettings(coreId, def.screen!!, def.options)
+                    }
+                }
+
                 SettingGroup("translate", open, { open = it }, R.drawable.ic_fluent_globe_24_regular, primaryGradient(), "Dịch màn hình game", "Dùng khóa API của bạn · gói dịch offline sắp có") {
                     val ts = AppGraph.translateSettings
                     var provider by remember { mutableStateOf(ts.provider) }
