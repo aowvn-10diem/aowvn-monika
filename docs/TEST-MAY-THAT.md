@@ -112,6 +112,7 @@ Mở **Cài đặt → Tay cầm ảo** để đổi mức rung và hiệu ứng
 | 5.2 | Phím ảo | Phím bo tròn kiểu Monika, nhấn thấy lún + đổi màu cam-hồng, **rung nhẹ "tách"** | |
 | 5.3 | Chơi vài phút, thoát, vào lại | Không văng, save còn | |
 | 5.4 | Game 3D (nếu có) | Chạy được | |
+| 5.5 | Nút menu (V90): vào game ở màn dọc rồi xoay ngang | Dọc: nút tròn nằm ở hàng dưới cùng của bàn phím, bên phải (dưới phím Menu); ngang: dưới phím ← của cụm phím bên phải. Không đè lên màn hình game ở cả hai hướng; bấm nút mở menu Monika (có Chụp màn hình) | |
 
 ## 6. APK & app ngoài
 
