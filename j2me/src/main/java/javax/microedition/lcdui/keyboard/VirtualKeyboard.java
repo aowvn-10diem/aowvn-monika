@@ -566,6 +566,29 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		return layoutVariant == TYPE_MONIKA;
 	}
 
+	private Runnable layoutListener;
+
+	/** Aow Monika (V90): báo mỗi khi bàn phím bố trí lại (xoay máy, đổi cỡ) để nút menu nổi đổi chỗ theo. */
+	public void setOnLayoutListener(Runnable listener) {
+		layoutListener = listener;
+	}
+
+	/**
+	 * Aow Monika (V90): ô trống của bàn phím Monika dành cho nút menu nổi, theo toạ độ của lớp phủ (pixel).
+	 * Dọc: hàng dưới cùng phía phải (dưới phím Menu). Ngang: dưới phím ← của cụm phím bên phải.
+	 * null = không phải bàn phím Monika, chưa bố trí, hoặc ô bị phím ẩn đã bật chiếm.
+	 */
+	public RectF getMonikaMenuSlot() {
+		if (layoutVariant != TYPE_MONIKA || !monikaLaidOut) return null;
+		VirtualKey anchor = keypad[monikaLandscape ? KEY_LEFT : KEY_MENU];
+		if (anchor == null || !anchor.visible || anchor.rect.isEmpty()) return null;
+		RectF slot = new RectF(anchor.rect);
+		slot.offset(0, anchor.rect.height());
+		VirtualKey below = keypad[monikaLandscape ? KEY_DOWN_LEFT : KEY_DOWN_RIGHT];
+		if (below != null && below.visible) return null;
+		return slot;
+	}
+
 	/** Máy ngang + bàn phím Monika: bề rộng mỗi cụm phím 2 bên (game nằm giữa). 0 = không áp dụng. */
 	public float getMonikaSideWidth(float w, float h) {
 		if (layoutVariant != TYPE_MONIKA || w <= h) return 0;
@@ -1021,6 +1044,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		}
 		snapKeys();
 		overlayView.postInvalidate();
+		if (layoutListener != null) layoutListener.run();
 		int delay = settings.vkHideDelay;
 		if (delay > 0 && obscuresVirtualScreen && layoutEditMode == LAYOUT_EOF) {
 			for (VirtualKey key : associatedKeys) {

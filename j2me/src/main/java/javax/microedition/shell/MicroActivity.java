@@ -169,6 +169,8 @@ public class MicroActivity extends AppCompatActivity {
 		if (vk != null) {
 			vk.setView(binding.overlay);
 			binding.overlay.addLayer(vk);
+			// V90: bàn phím bố trí lại (xoay máy, đổi cỡ) → nút menu đổi chỗ theo.
+			vk.setOnLayoutListener(() -> runOnUiThread(this::positionMonikaMenuButton));
 			// Aow Monika: bàn phím Monika xoay ngang được (phím tách 2 bên), kiểu điện thoại khác vẫn khóa dọc.
 			if (vk.isPhone() && !vk.isMonika()) {
 				orientation = ORIENTATION_PORTRAIT;
@@ -393,20 +395,65 @@ public class MicroActivity extends AppCompatActivity {
 		}
 	}
 
-	/** Aow Monika: nút menu nổi duy nhất trên màn chơi — bấm = mở menu Monika (đẩy khỏi tai thỏ / thanh trạng thái). */
+	/** Lề (px) quanh nút menu khi đặt ở góc: né camera / thanh trạng thái (cập nhật theo window insets). */
+	private int menuInsetTop;
+	private int menuInsetEnd;
+
+	/**
+	 * Aow Monika: nút menu nổi duy nhất trên màn chơi — bấm = mở menu Monika. V90: nằm trong vùng bàn phím ảo (ô trống của bàn phím
+	 * Monika, sát cụm phím) để không đè lên màn hình game; không có bàn phím Monika (hoặc đang ở màn Form/List) thì ở góc trên phải.
+	 */
 	private void setupMonikaMenuButton() {
 		final android.widget.ImageButton button = binding.monikaMenuButton;
 		button.setOnClickListener(v -> openOptionsMenu());
 		final int base = (int) (10 * getResources().getDisplayMetrics().density);
+		menuInsetTop = base;
+		menuInsetEnd = base;
 		ViewCompat.setOnApplyWindowInsetsListener(button, (v, insets) -> {
 			androidx.core.graphics.Insets bars = insets.getInsets(
 					WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-			android.view.ViewGroup.MarginLayoutParams lp = (android.view.ViewGroup.MarginLayoutParams) v.getLayoutParams();
-			lp.topMargin = base + bars.top;
-			lp.setMarginEnd(base + bars.right);
-			v.setLayoutParams(lp);
+			menuInsetTop = base + bars.top;
+			menuInsetEnd = base + bars.right;
+			positionMonikaMenuButton();
 			return insets;
 		});
+	}
+
+	/** Đặt nút menu: vào ô trống của bàn phím Monika nếu có, không thì ở góc trên phải. */
+	void positionMonikaMenuButton() {
+		positionMonikaMenuButton(current);
+	}
+
+	void positionMonikaMenuButton(Displayable shown) {
+		final android.widget.ImageButton button = binding.monikaMenuButton;
+		android.widget.FrameLayout.LayoutParams lp = (android.widget.FrameLayout.LayoutParams) button.getLayoutParams();
+		VirtualKeyboard vk = ContextHolder.getVk();
+		android.graphics.RectF slot = shown instanceof Canvas && vk != null ? vk.getMonikaMenuSlot() : null;
+		final float density = getResources().getDisplayMetrics().density;
+		if (slot != null && slot.width() > 0 && slot.height() > 0) {
+			int size = (int) Math.min(Math.min(slot.width(), slot.height()) * 0.9f, 48 * density);
+			lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+			lp.width = size;
+			lp.height = size;
+			lp.leftMargin = Math.round(slot.centerX() - size / 2f);
+			lp.topMargin = Math.round(slot.centerY() - size / 2f);
+			lp.setMarginEnd(0);
+			button.animate().cancel();
+			button.setAlpha(0.7f);
+		} else {
+			lp.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+			lp.width = lp.height = (int) (44 * density);
+			lp.leftMargin = 0;
+			lp.topMargin = menuInsetTop;
+			lp.setMarginEnd(menuInsetEnd);
+			// A31: ở góc trên phải (có thể đè lên game) thì mờ hẳn sau vài giây; vẫn chạm được vào đúng chỗ đó, phím Back/Menu cũng mở menu.
+			button.animate().cancel();
+			button.setAlpha(0.7f);
+			if (shown instanceof Canvas) {
+				button.animate().alpha(0f).setStartDelay(3000).setDuration(300).start();
+			}
+		}
+		button.setLayoutParams(lp);
 	}
 
 	/** Dự phòng khi app chính chưa gắn {@link J2meRuntime#menuPresenter}: menu gốc, neo vào nút menu nổi. */
@@ -794,6 +841,8 @@ public class MicroActivity extends AppCompatActivity {
 			if (next != null) {
 				binding.displayableContainer.addView(next.getDisplayableView());
 			}
+			// V90: màn Canvas có bàn phím ảo → nút vào ô trống của bàn phím; Form/List → góc trên phải.
+			positionMonikaMenuButton(next);
 		}
 	}
 }
