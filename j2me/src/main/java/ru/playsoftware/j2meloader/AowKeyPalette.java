@@ -24,6 +24,13 @@ public final class AowKeyPalette {
 	 */
 	public static final int DARK_PRESSED_MIXED = 0xFF521E16;
 
+	/**
+	 * Độ đục của mặt phím khi vẽ (0–255). Luôn đục hoàn toàn: bàn phím Monika nằm ngoài khung game, và alpha < 255 làm màu mặt phím
+	 * trộn với nền (gradient cam/tím hoặc nền sáng) nên tương phản chữ/mặt phím tụt dưới 4.5:1 (V85c, Luna Ultra). Độ mờ tuỳ chọn
+	 * `vkAlpha` của người chơi không áp cho phím kiểu Monika.
+	 */
+	public static final int FACE_ALPHA = 0xFF;
+
 	/** Mặt phím: phím thường = than đá `PAD_SURFACE`; phím chính (OK) = cam. Nhấn: đỏ sẫm / cam sẫm. */
 	public static int face(boolean primary, boolean pressed) {
 		if (primary) return pressed ? ORANGE_PRESSED : ORANGE;
@@ -33,6 +40,25 @@ public final class AowKeyPalette {
 	/** Nhãn: trắng trên nền tối và khi nhấn; mực đen trên cam thường (đạt 4.5:1). */
 	public static int label(boolean primary, boolean pressed) {
 		return primary && !pressed ? INK : ON_DARK;
+	}
+
+	/** Chữ phụ (ABC dưới số): phím thường trộn 80 % nhãn + 20 % mặt phím, ra màu đục (không dùng alpha) và vẫn ≥ 4.5:1; phím cam dùng nhãn đầy đủ. */
+	public static int subLabel(boolean primary, boolean pressed) {
+		if (primary) return label(true, pressed); // phím cam không có chữ phụ; giữ nguyên nhãn đầy đủ cho đạt tương phản
+		return blend(label(primary, pressed), face(primary, pressed), 0.8f);
+	}
+
+	/** Màu `fg` phủ lên `bg` với độ đục `alpha` (0–255) → màu đục, như khi vẽ lên canvas. */
+	public static int composite(int fg, int bg, int alpha) {
+		return blend(fg, bg, alpha / 255f);
+	}
+
+	/** `weight` phần của `a` + phần còn lại của `b` (RGB, bỏ alpha), làm tròn; kết quả đục hoàn toàn. */
+	static int blend(int a, int b, float weight) {
+		int r = Math.round(((a >> 16) & 0xFF) * weight + ((b >> 16) & 0xFF) * (1 - weight));
+		int g = Math.round(((a >> 8) & 0xFF) * weight + ((b >> 8) & 0xFF) * (1 - weight));
+		int bl = Math.round((a & 0xFF) * weight + (b & 0xFF) * (1 - weight));
+		return 0xFF000000 | (r << 16) | (g << 8) | bl;
 	}
 
 	/** Tỉ lệ tương phản WCAG giữa hai màu đục. */

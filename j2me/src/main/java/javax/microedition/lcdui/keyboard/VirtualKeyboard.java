@@ -1531,7 +1531,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		private void paintMonikaPhone(CanvasWrapper g, int alpha) {
 			float d = ContextHolder.getAppContext().getResources().getDisplayMetrics().density;
 			boolean primary = keyCode == Canvas.KEY_FIRE;
-			int a = Math.max(alpha >>> 24, 0xC0) << 24; // bàn phím nằm ngoài khung game → đậm hơn cho dễ nhìn
+			// V85c: mặt phím luôn đục (AowKeyPalette.FACE_ALPHA): alpha < 255 trộn màu mặt phím với nền làm tụt tương phản dưới 4.5:1.
+			int a = AowKeyPalette.FACE_ALPHA << 24;
 			float step = 3 * d;
 			float shadow = 3 * d;
 			float press = selected ? 2 * d : 0;
@@ -1562,7 +1563,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 			} else {
 				g.drawString(text, cx, cy - depth.height() * 0.12f);
 				g.setTextScale(0.45f);
-				g.setTextColor((label & 0xFFFFFF) | 0xCC000000);
+				g.setTextColor(AowKeyPalette.subLabel(primary, selected)); // màu đục đã trộn, không dùng alpha
 				g.drawString(sub, cx, cy + depth.height() * 0.26f);
 				g.setTextScale(1f);
 			}
