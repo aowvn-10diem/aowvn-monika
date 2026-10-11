@@ -13,6 +13,19 @@ import vn.aow.monika.library.Xp3Fixture
 class KirikiriDiagTest {
     @get:Rule val tmp = TemporaryFolder()
 
+    @Test fun malformedEmbeddedEntryReportsUnfinishedIndexInsteadOfMissingStartup() {
+        val dir = tmp.newFolder("malformed-diag")
+        for (damage in Xp3Fixture.IndexDamage.values()) Xp3Fixture.exeWithBrokenEntry(dir, damage)
+        val lines = KirikiriDiag.describe(dir.path).filter { it.startsWith("exe ") }
+        assertEquals(Xp3Fixture.IndexDamage.values().size, lines.size)
+        for (line in lines) {
+            assertTrue(line.contains("xp3 nhúng=true offset=64 mục=1+ startup.tjs@gốc=?"))
+            assertTrue(line.contains("chỉ mục chưa hoàn chỉnh"))
+            assertFalse(line.contains("startup.tjs@gốc=false"))
+            assertTrue(line.length <= 200)
+        }
+    }
+
     @Test fun karaNoShoujo_ghiXp3NaoCoStartupTjs() {
         val dir = tmp.newFolder("Kara no Shoujo - AowVN.org")
         Xp3Fixture.xp3(dir, listOf("scn/main.ks", "image/bg.png"), compressed = true).renameTo(File(dir, "karanoshojo.xp3"))
@@ -86,6 +99,45 @@ class KirikiriDiagTest {
         assertTrue(lines.any { it.startsWith("xp3 broken.xp3") && it.contains("chỉ mục không đọc được") })
         assertEquals(listOf("mẫu mục: hashvalue"), lines.filter { it.startsWith("mẫu mục: ") })
         assertFalse(lines.any { it.contains('\n') || it.contains('\t') || it.contains("/") })
+    }
+
+    @Test fun exeMetadataIncludesEmbeddedOffsetCountAndRootStartup() {
+        val dir = tmp.newFolder("embedded-diag")
+        val exe = Xp3Fixture.exe(dir, listOf("startup.tjs", "script/a.ks"), name = "karanoshojo.exe")
+        File(dir, "Uninstall.exe").writeBytes(byteArrayOf(0x4d, 0x5a) + ByteArray(128))
+        val lines = KirikiriDiag.describe(exe.path)
+        val line = lines.first { it.startsWith("exe karanoshojo.exe") }
+        assertTrue(line.contains("xp3 nhúng=true offset=64 mục=2 startup.tjs@gốc=true"))
+        assertTrue(lines.any { it.startsWith("exe Uninstall.exe") && it.contains("xp3 nhúng=false") })
+        assertTrue(lines.all { it.length <= 200 })
+        assertFalse(lines.any { it.contains(tmp.root.path) || it.contains("script/a.ks") })
+    }
+
+    @Test fun unfinishedEmbeddedIndexDoesNotReportMissingStartup() {
+        val dir = tmp.newFolder("unfinished-diag")
+        val pending = Xp3Fixture.exe(dir, listOf("main.ks"), continuation = true, name = "pending.exe")
+        val broken = Xp3Fixture.exe(dir, listOf("startup.tjs"), compressed = false, name = "broken.exe")
+        broken.writeBytes(broken.readBytes().dropLast(1).toByteArray())
+        val lines = KirikiriDiag.describe(pending.path).filter { it.startsWith("exe ") }
+
+        assertEquals(2, lines.size)
+        for (line in lines) {
+            assertTrue(line.contains("xp3 nhúng=true offset=64"))
+            assertTrue(line.contains("startup.tjs@gốc=?"))
+            assertTrue(line.contains("chỉ mục chưa hoàn chỉnh"))
+            assertFalse(line.contains("startup.tjs@gốc=false") || line.contains("thiếu startup.tjs"))
+            assertTrue(line.length <= 200)
+        }
+        assertTrue(lines.first { it.startsWith("exe pending.exe") }.contains("mục=1+"))
+        assertTrue(lines.first { it.startsWith("exe broken.exe") }.contains("mục=?"))
+        assertEquals(KirikiriDiag.describe(pending.path).joinToString("\n"), KirikiriDiag.reportText(pending.path))
+    }
+
+    @Test fun startupAlreadySeenRemainsTrueEvenWhenEmbeddedIndexIsUnfinished() {
+        val dir = tmp.newFolder("unfinished-with-startup")
+        val exe = Xp3Fixture.exe(dir, listOf("Startup.TJS"), continuation = true)
+        val line = KirikiriDiag.describe(exe.path).first { it.startsWith("exe ") }
+        assertTrue(line.contains("mục=1+ startup.tjs@gốc=true chỉ mục chưa hoàn chỉnh"))
     }
 
 }
