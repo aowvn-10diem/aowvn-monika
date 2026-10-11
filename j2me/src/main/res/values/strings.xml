@@ -273,4 +273,5 @@
     <string name="monika_java_game">Game Java (J2ME)</string>
     <string name="monika_ask_group">Hỏi nhóm FB</string>
     <string name="monika_menu_button">Mở menu</string>
+    <string name="monika_keyboard_opaque">Bàn phím Monika luôn đục để dễ đọc</string>
 </resources>

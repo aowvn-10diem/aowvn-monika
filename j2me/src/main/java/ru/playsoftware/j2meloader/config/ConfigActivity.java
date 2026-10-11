@@ -72,6 +72,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import javax.microedition.lcdui.keyboard.VirtualKeyboard;
 import javax.microedition.shell.MicroActivity;
 import javax.microedition.util.ContextHolder;
 
@@ -284,6 +285,7 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
 			};
 			binding.getRoot().addOnLayoutChangeListener(onLayoutChangeListener);
 			binding.groupVkConfig.setVisibility(binding.cxIsShowKeyboard.isChecked() ? View.VISIBLE : View.GONE);
+			applyMonikaOpacityLock();
 		});
 		binding.tfScreenBack.addTextChangedListener(new ColorTextWatcher(binding.tfScreenBack));
 		binding.tfVKFore.addTextChangedListener(new ColorTextWatcher(binding.tfVKFore));
@@ -577,6 +579,22 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
 	}
 
 	@SuppressLint("SetTextI18n")
+	/**
+	 * Aow Monika (V85c, A33): bàn phím Monika luôn vẽ mặt phím đục (AowKeyPalette.FACE_ALPHA) để giữ tương phản 4.5:1, nên thanh "Độ mờ"
+	 * và "Ép độ mờ" không có tác dụng với kiểu này: khóa + làm mờ chúng và ghi chú lý do. Kiểu bàn phím khác giữ nguyên.
+	 * Giá trị đã lưu (params.vkAlpha) không bị đổi, dùng lại khi người chơi đổi sang kiểu khác.
+	 */
+	private void applyMonikaOpacityLock() {
+		boolean monika = params != null && params.vkType == VirtualKeyboard.TYPE_MONIKA;
+		float alpha = monika ? 0.4f : 1f;
+		binding.sbVKAlpha.setEnabled(!monika);
+		binding.cxVKForceOpacity.setEnabled(!monika);
+		binding.tvOpacity.setAlpha(alpha);
+		binding.sbVKAlpha.setAlpha(alpha);
+		binding.cxVKForceOpacity.setAlpha(alpha);
+		binding.tvOpacityNote.setVisibility(monika && binding.cxIsShowKeyboard.isChecked() ? View.VISIBLE : View.GONE);
+	}
+
 	public void loadParams(boolean reloadFromFile) {
 		if (reloadFromFile) {
 			loadConfig();
@@ -620,6 +638,7 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
 		boolean showVk = params.showKeyboard;
 		binding.cxIsShowKeyboard.setChecked(showVk);
 		binding.groupVkConfig.setVisibility(showVk ? View.VISIBLE : View.GONE);
+		applyMonikaOpacityLock();
 		binding.cxVKFeedback.setChecked(params.vkFeedback);
 		binding.cxVKForceOpacity.setChecked(params.vkForceOpacity);
 		binding.cxTouchInput.setChecked(params.touchInput);
