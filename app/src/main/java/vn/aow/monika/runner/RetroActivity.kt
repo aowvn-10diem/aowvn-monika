@@ -196,7 +196,6 @@ class RetroActivity : ComponentActivity() {
                     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
                     InGameOverlay(
                         state = ui, system = systemName, title = title, layout = layout, showPad = ready,
-                        autoHideHeader = layout == PadLayout.NDS,
                         send = { action, k -> retroView?.sendKeyEvent(action, k) },
                         onBack = { finish() },
                         onSave = { saveState() },
@@ -359,10 +358,10 @@ class RetroActivity : ComponentActivity() {
         // Khung game nằm dưới header; header đã bị đẩy xuống nếu máy có camera/cutout ở trên.
         val cutoutTop = androidx.core.view.ViewCompat.getRootWindowInsets(root)
             ?.getInsets(WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.statusBars())?.top ?: 0
-        // V78a: NDS (2 màn chồng dọc) lấy tối đa chiều rộng; tiêu đề tự ẩn nên phủ lên khung thay vì đẩy khung xuống.
+        // V78a/A30: NDS dọc kiểu DraStic — 2 màn chồng dọc trên cùng, to hết chiều rộng; trên màn không còn gì (thanh tên/menu nằm sát đáy).
         val ds = padLayout == PadLayout.NDS
         val top = if (ds) (DsFrame.TOP_GAP_DP * dm.density).toInt() + cutoutTop else (76 * dm.density).toInt() + cutoutTop
-        val maxH = if (ds) DsFrame.portraitHeight(dm.widthPixels, dm.heightPixels, top, (DsFrame.PAD_RESERVE_DP * dm.density).toInt(), aspect)
+        val maxH = if (ds) DsFrame.portraitHeight(dm.widthPixels, dm.heightPixels, top, ((DsFrame.PAD_RESERVE_DP + NDS_BOTTOM_BAR_DP) * dm.density).toInt(), aspect)
             else (dm.heightPixels * 0.58f).toInt()
         intScale = if (wantInt) DisplayStyles.integerScale(dm.widthPixels, maxH, nat!![0], nat[1]) else 0
         if (intScale > 0) return FrameLayout.LayoutParams(intScale * nat!![0], intScale * nat[1], Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = top }

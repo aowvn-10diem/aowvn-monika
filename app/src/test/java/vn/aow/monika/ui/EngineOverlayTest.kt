@@ -1,7 +1,12 @@
 package vn.aow.monika.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -9,7 +14,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import vn.aow.monika.runner.AutoHide
 import vn.aow.monika.runner.InGameState
+import vn.aow.monika.runner.MENU_BUTTON_TAG
+import vn.aow.monika.runner.RenpyOverlay
 import vn.aow.monika.runner.KirikiriOverlay
 import vn.aow.monika.runner.PadLayout
 import vn.aow.monika.runner.RgssOverlay
@@ -72,5 +80,37 @@ class EngineOverlayTest {
     @Test fun rgssMenuOpen() {
         rgss(open = true)
         rule.shot("23-menu-rgss-mo")
+    }
+
+    /** A31: nút menu của Kirikiri / RPG Maker / Ren'Py tự ẩn khi đang chơi; chạm góc phải trên hiện lại; đang mở menu thì luôn hiện. */
+    private fun assertMenuButtonAutoHides(name: String, show: (open: Boolean) -> Unit) {
+        show(false)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
+        rule.shot("$name-nut-hien")
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertDoesNotExist()
+        rule.shot("$name-nut-an")
+        // Chạm đúng góc phải trên (nơi nút từng nằm) → hiện lại, rồi lại tự ẩn.
+        rule.onRoot().performTouchInput { down(Offset(width - 40f, 40f)); up() }
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(500)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertDoesNotExist()
+    }
+
+    @Test fun kirikiriMenuButtonAutoHides() = assertMenuButtonAutoHides("v89-kirikiri") { kirikiri(it) }
+
+    @Test fun rgssMenuButtonAutoHides() = assertMenuButtonAutoHides("v89-rgss") { rgss(it) }
+
+    @Test fun renpyMenuButtonAutoHides() = assertMenuButtonAutoHides("v89-renpy") { open ->
+        rule.setContent { RenpyOverlay(title = "Game Ren'Py", open = open, onOpen = {}, onExit = {}) }
+        rule.mainClock.advanceTimeBy(1_000)
+    }
+
+    @Test fun menuButtonStaysWhileMenuOpen() {
+        kirikiri(open = true)
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
     }
 }

@@ -158,20 +158,16 @@ class InGameState {
     /** Tên kiểu hiển thị đang dùng (vd. "LCD cổ điển"); null = lõi này không có nhiều kiểu → không hiện nút. */
     var styleLabel by mutableStateOf<String?>(null)
 
-    /** V78b: thanh tiêu đề đang hiện (chỉ có nghĩa khi `autoHideHeader`). Tự ẩn sau [HEADER_HIDE_MS] khi đang chơi. */
-    var headerShown by mutableStateOf(true)
-    /** Mỗi lần chạm mép trên tăng 1 → hiện lại tiêu đề và đếm lại thời gian tự ẩn. */
-    var headerPulse by mutableIntStateOf(0)
-    /** Hiện ngay (đặt trạng thái đồng bộ, không chờ hiệu ứng nền) rồi đếm lại giờ tự ẩn. */
-    fun revealHeader() { headerShown = true; headerPulse++ }
+    /** A31: thanh tên game + chip gợi ý tự ẩn khi đang chơi; chạm mép hoặc mở menu thì hiện lại. */
+    val chrome = AutoHide()
 }
 
-/** V78b: thời gian (ms) tiêu đề chờ trước khi tự ẩn lúc đang chơi. */
-const val HEADER_HIDE_MS = 3000L
-/** testTag của thanh tiêu đề trong game (test giao diện). */
+/** testTag của thanh tên game trong game (test giao diện). */
 const val HEADER_TAG = "in-game-header"
-/** V78b: dải mép trên (dp) chạm vào thì hiện lại tiêu đề. */
+/** Dải mép (dp) chạm vào thì hiện lại thanh đang ẩn. */
 private val HEADER_REVEAL_EDGE = 40.dp
+/** A30: NDS dọc — thanh tên/menu gọn sát đáy, cao (dp) kể cả đệm; bàn phím ảo chừa chỗ này để thanh không đè phím. */
+const val NDS_BOTTOM_BAR_DP = 52
 
 /** Vùng an toàn phía trên: thanh trạng thái ∪ camera/cutout (cả khi thanh trạng thái bị ẩn), và 2 bên cạnh cutout khi máy ngang. */
 private val SafeTop: WindowInsets
@@ -201,51 +197,35 @@ fun InGameOverlay(
     onMotion: (Int, Float, Float) -> Unit = { _, _, _ -> },
     /** Nút riêng của từng giả lập (vd. "Mã cheat" của 3DS), đặt trước "Chơi tiếp". */
     extraActions: List<SheetAction> = emptyList(),
-    /** V78b: ẩn thanh tiêu đề khi đang chơi (NDS); chạm mép trên hoặc mở menu thì hiện lại. */
-    autoHideHeader: Boolean = false,
+    /** A31: tự ẩn thanh tên game + chip gợi ý khi đang chơi (mọi giả lập); chạm mép hoặc mở menu thì hiện lại. */
+    autoHideHeader: Boolean = true,
 ) {
     // Nút Back của máy: mở menu (thay vì thoát ngay, dễ bấm nhầm khi đang chơi); đang chỉnh phím → xong.
     androidx.activity.compose.BackHandler(enabled = !state.menuOpen && state.options == null) {
         if (state.editing) { state.editing = false; onEditDone() } else state.menuOpen = true
     }
-    // V78b: tiêu đề hiện lúc đang tải / mở menu / chỉnh phím / bảng tùy chọn; đang chơi thì ẩn sau HEADER_HIDE_MS.
-    // Chạm mép trên (headerPulse đổi) hiện lại và đếm lại.
+    // A30: NDS dọc xếp kiểu DraStic — màn hình game trên cùng, bàn phím ảo dưới, thanh tên/menu gọn sát đáy.
+    val headerAtBottom = layout == PadLayout.NDS &&
+        LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
+    // A31: thanh + chip gợi ý hiện lúc đang tải / mở menu / chỉnh phím / bảng tùy chọn; đang chơi thì ẩn sau AutoHide.HIDE_MS.
+    // Chạm vùng mép (state.chrome.seq đổi) hiện lại và đếm lại.
     val pinned = state.menuOpen || state.editing || state.options != null || !showPad
-    // Hiện = không tự ẩn, hoặc đang ghim (menu...), hoặc chưa tới giờ ẩn — tính thẳng khi vẽ, không phụ thuộc hiệu ứng nền.
-    val headerVisible = !autoHideHeader || pinned || state.headerShown
-    LaunchedEffect(autoHideHeader, pinned, state.headerPulse) {
-        if (!autoHideHeader || pinned) { state.headerShown = true; return@LaunchedEffect }
-        kotlinx.coroutines.delay(HEADER_HIDE_MS)
-        state.headerShown = false
-    }
+    AutoHideEffect(state.chrome, autoHideHeader, pinned)
+    // Hiện thật sự tính thẳng lúc vẽ, không phụ thuộc hiệu ứng nền.
+    val headerVisible = state.chrome.visible(autoHideHeader, pinned)
+    val headerAlpha = autoHideAlpha(headerVisible)
+    val edgeAlign = if (headerAtBottom) Alignment.BottomCenter else Alignment.TopCenter
     Box(Modifier.fillMaxSize()) {
-        // Header kính mờ
         // Né camera / "con nhộng" (display cutout) + thanh trạng thái — lúc chơi game thanh trạng thái bị ẩn nên phải dùng cutout.
-        // Hiện/ẩn thẳng bằng điều kiện (AnimatedVisibility không vào lại được trong test Robolectric: 2 test đỏ ở CI).
-        if (headerVisible) {
-        Row(Modifier.testTag(HEADER_TAG).fillMaxWidth().windowInsetsPadding(SafeTop).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            GlassCircle(R.drawable.ic_fluent_arrow_left_24_regular, "Thoát", onBack)
-            Spacer(Modifier.width(10.dp))
-            Row(
-                Modifier.weight(1f).height(52.dp).clip(Radius.pill).background(Color(0xB8181719)).border(1.dp, Color(0x24FFFFFF), Radius.pill).padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(painterResource(R.drawable.ic_fluent_xbox_controller_24_regular), null, Modifier.size(22.dp), tint = Color.White)
-                Column(Modifier.padding(start = 10.dp)) {
-                    Text(system, style = Monika.type.bodyStrong, color = Color.White, maxLines = 1)
-                    Text(title, style = Monika.type.caption, color = Color(0xFFC8C5CB), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            Spacer(Modifier.width(10.dp))
-            GlassCircle(R.drawable.ic_fluent_grid_24_regular, "Menu", { state.menuOpen = !state.menuOpen }, active = state.menuOpen)
-        }
-        }
-        // Tiêu đề đang ẩn: dải mỏng sát mép trên bắt cú chạm để hiện lại (không nằm trên màn cảm ứng dưới của NDS).
-        if (autoHideHeader && !headerVisible) {
-            Box(
-                Modifier.align(Alignment.TopCenter).fillMaxWidth().height(HEADER_REVEAL_EDGE)
-                    .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); state.revealHeader() } },
+        if (headerAlpha > 0f) {
+            GameHeader(
+                system, title, state.menuOpen, onBack, { state.menuOpen = !state.menuOpen }, compact = headerAtBottom,
+                modifier = Modifier.align(edgeAlign).testTag(HEADER_TAG).graphicsLayer { alpha = headerAlpha },
             )
+        }
+        // Thanh đang ẩn: dải mỏng sát mép bắt cú chạm để hiện lại (NDS dọc: mép dưới, ngoài vùng phím; còn lại: mép trên).
+        if (autoHideHeader && !headerVisible) {
+            RevealEdge(state.chrome, Modifier.align(edgeAlign).fillMaxWidth().height(HEADER_REVEAL_EDGE))
         }
 
         state.toast?.let {
@@ -255,7 +235,8 @@ fun InGameOverlay(
             )
         }
 
-        if (showPad) VirtualPad(layout, state, send, onMotion, Modifier.align(Alignment.BottomCenter))
+        if (showPad) VirtualPad(layout, state, send, onMotion, Modifier.align(Alignment.BottomCenter),
+            chipVisible = headerVisible, bottomReserve = if (headerAtBottom) NDS_BOTTOM_BAR_DP.dp else 0.dp)
 
         // Thanh chỉnh tay cầm: chọn cỡ, về mặc định, xong (lưu lại). Giữa màn hình để vẫn thấy phím khi kéo.
         if (state.editing) {
@@ -362,10 +343,47 @@ private fun Movable(state: InGameState, offset: Offset, onMove: (Offset) -> Unit
     }
 }
 
+/**
+ * Thanh tên game kính mờ: quay lại · hệ máy + tên game · menu. [compact] = hàng gọn sát đáy, dưới bàn phím ảo
+ * (NDS dọc, A30): thấp hơn, né thanh điều hướng thay vì camera/thanh trạng thái.
+ */
 @Composable
-private fun GlassCircle(@DrawableRes icon: Int, desc: String, onClick: () -> Unit, active: Boolean = false) {
+private fun GameHeader(
+    system: String, title: String, menuOpen: Boolean, onBack: () -> Unit, onMenu: () -> Unit,
+    compact: Boolean, modifier: Modifier = Modifier,
+) {
+    val insets = if (compact) Modifier.navigationBarsPadding() else Modifier.windowInsetsPadding(SafeTop)
+    val circle = if (compact) 40.dp else 52.dp
+    Row(
+        modifier.fillMaxWidth().then(insets).padding(horizontal = 16.dp, vertical = if (compact) 4.dp else 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        GlassCircle(R.drawable.ic_fluent_arrow_left_24_regular, "Thoát", onBack, size = circle)
+        Spacer(Modifier.width(10.dp))
+        Row(
+            Modifier.weight(1f).height(if (compact) 40.dp else 52.dp).clip(Radius.pill).background(Color(0xB8181719)).border(1.dp, Color(0x24FFFFFF), Radius.pill).padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(painterResource(R.drawable.ic_fluent_xbox_controller_24_regular), null, Modifier.size(if (compact) 18.dp else 22.dp), tint = Color.White)
+            if (compact) {
+                // Một dòng: hệ máy · tên game (thanh gọn, cao ≤ 40 dp).
+                Text("$system · $title", Modifier.padding(start = 10.dp), style = Monika.type.caption, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            } else {
+                Column(Modifier.padding(start = 10.dp)) {
+                    Text(system, style = Monika.type.bodyStrong, color = Color.White, maxLines = 1)
+                    Text(title, style = Monika.type.caption, color = Color(0xFFC8C5CB), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+        Spacer(Modifier.width(10.dp))
+        GlassCircle(R.drawable.ic_fluent_grid_24_regular, "Menu", onMenu, active = menuOpen, size = circle)
+    }
+}
+
+@Composable
+private fun GlassCircle(@DrawableRes icon: Int, desc: String, onClick: () -> Unit, active: Boolean = false, size: androidx.compose.ui.unit.Dp = 52.dp) {
     Box(
-        Modifier.size(52.dp).clip(Radius.pill)
+        Modifier.size(size).clip(Radius.pill)
             .background(if (active) primaryGradient() else Brush.linearGradient(listOf(Color(0xB8181719), Color(0xB8181719))))
             .border(1.dp, Color(0x24FFFFFF), Radius.pill)
             .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); val up = awaitRelease(); if (up) onClick() } },
@@ -383,7 +401,11 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.awa
 
 @Composable
 internal fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) -> Unit, motion: (Int, Float, Float) -> Unit, modifier: Modifier,
-    aowStyle: Boolean = true) {
+    aowStyle: Boolean = true,
+    /** A31: chip gợi ý ("D-pad → Cần") mờ đi cùng thanh tên game đang tự ẩn. */
+    chipVisible: Boolean = true,
+    /** A30: chỗ chừa dưới cùng cho thanh tên/menu của NDS dọc. */
+    bottomReserve: androidx.compose.ui.unit.Dp = 0.dp) {
     ControllerOptionsProvider {
     val stored = LocalControllerOptions.current
     BoxWithConstraints(modifier.fillMaxWidth()) {
@@ -394,7 +416,7 @@ internal fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) 
     androidx.compose.runtime.CompositionLocalProvider(LocalControllerOptions provides options, LocalControllerTurbo provides state.turbo,
         LocalAowControllerStyle provides aowStyle) {
     val useStick = layout.hasStick && (state.stickMode ?: layout.stickDefault)
-    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 8.dp, vertical = if (compact) 8.dp else 16.dp).alpha(if (state.editing) 1f else state.opacity * options.opacity)) {
+    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = bottomReserve).padding(horizontal = 8.dp, vertical = if (compact) 8.dp else 16.dp).alpha(if (state.editing) 1f else state.opacity * options.opacity)) {
         ShoulderRow(layout, send, compact)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Movable(state, state.dpadOffset, { state.dpadOffset += it }) {
@@ -402,7 +424,8 @@ internal fun VirtualPad(layout: PadLayout, state: InGameState, send: (Int, Int) 
                     if (useStick) AnalogStick { x, y -> motion(STICK_LEFT, x, y) } else DPad(send)
                     if (layout.hasStick) {
                         Spacer(Modifier.height(6.dp))
-                        SwapPill(if (useStick) "Cần → D-pad" else "D-pad → Cần") {
+                        val chipAlpha = autoHideAlpha(chipVisible)
+                        SwapPill(if (useStick) "Cần → D-pad" else "D-pad → Cần", chipAlpha) {
                             state.stickMode = !useStick
                             // Đổi chế độ khi đang nghiêng cần → nhả cần để game không bị kẹt hướng.
                             motion(STICK_LEFT, 0f, 0f)
@@ -461,11 +484,11 @@ private fun ShoulderGroup(labels: Pair<String?, String?>, firstKey: Int, secondK
 }
 
 @Composable
-private fun SwapPill(text: String, onClick: () -> Unit) {
+private fun SwapPill(text: String, alpha: Float, onClick: () -> Unit) {
     Text(
         text, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.clip(Radius.pill).background(Color(0x99181719)).border(1.dp, Color(0x33FFFFFF), Radius.pill)
-            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); if (awaitRelease()) onClick() } }
+        modifier = Modifier.alpha(alpha).clip(Radius.pill).background(Color(0x99181719)).border(1.dp, Color(0x33FFFFFF), Radius.pill)
+            .pointerInput(alpha > 0f) { if (alpha > 0f) awaitEachGesture { awaitFirstDown(); if (awaitRelease()) onClick() } }
             .padding(horizontal = 12.dp, vertical = 6.dp),
     )
 }
@@ -543,16 +566,30 @@ private fun PillKey(label: String, key: Int, send: (Int, Int) -> Unit) {
 }
 
 /**
- * Nút mở menu dùng chung cho mọi giả lập không có thanh tiêu đề (game web, J2ME):
- * tròn kính mờ 44dp ở góc phải trên, né camera / tai thỏ; mờ bớt khi không dùng để không che game.
+ * Nút mở menu dùng chung cho mọi giả lập không có thanh tiêu đề (Kirikiri, RPG Maker, Ren'Py, game web):
+ * tròn kính mờ 44dp ở góc phải trên, né camera / tai thỏ. A31: tự ẩn sau [AutoHide.HIDE_MS] khi đang chơi để không che game;
+ * chạm góc phải trên hiện lại, mở menu (đang [active]) thì luôn hiện.
  */
 @Composable
 fun GameMenuButton(active: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
-        modifier.windowInsetsPadding(SafeTop).padding(10.dp).size(44.dp).alpha(if (active) 1f else 0.7f).clip(Radius.pill)
-            .background(if (active) primaryGradient() else Brush.linearGradient(listOf(Color(0xB8181719), Color(0xB8181719))))
-            .border(1.dp, Color(0x24FFFFFF), Radius.pill)
-            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); if (awaitRelease()) onClick() } },
-        contentAlignment = Alignment.Center,
-    ) { Icon(painterResource(R.drawable.ic_fluent_grid_24_regular), "Menu", Modifier.size(22.dp), tint = Color.White) }
+    val auto = rememberAutoHide(enabled = true, pinned = active)
+    val visible = auto.visible(true, active)
+    val a = autoHideAlpha(visible)
+    if (a > 0f) {
+        Box(
+            modifier.testTag(MENU_BUTTON_TAG).windowInsetsPadding(SafeTop).padding(10.dp).size(44.dp).alpha(a * if (active) 1f else 0.7f).clip(Radius.pill)
+                .background(if (active) primaryGradient() else Brush.linearGradient(listOf(Color(0xB8181719), Color(0xB8181719))))
+                .border(1.dp, Color(0x24FFFFFF), Radius.pill)
+                .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); if (awaitRelease()) onClick() } },
+            contentAlignment = Alignment.Center,
+        ) { Icon(painterResource(R.drawable.ic_fluent_grid_24_regular), "Menu", Modifier.size(22.dp), tint = Color.White) }
+    } else {
+        // Đang ẩn: vùng chạm vô hình ở đúng góc nút để hiện lại.
+        RevealEdge(auto, modifier.windowInsetsPadding(SafeTop).size(MENU_REVEAL_DP))
+    }
 }
+
+/** testTag của nút menu tự ẩn (test giao diện). */
+const val MENU_BUTTON_TAG = "game-menu-button"
+/** Vùng chạm (dp) ở góc phải trên để hiện lại nút menu đang ẩn. */
+private val MENU_REVEAL_DP = 64.dp

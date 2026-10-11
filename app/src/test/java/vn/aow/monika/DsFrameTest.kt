@@ -3,6 +3,7 @@ package vn.aow.monika
 import org.junit.Assert.*
 import org.junit.Test
 import vn.aow.monika.runner.DsFrame
+import vn.aow.monika.runner.NDS_BOTTOM_BAR_DP
 import vn.aow.monika.runner.PadLayout
 import vn.aow.monika.runner.padFor
 
@@ -11,7 +12,7 @@ class DsFrameTest {
     // Máy 393×851 dp ở 2,75× (xxhdp): rộng 1081 px, cao 2340 px.
     private val w = 1081
     private val h = 2340
-    private val reserve = (DsFrame.PAD_RESERVE_DP * 2.75f).toInt()
+    private val reserve = ((DsFrame.PAD_RESERVE_DP + NDS_BOTTOM_BAR_DP) * 2.75f).toInt()
 
     @Test fun twoScreensFillWidthWhenThereIsRoom() {
         // Màn cao: đủ chỗ cho khung cao 1,5× chiều rộng.
@@ -25,8 +26,8 @@ class DsFrameTest {
         val pictureWidth = frameH * DsFrame.ASPECT // lõi giữ tỉ lệ 2:3 trong khung
         // Trước V78: lõi melondsds rơi về tỉ lệ 4:3 → khung cao w/(4/3) → hình chỉ ~ w/2.
         val before = (w / (4f / 3f)) * DsFrame.ASPECT
-        assertTrue("sau $pictureWidth / trước $before", pictureWidth > before * 1.6f)
-        assertTrue(pictureWidth >= w * 0.75f)
+        assertTrue("sau $pictureWidth / trước $before", pictureWidth > before * 1.4f)
+        assertTrue(pictureWidth >= w * 0.7f)
     }
 
     @Test fun leavesRoomForThePadOnShortScreens() {

@@ -7,8 +7,12 @@ package vn.aow.monika.runner
 internal object DsFrame {
     /** Hai màn NDS chồng dọc: rộng/cao. */
     const val ASPECT = 256f / 384f
-    /** Chừa cho tay cầm ảo NDS (hàng L, cụm D-pad/nút, SELECT·START) ở dưới, dp. Đo từ ảnh chụp tay cầm NDS trên máy 393×851 dp: ≈ 349 dp. */
-    const val PAD_RESERVE_DP = 340
+    /**
+     * Chừa cho tay cầm ảo NDS ở dưới (dp), chưa kể thanh tên/menu sát đáy [NDS_BOTTOM_BAR_DP]. Tay cầm cao ≈ 350 dp trên máy 393×851 dp
+     * (đo từ ảnh chụp `6-tay-cam-nds`); chỉ chừa phần dưới hàng L/R (≈ 44 dp) — hai nút vai nằm ở 2 mép nên chồng lên góc dưới của màn cảm ứng,
+     * đổi lại hai màn hình rộng hơn.
+     */
+    const val PAD_RESERVE_DP = 306
     /** Khe giữa mép trên (sau camera/thanh trạng thái) và màn trên, dp. Tiêu đề NDS tự ẩn nên không cần chừa 76 dp. */
     const val TOP_GAP_DP = 4
 
