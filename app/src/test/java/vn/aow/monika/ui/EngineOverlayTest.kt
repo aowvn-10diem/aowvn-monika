@@ -7,12 +7,14 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertTrue
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -50,8 +52,8 @@ class EngineOverlayTest {
         rule.mainClock.advanceTimeBy(1_000)
     }
 
-    private fun rgss(open: Boolean) {
-        val state = InGameState().apply { menuOpen = open }
+    private fun rgss(open: Boolean, state: InGameState = InGameState()) {
+        state.menuOpen = open
         rule.setContent {
             RgssOverlay(
                 state = state,
@@ -116,6 +118,26 @@ class EngineOverlayTest {
     @Test fun kirikiriMenuButtonAutoHides() = assertMenuButtonAutoHides("v89-kirikiri") { kirikiri(it) }
 
     @Test fun rgssMenuButtonAutoHides() = assertMenuButtonAutoHides("v89-rgss") { rgss(it) }
+
+    @Test fun rgssTwoQuickTapsOnRevealCenterOpenMenu() {
+        val state = InGameState()
+        rgss(open = false, state = state)
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertDoesNotExist()
+        val root = rule.onRoot()
+        val point = rule.onNodeWithTag(REVEAL_EDGE_TAG).assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot.center - root.fetchSemanticsNode().boundsInRoot.topLeft
+        root.performTouchInput { click(point) }
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(100)
+        rule.waitForIdle()
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
+        root.performTouchInput { click(point) }
+        rule.waitForIdle()
+        rule.runOnIdle { assertTrue(state.menuOpen) }
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
+    }
 
     @Test fun renpyMenuButtonAutoHides() = assertMenuButtonAutoHides("v89-renpy") { open ->
         rule.setContent { RenpyOverlay(title = "Game Ren'Py", open = open, onOpen = {}, onExit = {}) }

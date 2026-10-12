@@ -5,10 +5,10 @@ appId: com.aow.monika
     id: "game-reveal-edge"
 - tapOn:
     id: "game-reveal-edge"
-    # Game render liên tục; đừng chờ ổn định quá thời gian Menu tự ẩn (3 giây).
-    waitToSettleTimeoutMs: 0
-- tapOn:
-    text: "Menu"
+    # Cùng tâm với nút Menu: tap đầu hiện lại, tap sau mở Menu trước timer A31.
+    # Maestro chờ window settle trước mỗi lệnh; hai tap trong một lệnh tránh khoảng chờ đó.
+    repeat: 2
+    delay: 100
     waitToSettleTimeoutMs: 0
 - scrollUntilVisible:
     element: "Báo lỗi game này"
