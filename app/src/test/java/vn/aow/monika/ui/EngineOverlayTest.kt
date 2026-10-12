@@ -97,7 +97,9 @@ class EngineOverlayTest {
         rule.onNodeWithContentDescription("Hiện tên game và menu")
             .assertIsDisplayed().assertHasClickAction()
             .performSemanticsAction(SemanticsActions.OnClick) { it() }
+        rule.waitForIdle()
         rule.mainClock.advanceTimeBy(500)
+        rule.waitForIdle()
         rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
         rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
         rule.onNodeWithTag(MENU_BUTTON_TAG).assertDoesNotExist()
