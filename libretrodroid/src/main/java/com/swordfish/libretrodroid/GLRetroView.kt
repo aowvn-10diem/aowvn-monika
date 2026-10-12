@@ -78,12 +78,14 @@ class GLRetroView(
     @Volatile private var isEmulationReady = false // Aow Monika: UI đọc cổng chạm, GL đọc cổng vẽ.
     @Volatile private var hasRenderedFrame = false // Aow Monika: không xếp chạm trước khung đầu.
     @Volatile private var isAborted = false // Aow Monika: UI cũng bỏ chạm khi lõi đã lỗi.
+    @Volatile private var isDestroyed = false // Aow Monika: không nhả vào JNI sau khi đóng lõi.
 
     // Aow Monika: snapshot tọa độ, JNI chỉ chạy trong queue GL; callback không chặn UI bằng latch.
     private val touchInput = EmulationTouchInput(
         ready = { isEmulationReady && hasRenderedFrame && !isAborted },
         enqueue = { queueEvent(it) },
         deliver = { x, y -> LibretroDroid.onTouchEvent(x, y) },
+        canRelease = { isGameLoaded && !isAborted && !isDestroyed }, // Aow Monika
     )
 
     private val retroGLEventsSubject = MutableSharedFlow<GLRetroEvents>(1)
@@ -132,6 +134,7 @@ class GLRetroView(
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     fun onDestroy() {
+        isDestroyed = true // Aow Monika: chặn cả release còn đợi trong queue GL.
         hasRenderedFrame = false // Aow Monika: bỏ cả chạm đang đợi khi đóng game.
         isEmulationReady = false // Aow Monika: luôn đóng cổng, kể cả catchExceptions bỏ qua lõi đã lỗi.
         catchExceptions {
@@ -157,14 +160,14 @@ class GLRetroView(
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
+        if (event?.actionMasked == MotionEvent.ACTION_UP || event?.actionMasked == MotionEvent.ACTION_CANCEL) {
+            touchInput.release(TOUCH_EVENT_OUTSIDE.x, TOUCH_EVENT_OUTSIDE.y) // Aow Monika: nhả kể cả cổng khung đã đóng.
+            return true
+        }
         if (!isEmulationReady || !hasRenderedFrame || isAborted || width <= 0 || height <= 0) return true // Aow Monika
         val position = when (event?.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
                 normalizeTouchCoordinates(event.x, event.y)
-            }
-
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { // Aow Monika: hủy chạm cũng nhả màn cảm ứng.
-                TOUCH_EVENT_OUTSIDE
             }
 
             else -> null
@@ -334,6 +337,7 @@ class GLRetroView(
         private fun pause() = catchExceptions {
             isEmulationReady = false
             hasRenderedFrame = false // Aow Monika: đợi khung đầu sau khi tiếp tục.
+            touchInput.pause(TOUCH_EVENT_OUTSIDE.x, TOUCH_EVENT_OUTSIDE.y) // Aow Monika: queue nhả trước khi GLSurfaceView pause.
             onPause()
             LibretroDroid.pause()
         }
