@@ -205,8 +205,9 @@ jobs:
           GH_TOKEN: ${{ secrets.PACKS_TOKEN != '' && secrets.PACKS_TOKEN || github.token }}
           GH_REPO: ${{ secrets.PACKS_TOKEN != '' && 'aowvn-10diem/aowvn-monika-packs' || github.repository }}
         run: |
-          # V96: đính ZIP ký hiệu (build-ids.tsv) vào chính bản phát hành gói để báo cáo sập ghép được theo BuildId; thiếu file thì vẫn phát hành gói
-          SYM="symbols-kirikiri-${{ github.run_number }}-arm64-v8a.zip"; EXTRA=""; [ -f "$SYM" ] && EXTRA="$SYM"
-          gh release create "engines-kirikiri-${{ github.run_number }}" kirikiri-arm64.zip kirikiri-arm64.zip.sha256 $EXTRA \
+          # V96: bắt buộc đính ZIP ký hiệu (build-ids.tsv) vào chính bản phát hành gói để báo cáo sập ghép được theo BuildId; thiếu ZIP thì KHÔNG phát hành gói
+          SYM="symbols-kirikiri-${{ github.run_number }}-arm64-v8a.zip"
+          [ -s "$SYM" ] || { echo "::error::Thiếu $SYM (bước ký hiệu lỗi) — không phát hành gói không có ký hiệu"; exit 1; }
+          gh release create "engines-kirikiri-${{ github.run_number }}" kirikiri-arm64.zip kirikiri-arm64.zip.sha256 "$SYM" \
             --title "Kirikiri (Kirikiroid2Yuri) #${{ github.run_number }}" \
             --notes "Dựng lại từ mã nguồn Kirikiroid2Yuri @ $SRC_COMMIT + bản vá Aow Monika. BuildId libkrkr2yuri.so: $BUILD_ID. Monika tự tải khi người chơi có game Kirikiri."
