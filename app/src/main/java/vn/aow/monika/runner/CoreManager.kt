@@ -7,7 +7,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import vn.aow.monika.config.ConfigRepository
-import vn.aow.monika.library.Importer
 import vn.aow.monika.pack.PackTransaction
 import vn.aow.monika.config.CoreDef
 import java.io.File
@@ -53,8 +52,9 @@ class CoreManager(
 
     fun isReady(id: String): Boolean {
         val def = configRepo.current.cores[id] ?: return false
-        return def.supportsAbi() && File(coreDir(id), "${id}_libretro_android.so").exists() && installedVersion(id) == def.wantedVersion() &&
-            (def.systemFiles == null || File(systemDir(), ".$id-${def.wantedVersion()}").exists())
+        val so = File(coreDir(id), "${id}_libretro_android.so")
+        return def.supportsAbi() && so.isFile && so.length() > 0 && installedVersion(id) == def.wantedVersion() &&
+            (def.systemFiles == null || SystemFilesCache(systemDir()).ready(id, def.systemFiles, def.wantedVersion()))
     }
 
     /** Tải sẵn lõi cho các hệ máy đang có game (chạy ngầm) → bấm Chơi vào game ngay, không chờ tải. */
@@ -102,7 +102,7 @@ class CoreManager(
         val wantedVersion = def.wantedVersion()
         val artifact = def.artifacts[abi]
         val so = File(coreDir(id), "${id}_libretro_android.so")
-        if (!so.exists() || installedVersion(id) != wantedVersion) {
+        if (!so.isFile || so.length() == 0L || installedVersion(id) != wantedVersion) {
             emit(CoreProgress("core-download"))
             if (artifact == null) {
                 coreDir(id).mkdirs()
@@ -176,11 +176,10 @@ class CoreManager(
         }
         def.systemFiles?.let { url ->
             // Một số lõi (PPSSPP...) cần thêm file hệ thống: font, dữ liệu...
-            val marker = File(systemDir(), ".$id-$wantedVersion")
-            if (!marker.exists()) {
+            val cache = SystemFilesCache(systemDir())
+            if (!cache.ready(id, url, wantedVersion)) {
                 emit(CoreProgress("system-download"))
-                download(url) { Importer.unzip(it, systemDir()) }
-                marker.writeText("ok")
+                download(url) { cache.install(id, url, wantedVersion, it) }
             }
         }
         // Đánh dấu vừa dùng → bộ dọn bộ đệm không xóa lõi đang dùng thường xuyên.
