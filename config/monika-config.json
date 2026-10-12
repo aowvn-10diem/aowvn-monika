@@ -1,6 +1,6 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 41,
+  "configVersion": 42,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 41,
@@ -1243,7 +1243,8 @@
       "size": 13116908,
       "abis": [
         "arm64-v8a"
-      ]
+      ],
+      "customGpuDriver": false
     },
     "sevenzip": {
       "version": "16.02-2.02",

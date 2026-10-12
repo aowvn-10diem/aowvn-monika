@@ -62,6 +62,12 @@ data class ModuleDef(
     /** Gói theo kiến trúc: [url] chứa "{abi}"; SHA-256 / dung lượng riêng từng ABI (khóa = arm64-v8a, armeabi-v7a…). */
     val sha256ByAbi: Map<String, String> = emptyMap(),
     val sizeByAbi: Map<String, Long> = emptyMap(),
+    /**
+     * Chỉ module "azahar" (3DS): true = gọi `initializeGpuDriver` (lớp nạp driver Vulkan tùy biến `libhook_impl.so`) trước khi chạy.
+     * Mặc định false = dùng driver hệ thống. V98: lớp nạp này sập SIGSEGV (null 0x68) ngay sau khi nạp lõi trên Snapdragon SM8650 / Android 16
+     * (21 báo cáo v0.8.2) và không bắt được bằng try/catch, nên chỉ bật khi thật sự có driver tùy biến.
+     */
+    val customGpuDriver: Boolean = false,
 )
 
 @Serializable
