@@ -153,7 +153,11 @@ jobs:
           Commit: $SRC_COMMIT
           Bản vá của Aow Monika (nhận đường dẫn game, quyền Truy cập mọi tệp, tài nguyên từ gói tải thêm): thư mục kirikiri/patches trong kho Aow Monika.
           EOT
-          echo "{\"engine\":\"kirikiroid2-yuri\",\"commit\":\"$SRC_COMMIT\",\"abi\":\"arm64-v8a\",\"built\":\"$(date -u +%FT%TZ)\"}" > pack/manifest.json
+          # V96: báo cáo sập in nguyên manifest.json; tombstone của một số máy không có build_id cho libkrkr2yuri.so → ghi BuildId vào manifest để ghép ký hiệu
+          BID=$("$ANDROID_HOME/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" -n pack/libkrkr2yuri.so | sed -n 's/.*Build ID: *//p' | head -1)
+          [ -n "$BID" ] || { echo "::error::libkrkr2yuri.so không có BuildId (kiểm cờ -Wl,--build-id)"; exit 1; }
+          echo "BUILD_ID=$BID" >> "$GITHUB_ENV"
+          echo "{\"engine\":\"kirikiroid2-yuri\",\"commit\":\"$SRC_COMMIT\",\"abi\":\"arm64-v8a\",\"buildId\":\"$BID\",\"built\":\"$(date -u +%FT%TZ)\"}" > pack/manifest.json
           (cd pack && zip -9 -r ../kirikiri-arm64.zip .)
           sha256sum kirikiri-arm64.zip | tee kirikiri-arm64.zip.sha256
           stat -c 'size=%s' kirikiri-arm64.zip
@@ -201,6 +205,8 @@ jobs:
           GH_TOKEN: ${{ secrets.PACKS_TOKEN != '' && secrets.PACKS_TOKEN || github.token }}
           GH_REPO: ${{ secrets.PACKS_TOKEN != '' && 'aowvn-10diem/aowvn-monika-packs' || github.repository }}
         run: |
-          gh release create "engines-kirikiri-${{ github.run_number }}" kirikiri-arm64.zip kirikiri-arm64.zip.sha256 \
+          # V96: đính ZIP ký hiệu (build-ids.tsv) vào chính bản phát hành gói để báo cáo sập ghép được theo BuildId; thiếu file thì vẫn phát hành gói
+          SYM="symbols-kirikiri-${{ github.run_number }}-arm64-v8a.zip"; EXTRA=""; [ -f "$SYM" ] && EXTRA="$SYM"
+          gh release create "engines-kirikiri-${{ github.run_number }}" kirikiri-arm64.zip kirikiri-arm64.zip.sha256 $EXTRA \
             --title "Kirikiri (Kirikiroid2Yuri) #${{ github.run_number }}" \
-            --notes "Dựng lại từ mã nguồn Kirikiroid2Yuri @ $SRC_COMMIT + bản vá Aow Monika. Monika tự tải khi người chơi có game Kirikiri."
+            --notes "Dựng lại từ mã nguồn Kirikiroid2Yuri @ $SRC_COMMIT + bản vá Aow Monika. BuildId libkrkr2yuri.so: $BUILD_ID. Monika tự tải khi người chơi có game Kirikiri."
