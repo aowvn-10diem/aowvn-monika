@@ -77,11 +77,11 @@ class GLRetroView(
     private var isGameLoaded = false
     @Volatile private var isEmulationReady = false // Aow Monika: UI đọc cổng chạm, GL đọc cổng vẽ.
     @Volatile private var hasRenderedFrame = false // Aow Monika: không xếp chạm trước khung đầu.
-    private var isAborted = false
+    @Volatile private var isAborted = false // Aow Monika: UI cũng bỏ chạm khi lõi đã lỗi.
 
     // Aow Monika: snapshot tọa độ, JNI chỉ chạy trong queue GL; callback không chặn UI bằng latch.
     private val touchInput = EmulationTouchInput(
-        ready = { isEmulationReady && hasRenderedFrame },
+        ready = { isEmulationReady && hasRenderedFrame && !isAborted },
         enqueue = { queueEvent(it) },
         deliver = { x, y -> LibretroDroid.onTouchEvent(x, y) },
     )
@@ -131,12 +131,15 @@ class GLRetroView(
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    fun onDestroy() = catchExceptions {
+    fun onDestroy() {
         hasRenderedFrame = false // Aow Monika: bỏ cả chạm đang đợi khi đóng game.
+        isEmulationReady = false // Aow Monika: luôn đóng cổng, kể cả catchExceptions bỏ qua lõi đã lỗi.
+        catchExceptions {
         // Không destroy song song với retro_init/retro_load_game đang chạy trên GL.
         if (data.initializeOnGlThread) queueEvent { if (isCoreCreated) LibretroDroid.destroy() }
         else LibretroDroid.destroy()
         lifecycle = null
+        }
     }
 
     private fun getDeviceLanguage() = Locale.getDefault().language
@@ -154,7 +157,7 @@ class GLRetroView(
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (!isEmulationReady || !hasRenderedFrame || width <= 0 || height <= 0) return true // Aow Monika
+        if (!isEmulationReady || !hasRenderedFrame || isAborted || width <= 0 || height <= 0) return true // Aow Monika
         val position = when (event?.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
                 normalizeTouchCoordinates(event.x, event.y)
