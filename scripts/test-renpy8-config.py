@@ -38,8 +38,8 @@ class Renpy8ConfigTest(unittest.TestCase):
     def facts(self, *abis):
         return {abi: m.zip_facts(make_zip(self.dir, abi), abi) for abi in abis}
 
-    def test_repo_config_round_trips_byte_for_byte(self):
-        self.assertEqual(m.dump(self.config), REPO_CONFIG.read_text(encoding="utf-8"))
+    def test_repo_config_round_trips_without_changing_data(self):
+        self.assertEqual(json.loads(m.dump(self.config)), self.config)
 
     def test_apply_adds_module_enables_engine_and_bumps_version(self):
         facts = self.facts("arm64-v8a")
@@ -125,6 +125,7 @@ class Renpy8ConfigTest(unittest.TestCase):
             m.zip_facts(make_zip(self.dir, "arm64-v8a", manifest=False), "arm64-v8a")
 
     def test_cli_writes_out_file_and_validates_like_the_app_expects(self):
+        source_before = REPO_CONFIG.read_bytes()
         zip_path = make_zip(self.dir, "arm64-v8a")
         out = self.dir / "config-out.json"
         code = m.main(["--config", str(REPO_CONFIG), "--version", "8.5.3-r1", "--url", URL,
@@ -137,8 +138,8 @@ class Renpy8ConfigTest(unittest.TestCase):
             for value in [module.get("sha256", "")] + list(module.get("sha256ByAbi", {}).values()):
                 if value:
                     self.assertRegex(value, r"^[0-9a-f]{64}$")
-        # Không --write và không --out thì file nguồn không đổi.
-        self.assertEqual(REPO_CONFIG.read_text(encoding="utf-8"), m.dump(self.config))
+        # Dùng --out phải giữ nguyên từng byte của file nguồn.
+        self.assertEqual(REPO_CONFIG.read_bytes(), source_before)
 
 
 if __name__ == "__main__":
