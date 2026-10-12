@@ -37,7 +37,7 @@ class ConfigRepositoryValidationTest {
     }
 
     @Test fun oldCacheWithoutExperimentalFlagFallsBackToBundledWarning() {
-        assertEquals(41, bundled)
+        assertEquals(42, bundled)
         cache.writeText(valid(38))
         val current = repo().current
         assertEquals(42, current.configVersion)
