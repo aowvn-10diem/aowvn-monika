@@ -12,12 +12,13 @@
 >
 > **[A36] Chế độ TIẾT KIỆM TOKEN (sếp chốt 12/10):** không mở việc mới; chỉ làm việc đang dở bên dưới. Lượt định kỳ không có gì mới → dừng ngay, không comment. Báo cáo ≤ 3 dòng, chỉ khi mở PR / đẩy commit / bị kẹt. Không chạy lại CI quá 1 lần. Không đọc log dài, không đọc lại file đã chốt. Lịch: PM 2 giờ/lần (07–23h), Haiku-2 3 giờ/lần, duyệt định kỳ 6 giờ/lần, đêm tắt.
 >
-> | Ai | Việc hiện hành |
+> | Ai | Việc hiện hành (làm tiếp từ 17:30 12/10) |
 > |---|---|
-> | Sol High | Sửa #210 (V92) theo "Cần sửa" của Luna Ultra trên head 0fb2d0a, 1 lần đẩy gọn |
-> | Luna 3 → Luna Ultra | Chỉ duyệt khi #210 có head mới |
-> | Haiku-2 | Chỉ tiền duyệt khi có head mới; không có thì dừng |
-> | Sol, Nova | Nghỉ, chờ lệnh mới ở #119 |
+> | Sol High | #210 (V92): sửa theo "Cần sửa" của Luna Ultra; Maestro mở Menu tự ẩn trước khi bấm Báo lỗi |
+> | Nova | Phân loại dependabot #214, #215; #216 (Kotlin 2.4) và #217 (AGP 9.4) HOÃN |
+> | Luna 3 → Luna Ultra | Duyệt #210 khi có head mới, rồi #214/#215 nếu CI xanh |
+> | Haiku-2 | Tiền duyệt khi có head mới |
+> | Sol | Chờ; hỗ trợ #210 nếu kẹt quá 2 giờ |
 
 ## 1. Mốc
 
