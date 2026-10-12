@@ -17,6 +17,8 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import vn.aow.monika.ui.theme.Monika
 
@@ -73,7 +75,11 @@ fun autoHideAlpha(visible: Boolean): Float =
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun RevealEdge(auto: AutoHide, modifier: Modifier) {
-    Box(modifier.semantics { testTagsAsResourceId = true }.testTag(REVEAL_EDGE_TAG)
+    Box(modifier.semantics {
+        testTagsAsResourceId = true
+        contentDescription = "Hiện tên game và menu"
+        onClick { auto.reveal(); true }
+    }.testTag(REVEAL_EDGE_TAG)
         .pointerInput(auto) { awaitEachGesture { awaitFirstDown(); auto.reveal() } })
 }
 

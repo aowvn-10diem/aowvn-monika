@@ -1,13 +1,10 @@
 appId: com.aow.monika
 ---
-# A31: sau 25 giây chờ engine, Menu đã tự ẩn. Chạm vùng hiện lại theo ID khi cần.
-- runFlow:
-    when:
-      visible:
-        id: "game-reveal-edge"
-    commands:
-      - tapOn:
-          id: "game-reveal-edge"
+# A31: sau 25 giây chờ engine, phải thấy vùng accessibility để hiện lại Menu.
+- assertVisible:
+    id: "game-reveal-edge"
+- tapOn:
+    id: "game-reveal-edge"
 - tapOn: "Menu"
 - scrollUntilVisible:
     element: "Báo lỗi game này"

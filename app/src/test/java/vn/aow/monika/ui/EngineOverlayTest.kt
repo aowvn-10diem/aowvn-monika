@@ -2,10 +2,14 @@ package vn.aow.monika.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -87,6 +91,14 @@ class EngineOverlayTest {
         show(false)
         rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
         rule.shot("$name-nut-hien")
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertDoesNotExist()
+        // V92: TalkBack/Android accessibility có action hiện lại, không chỉ tag Compose.
+        rule.onNodeWithContentDescription("Hiện tên game và menu")
+            .assertIsDisplayed().assertHasClickAction()
+            .performSemanticsAction(SemanticsActions.OnClick) { it() }
+        rule.mainClock.advanceTimeBy(500)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
         rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
         rule.onNodeWithTag(MENU_BUTTON_TAG).assertDoesNotExist()
         rule.shot("$name-nut-an")
