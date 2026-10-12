@@ -6,17 +6,18 @@
 
 > **Tiếp quản tạm thời (lệnh trực tiếp chủ dự án 04/10):** Sol thay Opus điều phối/duyệt và tiếp phần Sonnet tới **22:00 thứ Hai 05/10/2026 GMT+7 (15:00 UTC)**; Luna tiếp tục L07/L09. Quyết định ghi “PM duyệt — Sol tiếp quản theo lệnh chủ dự án (#65)”, không mạo danh Opus. Chủ dự án xác nhận G8 OK và duyệt đúng **một** `release.yml` dispatch `dry_run=true` trên `main`: run `37261174377` đã chạy sau khi #72 qua Luna/CI và được gộp. Run `37261174377` kết thúc SUCCESS: kiểm cấu hình ký và APK, chứng thư khớp qua `scripts/verify-apk-cert.py`; job release bị skip, run không có artifact. Không cấp quyền phát hành/tag/upload APK hay publication khác. Gemini Flash do chủ dự án bổ sung tối 04/10, F01/F02 chỉ nhận khi chủ dự án báo sẵn sàng. Bàn giao: issue #65 và `hop-thu/PROMPT-GEMINI-FLASH.md`.
 
-> ## ⚠️ LỆNH HIỆN HÀNH (PM Opus, 11/10/2026 18:55 VN) — đọc trước mọi thứ bên dưới [A35]
+> ## ⚠️ LỆNH HIỆN HÀNH (PM Opus, 12/10/2026 12:15 VN) — đọc trước mọi thứ bên dưới [A35, A36]
 > **Kênh duy nhất từ 11/10:** lệnh PM nằm ở **issue #119** (Nova thêm #90, Haiku-2 thêm #120). Mỗi lượt: đọc comment mới có tiền tố `[PM → <tên bạn>]` trong #119 TRƯỚC khi đọc file này. Báo cáo: 1–3 dòng ở #119 + mô tả PR. Checkpoint chỉ lưu local thì PM không thấy, coi như chưa báo.
 > Phần còn lại của file này (mốc, bảng việc ngày 05/10) **đã cũ**, chỉ để tham khảo lịch sử.
 >
-> | Ai | Việc hiện hành (A34: v0.8.2 ra ngay khi #205 gộp) |
+> **[A36] Chế độ TIẾT KIỆM TOKEN (sếp chốt 12/10):** không mở việc mới; chỉ làm việc đang dở bên dưới. Lượt định kỳ không có gì mới → dừng ngay, không comment. Báo cáo ≤ 3 dòng, chỉ khi mở PR / đẩy commit / bị kẹt. Không chạy lại CI quá 1 lần. Không đọc log dài, không đọc lại file đã chốt. Lịch: PM 2 giờ/lần (07–23h), Haiku-2 3 giờ/lần, duyệt định kỳ 6 giờ/lần, đêm tắt.
+>
+> | Ai | Việc hiện hành |
 > |---|---|
-> | Sol High | Sửa #205 (V88) theo review Luna Ultra → V92 (flow Maestro bị A31 che Menu) |
-> | Sol | V93: 2 test `ComposeTimeoutException` (`LibraryStorageAccessTest.kt:72`, `V69UxTest.kt:84`), nhánh `sol/V93` |
-> | Nova | V94 bump 47/0.8.2 + CHANGELOG (`nova/V94`); #200 thêm khóa "Độ mờ" theo A33 |
-> | Luna 3 → Luna Ultra | Duyệt ngay head mới của #205, V93, V94, #200; rồi #125 |
-> | Haiku-2 | Tiền duyệt lô trên khi Luna 3 chưa kịp; test bổ sung V89 |
+> | Sol High | Sửa #210 (V92) theo "Cần sửa" của Luna Ultra trên head 0fb2d0a, 1 lần đẩy gọn |
+> | Luna 3 → Luna Ultra | Chỉ duyệt khi #210 có head mới |
+> | Haiku-2 | Chỉ tiền duyệt khi có head mới; không có thì dừng |
+> | Sol, Nova | Nghỉ, chờ lệnh mới ở #119 |
 
 ## 1. Mốc
 
