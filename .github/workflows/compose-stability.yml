@@ -1,0 +1,36 @@
+name: Compose stability (V104)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'app/src/test/java/vn/aow/monika/ui/ComposeLayout.kt'
+      - 'app/src/test/java/vn/aow/monika/ui/LibraryStorageAccessTest.kt'
+      - 'app/src/test/java/vn/aow/monika/ui/V69UxTest.kt'
+      - 'scripts/ci-compose-stability.sh'
+      - '.github/workflows/compose-stability.yml'
+permissions:
+  contents: read
+jobs:
+  repeated-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v6
+        with: {cache-provider: basic}
+      - name: Cài NDK cho J2ME Loader
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+      - name: Hai test thật, 20 lượt liên tiếp (không retry)
+        run: scripts/ci-compose-stability.sh
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: v104-20-luot
+          path: |
+            app/build/compose-stability/
+            app/build/test-results/testDebugUnitTest/
+          retention-days: 2
