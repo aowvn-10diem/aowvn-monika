@@ -2,6 +2,18 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.3 (Bản thử)
+
+> Chưa phát hành. Danh sách đối chiếu các PR đã gộp vào main sau v0.8.2 (`4b672c5`); chưa thử trên máy thật.
+
+- 3DS: Monika không còn gọi lớp nạp driver GPU tùy biến (`libhook_impl.so`) khi mở lõi, nên máy bị văng ngay sau khi nạp lõi sẽ dùng driver hệ thống. Có cờ cấu hình `customGpuDriver` (mặc định tắt) để bật lại. Chạy thật trên máy 3DS còn **[CHƯA KIỂM]**. ([d199001](https://github.com/aowvn-10diem/aowvn-monika/commit/d199001b835eed66a15f58461ec9e387369eba86))
+- Nintendo DS: chạm màn hình được xếp chờ đến sau khung hình đầu nên không treo khi chạm lúc đang nạp, và bước chuẩn bị tệp hệ thống của lõi được lưu lại để không nạp lại mỗi lần mở. Tốc độ vào game thật trên máy còn **[CHƯA KIỂM]**. ([89ca662](https://github.com/aowvn-10diem/aowvn-monika/commit/89ca6624b8934faaeb753d8179a145a5f31a9713), [0027e6e](https://github.com/aowvn-10diem/aowvn-monika/commit/0027e6ec4bcda0c8102d9d0723148917913da5d4), [338921d](https://github.com/aowvn-10diem/aowvn-monika/commit/338921d16b2814fe54ae8921d4db59d742b1ef52))
+- Khi thanh tên game và menu đang tự ẩn, vùng mép hiện lại chúng có mô tả "Hiện tên game và menu" và kích hoạt được bằng trợ năng, để mở lại menu (có mục Báo lỗi) ổn định hơn. ([98375af](https://github.com/aowvn-10diem/aowvn-monika/commit/98375af9c94bd5b6f079d999a391a273e00613d9), [413bfc3](https://github.com/aowvn-10diem/aowvn-monika/commit/413bfc3a83796d6241d80923e4eb1050be7febd3))
+- Kirikiri: gói lõi Kirikiri dựng từ nay ghi `buildId` vào `manifest.json` và đính kèm tệp ký hiệu, để báo lỗi sập của Kirikiri đọc được tên hàm. Chỉ có hiệu lực sau khi phát hành gói Kirikiri mới; gói hiện tại chưa có ký hiệu. ([dd752c2](https://github.com/aowvn-10diem/aowvn-monika/commit/dd752c2504d15278e871b9be55bb017b2f3929a4))
+- Bàn phím ảo J2ME theo bộ nút AowVN (mặt than đá, góc bậc, viền đen, bóng cứng, nhấn đỏ sẫm); mặt phím luôn đục nên thanh "Độ mờ" và "Ép độ mờ" bị khóa kèm ghi chú khi dùng bàn phím Monika. ([32b0c1b](https://github.com/aowvn-10diem/aowvn-monika/commit/32b0c1bac2c1de491d87dbfe471c3f32831e2eaf))
+- Nội bộ, không đổi giao diện (V93b): các bài kiểm thử giao diện thư viện và trải nghiệm (`LibraryStorageAccessTest`, `V69UxTest`) đồng bộ looper Robolectric với khung Compose thủ công để bớt chập chờn; bản cài của người dùng không đổi. ([408b901](https://github.com/aowvn-10diem/aowvn-monika/commit/408b901e46a5eecf802a0615c5f6a8de20d16f47))
+- Nội bộ, không đổi giao diện (V95): bài kiểm dữ liệu cấu hình Ren'Py kiểm theo nội dung dữ liệu thay vì định dạng JSON; bản cài của người dùng không đổi. ([248395a](https://github.com/aowvn-10diem/aowvn-monika/commit/248395a31e9e4f0145da73e1d16ff396d44d32f4))
+
 ## v0.8.2 (Bản thử)
 
 > Bản thử ngày 11/10/2026. Danh sách đối chiếu các PR đã gộp vào main `4b672c5`; chưa thử trên máy thật.
