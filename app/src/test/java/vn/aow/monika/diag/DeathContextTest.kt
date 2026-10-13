@@ -8,14 +8,22 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
+import vn.aow.monika.ui.TestApp
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(application = TestApp::class, sdk = [34])
 class DeathContextTest {
+    @Before fun clean() {
+        val c = ApplicationProvider.getApplicationContext<Context>()
+        Diagnostics.end(c)
+        File(c.filesDir, "diag").deleteRecursively()
+        Diagnostics.pending.value = null
+    }
     private fun report(kind: String, session: Diagnostics.Session? = null) =
         Diagnostics.Report(123, 123, kind, "fixture", "0.8.3", "fake", session)
 
