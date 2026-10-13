@@ -1,9 +1,9 @@
 name: Test Lab budget policy (V56)
 on:
   push:
-    paths: [scripts/testlab-preflight.py, scripts/test-testlab-preflight.py, scripts/collect-testlab-evidence.py, scripts/test-testlab-evidence.py, .github/workflows/testlab-policy.yml]
+    paths: [scripts/testlab-preflight.py, scripts/test-testlab-preflight.py, scripts/collect-testlab-evidence.py, scripts/test-testlab-evidence.py, scripts/select-testlab-device.py, scripts/test-testlab-device.py, .github/testlab-devices.json, .github/workflows/testlab-policy.yml]
   pull_request:
-    paths: [scripts/testlab-preflight.py, scripts/test-testlab-preflight.py, scripts/collect-testlab-evidence.py, scripts/test-testlab-evidence.py, .github/workflows/testlab-policy.yml]
+    paths: [scripts/testlab-preflight.py, scripts/test-testlab-preflight.py, scripts/collect-testlab-evidence.py, scripts/test-testlab-evidence.py, scripts/select-testlab-device.py, scripts/test-testlab-device.py, .github/testlab-devices.json, .github/workflows/testlab-policy.yml]
 permissions:
   contents: read
 jobs:
@@ -12,4 +12,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
-      - run: python3 scripts/test-testlab-preflight.py && python3 scripts/test-testlab-evidence.py
+      - run: python3 scripts/test-testlab-preflight.py && python3 scripts/test-testlab-evidence.py && python3 scripts/test-testlab-device.py
