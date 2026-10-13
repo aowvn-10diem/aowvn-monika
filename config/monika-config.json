@@ -1,6 +1,6 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 42,
+  "configVersion": 43,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 41,
@@ -1263,10 +1263,10 @@
       }
     },
     "kirikiri": {
-      "version": "6e61ce3-aow2",
-      "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/engines-kirikiri-14/kirikiri-arm64.zip",
-      "sha256": "2166672a84137fe74eb2d87a352d7280114ffca23b0cc76cecd9a108b3813580",
-      "size": 17166751,
+      "version": "6e61ce3-aow3",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/engines-kirikiri-16/kirikiri-arm64.zip",
+      "sha256": "a6f2026c43607db84748cdcb8e1ef27866d1317a4eeb78cbc9cc2d5eebc76aed",
+      "size": 17166937,
       "abis": [
         "arm64-v8a"
       ]
