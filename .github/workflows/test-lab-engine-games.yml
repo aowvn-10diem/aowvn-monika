@@ -23,6 +23,11 @@ on:
         default: cubs
         description: "Đúng một máy ARM; hai profile V105 xác minh catalog, quota 5 lượt/ngày"
 
+      catalog_only:
+        type: boolean
+        default: false
+        description: "Chỉ xác minh catalog V105, không build/chạy máy hoặc dùng quota"
+
 permissions:
   contents: read
   actions: read
@@ -47,15 +52,18 @@ jobs:
           REF: ${{ github.ref }}
         run: test "$EVENT" != workflow_dispatch || test "$REF" = refs/heads/main
       - name: Cửa exact Build, thay đổi engine và hạn mức5 UTC
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && !inputs.catalog_only
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/testlab-preflight.py --physical
       - uses: actions/setup-java@v6
+        if: github.event_name != 'workflow_dispatch' || !inputs.catalog_only
         with: {distribution: temurin, java-version: 17}
       - uses: gradle/actions/setup-gradle@v6
+        if: github.event_name != 'workflow_dispatch' || !inputs.catalog_only
         with: {cache-provider: basic}
       - name: Cài SDK33 của Kirikiri và NDK trong catalog
+        if: github.event_name != 'workflow_dispatch' || !inputs.catalog_only
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-33" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
           # Fail here if SDK installation/download is incomplete, before Gradle or GCP.
@@ -72,8 +80,10 @@ jobs:
       - name: Kiểm cửa thu bằng chứng (dữ liệu giả, không game)
         run: python3 scripts/test-testlab-evidence.py
       - name: Sinh game CI và xác minh engine pack
+        if: github.event_name != 'workflow_dispatch' || !inputs.catalog_only
         run: python3 scripts/prepare-testlab-games.py --output app/build/generated/v56-assets --head "$(git rev-parse HEAD)"
       - name: Build app debug và instrumentation (không release/sign/publish)
+        if: github.event_name != 'workflow_dispatch' || !inputs.catalog_only
         run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
       # PR chỉ biên dịch; không có GCP Secrets, máy thật hay artifact APK/game trên PR.
       - uses: google-github-actions/auth@v2
@@ -82,6 +92,9 @@ jobs:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - uses: google-github-actions/setup-gcloud@v3
         if: github.event_name == 'workflow_dispatch'
+      - name: Catalog V105 only (không dùng máy/quota)
+        if: github.event_name == 'workflow_dispatch' && inputs.catalog_only
+        run: echo 'Read-only catalog request; physical test disabled.'
       - name: Xác nhận đúng một máy PHYSICAL / ARM64 trong catalog (V105)
         id: dev
         if: github.event_name == 'workflow_dispatch'
@@ -94,7 +107,7 @@ jobs:
             --profile "$DEVICE_PROFILE" --output v56-evidence/selected-device.json --github-output "$GITHUB_OUTPUT"
       - name: Chạy K1–K8 trên một máy ARM thật (một cách instrumentation)
         id: physical
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && !inputs.catalog_only
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
           DEVICE: ${{ steps.dev.outputs.device }}
@@ -115,7 +128,7 @@ jobs:
           echo "Kết thúc Test Lab, exit=$code; kết quả được thu riêng, không in thông tin GCP."
           exit "$code"
       - name: Thu ảnh/log/tombstone V56 có giới hạn, bỏ APK/game/credential
-        if: always() && github.event_name == 'workflow_dispatch'
+        if: always() && github.event_name == 'workflow_dispatch' && !inputs.catalog_only
         env:
           V56_EXPECTED_DEVICES: "1"
         run: python3 scripts/collect-testlab-evidence.py --result "$RUNNER_TEMP/v56-result.json" --stderr "$RUNNER_TEMP/v56-result.stderr" --output v56-evidence
