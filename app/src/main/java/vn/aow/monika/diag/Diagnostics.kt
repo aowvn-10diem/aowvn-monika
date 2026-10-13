@@ -372,6 +372,12 @@ object Diagnostics {
     /** Gắn ở AppGraph: gửi ngầm báo cáo `op-fail` theo cấu hình/ý người chơi (cùng đường với lõi sập). */
     @Volatile internal var opSender: ((Context, Report) -> Unit)? = null
     internal fun resetOpThrottle() = opSeen.clear()
+    private val opIdSeq = java.util.concurrent.atomic.AtomicLong(0)
+    /** Mã báo cáo là mili-giây thật và không bao giờ trùng (id = tên file): hai lỗi cùng mili-giây không được ghi đè nhau. */
+    private fun nextOpReportId(): Long {
+        val t = System.currentTimeMillis()
+        return opIdSeq.updateAndGet { maxOf(it + 1, t) }
+    }
 
     /**
      * Chạy một thao tác người dùng; lỗi (trừ hủy coroutine) được ghi thành báo cáo `kind=op-fail` rồi trả về trong [Result]
@@ -412,8 +418,9 @@ object Diagnostics {
             append(stack)
         }.let { scrub(c, stripLinks(it)) }.take(8_000)
         val s = read(c)?.takeIf { it.pid == Process.myPid() }
+        val id = nextOpReportId()
         val r = record(c, Report(
-            id = now, time = now, kind = "op-fail",
+            id = id, time = id, kind = "op-fail",
             title = "Thao tác lỗi: $name${if (step.isBlank()) "" else " ($step)"} — $code", app = appLine(), device = deviceLine(), session = s,
             reason = "$name/${step.ifBlank { "-" }}: $code", detail = detail, fromGame = false,
             component = "op:$name", env = envLine(c), crumbs = Breadcrumbs.read(c, Process.myPid(), OP_CRUMBS),

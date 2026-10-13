@@ -25,7 +25,7 @@ data class ImportResult(
 object Importer {
 
     /** V112: giải nén là thao tác người dùng → lỗi thật (hỏng file, hết chỗ, thiếu bộ giải nén…) để lại báo cáo `op-fail`; cần mật khẩu là luồng bình thường nên không báo. */
-    private fun extractOp(context: Context?, name: String, block: () -> Unit): Throwable? {
+    internal fun extractOp(context: Context?, name: String, block: () -> Unit): Throwable? {
         if (context == null) return runCatching(block).exceptionOrNull() // diag: bỏ qua — gọi từ nơi không có Context (test/tiện ích)
         return vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.EXTRACT, name,
             expected = { it is ArchiveExtractor.PasswordException }) { step("giai-nen"); block() }.exceptionOrNull()

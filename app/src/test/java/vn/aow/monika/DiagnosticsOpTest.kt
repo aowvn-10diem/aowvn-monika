@@ -19,7 +19,6 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.diag.Diagnostics.Op
-import vn.aow.monika.library.GameStorage
 import vn.aow.monika.library.Importer
 import vn.aow.monika.ui.TestApp
 import java.io.File
@@ -52,6 +51,8 @@ class DiagnosticsOpTest {
     }
 
     private fun opFails() = Diagnostics.list(app).filter { it.kind == "op-fail" }
+    /** Cùng một chỗ gọi → cùng chữ ký lỗi (như trong app, nơi mã gọi cố định). */
+    private fun failInstall() = Diagnostics.op(app, Op.INSTALL_PACK) { step("tai"); throw IOException("hết dung lượng") }
 
     @Test fun everyNamedOperationProducesExactlyOneOpFailReport() {
         val names = listOf(Op.DOWNLOAD, Op.EXTRACT, Op.IMPORT, Op.PATCH_ROM, Op.INSTALL_PACK, Op.OPEN_GAME, Op.FETCH_CONFIG, Op.FETCH_FEED, Op.FETCH_FORUM)
@@ -96,11 +97,11 @@ class DiagnosticsOpTest {
     }
 
     @Test fun sameOperationAndSignatureWithinTenMinutesReportsOnlyOnce() {
-        repeat(5) { Diagnostics.op(app, Op.INSTALL_PACK) { step("tai"); throw IOException("hết dung lượng") } }
+        repeat(5) { failInstall() }
         assertEquals(1, opFails().size)
         assertEquals(1, sent.size)
         now += Diagnostics.OP_THROTTLE_MS + 1
-        Diagnostics.op(app, Op.INSTALL_PACK) { step("tai"); throw IOException("hết dung lượng") }
+        failInstall()
         assertEquals("sau 10 phút: gộp vào cùng báo cáo, tăng đếm", 1, opFails().size)
         assertEquals(2, opFails().single().count)
         assertEquals(2, sent.size)
@@ -140,13 +141,15 @@ class DiagnosticsOpTest {
         assertEquals("IOException <- FileNotFoundException", Diagnostics.errorCode(e))
     }
 
-    @Test fun importerCorruptArchiveLeavesOneExtractOpFail() {
-        GameStorage.games(app).listFiles().orEmpty().forEach { it.deleteRecursively() }
-        val bad = File(tmp.root, "Hong.zip").apply { writeBytes(ByteArray(2_000) { 7 }) }
-        val result = Importer.importFile(app, bad, false, emptyList())
-        assertNotNull("lỗi vẫn được trả về cho giao diện như cũ", result.error)
+    @Test fun importerExtractFailureLeavesOneOpFailButPasswordPromptDoesNot() {
+        // Không chạy giải nén thật: SevenZipNative nạp thư viện native vào sandbox Robolectric và làm hỏng RarTest chạy sau trong cùng JVM.
+        val err = Importer.extractOp(app, "Hong.zip") { throw IOException("file nén hỏng") }
+        assertTrue(err is IOException)
         val r = opFails().single()
         assertEquals("op:giai-nen", r.component)
         assertTrue(r.detail.contains("đối tượng: Hong.zip") && r.detail.contains("bước: giai-nen"))
+        val pw = Importer.extractOp(app, "Khoa.rar") { throw vn.aow.monika.library.ArchiveExtractor.PasswordException("cần mật khẩu") }
+        assertTrue(pw is vn.aow.monika.library.ArchiveExtractor.PasswordException)
+        assertEquals("cần mật khẩu không phải lỗi: không thêm báo cáo", 1, opFails().size)
     }
 }
