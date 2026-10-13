@@ -16,6 +16,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import vn.aow.monika.BuildConfig
 import java.io.File
+import java.util.UUID
 
 /**
  * Bắt lỗi khi chơi game — để sửa lõi / engine về sau.
@@ -128,10 +129,22 @@ object Diagnostics {
     private fun deathSessionFile(c: Context, pid: Int) = File(File(dir(c), "sessions").apply { mkdirs() }, "$pid.json")
     private fun reportsDir(c: Context) = File(dir(c), "reports").apply { mkdirs() }
 
+    /** Riêng từng lần khởi động tiến trình; Android lưu cùng ApplicationExitInfo. Không gửi token này. */
+    private val processGeneration = UUID.randomUUID().toString()
+    @Volatile private var startedSession: Long? = null
+    @Serializable
+    internal data class DeathSnapshot(val session: Session, val generation: String)
+    internal fun deathProcessSummary(generation: String): ByteArray =
+        "monika-death-context:$generation".toByteArray(Charsets.UTF_8)
+
     // ---------- Phiên chơi (chạy trong tiến trình game) ----------
 
     fun begin(c: Context, kind: String, core: String, coreInfo: String, game: String, system: String) {
         val now = System.currentTimeMillis()
+        startedSession = now
+        if (Build.VERSION.SDK_INT >= 30) runCatching {
+            c.getSystemService(ActivityManager::class.java).setProcessStateSummary(deathProcessSummary(processGeneration))
+        }
         // Một lần mỗi phiên; ghi qua scrub, không thay định dạng Session cũ.
         runCatching { File(dir(c), "session-env.txt").writeText(GameEnvironment.capture(c)) }
         Breadcrumbs.add(c, "begin", "$kind · $core · $system")
@@ -167,6 +180,7 @@ object Diagnostics {
 
     /** Thoát bình thường → xóa phiên, không tạo báo cáo. */
     fun end(c: Context) { runCatching {
+        startedSession = null
         sessionFile(c).delete(); deathSessionFile(c, Process.myPid()).delete()
         File(dir(c), "session-env.txt").delete()
     } }
@@ -180,9 +194,10 @@ object Diagnostics {
             tmp.writeText(scrubJson(c, json.encodeToJsonElement(Session.serializer(), s)).toString())
             tmp.renameTo(sessionFile(c))
             // V101: riêng từng PID, không dùng phiên game khác để giải thích chết của main/midlet.
+            if (s.pid != Process.myPid() || s.startedAt != startedSession) return@runCatching
             val target = deathSessionFile(c, s.pid)
             val snapshot = File(target.parentFile, "${s.pid}.tmp")
-            snapshot.writeText(scrubJson(c, json.encodeToJsonElement(Session.serializer(), s)).toString())
+            snapshot.writeText(scrubJson(c, json.encodeToJsonElement(DeathSnapshot.serializer(), DeathSnapshot(s, processGeneration))).toString())
             snapshot.renameTo(target)
             target.parentFile?.listFiles()?.filter { it.extension == "json" }
                 ?.sortedByDescending { it.lastModified() }?.drop(30)?.forEach { it.delete() }
@@ -520,7 +535,7 @@ object Diagnostics {
             if (e.processName?.endsWith(":game") == true && File(reportsDir(c), "${e.timestamp}.json").exists()) continue
             val trace = scrub(c, traceStrings(e).joinToString("\n"))
             val crumbs = Breadcrumbs.read(c, e.pid)
-            val deathSession = if (kind == "anr" || kind == "lowmem") readDeathSession(c, e.pid, e.timestamp) else null
+            val deathSession = if (kind == "anr" || kind == "lowmem") readDeathSession(c, e.pid, e.timestamp, e.processStateSummary) else null
             val proc = e.processName.orEmpty().substringAfter(':', "chính")
             val comp = Components.of(c, deathSession, trace + "\n" + crumbs.joinToString("\n")).ifBlank { "app:$proc" }
             out += record(c, Report(
@@ -538,20 +553,31 @@ object Diagnostics {
                 session = deathSession, fromGame = deathSession != null,
             ))
             Breadcrumbs.drop(c, e.pid)
-            deathSessionFile(c, e.pid).delete()
+            clearDeathSession(c, e.pid, e.processStateSummary)
         }
         runCatching { stamp.writeText(newest.toString()) }
         return out
     }
 
-    /** Chỉ nhận snapshot thuộc chính PID và tồn tại trước thời điểm Android ghi nhận chết. */
-    internal fun matchingDeathSession(s: Session?, pid: Int, diedAt: Long): Session? = s?.takeIf {
+    /** PID/thời gian chưa đủ: token Android ghi cho lần chết phải khớp thế hệ snapshot. */
+    internal fun matchingDeathSession(snapshot: DeathSnapshot?, pid: Int, diedAt: Long, summary: ByteArray?): Session? {
+        if (snapshot == null || !runCatching { UUID.fromString(snapshot.generation).toString() == snapshot.generation }.getOrDefault(false) ||
+            summary == null || !summary.contentEquals(deathProcessSummary(snapshot.generation))) return null
+        return snapshot.session.takeIf {
         it.pid == pid && it.startedAt > 0 && it.startedAt <= diedAt &&
             it.stageAt in 0..diedAt && it.lastAlive in 0..diedAt
+        }
     }
 
-    internal fun readDeathSession(c: Context, pid: Int, diedAt: Long): Session? = matchingDeathSession(
-        runCatching { json.decodeFromString(Session.serializer(), deathSessionFile(c, pid).readText()) }.getOrNull(), pid, diedAt)
+    internal fun readDeathSession(c: Context, pid: Int, diedAt: Long, summary: ByteArray?): Session? = matchingDeathSession(
+        runCatching { json.decodeFromString(DeathSnapshot.serializer(), deathSessionFile(c, pid).readText()) }.getOrNull(), pid, diedAt, summary)
+
+    /** Một exit cũ không được xóa snapshot của tiến trình mới đang dùng lại PID. */
+    internal fun clearDeathSession(c: Context, pid: Int, summary: ByteArray?) {
+        val f = deathSessionFile(c, pid)
+        val snapshot = runCatching { json.decodeFromString(DeathSnapshot.serializer(), f.readText()) }.getOrNull() ?: return
+        if (summary != null && summary.contentEquals(deathProcessSummary(snapshot.generation))) f.delete()
+    }
 
     internal fun enrichDeathReport(r: Report): Report {
         if (r.kind != "lowmem" && r.kind != "anr") return r

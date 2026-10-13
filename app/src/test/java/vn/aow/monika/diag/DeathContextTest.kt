@@ -18,6 +18,7 @@ import vn.aow.monika.ui.TestApp
 @RunWith(RobolectricTestRunner::class)
 @Config(application = TestApp::class, sdk = [34])
 class DeathContextTest {
+    private val generation = "00000000-0000-0000-0000-000000000001"
     @Before fun clean() {
         val c = ApplicationProvider.getApplicationContext<Context>()
         Diagnostics.end(c)
@@ -50,11 +51,36 @@ class DeathContextTest {
 
     @Test fun pidReuseAndNewerSnapshotCannotBeAttributedToOlderDeath() {
         val s = Diagnostics.Session(7, 10, "libretro", "melondsds", stageAt = 20, lastAlive = 30)
-        assertEquals(s, Diagnostics.matchingDeathSession(s, 7, 40))
-        assertNull(Diagnostics.matchingDeathSession(s, 8, 40))
-        assertNull(Diagnostics.matchingDeathSession(s, 7, 9))
-        assertNull(Diagnostics.matchingDeathSession(s, 7, 25))
-        assertNull(Diagnostics.matchingDeathSession(s.copy(lastAlive = -1), 7, 40))
+        val snapshot = Diagnostics.DeathSnapshot(s, generation)
+        val summary = Diagnostics.deathProcessSummary(generation)
+        assertEquals(s, Diagnostics.matchingDeathSession(snapshot, 7, 40, summary))
+        assertNull(Diagnostics.matchingDeathSession(snapshot, 8, 40, summary))
+        assertNull(Diagnostics.matchingDeathSession(snapshot, 7, 9, summary))
+        assertNull(Diagnostics.matchingDeathSession(snapshot, 7, 25, summary))
+        assertNull(Diagnostics.matchingDeathSession(snapshot.copy(session = s.copy(lastAlive = -1)), 7, 40, summary))
+    }
+
+    @Test fun olderSamePidSnapshotRequiresAndroidGenerationEvidenceOrRemainsUnknown() {
+        val old = Diagnostics.DeathSnapshot(Diagnostics.Session(7, 10, "libretro", "old-core", stageAt = 20, lastAlive = 30), generation)
+        val newSummary = Diagnostics.deathProcessSummary("00000000-0000-0000-0000-000000000002")
+        assertNull(Diagnostics.matchingDeathSession(old, 7, 1000, newSummary))
+        assertNull(Diagnostics.matchingDeathSession(old, 7, 1000, null)) // new process dies before begin
+        assertNull(Diagnostics.matchingDeathSession(old, 7, 1000, ByteArray(0)))
+        assertEquals(old.session, Diagnostics.matchingDeathSession(old, 7, 1000, Diagnostics.deathProcessSummary(generation)))
+        assertEquals("unknown", Diagnostics.enrichDeathReport(report("lowmem", Diagnostics.matchingDeathSession(old, 7, 1000, newSummary))).core)
+    }
+
+    @Test fun oldExitDoesNotDeleteNewGenerationSnapshotAndLegacySnapshotIsUntrusted() {
+        val c = ApplicationProvider.getApplicationContext<Context>()
+        val f = File(c.filesDir, "diag/sessions/7.json").apply { parentFile!!.mkdirs() }
+        val snapshot = Diagnostics.DeathSnapshot(Diagnostics.Session(7, 10, "libretro", "new-core", lastAlive = 30), generation)
+        f.writeText(Json.encodeToString(Diagnostics.DeathSnapshot.serializer(), snapshot))
+        Diagnostics.clearDeathSession(c, 7, Diagnostics.deathProcessSummary("00000000-0000-0000-0000-000000000002"))
+        assertTrue(f.exists())
+        Diagnostics.clearDeathSession(c, 7, Diagnostics.deathProcessSummary(generation))
+        assertFalse(f.exists())
+        f.writeText(Json.encodeToString(Diagnostics.Session.serializer(), snapshot.session))
+        assertNull(Diagnostics.readDeathSession(c, 7, 40, Diagnostics.deathProcessSummary(generation)))
     }
 
     @Test fun perPidSnapshotSurvivesActivePointerLossUpdatesStageAndNormalExitClearsIt() {
@@ -63,11 +89,13 @@ class DeathContextTest {
         Diagnostics.begin(c, "libretro", "melondsds", "fake", "fixture", "NDS")
         Diagnostics.stage(c, "core-ready")
         val pid = Process.myPid()
+        val snapshot = Json.decodeFromString(Diagnostics.DeathSnapshot.serializer(), File(c.filesDir, "diag/sessions/$pid.json").readText())
+        val summary = Diagnostics.deathProcessSummary(snapshot.generation)
         File(c.filesDir, "diag/active-session.json").delete()
-        val s = Diagnostics.readDeathSession(c, pid, System.currentTimeMillis() + 1000)
+        val s = Diagnostics.readDeathSession(c, pid, System.currentTimeMillis() + 1000, summary)
         assertNotNull(s); assertEquals("melondsds", s!!.core); assertEquals("NDS", s.system); assertEquals("core-ready", s.stage)
-        assertNull(Diagnostics.readDeathSession(c, pid + 1, System.currentTimeMillis() + 1000))
+        assertNull(Diagnostics.readDeathSession(c, pid + 1, System.currentTimeMillis() + 1000, summary))
         Diagnostics.end(c)
-        assertNull(Diagnostics.readDeathSession(c, pid, System.currentTimeMillis() + 1000))
+        assertNull(Diagnostics.readDeathSession(c, pid, System.currentTimeMillis() + 1000, summary))
     }
 }
