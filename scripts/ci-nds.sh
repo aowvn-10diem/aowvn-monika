@@ -18,9 +18,9 @@ adb shell "mkdir -p $BASE/ci; cp /data/local/tmp/monika-v106.nds $BASE/ci/monika
 adb logcat -c
 adb logcat -v threadtime > "$OUT/logcat.txt" & LOGCAT_PID=$!
 launch() {
-  adb shell am start -W -n "$PKG/vn.aow.monika.runner.RetroActivity" \
-    --es core melondsds --es game "$BASE/ci/monika.nds" --es system 'Nintendo DS' \
-    --es system_id nds --es title 'CI NDS V106' > "$OUT/start-$1.txt"
+  adb shell "am start -W -n $PKG/vn.aow.monika.runner.RetroActivity \
+    --es core melondsds --es game $BASE/ci/monika.nds --es system 'Nintendo DS' \
+    --es system_id nds --es title 'CI NDS V106'" > "$OUT/start-$1.txt"
 }
 wait_frame() {
   for tick in $(seq 1 90); do
@@ -48,7 +48,7 @@ assert sum(r >= 250 and 115 <= g <= 135 and b <= 5 for r,g,b in pixels) > 3000, 
 PYCODE
 }
 verify_frame "$OUT/first-frame.png"
-adb shell stat -c '%Y %s' "$BASE/cores/melondsds/melondsds_libretro_android.so" > "$OUT/core-before.txt"
+adb shell "stat -c '%Y %s' '$BASE/cores/melondsds/melondsds_libretro_android.so'" > "$OUT/core-before.txt"
 maestro test .maestro-nds/exit.yaml --test-output-dir "$OUT/exit-ui"
 for tick in $(seq 1 15); do
   if ! adb shell pidof "$PKG:game" >/dev/null; then break; fi
@@ -60,7 +60,7 @@ launch second
 wait_frame
 adb exec-out screencap -p > "$OUT/second-frame.png"
 verify_frame "$OUT/second-frame.png"
-adb shell stat -c '%Y %s' "$BASE/cores/melondsds/melondsds_libretro_android.so" > "$OUT/core-after.txt"
+adb shell "stat -c '%Y %s' '$BASE/cores/melondsds/melondsds_libretro_android.so'" > "$OUT/core-after.txt"
 cmp "$OUT/core-before.txt" "$OUT/core-after.txt"
 python3 - "$FIXTURE/requests.jsonl" "$OUT" <<'PY'
 import json,pathlib,sys

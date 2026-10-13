@@ -5,6 +5,7 @@ on:
     paths:
       - '.maestro-nds/**'
       - 'scripts/ci-nds*'
+      - 'scripts/test-ci-nds-adb.py'
       - '.github/workflows/nds-flow.yml'
 permissions: {contents: read}
 concurrency: {group: 'v106-${{ github.ref }}', cancel-in-progress: true}
@@ -19,6 +20,8 @@ jobs:
         with: {distribution: temurin, java-version: 17}
       - uses: gradle/actions/setup-gradle@v6
         with: {cache-provider: basic}
+      - name: Kiểm lệnh adb qua remote shell (offline)
+        run: python3 scripts/test-ci-nds-adb.py
       - name: Unit trên cấu hình sản phẩm
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
