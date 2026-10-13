@@ -1,0 +1,59 @@
+name: Chuẩn bị PR phiên bản (V102)
+on:
+  pull_request:
+    paths: ['scripts/version-pr.py', 'scripts/test-version-pr.py', '.github/workflows/version-pr.yml']
+  push:
+    paths: ['scripts/version-pr.py', 'scripts/test-version-pr.py', '.github/workflows/version-pr.yml']
+  workflow_dispatch:
+    inputs:
+      next_version:
+        description: 'Để trống thì tăng patch từ versionName trên main'
+        required: false
+        type: string
+      create_pr:
+        description: 'PM cho phép tạo PR nháp; mặc định chỉ xuất kế hoạch'
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
+concurrency:
+  group: version-pr-${{ github.event_name == 'workflow_dispatch' && 'manual' || github.ref }}
+  cancel-in-progress: false
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - run: python3 scripts/test-version-pr.py
+  plan:
+    if: github.event_name == 'workflow_dispatch'
+    needs: offline
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Xuất kế hoạch hoặc tạo PR nháp theo quyền PM
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          NEXT_VERSION: ${{ inputs.next_version }}
+          CREATE_PR: ${{ inputs.create_pr }}
+        run: |
+          args=(--out version-pr-plan.json)
+          if [ -n "$NEXT_VERSION" ]; then args+=(--next-version "$NEXT_VERSION"); fi
+          if [ "$CREATE_PR" = true ]; then args+=(--apply); fi
+          python3 scripts/version-pr.py "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: version-pr-plan
+          path: version-pr-plan.json
+          retention-days: 3
