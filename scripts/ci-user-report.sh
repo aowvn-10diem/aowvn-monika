@@ -25,10 +25,27 @@ for item in 'pack packs/rgss' 'game games/user-report'; do
 done
 adb logcat -c
 adb logcat -v threadtime > "$OUT/logcat.txt" & LOGCAT_PID=$!
-adb shell am start -W -f 0x10008000 -n "$PKG/vn.aow.monika.runner.RgssGameActivity" --es title Monika-User-Report --es game_path "$BASE/games/user-report" > "$OUT/start.txt"
-adb shell pidof "$PKG:game" > "$OUT/pid-start.txt" || true
-sleep 25
-adb shell pidof "$PKG:game" > "$OUT/pid-before-ui.txt"
+# Zygote có thể lỗi fork lúc emulator vừa boot: thử khởi động fixture tối đa hai lần.
+# Không gọi Maestro trên launcher chỉ vì còn PID; mỗi lần vẫn chờ engine đủ 25 giây.
+LAUNCH_READY=0
+: > "$OUT/start.txt"
+for launch_attempt in 1 2; do
+  echo "launch_attempt=$launch_attempt" >> "$OUT/start.txt"
+  adb shell am start -W -f 0x10008000 -n "$PKG/vn.aow.monika.runner.RgssGameActivity" --es title Monika-User-Report --es game_path "$BASE/games/user-report" >> "$OUT/start.txt" || true
+  adb shell pidof "$PKG:game" > "$OUT/pid-start.txt" || true
+  sleep 25
+  adb shell dumpsys activity activities > "$OUT/activity-before-ui.txt"
+  if adb shell pidof "$PKG:game" > "$OUT/pid-before-ui.txt" &&
+     grep -Eq '(mResumedActivity|topResumedActivity).*com[.]aow[.]monika/vn[.]aow[.]monika[.]runner[.]RgssGameActivity([ }]|$)' "$OUT/activity-before-ui.txt"; then
+    LAUNCH_READY=1
+    break
+  fi
+  adb shell am force-stop "$PKG"
+done
+if [[ "$LAUNCH_READY" != 1 ]]; then
+  echo 'BLOCKED: RGSS fixture chưa có PID và Activity resume; không chạy Maestro trên launcher.' >&2
+  exit 1
+fi
 maestro test .maestro-user-report/report.yaml --test-output-dir "$OUT/ui"
 adb shell run-as "$PKG" sh -c "'for f in files/diag/reports/*.json; do cat \"\$f\"; echo; done'" > "$OUT/reports.jsonl"
 python3 - "$OUT/reports.jsonl" <<'PY'

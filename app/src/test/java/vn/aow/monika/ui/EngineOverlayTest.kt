@@ -1,15 +1,20 @@
 package vn.aow.monika.ui
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.semantics.SemanticsActions
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertTrue
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -17,6 +22,7 @@ import org.robolectric.annotation.GraphicsMode
 import vn.aow.monika.runner.AutoHide
 import vn.aow.monika.runner.InGameState
 import vn.aow.monika.runner.MENU_BUTTON_TAG
+import vn.aow.monika.runner.REVEAL_EDGE_TAG
 import vn.aow.monika.runner.RenpyOverlay
 import vn.aow.monika.runner.KirikiriOverlay
 import vn.aow.monika.runner.PadLayout
@@ -46,8 +52,8 @@ class EngineOverlayTest {
         rule.mainClock.advanceTimeBy(1_000)
     }
 
-    private fun rgss(open: Boolean) {
-        val state = InGameState().apply { menuOpen = open }
+    private fun rgss(open: Boolean, state: InGameState = InGameState()) {
+        state.menuOpen = open
         rule.setContent {
             RgssOverlay(
                 state = state,
@@ -89,9 +95,19 @@ class EngineOverlayTest {
         rule.shot("$name-nut-hien")
         rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
         rule.onNodeWithTag(MENU_BUTTON_TAG).assertDoesNotExist()
+        // V92: TalkBack/Android accessibility có action hiện lại, không chỉ tag Compose.
+        rule.onNodeWithContentDescription("Hiện tên game và menu")
+            .assertIsDisplayed().assertHasClickAction()
+            .performSemanticsAction(SemanticsActions.OnClick) { it() }
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(500)
+        rule.waitForIdle()
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertDoesNotExist()
         rule.shot("$name-nut-an")
-        // Chạm đúng góc phải trên (nơi nút từng nằm) → hiện lại, rồi lại tự ẩn.
-        rule.onRoot().performTouchInput { down(Offset(width - 40f, 40f)); up() }
+        // V92: cùng selector với Maestro → chạm đúng vùng A31 để hiện lại, rồi lại tự ẩn.
+        rule.onNodeWithTag(REVEAL_EDGE_TAG).assertIsDisplayed().performTouchInput { click() }
         rule.waitForIdle()
         rule.mainClock.advanceTimeBy(500)
         rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
@@ -102,6 +118,26 @@ class EngineOverlayTest {
     @Test fun kirikiriMenuButtonAutoHides() = assertMenuButtonAutoHides("v89-kirikiri") { kirikiri(it) }
 
     @Test fun rgssMenuButtonAutoHides() = assertMenuButtonAutoHides("v89-rgss") { rgss(it) }
+
+    @Test fun rgssTwoQuickTapsOnRevealCenterOpenMenu() {
+        val state = InGameState()
+        rgss(open = false, state = state)
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertDoesNotExist()
+        val root = rule.onRoot()
+        val point = rule.onNodeWithTag(REVEAL_EDGE_TAG).assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot.center - root.fetchSemanticsNode().boundsInRoot.topLeft
+        root.performTouchInput { click(point) }
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(100)
+        rule.waitForIdle()
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
+        root.performTouchInput { click(point) }
+        rule.waitForIdle()
+        rule.runOnIdle { assertTrue(state.menuOpen) }
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000)
+        rule.onNodeWithTag(MENU_BUTTON_TAG).assertIsDisplayed()
+    }
 
     @Test fun renpyMenuButtonAutoHides() = assertMenuButtonAutoHides("v89-renpy") { open ->
         rule.setContent { RenpyOverlay(title = "Game Ren'Py", open = open, onOpen = {}, onExit = {}) }

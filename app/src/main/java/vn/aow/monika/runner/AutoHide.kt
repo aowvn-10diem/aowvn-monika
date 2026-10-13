@@ -13,7 +13,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import vn.aow.monika.ui.theme.Monika
 
 /**
@@ -66,7 +72,16 @@ fun autoHideAlpha(visible: Boolean): Float =
     animateFloatAsState(if (visible) 1f else 0f, tween(Monika.motion.normal), label = "autoHide").value
 
 /** Vùng chạm vô hình sát mép để hiện lại phần tử đang ẩn. Chỉ đặt khi đang ẩn. */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun RevealEdge(auto: AutoHide, modifier: Modifier) {
-    Box(modifier.pointerInput(auto) { awaitEachGesture { awaitFirstDown(); auto.reveal() } })
+    Box(modifier.semantics {
+        testTagsAsResourceId = true
+        contentDescription = "Hiện tên game và menu"
+        onClick { auto.reveal(); true }
+    }.testTag(REVEAL_EDGE_TAG)
+        .pointerInput(auto) { awaitEachGesture { awaitFirstDown(); auto.reveal() } })
 }
+
+/** ID cho Maestro chạm đúng vùng hiện lại thanh/menu A31, không phụ thuộc độ phân giải. */
+const val REVEAL_EDGE_TAG = "game-reveal-edge"

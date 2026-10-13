@@ -1,6 +1,15 @@
 appId: com.aow.monika
 ---
-- tapOn: "Menu"
+# A31: sau 25 giây chờ engine, phải thấy vùng accessibility để hiện lại Menu.
+- assertVisible:
+    id: "game-reveal-edge"
+- tapOn:
+    id: "game-reveal-edge"
+    # Cùng tâm với nút Menu: tap đầu hiện lại, tap sau mở Menu trước timer A31.
+    # Maestro chờ window settle trước mỗi lệnh; hai tap trong một lệnh tránh khoảng chờ đó.
+    repeat: 2
+    delay: 100
+    waitToSettleTimeoutMs: 0
 - scrollUntilVisible:
     element: "Báo lỗi game này"
     direction: DOWN
