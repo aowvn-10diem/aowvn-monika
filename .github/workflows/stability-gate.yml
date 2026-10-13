@@ -1,0 +1,19 @@
+name: Cổng chữ ký lỗi offline (V103)
+on:
+  pull_request:
+    paths: ['scripts/stability-gate.py', 'scripts/test-stability-gate.py', 'cloudflare/crash-worker/**', '.github/workflows/stability-gate.yml']
+  push:
+    paths: ['scripts/stability-gate.py', 'scripts/test-stability-gate.py', 'cloudflare/crash-worker/**', '.github/workflows/stability-gate.yml']
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - run: python3 scripts/test-stability-gate.py
+      - run: node --test cloudflare/crash-worker/worker.test.js

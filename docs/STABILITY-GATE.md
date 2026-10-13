@@ -1,0 +1,9 @@
+# Cổng chữ ký lỗi V103
+
+`python3 scripts/test-stability-gate.py` chạy offline. Fixture JSON `{complete:true, records:[{id,report}]}` chứa báo cáo giả; `stability-gate.py --fixture fixture.json --version 0.8.3 --hours 24 --now-ms 1791862200000 --out result.json` không mạng. Exit0: không có chữ ký mới trong cửa sổ, exit1: có và danh sách hash/core/kind/count, exit2: không đủ bằng chứng/cấu hình/API. Không có báo cáo đúng phiên bản cũng BLOCKED.
+
+Chữ ký giống giao thức V100: core + kind + ba frame Java/native đầu, bỏ path/line/PC. Mới là **lần nhận đầu tiên của chữ ký trong lịch sử còn lưu của đúng phiên bản** nằm trong N giờ (1–168), kể cả đúng biên. Chữ ký đã có từ trước lặp lại không tính mới; báo cáo bản khác không làm baseline. Dùng thời gian nhận từ ID do Worker sinh, không dùng đồng hồ máy gửi.
+
+Đường thật chỉ GET `/report-index` phân trang và detail của đúng bản. Index phải hoàn tất: tối đa50 trang100, target200 detail, 250 API,1MiB/response và8MiB tổng; cursor lặp/metadata thiếu/detail lệch/version không có/budget/API hỏng thì BLOCKED. Endpoint mới chỉ là **sửa nguồn Worker**, chưa deploy; Worker hiện tại chưa có endpoint thì script dừng, không rơi về100 báo cáo rồi tuyên bố ổn định. Không sửa/xóa KV cũ, không gửi báo cáo/stack/ảnh/tên game vào output.
+
+PM dùng sau khi endpoint được triển khai và secret có sẵn: biến môi trường `CRASH_WORKER_URL` (origin HTTPS, không credential/query), `CRASH_ADMIN_TOKEN`. Sol không đọc/tạo secret hay chạy đường thật/deploy. Snapshot phụ thuộc KV (eventual consistency, TTL60 ngày), không chứng minh không có lỗi ngoài dữ liệu đã lưu/nhận; PM còn kiểm CI đúng head, hai lượt review, quota/máy thật và quyết định phát hành. Script không merge/tag/release/sign/publish. Một kết quả ALLOWED chỉ là cổng chữ ký trên snapshot, không tự cấp quyền chuyển stable.
