@@ -88,21 +88,21 @@ class DiagnosticsOpTest {
 
     @Test fun neverLeaksDownloadLinks() {
         Diagnostics.op(app, Op.DOWNLOAD, "game.zip") {
-            throw IOException("Không tải được https://pixeldrain.com/api/file/AbCd1234?download và http://x.test/rom.nds")
+            throw IOException("Không tải được https://files.example.test/api/file/AbCd1234?download và http://x.test/rom.nds")
         }
         val r = opFails().single()
         val text = r.toText() + r.detail + r.reason + r.title
-        assertFalse(text.contains("pixeldrain") || text.contains("http://") || text.contains("https://"))
+        assertFalse(text.contains("example.test") || text.contains("http://") || text.contains("https://"))
         assertTrue(r.detail.contains("<link>"))
     }
 
     @Test fun linksAlreadyInBreadcrumbsNeverReachTheReportOrPayload() {
-        Diagnostics.crumb(app, "net", "GET https://pixeldrain.com/api/file/AbCd1234?download")
+        Diagnostics.crumb(app, "net", "GET https://files.example.test/api/file/AbCd1234?download")
         Diagnostics.crumb(app, "net", "redirect http://cdn.rom-host.test/game.nds")
         Diagnostics.op(app, Op.DOWNLOAD, "game.zip") { step("tai-ve"); throw IOException("HTTP 502") }
         val r = opFails().single()
         val everything = r.toText() + Diagnostics.reportJson(app, r) + sent.single().crumbs.joinToString("\n")
-        assertFalse(everything.contains("pixeldrain") || everything.contains("rom-host") || everything.contains("https://") || everything.contains("http://"))
+        assertFalse(everything.contains("example.test") || everything.contains("rom-host") || everything.contains("https://") || everything.contains("http://"))
         assertTrue(r.crumbs.any { it.contains("<link>") })
     }
 
