@@ -96,6 +96,16 @@ class DiagnosticsOpTest {
         assertTrue(r.detail.contains("<link>"))
     }
 
+    @Test fun linksAlreadyInBreadcrumbsNeverReachTheReportOrPayload() {
+        Diagnostics.crumb(app, "net", "GET https://pixeldrain.com/api/file/AbCd1234?download")
+        Diagnostics.crumb(app, "net", "redirect http://cdn.rom-host.test/game.nds")
+        Diagnostics.op(app, Op.DOWNLOAD, "game.zip") { step("tai-ve"); throw IOException("HTTP 502") }
+        val r = opFails().single()
+        val everything = r.toText() + Diagnostics.reportJson(app, r) + sent.single().crumbs.joinToString("\n")
+        assertFalse(everything.contains("pixeldrain") || everything.contains("rom-host") || everything.contains("https://") || everything.contains("http://"))
+        assertTrue(r.crumbs.any { it.contains("<link>") })
+    }
+
     @Test fun sameOperationAndSignatureWithinTenMinutesReportsOnlyOnce() {
         repeat(5) { failInstall() }
         assertEquals(1, opFails().size)

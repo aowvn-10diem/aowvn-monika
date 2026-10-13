@@ -429,7 +429,8 @@ object Diagnostics {
             id = id, time = id, kind = "op-fail",
             title = "Thao tác lỗi: $name${if (step.isBlank()) "" else " ($step)"} — $code", app = appLine(), device = deviceLine(), session = s,
             reason = "$name/${step.ifBlank { "-" }}: $code", detail = detail, fromGame = false,
-            component = "op:$name", env = envLine(c), crumbs = Breadcrumbs.read(c, Process.myPid(), OP_CRUMBS),
+            component = "op:$name", env = envLine(c), // Vệt cũ có thể chứa link (vd. ghi lúc tải) → lọc cả vệt: báo cáo/payload không bao giờ mang link tải.
+            crumbs = Breadcrumbs.read(c, Process.myPid(), OP_CRUMBS).map { stripLinks(it) },
         ))
         opSender?.invoke(c, r)
         r
