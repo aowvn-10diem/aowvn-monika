@@ -1,12 +1,8 @@
 appId: com.aow.monika
 ---
-- assertVisible:
-    id: "game-reveal-edge"
-- tapOn:
-    id: "game-reveal-edge"
-    repeat: 2
-    delay: 100
-    waitToSettleTimeoutMs: 0
+# NDS has a full-width reveal edge, whose center does not overlap the Menu button.
+# The app's BackHandler opens and pins the real menu, even while chrome is hidden.
+- pressKey: Back
 - scrollUntilVisible:
     element: "Thoát game"
     direction: DOWN
