@@ -51,6 +51,15 @@ class BotTest(unittest.TestCase):
         b["report"]["detail"] = b["report"]["detail"].replace("libtest.so", "libother.so")
         self.assertNotEqual(bot.plan([a], [], OWNERS)[0]["title"], bot.plan([b], [], OWNERS)[0]["title"])
 
+    def test_native_hex_offsets_group_with_decimal_but_different_symbols_stay_separate(self):
+        base = record(1, detail="#00 pc 0001 /private/libtest.so (function+32)")
+        expected = bot.plan([base], [], OWNERS)[0]["title"]
+        for offset in ["0x20", "0x44", "0XABCD", "9876"]:
+            row = record(2, detail=f"#00 pc abcdef /different/libtest.so (function+{offset})")
+            self.assertEqual(bot.plan([row], [], OWNERS)[0]["title"], expected)
+        other = record(3, detail="#00 pc abcdef /different/libtest.so (other+0x20)")
+        self.assertNotEqual(bot.plan([other], [], OWNERS)[0]["title"], expected)
+
     def test_new_issue_and_repeat_are_idempotent(self):
         first = bot.plan([record(1)], [], OWNERS)[0]
         self.assertEqual(first["assignees"], ["sol-fixture"])

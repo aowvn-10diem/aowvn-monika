@@ -37,7 +37,7 @@ def frames(report):
             result.append(java.group(1))
         elif native:
             # Remove addresses/offsets, retain module+symbol; never emit paths/stack text.
-            symbol = re.sub(r"\+\d+\b", "", native.group(2) or "")
+            symbol = re.sub(r"\+(?:0[xX][0-9a-fA-F]+|\d+)\b", "", native.group(2) or "")
             result.append(native.group(1) + ":" + symbol)
         if len(result) == 3:
             break
