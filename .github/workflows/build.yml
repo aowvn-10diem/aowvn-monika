@@ -12,6 +12,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Chặn handler nuốt lỗi mới (V113, offline)
+        env:
+          DIAG_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          DIAG_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 scripts/test-kiem-nuot-loi.py
+          bash scripts/kiem-nuot-loi.sh --base "$DIAG_BASE" --head "$DIAG_HEAD"
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
