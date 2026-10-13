@@ -15,7 +15,10 @@ object PatchFlow {
         try {
             if (rom.length() > MAX_BYTES) return@withContext "File game quá lớn để vá trong app (${rom.length() / (1024 * 1024)} MB)."
             val patchBytes = context.contentResolver.openInputStream(patchUri)?.use { it.readBytes() }
-                ?: return@withContext "Không đọc được file bản vá."
+                ?: run {
+                    Diagnostics.opFail(context, Diagnostics.Op.PATCH_ROM, "doc-ban-va", java.io.IOException("không mở được luồng bản vá"), rom.name)
+                    return@withContext "Không đọc được file bản vá."
+                }
             val fmt = RomPatcher.detect(patchBytes) ?: return@withContext "Không nhận ra định dạng bản vá (hỗ trợ IPS, BPS, UPS)."
             val result = RomPatcher.apply(rom.readBytes(), patchBytes)
             // Mỗi thư mục = 1 game: bản vá nằm trong thư mục riêng "<tên> (Việt hóa)" để hiện thành game riêng trong Thư viện.
@@ -23,12 +26,19 @@ object PatchFlow {
             var dir = File(root, "${rom.parentFile?.name ?: rom.nameWithoutExtension} (Việt hóa)")
             var n = 2
             while (dir.exists()) dir = File(root, "${rom.parentFile?.name ?: rom.nameWithoutExtension} (Việt hóa $n)").also { n++ }
-            if (!dir.mkdirs()) return@withContext "Không tạo được thư mục cho bản đã vá."
+            if (!dir.mkdirs()) {
+                Diagnostics.opFail(context, Diagnostics.Op.PATCH_ROM, "tao-thu-muc", java.io.IOException("mkdirs thất bại"), rom.name)
+                return@withContext "Không tạo được thư mục cho bản đã vá."
+            }
             rom.parentFile?.let { vn.aow.monika.library.GameMeta.read(it) }?.let { vn.aow.monika.library.GameMeta.write(dir, it.copy(title = it.title.ifBlank { rom.nameWithoutExtension } + " (Việt hóa)")) }
             val out = File(dir, rom.name)
             val tmp = File(out.parentFile, out.name + ".part")
             tmp.writeBytes(result)
-            if (!tmp.renameTo(out)) { tmp.delete(); dir.deleteRecursively(); return@withContext "Không ghi được file sau khi vá." }
+            if (!tmp.renameTo(out)) {
+                tmp.delete(); dir.deleteRecursively()
+                Diagnostics.opFail(context, Diagnostics.Op.PATCH_ROM, "doi-ten-file", java.io.IOException("renameTo thất bại"), rom.name)
+                return@withContext "Không ghi được file sau khi vá."
+            }
             "Đã vá (${fmt.label}). Game \"${dir.name}\" đã có trong Thư viện, ROM gốc giữ nguyên."
         } catch (e: PatchException) {
             Diagnostics.opFail(context, Diagnostics.Op.PATCH_ROM, "ap-ban-va", e, rom.name)

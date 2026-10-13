@@ -58,7 +58,7 @@ class ConfigRepositoryValidationTest {
         val before = cache.readText()
         reply = valid(high - 1); assertTrue(r.refresh(true).isFailure)
         assertEquals(high, r.current.configVersion); assertEquals(before, cache.readText())
-        assertEquals("app:config", Diagnostics.list(app).first().component)
+        assertEquals("op:tai-cau-hinh", Diagnostics.list(app).first().component)
         assertEquals(high, repo().current.configVersion)
     }
 
@@ -110,6 +110,22 @@ class ConfigRepositoryValidationTest {
             assertEquals(version, r.current.configVersion)
             assertEquals(before, cache.readText())
         }
+    }
+
+    @Test fun refreshFailureLeavesOneOpFailButOfflineDoesNot() = runBlocking {
+        Diagnostics.resetOpThrottle()
+        val http500 = OkHttpClient.Builder().addInterceptor { chain ->
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(500).message("Err")
+                .body(ResponseBody.create(null, "")).build()
+        }.build()
+        assertTrue(ConfigRepository(app, http500).refresh(true).isFailure)
+        val fail = Diagnostics.list(app).filter { it.kind == "op-fail" }.single()
+        assertEquals("op:tai-cau-hinh", fail.component)
+        assertTrue(fail.detail.contains("bước: tai") && fail.detail.contains("HTTP 500"))
+        File(app.filesDir, "diag").deleteRecursively()
+        val offline = OkHttpClient.Builder().addInterceptor { throw java.net.UnknownHostException("aow.vn") }.build()
+        assertTrue(ConfigRepository(app, offline).refresh(true).isFailure)
+        assertTrue("mất mạng chỉ ghi vệt", Diagnostics.list(app).none { it.kind == "op-fail" })
     }
 
     @Test fun invalidCacheFallsBackToBundledAndRecordsHandledError() {

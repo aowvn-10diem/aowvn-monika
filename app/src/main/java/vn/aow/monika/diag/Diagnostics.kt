@@ -346,9 +346,9 @@ object Diagnostics {
 
     /** Phạm vi của một thao tác người dùng; gọi [step] để ghi bước đang làm (vào vệt sự kiện và báo cáo lỗi). */
     class OpScope internal constructor(private val c: Context, val name: String) {
-        @Volatile var current: String = ""
+        @Volatile var stepName: String = ""
             private set
-        fun step(s: String) { current = s; Breadcrumbs.add(c, "op", "$name: $s") }
+        fun step(s: String) { stepName = s; Breadcrumbs.add(c, "op", "$name: $s") }
     }
 
     /** Tên thao tác dùng chung để báo cáo `op-fail` gom đúng nhóm (khớp `component = "op:<tên>"`). */
@@ -387,14 +387,14 @@ object Diagnostics {
     fun <T> op(c: Context, name: String, target: String? = null, expected: (Throwable) -> Boolean = { false }, block: OpScope.() -> T): Result<T> {
         val scope = OpScope(c, name)
         return try { Result.success(scope.block()) } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-        catch (e: Throwable) { if (!expected(e)) opFail(c, name, scope.current, e, target); Result.failure(e) }
+        catch (e: Throwable) { if (!expected(e)) opFail(c, name, scope.stepName, e, target); Result.failure(e) }
     }
 
     /** Bản `suspend` của [op]. */
     suspend fun <T> opSuspend(c: Context, name: String, target: String? = null, expected: (Throwable) -> Boolean = { false }, block: suspend OpScope.() -> T): Result<T> {
         val scope = OpScope(c, name)
         return try { Result.success(scope.block()) } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-        catch (e: Throwable) { if (!expected(e)) opFail(c, name, scope.current, e, target); Result.failure(e) }
+        catch (e: Throwable) { if (!expected(e)) opFail(c, name, scope.stepName, e, target); Result.failure(e) }
     }
 
     /** Ghi một lỗi thao tác đã tự bắt (nơi không bọc được bằng [op]). Trả null nếu trùng trong cửa sổ chống spam. */

@@ -190,6 +190,23 @@ class DiagnosticsOpTest {
         assertTrue(Regex("bước: (mo|chep)-file").containsMatchIn(r.detail))
     }
 
+    private fun ips(): ByteArray = "PATCH".toByteArray() + byteArrayOf(0, 0, 0, 0, 1, 0x41) + "EOF".toByteArray()
+
+    @Test fun patchFileWriteFailureLeavesOpFailInsteadOfOnlyAMessage() = runBlocking {
+        val rom = File(tmp.root, "rom.nds").apply { writeBytes(ByteArray(8)) }
+        val patch = File(tmp.root, "vh.ips").apply { writeBytes(ips()) }
+        // Thư mục games bị thay bằng 1 file → mkdirs() của thư mục bản vá trả false (không ném ngoại lệ).
+        val games = vn.aow.monika.library.GameStorage.games(app)
+        games.deleteRecursively(); games.createNewFile()
+        try {
+            val msg = vn.aow.monika.patch.PatchFlow.run(app, rom, android.net.Uri.fromFile(patch))
+            assertTrue(msg.startsWith("Không tạo được thư mục"))
+        } finally { games.delete(); games.mkdirs() }
+        val r = opFails().single()
+        assertEquals("op:va-rom", r.component)
+        assertTrue(r.detail.contains("bước: tao-thu-muc") && r.detail.contains("đối tượng: rom.nds"))
+    }
+
     @Test fun errorCodeShowsRootCause() {
         val e = IOException("ngoài", java.io.FileNotFoundException("gốc"))
         assertEquals("IOException <- FileNotFoundException", Diagnostics.errorCode(e))
