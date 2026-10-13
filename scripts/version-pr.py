@@ -110,6 +110,23 @@ class Github:
         return json.loads(raw)
 
 
+def check_environment(github, ref):
+    # Scheduler enforces this Environment policy before granting its scoped secret.
+    if ref != "refs/heads/main": raise ValueError("untrusted dispatch ref")
+    env = github.call("/environments/version-pr-main")
+    policy = env.get("deployment_branch_policy") or {}
+    rules = env.get("protection_rules") or []
+    review = [r for r in rules if r.get("type") == "required_reviewers"]
+    if policy.get("custom_branch_policies") is not True or policy.get("protected_branches") is not False or len(review) != 1:
+        raise ValueError("missing protected Environment")
+    if not review[0].get("reviewers") or review[0].get("prevent_self_review") is not True:
+        raise ValueError("independent review required")
+    branches = github.call("/environments/version-pr-main/deployment-branch-policies?per_page=100")
+    policies = branches.get("branch_policies", [])
+    if branches.get("total_count") != 1 or len(policies) != 1 or policies[0].get("name") != "main" or policies[0].get("type") != "branch":
+        raise ValueError("Environment must allow only main branch")
+
+
 def snapshot(github):
     main = github.call("/git/ref/heads/main")["object"]["sha"]
     def content(path):
@@ -186,8 +203,14 @@ def main():
     parser.add_argument("--out", default="version-pr-plan.json")
     parser.add_argument("--next-version")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--check-environment", action="store_true")
     args = parser.parse_args()
     try:
+        if args.check_environment:
+            if args.fixture or args.apply: raise ValueError("invalid guard mode")
+            check_environment(Github(os.environ.get("GITHUB_REPOSITORY", ""), os.environ.get("GITHUB_TOKEN", "")), os.environ.get("GITHUB_REF", ""))
+            print("Protected main-only Environment verified; no mutations")
+            return
         if args.fixture and args.apply: raise ValueError("offline fixture cannot apply")
         github = None if args.fixture else Github(os.environ.get("GITHUB_REPOSITORY", ""), os.environ.get("GITHUB_TOKEN", ""))
         data = json.loads(Path(args.fixture).read_text()) if args.fixture else snapshot(github)

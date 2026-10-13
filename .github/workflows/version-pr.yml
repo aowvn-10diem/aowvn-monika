@@ -11,7 +11,7 @@ on:
         required: false
         type: string
       create_pr:
-        description: 'PM cho phép tạo PR nháp; mặc định chỉ xuất kế hoạch'
+        description: 'PM cho phép tạo PR nháp qua Environment bảo vệ; mặc định dry plan'
         required: true
         default: false
         type: boolean
@@ -30,30 +30,57 @@ jobs:
           persist-credentials: false
       - run: python3 scripts/test-version-pr.py
   plan:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: offline
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
-      - name: Xuất kế hoạch hoặc tạo PR nháp theo quyền PM
+      - name: Xuất kế hoạch chỉ đọc từ main
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           NEXT_VERSION: ${{ inputs.next_version }}
-          CREATE_PR: ${{ inputs.create_pr }}
         run: |
           args=(--out version-pr-plan.json)
           if [ -n "$NEXT_VERSION" ]; then args+=(--next-version "$NEXT_VERSION"); fi
-          if [ "$CREATE_PR" = true ]; then args+=(--apply); fi
           python3 scripts/version-pr.py "${args[@]}"
       - uses: actions/upload-artifact@v7
         with:
           name: version-pr-plan
           path: version-pr-plan.json
           retention-days: 3
+  create:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.create_pr
+    needs: plan
+    # Chính sách Environment nằm ngoài ref dispatch; secret CHỈ đặt ở Environment này.
+    environment: version-pr-main
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Kiểm Environment chỉ main và bắt buộc người duyệt độc lập
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF: ${{ github.ref }}
+        run: python3 scripts/version-pr.py --check-environment
+      - name: Tạo duy nhất PR nháp từ nguồn main đã duyệt
+        env:
+          # Không dùng GITHUB_TOKEN ghi; Environment chặn cấp token cho ref khác main.
+          GITHUB_TOKEN: ${{ secrets.VERSION_PR_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          NEXT_VERSION: ${{ inputs.next_version }}
+        run: |
+          args=(--apply --out version-pr-applied-plan.json)
+          if [ -n "$NEXT_VERSION" ]; then args+=(--next-version "$NEXT_VERSION"); fi
+          python3 scripts/version-pr.py "${args[@]}"

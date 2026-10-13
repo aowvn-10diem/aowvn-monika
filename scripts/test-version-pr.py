@@ -17,6 +17,32 @@ def fixture():
 
 
 class VersionTest(unittest.TestCase):
+    def test_dispatch_environment_guard_requires_main_only_and_independent_review(self):
+        env={'deployment_branch_policy':{'custom_branch_policies':True,'protected_branches':False},
+             'protection_rules':[{'type':'required_reviewers','reviewers':[{'type':'User','reviewer':{'id':1}}],'prevent_self_review':True}]}
+        branches={'total_count':1,'branch_policies':[{'name':'main','type':'branch'}]}
+        class Fake:
+            def __init__(self,e,b):self.e=e;self.b=b;self.calls=[]
+            def call(self,path):self.calls.append(path);return self.b if 'branch-policies?' in path else self.e
+        f=Fake(env,branches);v.check_environment(f,'refs/heads/main');self.assertEqual(len(f.calls),2)
+        for ref in ['refs/heads/sol/V102','refs/tags/main','']:
+            f=Fake(env,branches)
+            with self.assertRaises(ValueError):v.check_environment(f,ref)
+            self.assertEqual(f.calls,[])
+        bad=copy.deepcopy(env);bad['protection_rules'][0]['prevent_self_review']=False
+        broad=copy.deepcopy(branches);broad['branch_policies'][0]['name']='*'
+        tag=copy.deepcopy(branches);tag['branch_policies'][0]['type']='tag'
+        for e,b in [({},branches),(bad,branches),(env,broad),(env,tag),(env,{'total_count':2,'branch_policies':branches['branch_policies']})]:
+            with self.assertRaises(ValueError):v.check_environment(Fake(e,b),'refs/heads/main')
+
+    def test_workflow_never_grants_builtin_write_token_and_scopes_secret_to_environment(self):
+        text=(pathlib.Path(__file__).resolve().parent.parent/'.github/workflows/version-pr.yml').read_text()
+        self.assertNotIn('contents: write',text);self.assertNotIn('pull-requests: write',text)
+        plan=text.split('  plan:')[1].split('  create:')[0];create=text.split('  create:')[1]
+        self.assertIn("github.ref == 'refs/heads/main'",plan);self.assertIn("github.ref == 'refs/heads/main'",create)
+        self.assertIn('environment: version-pr-main',create);self.assertIn('secrets.VERSION_PR_TOKEN',create)
+        self.assertNotIn('secrets.',plan);self.assertLess(create.index('--check-environment'),create.index('secrets.VERSION_PR_TOKEN'))
+        self.assertIn('ref: ${{ github.sha }}',create)
     def test_dry_plan_has_two_files_increment_full_commit_and_draft(self):
         p = v.make_plan(fixture())
         self.assertEqual(set(p["files"]), {v.BUILD,v.CHANGELOG})
