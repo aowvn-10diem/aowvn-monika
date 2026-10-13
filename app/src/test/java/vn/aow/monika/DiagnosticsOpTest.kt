@@ -154,7 +154,7 @@ class DiagnosticsOpTest {
         Diagnostics.opFail(app, Op.FETCH_FEED, "tai-bai", IOException("HTTP 500"))
         val r = opFails().single()
         Diagnostics.autoSend(app, http, r, "https://crash.invalid/report", true, true)
-        Thread.sleep(200) // nếu có gửi thì luồng nền đã kịp gọi interceptor
+        // autoSend thoát đồng bộ ở cổng autoSendAllowedHere() trước khi tạo luồng nền → không cần chờ
         assertEquals("không được gọi mạng", 0, calls)
         Diagnostics.allowDebugSend = true
         try { assertTrue("cờ thủ công bật lại được", Diagnostics.autoSendAllowedHere()) } finally { Diagnostics.allowDebugSend = false }
