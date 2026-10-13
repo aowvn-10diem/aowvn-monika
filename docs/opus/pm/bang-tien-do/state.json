@@ -1,10 +1,30 @@
 {
- "updatedAt": "2026-10-10T18:28:12Z",
- "mainSha": "49bdbd5",
- "app": "App 0.7.7 (bản thử RC) · config 36",
+ "updatedAt": "2026-10-13T09:46:20Z",
+ "mainSha": "9897563",
+ "app": "v0.8.3 bản thử · ổn định chờ lượt cài thật",
  "nextCheck": "2026-10-09T06:14:32Z",
- "headline": "Bản thử v0.7.9 đã ra (60fbffb); chờ sếp test và chốt ổn định",
+ "headline": "[A40] Chế độ tự động: PM điều phối mỗi giờ, tối thiểu 2 ngày 1 bản. Đang kẹt 1 việc: PM chưa có quyền gộp PR (10 PR đủ luật đang chờ).",
  "needsBoss": [
+  {
+   "code": "Q-GOP",
+   "urgency": "Chặn cả dự án",
+   "kind": "one",
+   "question": "Cho PM quyền tự gộp PR khi đủ luật (Đạt đúng head + CI xanh)?",
+   "recommend": "Đồng ý. Không có quyền gộp thì quy trình tự động dừng ở bước gộp; 10 PR đủ luật đang chờ.",
+   "how": "Cách 1: sếp thêm luật cho phép trong cài đặt Claude Code: Bash(gh api -X PUT repos/aowvn-10diem/aowvn-monika/pulls/*/merge*). Cách 2: chọn 'Đồng ý' ở đây, PM sẽ hướng dẫn từng bước ở lượt sau.",
+   "options": [
+    "Đồng ý, tôi thêm luật",
+    "Tôi tự gộp tay",
+    "Không"
+   ],
+   "links": [
+    {
+     "kind": "doc",
+     "label": "Quy trình A40",
+     "url": "https://github.com/aowvn-10diem/aowvn-monika/blob/docs/opus-tra-loi/docs/opus/hop-thu/QUY-TRINH-TU-DONG-1310.md"
+    }
+   ]
+  },
   {
    "code": "G9",
    "urgency": "Nên làm",
@@ -1048,6 +1068,35 @@
    "owner": "",
    "status": "cho",
    "note": "Sol, sau cùng"
+  },
+  {
+   "code": "V112",
+   "title": "Crashlog: bọc mọi thao tác người dùng (Diagnostics.op)",
+   "owner": "Sonnet",
+   "status": "dang",
+   "note": "Tải, giải nén, nhập game, vá ROM, cài gói, mở game, tải config/feed: lỗi nào cũng có báo cáo op-fail",
+   "module": "app-diag"
+  },
+  {
+   "code": "V113",
+   "title": "CI chặn nuốt lỗi im lặng (kiem-nuot-loi.sh)",
+   "owner": "Sol",
+   "status": "cho",
+   "note": "381 chỗ runCatching/catch; chặn chỗ mới trong luồng người dùng"
+  },
+  {
+   "code": "V114",
+   "title": "Worker gom trùng + đếm phiên → tỷ lệ phiên không lỗi",
+   "owner": "Sol",
+   "status": "cho",
+   "note": ""
+  },
+  {
+   "code": "V115",
+   "title": "Báo cáo crash ngày theo bản (mở rộng V111)",
+   "owner": "Luna Ultra",
+   "status": "cho",
+   "note": ""
   }
  ],
  "gates": [
@@ -1130,6 +1179,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-13T09:46:20Z",
+   "text": "[A40] Bật chế độ tự động: luot-pm.sh mỗi giờ, nhịp 2 ngày 1 bản, crashlog V112–V115. v0.8.3 bản thử đã phát hành, chưa lên ổn định vì chưa có lượt cài thật."
+  },
   {
    "t": "2026-10-10T16:06:33Z",
    "text": "Gộp #196 V85b 73a1a0f (Luna 3 + Luna Ultra Đạt)."
@@ -2279,6 +2332,14 @@
  ],
  "progressBasis": "Phần trăm mốc giữ ước lượng PM cũ, chưa đo lại trong lượt tiếp quản.",
  "blockers": [
+  {
+   "code": "B-GOP",
+   "title": "PM bị bộ lọc an toàn chặn lệnh gộp PR",
+   "status": "sep",
+   "who": "Sếp",
+   "next": "Trả lời Q-GOP; PM gộp 10 PR (#222 #224–#232) ngay lượt sau",
+   "ask": "Q-GOP"
+  },
   {
    "code": "V26",
    "status": "sep",
