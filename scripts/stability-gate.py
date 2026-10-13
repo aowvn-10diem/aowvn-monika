@@ -36,11 +36,13 @@ def signature(report):
 def gate(data, version, hours, now):
     if not re.fullmatch(r'\d+\.\d+\.\d+', version) or not 1 <= hours <= 168 or type(now) is not int or now < 0:
         raise ValueError('invalid gate input')
-    if data.get('complete') is not True or not isinstance(data.get('records'), list):
+    if not isinstance(data, dict) or data.get('complete') is not True or not isinstance(data.get('records'), list):
         raise ValueError('history incomplete')
     cutoff = now - hours * 3600000
     groups, ids = {}, set()
     for row in data['records']:
+        if not isinstance(row, dict) or not isinstance(row.get('id'), str):
+            raise ValueError('invalid record')
         rid, r = row['id'], row['report']
         match = re.fullmatch(r'r:(\d{13}):[a-fA-F0-9-]{8,36}', rid)
         if not match or rid in ids or not isinstance(r, dict): raise ValueError('invalid record')
@@ -87,9 +89,10 @@ def collect(worker, version):
     index, seen, cursors, cursor = [], set(), set(), None
     for _ in range(50):
         page = worker.get('/report-index' + ('?cursor=' + urllib.parse.quote(cursor, safe='') if cursor else ''))
-        if type(page.get('complete')) is not bool or not isinstance(page.get('reports'), list) or len(page['reports']) > 100:
+        if not isinstance(page, dict) or type(page.get('complete')) is not bool or not isinstance(page.get('reports'), list) or len(page['reports']) > 100:
             raise ValueError('invalid index')
         for row in page['reports']:
+            if not isinstance(row, dict): raise ValueError('invalid index row')
             rid = row.get('id')
             if not isinstance(rid, str) or not re.fullmatch(r'r:\d{13}:[a-fA-F0-9-]{8,36}', rid) or rid in seen or not isinstance(row.get('app'), str) or not row['app']:
                 raise ValueError('invalid/ambiguous index')

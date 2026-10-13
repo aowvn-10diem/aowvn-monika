@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 import copy
+import contextlib
 import hashlib
 import importlib.util
+import io
 import json
 from pathlib import Path
+import tempfile
 import unittest
+from unittest import mock
 
 spec=importlib.util.spec_from_file_location('stability',Path(__file__).with_name('stability-gate.py'))
 v=importlib.util.module_from_spec(spec);spec.loader.exec_module(v)
@@ -79,5 +83,50 @@ class GateTest(unittest.TestCase):
     def test_worker_configuration_rejects_credentials_http_and_redirect_origins(self):
         for origin in ['http://example.test','https://user:password@example.test','https://example.test/path','https://example.test/?token=a']:
             with self.assertRaises(ValueError):v.Worker(origin,'fixture-only')
+
+    def test_gate_rejects_top_level_and_record_shapes(self):
+        bad_values = [None, [], [row(NOW)], 'object', 1, True]
+        for bad in bad_values:
+            with self.subTest(top=bad), self.assertRaises(ValueError):
+                v.gate(bad, '0.8.3', 24, NOW)
+            with self.subTest(record=bad), self.assertRaises(ValueError):
+                v.gate(data(bad), '0.8.3', 24, NOW)
+
+    def test_api_wrong_page_or_row_shape_exits_blocked_before_detail_requests(self):
+        bad_values = [None, [], 'object', 1, True]
+        responses = bad_values + [{'complete': True, 'reports': [bad]} for bad in bad_values]
+        for response in responses:
+            class Fake:
+                def __init__(self): self.paths = []
+                def get(self, path):
+                    self.paths.append(path)
+                    if path != '/report-index': raise AssertionError('unexpected detail request')
+                    return response
+            with self.subTest(response=response), tempfile.TemporaryDirectory() as tmp:
+                worker = Fake(); out = Path(tmp) / 'result.json'
+                stderr, stdout = io.StringIO(), io.StringIO()
+                with mock.patch.object(v, 'Worker', return_value=worker), mock.patch.object(v.sys, 'argv', ['gate', '--version', '0.8.3', '--out', str(out)]), contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(stdout):
+                    code = v.main()
+                self.assertEqual(code, 2)
+                self.assertEqual(worker.paths, ['/report-index'])
+                self.assertFalse(out.exists())
+                self.assertEqual(stdout.getvalue(), '')
+                self.assertTrue(stderr.getvalue().startswith('BLOCKED:'))
+                self.assertNotIn('Traceback', stderr.getvalue())
+
+    def test_cli_wrong_fixture_shape_exits_blocked_without_result(self):
+        bad_values = [None, [], 'object', 1, True]
+        fixtures = bad_values + [data(bad) for bad in bad_values]
+        for fixture in fixtures:
+            with self.subTest(fixture=fixture), tempfile.TemporaryDirectory() as tmp:
+                path, out = Path(tmp) / 'input.json', Path(tmp) / 'result.json'
+                path.write_text(json.dumps(fixture)); stderr, stdout = io.StringIO(), io.StringIO()
+                with mock.patch.object(v.sys, 'argv', ['gate', '--fixture', str(path), '--version', '0.8.3', '--now-ms', str(NOW), '--out', str(out)]), contextlib.redirect_stderr(stderr), contextlib.redirect_stdout(stdout):
+                    code = v.main()
+                self.assertEqual(code, 2)
+                self.assertFalse(out.exists())
+                self.assertEqual(stdout.getvalue(), '')
+                self.assertTrue(stderr.getvalue().startswith('BLOCKED:'))
+                self.assertNotIn('Traceback', stderr.getvalue())
 
 if __name__=='__main__':unittest.main()
