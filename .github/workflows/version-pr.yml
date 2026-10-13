@@ -52,7 +52,7 @@ jobs:
           if [ -n "$NEXT_VERSION" ]; then args+=(--next-version "$NEXT_VERSION"); fi
           if [ "$CREATE_PR" = true ]; then args+=(--apply); fi
           python3 scripts/version-pr.py "${args[@]}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: version-pr-plan
           path: version-pr-plan.json
