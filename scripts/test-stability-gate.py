@@ -129,4 +129,46 @@ class GateTest(unittest.TestCase):
                 self.assertTrue(stderr.getvalue().startswith('BLOCKED:'))
                 self.assertNotIn('Traceback', stderr.getvalue())
 
+    def test_diagnostics_app_line_and_legacy_semver_share_version_history(self):
+        old, recent = row(NOW-25*HOUR), row(NOW-HOUR, suffix='abcdef12')
+        old['report']['app'] = '0.8.3 (48) release'
+        for app in ['0.8.3', '0.8.3 (48) release', '0.8.3 (49) debug']:
+            with self.subTest(app=app):
+                recent['report']['app'] = app
+                self.assertTrue(v.gate(data(old,recent), '0.8.3',24,NOW)['allowed'])
+        old['report']['app'] = '0.8.2 (47) release'
+        self.assertFalse(v.gate(data(old,recent), '0.8.3',24,NOW)['allowed'])
+
+    def test_collect_real_app_format_filters_version_and_checks_raw_detail_match(self):
+        target, other = row(NOW-25*HOUR), row(NOW-HOUR, suffix='abcdef12')
+        target['report']['app'] = '0.8.3 (48) release'
+        other['report']['app'] = '0.8.2 (47) release'
+        class Fake:
+            def __init__(self, detail_app): self.paths=[]; self.detail_app=detail_app
+            def get(self,path):
+                self.paths.append(path)
+                if path=='/report-index':
+                    return {'complete':True,'reports':[{'id':r['id'],'app':r['report']['app']} for r in [target,other]]}
+                if path=='/reports/'+v.urllib.parse.quote(target['id'],safe=''):
+                    return dict(target['report'],app=self.detail_app)
+                raise AssertionError('unexpected detail request')
+        f=Fake(target['report']['app']); result=v.collect(f,'0.8.3')
+        self.assertEqual(result,data(target)); self.assertEqual(len(f.paths),2)
+        self.assertTrue(v.gate(result,'0.8.3',24,NOW)['allowed'])
+        for app in ['0.8.2 (47) release','0.8.3','0.8.3 (49) release','0.8.3 (48) debug']:
+            with self.subTest(detail_app=app), self.assertRaises(ValueError):
+                v.collect(Fake(app),'0.8.3')
+
+    def test_unknown_report_app_formats_block_instead_of_being_silently_skipped(self):
+        for app in [None,True,48,'','0.8.3 trailing','v0.8.3','0.8.3 (48)','0.8.3 (48) beta','0.8.3 (48) release extra']:
+            class Fake:
+                def get(self,path):
+                    if path!='/report-index': raise AssertionError('unexpected detail request')
+                    return {'complete':True,'reports':[{'id':row(NOW)['id'],'app':app}]}
+            with self.subTest(app=app), self.assertRaises(ValueError):
+                v.collect(Fake(),'0.8.3')
+            r=row(NOW); r['report']['app']=app
+            with self.subTest(fixture_app=app), self.assertRaises(ValueError):
+                v.gate(data(row(NOW-25*HOUR, suffix='abcdef12'),r),'0.8.3',24,NOW)
+
 if __name__=='__main__':unittest.main()

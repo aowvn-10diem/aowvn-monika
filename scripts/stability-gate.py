@@ -33,6 +33,13 @@ def signature(report):
     return digest, core, kind
 
 
+def report_version(app):
+    # Diagnostics.appLine(): VERSION_NAME (VERSION_CODE) debug|release; old fixtures use semver.
+    match = re.fullmatch(r'(\d+\.\d+\.\d+)(?: \(\d+\) (?:debug|release))?', app) if isinstance(app, str) else None
+    if not match: raise ValueError('invalid report app')
+    return match[1]
+
+
 def gate(data, version, hours, now):
     if not re.fullmatch(r'\d+\.\d+\.\d+', version) or not 1 <= hours <= 168 or type(now) is not int or now < 0:
         raise ValueError('invalid gate input')
@@ -49,7 +56,7 @@ def gate(data, version, hours, now):
         ids.add(rid)
         seen = int(match[1])  # Worker receipt clock, not untrusted device report.time.
         if seen > now: raise ValueError('future receipt')
-        if r.get('app') != version: continue
+        if report_version(r.get('app')) != version: continue
         key, core, kind = signature(r)
         count = r.get('count', 1)
         if type(count) is not int or not 1 <= count <= 1000000: raise ValueError('invalid count')
@@ -97,7 +104,7 @@ def collect(worker, version):
             if not isinstance(rid, str) or not re.fullmatch(r'r:\d{13}:[a-fA-F0-9-]{8,36}', rid) or rid in seen or not isinstance(row.get('app'), str) or not row['app']:
                 raise ValueError('invalid/ambiguous index')
             seen.add(rid)
-            if row['app'] == version: index.append(rid)
+            if report_version(row['app']) == version: index.append((rid, row['app']))
         if len(index) > 200: raise ValueError('target report budget')
         if page['complete']: break
         cursor = page.get('cursor')
@@ -106,9 +113,10 @@ def collect(worker, version):
         cursors.add(cursor)
     else: raise ValueError('history exceeds budget')
     records = []
-    for rid in index:
+    for rid, index_app in index:
         report = worker.get('/reports/' + urllib.parse.quote(rid, safe=''))
-        if not isinstance(report, dict) or report.get('app') != version: raise ValueError('index/detail mismatch')
+        if not isinstance(report, dict) or report.get('app') != index_app or report_version(report.get('app')) != version:
+            raise ValueError('index/detail mismatch')
         records.append({'id': rid, 'report': report})
     return {'complete': True, 'records': records}
 
