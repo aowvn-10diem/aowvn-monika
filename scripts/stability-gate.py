@@ -27,7 +27,7 @@ def signature(report):
         java = re.search(r'\bat\s+([\w.$]+)\([^)]*\)', line)
         native = re.search(r'#\d+\s+pc\s+[0-9a-fA-F]+\s+(?:\S*/)?([^/\s]+\.so)(?:\s+\(([^)]*)\))?', line)
         if java: frames.append(java.group(1))
-        elif native: frames.append(native.group(1) + ':' + re.sub(r'\+\d+\b', '', native.group(2) or ''))
+        elif native: frames.append(native.group(1) + ':' + re.sub(r'\+(?:0[xX][0-9a-fA-F]+|\d+)\b', '', native.group(2) or ''))
         if len(frames) == 3: break
     digest = hashlib.sha256(json.dumps([core, kind, frames], separators=(',', ':')).encode()).hexdigest()
     return digest, core, kind

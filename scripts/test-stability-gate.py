@@ -46,6 +46,11 @@ class GateTest(unittest.TestCase):
         r['detail']='#00 pc 1234 /data/private/libengine.so (run+4)'
         s=v.signature(r)[0];r['detail']='#00 pc abcd /different/libengine.so (run+999)'
         self.assertEqual(v.signature(r)[0],s)
+        for offset in ['0x20','0x44','0XABCD']:
+            r['detail']=f'#00 pc abcd /different/libengine.so (run+{offset})'
+            self.assertEqual(v.signature(r)[0],s)
+        r['detail']='#00 pc abcd /different/libengine.so (other+0x20)'
+        self.assertNotEqual(v.signature(r)[0],s)
 
     def test_pagination_filters_version_and_fetches_only_target_details(self):
         a,b=row(NOW-25*HOUR),row(NOW-HOUR,version='0.8.2',suffix='abcdef12')
