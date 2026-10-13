@@ -6,6 +6,7 @@ on:
       - '.maestro-nds/**'
       - 'scripts/ci-nds*'
       - 'scripts/test-ci-nds-adb.py'
+      - 'scripts/test-ci-nds-frame.py'
       - '.github/workflows/nds-flow.yml'
 permissions: {contents: read}
 concurrency: {group: 'v106-${{ github.ref }}', cancel-in-progress: true}
@@ -37,6 +38,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
           python3 -m pip install Pillow
+          python3 scripts/test-ci-nds-frame.py
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34

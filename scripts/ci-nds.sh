@@ -34,7 +34,6 @@ wait_frame() {
 launch first
 maestro test .maestro-nds/loading.yaml --test-output-dir "$OUT/loading-ui"
 wait_frame
-adb exec-out screencap -p > "$OUT/first-frame.png"
 # Native ROM must draw orange pixels, not merely return a black emulator frame.
 verify_frame() {
   python3 - "$1" <<'PYCODE'
@@ -47,7 +46,18 @@ pixels=image.crop((w//4,h//12,3*w//4,3*h//5)).getdata()
 assert sum(r >= 250 and 115 <= g <= 135 and b <= 5 for r,g,b in pixels) > 3000, 'original NDS framebuffer not rendered'
 PYCODE
 }
-verify_frame "$OUT/first-frame.png"
+wait_visible_frame() {
+  # FrameRendered/log precedes Android's removal/draw of the loading ComposeView.
+  # Wait on real pixels, not a fixed sleep or an unrelated global idle signal.
+  for sample in $(seq 1 20); do
+    adb exec-out screencap -p > "$1"
+    if verify_frame "$1" 2> "$OUT/frame-check.txt"; then return 0; fi
+    sleep 1
+  done
+  cat "$OUT/frame-check.txt" >&2
+  return 1
+}
+wait_visible_frame "$OUT/first-frame.png"
 adb shell "stat -c '%Y %s' '$BASE/cores/melondsds/melondsds_libretro_android.so'" > "$OUT/core-before.txt"
 maestro test .maestro-nds/exit.yaml --test-output-dir "$OUT/exit-ui"
 for tick in $(seq 1 15); do
@@ -58,8 +68,7 @@ if adb shell pidof "$PKG:game" >/dev/null; then echo 'FAIL: menu exit did not en
 adb logcat -c
 launch second
 wait_frame
-adb exec-out screencap -p > "$OUT/second-frame.png"
-verify_frame "$OUT/second-frame.png"
+wait_visible_frame "$OUT/second-frame.png"
 adb shell "stat -c '%Y %s' '$BASE/cores/melondsds/melondsds_libretro_android.so'" > "$OUT/core-after.txt"
 cmp "$OUT/core-before.txt" "$OUT/core-after.txt"
 python3 - "$FIXTURE/requests.jsonl" "$OUT" <<'PY'
