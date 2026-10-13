@@ -81,6 +81,16 @@ object Diagnostics {
         @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
         @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
         val image: ReportImage? = null,
+        /** V101: ngữ cảnh chết; unknown là thiếu bằng chứng, không giả một Session. */
+        @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+        @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+        val core: String = "",
+        @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+        @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+        val system: String = "",
+        @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+        @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+        val stage: String = "",
     ) {
         fun toText(): String = scrub(null, buildString {
             appendLine("== Báo lỗi Aow Monika ==")
@@ -115,6 +125,7 @@ object Diagnostics {
 
     private fun dir(c: Context) = File(c.filesDir, "diag").apply { mkdirs() }
     private fun sessionFile(c: Context) = File(dir(c), "active-session.json")
+    private fun deathSessionFile(c: Context, pid: Int) = File(File(dir(c), "sessions").apply { mkdirs() }, "$pid.json")
     private fun reportsDir(c: Context) = File(dir(c), "reports").apply { mkdirs() }
 
     // ---------- Phiên chơi (chạy trong tiến trình game) ----------
@@ -155,7 +166,10 @@ object Diagnostics {
     }
 
     /** Thoát bình thường → xóa phiên, không tạo báo cáo. */
-    fun end(c: Context) { runCatching { sessionFile(c).delete(); File(dir(c), "session-env.txt").delete() } }
+    fun end(c: Context) { runCatching {
+        sessionFile(c).delete(); deathSessionFile(c, Process.myPid()).delete()
+        File(dir(c), "session-env.txt").delete()
+    } }
 
     private fun read(c: Context): Session? =
         runCatching { json.decodeFromString(Session.serializer(), sessionFile(c).readText()) }.getOrNull()
@@ -165,6 +179,13 @@ object Diagnostics {
             val tmp = File(dir(c), "active-session.tmp")
             tmp.writeText(scrubJson(c, json.encodeToJsonElement(Session.serializer(), s)).toString())
             tmp.renameTo(sessionFile(c))
+            // V101: riêng từng PID, không dùng phiên game khác để giải thích chết của main/midlet.
+            val target = deathSessionFile(c, s.pid)
+            val snapshot = File(target.parentFile, "${s.pid}.tmp")
+            snapshot.writeText(scrubJson(c, json.encodeToJsonElement(Session.serializer(), s)).toString())
+            snapshot.renameTo(target)
+            target.parentFile?.listFiles()?.filter { it.extension == "json" }
+                ?.sortedByDescending { it.lastModified() }?.drop(30)?.forEach { it.delete() }
         }
     }
 
@@ -207,6 +228,7 @@ object Diagnostics {
             env = envLine(c), crumbs = crumbs,
         ))
         Breadcrumbs.drop(c, s.pid)
+        deathSessionFile(c, s.pid).delete()
         pending.value = r
         return r
     }
@@ -388,7 +410,7 @@ object Diagnostics {
 
     /** Lưu báo cáo mới; nếu cùng dấu vân tay với báo cáo trước (trong 30 báo cáo gần nhất) thì gộp: tăng đếm, giữ bản mới nhất. */
     private fun record(c: Context, r0: Report): Report {
-        val safe = sanitized(c, r0)
+        val safe = sanitized(c, enrichDeathReport(r0))
         val fp = fingerprint(safe)
         val prev = list(c).firstOrNull { it.fingerprint == fp }
         val r = safe.copy(fingerprint = fp, count = (prev?.count ?: 0) + 1, sent = false, seen = prev?.seen == true && prev.count >= 3)
@@ -498,8 +520,9 @@ object Diagnostics {
             if (e.processName?.endsWith(":game") == true && File(reportsDir(c), "${e.timestamp}.json").exists()) continue
             val trace = scrub(c, traceStrings(e).joinToString("\n"))
             val crumbs = Breadcrumbs.read(c, e.pid)
+            val deathSession = if (kind == "anr" || kind == "lowmem") readDeathSession(c, e.pid, e.timestamp) else null
             val proc = e.processName.orEmpty().substringAfter(':', "chính")
-            val comp = Components.of(c, null, trace + "\n" + crumbs.joinToString("\n")).ifBlank { "app:$proc" }
+            val comp = Components.of(c, deathSession, trace + "\n" + crumbs.joinToString("\n")).ifBlank { "app:$proc" }
             out += record(c, Report(
                 id = e.timestamp, time = e.timestamp, kind = kind,
                 title = when (kind) {
@@ -512,11 +535,31 @@ object Diagnostics {
                 log = if (kind == "native" && Build.VERSION.SDK_INT == 30)
                     logcat(e.pid, nativeDeathAt = e.timestamp).map { scrub(c, it) } else emptyList(),
                 component = comp, env = envLine(c), crumbs = crumbs,
+                session = deathSession, fromGame = deathSession != null,
             ))
             Breadcrumbs.drop(c, e.pid)
+            deathSessionFile(c, e.pid).delete()
         }
         runCatching { stamp.writeText(newest.toString()) }
         return out
+    }
+
+    /** Chỉ nhận snapshot thuộc chính PID và tồn tại trước thời điểm Android ghi nhận chết. */
+    internal fun matchingDeathSession(s: Session?, pid: Int, diedAt: Long): Session? = s?.takeIf {
+        it.pid == pid && it.startedAt > 0 && it.startedAt <= diedAt &&
+            it.stageAt in 0..diedAt && it.lastAlive in 0..diedAt
+    }
+
+    internal fun readDeathSession(c: Context, pid: Int, diedAt: Long): Session? = matchingDeathSession(
+        runCatching { json.decodeFromString(Session.serializer(), deathSessionFile(c, pid).readText()) }.getOrNull(), pid, diedAt)
+
+    internal fun enrichDeathReport(r: Report): Report {
+        if (r.kind != "lowmem" && r.kind != "anr") return r
+        return r.copy(
+            core = r.session?.core?.takeIf { it.isNotBlank() } ?: r.core.ifBlank { "unknown" },
+            system = r.session?.system?.takeIf { it.isNotBlank() } ?: r.system.ifBlank { "unknown" },
+            stage = r.session?.stage?.takeIf { it.isNotBlank() } ?: r.stage.ifBlank { "unknown" },
+        )
     }
 
     // ---------- Kho báo cáo ----------

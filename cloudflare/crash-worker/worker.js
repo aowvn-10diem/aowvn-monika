@@ -96,6 +96,12 @@ export default {
           kind: s(ss.kind, 20), core: s(ss.core, 60), coreInfo: s(ss.coreInfo, 200), game: s(ss.game, 160), system: s(ss.system, 60), stage: s(ss.stage, 40),
         } : null,
       };
+      // V101: only ANR/low-memory gain additive context; keep old other-kind JSON unchanged.
+      if (["anr", "lowmem"].includes(slim.kind)) Object.assign(slim, {
+        core: s(r.core, 60) || s(ss?.core, 60) || "unknown",
+        system: s(r.system, 60) || s(ss?.system, 60) || "unknown",
+        stage: s(r.stage, 40) || s(ss?.stage, 40) || "unknown",
+      });
       if (image) slim.image = image;
       let stored = JSON.stringify(slim);
       // Ưu tiên ảnh hợp lệ, bớt chữ nếu JSON chuẩn hóa thêm default vượt ngân sách.
@@ -117,7 +123,7 @@ export default {
       await env.REPORTS.put(rk, String(n + 1), { expirationTtl: 7200 });
 
       const id = `r:${String(Date.now()).padStart(13, "0")}:${crypto.randomUUID().slice(0, 8)}`;
-      const meta = { k: slim.kind, c: slim.session?.core || "", y: slim.session?.system || "", g: (slim.session?.game || "").slice(0, 60), a: slim.app.slice(0, 40), st: slim.session?.stage || "", t: slim.time, component: slim.component, fp: slim.fingerprint, count: slim.count };
+      const meta = { k: slim.kind, c: slim.core || slim.session?.core || "", y: slim.system || slim.session?.system || "", g: (slim.session?.game || "").slice(0, 60), a: slim.app.slice(0, 40), st: slim.stage || slim.session?.stage || "", t: slim.time, component: slim.component, fp: slim.fingerprint, count: slim.count };
       await env.REPORTS.put(id, stored, { expirationTtl: 60 * 86400, metadata: meta });
       return json({ ok: true });
     }
