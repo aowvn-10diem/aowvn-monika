@@ -5,8 +5,8 @@ import http.server
 import json
 from pathlib import Path
 import struct
+import subprocess
 import time
-import urllib.request
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -69,11 +69,17 @@ def prepare(out, root=ROOT):
     (out / 'monika.nds').write_bytes(make_rom())
     cfg = json.loads((root / 'config/monika-config.json').read_text())
     url = cfg['cores']['melondsds']['url'].replace('{abi}', 'x86_64')
-    with urllib.request.urlopen(url, timeout=60) as response:
-        pack = response.read(20 * 1024 * 1024 + 1)
-    assert len(pack) <= 20 * 1024 * 1024, 'oversized core archive'
     archive = out / 'web/melondsds.zip'
-    archive.write_bytes(pack)
+    print('V106 downloading test core: two attempts, total deadline 130s', flush=True)
+    # urllib's timeout covers individual socket operations, not DNS/whole transfer.
+    # Bound the process as well so a trickling response cannot stall the flow job.
+    subprocess.run(['curl', '--fail', '--location', '--silent', '--show-error',
+        '--connect-timeout', '20', '--max-time', '60', '--retry', '1', '--retry-all-errors',
+        '--max-filesize', str(20 * 1024 * 1024), '--output', str(archive), url],
+        check=True, timeout=130)
+    assert archive.stat().st_size <= 20 * 1024 * 1024, 'oversized core archive'
+    pack = archive.read_bytes()
+    print('V106 core archive downloaded; verifying ELF/hash', flush=True)
     with zipfile.ZipFile(archive) as z:
         entry = next(n for n in z.namelist() if n.endswith('melondsds_libretro_android.so'))
         elf = z.read(entry)
