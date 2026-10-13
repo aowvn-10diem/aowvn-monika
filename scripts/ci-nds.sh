@@ -24,8 +24,9 @@ launch() {
 }
 wait_frame() {
   for tick in $(seq 1 90); do
-    if adb logcat -d | grep -q 'MonikaGame: loading-dismissed core=melondsds'; then return 0; fi
-    if adb logcat -d | grep -qE 'Fatal signal|FATAL EXCEPTION|MonikaGame: (error|no-first-frame)'; then return 1; fi
+    adb logcat -d > "$OUT/current-logcat.txt"
+    if grep -q 'MonikaGame: loading-dismissed core=melondsds' "$OUT/current-logcat.txt"; then return 0; fi
+    if grep -qE 'Fatal signal|FATAL EXCEPTION|MonikaGame: (error|no-first-frame)' "$OUT/current-logcat.txt"; then return 1; fi
     sleep 2
   done
   return 1
@@ -35,12 +36,18 @@ maestro test .maestro-nds/loading.yaml --test-output-dir "$OUT/loading-ui"
 wait_frame
 adb exec-out screencap -p > "$OUT/first-frame.png"
 # Native ROM must draw orange pixels, not merely return a black emulator frame.
-python3 - "$OUT/first-frame.png" <<'PY'
+verify_frame() {
+  python3 - "$1" <<'PYCODE'
 from PIL import Image
 import sys
-pixels=Image.open(sys.argv[1]).convert('RGB').getdata()
-assert sum(r > 220 and 80 < g < 170 and b < 45 for r,g,b in pixels) > 3000, 'original NDS framebuffer not rendered'
-PY
+image=Image.open(sys.argv[1]).convert('RGB')
+w,h=image.size
+# Sample the central game area; the pad/menu gradient must not satisfy this check.
+pixels=image.crop((w//4,h//12,3*w//4,3*h//5)).getdata()
+assert sum(r >= 250 and 115 <= g <= 135 and b <= 5 for r,g,b in pixels) > 3000, 'original NDS framebuffer not rendered'
+PYCODE
+}
+verify_frame "$OUT/first-frame.png"
 adb shell stat -c '%Y %s' "$BASE/cores/melondsds/melondsds_libretro_android.so" > "$OUT/core-before.txt"
 maestro test .maestro-nds/exit.yaml --test-output-dir "$OUT/exit-ui"
 for tick in $(seq 1 15); do
@@ -52,6 +59,7 @@ adb logcat -c
 launch second
 wait_frame
 adb exec-out screencap -p > "$OUT/second-frame.png"
+verify_frame "$OUT/second-frame.png"
 adb shell stat -c '%Y %s' "$BASE/cores/melondsds/melondsds_libretro_android.so" > "$OUT/core-after.txt"
 cmp "$OUT/core-before.txt" "$OUT/core-after.txt"
 python3 - "$FIXTURE/requests.jsonl" "$OUT" <<'PY'
