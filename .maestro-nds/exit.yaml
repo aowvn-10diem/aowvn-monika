@@ -1,0 +1,13 @@
+appId: com.aow.monika
+---
+- assertVisible:
+    id: "game-reveal-edge"
+- tapOn:
+    id: "game-reveal-edge"
+    repeat: 2
+    delay: 100
+    waitToSettleTimeoutMs: 0
+- scrollUntilVisible:
+    element: "Thoát game"
+    direction: DOWN
+- tapOn: "Thoát game"

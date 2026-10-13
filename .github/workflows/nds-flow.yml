@@ -1,0 +1,54 @@
+name: NDS loading and reentry (V106)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.maestro-nds/**'
+      - 'scripts/ci-nds*'
+      - '.github/workflows/nds-flow.yml'
+permissions: {contents: read}
+concurrency: {group: 'v106-${{ github.ref }}', cancel-in-progress: true}
+jobs:
+  nds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@v6
+        with: {distribution: temurin, java-version: 17}
+      - uses: gradle/actions/setup-gradle@v6
+        with: {cache-provider: basic}
+      - name: Unit trên cấu hình sản phẩm
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+          ./gradlew testDebugUnitTest --console=plain
+      - name: ROM tự sinh và bridge x86_64 chỉ trong APK CI
+        run: python3 scripts/ci-nds-fixture.py prepare --out "$RUNNER_TEMP/v106"
+      - name: Build APK debug fixture
+        run: ./gradlew assembleDebug --console=plain
+      - name: Maestro và KVM
+        run: |
+          curl -fsSL https://get.maestro.mobile.dev | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+          python3 -m pip install Pillow
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
+          script: |
+            python3 scripts/ci-nds-fixture.py serve --out "$RUNNER_TEMP/v106" > "$RUNNER_TEMP/v106-server.log" 2>&1 &
+            bash scripts/ci-nds.sh "$RUNNER_TEMP/v106" out/v106
+      - name: Metadata fixture (không ROM/engine)
+        if: always()
+        run: |
+          mkdir -p out/v106
+          cp "$RUNNER_TEMP/v106/fixture.json" out/v106/fixture.json || true
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: {name: v106-nds-api34, path: out/v106/, retention-days: 2}
