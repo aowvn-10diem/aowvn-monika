@@ -229,7 +229,13 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         val redirect = File(dir, "gpu/vk_file_redirect").apply { mkdirs() }
         val drivers = File(filesDir, "gpu_driver").apply { mkdirs() }
         val moduleDir = File(filesDir, "engines/azahar").absolutePath + "/"
-        runCatching { NativeLibrary.initializeGpuDriver(moduleDir, drivers.absolutePath + "/", "", redirect.absolutePath + "/") }
+        // V98: lớp nạp driver tùy biến (libhook_impl.so) sập native (SIGSEGV, không bắt được) trên nhiều máy → mặc định bỏ qua, dùng driver hệ thống.
+        if (AzaharConfig.shouldInitGpuDriver(AppGraph.config.current.modules[AzaharConfig.CORE_ID])) {
+            Diagnostics.crumb(this, "azahar", "initializeGpuDriver (customGpuDriver bật trong config)")
+            runCatching { NativeLibrary.initializeGpuDriver(moduleDir, drivers.absolutePath + "/", "", redirect.absolutePath + "/") }
+        } else {
+            Diagnostics.crumb(this, "azahar", "bỏ qua initializeGpuDriver, dùng driver hệ thống")
+        }
         refreshSlots()
     }
 

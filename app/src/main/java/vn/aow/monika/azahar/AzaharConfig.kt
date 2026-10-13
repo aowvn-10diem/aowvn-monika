@@ -12,6 +12,9 @@ import java.io.File
 object AzaharConfig {
     const val CORE_ID = "azahar"
 
+    /** Có nạp driver GPU tùy biến không (V98). Thiếu module/trường config → false (driver hệ thống). */
+    fun shouldInitGpuDriver(module: vn.aow.monika.config.ModuleDef?): Boolean = module?.customGpuDriver == true
+
     private class Def(val key: String, val label: String, val values: List<String>, val default: String, val text: Map<String, String> = emptyMap())
 
     private val defs = listOf(
