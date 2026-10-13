@@ -342,6 +342,107 @@ object Diagnostics {
         ))
     }
 
+    // ---------- V112: mọi thao tác người dùng đều để lại log khi lỗi ----------
+
+    /** Phạm vi của một thao tác người dùng; gọi [step] để ghi bước đang làm (vào vệt sự kiện và báo cáo lỗi). */
+    class OpScope internal constructor(private val c: Context, val name: String) {
+        @Volatile var current: String = ""
+            private set
+        fun step(s: String) { current = s; Breadcrumbs.add(c, "op", "$name: $s") }
+    }
+
+    /** Tên thao tác dùng chung để báo cáo `op-fail` gom đúng nhóm (khớp `component = "op:<tên>"`). */
+    object Op {
+        const val DOWNLOAD = "tai-xuong"
+        const val EXTRACT = "giai-nen"
+        const val IMPORT = "nhap-game"
+        const val PATCH_ROM = "va-rom"
+        const val INSTALL_PACK = "cai-goi-engine"
+        const val OPEN_GAME = "mo-game"
+        const val FETCH_CONFIG = "tai-cau-hinh"
+        const val FETCH_FEED = "tai-feed"
+        const val FETCH_FORUM = "tai-dien-dan"
+    }
+
+    /** Cùng thao tác + cùng chữ ký lỗi trong chừng này thời gian chỉ ghi/gửi 1 lần. */
+    internal const val OP_THROTTLE_MS = 10 * 60_000L
+    private const val OP_CRUMBS = 30
+    internal var opClock: () -> Long = { System.currentTimeMillis() }
+    private val opSeen = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    /** Gắn ở AppGraph: gửi ngầm báo cáo `op-fail` theo cấu hình/ý người chơi (cùng đường với lõi sập). */
+    @Volatile internal var opSender: ((Context, Report) -> Unit)? = null
+    internal fun resetOpThrottle() = opSeen.clear()
+
+    /**
+     * Chạy một thao tác người dùng; lỗi (trừ hủy coroutine) được ghi thành báo cáo `kind=op-fail` rồi trả về trong [Result]
+     * — thay cho `runCatching` nuốt lỗi im lặng. [target] là tên file game (không đường dẫn, không link tải).
+     * [expected] đánh dấu lỗi nằm trong luồng bình thường (vd. cần mật khẩu): vẫn trả về trong [Result] nhưng không lập báo cáo.
+     */
+    fun <T> op(c: Context, name: String, target: String? = null, expected: (Throwable) -> Boolean = { false }, block: OpScope.() -> T): Result<T> {
+        val scope = OpScope(c, name)
+        return try { Result.success(scope.block()) } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (e: Throwable) { if (!expected(e)) opFail(c, name, scope.current, e, target); Result.failure(e) }
+    }
+
+    /** Bản `suspend` của [op]. */
+    suspend fun <T> opSuspend(c: Context, name: String, target: String? = null, expected: (Throwable) -> Boolean = { false }, block: suspend OpScope.() -> T): Result<T> {
+        val scope = OpScope(c, name)
+        return try { Result.success(scope.block()) } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (e: Throwable) { if (!expected(e)) opFail(c, name, scope.current, e, target); Result.failure(e) }
+    }
+
+    /** Ghi một lỗi thao tác đã tự bắt (nơi không bọc được bằng [op]). Trả null nếu trùng trong cửa sổ chống spam. */
+    fun opFail(c: Context, name: String, step: String, e: Throwable, target: String? = null): Report? = runCatching {
+        val code = errorCode(e)
+        val key = "$name|$step|$code|${e.message.orEmpty().take(60).replace(Regex("""\d+"""), "")}"
+        val now = opClock()
+        val last = opSeen[key]
+        if (last != null && now - last < OP_THROTTLE_MS) {
+            Breadcrumbs.add(c, "op-fail", "$name/$step $code (trùng, đã ghi)")
+            return@runCatching null
+        }
+        opSeen[key] = now
+        Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code")
+        val stack = java.io.StringWriter().also { e.printStackTrace(java.io.PrintWriter(it)) }.toString()
+        val detail = buildString {
+            append("thao tác: ").append(name).append('\n')
+            append("bước: ").append(step.ifBlank { "-" }).append('\n')
+            append("mã lỗi: ").append(code).append('\n')
+            target?.takeIf { it.isNotBlank() }?.let { append("đối tượng: ").append(it.substringAfterLast('/')).append('\n') }
+            append(stack)
+        }.let { scrub(c, stripLinks(it)) }.take(8_000)
+        val s = read(c)?.takeIf { it.pid == Process.myPid() }
+        val r = record(c, Report(
+            id = now, time = now, kind = "op-fail",
+            title = "Thao tác lỗi: $name${if (step.isBlank()) "" else " ($step)"} — $code", app = appLine(), device = deviceLine(), session = s,
+            reason = "$name/${step.ifBlank { "-" }}: $code", detail = detail, fromGame = false,
+            component = "op:$name", env = envLine(c), crumbs = Breadcrumbs.read(c, Process.myPid(), OP_CRUMBS),
+        ))
+        opSender?.invoke(c, r)
+        r
+    }.getOrNull()
+
+    /** Loại/mã lỗi gọn: tên lớp ngoại lệ (+ errno nếu có, + lớp nguyên nhân gốc nếu khác). */
+    internal fun errorCode(e: Throwable): String {
+        val root = generateSequence(e) { it.cause?.takeIf { c -> c !== it } }.last()
+        val errno = (e as? android.system.ErrnoException)?.errno ?: (root as? android.system.ErrnoException)?.errno
+        return buildString {
+            append(e.javaClass.simpleName.ifBlank { e.javaClass.name })
+            errno?.let { append(" errno=").append(it) }
+            if (root !== e) append(" <- ").append(root.javaClass.simpleName.ifBlank { root.javaClass.name })
+        }
+    }
+
+    /** Mất mạng/quá hạn là chuyện thường của người chơi, không phải lỗi app → không lập báo cáo `op-fail` (chỉ ghi vệt). */
+    fun isOffline(e: Throwable): Boolean = generateSequence(e) { it.cause?.takeIf { c -> c !== it } }.any {
+        it is java.net.UnknownHostException || it is java.net.ConnectException || it is java.net.NoRouteToHostException ||
+            it is java.net.SocketTimeoutException || it is java.io.InterruptedIOException
+    }
+
+    private val LINK = Regex("""(?i)\b(?:https?|ftp)://[^\s"'<>)]+""")
+    /** Không bao giờ gửi link tải (có thể là link game/ROM). */
+    internal fun stripLinks(text: String): String = text.replace(LINK, "<link>")
+
     /**
      * Lõi báo lỗi khi nạp game / không lên hình (tiến trình KHÔNG chết nên [collect] không thấy) → lập báo cáo từ phiên đang chạy.
      * Trả về báo cáo đã lưu.

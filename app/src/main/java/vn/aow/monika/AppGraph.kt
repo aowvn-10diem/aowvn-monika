@@ -21,6 +21,11 @@ object AppGraph {
 
     fun init(application: Application) {
         app = application
+        // V112: báo cáo lỗi thao tác người dùng (op-fail) gửi ngầm cùng đường, cùng công tắc với lõi sập.
+        vn.aow.monika.diag.Diagnostics.opSender = { c, r ->
+            val cr = config.current.crash
+            vn.aow.monika.diag.Diagnostics.autoSend(c, http, r, cr.endpoint, cr.autoSend, prefs.autoSendCrash)
+        }
     }
 
     val http: OkHttpClient by lazy {
@@ -39,8 +44,8 @@ object AppGraph {
 
     val prefs by lazy { Prefs(app) }
     val config by lazy { ConfigRepository(app, http) }
-    val feed by lazy { FeedRepository(http, config, java.io.File(app.cacheDir, "feed").apply { mkdirs() }) }
-    val forum by lazy { vn.aow.monika.forum.ForumRepository(http, config, java.io.File(app.cacheDir, "forum").apply { mkdirs() }) }
+    val feed by lazy { FeedRepository(http, config, java.io.File(app.cacheDir, "feed").apply { mkdirs() }, app) }
+    val forum by lazy { vn.aow.monika.forum.ForumRepository(http, config, java.io.File(app.cacheDir, "forum").apply { mkdirs() }, app) }
     val cores by lazy { CoreManager(app, http, config) }
     val packs by lazy { vn.aow.monika.pack.SimpleModule(app, http, config) }
     val azahar by lazy { vn.aow.monika.azahar.AzaharModule(app, http, config) }

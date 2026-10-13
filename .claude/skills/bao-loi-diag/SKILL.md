@@ -13,6 +13,7 @@ Lỗi Java (`CrashReporter`) · game chết (phiên + `ApplicationExitInfo`) · 
 ## Thêm mã mới
 - Ghi vệt: `Diagnostics.crumb(ctx, tag, msg)`.
 - Lỗi nuốt-được: `recordHandled(ctx, "pack:x", "mô tả", e)`.
+- **Thao tác người dùng (V112)**: bọc bằng `Diagnostics.op(ctx, Diagnostics.Op.X, tenFile) { step("buoc"); ... }` (hoặc `opSuspend`; chỗ tự bắt thì `opFail`) thay cho `runCatching` nuốt lỗi. Lỗi → báo cáo `kind=op-fail`, `component=op:<tên>`, gồm bước, mã lỗi, 30 vệt gần nhất, máy/bản app; link bị thay `<link>`, chỉ tên file (không đường dẫn). Cùng thao tác + bước + lỗi trong 10 phút chỉ ghi/gửi 1 lần. Lỗi bình thường (cần mật khẩu, mất mạng) đưa vào `expected`/`Diagnostics.isOffline` để không báo.
 - Nội dung báo cáo luôn qua `scrub` (che đường dẫn/email/token). Đừng đưa dữ liệu nhạy cảm vào `msg`.
 - Vệt sự kiện nằm ở file `diag/crumbs/<pid>.log` → sống sót cả khi native crash.
 - Phiên chơi: `Diagnostics.begin/coreInfo/stage/heartbeat/end`.

@@ -141,7 +141,7 @@ class EnginePrepActivity : ComponentActivity() {
             runCatching { PackManager.install(packId) { status = it } }
                 .onSuccess { play() }
                 .onFailure {
-                    Diagnostics.recordHandled(this@EnginePrepActivity, "pack:$packId", "tải gói $packId thất bại", it)
+                    Diagnostics.opFail(this@EnginePrepActivity, Diagnostics.Op.INSTALL_PACK, "pack:$packId", it, packId)
                     status = "Không tải được: ${it.message ?: "lỗi mạng"}. Kiểm tra mạng rồi bấm lại."
                 }
         }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import vn.aow.monika.diag.Diagnostics
 import java.io.File
 
 /** Luồng "vá Việt hóa" cho 1 game trong Thư viện: đọc bản vá từ Uri → vá → ghi "(Việt hóa)" cạnh ROM gốc. Trả thông điệp cho người chơi. */
@@ -30,10 +31,13 @@ object PatchFlow {
             if (!tmp.renameTo(out)) { tmp.delete(); dir.deleteRecursively(); return@withContext "Không ghi được file sau khi vá." }
             "Đã vá (${fmt.label}). Game \"${dir.name}\" đã có trong Thư viện, ROM gốc giữ nguyên."
         } catch (e: PatchException) {
+            Diagnostics.opFail(context, Diagnostics.Op.PATCH_ROM, "ap-ban-va", e, rom.name)
             e.message ?: "Vá không thành công."
         } catch (e: java.io.IOException) {
+            Diagnostics.opFail(context, Diagnostics.Op.PATCH_ROM, "doc-ghi", e, rom.name)
             "Không vá được: ${e.message}"
         } catch (e: OutOfMemoryError) {
+            Diagnostics.opFail(context, Diagnostics.Op.PATCH_ROM, "het-bo-nho", e, rom.name)
             "Không đủ bộ nhớ để vá file này."
         }
     }
