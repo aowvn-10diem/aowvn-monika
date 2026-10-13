@@ -136,6 +136,20 @@ class DiagnosticsOpTest {
         assertTrue(rep.detail.contains("bước: nap-native") && rep.detail.contains("UnsatisfiedLinkError"))
     }
 
+    @Test fun debugAndRobolectricNeverAutoSendToTheWorker() {
+        var calls = 0
+        val http = okhttp3.OkHttpClient.Builder().addInterceptor { chain -> calls++; chain.proceed(chain.request()) }.build()
+        assertTrue(Diagnostics.isTestDevice())
+        assertFalse(Diagnostics.autoSendAllowedHere())
+        Diagnostics.opFail(app, Op.FETCH_FEED, "tai-bai", IOException("HTTP 500"))
+        val r = opFails().single()
+        Diagnostics.autoSend(app, http, r, "https://crash.invalid/report", true, true)
+        Thread.sleep(200) // nếu có gửi thì luồng nền đã kịp gọi interceptor
+        assertEquals("không được gọi mạng", 0, calls)
+        Diagnostics.allowDebugSend = true
+        try { assertTrue("cờ thủ công bật lại được", Diagnostics.autoSendAllowedHere()) } finally { Diagnostics.allowDebugSend = false }
+    }
+
     @Test fun errorCodeShowsRootCause() {
         val e = IOException("ngoài", java.io.FileNotFoundException("gốc"))
         assertEquals("IOException <- FileNotFoundException", Diagnostics.errorCode(e))

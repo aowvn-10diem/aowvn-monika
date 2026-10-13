@@ -21,6 +21,7 @@ object AppGraph {
 
     fun init(application: Application) {
         app = application
+        vn.aow.monika.diag.Diagnostics.allowDebugSend = prefs.debugSendCrash
         // V112: báo cáo lỗi thao tác người dùng (op-fail) gửi ngầm cùng đường, cùng công tắc với lõi sập.
         vn.aow.monika.diag.Diagnostics.opSender = { c, r ->
             val cr = config.current.crash

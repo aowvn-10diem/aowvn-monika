@@ -480,9 +480,19 @@ object Diagnostics {
             crumbs = Breadcrumbs.read(c, Process.myPid())))
     }
 
+    /**
+     * Bản debug và máy giả lập test (Robolectric) KHÔNG tự gửi báo cáo lên Worker: làm bẩn số liệu crash-free và tốn quota KV.
+     * Bật tay bằng [allowDebugSend] (AppGraph đọc từ Prefs `debugSendCrash`; test kiểm đường gửi dùng uploader giả thì tự bật).
+     */
+    @Volatile internal var allowDebugSend = false
+    internal fun isTestDevice(): Boolean =
+        Build.FINGERPRINT.contains("robolectric", ignoreCase = true) || Build.MODEL.contains("robolectric", ignoreCase = true)
+    internal fun autoSendAllowedHere(): Boolean = allowDebugSend || !(BuildConfig.DEBUG || isTestDevice())
+
     /** Gửi ngầm (không clipboard) nếu người chơi không tắt và config `crash.autoSend` bật. Chạy ở luồng nền. */
     fun autoSend(c: Context, http: OkHttpClient, r: Report, endpoint: String, enabledByConfig: Boolean, enabledByUser: Boolean) {
         if (!enabledByConfig || !enabledByUser || endpoint.isBlank() || r.sent) return
+        if (!autoSendAllowedHere()) return
         Thread {
             val ok = runCatching {
                 http.newCall(Request.Builder().url(endpoint).post(reportJson(c, r).toRequestBody("application/json".toMediaType())).build())
