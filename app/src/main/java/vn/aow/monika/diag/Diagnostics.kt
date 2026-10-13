@@ -400,14 +400,20 @@ object Diagnostics {
     /** Ghi một lỗi thao tác đã tự bắt (nơi không bọc được bằng [op]). Trả null nếu trùng trong cửa sổ chống spam. */
     fun opFail(c: Context, name: String, step: String, e: Throwable, target: String? = null): Report? = runCatching {
         val code = errorCode(e)
-        val key = "$name|$step|$code|${e.message.orEmpty().take(60).replace(Regex("""\d+"""), "")}"
-        val now = opClock()
-        val last = opSeen[key]
-        if (last != null && now - last < OP_THROTTLE_MS) {
-            Breadcrumbs.add(c, "op-fail", "$name/$step $code (trùng, đã ghi)")
+        // Hủy (Activity rời màn, Worker bị dừng) và mất mạng là chuyện thường: chỉ ghi vệt, không lập báo cáo.
+        if (isCancellation(e) || isOffline(e)) {
+            Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code (hủy/mất mạng, không báo)")
             return@runCatching null
         }
-        opSeen[key] = now
+        val key = "$name|$step|$code|${e.message.orEmpty().take(60).replace(Regex("""\d+"""), "")}"
+        val now = opClock()
+        var fresh = false
+        // Nguyên tử: nhiều luồng cùng lỗi cùng lúc thì đúng 1 luồng thắng cửa sổ 10 phút.
+        opSeen.compute(key) { _, last -> if (last == null || now - last >= OP_THROTTLE_MS) { fresh = true; now } else last }
+        if (!fresh) {
+            Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code (trùng, đã ghi)")
+            return@runCatching null
+        }
         Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code")
         val stack = java.io.StringWriter().also { e.printStackTrace(java.io.PrintWriter(it)) }.toString()
         val detail = buildString {
@@ -438,6 +444,11 @@ object Diagnostics {
             errno?.let { append(" errno=").append(it) }
             if (root !== e) append(" <- ").append(root.javaClass.simpleName.ifBlank { root.javaClass.name })
         }
+    }
+
+    /** Coroutine bị hủy, hoặc OkHttp báo `Canceled` khi lời gọi bị hủy. */
+    internal fun isCancellation(e: Throwable): Boolean = generateSequence(e) { it.cause?.takeIf { c -> c !== it } }.any {
+        it is kotlinx.coroutines.CancellationException || (it is java.io.IOException && it.message == "Canceled")
     }
 
     /** Mất mạng/quá hạn là chuyện thường của người chơi, không phải lỗi app → không lập báo cáo `op-fail` (chỉ ghi vệt). */

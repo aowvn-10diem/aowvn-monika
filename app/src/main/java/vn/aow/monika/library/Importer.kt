@@ -88,19 +88,25 @@ object Importer {
         if (MultiPart.parse(name) != null || name.endsWith(".rar", true)) {
             // Chép ra thư mục tải về trước, để các phần của cùng bộ nằm cạnh nhau.
             val tmp = File(GameStorage.downloads(context), name)
-            (context.contentResolver.openInputStream(uri) ?: throw IOException("Không mở được file")).use { input ->
-                tmp.outputStream().use { input.copyTo(it) }
-            }
+            copyUri(context, uri, tmp, name)
             return importFile(context, tmp, deleteSource = true, passwords = passwords, progress = progress)
         }
         val dir = newGameDir(context, name)
-        val resolver = context.contentResolver
         val tmp = File(dir, name)
-        (resolver.openInputStream(uri) ?: throw IOException("Không mở được file")).use { input ->
-            tmp.outputStream().use { input.copyTo(it) }
-        }
+        copyUri(context, uri, tmp, name)
         if (!ArchiveExtractor.isArchive(tmp)) return ImportResult(dir)
-        return extractInPlace(dir, passwords, progress)
+        return extractInPlace(dir, passwords, progress, context)
+    }
+
+    /** V112: mở/chép file người dùng chọn là bước "nhập game" → lỗi để lại op-fail rồi ném lại như cũ cho giao diện hiện thông báo. */
+    private fun copyUri(context: Context, uri: Uri, dest: File, name: String) {
+        vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.IMPORT, name) {
+            step("mo-file")
+            (context.contentResolver.openInputStream(uri) ?: throw IOException("Không mở được file")).use { input ->
+                step("chep-file")
+                dest.outputStream().use { input.copyTo(it) }
+            }
+        }.getOrThrow()
     }
 
     /** Giải nén file nén đang nằm trong thư mục game (lần đầu lỗi, hoặc user vừa nhập mật khẩu). */

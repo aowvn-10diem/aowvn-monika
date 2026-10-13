@@ -32,7 +32,7 @@ class DiagnosticsOpTest {
     @get:Rule val tmp = TemporaryFolder()
     private val app get() = ApplicationProvider.getApplicationContext<android.app.Application>()
     private var now = 1_000_000L
-    private val sent = mutableListOf<Diagnostics.Report>()
+    private val sent = java.util.Collections.synchronizedList(mutableListOf<Diagnostics.Report>())
 
     @Before fun setUp() {
         File(app.filesDir, "diag").deleteRecursively()
@@ -148,6 +148,45 @@ class DiagnosticsOpTest {
         assertEquals("không được gọi mạng", 0, calls)
         Diagnostics.allowDebugSend = true
         try { assertTrue("cờ thủ công bật lại được", Diagnostics.autoSendAllowedHere()) } finally { Diagnostics.allowDebugSend = false }
+    }
+
+    @Test fun opFailIgnoresCancellationAndOfflineButKeepsACrumb() {
+        Diagnostics.opFail(app, Op.INSTALL_PACK, "pack:x", CancellationException("Worker dừng"))
+        Diagnostics.opFail(app, Op.DOWNLOAD, "tai-ve", IOException("Canceled"))
+        Diagnostics.opFail(app, Op.DOWNLOAD, "tai-ve", java.net.UnknownHostException("host"))
+        Diagnostics.opFail(app, Op.DOWNLOAD, "tai-ve", IOException("bọc", java.net.SocketTimeoutException("quá hạn")))
+        assertTrue(opFails().isEmpty())
+        assertTrue(sent.isEmpty())
+        assertTrue(vn.aow.monika.diag.Breadcrumbs.read(app, android.os.Process.myPid()).any { it.contains("không báo") })
+        Diagnostics.opFail(app, Op.DOWNLOAD, "tai-ve", IOException("HTTP 500")) // lỗi thật vẫn báo
+        assertEquals(1, opFails().size)
+    }
+
+    @Test fun concurrentSameFailureWinsTheThrottleExactlyOnce() {
+        val threads = 12
+        val gate = java.util.concurrent.CyclicBarrier(threads)
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(threads)
+        try {
+            val futures = (1..threads).map {
+                pool.submit {
+                    gate.await()
+                    Diagnostics.opFail(app, Op.DOWNLOAD, "tai-ve", IOException("HTTP 502"))
+                }
+            }
+            futures.forEach { it.get() }
+        } finally { pool.shutdown() }
+        assertEquals("nhiều lượt tải cùng lỗi cùng lúc chỉ lập 1 báo cáo", 1, opFails().size)
+        assertEquals(1, synchronized(sent) { sent.size })
+    }
+
+    @Test fun importUriOpenFailureLeavesOneImportOpFailAndStillThrows() {
+        try {
+            Importer.importUri(app, android.net.Uri.parse("content://vn.aow.khong-co/game.nds"), emptyList())
+            fail("mở file lỗi phải ném lại để giao diện báo cho người dùng")
+        } catch (_: Exception) {}
+        val r = opFails().single()
+        assertEquals("op:nhap-game", r.component)
+        assertTrue(r.detail.contains("bước: mo-file"))
     }
 
     @Test fun errorCodeShowsRootCause() {

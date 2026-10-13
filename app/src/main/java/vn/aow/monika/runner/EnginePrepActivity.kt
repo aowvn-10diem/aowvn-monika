@@ -141,6 +141,7 @@ class EnginePrepActivity : ComponentActivity() {
             runCatching { PackManager.install(packId) { status = it } }
                 .onSuccess { play() }
                 .onFailure {
+                    if (it is kotlinx.coroutines.CancellationException) throw it // Activity rời màn: để huỷ lan truyền, không báo
                     Diagnostics.opFail(this@EnginePrepActivity, Diagnostics.Op.INSTALL_PACK, "pack:$packId", it, packId)
                     status = "Không tải được: ${it.message ?: "lỗi mạng"}. Kiểm tra mạng rồi bấm lại."
                 }
