@@ -1,0 +1,10 @@
+appId: com.aow.monika
+---
+# The fixture server leaves 40 seconds to verify taps on the real loading screen.
+- assertVisible: "Đang tải lõi.*"
+- tapOn:
+    point: "50%,30%"
+    repeat: 8
+    delay: 100
+    waitToSettleTimeoutMs: 0
+- assertVisible: "Đang tải lõi.*"
