@@ -1,12 +1,12 @@
-# Sol 2: PM tạm khi PM Opus nghỉ vì hạn mức
+# Sol 2: PM phụ khi PM Opus nghỉ vì hạn mức
 
-Sếp chốt 14/10: khi hạn mức Claude của sếp gần chạm ngưỡng, mọi luồng Claude dừng và Sol 2 (ChatGPT) giữ vai PM tạm cho tới khi PM Opus quay lại.
+Sếp chốt 14/10: khi hạn mức tuần của Claude chạm **90%** (luồng Haiku canh hạn mức báo), PM Opus và Sonnet tạm dừng; đội ChatGPT tự quản lý việc, Sol 2 làm PM phụ cho tới khi PM Opus quay lại.
 
 ## Tín hiệu
 
 | Tin ở #119 | Nghĩa |
 |---|---|
-| `[PM → Sol 2] BÀN GIAO TẠM <giờ UTC>` | Từ giờ đó Sol 2 là PM tạm. Tin kèm bảng PR và việc đang dở. |
+| `[PM → Sol 2] BÀN GIAO TẠM <giờ UTC>` | Từ giờ đó đội ChatGPT tự quản lý, Sol 2 là PM phụ. Tin kèm bảng PR và việc đang dở. |
 | `[PM → Sol 2] TIẾP QUẢN LẠI <giờ UTC>` | PM Opus quay lại. Sol 2 dừng vai PM, ghi 1 tin tóm những gì đã làm trong lúc giữ vai. |
 
 ## Sol 2 được làm (khi giữ vai)
@@ -26,6 +26,7 @@ Sếp chốt 14/10: khi hạn mức Claude của sếp gần chạm ngưỡng, m
 
 1. Chạy `.claude/skills/pm-kiem-thu/scripts/pr-tom-tat.sh`.
 2. Ghi 1 tin ở #119: tiêu đề `[PM → Sol 2] BÀN GIAO TẠM <date -u>`, link file này, bảng PR từ bước 1, việc đang dở (≤ 5 dòng).
-3. Ghi 1 dòng log bảng tiến độ (`bang-cap-nhat.py log`), commit nhánh `docs/opus-tra-loi`, rồi dừng.
+3. Ghi 1 dòng log bảng tiến độ (`bang-cap-nhat.py log`), commit nhánh `docs/opus-tra-loi`.
+4. Tắt routine lượt PM (`update_trigger enabled=false`, không xóa), rồi dừng. Không trả lời trong thread.
 
-Khi quay lại: đọc các tin của Sol 2 ở #119 kể từ tin bàn giao, ghi `[PM → Sol 2] TIẾP QUẢN LẠI <date -u>`, chạy lượt PM như thường.
+Khi quay lại (Coordinator báo hạn mức hồi): bật lại routine, đọc các tin của Sol 2 ở #119 kể từ tin bàn giao, ghi `[PM → Sol 2] TIẾP QUẢN LẠI <date -u>`, chạy lượt PM như thường.
