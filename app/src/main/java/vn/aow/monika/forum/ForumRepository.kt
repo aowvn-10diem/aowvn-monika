@@ -32,7 +32,7 @@ data class ForumTag(val name: String, val slug: String, val color: String?, val 
  * Đọc diễn đàn AowVN qua API công khai của Flarum (chỉ đọc, không cần đăng nhập). Lưu bộ đệm 10 phút để mở Trang chủ nhanh
  * và không gọi máy chủ diễn đàn quá nhiều.
  */
-class ForumRepository(private val http: OkHttpClient, private val config: ConfigRepository, private val dir: File, private val ctx: android.content.Context? = null) {
+class ForumRepository(private val http: OkHttpClient, private val config: ConfigRepository, private val dir: File) {
     private val cfg get() = config.current.forum
 
     /** Bản đã lưu (kể cả cũ) để hiện ngay; null nếu chưa có. */
@@ -57,16 +57,9 @@ class ForumRepository(private val http: OkHttpClient, private val config: Config
 
     private fun get(url: String): String {
         val req = Request.Builder().url(url).header("Accept", "application/vnd.api+json").build()
-        return try {
-            http.newCall(req).execute().use { r ->
-                check(r.isSuccessful) { "HTTP ${r.code}" }
-                r.body!!.string()
-            }
-        } catch (e: Exception) {
-            // V112: tải diễn đàn lỗi (HTTP/đọc) để lại op-fail; mất mạng thì không.
-            if (!vn.aow.monika.diag.Diagnostics.isOffline(e))
-                ctx?.let { vn.aow.monika.diag.Diagnostics.opFail(it, vn.aow.monika.diag.Diagnostics.Op.FETCH_FORUM, "tai-chu-de", e) }
-            throw e
+        return http.newCall(req).execute().use { r ->
+            check(r.isSuccessful) { "HTTP ${r.code}" }
+            r.body!!.string()
         }
     }
 

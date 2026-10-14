@@ -361,7 +361,6 @@ object Diagnostics {
         const val OPEN_GAME = "mo-game"
         const val FETCH_CONFIG = "tai-cau-hinh"
         const val FETCH_FEED = "tai-feed"
-        const val FETCH_FORUM = "tai-dien-dan"
     }
 
     /** Cùng thao tác + cùng chữ ký lỗi trong chừng này thời gian chỉ ghi/gửi 1 lần. */

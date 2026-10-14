@@ -55,7 +55,7 @@ class DiagnosticsOpTest {
     private fun failInstall() = Diagnostics.op(app, Op.INSTALL_PACK) { step("tai"); throw IOException("hết dung lượng") }
 
     @Test fun everyNamedOperationProducesExactlyOneOpFailReport() {
-        val names = listOf(Op.DOWNLOAD, Op.EXTRACT, Op.IMPORT, Op.PATCH_ROM, Op.INSTALL_PACK, Op.OPEN_GAME, Op.FETCH_CONFIG, Op.FETCH_FEED, Op.FETCH_FORUM)
+        val names = listOf(Op.DOWNLOAD, Op.EXTRACT, Op.IMPORT, Op.PATCH_ROM, Op.INSTALL_PACK, Op.OPEN_GAME, Op.FETCH_CONFIG, Op.FETCH_FEED)
         names.forEach { name ->
             val r = Diagnostics.op(app, name) { step("buoc-thu"); throw IOException("hỏng $name") }
             assertTrue(r.isFailure)
