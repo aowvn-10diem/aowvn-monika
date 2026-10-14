@@ -224,6 +224,18 @@ class StorageCleanerTest {
         assertEquals(listOf("other"), report.removedGames)
     }
 
+    /** V117: game vừa nhập, chưa chơi lần nào, phải sống qua clean() mặc định (không protect) khi bộ nhớ vượt giới hạn. */
+    @Test fun freshlyImportedUnplayedGameSurvivesDefaultCleanWhenOverLimit() {
+        prefs.cacheLimitBytes = 100
+        val fresh = game("vua-nhap", 400, 0, title = "Vừa nhập")
+        assertEquals(0L, prefs.lastPlayed(fresh.path))
+
+        val report = StorageCleaner.clean(context)
+
+        assertTrue(payload(fresh).exists())
+        assertTrue(report.removedGames.isEmpty())
+    }
+
     @Test fun mediaOnlyClearsMediaRegardlessOfAgeAndLimitButNotCoresOrGames() {
         prefs.autoDeleteCoreDays = 1
         prefs.autoDeleteGameDays = 1
