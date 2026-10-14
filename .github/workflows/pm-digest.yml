@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: {persist-credentials: false}
       - name: Kiểm L10 và wrapper, chuẩn bị bản tin PR không đăng bot
         env: {GITHUB_TOKEN: '${{ github.token }}'}
@@ -43,7 +43,7 @@ jobs:
       security-events: read
     steps:
       # Luôn mã main: comment/fork/PR không được cấp code tùy ý chạy cùng token ghi.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: {ref: main, persist-credentials: false}
       - name: Chuẩn bị và đăng root commit bot/trang-thai
         # PR đầu tiên chưa có wrapper trên main: chỉ preview ở job trên, không publish trước duyệt.
