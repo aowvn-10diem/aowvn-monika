@@ -59,7 +59,7 @@ private val DAY_OPTIONS = listOf(0 to "Không bao giờ", 2 to "2 ngày", 7 to "
 
 /**
  * Cài đặt dung lượng kiểu Telegram:
- * - Tự động xóa khi không dùng: theo từng nhóm (game / lõi / ảnh & bài viết).
+ * - Tự động chỉ dọn lõi / ảnh & bài viết; game chỉ dọn qua nút Dọn ngay.
  * - Giới hạn bộ nhớ đệm (mặc định 2 GB): vượt thì xóa thứ lâu không dùng nhất.
  * Save game và game tự thêm từ máy không bao giờ bị xóa.
  */
@@ -79,10 +79,10 @@ fun StorageSettingsContent() {
 
     LaunchedEffect(tick) { usage = withContext(Dispatchers.IO) { StorageCleaner.usage(context) } }
 
-    fun runClean(mediaOnly: Boolean) {
+    fun runClean(mediaOnly: Boolean, allowGameEviction: Boolean = false) {
         busy = true
         scope.launch {
-            val r = withContext(Dispatchers.IO) { StorageCleaner.clean(context, mediaOnly = mediaOnly) }
+            val r = withContext(Dispatchers.IO) { StorageCleaner.clean(context, mediaOnly = mediaOnly, allowGameEviction = allowGameEviction) }
             busy = false
             tick++
             val games = if (r.removedGames.isNotEmpty()) " · dọn ${r.removedGames.size} game" else ""
@@ -105,15 +105,12 @@ fun StorageSettingsContent() {
             UsageLine(c.accentCyan, "Ảnh & bài viết", u.media)
         }
         Text(
-            "Game tải từ aow.vn, lõi giả lập và ảnh đều tải lại được bất cứ lúc nào. Save game và game bạn tự thêm từ máy KHÔNG bao giờ bị xóa.",
+            "Dọn tự động chỉ xóa ảnh, bài viết và lõi. Game tải từ aow.vn chỉ bị dọn khi bạn bấm Dọn ngay bên dưới. Save game và game bạn tự thêm từ máy KHÔNG bao giờ bị xóa.",
             style = Monika.type.caption, color = c.textSecondary,
         )
 
         // Tự động xóa
         Text("Tự động xóa khi không dùng", style = Monika.type.bodyStrong, color = c.accentCoral, modifier = Modifier.padding(top = 4.dp))
-        AutoDeleteRow(R.drawable.ic_fluent_games_24_regular, Brush.linearGradient(listOf(Color(0xFFFFB052), Color(0xFFE95CC8))), "Game tải từ aow.vn", gameDays) {
-            gameDays = it; prefs.autoDeleteGameDays = it
-        }
         AutoDeleteRow(R.drawable.ic_fluent_layer_24_regular, Brush.linearGradient(listOf(Color(0xFF8076FF), Color(0xFF628DF4))), "Lõi giả lập", coreDays) {
             coreDays = it; prefs.autoDeleteCoreDays = it
         }
@@ -121,7 +118,7 @@ fun StorageSettingsContent() {
             mediaDays = it; prefs.autoDeleteMediaDays = it
         }
         Text(
-            "Thứ không được mở trong khoảng thời gian này sẽ bị xóa khỏi máy để tiết kiệm dung lượng. Game bị dọn vẫn hiện trong Thư viện với nút \"Tải lại\".",
+            "Ảnh, bài viết và lõi không được mở trong khoảng thời gian này sẽ bị dọn tự động. Game được giữ nguyên.",
             style = Monika.type.caption, color = c.textSecondary,
         )
 
@@ -150,12 +147,16 @@ fun StorageSettingsContent() {
             ),
         )
         Text(
-            "Nếu bộ nhớ đệm vượt giới hạn, thứ lâu không dùng nhất sẽ bị xóa trước: ảnh & bài viết → lõi giả lập → game lâu không chơi.",
+            "Dọn tự động áp dụng giới hạn cho ảnh, bài viết và lõi. Bấm Dọn ngay mới tính cả game và dọn game lâu không chơi sau cùng.",
             style = Monika.type.caption, color = c.textSecondary,
         )
 
+        Text("Dọn game khi bấm Dọn ngay", style = Monika.type.bodyStrong, color = c.accentCoral)
+        AutoDeleteRow(R.drawable.ic_fluent_games_24_regular, Brush.linearGradient(listOf(Color(0xFFFFB052), Color(0xFFE95CC8))), "Game tải từ aow.vn", gameDays) {
+            gameDays = it; prefs.autoDeleteGameDays = it
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            GradientButton("Dọn ngay", { runClean(false) }, Modifier.weight(1f), icon = R.drawable.ic_fluent_delete_24_regular, enabled = !busy, height = 48.dp)
+            GradientButton("Dọn ngay", { runClean(false, allowGameEviction = true) }, Modifier.weight(1f), icon = R.drawable.ic_fluent_delete_24_regular, enabled = !busy, height = 48.dp)
             DarkButton("Xóa ảnh", { runClean(true) }, enabled = !busy)
         }
     }
