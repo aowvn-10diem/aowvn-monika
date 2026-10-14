@@ -1,0 +1,48 @@
+name: Gom báo cáo lỗi (V100)
+on:
+  schedule:
+    - cron: '17 * * * *'
+  pull_request:
+    paths: ['scripts/crash-issue-bot.py', 'scripts/test-crash-issue-bot.py', '.github/workflows/crash-issue-bot.yml']
+  push:
+    paths: ['scripts/crash-issue-bot.py', 'scripts/test-crash-issue-bot.py', '.github/workflows/crash-issue-bot.yml']
+permissions:
+  contents: read
+concurrency:
+  group: crash-issue-bot-${{ github.event_name == 'schedule' && 'scheduled' || github.ref }}
+  cancel-in-progress: false
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 scripts/test-crash-issue-bot.py
+  collect:
+    if: github.event_name == 'schedule'
+    needs: offline
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Gom cửa sổ báo cáo mới nhất, không in nội dung riêng tư
+        env:
+          CRASH_ADMIN_TOKEN: ${{ secrets.CRASH_ADMIN_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          CRASH_ASSIGNEE_SOL: ${{ vars.CRASH_ASSIGNEE_SOL }}
+          CRASH_ASSIGNEE_SONNET: ${{ vars.CRASH_ASSIGNEE_SONNET }}
+        run: python3 scripts/crash-issue-bot.py --apply
