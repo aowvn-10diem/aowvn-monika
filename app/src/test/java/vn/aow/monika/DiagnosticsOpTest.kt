@@ -217,6 +217,20 @@ class DiagnosticsOpTest {
         assertTrue(r.detail.contains("bước: tao-thu-muc") && r.detail.contains("đối tượng: rom.nds"))
     }
 
+    @Test fun patchRejectedRomOrPatchAlsoLeavesOpFail() = runBlocking {
+        val big = File(tmp.root, "big.nds").apply { java.io.RandomAccessFile(this, "rw").use { it.setLength(257L * 1024 * 1024) } }
+        val patch = File(tmp.root, "vh.ips").apply { writeBytes(ips()) }
+        val m1 = vn.aow.monika.patch.PatchFlow.run(app, big, android.net.Uri.fromFile(patch))
+        assertTrue(m1.startsWith("File game quá lớn"))
+        assertTrue(opFails().single().detail.contains("bước: kiem-tra-rom"))
+        Diagnostics.resetOpThrottle()
+        val rom = File(tmp.root, "rom2.nds").apply { writeBytes(ByteArray(8)) }
+        val junk = File(tmp.root, "x.bin").apply { writeBytes(ByteArray(16) { 7 }) }
+        val m2 = vn.aow.monika.patch.PatchFlow.run(app, rom, android.net.Uri.fromFile(junk))
+        assertTrue(m2.startsWith("Không nhận ra định dạng"))
+        assertTrue(opFails().any { it.detail.contains("bước: nhan-dang-ban-va") })
+    }
+
     @Test fun errorCodeShowsRootCause() {
         val e = IOException("ngoài", java.io.FileNotFoundException("gốc"))
         assertEquals("IOException <- FileNotFoundException", Diagnostics.errorCode(e))
