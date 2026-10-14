@@ -209,13 +209,20 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", required=True)
     parser.add_argument("--head", required=True)
+    parser.add_argument("--pull-request", action="store_true", help="compare PR changes from the common ancestor")
     args = parser.parse_args(argv)
     try:
         if not SHA.fullmatch(args.head) or not SHA.fullmatch(args.base):
             raise ValueError("full commit SHAs required")
         base = args.base
         if base == "0" * 40:
+            if args.pull_request:
+                raise ValueError("PR base commit required")
             base = git("merge-base", "refs/remotes/origin/main", args.head).decode().strip()
+        elif args.pull_request:
+            # A PR target can advance without becoming an ancestor of its head.
+            # Resolve the real common commit; missing history still fails closed.
+            base = git("merge-base", base, args.head).decode().strip()
         git("merge-base", "--is-ancestor", base, args.head)
         paths = git("diff", "--name-only", "-z", "--diff-filter=ACMR", base, args.head,
                     "--", *[PREFIX + scope + "/" for scope in SCOPES]).decode("utf-8").split("\0")

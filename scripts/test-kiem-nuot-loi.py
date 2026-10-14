@@ -85,6 +85,35 @@ class HandlerTest(unittest.TestCase):
 
 
 class GitBoundaryTest(unittest.TestCase):
+    def test_diverged_pr_target_uses_common_baseline_and_still_blocks_new_handlers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.check_output(['git', '-C', directory, *args], stderr=subprocess.DEVNULL, text=True).strip()
+            def commit():
+                git('add', '.')
+                git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'fixture')
+                return git('rev-parse', 'HEAD')
+            def write(source):
+                path = root / (guard.PREFIX + 'library/Legacy.kt')
+                path.parent.mkdir(parents=True, exist_ok=True); path.write_text(source)
+            def check(base, head, *options):
+                return subprocess.run(['bash', str(HERE / 'kiem-nuot-loi.sh'), '--base', base, '--head', head, *options], cwd=root, capture_output=True, text=True)
+            git('init', '-q'); write('runCatching { legacy() }'); common = commit()
+            git('checkout', '-qb', 'fixture-feature', common)
+            write('runCatching { legacy() }; runCatching { newOperation() }.getOrThrow()'); good = commit()
+            git('checkout', '-qb', 'fixture-target', common)
+            write('runCatching { upstreamOperation() }.getOrThrow()'); target = commit()
+            self.assertEqual(check(target, good).returncode, 2)  # Push ancestry remains strict.
+            self.assertEqual(check(target, good, '--pull-request').returncode, 0)
+            git('checkout', '-q', 'fixture-feature')
+            write('runCatching { legacy() }; runCatching { newOperation() }'); bad = commit()
+            result = check(target, bad, '--pull-request')
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertIn('Legacy.kt:1', result.stdout)
+            self.assertEqual(check('f' * 40, bad, '--pull-request').returncode, 2)
+            self.assertEqual(check('0' * 40, bad, '--pull-request').returncode, 2)
+
     def test_real_git_scope_rename_new_branch_missing_history_and_exit_codes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
