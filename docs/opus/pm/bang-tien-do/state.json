@@ -1,8 +1,8 @@
 {
- "updatedAt": "2026-10-13T09:46:20Z",
+ "updatedAt": "2026-10-14T04:08:50Z",
  "mainSha": "9897563",
  "app": "v0.8.3 bản thử · ổn định chờ lượt cài thật",
- "nextCheck": "2026-10-09T06:14:32Z",
+ "nextCheck": "2026-10-14T05:08:50Z",
  "headline": "[A40] Chế độ tự động: PM điều phối mỗi giờ, tối thiểu 2 ngày 1 bản. Đang kẹt 1 việc: PM chưa có quyền gộp PR (10 PR đủ luật đang chờ).",
  "needsBoss": [
   {
@@ -1179,6 +1179,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-14T04:08:50Z",
+   "text": "PM Opus 5.5 tiếp quản (thread Project). 9 PR GOP (#224–#231, #235) vẫn bị bộ lọc chặn gộp, chờ sếp mở quyền. #236 V103: [A42] chỉ gửi token tới *.workers.dev, giao Sol."
+  },
   {
    "t": "2026-10-13T09:46:20Z",
    "text": "[A40] Bật chế độ tự động: luot-pm.sh mỗi giờ, nhịp 2 ngày 1 bản, crashlog V112–V115. v0.8.3 bản thử đã phát hành, chưa lên ổn định vì chưa có lượt cài thật."
