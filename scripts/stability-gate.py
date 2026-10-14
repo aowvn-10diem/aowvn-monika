@@ -72,7 +72,7 @@ def gate(data, version, hours, now):
 class Worker:
     def __init__(self, origin, token):
         parsed = urllib.parse.urlsplit(origin)
-        if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.path not in ('', '/') or not token:
+        if parsed.scheme != 'https' or not (parsed.hostname or '').endswith('.workers.dev') or parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.path not in ('', '/') or not token:
             raise ValueError('invalid Worker configuration')
         self.origin, self.token, self.calls, self.bytes = origin.rstrip('/'), token, 0, 0
 

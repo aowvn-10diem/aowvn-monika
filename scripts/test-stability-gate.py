@@ -171,4 +171,34 @@ class GateTest(unittest.TestCase):
             with self.subTest(fixture_app=app), self.assertRaises(ValueError):
                 v.gate(data(row(NOW-25*HOUR, suffix='abcdef12'),r),'0.8.3',24,NOW)
 
+    def test_untrusted_worker_hosts_exit_blocked_before_any_authenticated_request(self):
+        origins = ['https://example.test', 'https://workers.dev',
+                   'https://aowvn-monika-crash.aowvn-system.workers.dev.evil.test',
+                   'https://notworkers.dev', 'https://127.0.0.1',
+                   'https://example.test#worker.workers.dev',
+                   'https://worker.workers.dev@example.test']
+        for origin in origins:
+            with self.subTest(origin=origin), tempfile.TemporaryDirectory() as tmp:
+                out = Path(tmp) / 'result.json'; stdout, stderr = io.StringIO(), io.StringIO()
+                with mock.patch.dict(v.os.environ, {'CRASH_WORKER_URL': origin, 'CRASH_ADMIN_TOKEN': 'fixture-only'}, clear=True), mock.patch.object(v.sys, 'argv', ['gate', '--version', '0.8.3', '--out', str(out)]), mock.patch.object(v.urllib.request, 'Request') as request, mock.patch.object(v.urllib.request, 'build_opener') as opener, contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                    self.assertEqual(v.main(), 2)
+                request.assert_not_called(); opener.assert_not_called()
+                self.assertFalse(out.exists()); self.assertEqual(stdout.getvalue(), '')
+                self.assertTrue(stderr.getvalue().startswith('BLOCKED:')); self.assertNotIn('fixture-only', stderr.getvalue())
+
+    def test_workers_dev_hosts_keep_authenticated_read_and_block_redirects(self):
+        for origin in ['https://aowvn-monika-crash.aowvn-system.workers.dev',
+                       'https://another.account.workers.dev']:
+            for configured in [origin, origin + '/']:
+                with self.subTest(origin=configured), mock.patch.object(v.urllib.request, 'build_opener') as build:
+                    build.return_value.open.return_value.__enter__.return_value.read.return_value = b'{"complete":true,"reports":[]}'
+                    worker = v.Worker(configured, 'fixture-only')
+                    self.assertEqual(worker.get('/report-index'), {'complete':True,'reports':[]})
+                    request = build.return_value.open.call_args.args[0]
+                    self.assertEqual(request.full_url, origin + '/report-index')
+                    self.assertEqual(request.get_header('Authorization'), 'Bearer fixture-only')
+                    handler = build.call_args.args[0]
+                    with self.assertRaises(ValueError):
+                        handler.redirect_request(None, None, None, None, None, 'https://example.test')
+
 if __name__=='__main__':unittest.main()
