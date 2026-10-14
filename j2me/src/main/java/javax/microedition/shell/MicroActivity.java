@@ -37,7 +37,10 @@ import android.text.InputType;
 import android.text.TextUtils;
 import android.text.method.DigitsKeyListener;
 import android.util.TypedValue;
+import android.os.SystemClock;
+import android.view.InputDevice;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -73,6 +76,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.microedition.lcdui.keyboard.KeyMapper;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
@@ -200,6 +204,7 @@ public class MicroActivity extends AppCompatActivity {
 
 	@Override
 	public void onPause() {
+		setPadDirection(0, 0); // nhả hướng tay cầm đang giữ, khỏi kẹt phím khi mất tiêu điểm
 		hideSoftInput();
 		super.onPause();
 	}
@@ -498,6 +503,39 @@ public class MicroActivity extends AppCompatActivity {
 				})
 				.setNegativeButton(R.string.monika_keep_playing, null);
 		alertBuilder.create().show();
+	}
+
+	/** Hướng D-pad đang giữ từ hat/cần analog của tay cầm (0 = không). V120. */
+	private int padDirection;
+
+	@Override
+	public boolean dispatchGenericMotionEvent(MotionEvent ev) {
+		if (ev.getAction() == MotionEvent.ACTION_MOVE
+				&& (ev.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
+			setPadDirection(KeyMapper.gamepadDirection(
+					ev.getAxisValue(MotionEvent.AXIS_HAT_X), ev.getAxisValue(MotionEvent.AXIS_HAT_Y),
+					ev.getAxisValue(MotionEvent.AXIS_X), ev.getAxisValue(MotionEvent.AXIS_Y)), ev.getDeviceId());
+			return true;
+		}
+		return super.dispatchGenericMotionEvent(ev);
+	}
+
+	private void setPadDirection(int direction, int deviceId) {
+		if (direction == padDirection) {
+			return;
+		}
+		if (padDirection != 0) {
+			sendPadKey(KeyEvent.ACTION_UP, padDirection, deviceId);
+		}
+		padDirection = direction;
+		if (direction != 0) {
+			sendPadKey(KeyEvent.ACTION_DOWN, direction, deviceId);
+		}
+	}
+
+	private void sendPadKey(int action, int keyCode, int deviceId) {
+		long now = SystemClock.uptimeMillis();
+		dispatchKeyEvent(new KeyEvent(now, now, action, keyCode, 0, 0, deviceId, 0, 0, InputDevice.SOURCE_GAMEPAD));
 	}
 
 	@Override
