@@ -128,6 +128,19 @@ export default {
       return json({ ok: true });
     }
 
+    // V103: đọc index từng trang, không trả tên game hay ghi/chỉnh báo cáo.
+    if (url.pathname === "/report-index") {
+      if (!env.ADMIN_TOKEN || (req.headers.get("authorization") || "") !== `Bearer ${env.ADMIN_TOKEN}`) return json({ ok: false, error: "unauthorized" }, 401);
+      if (req.method !== "GET") return json({ ok: false, error: "method_not_allowed" }, 405);
+      const cursor = url.searchParams.get("cursor") || undefined;
+      if (cursor && (cursor.length > 2048 || /[\u0000-\u001f]/.test(cursor))) return json({ ok: false, error: "bad_cursor" }, 400);
+      const page = await env.REPORTS.list({ prefix: "r:", cursor, limit: 100 });
+      if (typeof page.list_complete !== "boolean" || !Array.isArray(page.keys) || page.keys.length > 100) return json({ ok: false, error: "incomplete_index" }, 503);
+      if (!page.list_complete && !page.cursor) return json({ ok: false, error: "incomplete_index" }, 503);
+      return json({ complete: page.list_complete, cursor: page.list_complete ? null : page.cursor,
+        reports: page.keys.map(k => ({ id: k.name, app: k.metadata?.a || "" })) });
+    }
+
     // ---- Quản trị ----
     if (url.pathname.startsWith("/reports") || url.pathname === "/stats") {
       if ((req.headers.get("authorization") || "") !== `Bearer ${env.ADMIN_TOKEN}`) return json({ ok: false, error: "unauthorized" }, 401);

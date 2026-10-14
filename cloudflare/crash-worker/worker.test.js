@@ -138,3 +138,26 @@ test("JSON ảnh và chữ quá 60000 byte vẫn bị 413, báo cáo không ản
   const c=setup();assert.equal((await c.post({...fixture,kind:"user",image:userImage,detail:"đ".repeat(30000)})).status,413);
   assert.equal(c.data.size,0);
 });
+
+test('V103 index requires auth, GET and returns paginated IDs/version only', async () => {
+  const calls = [];
+  const env = { ADMIN_TOKEN: 'fixture-only', REPORTS: { list: async (args) => {
+    calls.push(args);
+    return args.cursor ? {list_complete:true, keys:[{name:'r:1791860000001:abcdef12',metadata:{a:'0.8.3',g:'private-game'}}]} :
+      {list_complete:false,cursor:'page-two',keys:[{name:'r:1791860000000:abcdef12',metadata:{a:'0.8.2',g:'private-game'}}]};
+  } } };
+  const get = (path, method='GET', auth=true) => worker.fetch(new Request('https://example.test'+path, {method,headers:auth?{authorization:'Bearer fixture-only'}:{}}),env);
+  assert.equal((await get('/report-index','GET',false)).status,401);assert.equal(calls.length,0);
+  assert.equal((await get('/report-index','POST')).status,405);assert.equal(calls.length,0);
+  const first=await (await get('/report-index')).json();assert.equal(first.complete,false);assert.equal(first.cursor,'page-two');
+  assert.deepEqual(first.reports,[{id:'r:1791860000000:abcdef12',app:'0.8.2'}]);assert.equal(JSON.stringify(first).includes('private-game'),false);
+  const last=await (await get('/report-index?cursor=page-two')).json();assert.equal(last.complete,true);assert.equal(last.cursor,null);
+  assert.equal(calls[1].cursor,'page-two');assert.equal(calls[0].limit,100);
+  assert.equal((await get('/report-index?cursor='+ 'x'.repeat(2049))).status,400);
+});
+
+test('V103 incomplete index without cursor fails instead of claiming complete', async () => {
+  const env={ADMIN_TOKEN:'fixture-only',REPORTS:{list:async()=>({list_complete:false,keys:[]})}};
+  const response=await worker.fetch(new Request('https://example.test/report-index',{headers:{authorization:'Bearer fixture-only'}}),env);
+  assert.equal(response.status,503);assert.equal((await response.json()).error,'incomplete_index');
+});
