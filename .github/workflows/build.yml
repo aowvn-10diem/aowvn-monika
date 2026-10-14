@@ -12,6 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Chặn handler nuốt lỗi mới (V113, offline)
+        env:
+          DIAG_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          DIAG_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          DIAG_EVENT: ${{ github.event_name }}
+        run: |
+          python3 scripts/test-kiem-nuot-loi.py
+          task_guard_args=(--base "$DIAG_BASE" --head "$DIAG_HEAD")
+          if [[ "$DIAG_EVENT" == "pull_request" ]]; then
+            task_guard_args+=(--pull-request)
+          fi
+          bash scripts/kiem-nuot-loi.sh "${task_guard_args[@]}"
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
