@@ -1,0 +1,18 @@
+{
+  "cubs": {"id": "cubs", "api": 37},
+  "grizzly": {"id": "grizzly", "api": 37},
+  "snapdragon8gen3": {
+    "manufacturer": "Samsung",
+    "names": ["Galaxy S24 Ultra", "Samsung Galaxy S24 Ultra"],
+    "minimumApi": 34,
+    "soc": "Snapdragon 8 Gen 3 for Galaxy",
+    "specification": "https://news.samsung.com/global/enter-the-new-era-of-mobile-ai-with-samsung-galaxy-s24-series"
+  },
+  "mediatek-modern": {
+    "manufacturer": "Xiaomi",
+    "names": ["Xiaomi 14T Pro", "14T Pro"],
+    "minimumApi": 34,
+    "soc": "MediaTek Dimensity 9300+",
+    "specification": "https://www.mi.com/global/product/xiaomi-14t-pro/specs/"
+  }
+}

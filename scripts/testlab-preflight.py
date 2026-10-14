@@ -104,6 +104,10 @@ def physical_history(repo, workflows, day, own):
                     continue
                 physical = [s for s in steps if 'Chạy K1–K8' in s['name'] or s['name'] == 'Chạy robot test']
                 started = [s for s in physical if s.get('started_at', '') and s['started_at'][:10] == day and s.get('conclusion') != 'skipped']
+                catalog_only = any(s['name'] == 'Catalog V105 only (không dùng máy/quota)'
+                                   and s.get('conclusion') == 'success' for s in steps)
+                if catalog_only and physical and all(s.get('conclusion') == 'skipped' for s in physical):
+                    continue  # explicit read-only catalog; never dispatched a physical test
                 if not started and any(s['name'] == virtual for s in steps):
                     continue  # explicit virtual workflow; old/unknown Robo remains reserved physical
                 # Failed/blocked attempts also reserve. Old or unknown requests may select two models.

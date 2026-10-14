@@ -101,6 +101,15 @@ class PhysicalHistoryGate(unittest.TestCase):
             history = gate.physical_history('repo', [('test-lab.yml', [self.record(created='2026-10-07T08:00:00Z')])], '2026-10-08', 99)
         self.assertEqual({7: 2}, history)
 
+    def test_read_only_catalog_does_not_reserve_quota_but_physical_start_still_counts(self):
+        data = self.jobs('2026-10-08T09:00:00Z', 'skipped', 'Chạy K1–K8 trên một máy ARM thật (một cách instrumentation)')
+        data['jobs'][0]['steps'].append(dict(name='Catalog V105 only (không dùng máy/quota)', conclusion='success'))
+        with patch.object(gate, 'gh', return_value=data):
+            self.assertEqual({}, gate.physical_history('repo', [('w', [self.record(1)])], '2026-10-08', 99))
+        data['jobs'][0]['steps'][0]['conclusion'] = 'success'
+        with patch.object(gate, 'gh', return_value=data):
+            self.assertEqual({7: 1}, gate.physical_history('repo', [('w', [self.record(1)])], '2026-10-08', 99))
+
     def test_explicit_virtual_attempt_does_not_consume_physical_quota(self):
         with patch.object(gate, 'gh', return_value=self.jobs('2026-10-08T09:00:00Z', 'success', 'Chạy Robo máy ảo (không quota máy thật)')):
             self.assertEqual({}, gate.physical_history('repo', [('test-lab.yml', [self.record(1)])], '2026-10-08', 99))
