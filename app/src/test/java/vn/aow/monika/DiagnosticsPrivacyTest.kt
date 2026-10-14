@@ -74,8 +74,11 @@ class DiagnosticsPrivacyTest {
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(500).message("Retry")
                 .body(ResponseBody.create(null, "{}")).build()
         }.build()
-        Diagnostics.autoSend(app, autoHttp, report(), "https://example.test/report", true, true)
-        assertTrue(autoDone.await(5, TimeUnit.SECONDS))
+        Diagnostics.allowDebugSend = true // uploader giả (interceptor) nên không ra mạng thật; mặc định debug/Robolectric không tự gửi
+        try {
+            Diagnostics.autoSend(app, autoHttp, report(), "https://example.test/report", true, true)
+            assertTrue(autoDone.await(5, TimeUnit.SECONDS))
+        } finally { Diagnostics.allowDebugSend = false }
         synchronized(posted) { assertSafe(posted.single()) }
     }
 

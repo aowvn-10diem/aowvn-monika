@@ -473,7 +473,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
                     GameTasks.put(GameTask(taskId, target.name, target.meta?.cover, "Đang giải nén", null))
                     scope.launch {
                         val r = withContext(Dispatchers.IO) {
-                            Importer.extractInPlace(target.dir, listOf(password) + AppGraph.config.current.archivePasswords, ExtractProgress { p -> GameTasks.progress(taskId, p) })
+                            Importer.extractInPlace(target.dir, listOf(password) + AppGraph.config.current.archivePasswords, ExtractProgress { p -> GameTasks.progress(taskId, p) }, context.applicationContext)
                         }
                         GameTasks.remove(taskId)
                         busy = false

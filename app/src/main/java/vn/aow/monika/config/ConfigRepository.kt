@@ -62,23 +62,27 @@ class ConfigRepository(
 
     /** [force] = true (người dùng bấm "Cập nhật cấu hình") bỏ qua giới hạn tần suất. */
     suspend fun refresh(force: Boolean = false): Result<MonikaConfig> = withContext(Dispatchers.IO) {
-        refreshLock.withLock { runCatching {
-            if (!force && System.currentTimeMillis() - checkedFile.lastModified() < MIN_REFRESH_MS) return@runCatching current
-            val request = Request.Builder().url(BuildConfig.REMOTE_CONFIG_URL).build()
-            val text = http.newCall(request).execute().use { response ->
-                check(response.isSuccessful) { "HTTP ${response.code}" }
-                response.body!!.string()
+        refreshLock.withLock {
+            // V112: tải cấu hình từ xa là thao tác → lỗi thật thành op-fail (mất mạng/hủy chỉ ghi vệt); hủy coroutine được ném lại.
+            Diagnostics.opSuspend(context, Diagnostics.Op.FETCH_CONFIG) {
+                if (!force && System.currentTimeMillis() - checkedFile.lastModified() < MIN_REFRESH_MS) return@opSuspend current
+                step("tai")
+                val request = Request.Builder().url(BuildConfig.REMOTE_CONFIG_URL).build()
+                val text = http.newCall(request).execute().use { response ->
+                    check(response.isSuccessful) { "HTTP ${response.code}" }
+                    response.body!!.string()
+                }
+                step("kiem-tra")
+                val cfg = ConfigValidation.parse(text, current.configVersion)
+                step("ghi-cache")
+                writeCache(text) // Đổi nguyên khối trước khi thay StateFlow; ghi lỗi giữ bản cũ.
+                _config.value = cfg
+                runCatching { checkedFile.writeText("ok") }
+                cfg
+            }.onFailure {
+                Log.w(TAG, "Không tải được cấu hình từ xa, dùng bản hiện có", it)
             }
-            val cfg = ConfigValidation.parse(text, current.configVersion)
-            writeCache(text) // Đổi nguyên khối trước khi thay StateFlow; ghi lỗi giữ bản cũ.
-            _config.value = cfg
-            runCatching { checkedFile.writeText("ok") }
-            cfg
-        }.onFailure {
-            reportInvalid(it)
-            Log.w(TAG, "Không tải được cấu hình từ xa, dùng bản hiện có", it)
-        } }
-
+        }
     }
 
     companion object {

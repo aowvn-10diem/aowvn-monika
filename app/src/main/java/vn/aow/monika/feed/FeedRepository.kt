@@ -31,6 +31,7 @@ class FeedRepository(
     private val http: OkHttpClient,
     private val configRepo: ConfigRepository,
     private val cacheDir: java.io.File? = null,
+    private val ctx: android.content.Context? = null,
 ) {
     private val cache = mutableMapOf<String, Post>()
 
@@ -108,9 +109,16 @@ class FeedRepository(
     private suspend fun getJson(url: String): JsonElement = withContext(Dispatchers.IO) {
         val call = http.newCall(Request.Builder().url(url).build())
         call.timeout().timeout(10, java.util.concurrent.TimeUnit.SECONDS)
-        call.execute().use { response ->
-            check(response.isSuccessful) { "Không tải được bài viết (HTTP ${response.code})" }
-            Json.parseToJsonElement(response.body!!.string())
+        try {
+            call.execute().use { response ->
+                check(response.isSuccessful) { "Không tải được bài viết (HTTP ${response.code})" }
+                Json.parseToJsonElement(response.body!!.string())
+            }
+        } catch (e: Exception) {
+            // V112: tải feed lỗi (HTTP/parse) để lại op-fail; mất mạng/hủy thì không.
+            if (e !is kotlinx.coroutines.CancellationException && !vn.aow.monika.diag.Diagnostics.isOffline(e))
+                ctx?.let { vn.aow.monika.diag.Diagnostics.opFail(it, vn.aow.monika.diag.Diagnostics.Op.FETCH_FEED, "tai-bai", e) }
+            throw e
         }
     }
 

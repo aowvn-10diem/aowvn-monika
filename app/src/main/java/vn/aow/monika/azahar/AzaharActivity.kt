@@ -178,13 +178,17 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         AzaharBridge.onFirstFrame = { markFirstFrame(loading) }
 
         lifecycleScope.launch {
-            val ok = runCatching {
+            // V112: nạp engine 3DS là bước mở game → lỗi để lại op-fail (kèm bước đang làm), mất mạng chỉ ghi vệt.
+            val ok = Diagnostics.opSuspend(this@AzaharActivity, Diagnostics.Op.OPEN_GAME, expected = Diagnostics::isOffline) {
+                step("tai-module")
                 module.ensure { status.text = it }
                 Diagnostics.stage(this@AzaharActivity, "module-ready")
                 status.text = "Đang nạp engine 3DS…"
+                step("nap-native")
                 Diagnostics.stage(this@AzaharActivity, "native-loading") // chết ở đây = thư viện native không khớp máy
                 withContext(Dispatchers.Default) { module.load() }
                 Diagnostics.stage(this@AzaharActivity, "native-loaded")
+                step("khoi-tao")
                 setUp()
                 Diagnostics.stage(this@AzaharActivity, "initialized")
             }

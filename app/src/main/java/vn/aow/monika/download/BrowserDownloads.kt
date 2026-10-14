@@ -144,6 +144,7 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
         } catch (e: Exception) {
             runCatching { job.part.delete() }
             if (job.state == DlState.CANCELED) return
+            vn.aow.monika.diag.Diagnostics.opFail(context, vn.aow.monika.diag.Diagnostics.Op.DOWNLOAD, "tai-ve", e, job.name)
             main.post { job.error = e.message ?: "Lỗi mạng"; job.state = DlState.FAILED }
             Notifier.downloadDone(context, "Tải thất bại", "${job.name}: ${e.message ?: "lỗi mạng"}", Intent(context, MainActivity::class.java))
         }
@@ -228,6 +229,7 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
             }
             Notifier.downloadDone(context, "Đã tải xong", "${job.savedName.ifBlank { name }} · lưu ở $place", openIntent)
         } catch (e: Exception) {
+            vn.aow.monika.diag.Diagnostics.opFail(context, vn.aow.monika.diag.Diagnostics.Op.DOWNLOAD, "luu-file", e, name)
             main.post { job.error = e.message ?: "Không lưu được"; job.state = DlState.FAILED }
             Notifier.downloadDone(context, "Không lưu được file", "$name: ${e.message}", Intent(context, MainActivity::class.java))
         }

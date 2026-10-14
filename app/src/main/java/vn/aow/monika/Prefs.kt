@@ -172,6 +172,10 @@ class Prefs(private val context: Context) {
     var autoSendCrash: Boolean
         get() = sp.getBoolean("auto_send_crash", true)
         set(v) = sp.edit().putBoolean("auto_send_crash", v).apply()
+    /** Chỉ cho dev: bản debug mặc định KHÔNG tự gửi báo lỗi lên Worker (làm bẩn số liệu); bật cờ này để thử đường gửi. */
+    var debugSendCrash: Boolean
+        get() = sp.getBoolean("debug_send_crash", false)
+        set(v) = sp.edit().putBoolean("debug_send_crash", v).apply()
     fun setCoreOverride(systemId: String, core: String?) = sp.edit().putString("core_$systemId", core).apply()
 
     /** Game được "Giữ lại": không bao giờ bị dọn bộ đệm. */

@@ -24,6 +24,13 @@ data class ImportResult(
  */
 object Importer {
 
+    /** V112: giải nén là thao tác người dùng → lỗi thật (hỏng file, hết chỗ, thiếu bộ giải nén…) để lại báo cáo `op-fail`; cần mật khẩu là luồng bình thường nên không báo. */
+    internal fun extractOp(context: Context?, name: String, block: () -> Unit): Throwable? {
+        if (context == null) return runCatching(block).exceptionOrNull() // diag: bỏ qua — gọi từ nơi không có Context (test/tiện ích)
+        return vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.EXTRACT, name,
+            expected = { it is ArchiveExtractor.PasswordException }) { step("giai-nen"); block() }.exceptionOrNull()
+    }
+
     fun importFile(context: Context, src: File, deleteSource: Boolean, passwords: List<String>, progress: ExtractProgress? = null): ImportResult {
         MultiPart.parse(src.name)?.let { return importPart(context, src, it, passwords, progress) }
         // Game.rar đầu bộ cũ (Game.rar + .r00...) nằm cùng chỗ các phần khác → gom chung.
@@ -39,7 +46,7 @@ object Importer {
             }
             return ImportResult(dir)
         }
-        val error = runCatching { ArchiveExtractor.extract(src, dir, passwords, progress) }.exceptionOrNull()
+        val error = extractOp(context, src.name) { ArchiveExtractor.extract(src, dir, passwords, progress) }
         if (error == null) {
             if (deleteSource) src.delete()
             return ImportResult(dir)
@@ -64,7 +71,7 @@ object Importer {
         if (!MultiPart.looksContiguous(parts)) return pending("Đã nhận ${parts.size} phần của \"${piece.base}\". Đang chờ các phần còn lại.")
 
         val dir = newGameDir(context, piece.base)
-        val error = runCatching { ArchiveExtractor.extractParts(parts, dir, passwords, progress) }.exceptionOrNull()
+        val error = extractOp(context, piece.base) { ArchiveExtractor.extractParts(parts, dir, passwords, progress) }
         if (error == null) {
             // Giữ thông tin bài viết (ảnh bìa...) đã ghi lúc nhận các phần trước.
             File(staging, ".monika.json").takeIf { it.exists() }?.copyTo(File(dir, ".monika.json"), overwrite = true)
@@ -81,27 +88,33 @@ object Importer {
         if (MultiPart.parse(name) != null || name.endsWith(".rar", true)) {
             // Chép ra thư mục tải về trước, để các phần của cùng bộ nằm cạnh nhau.
             val tmp = File(GameStorage.downloads(context), name)
-            (context.contentResolver.openInputStream(uri) ?: throw IOException("Không mở được file")).use { input ->
-                tmp.outputStream().use { input.copyTo(it) }
-            }
+            copyUri(context, uri, tmp, name)
             return importFile(context, tmp, deleteSource = true, passwords = passwords, progress = progress)
         }
         val dir = newGameDir(context, name)
-        val resolver = context.contentResolver
         val tmp = File(dir, name)
-        (resolver.openInputStream(uri) ?: throw IOException("Không mở được file")).use { input ->
-            tmp.outputStream().use { input.copyTo(it) }
-        }
+        copyUri(context, uri, tmp, name)
         if (!ArchiveExtractor.isArchive(tmp)) return ImportResult(dir)
-        return extractInPlace(dir, passwords, progress)
+        return extractInPlace(dir, passwords, progress, context)
+    }
+
+    /** V112: mở/chép file người dùng chọn là bước "nhập game" → lỗi để lại op-fail rồi ném lại như cũ cho giao diện hiện thông báo. */
+    private fun copyUri(context: Context, uri: Uri, dest: File, name: String) {
+        vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.IMPORT, name) {
+            step("mo-file")
+            (context.contentResolver.openInputStream(uri) ?: throw IOException("Không mở được file")).use { input ->
+                step("chep-file")
+                dest.outputStream().use { input.copyTo(it) }
+            }
+        }.getOrThrow()
     }
 
     /** Giải nén file nén đang nằm trong thư mục game (lần đầu lỗi, hoặc user vừa nhập mật khẩu). */
-    fun extractInPlace(dir: File, passwords: List<String>, progress: ExtractProgress? = null): ImportResult {
+    fun extractInPlace(dir: File, passwords: List<String>, progress: ExtractProgress? = null, context: Context? = null): ImportResult {
         val archive = dir.listFiles().orEmpty().firstOrNull { it.isFile && ArchiveExtractor.isArchive(it) }
             ?: return ImportResult(dir, "Không tìm thấy file nén trong thư mục game.")
         val work = File(dir, ".dang-giai-nen").apply { deleteRecursively(); mkdirs() }
-        val error = runCatching { ArchiveExtractor.extract(archive, work, passwords, progress) }.exceptionOrNull()
+        val error = extractOp(context, archive.name) { ArchiveExtractor.extract(archive, work, passwords, progress) }
         if (error != null) {
             work.deleteRecursively()
             return ImportResult(dir, error.message)
