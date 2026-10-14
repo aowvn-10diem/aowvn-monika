@@ -1,6 +1,6 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 43,
+  "configVersion": 44,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 41,
@@ -742,15 +742,17 @@
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip",
       "options": {
-        "desmume_internal_resolution": "512x384",
+        "desmume_internal_resolution": "256x192",
         "desmume_num_cores": "2"
       },
+      "lowLatencyAudio": false,
       "perf": {
         "lite": {
           "desmume_internal_resolution": "256x192",
           "desmume_num_cores": "1"
         },
         "full": {
+          "desmume_internal_resolution": "512x384",
           "desmume_num_cores": "4"
         }
       }
@@ -761,6 +763,7 @@
       "options": {
         "melonds_threaded_renderer": "enabled"
       },
+      "lowLatencyAudio": false,
       "perf": {
         "lite": {
           "melonds_threaded_renderer": "disabled"
