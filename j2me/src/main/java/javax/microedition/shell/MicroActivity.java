@@ -77,6 +77,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import javax.microedition.lcdui.keyboard.KeyMapper;
+import ru.playsoftware.j2meloader.AowPad;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
@@ -512,7 +513,7 @@ public class MicroActivity extends AppCompatActivity {
 	public boolean dispatchGenericMotionEvent(MotionEvent ev) {
 		if (ev.getAction() == MotionEvent.ACTION_MOVE
 				&& (ev.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
-			setPadDirection(KeyMapper.gamepadDirection(
+			setPadDirection(AowPad.direction(
 					ev.getAxisValue(MotionEvent.AXIS_HAT_X), ev.getAxisValue(MotionEvent.AXIS_HAT_Y),
 					ev.getAxisValue(MotionEvent.AXIS_X), ev.getAxisValue(MotionEvent.AXIS_Y)), ev.getDeviceId());
 			return true;
