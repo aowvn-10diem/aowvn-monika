@@ -45,6 +45,36 @@ test("app cũ và mọi kind hiện có vẫn được nhận; session trống c
   }
 });
 
+test("V101 ANR/lowmem giữ lõi hệ giai đoạn qua POST KV metadata GET", async () => {
+  for (const kind of ["anr", "lowmem"]) {
+    const c = setup();
+    const report = { kind, title: "fixture", app: "0.8.3", core: "melondsds", system: "NDS", stage: "core-ready" };
+    assert.equal((await c.post(report)).status, 200);
+    const entry = (await (await c.read("/reports")).json()).reports[0];
+    assert.deepEqual([entry.c, entry.y, entry.st], ["melondsds", "NDS", "core-ready"]);
+    const got = await (await c.read(`/reports/${entry.id}`)).json();
+    assert.deepEqual([got.core, got.system, got.stage], ["melondsds", "NDS", "core-ready"]);
+    assert.equal(got.session, null); // Không giả PID/timestamp của một phiên game.
+  }
+});
+
+test("V101 app cũ lấy session có thật; thiếu/sai kiểu ghi unknown, giới hạn độ dài", async () => {
+  for (const kind of ["anr", "lowmem"]) {
+    const c = setup();
+    await c.post({ kind, title: "fixture", app: "old", session: {core:"mkxp-z",system:"XP",stage:"playing"} });
+    let entry = (await (await c.read("/reports")).json()).reports[0];
+    assert.deepEqual([entry.c, entry.y, entry.st], ["mkxp-z", "XP", "playing"]);
+    const d = setup();
+    await d.post({ kind, title: "fixture", app: "old", core: {}, system: 1, stage: [] });
+    entry = (await (await d.read("/reports")).json()).reports[0];
+    assert.deepEqual([entry.c, entry.y, entry.st], ["unknown", "unknown", "unknown"]);
+    const e = setup();
+    await e.post({ kind, title: "fixture", app: "new", core: "a".repeat(80), system:"b".repeat(80), stage:"c".repeat(80) });
+    entry = (await (await e.read("/reports")).json()).reports[0];
+    assert.deepEqual([entry.c.length, entry.y.length, entry.st.length], [60, 60, 40]);
+  }
+});
+
 test("giới hạn byte UTF-8 kể cả stream không có Content-Length", async () => {
   const c = setup();
   const body = JSON.stringify({ kind: "java", title: "đ".repeat(MAX_BODY / 2), app: "test" });

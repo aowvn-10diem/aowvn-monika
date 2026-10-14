@@ -21,6 +21,9 @@
 | fromGame | boolean, mặc định false |
 | session | null nếu không có; pid, startedAt, stageAt, lastAlive là số nguyên không âm |
 | session.kind/core/coreInfo/game/system/stage | 20 / 60 / 200 / 160 / 60 / 40 đơn vị UTF-16 |
+| core / system / stage (V101, chỉ anr/lowmem) | 60 / 60 / 40; lấy field mới, rồi session thực có, cuối cùng `unknown` |
+
+V101 giữ snapshot phiên theo PID ở app, cập nhật cùng stage; PID hoặc thời điểm không khớp thì không gán phiên khác. `unknown` nghĩa thiếu bằng chứng, không tạo Session/PID/game giả. `core/system/stage` bổ sung cho báo cáo ANR/lowmem mới và metadata danh sách; JSON của loại lỗi khác giữ nguyên. Báo cáo cũ trong KV không bị viết lại. Worker thay đổi ở đây là mã chuẩn bị; Sol không deploy, server đang chạy có thể vẫn bỏ ba field mới cho đến khi người có quyền triển khai. Không tuyên bố sửa lại 78 báo cáo lịch sử hay xác nhận ANR/RAM trên máy thật.
 
 Các chuỗi/danh sách tùy chọn sai loại được thay bằng rỗng. `seen`/`sent` là cờ UI cục bộ, không lưu ở Worker. Trường lạ bỏ qua. KV giữ 60 ngày; metadata danh sách gồm `component`, `fp`, `count` để lọc lỗi. GET chi tiết trả cùng JSON đã lưu, không cắt thêm. Kho cũ giữ nguyên; báo cáo cũ có thể thiếu trường mới.
 
