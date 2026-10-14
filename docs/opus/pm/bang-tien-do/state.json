@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-14T14:31:54Z",
+ "updatedAt": "2026-10-14T17:14:04Z",
  "mainSha": "9897563",
  "app": "v0.8.3 bản thử · ổn định chờ lượt cài thật",
  "nextCheck": "2026-10-14T05:08:50Z",
@@ -1179,6 +1179,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-14T17:14:04Z",
+   "text": "17:14 UTC gộp #240 V117 game tự mất (84ab5b4)"
+  },
   {
    "t": "2026-10-14T14:31:54Z",
    "text": "14:35 UTC 6 lỗi thực tế của sếp → V117–V122 ở #119; [A44] dọn tự động không xóa game"
