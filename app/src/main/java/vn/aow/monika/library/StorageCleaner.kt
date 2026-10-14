@@ -20,7 +20,8 @@ import java.util.concurrent.TimeUnit
  *
  * Game bị dọn chỉ còn lại file `.monika.json` → Thư viện hiện "Đã dọn · Tải lại" (mở lại bài viết).
  *
- * Thứ tự khi vượt giới hạn: ảnh/bài viết → lõi giả lập lâu không dùng → game lâu không chơi nhất.
+ * Tự động chỉ dọn ảnh/bài viết và lõi. Game chỉ được dọn khi người dùng bấm Dọn ngay trong Cài đặt.
+ * Khi dọn thủ công: ảnh/bài viết → lõi giả lập lâu không dùng → game lâu không chơi nhất.
  */
 object StorageCleaner {
     private const val DAY = 24L * 60 * 60 * 1000
@@ -49,8 +50,14 @@ object StorageCleaner {
     /**
      * @param protect thư mục không được xóa (vd. game vừa tải xong).
      * @param mediaOnly true = chỉ xóa ảnh/bài viết (nút "Xóa bộ nhớ đệm ảnh").
+     * @param allowGameEviction chỉ bật từ nút Dọn ngay trong Cài đặt; mặc định mọi game được giữ.
      */
-    fun clean(context: Context, protect: File? = null, mediaOnly: Boolean = false): Report {
+    fun clean(
+        context: Context,
+        protect: File? = null,
+        mediaOnly: Boolean = false,
+        allowGameEviction: Boolean = false,
+    ): Report {
         val prefs = AppGraph.prefs
         val now = System.currentTimeMillis()
         var freed = 0L
@@ -59,7 +66,10 @@ object StorageCleaner {
         freed += cleanLeftoverDownloads(context, now)
 
         // 1. Xóa theo tuổi (không dùng quá N ngày).
-        val items = collect(context).filterNot { protect != null && it.file.canonicalPath == protect.canonicalPath }
+        // Game không tham gia cả luật tuổi lẫn ngân sách dọn tự động, kể cả prefs cũ có gameDays.
+        val items = collect(context)
+            .filter { it.kind != Kind.GAME || (allowGameEviction && !mediaOnly) }
+            .filterNot { protect != null && it.file.canonicalPath == protect.canonicalPath }
         val keep = mutableListOf<Item>()
         for (item in items) {
             val days = when (item.kind) {
