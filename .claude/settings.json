@@ -5,7 +5,7 @@
       "ArtifactData",
       "Artifact",
       "Bash(gh api -X PUT repos/aowvn-10diem/aowvn-monika/pulls/*/merge*)",
-      "Bash(gh workflow run release.yml -R aowvn-10diem/aowvn-monika *)"
+      "Bash(gh workflow run release.yml -R aowvn-10diem/aowvn-monika*)"
     ]
   }
 }
