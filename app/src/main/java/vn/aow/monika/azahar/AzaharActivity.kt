@@ -314,10 +314,13 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
     override fun onResume() {
         super.onResume()
         clock?.resume()
+        inputDevices.registerInputDeviceListener(deviceListener, null)
         if (started && paused && surfaceOk) resumeEmu()
     }
 
     override fun onPause() {
+        inputDevices.unregisterInputDeviceListener(deviceListener)
+        releasePad()
         clock?.pause()
         if (started) { paused = true; runCatching { NativeLibrary.pauseEmulation() } }
         super.onPause()
@@ -345,6 +348,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
 
     private fun press(btn: Int, down: Boolean): Boolean {
         if (!started) return true
+        if (down) heldButtons += btn else heldButtons -= btn
         val state = if (down) NativeLibrary.ButtonState.PRESSED else NativeLibrary.ButtonState.RELEASED
         return runCatching { NativeLibrary.onGamePadEvent(NativeLibrary.TOUCHSCREEN_DEVICE, btn, state) }.getOrDefault(false)
     }
@@ -367,6 +371,20 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
 
     // Tay cầm thật (V120): nút, hat, cần analog, cò. Tay cầm báo nguồn nào cũng nhận; BACK để hệ thống xử lý.
     private val padAxes = GamepadInput.Tracker()
+    private val heldButtons = HashSet<Int>()
+    private val inputDevices by lazy { getSystemService(android.hardware.input.InputManager::class.java) }
+    private val deviceListener = object : android.hardware.input.InputManager.InputDeviceListener {
+        override fun onInputDeviceAdded(deviceId: Int) = Unit
+        override fun onInputDeviceChanged(deviceId: Int) = Unit
+        override fun onInputDeviceRemoved(deviceId: Int) = releasePad() // rút tay cầm đang giữ nút/cần: nhả hết, khỏi kẹt phím
+    }
+
+    /** Đưa trục về giữa và nhả mọi nút đang giữ (rút tay cầm, tạm dừng). */
+    private fun releasePad() {
+        sendPad(padAxes.reset())
+        heldButtons.toList().forEach { press(it, false) }
+        heldButtons.clear()
+    }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (GamepadInput.isPadKey(event.source, event.keyCode) && key(event.action, event.keyCode)) return true
