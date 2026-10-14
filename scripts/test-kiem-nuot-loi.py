@@ -36,6 +36,28 @@ class HandlerTest(unittest.TestCase):
         self.bad('catch (e: Exception) { val name = Diagnostics.recordHandled; null }')
         self.bad('runCatching { Diagnostics.begin(c); fail() }')
 
+    def test_catch_direct_rethrow_passes_with_own_parameter(self):
+        for source in [
+            'try { fail() } catch (e: Exception) { throw e }',
+            'catch (failure: Throwable) { /* propagate */ throw failure; }',
+            'catch (problem: java.lang.Exception) {\n throw\n problem\n}',
+        ]:
+            with self.subTest(source=source):
+                self.bad(source, 0)
+
+    def test_rethrow_text_conditional_other_variable_and_nested_lambda_do_not_exempt(self):
+        for body in ['"throw e"', '/* throw e */ null', 'throw other',
+                     'if (shouldThrow) { throw e } else { null }',
+                     'val later = { throw e }; null', 'val e = other; throw e',
+                     'throw e.message', 'throw e; null']:
+            with self.subTest(body=body):
+                self.bad('catch (e: Exception) { ' + body + ' }')
+        self.bad('runCatching { catch (e: Exception) { throw e } }')
+
+    def test_removing_rethrow_is_a_new_violation(self):
+        self.bad('catch (e: Exception) { null }',
+                 before='catch (e: Exception) { throw e }')
+
     def test_nested_handler_needs_its_own_diagnostic(self):
         self.bad('runCatching { Diagnostics.recordHandled(c,"x","y"); try { fail() } catch(e: Exception) { null } }')
 

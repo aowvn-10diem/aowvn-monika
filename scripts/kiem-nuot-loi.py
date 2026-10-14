@@ -135,6 +135,16 @@ def exempt(comments, line):
     return False
 
 
+def direct_rethrow(tokens, arguments, block, block_end):
+    """Accept only a catch body consisting of throw of its own parameter."""
+    parameter = [x.text for x in tokens[arguments:block]]
+    if (len(parameter) < 5 or parameter[0] != "(" or parameter[2] != ":" or
+            parameter[-1] != ")" or not IDENTIFIER.fullmatch(parameter[1])):
+        return False
+    body = [x.text for x in tokens[block + 1:block_end - 1]]
+    return body in (["throw", parameter[1]], ["throw", parameter[1], ";"])
+
+
 def silent_handlers(source):
     tokens, comments = lex(source)
     handlers = []
@@ -161,6 +171,8 @@ def silent_handlers(source):
             continue  # references/identifiers, not a handler call
         finish = block_end
         has_log = logged(tokens[end:block_end])
+        if kind == "catch":
+            has_log |= direct_rethrow(tokens, arguments, end, block_end)
         if kind == "runCatching":
             # Standard failure handling adjacent to Result creation.
             while finish + 2 < len(tokens) and tokens[finish].text == ".":
