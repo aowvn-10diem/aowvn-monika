@@ -47,3 +47,5 @@ jobs:
           print('N04 scripts: ' + str(len(cases)) + ' executed; failed=' + ','.join(failed))
           raise SystemExit(1 if failed else 0)
           PY
+      - name: Kiểm thử lại NDK bằng SDK giả (V123, offline)
+        run: python3 scripts/test-ci-install-j2me-ndk.py
