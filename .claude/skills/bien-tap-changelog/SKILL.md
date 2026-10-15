@@ -15,7 +15,7 @@ git fetch origin main && git checkout -B nova/bien-tap-<tag> origin/main   # ho�
 python3 scripts/changelog-pending.py
 ```
 - Không in gì và thoát 0 → dừng (hết việc).
-- Thoát 1 (không đọc được tag lẫn API) → đây là **lỗi chạy**, không phải hết việc: báo 1 dòng ở #90 rồi dừng, không đi đường vòng qua proxy.
+- Thoát 1 (không đọc được danh sách GitHub Releases; phiên phải gắn với repo) → đây là **lỗi chạy**, không phải hết việc: báo 1 dòng ở #90 rồi dừng, không đi đường vòng qua proxy.
 - In ra tối đa 3 tag, mới nhất trước. Mặc định chỉ xét từ `v0.8.0` trở lên; bản cũ hơn chỉ làm khi sếp bảo.
 - Một lượt = **một PR**, gộp các tag in ra.
 
