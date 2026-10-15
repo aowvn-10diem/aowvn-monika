@@ -23,7 +23,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - name: Chạy đủ 5 test N04, báo lỗi sau khi chạy hết
+      - name: Chạy đủ 6 test N04, báo lỗi sau khi chạy hết
         run: |
           python3 - <<'PY'
           import subprocess
@@ -36,6 +36,7 @@ jobs:
               'test-gen-architecture.py',
               'test-prepare-core-pins.py',
               'test-verify-apk-cert.py',
+              'test-changelog-pending.py',
           )
           failed = []
           for case in cases:
