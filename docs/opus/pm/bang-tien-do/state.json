@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-15T04:13:51Z",
+ "updatedAt": "2026-10-15T05:05:13Z",
  "mainSha": "9897563",
  "app": "v0.8.3 bản thử · ổn định chờ lượt cài thật",
  "nextCheck": "2026-10-14T05:08:50Z",
@@ -1179,6 +1179,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-15T05:05:13Z",
+   "text": "Quota 90%: PM Opus bàn giao #119 cho đội ChatGPT + Sol 2 PM phụ; routine PM :12 tắt"
+  },
   {
    "t": "2026-10-15T04:13:51Z",
    "text": "Gộp #248 V110 (113f0d2), #247 V52 (fb35ce3); V102 chưa có PR (Sol High)"
