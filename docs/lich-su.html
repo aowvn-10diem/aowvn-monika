@@ -197,6 +197,7 @@ footer a { color: var(--muted); }
     });
     if (rels && released) {
       document.getElementById("s-total").textContent = num(total);
+      try { localStorage.setItem("monika.dl.v1", JSON.stringify({ n: total, t: Date.now() })); } catch (e) {}
       document.getElementById("s-count").textContent = num(released);
       document.getElementById("stats").hidden = false;
     }

@@ -19,8 +19,7 @@
 <link rel="dns-prefetch" href="https://www.aow.vn">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" type="image/webp" href="assets/app-home.webp" fetchpriority="high">
-<link rel="preload" as="image" type="image/webp" href="assets/app-gamepad.webp">
+<link rel="preload" as="image" type="image/webp" href="assets/shot-nds.webp" fetchpriority="high">
 <!-- Font nạp không chặn hiển thị: chữ hiện ngay bằng font hệ thống, đổi sang Manrope khi tải xong -->
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"></noscript>
@@ -117,9 +116,7 @@ p { margin: 0; }
 /* Hero */
 .hero { padding-block: 40px 72px; }
 .hero .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 40px; align-items: center; }
-.eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px 6px 8px; }
-.eyebrow img { width: 22px; height: 22px; }
-.hero h1 { font-size: clamp(40px, 6.4vw, 76px); font-weight: 800; line-height: 1.02; margin-top: 20px; }
+.hero h1 { font-size: clamp(40px, 6.4vw, 76px); font-weight: 800; line-height: 1.02; }
 .lede { font-size: clamp(17px, 2vw, 20px); color: var(--muted); max-width: 34em; margin-top: 20px; }
 .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 32px; }
 .dl-meta { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; color: var(--muted); font-weight: 600; }
@@ -132,27 +129,28 @@ p { margin: 0; }
 .qr-card b { display: block; font-size: 15px; }
 .qr-card span { font-size: 13.5px; color: var(--muted); }
 
-/* Điện thoại */
-.stage { position: relative; height: 600px; }
-.phone { position: absolute; width: 270px; aspect-ratio: 9 / 19.5; border-radius: 40px; background: #121010; padding: 10px; box-shadow: var(--shadow); max-width: 100%; }
-.phone .screen { width: 100%; height: 100%; border-radius: 31px; overflow: hidden; background: #FBF6EE; position: relative; }
+/* Ảnh chụp trong app, xếp quạt */
+.stage { position: relative; height: 620px; }
+.phone { position: absolute; width: 196px; aspect-ratio: 9 / 19.5; border-radius: 34px; background: #121010; padding: 7px; box-shadow: var(--shadow); max-width: 100%; }
+.phone .screen { width: 100%; height: 100%; border-radius: 27px; overflow: hidden; background: #000; }
 .phone .screen img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.phone .notch { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); width: 76px; height: 20px; border-radius: 12px; background: #121010; z-index: 2; }
-.phone.front { right: 8%; top: 10px; transform: rotate(4deg); z-index: 2; }
-.phone.back { left: 2%; top: 80px; transform: rotate(-7deg); width: 240px; }
-.phone.back .screen img { object-position: bottom; background: #F2EBE1; }
-.float { position: absolute; width: 74px; height: 74px; z-index: 3; filter: drop-shadow(0 12px 16px rgba(60, 30, 10, .25)); }
-.f1 { top: 0; left: 30%; }
-.f2 { bottom: 40px; right: 0; width: 86px; height: 86px; }
-.f3 { bottom: 0; left: 6%; width: 62px; height: 62px; }
+.p-left { left: 0; top: 96px; rotate: -8deg; z-index: 1; }
+.p-right { right: 0; top: 96px; rotate: 8deg; z-index: 1; }
+.p-mid { left: 50%; top: 0; width: 226px; margin-left: -113px; z-index: 2; }
+.land { position: absolute; z-index: 3; left: 50%; bottom: 8px; width: 320px; margin-left: -190px; rotate: -4deg; padding: 6px; border-radius: 20px; background: #121010; box-shadow: var(--shadow); }
+.land img { width: 100%; height: auto; border-radius: 15px; }
+.float { position: absolute; width: 74px; height: 74px; z-index: 4; filter: drop-shadow(0 12px 16px rgba(60, 30, 10, .25)); }
+.f1 { top: 6px; left: 8%; }
+.f2 { bottom: 70px; right: 0; width: 86px; height: 86px; }
 .blob { position: absolute; inset: 60px 0 20px 6%; border-radius: 48% 52% 46% 54% / 50% 46% 54% 50%; background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--g1) 40%, transparent), transparent 60%), radial-gradient(circle at 70% 60%, color-mix(in srgb, var(--g3) 38%, transparent), transparent 62%), radial-gradient(circle at 50% 90%, color-mix(in srgb, var(--g2) 30%, transparent), transparent 60%); filter: blur(10px); opacity: .9; }
 @media (prefers-reduced-motion: no-preference) {
-  .phone.front { animation: rise .9s cubic-bezier(.2, .8, .2, 1) both; }
-  .phone.back { animation: rise-b 1s .12s cubic-bezier(.2, .8, .2, 1) both; }
+  .p-mid { animation: rise .9s cubic-bezier(.2, .8, .2, 1) both; }
+  .p-left { animation: rise .9s .12s cubic-bezier(.2, .8, .2, 1) both; }
+  .p-right { animation: rise .9s .2s cubic-bezier(.2, .8, .2, 1) both; }
+  .land { animation: rise .9s .32s cubic-bezier(.2, .8, .2, 1) both; }
   .float { animation: bob 6s ease-in-out infinite; }
-  .f2 { animation-delay: -2s; } .f3 { animation-delay: -4s; }
-  @keyframes rise { from { transform: translateY(40px) rotate(9deg); } to { transform: translateY(0) rotate(4deg); } }
-  @keyframes rise-b { from { transform: translateY(60px) rotate(-14deg); } to { transform: translateY(0) rotate(-7deg); } }
+  .f2 { animation-delay: -2s; }
+  @keyframes rise { from { translate: 0 44px; opacity: 0; } to { translate: 0 0; opacity: 1; } }
   @keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
 }
 
@@ -166,6 +164,19 @@ p { margin: 0; }
 .chips li { list-style: none; border: 1px solid var(--night-line); border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 15px; display: inline-flex; gap: 8px; align-items: baseline; }
 .chips li small { color: var(--night-muted); font-weight: 600; font-size: 12.5px; }
 .chips { margin: 0; padding: 0; }
+.flow { display: grid; gap: 12px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+.flow .row { display: flex; width: max-content; animation: flow 70s linear infinite; }
+.flow .row.rev { animation-direction: reverse; animation-duration: 82s; }
+.flow:hover .row { animation-play-state: paused; }
+.flow .chips { flex-wrap: nowrap; flex: none; padding-right: 10px; }
+.flow .chips li { white-space: nowrap; }
+@keyframes flow { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .flow { -webkit-mask-image: none; mask-image: none; }
+  .flow .row { animation: none; width: auto; }
+  .flow .chips { flex-wrap: wrap; }
+  .flow .chips[aria-hidden] { display: none; }
+}
 
 /* Tính năng */
 section.block { padding-block: 84px; }
@@ -213,20 +224,57 @@ footer { padding-block: 48px 120px; color: var(--muted); font-size: 14px; border
 footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
 footer a { color: var(--muted); }
 
+/* Số lượt tải */
+.dl-meta b { color: var(--ink); }
+.dl-note { font-size: 14px; font-weight: 600; color: var(--muted); }
+.dl-note b { color: var(--ink); }
+
+/* Cửa sổ ủng hộ (hiện mỗi lần bấm tải) */
+.don { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(15, 12, 10, .6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.don[hidden] { display: none; }
+.don-card { position: relative; width: min(760px, 100%); max-height: calc(100dvh - 32px); overflow: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 26px; padding: 28px; box-shadow: var(--shadow); display: grid; gap: 18px; }
+.don-x { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--chip); color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; font-family: inherit; }
+.don-card h2 { font-size: clamp(22px, 3.4vw, 30px); font-weight: 800; padding-right: 40px; }
+.don-msg { color: var(--muted); font-size: 16px; }
+.don-body { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
+.don-qr { width: 100%; height: auto; border-radius: 16px; background: #fff; }
+.don-info { display: grid; gap: 12px; min-width: 0; }
+.don-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; padding: 10px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.don-row small { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); font-weight: 700; }
+.don-row b { font-size: 17px; overflow-wrap: anywhere; }
+.don-copy { border: 0; border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; background: var(--ink); color: var(--bg); }
+.don-mobile { display: none; gap: 10px; }
+.don.is-mobile .don-mobile { display: grid; order: -1; }
+.don-label { font-size: 13px; font-weight: 800; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.don-amounts { display: flex; flex-wrap: wrap; gap: 8px; }
+.don-amounts button { border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 800; font-size: 14.5px; cursor: pointer; }
+.don-amounts button[aria-pressed="true"] { border-color: var(--g2); background: color-mix(in srgb, var(--g2) 14%, var(--bg)); }
+.don-banks { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; max-height: 228px; overflow: auto; padding: 2px; }
+.don-banks a { text-decoration: none; display: grid; justify-items: center; align-content: start; gap: 6px; padding: 10px 6px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--ink); font-size: 12px; font-weight: 700; text-align: center; line-height: 1.2; min-height: 84px; }
+.don-banks a span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.don-banks img { width: 34px; height: 34px; object-fit: contain; border-radius: 8px; }
+.don-skip { justify-self: center; border: 0; background: none; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; padding: 6px 12px; }
+@media (max-width: 620px) {
+  .don { align-items: end; padding: 0; }
+  .don-card { border-radius: 24px 24px 0 0; max-height: 92dvh; padding: 22px 18px calc(18px + env(safe-area-inset-bottom, 0px)); }
+  .don-body { grid-template-columns: 1fr; }
+  .don-qr { width: 190px; justify-self: center; }
+}
+
 /* Thanh tải dính đáy (điện thoại) */
 .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line); display: none; align-items: center; gap: 12px; transform: translateY(110%); transition: transform .25s ease; }
 .dock.show { transform: translateY(0); }
 .dock img { width: 40px; height: 40px; border-radius: 11px; }
 .dock .t { flex: 1; min-width: 0; }
-.dock .t b { display: block; font-size: 15px; }
-.dock .t span { font-size: 12.5px; color: var(--muted); }
-.dock .btn-main { padding: 11px 18px; font-size: 15px; box-shadow: none; }
+.dock .t b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dock .t > span { display: block; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dock .btn-main { padding: 11px 20px; font-size: 15px; box-shadow: none; flex: none; width: auto; white-space: nowrap; }
 
 @media (min-width: 900px) { .qr-card.ready { display: flex; } }
 @media (max-width: 900px) {
   .hero .wrap { grid-template-columns: 1fr; }
-  .stage { height: 500px; max-width: 460px; width: 100%; margin: 0 auto; }
-  .phone { width: 230px; } .phone.back { width: 205px; }
+  .stage { height: 560px; max-width: 460px; width: 100%; margin: 0 auto; }
+  .phone { width: 168px; } .p-mid { width: 196px; margin-left: -98px; } .land { width: 280px; margin-left: -160px; }
   .feats, .steps, .comm { grid-template-columns: 1fr 1fr; }
   .nav a.link { display: none; }
   .nav { gap: 12px; }
@@ -237,10 +285,11 @@ footer a { color: var(--muted); }
   body { font-size: 16px; }
   .hero { padding-block: 24px 48px; }
   .stage { height: 440px; }
-  .phone { width: 200px; border-radius: 32px; padding: 8px; } .phone .screen { border-radius: 25px; }
-  .phone.back { width: 180px; top: 70px; }
-  .phone.front { right: 2%; }
-  .float { width: 58px; height: 58px; } .f2 { width: 66px; height: 66px; }
+  .phone { width: 124px; border-radius: 24px; padding: 5px; } .phone .screen { border-radius: 19px; }
+  .p-left, .p-right { top: 78px; }
+  .p-mid { width: 152px; margin-left: -76px; }
+  .land { width: 200px; margin-left: -118px; padding: 4px; border-radius: 15px; } .land img { border-radius: 11px; }
+  .float { width: 52px; height: 52px; } .f2 { width: 60px; height: 60px; bottom: 60px; }
   .feats, .steps, .comm { grid-template-columns: 1fr; }
   section.block { padding-block: 60px; }
   .btn-main { width: 100%; justify-content: center; }
@@ -254,7 +303,6 @@ footer a { color: var(--muted); }
 <header class="top" id="top">
   <div class="wrap">
     <a class="brand" href="#" aria-label="AowVN Monika, về đầu trang">
-      <img class="icon" src="assets/icon-192.png" alt="" width="36" height="36">
       <picture>
         <source srcset="assets/monika_wordmark_on_dark.webp" media="(prefers-color-scheme: dark)">
         <img src="assets/monika_wordmark_on_light.webp" alt="Monika" width="73" height="26">
@@ -274,9 +322,8 @@ footer a { color: var(--muted); }
   <section class="hero" aria-labelledby="hero-h">
     <div class="wrap">
       <div>
-        <span class="eyebrow"><img src="assets/fluent3d_sparkles.webp" alt="" width="22" height="22">App Android chính thức của AowVN</span>
-        <h1 id="hero-h">Đọc bài, tải game, <span class="grad">chơi ngay.</span></h1>
-        <p class="lede">Monika gom mọi thứ của AowVN vào một app. Đọc bài Việt hóa mới nhất, bấm tải là game tự giải nén vào Thư viện, rồi mở bằng giả lập có sẵn trong app.</p>
+        <h1 id="hero-h">Định nghĩa lại trải nghiệm <span class="grad">chơi game</span></h1>
+        <p class="lede">Monika tích hợp tất cả các giả lập cho tất cả hệ máy trên thế giới. Tự động giải nén, cài game, tự động cài patch Việt hóa. Tích hợp trình duyệt và hệ thống download.</p>
         <div class="cta" id="hero-cta">
           <a class="btn btn-main" data-apk href="https://github.com/aowvn-10diem/aowvn-monika/releases">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
@@ -288,6 +335,7 @@ footer a { color: var(--muted); }
           <span><i class="dot" aria-hidden="true"></i>Miễn phí</span>
           <span>Bản <b class="mono" data-ver>v0.7.4</b></span>
           <span data-size>18,2 MB</span>
+          <span data-dl hidden><b data-dl-n>0</b> lượt tải</span>
           <span>Android 8.0 trở lên</span>
           <span class="tag-beta" data-beta hidden>Bản thử nghiệm</span>
         </div>
@@ -299,11 +347,12 @@ footer a { color: var(--muted); }
       </div>
       <div class="stage" aria-hidden="true">
         <div class="blob"></div>
-        <div class="phone back"><div class="notch"></div><div class="screen"><img src="assets/app-gamepad.webp" alt="" width="600" height="714" loading="eager"></div></div>
-        <div class="phone front"><div class="notch"></div><div class="screen"><img src="assets/app-home.webp" alt="" width="600" height="1291" loading="eager"></div></div>
+        <div class="phone p-left"><div class="screen"><img src="assets/shot-java.webp" alt="" width="420" height="933" loading="eager"></div></div>
+        <div class="phone p-right"><div class="screen"><img src="assets/shot-gba.webp" alt="" width="420" height="933" loading="eager"></div></div>
+        <div class="phone p-mid"><div class="screen"><img src="assets/shot-nds.webp" alt="" width="420" height="933" loading="eager"></div></div>
+        <div class="land"><img src="assets/shot-land.webp" alt="" width="760" height="342" loading="eager"></div>
         <img class="float f1" src="assets/fluent3d_video_game.webp" alt="" width="74" height="74">
         <img class="float f2" src="assets/fluent3d_joystick.webp" alt="" width="86" height="86">
-        <img class="float f3" src="assets/fluent3d_package.webp" alt="" width="62" height="62">
       </div>
     </div>
   </section>
@@ -311,15 +360,12 @@ footer a { color: var(--muted); }
   <section class="systems" aria-labelledby="sys-h">
     <div class="wrap">
       <span class="kicker">Chơi được gì</span>
-      <h2 id="sys-h">Hơn 20 hệ máy, chơi ngay trong một app</h2>
+      <h2 id="sys-h">30 hệ máy, chơi ngay trong một app</h2>
       <p class="sub">Lõi giả lập tự tải về khi bạn mở game lần đầu. Không cần cài thêm từng giả lập riêng.</p>
-      <ul class="chips">
-        <li>Game Boy / Color</li><li>GBA</li><li>Nintendo DS</li><li>3DS <small>máy 64-bit</small></li>
-        <li>NES</li><li>SNES</li><li>Nintendo 64</li><li>PS1</li><li>PSP</li>
-        <li>Mega Drive</li><li>Master System</li><li>Game Gear</li><li>PC Engine</li><li>Dreamcast</li>
-        <li>Atari</li><li>WonderSwan</li><li>Neo Geo Pocket</li><li>RPG Maker 2000/2003</li>
-        <li>Game Java</li><li>Flash</li><li>RPG Maker MV/MZ</li><li>TyranoScript</li><li>Kirikiri <small>thử nghiệm</small></li>
-      </ul>
+      <div class="flow" aria-label="Danh sách hệ máy được hỗ trợ">
+        <div class="row"><ul class="chips"><li>Nintendo DS</li><li>Game Boy Advance</li><li>Game Boy / Color</li><li>Super Nintendo</li><li>NES / Famicom</li><li>Sega Mega Drive</li><li>Master System</li><li>Game Gear</li><li>PC Engine</li><li>Nintendo 64</li><li>Nintendo 3DS <small>máy 64-bit</small></li><li>Dreamcast</li><li>Atari Lynx</li><li>Atari 2600</li><li>Atari 7800</li><li>WonderSwan</li><li>Neo Geo Pocket</li><li>PlayStation 1</li><li>PSP</li></ul><ul class="chips" aria-hidden="true"><li>Nintendo DS</li><li>Game Boy Advance</li><li>Game Boy / Color</li><li>Super Nintendo</li><li>NES / Famicom</li><li>Sega Mega Drive</li><li>Master System</li><li>Game Gear</li><li>PC Engine</li><li>Nintendo 64</li><li>Nintendo 3DS <small>máy 64-bit</small></li><li>Dreamcast</li><li>Atari Lynx</li><li>Atari 2600</li><li>Atari 7800</li><li>WonderSwan</li><li>Neo Geo Pocket</li><li>PlayStation 1</li><li>PSP</li></ul></div>
+        <div class="row rev"><ul class="chips"><li>RPG Maker 2000/2003</li><li>Flash</li><li>Android (APK)</li><li>Game Java (J2ME)</li><li>RPG Maker MV/MZ</li><li>TyranoScript</li><li>Kirikiri <small>thử nghiệm</small></li><li>Ren'Py</li><li>RPG Maker XP/VX/Ace</li><li>ONScripter</li><li>Symbian / N-Gage</li><li>Nintendo DS</li><li>Game Boy Advance</li><li>Game Boy / Color</li><li>Super Nintendo</li><li>NES / Famicom</li><li>Sega Mega Drive</li><li>Master System</li></ul><ul class="chips" aria-hidden="true"><li>RPG Maker 2000/2003</li><li>Flash</li><li>Android (APK)</li><li>Game Java (J2ME)</li><li>RPG Maker MV/MZ</li><li>TyranoScript</li><li>Kirikiri <small>thử nghiệm</small></li><li>Ren'Py</li><li>RPG Maker XP/VX/Ace</li><li>ONScripter</li><li>Symbian / N-Gage</li><li>Nintendo DS</li><li>Game Boy Advance</li><li>Game Boy / Color</li><li>Super Nintendo</li><li>NES / Famicom</li><li>Sega Mega Drive</li><li>Master System</li></ul></div>
+      </div>
     </div>
   </section>
 
@@ -327,7 +373,7 @@ footer a { color: var(--muted); }
     <div class="wrap">
       <div class="head">
         <span class="kicker">Tính năng</span>
-        <h2 id="feat-h">Từ bài viết tới màn chơi, chỉ vài lần chạm</h2>
+        <h2 id="feat-h">Tìm, tải game, chơi, siêu đơn giản</h2>
         <p>Monika làm thay bạn những bước lằng nhằng: tải, giải nén, chọn giả lập, chỉnh phím.</p>
       </div>
       <div class="feats">
@@ -335,8 +381,8 @@ footer a { color: var(--muted); }
         <article class="feat"><img src="assets/fluent3d_package.webp" alt="" width="56" height="56" loading="lazy"><h3>Tải một chạm, tự giải nén</h3><p>Bấm tải trong bài viết. Monika tự giải nén zip, rar, 7z, kể cả file có mật khẩu hay chia nhiều phần, rồi đưa game vào Thư viện.</p></article>
         <article class="feat"><img src="assets/fluent3d_joystick.webp" alt="" width="56" height="56" loading="lazy"><h3>Giả lập có sẵn</h3><p>Mở game là chơi. App tự chọn đúng giả lập cho từng hệ máy và tải lõi về khi cần.</p></article>
         <article class="feat"><img src="assets/fluent3d_video_game.webp" alt="" width="56" height="56" loading="lazy"><h3>Tay cầm ảo theo từng máy</h3><p>Mỗi hệ máy có bố cục phím riêng. Kéo nút đổi chỗ, đổi cỡ cho vừa tay, app nhớ cho lần sau.</p></article>
-        <article class="feat"><img src="assets/fluent3d_sparkles.webp" alt="" width="56" height="56" loading="lazy"><h3>Lưu game, mã gian lận</h3><p>Lưu và nạp nhanh với 3 ô lưu. Có mã gian lận và hỗ trợ RetroAchievements.</p></article>
-        <article class="feat"><img src="assets/fluent3d_toolbox.webp" alt="" width="56" height="56" loading="lazy"><h3>Vá Việt hóa ROM</h3><p>Áp bản vá IPS, BPS, UPS ngay trên máy. Game đã vá nằm ở thư mục riêng, bản gốc vẫn còn.</p></article>
+        <article class="feat"><img src="assets/fluent3d_sparkles.webp" alt="" width="56" height="56" loading="lazy"><h3>Lưu game, mã chít</h3><p>Lưu và nạp nhanh với 3 ô lưu. Có hỗ trợ chít và hỗ trợ quản lý thành tựu qua RetroAchievements.</p></article>
+        <article class="feat"><img src="assets/fluent3d_toolbox.webp" alt="" width="56" height="56" loading="lazy"><h3>Tự động cài Việt hóa</h3><p>Hệ thống tự động patch các file IPS, BPS, UPS,… ngay trên máy.</p></article>
       </div>
     </div>
   </section>
@@ -359,6 +405,7 @@ footer a { color: var(--muted); }
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
           Tải Monika <span class="mono" data-ver>v0.7.4</span>
         </a>
+        <span class="dl-note" data-dl hidden>Đã có <b data-dl-n>0</b> lượt tải</span>
       </div>
     </div>
   </section>
@@ -391,9 +438,38 @@ footer a { color: var(--muted); }
 <footer>
   <div class="wrap">
     <span>© AowVN · <a href="https://www.aow.vn" target="_blank" rel="noopener">aow.vn</a></span>
-    <span><a href="https://github.com/aowvn-10diem/aowvn-monika" target="_blank" rel="noopener">Mã nguồn trên GitHub</a> · Biểu tượng 3D: Fluent Emoji (MIT)</span>
+    <!-- Biểu tượng 3D: Fluent Emoji của Microsoft, giấy phép MIT (https://github.com/microsoft/fluentui-emoji). Giữ dòng ghi công này theo yêu cầu của giấy phép. -->
   </div>
 </footer>
+
+<div class="don" id="don" role="dialog" aria-modal="true" aria-labelledby="don-h" hidden>
+  <div class="don-card">
+    <button class="don-x" type="button" aria-label="Đóng" data-don-close>×</button>
+    <h2 id="don-h">Ủng hộ chúng mình nhé</h2>
+    <p class="don-msg">Chúng mình cố gắng phát triển Monika hoàn toàn miễn phí, nhưng AowVN vẫn cần phải chi trả chi phí cho máy chủ, AI. Đừng ngần ngại donate ủng hộ chúng mình nha, 200k, 100k hay 10k đều rất đáng trân trọng á.</p>
+    <div class="don-body">
+      <img class="don-qr" id="don-qr" data-src="assets/donate-qr.webp" alt="Mã QR chuyển khoản VietinBank, tài khoản 101867601261, VU DOAN BINH MINH" width="437" height="495">
+      <div class="don-info">
+        <div class="don-row"><small>Ngân hàng</small><b>VietinBank</b></div>
+        <div class="don-row"><small>Số tài khoản</small><b class="mono" id="don-acc">101867601261</b><button class="don-copy" type="button" data-copy="#don-acc">Sao chép</button></div>
+        <div class="don-row"><small>Chủ tài khoản</small><b>VU DOAN BINH MINH</b></div>
+        <div class="don-row"><small>Nội dung chuyển khoản</small><b id="don-memo">Ung ho AowVN Monika</b><button class="don-copy" type="button" data-copy="#don-memo">Sao chép</button></div>
+        <div class="don-mobile">
+          <span class="don-label">Chọn số tiền</span>
+          <div class="don-amounts" id="don-amounts">
+            <button type="button" data-amt="10000" aria-pressed="false">10.000đ</button>
+            <button type="button" data-amt="50000" aria-pressed="false">50.000đ</button>
+            <button type="button" data-amt="100000" aria-pressed="true">100.000đ</button>
+            <button type="button" data-amt="200000" aria-pressed="false">200.000đ</button>
+          </div>
+          <span class="don-label">Chọn ngân hàng của bạn để chuyển nhanh</span>
+          <div class="don-banks" id="don-banks"></div>
+        </div>
+      </div>
+    </div>
+    <button class="don-skip" type="button" data-don-close>Để sau, cảm ơn</button>
+  </div>
+</div>
 
 <div class="dock" id="dock" aria-hidden="true">
   <img src="assets/icon-192.png" alt="" width="40" height="40">
@@ -431,6 +507,101 @@ footer a { color: var(--muted); }
     }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", qr); else qr();
+
+  // Số lượt tải: dùng số lưu lần trước ngay, rồi cập nhật khi rảnh (API GitHub, cộng file .apk của mọi bản)
+  var DLK = "monika.dl.v1", dlc = null;
+  function showDl(n) {
+    document.querySelectorAll("[data-dl]").forEach(function (e) { e.hidden = false; e.querySelector("[data-dl-n]").textContent = Number(n).toLocaleString("vi-VN"); });
+  }
+  try { dlc = JSON.parse(localStorage.getItem(DLK)); if (dlc && dlc.n != null) showDl(dlc.n); } catch (e) { dlc = null; }
+  function refreshDl() {
+    if (dlc && Date.now() - dlc.t < 1800000) return;
+    fetch("https://api.github.com/repos/" + "aowvn-10diem/aowvn-monika" + "/releases?per_page=100", { headers: { Accept: "application/vnd.github+json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (list) {
+        if (!list) return;
+        var n = 0;
+        list.forEach(function (r) { if (r.draft) return; (r.assets || []).forEach(function (a) { if (/\.apk$/i.test(a.name)) n += a.download_count || 0; }); });
+        showDl(n);
+        try { localStorage.setItem(DLK, JSON.stringify({ n: n, t: Date.now() })); } catch (e) {}
+      }).catch(function () {});
+  }
+  window.addEventListener("load", function () { (window.requestIdleCallback || function (f) { setTimeout(f, 1500); })(refreshDl); });
+
+  // Cửa sổ ủng hộ: hiện mỗi lần bấm nút tải (việc tải vẫn chạy bình thường)
+  var DON = { code: "icb", acc: "101867601261", name: "VU DOAN BINH MINH", memo: "Ung ho AowVN Monika", ret: "https://monika.aow.vn/" };
+  var don = document.getElementById("don"), donBanks = document.getElementById("don-banks"), amt = 100000, lastFocus = null, banksLoaded = false;
+  var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (window.matchMedia && matchMedia("(pointer: coarse)").matches && window.innerWidth < 900);
+  var FALLBACK_BANKS = [["icb", "VietinBank"], ["vcb", "Vietcombank"], ["mb", "MB Bank"], ["tcb", "Techcombank"], ["bidv", "BIDV"], ["acb", "ACB"], ["vpb", "VPBank"], ["tpb", "TPBank"], ["shb", "SHB"], ["ocb", "OCB"], ["lpb", "LPBank"], ["seab", "SeABank"]];
+  function plus(t) { return encodeURIComponent(t).replace(/%20/g, "+"); }
+  function deeplink(appId) {
+    return "https://dl.vietqr.io/pay?app=" + encodeURIComponent(appId) + "&ba=" + DON.acc + "@" + DON.code + "&am=" + amt + "&tn=" + plus(DON.memo) + "&bn=" + plus(DON.name) + "&url=" + encodeURIComponent(DON.ret);
+  }
+  function drawBanks(apps) {
+    donBanks.innerHTML = "";
+    apps.forEach(function (a) {
+      var el = document.createElement("a");
+      el.rel = "noopener"; el.dataset.app = a.id;
+      el.href = deeplink(a.id);
+      if (a.logo) { var im = document.createElement("img"); im.src = a.logo; im.alt = ""; im.loading = "lazy"; im.width = 34; im.height = 34; el.appendChild(im); }
+      var lb = document.createElement("span"); lb.textContent = a.name; el.appendChild(lb);
+      donBanks.appendChild(el);
+    });
+  }
+  function loadBanks() {
+    if (banksLoaded || !isMobile) return;
+    banksLoaded = true;
+    drawBanks(FALLBACK_BANKS.map(function (b) { return { id: b[0], name: b[1] }; }));
+    var KEY = "monika.banks." + (isIOS ? "ios" : "and") + ".v1";
+    try { var c = JSON.parse(localStorage.getItem(KEY)); if (c && Date.now() - c.t < 86400000 && c.a.length) { drawBanks(c.a); return; } } catch (e) {}
+    fetch("https://api.vietqr.io/v2/" + (isIOS ? "ios" : "android") + "-app-deeplinks")
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.apps || !d.apps.length) return;
+        var a = d.apps.slice().sort(function (x, y) { return (y.monthlyInstall || 0) - (x.monthlyInstall || 0); })
+          .map(function (x) { return { id: x.appId, name: x.appName.replace(/\s*(iPay|SmartBanking|Digibank|Mobile|OMNI|ONE|NEO|SAHA|Mobile Banking)\s*$/i, "").trim() || x.appName, logo: x.appLogo }; });
+        drawBanks(a);
+        try { localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), a: a })); } catch (e) {}
+      }).catch(function () {});
+  }
+  function openDon() {
+    if (!don) return;
+    lastFocus = document.activeElement;
+    var q = document.getElementById("don-qr"); if (!q.getAttribute("src")) q.src = q.dataset.src;
+    don.classList.toggle("is-mobile", isMobile);
+    loadBanks();
+    don.hidden = false;
+    document.body.style.overflow = "hidden";
+    var x = don.querySelector(".don-x"); if (x) x.focus();
+  }
+  function closeDon() {
+    if (!don || don.hidden) return;
+    don.hidden = true;
+    document.body.style.overflow = "";
+    if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target, a = t.closest ? t.closest("[data-apk]") : null;
+    if (a && !a.closest("#don")) { setTimeout(openDon, 400); return; }
+    if (!don || don.hidden) return;
+    if (t === don || (t.closest && t.closest("[data-don-close]"))) { closeDon(); return; }
+    var cp = t.closest && t.closest("[data-copy]");
+    if (cp) {
+      var txt = document.querySelector(cp.getAttribute("data-copy")).textContent.trim();
+      var done = function () { var o = cp.textContent; cp.textContent = "Đã chép"; setTimeout(function () { cp.textContent = o; }, 1600); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, done);
+      else { var ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (er) {} document.body.removeChild(ta); done(); }
+      return;
+    }
+    var am = t.closest && t.closest("[data-amt]");
+    if (am) {
+      amt = Number(am.dataset.amt);
+      document.querySelectorAll("#don-amounts button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === am)); });
+      donBanks.querySelectorAll("a").forEach(function (l) { l.href = deeplink(l.dataset.app); });
+    }
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeDon(); });
 
   // Viền thanh trên khi cuộn; thanh tải dính đáy khi nút tải chính đã khuất
   var top = document.getElementById("top"), dock = document.getElementById("dock"), cta = document.getElementById("hero-cta");
