@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-15T03:13:51Z",
+ "updatedAt": "2026-10-15T03:54:53Z",
  "mainSha": "9897563",
  "app": "v0.8.3 bản thử · ổn định chờ lượt cài thật",
  "nextCheck": "2026-10-14T05:08:50Z",
@@ -1179,6 +1179,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-15T03:54:53Z",
+   "text": "V124 workflow game thật theo secret TEST_GAME_<HỆ> giao Haiku (#94); [A45] không lách hạn mức Firebase bằng nhiều tài khoản"
+  },
   {
    "t": "2026-10-15T03:13:51Z",
    "text": "V102 chuyển Sol 2 → Sol High (Sol 2 im 3h)"
