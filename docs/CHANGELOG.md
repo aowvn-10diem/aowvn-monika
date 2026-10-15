@@ -2,7 +2,7 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
-## v0.8.3 (Bản thử)
+## [v0.8.3](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.3) (Bản thử)
 <!-- bien-tap: v0.8.3 -->
 > Phát hành ngày 13/10/2026 (UTC), bản thử nghiệm.
 
@@ -15,7 +15,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 - Nội bộ: có cờ cấu hình để bật lại lớp đồ họa tùy biến của 3DS (mặc định tắt), dùng khi cần thử. ([d199001](https://github.com/aowvn-10diem/aowvn-monika/commit/d199001b835eed66a15f58461ec9e387369eba86))
 - Nội bộ: sửa các bài kiểm thử giao diện và dữ liệu Ren'Py cho ổn định; bản cài của người dùng không đổi. ([408b901](https://github.com/aowvn-10diem/aowvn-monika/commit/408b901e46a5eecf802a0615c5f6a8de20d16f47), [248395a](https://github.com/aowvn-10diem/aowvn-monika/commit/248395a31e9e4f0145da73e1d16ff396d44d32f4))
 
-## v0.8.2 (Bản thử)
+## [v0.8.2](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.2) (Bản thử)
 <!-- bien-tap: v0.8.2 -->
 > Phát hành ngày 11/10/2026 (UTC), bản thử nghiệm.
 
