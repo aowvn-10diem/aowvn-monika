@@ -11,9 +11,36 @@
 <meta property="og:image" content="assets/icon-192.png">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/icon-192.png">
+<!-- Đường tải: API bản phát hành (đọc ngay khi mở trang) -> github.com (link tải) -> máy chủ file release (nơi APK thật sự nằm) -->
+<link rel="preconnect" href="https://api.github.com" crossorigin>
+<link rel="dns-prefetch" href="https://github.com">
+<link rel="dns-prefetch" href="https://release-assets.githubusercontent.com">
+<link rel="dns-prefetch" href="https://objects.githubusercontent.com">
+<link rel="dns-prefetch" href="https://www.aow.vn">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="preload" as="image" type="image/webp" href="assets/app-home.webp" fetchpriority="high">
+<link rel="preload" as="image" type="image/webp" href="assets/app-gamepad.webp">
+<!-- Font nạp không chặn hiển thị: chữ hiện ngay bằng font hệ thống, đổi sang Manrope khi tải xong -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"></noscript>
+<script>
+// Bắt đầu hỏi bản APK mới nhất ngay từ <head>, không đợi cuối trang. Kết quả để ở window.__monikaRel (Promise).
+window.__monikaRel = (function () {
+  try {
+    return fetch("https://api.github.com/repos/aowvn-10diem/aowvn-monika/releases?per_page=10", { headers: { Accept: "application/vnd.github+json" } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (list) {
+        for (var i = 0; i < list.length; i++) {
+          var r = list[i]; if (r.draft) continue;
+          var a = (r.assets || []).filter(function (x) { return /\.apk$/i.test(x.name); })[0];
+          if (a) return { url: a.browser_download_url, tag: r.tag_name, size: a.size, pre: !!r.prerelease };
+        }
+        return null;
+      }).catch(function () { return null; });
+  } catch (e) { return Promise.resolve(null); }
+})();
+</script>
 <style>
 /* Bố cục: "hộp game mở nắp" — hero chia đôi (chữ + nút tải | hai điện thoại nghiêng có biểu tượng 3D bay quanh),
    dải tối liệt kê hệ máy, lưới tính năng, 3 bước cài (đúng thứ tự thật), hỏi đáp, cộng đồng. Thanh tải dính đáy trên điện thoại. */
@@ -198,6 +225,7 @@ footer a { color: var(--muted); }
   .phone { width: 230px; } .phone.back { width: 205px; }
   .feats, .steps, .comm { grid-template-columns: 1fr 1fr; }
   .nav a.link { display: none; }
+  .nav a.link.site { display: inline; color: var(--ink); }
 }
 @media (max-width: 620px) {
   body { font-size: 16px; }
@@ -227,10 +255,11 @@ footer a { color: var(--muted); }
       </picture>
     </a>
     <nav class="nav" aria-label="Mục chính">
+      <a class="link site" href="https://www.aow.vn" rel="noopener">aow.vn</a>
       <a class="link" href="#tinh-nang">Tính năng</a>
       <a class="link" href="#cai-dat">Cách cài</a>
       <a class="link" href="#hoi-dap">Hỏi đáp</a>
-      <a class="btn btn-small" data-apk href="https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.4/AowVN-Monika-v0.7.4.apk">Tải app</a>
+      <a class="btn btn-small" data-apk href="https://github.com/aowvn-10diem/aowvn-monika/releases">Tải app</a>
     </nav>
   </div>
 </header>
@@ -243,7 +272,7 @@ footer a { color: var(--muted); }
         <h1 id="hero-h">Đọc bài, tải game, <span class="grad">chơi ngay.</span></h1>
         <p class="lede">Monika gom mọi thứ của AowVN vào một app. Đọc bài Việt hóa mới nhất, bấm tải là game tự giải nén vào Thư viện, rồi mở bằng giả lập có sẵn trong app.</p>
         <div class="cta" id="hero-cta">
-          <a class="btn btn-main" data-apk href="https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.4/AowVN-Monika-v0.7.4.apk">
+          <a class="btn btn-main" data-apk href="https://github.com/aowvn-10diem/aowvn-monika/releases">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
             Tải Monika cho Android
           </a>
@@ -319,7 +348,7 @@ footer a { color: var(--muted); }
       </ol>
       <p class="note"><img src="assets/fluent3d_bell.webp" alt="" width="28" height="28" loading="lazy"><span><b>Cập nhật bản mới:</b> tải bản mới và cài đè lên bản cũ. Game và dữ liệu đã lưu vẫn còn nguyên.</span></p>
       <div class="cta">
-        <a class="btn btn-main" data-apk href="https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.4/AowVN-Monika-v0.7.4.apk">
+        <a class="btn btn-main" data-apk href="https://github.com/aowvn-10diem/aowvn-monika/releases">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
           Tải Monika <span class="mono" data-ver>v0.7.4</span>
         </a>
@@ -362,13 +391,12 @@ footer a { color: var(--muted); }
 <div class="dock" id="dock" aria-hidden="true">
   <img src="assets/icon-192.png" alt="" width="40" height="40">
   <div class="t"><b>AowVN Monika</b><span><span data-ver>v0.7.4</span> · <span data-size>18,2 MB</span> · miễn phí</span></div>
-  <a class="btn btn-main" data-apk tabindex="-1" href="https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.4/AowVN-Monika-v0.7.4.apk">Tải app</a>
+  <a class="btn btn-main" data-apk tabindex="-1" href="https://github.com/aowvn-10diem/aowvn-monika/releases">Tải app</a>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous" defer></script>
 <script>
 (function () {
-  var REPO = "aowvn-10diem/aowvn-monika";
   function mb(bytes) { return (bytes / 1048576).toLocaleString("vi-VN", { maximumFractionDigits: 1 }) + " MB"; }
   function apply(rel) {
     document.querySelectorAll("[data-apk]").forEach(function (a) { a.href = rel.url; });
@@ -376,27 +404,26 @@ footer a { color: var(--muted); }
     document.querySelectorAll("[data-size]").forEach(function (n) { n.textContent = mb(rel.size); });
     var beta = document.querySelector("[data-beta]"); if (beta) beta.hidden = !rel.pre;
   }
-  // Lấy bản mới nhất có file APK (kể cả bản thử nghiệm). Lỗi mạng thì giữ link dự phòng trong HTML.
-  try {
-    fetch("https://api.github.com/repos/" + REPO + "/releases?per_page=10", { headers: { Accept: "application/vnd.github+json" } })
-      .then(function (r) { return r.ok ? r.json() : []; })
-      .then(function (list) {
-        for (var i = 0; i < list.length; i++) {
-          var r = list[i]; if (r.draft) continue;
-          var a = (r.assets || []).filter(function (x) { return /\.apk$/i.test(x.name); })[0];
-          if (a) { apply({ url: a.browser_download_url, tag: r.tag_name, size: a.size, pre: !!r.prerelease }); return; }
-        }
-      }).catch(function () {});
-  } catch (e) {}
+  // Bản APK mới nhất: dùng bản nhớ lần trước ngay lập tức, rồi cập nhật khi kết quả từ <head> về. Lỗi mạng thì giữ link dự phòng trong HTML.
+  var KEY = "monika.rel.v1";
+  try { var c = JSON.parse(localStorage.getItem(KEY)); if (c && c.url) apply(c); } catch (e) {}
+  (window.__monikaRel || Promise.resolve(null)).then(function (rel) {
+    if (!rel) return;
+    apply(rel);
+    try { localStorage.setItem(KEY, JSON.stringify(rel)); } catch (e) {}
+  });
 
-  // Mã QR cho người xem trên máy tính
-  var card = document.getElementById("qr-card");
-  if (window.QRCode && card) {
-    try {
-      new QRCode(document.getElementById("qr"), { text: location.href.split("#")[0], width: 168, height: 168, colorDark: "#24211F", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
-      card.classList.add("ready");
-    } catch (e) {}
+  // Mã QR cho người xem trên máy tính (qrcode.js nạp defer, chạy sau khi nó sẵn sàng)
+  function qr() {
+    var card = document.getElementById("qr-card");
+    if (window.QRCode && card && !card.classList.contains("ready")) {
+      try {
+        new QRCode(document.getElementById("qr"), { text: location.href.split("#")[0], width: 168, height: 168, colorDark: "#24211F", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+        card.classList.add("ready");
+      } catch (e) {}
+    }
   }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", qr); else qr();
 
   // Viền thanh trên khi cuộn; thanh tải dính đáy khi nút tải chính đã khuất
   var top = document.getElementById("top"), dock = document.getElementById("dock"), cta = document.getElementById("hero-cta");
