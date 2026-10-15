@@ -583,7 +583,14 @@ footer a { color: var(--muted); }
   }
   document.addEventListener("click", function (e) {
     var t = e.target, a = t.closest ? t.closest("[data-apk]") : null;
-    if (a && !a.closest("#don")) { setTimeout(openDon, 400); return; }
+    if (a && !a.closest("#don")) {
+      if (/\.apk(\?|$)/i.test(a.href)) { setTimeout(openDon, 400); return; }
+      // Link dự phòng (chưa lấy được bản mới): mở trang bản phát hành ở tab mới để popup vẫn hiện ở trang này
+      e.preventDefault();
+      window.open(a.href, "_blank", "noopener");
+      openDon();
+      return;
+    }
     if (!don || don.hidden) return;
     if (t === don || (t.closest && t.closest("[data-don-close]"))) { closeDon(); return; }
     var cp = t.closest && t.closest("[data-copy]");
