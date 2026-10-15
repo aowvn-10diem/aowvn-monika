@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-15T03:54:53Z",
+ "updatedAt": "2026-10-15T04:03:21Z",
  "mainSha": "9897563",
  "app": "v0.8.3 bản thử · ổn định chờ lượt cài thật",
  "nextCheck": "2026-10-14T05:08:50Z",
@@ -1179,6 +1179,10 @@
   }
  ],
  "log": [
+  {
+   "t": "2026-10-15T04:03:21Z",
+   "text": "V124: ma trận 1 job/hệ, max-parallel 15, lịch 2 lượt/ngày; sếp thêm 29 secret TEST_GAME_<HỆ> dần"
+  },
   {
    "t": "2026-10-15T03:54:53Z",
    "text": "V124 workflow game thật theo secret TEST_GAME_<HỆ> giao Haiku (#94); [A45] không lách hạn mức Firebase bằng nhiều tài khoản"
