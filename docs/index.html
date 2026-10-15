@@ -225,7 +225,9 @@ footer a { color: var(--muted); }
   .phone { width: 230px; } .phone.back { width: 205px; }
   .feats, .steps, .comm { grid-template-columns: 1fr 1fr; }
   .nav a.link { display: none; }
-  .nav a.link.site { display: inline; color: var(--ink); }
+  .nav { gap: 12px; }
+  .nav a.link.site { display: inline; color: var(--ink); font-size: 14px; white-space: nowrap; }
+  .nav .btn-small { white-space: nowrap; }
 }
 @media (max-width: 620px) {
   body { font-size: 16px; }
@@ -255,7 +257,7 @@ footer a { color: var(--muted); }
       </picture>
     </a>
     <nav class="nav" aria-label="Mục chính">
-      <a class="link site" href="https://www.aow.vn" rel="noopener">aow.vn</a>
+      <a class="link site" href="https://www.aow.vn" rel="noopener">Made by AowVN</a>
       <a class="link" href="#tinh-nang">Tính năng</a>
       <a class="link" href="#cai-dat">Cách cài</a>
       <a class="link" href="#hoi-dap">Hỏi đáp</a>
