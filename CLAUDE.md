@@ -43,5 +43,6 @@ Hạn mức là tài nguyên hiếm nhất. Mọi agent:
 | PM kiểm hộp thư, bảng tiến độ | `pm-kiem-thu` |
 | Lượt tiền duyệt định kỳ (Nova, Haiku) | `tien-duyet` |
 | Kiểm bản vừa phát hành (chứng thư, link tải) | `kiem-phat-hanh` |
+| Biên tập CHANGELOG cho người thường khi có bản mới (Haiku 5.5) | `bien-tap-changelog` |
 
 Phiên mất/mới? Đọc `docs/opus/HANDOFF-SONNET.md` trước. Tiến độ: `docs/opus/KE-HOACH.md`. Bàn giao Opus: `docs/GIAO-TIEP-VOI-OPUS.md`.
