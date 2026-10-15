@@ -109,6 +109,10 @@ p { margin: 0; }
 .btn-small { background: var(--ink); color: var(--bg); padding: 9px 16px; font-size: 14px; }
 .btn-ghost { color: var(--ink); padding: 14px 6px; font-size: 16px; }
 .btn-ghost:hover { text-decoration: underline; text-underline-offset: 4px; }
+.hist-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; font-weight: 800; font-size: 15px; color: var(--ink); text-decoration: none; }
+.hist-link svg { width: 18px; height: 18px; transition: transform .2s ease; }
+.hist-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.hist-link:hover svg { transform: translateX(3px); }
 
 /* Hero */
 .hero { padding-block: 40px 72px; }
@@ -285,6 +289,7 @@ footer a { color: var(--muted); }
           <span>Android 8.0 trở lên</span>
           <span class="tag-beta" data-beta hidden>Bản thử nghiệm</span>
         </div>
+        <a class="hist-link" href="lich-su.html">Lịch sử cập nhật<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></a>
         <div class="qr-card" id="qr-card">
           <div id="qr" aria-hidden="true"></div>
           <div><b>Đang xem trên máy tính?</b><span>Quét mã bằng camera điện thoại để mở trang này và tải app.</span></div>
