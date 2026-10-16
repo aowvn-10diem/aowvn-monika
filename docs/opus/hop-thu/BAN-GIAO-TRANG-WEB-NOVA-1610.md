@@ -51,7 +51,12 @@ Mỗi lần lên live, Nova xóa cache Cloudflare (mục 4). Các PR trên gộp
 
 ## 5. Quy trình Haiku biên tập CHANGELOG
 
-Skill `bien-tap-changelog`, script `scripts/changelog-pending.py` (6 bài test N04), routine "Nova kiểm hộp thư" (`trig_01Rc26rgjFMcTifW523pxoGH`) mở phiên Haiku cho bản chưa biên tập. v0.8.1–v0.8.3 đã biên tập. **v0.8.0 còn chờ** vì sếp chưa chọn cách xử lý hạn mức (giữ chạy / giãn routine 3 giờ / tạm dừng tự mở phiên Haiku). Routine không bị tắt.
+Skill `bien-tap-changelog`, script `scripts/changelog-pending.py` (6 bài test N04), routine "Nova kiểm hộp thư" (`trig_01Rc26rgjFMcTifW523pxoGH`) mở phiên **Haiku 5.5** cho bản chưa biên tập. **Từ 16/10 sếp giao việc này cho Haiku 5.5 làm thường trực** (Nova chỉ mở phiên, không tự biên tập), giữ routine chạy như cũ (coi như sếp chọn "giữ chạy" cho A5 hạn mức).
+
+**Quy tắc nội dung mới (sếp chốt 16/10):** người đọc trang Lịch sử cập nhật là người dùng, nên mỗi phiên bản chỉ nói **Sửa lỗi:** (đã sửa gì) và **Mới:** (có gì mới). Không ghi "chưa kiểm / chưa rõ / chưa chạy thật" hay ghi chú của nhóm; những thứ đó và việc người dùng không thấy đi vào dòng `Nội bộ:`, và trang **không hiển thị** dòng này nữa. Nơi áp dụng:
+- PR **#269** (vào `main`, chờ PM/sếp gộp): viết lại v0.8.0–v0.8.3 theo quy tắc, sửa skill `bien-tap-changelog`. v0.8.0 đã được Nova biên tập luôn (có dấu `<!-- bien-tap: v0.8.0 -->`, script báo không còn bản chờ).
+- PR **#270** (vào `trang-web`): trang `lich-su.html` bỏ mục "Thay đổi nội bộ" và tự lược câu có "chưa kiểm/chưa rõ/chưa chạy thật/chưa thử".
+- Prompt của routine đã được cập nhật 16/10 (cùng trigger id) để nhắc lại quy tắc mới và ghi Haiku là người giữ việc; vì Haiku đọc skill từ `main`, quy tắc này nằm cả trong prompt phiên Haiku cho tới khi #269 được gộp.
 
 ## 6. Việc treo và rủi ro
 
@@ -63,3 +68,16 @@ Skill `bien-tap-changelog`, script `scripts/changelog-pending.py` (6 bài test N
 | A4 | Logo hệ máy và logo NOKIA là nhãn hiệu của chủ sở hữu; chưa có trang giấy phép. Biểu tượng 3D Fluent Emoji (MIT): sếp đã yêu cầu bỏ dòng ghi nguồn ở chân trang; MIT cần giữ thông báo bản quyền, nên cân nhắc một trang "Giấy phép". | Sếp / PM |
 | A5 | Chưa thử trên điện thoại thật: popup + nhạc + liên kết ngân hàng, vuốt ngang, tốc độ thật. Sandbox không vào được web thật (403). | Sếp |
 | A6 | Sau khi chuyển nguồn Pages: gửi `sitemap.xml` lên Google Search Console / Bing, làm mới ảnh chia sẻ trên Facebook/Zalo. | Sếp |
+
+## 7. Cập nhật tối 16/10 (sau khi viết các mục trên)
+
+| Việc | Trạng thái |
+|---|---|
+| **three.js trên trang chủ** (#266, #268, đã live): dải hạt cực quang đầu trang, băng chuyền logo hệ máy, điện thoại 3D tự chạy ở mục Tính năng (đọc web, xoay ngang chơi game, xoay dọc tải/vá), dòng hạt ở Lộ trình, pháo hoa khi bấm tải, chữ M 3D ở trang "Xây dựng cho tương lai" | Live. Chỉ bật khi máy đủ điều kiện (`html.fx3d`); chỉ dựng và vẽ khi người dùng xem tới; tự hạ chất lượng rồi tắt nếu dưới ~24 fps; popup mở thì dừng cảnh phía sau. Cờ thử: `?3d=off`, `?hud` (xem FPS), `?fx=force` (bỏ tự hạ, để thử trên máy không có GPU). |
+| **Nhạc nền** (#266, #267) | `assets/snd/nen-x-cool.mp3` (X-COOL Instrumental – Ultra Slowed, 1,2 MB, âm lượng tối đa 70%). Tự phát khi vào trang nếu trình duyệt cho, không thì ở lần chạm đầu; nhỏ dần khi bấm tải; có nút bật/tắt (nhớ lựa chọn ở `monika.bgm`). Sếp khẳng định rủi ro bản quyền bằng 0, chưa có giấy tờ nguồn. Bản remix cũ `nen.mp3` đã gỡ khỏi trang nhưng còn trong lịch sử git. |
+| **Donate số tiền tùy chọn** (#268) | Ô nhập 1.000đ đến 500.000.000đ (mức tối đa là giả định của Nova, sếp/PM chốt). Số hợp lệ thì QR đổi sang QR VietQR có sẵn số tiền (ảnh từ `img.vietqr.io`, lỗi thì quay về QR tĩnh) và liên kết ngân hàng trên điện thoại dùng số đó; ô trống/sai thì quay về số của nút đã chọn. Chưa quét thử QR bằng app ngân hàng. |
+| **Mã nguồn three.js** | Trên trang chỉ có bản đã đóng gói `assets/three/fx.js` (three@0.186.1, MIT, kèm `assets/three/LICENSE-three.txt`). Nguồn đọc được nằm ở `docs/opus/hop-thu/trang-web-nguon/fx.js` (đối chiếu: dựng lại cho ra đúng tệp đang live). Dựng lại: `npm i three@0.186.1 esbuild`, chép `fx.js` vào `src/`, chạy `npx esbuild src/fx.js --bundle --minify --format=esm --target=es2020 --outfile=out/fx.js --legal-comments=none`, rồi chép `out/fx.js` vào `assets/three/` trên nhánh `trang-web` (xem lại mục 4 về PR và xóa cache). |
+| **Chữ trên điện thoại 3D** | Màn hình trong điện thoại 3D do Nova tự vẽ theo 6 tính năng, không phải ảnh chụp app thật; nếu có ảnh chụp thật thì thay. |
+| **Cổng CI** | Nhánh `trang-web` không có workflow Build/Coverage/CodeQL nên các PR trang web không có kết quả CI (Luna 3 đã hỏi). PM/sếp xác nhận cách đáp ứng cổng này. |
+
+Mục treo mới cho mục 6: nguồn nhạc `tai-ve.mp3` vẫn chưa rõ; task "sửa phím bấm theo asset nút bấm đẹp" mà sếp hỏi lúc 16/10: Nova **không tìm thấy** lệnh này trong lịch sử phiên của Nova (có thể liên quan PR #200, đã đóng); chưa xử lý, chờ sếp cho biết phím ở đâu và asset nằm ở đâu.
