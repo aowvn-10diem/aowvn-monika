@@ -38,7 +38,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="image" type="image/avif" imagesrcset="assets/m/fold-480.avif 480w, assets/m/fold-960.avif 960w" imagesizes="(max-width: 900px) min(92vw, 420px), 480px" fetchpriority="high">
 <link rel="preload" as="image" type="image/avif" imagesrcset="assets/m/tilt-380.avif 380w, assets/m/tilt-760.avif 760w" imagesizes="(max-width: 900px) min(74vw, 340px), 380px">
-<script>document.documentElement.classList.add("js")</script>
+<script>document.documentElement.classList.add("js");
+(function(){var d=document.documentElement,q=location.search;try{
+var weak=(navigator.hardwareConcurrency||8)<4||(navigator.deviceMemory||8)<4,saver=navigator.connection&&navigator.connection.saveData,reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+if(/[?&]3d=off/.test(q)||weak||saver||reduce)return;
+var c=document.createElement("canvas"),g=c.getContext("webgl2")||c.getContext("webgl");if(!g)return;
+var e=g.getExtension("WEBGL_lose_context");if(e)e.loseContext();d.classList.add("fx3d")}catch(x){}})()</script>
 <!-- Font nạp không chặn hiển thị: chữ hiện ngay bằng font hệ thống, đổi sang Manrope khi tải xong -->
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"></noscript>
@@ -463,6 +468,33 @@ footer a { color: var(--muted); }
   .dock { display: flex; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .dock { transition: none; } }
+/* ===== Hiệu ứng three.js (chỉ bật khi html.fx3d; không đủ điều kiện thì giao diện CSS như cũ) ===== */
+.gl { display: block; opacity: 0; transition: opacity 1.4s ease; pointer-events: none; }
+.gl.on { opacity: 1; }
+.hero { position: relative; overflow: hidden; }
+.hero .wrap { position: relative; z-index: 1; }
+.gl-hero { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.gl-ring { display: none; width: 100%; height: 230px; margin: 0 0 6px; pointer-events: auto; }
+.fx3d .gl-ring { display: block; }
+.systems.ring-on .flow .row:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.phone3d { display: none; }
+.fx3d .feat-stage { display: grid; grid-template-columns: minmax(340px, .9fr) minmax(0, 1.1fr); gap: 36px; align-items: start; }
+.fx3d .phone3d { display: block; position: sticky; top: 92px; height: min(620px, calc(100vh - 120px)); border-radius: var(--r-lg); }
+.phone3d .poster { position: absolute; inset: 0; margin: auto; width: 150px; height: 150px; opacity: .9; }
+.phone3d.live .poster { display: none; }
+.gl-phone { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: auto; -webkit-mask-image: radial-gradient(ellipse 72% 68% at 50% 50%, #000 58%, transparent 100%); mask-image: radial-gradient(ellipse 72% 68% at 50% 50%, #000 58%, transparent 100%); }
+.fx3d .feats { grid-template-columns: 1fr 1fr; }
+.feat { transition: border-color .35s ease, box-shadow .35s ease, translate .35s ease; }
+.fx3d .feat.on { border-color: color-mix(in srgb, var(--g2) 60%, var(--line)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--g2) 13%, transparent), 0 14px 40px -18px color-mix(in srgb, var(--g2) 55%, transparent); translate: 0 -2px; }
+.road-sec .gl-road { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.don .gl-burst { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; transition: opacity .5s ease; }
+.gl-hud { position: fixed; left: 12px; bottom: 12px; z-index: 80; font: 700 12px/1.3 var(--mono); background: rgba(0,0,0,.7); color: #fff; padding: 8px 10px; border-radius: 10px; pointer-events: none; }
+@media (max-width: 900px) {
+  .fx3d .feat-stage { grid-template-columns: 1fr; gap: 20px; }
+  .fx3d .phone3d { position: relative; top: 0; height: 400px; }
+}
+@media (max-width: 620px) { .fx3d .feats { grid-template-columns: 1fr; } .fx3d .phone3d { height: 360px; } .gl-ring { height: 190px; } }
+
 </style>
 
 </head>
@@ -485,6 +517,7 @@ footer a { color: var(--muted); }
 
 <main>
   <section class="hero" aria-labelledby="hero-h">
+    <canvas class="gl gl-hero" aria-hidden="true"></canvas>
     <div class="wrap">
       <div>
         <div class="rot" id="rot" role="group" aria-roledescription="carousel" aria-label="Giới thiệu Monika">
@@ -574,6 +607,7 @@ footer a { color: var(--muted); }
       <span class="kicker">Phá bỏ giới hạn</span>
       <h2 id="sys-h">30 hệ máy, chơi ngay trong một app</h2>
       <p class="sub">Monika tự động nhận diện game và cài đặt lõi giả lập tương ứng, bạn chỉ việc tải game về, app sẽ lo phần còn lại.</p>
+      <canvas class="gl gl-ring" aria-hidden="true"></canvas>
       <div class="flow" aria-label="Danh sách hệ máy được hỗ trợ">
         <div class="row"><ul class="chips"><li class="tile" title="Nintendo DS"><img src="assets/sys/ds.webp" alt="Nintendo DS" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy Advance"><img src="assets/sys/gba.webp" alt="Game Boy Advance" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy / Color"><img src="assets/sys/gb.webp" alt="Game Boy / Color" width="150" height="28" style="width:150px;height:28px" loading="lazy" decoding="async"></li><li class="tile" title="Super Nintendo"><img src="assets/sys/snes.webp" alt="Super Nintendo" width="150" height="41" style="width:150px;height:41px" loading="lazy" decoding="async"></li><li class="tile" title="NES / Famicom"><img src="assets/sys/nes.webp" alt="NES / Famicom" width="89" height="44" style="width:89px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="SEGA Mega Drive, Master System, Game Gear"><img src="assets/sys/sega.webp" alt="SEGA Mega Drive, Master System, Game Gear" width="144" height="44" style="width:144px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 64"><img src="assets/sys/n64.webp" alt="Nintendo 64" width="150" height="34" style="width:150px;height:34px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 3DS"><img src="assets/sys/3ds.webp" alt="Nintendo 3DS" width="150" height="30" style="width:150px;height:30px" loading="lazy" decoding="async"></li><li class="tile" title="Dreamcast"><img src="assets/sys/dc.webp" alt="Dreamcast" width="150" height="27" style="width:150px;height:27px" loading="lazy" decoding="async"></li><li class="tile" title="PlayStation 1"><img src="assets/sys/ps1.webp" alt="PlayStation 1" width="150" height="32" style="width:150px;height:32px" loading="lazy" decoding="async"></li><li class="tile" title="PSP"><img src="assets/sys/psp.webp" alt="PSP" width="136" height="44" style="width:136px;height:44px" loading="lazy" decoding="async"></li></ul><ul class="chips" aria-hidden="true"><li class="tile" title="Nintendo DS"><img src="assets/sys/ds.webp" alt="" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy Advance"><img src="assets/sys/gba.webp" alt="" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy / Color"><img src="assets/sys/gb.webp" alt="" width="150" height="28" style="width:150px;height:28px" loading="lazy" decoding="async"></li><li class="tile" title="Super Nintendo"><img src="assets/sys/snes.webp" alt="" width="150" height="41" style="width:150px;height:41px" loading="lazy" decoding="async"></li><li class="tile" title="NES / Famicom"><img src="assets/sys/nes.webp" alt="" width="89" height="44" style="width:89px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="SEGA Mega Drive, Master System, Game Gear"><img src="assets/sys/sega.webp" alt="" width="144" height="44" style="width:144px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 64"><img src="assets/sys/n64.webp" alt="" width="150" height="34" style="width:150px;height:34px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 3DS"><img src="assets/sys/3ds.webp" alt="" width="150" height="30" style="width:150px;height:30px" loading="lazy" decoding="async"></li><li class="tile" title="Dreamcast"><img src="assets/sys/dc.webp" alt="" width="150" height="27" style="width:150px;height:27px" loading="lazy" decoding="async"></li><li class="tile" title="PlayStation 1"><img src="assets/sys/ps1.webp" alt="" width="150" height="32" style="width:150px;height:32px" loading="lazy" decoding="async"></li><li class="tile" title="PSP"><img src="assets/sys/psp.webp" alt="" width="136" height="44" style="width:136px;height:44px" loading="lazy" decoding="async"></li></ul></div>
         <div class="row rev"><ul class="chips"><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">PC Engine</li><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">Atari Lynx / 2600 / 7800</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">WonderSwan</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">Neo Geo Pocket</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker 2000/2003</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker XP/VX/Ace</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker MV/MZ</li><li><img src="assets/fluent3d_high_voltage.webp" alt="" width="24" height="24" loading="lazy">Flash</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Android (APK)</li><li><img src="assets/fluent3d_hot_beverage.webp" alt="" width="24" height="24" loading="lazy">Game Java (J2ME)</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Symbian / N-Gage</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">TyranoScript</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Kirikiri <small>thử nghiệm</small></li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Ren'Py</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">ONScripter</li></ul><ul class="chips" aria-hidden="true"><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">PC Engine</li><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">Atari Lynx / 2600 / 7800</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">WonderSwan</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">Neo Geo Pocket</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker 2000/2003</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker XP/VX/Ace</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker MV/MZ</li><li><img src="assets/fluent3d_high_voltage.webp" alt="" width="24" height="24" loading="lazy">Flash</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Android (APK)</li><li><img src="assets/fluent3d_hot_beverage.webp" alt="" width="24" height="24" loading="lazy">Game Java (J2ME)</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Symbian / N-Gage</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">TyranoScript</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Kirikiri <small>thử nghiệm</small></li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Ren'Py</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">ONScripter</li></ul></div>
@@ -588,6 +622,8 @@ footer a { color: var(--muted); }
         <h2 id="feat-h">Tìm, tải game, chơi, siêu đơn giản</h2>
         <p>Monika làm thay bạn những bước lằng nhằng: tải, giải nén, chọn giả lập, chỉnh phím.</p>
       </div>
+      <div class="feat-stage">
+      <div class="phone3d" id="phone3d" aria-hidden="true"><img class="poster" src="assets/fluent3d_mobile_phone.webp" alt="" width="150" height="150"><canvas class="gl gl-phone"></canvas></div>
       <div class="feats">
         <article class="feat"><img src="assets/fluent3d_newspaper.webp" alt="" width="56" height="56" loading="lazy"><h3>Bài viết AowVN trong túi</h3><p>Đọc bài Việt hóa, hướng dẫn và tin mới ngay trong app. Bật thông báo để biết khi có bài mới.</p></article>
         <article class="feat"><img src="assets/fluent3d_package.webp" alt="" width="56" height="56" loading="lazy"><h3>Tải một chạm, tự giải nén</h3><p>Bấm tải trong bài viết. Monika tự giải nén zip, rar, 7z, kể cả file có mật khẩu hay chia nhiều phần, rồi đưa game vào Thư viện.</p></article>
@@ -595,6 +631,7 @@ footer a { color: var(--muted); }
         <article class="feat"><img src="assets/fluent3d_video_game.webp" alt="" width="56" height="56" loading="lazy"><h3>Tay cầm ảo theo từng máy</h3><p>Mỗi hệ máy có bố cục phím riêng. Kéo nút đổi chỗ, đổi cỡ cho vừa tay, app nhớ cho lần sau.</p></article>
         <article class="feat"><img src="assets/fluent3d_sparkles.webp" alt="" width="56" height="56" loading="lazy"><h3>Lưu game, mã chít</h3><p>Lưu và nạp nhanh với 3 ô lưu. Có hỗ trợ chít và hỗ trợ quản lý thành tựu qua RetroAchievements.</p></article>
         <article class="feat"><img src="assets/fluent3d_toolbox.webp" alt="" width="56" height="56" loading="lazy"><h3>Tự động cài Việt hóa</h3><p>Hệ thống tự động patch các file IPS, BPS, UPS,… ngay trên máy.</p></article>
+      </div>
       </div>
     </div>
   </section>
@@ -623,6 +660,7 @@ footer a { color: var(--muted); }
   </section>
 
   <section class="block road-sec" id="lo-trinh" aria-labelledby="road-h">
+    <canvas class="gl gl-road" aria-hidden="true"></canvas>
     <div class="wrap">
       <div class="head"><span class="kicker">Lộ trình</span><h2 id="road-h">Lộ trình phát triển</h2></div>
       <ol class="road" id="road">
@@ -718,6 +756,7 @@ footer a { color: var(--muted); }
     </div>
     <button class="don-skip" type="button" data-don-close>Để sau, cảm ơn</button>
   </div>
+  <canvas class="gl gl-burst" aria-hidden="true"></canvas>
 </div>
 
 <div class="dock" id="dock" aria-hidden="true">
@@ -878,6 +917,7 @@ footer a { color: var(--muted); }
     don.classList.add("show");
     document.body.style.overflow = "hidden";
     startProgress(real !== false);
+    window.dispatchEvent(new Event("monika:don"));
     var x = don.querySelector(".don-x"); if (x) x.focus({ preventScroll: true });
   }
   function closeDon() {
@@ -999,6 +1039,64 @@ footer a { color: var(--muted); }
   if (!("IntersectionObserver" in window)) { r.classList.add("in"); return; }
   new IntersectionObserver(function (es, o) { if (es[0].isIntersecting) { r.classList.add("in"); o.disconnect(); } }, { threshold: 0.3 }).observe(r);
 })();
+</script>
+<script type="module">
+// Nạp three.js muộn: sau khi trang tải xong và trình duyệt rảnh, chỉ khi html.fx3d (máy đủ điều kiện). Mỗi cảnh chỉ dựng khi cuộn gần tới.
+var d = document.documentElement;
+if (d.classList.contains("fx3d")) {
+  var q = location.search, mobile = innerWidth < 760;
+  var run = function () {
+    import("./assets/three/fx.js").then(function (m) {
+      var near = function (el, fn) {
+        var io = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { io.disconnect(); try { fn(); } catch (e) { console.warn("three.js:", e); } } }, { rootMargin: "500px 0px" });
+        io.observe(el);
+      };
+      var onDead = function (c, fn) { c.addEventListener("fx:dead", function () { c.style.display = "none"; fn && fn(); }); };
+      var hud = /[?&]hud/.test(q) ? document.body.appendChild(Object.assign(document.createElement("div"), { className: "gl-hud" })) : null;
+      var cv = function (s) { return document.querySelector(s); };
+      // Pha 1a
+      var hero = cv(".gl-hero"); onDead(hero); m.mountHero(hero, { count: mobile ? 2400 : 6000 });
+      // Pha 1b
+      var ring = cv(".gl-ring"), sys = cv(".systems");
+      near(ring, function () {
+        var items = [["ds","Nintendo DS"],["gba","Game Boy Advance"],["gb","Game Boy"],["snes","Super Nintendo"],["nes","NES"],["sega","SEGA"],["n64","Nintendo 64"],["3ds","Nintendo 3DS"],["dc","Dreamcast"],["ps1","PlayStation"],["psp","PSP"]].map(function (x) { return { src: "assets/sys/" + x[0] + ".webp", name: x[1] }; });
+        onDead(ring, function () { sys.classList.remove("ring-on"); });
+        m.mountRing(ring, items); sys.classList.add("ring-on");
+      });
+      // Pha 2
+      var ph = cv("#phone3d"), pc = cv(".gl-phone"), feats = [].slice.call(document.querySelectorAll(".feat"));
+      near(ph, function () {
+        var screens = feats.map(function (f) { return { title: f.querySelector("h3").textContent, sub: f.querySelector("p").textContent, icon: f.querySelector("img").getAttribute("src") }; });
+        onDead(pc, function () { ph.classList.remove("live"); feats.forEach(function (f) { f.classList.remove("on"); }); });
+        var api = m.mountPhone(pc, { screens: screens, orbit: ["rocket", "joystick", "package", "sparkles", "high_voltage"].map(function (n) { return "assets/fluent3d_" + n + ".webp"; }) });
+        ph.classList.add("live");
+        var cur = -1, pick = function (i) { if (i === cur) return; cur = i; api.setScreen(i); feats.forEach(function (f, k) { f.classList.toggle("on", k === i); }); };
+        var tick = false, scan = function () {
+          tick = false; var mid = innerHeight / 2, best = 0, bd = 1e9;
+          feats.forEach(function (f, k) { var r = f.getBoundingClientRect(); var dd = Math.abs(r.top + r.height / 2 - mid); if (dd < bd) { bd = dd; best = k; } });
+          pick(best);
+        };
+        addEventListener("scroll", function () { if (!tick) { tick = true; requestAnimationFrame(scan); } }, { passive: true });
+        feats.forEach(function (f, k) { f.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") pick(k); }); });
+        scan();
+      });
+      // Pha 3a
+      var rc = cv(".gl-road");
+      near(rc, function () { onDead(rc); m.mountRoad(rc, cv("#road")); });
+      // Pha 3b
+      var bc = cv(".gl-burst"), burst = null;
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        burst = m.mountBurst(bc);
+        addEventListener("monika:don", function () { burst.play(); });
+        document.addEventListener("keydown", function (e) { if (e.key === "Escape") burst.stop(); });
+        document.querySelectorAll("[data-don-close]").forEach(function (b) { b.addEventListener("click", function () { burst.stop(); }); });
+      }
+      if (hud) setInterval(function () { hud.textContent = ["hero", "ring", "phone", "road"].map(function (n, i) { var c = [hero, ring, pc, rc][i]; return n + " " + (c.dataset.fps || "-"); }).join(" | ") + " fps"; }, 700);
+    }).catch(function (e) { console.warn("three.js không nạp được, giữ giao diện CSS:", e); });
+  };
+  var start = function () { (window.requestIdleCallback || function (f) { setTimeout(f, 300); })(run, { timeout: 4000 }); };
+  if (document.readyState === "complete") start(); else addEventListener("load", start);
+}
 </script>
 </body>
 </html>
