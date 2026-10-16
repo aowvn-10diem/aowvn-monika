@@ -20,8 +20,8 @@
 <link rel="dns-prefetch" href="https://www.aow.vn">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" type="image/webp" href="assets/mock-fold.webp" fetchpriority="high">
-<link rel="preload" as="image" type="image/webp" href="assets/mock-tilt.webp" fetchpriority="high">
+<link rel="preload" as="image" type="image/avif" imagesrcset="assets/m/fold-480.avif 480w, assets/m/fold-960.avif 960w" imagesizes="(max-width: 900px) min(92vw, 420px), 480px" fetchpriority="high">
+<link rel="preload" as="image" type="image/avif" imagesrcset="assets/m/tilt-380.avif 380w, assets/m/tilt-760.avif 760w" imagesizes="(max-width: 900px) min(74vw, 340px), 380px">
 <script>document.documentElement.classList.add("js")</script>
 <!-- Font nạp không chặn hiển thị: chữ hiện ngay bằng font hệ thống, đổi sang Manrope khi tải xong -->
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
@@ -149,7 +149,9 @@ html:not(.js) .slide:not(:first-child), html:not(.js) .vis:not(:first-child), ht
 .m { position: absolute; height: auto; filter: drop-shadow(0 26px 28px rgba(0, 0, 0, .5)); will-change: transform; }
 .m-tilt { width: 74%; right: 0; top: 0; z-index: 1; }
 .m-fold { width: 92%; left: 0; bottom: 3%; z-index: 2; }
-.m-land { width: 100%; left: 0; top: 50%; translate: 0 -50%; }
+.m-land { width: 80%; left: 0; top: 38%; z-index: 1; }
+.m-nokia { width: 36%; right: 2%; top: 3%; z-index: 2; }
+.vis[data-i="2"] .t3 { top: 21%; right: auto; left: 7%; }
 .emo { position: absolute; width: 76px; height: 76px; z-index: 4; filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .4)); }
 .e1 { top: 4%; left: 6%; }
 .e2 { bottom: 0; right: 2%; width: 88px; height: 88px; }
@@ -413,33 +415,35 @@ footer a { color: var(--muted); }
       <div class="stage" id="stage" aria-hidden="true">
         <div class="blob"></div>
         <div class="vis on" data-i="0">
-          <img class="m m-tilt fl" src="assets/mock-tilt.webp" alt="" width="760" height="639" loading="eager" decoding="async">
-          <img class="m m-fold fl b" src="assets/mock-fold.webp" alt="" width="900" height="630" loading="eager" decoding="async">
+          <picture><source type="image/avif" srcset="assets/m/tilt-380.avif 380w, assets/m/tilt-760.avif 760w" sizes="(max-width: 900px) min(74vw, 340px), 380px"><img class="m m-tilt fl" src="assets/m/tilt-380.webp" srcset="assets/m/tilt-380.webp 380w, assets/m/tilt-760.webp 760w" sizes="(max-width: 900px) min(74vw, 340px), 380px" alt="" width="380" height="320" decoding="async"></picture>
+          <picture><source type="image/avif" srcset="assets/m/fold-480.avif 480w, assets/m/fold-960.avif 960w" sizes="(max-width: 900px) min(92vw, 420px), 480px"><img class="m m-fold fl b" src="assets/m/fold-480.webp" srcset="assets/m/fold-480.webp 480w, assets/m/fold-960.webp 960w" sizes="(max-width: 900px) min(92vw, 420px), 480px" alt="" width="480" height="336" decoding="async" fetchpriority="high"></picture>
           <img class="emo e1 fl c" src="assets/fluent3d_video_game.webp" alt="" width="76" height="76">
           <img class="emo e2 fl d" src="assets/fluent3d_joystick.webp" alt="" width="88" height="88">
         </div>
         <div class="vis" data-i="1">
           <div class="loop">
             <svg viewBox="0 0 400 400" focusable="false"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8A3D"/><stop offset=".55" stop-color="#FF4F8B"/><stop offset="1" stop-color="#8B5CF6"/></linearGradient></defs><circle class="spin" cx="200" cy="200" r="140" fill="none" stroke="url(#lg)" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 13"/></svg>
-            <img class="core fl" src="assets/fluent3d_robot.webp" alt="" width="256" height="256" loading="lazy" decoding="async">
-            <div class="node n1 fl b"><img src="assets/fluent3d_lady_beetle.webp" alt="" width="76" height="76" loading="lazy" decoding="async"><span>Ghi nhận lỗi, crash</span></div>
-            <div class="node n2 fl c"><img src="assets/fluent3d_wrench.webp" alt="" width="76" height="76" loading="lazy" decoding="async"><span>Agent tự sửa</span></div>
-            <div class="node n3 fl d"><img src="assets/fluent3d_rocket.webp" alt="" width="76" height="76" loading="lazy" decoding="async"><span>Có ngay ở bản sau</span></div>
-            <div class="node n4 fl"><img src="assets/fluent3d_compass.webp" alt="" width="56" height="56" loading="lazy" decoding="async"><span>Con người chỉ đạo</span></div>
+            <img class="core fl" data-src="assets/fluent3d_robot.webp" alt="" width="256" height="256" decoding="async">
+            <div class="node n1 fl b"><img data-src="assets/fluent3d_lady_beetle.webp" alt="" width="76" height="76" decoding="async"><span>Ghi nhận lỗi, crash</span></div>
+            <div class="node n2 fl c"><img data-src="assets/fluent3d_wrench.webp" alt="" width="76" height="76" decoding="async"><span>Agent tự sửa</span></div>
+            <div class="node n3 fl d"><img data-src="assets/fluent3d_rocket.webp" alt="" width="76" height="76" decoding="async"><span>Có ngay ở bản sau</span></div>
+            <div class="node n4 fl"><img data-src="assets/fluent3d_compass.webp" alt="" width="56" height="56" decoding="async"><span>Con người chỉ đạo</span></div>
           </div>
         </div>
         <div class="vis" data-i="2">
-          <img class="m m-land fl" src="assets/mock-land.webp" alt="" width="900" height="471" loading="lazy" decoding="async">
-          <div class="tag t1 fl b"><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="30" height="30" loading="lazy">Tự bổ sung thư viện, API</div>
-          <div class="tag t2 fl c"><img src="assets/fluent3d_mobile_phone.webp" alt="" width="30" height="30" loading="lazy">Android ảo tích hợp sẵn</div>
-          <div class="tag t3 fl d"><img src="assets/fluent3d_mantelpiece_clock.webp" alt="" width="30" height="30" loading="lazy">Game cũ vẫn chạy</div>
+          <picture><source type="image/avif" data-srcset="assets/m/land-400.avif 400w, assets/m/land-800.avif 800w" sizes="(max-width: 900px) min(80vw, 368px), 416px"><img class="m m-land fl" data-src="assets/m/land-400.webp" data-srcset="assets/m/land-400.webp 400w, assets/m/land-800.webp 800w" sizes="(max-width: 900px) min(80vw, 368px), 416px" alt="" width="400" height="210" decoding="async"></picture>
+          <picture><source type="image/avif" data-srcset="assets/m/nokia-200.avif 200w, assets/m/nokia-400.avif 400w" sizes="(max-width: 900px) min(36vw, 166px), 190px"><img class="m m-nokia fl b" data-src="assets/m/nokia-200.webp" data-srcset="assets/m/nokia-200.webp 200w, assets/m/nokia-400.webp 400w" sizes="(max-width: 900px) min(36vw, 166px), 190px" alt="" width="200" height="465" decoding="async"></picture>
+          <div class="tag t1 fl b"><img data-src="assets/fluent3d_puzzle_piece.webp" alt="" width="30" height="30">Tự bổ sung thư viện, API</div>
+          <div class="tag t3 fl d"><img data-src="assets/fluent3d_mantelpiece_clock.webp" alt="" width="30" height="30">Game cũ vẫn chạy</div>
+          <div class="tag t2 fl c"><img data-src="assets/fluent3d_mobile_phone.webp" alt="" width="30" height="30">Android ảo tích hợp sẵn</div>
+          <div class="tag t4 fl"><img data-src="assets/fluent3d_hot_beverage.webp" alt="" width="30" height="30">Cả game Java đời đầu</div>
         </div>
         <div class="vis" data-i="3">
-          <img class="brandmark fl" src="assets/icon-192.png" alt="" width="192" height="192" loading="lazy" decoding="async">
-          <div class="tag t1 fl b"><img src="assets/fluent3d_high_voltage.webp" alt="" width="30" height="30" loading="lazy">Hiệu suất cao</div>
-          <div class="tag t3 fl c"><img src="assets/fluent3d_dna.webp" alt="" width="30" height="30" loading="lazy">Engine mới</div>
-          <div class="tag t4 fl d"><img src="assets/fluent3d_stopwatch.webp" alt="" width="30" height="30" loading="lazy">Tối ưu theo giờ</div>
-          <div class="tag t2 fl"><img src="assets/fluent3d_telescope.webp" alt="" width="30" height="30" loading="lazy">Sẵn sàng cho tương lai</div>
+          <img class="brandmark fl" data-src="assets/icon-192.webp" alt="" width="192" height="192" decoding="async">
+          <div class="tag t1 fl b"><img data-src="assets/fluent3d_high_voltage.webp" alt="" width="30" height="30">Hiệu suất cao</div>
+          <div class="tag t3 fl c"><img data-src="assets/fluent3d_dna.webp" alt="" width="30" height="30">Engine mới</div>
+          <div class="tag t4 fl d"><img data-src="assets/fluent3d_stopwatch.webp" alt="" width="30" height="30">Tối ưu theo giờ</div>
+          <div class="tag t2 fl"><img data-src="assets/fluent3d_telescope.webp" alt="" width="30" height="30">Sẵn sàng cho tương lai</div>
         </div>
       </div>
     </div>
@@ -451,7 +455,7 @@ footer a { color: var(--muted); }
       <h2 id="sys-h">30 hệ máy, chơi ngay trong một app</h2>
       <p class="sub">Monika tự động nhận diện game và cài đặt lõi giả lập tương ứng, bạn chỉ việc tải game về, app sẽ lo phần còn lại.</p>
       <div class="flow" aria-label="Danh sách hệ máy được hỗ trợ">
-        <div class="row"><ul class="chips"><li class="tile" title="Nintendo DS"><img src="assets/sys/ds.webp" alt="Nintendo DS" width="150" height="19" style="width:150px;height:19px" decoding="async"></li><li class="tile" title="Game Boy Advance"><img src="assets/sys/gba.webp" alt="Game Boy Advance" width="150" height="19" style="width:150px;height:19px" decoding="async"></li><li class="tile" title="Game Boy / Color"><img src="assets/sys/gb.webp" alt="Game Boy / Color" width="150" height="28" style="width:150px;height:28px" decoding="async"></li><li class="tile" title="Super Nintendo"><img src="assets/sys/snes.webp" alt="Super Nintendo" width="150" height="41" style="width:150px;height:41px" decoding="async"></li><li class="tile" title="NES / Famicom"><img src="assets/sys/nes.webp" alt="NES / Famicom" width="89" height="44" style="width:89px;height:44px" decoding="async"></li><li class="tile" title="SEGA Mega Drive, Master System, Game Gear"><img src="assets/sys/sega.webp" alt="SEGA Mega Drive, Master System, Game Gear" width="144" height="44" style="width:144px;height:44px" decoding="async"></li><li class="tile" title="Nintendo 64"><img src="assets/sys/n64.webp" alt="Nintendo 64" width="150" height="34" style="width:150px;height:34px" decoding="async"></li><li class="tile" title="Nintendo 3DS"><img src="assets/sys/3ds.webp" alt="Nintendo 3DS" width="150" height="30" style="width:150px;height:30px" decoding="async"></li><li class="tile" title="Dreamcast"><img src="assets/sys/dc.webp" alt="Dreamcast" width="150" height="27" style="width:150px;height:27px" decoding="async"></li><li class="tile" title="PlayStation 1"><img src="assets/sys/ps1.webp" alt="PlayStation 1" width="150" height="32" style="width:150px;height:32px" decoding="async"></li><li class="tile" title="PSP"><img src="assets/sys/psp.webp" alt="PSP" width="136" height="44" style="width:136px;height:44px" decoding="async"></li></ul><ul class="chips" aria-hidden="true"><li class="tile" title="Nintendo DS"><img src="assets/sys/ds.webp" alt="" width="150" height="19" style="width:150px;height:19px" decoding="async"></li><li class="tile" title="Game Boy Advance"><img src="assets/sys/gba.webp" alt="" width="150" height="19" style="width:150px;height:19px" decoding="async"></li><li class="tile" title="Game Boy / Color"><img src="assets/sys/gb.webp" alt="" width="150" height="28" style="width:150px;height:28px" decoding="async"></li><li class="tile" title="Super Nintendo"><img src="assets/sys/snes.webp" alt="" width="150" height="41" style="width:150px;height:41px" decoding="async"></li><li class="tile" title="NES / Famicom"><img src="assets/sys/nes.webp" alt="" width="89" height="44" style="width:89px;height:44px" decoding="async"></li><li class="tile" title="SEGA Mega Drive, Master System, Game Gear"><img src="assets/sys/sega.webp" alt="" width="144" height="44" style="width:144px;height:44px" decoding="async"></li><li class="tile" title="Nintendo 64"><img src="assets/sys/n64.webp" alt="" width="150" height="34" style="width:150px;height:34px" decoding="async"></li><li class="tile" title="Nintendo 3DS"><img src="assets/sys/3ds.webp" alt="" width="150" height="30" style="width:150px;height:30px" decoding="async"></li><li class="tile" title="Dreamcast"><img src="assets/sys/dc.webp" alt="" width="150" height="27" style="width:150px;height:27px" decoding="async"></li><li class="tile" title="PlayStation 1"><img src="assets/sys/ps1.webp" alt="" width="150" height="32" style="width:150px;height:32px" decoding="async"></li><li class="tile" title="PSP"><img src="assets/sys/psp.webp" alt="" width="136" height="44" style="width:136px;height:44px" decoding="async"></li></ul></div>
+        <div class="row"><ul class="chips"><li class="tile" title="Nintendo DS"><img src="assets/sys/ds.webp" alt="Nintendo DS" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy Advance"><img src="assets/sys/gba.webp" alt="Game Boy Advance" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy / Color"><img src="assets/sys/gb.webp" alt="Game Boy / Color" width="150" height="28" style="width:150px;height:28px" loading="lazy" decoding="async"></li><li class="tile" title="Super Nintendo"><img src="assets/sys/snes.webp" alt="Super Nintendo" width="150" height="41" style="width:150px;height:41px" loading="lazy" decoding="async"></li><li class="tile" title="NES / Famicom"><img src="assets/sys/nes.webp" alt="NES / Famicom" width="89" height="44" style="width:89px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="SEGA Mega Drive, Master System, Game Gear"><img src="assets/sys/sega.webp" alt="SEGA Mega Drive, Master System, Game Gear" width="144" height="44" style="width:144px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 64"><img src="assets/sys/n64.webp" alt="Nintendo 64" width="150" height="34" style="width:150px;height:34px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 3DS"><img src="assets/sys/3ds.webp" alt="Nintendo 3DS" width="150" height="30" style="width:150px;height:30px" loading="lazy" decoding="async"></li><li class="tile" title="Dreamcast"><img src="assets/sys/dc.webp" alt="Dreamcast" width="150" height="27" style="width:150px;height:27px" loading="lazy" decoding="async"></li><li class="tile" title="PlayStation 1"><img src="assets/sys/ps1.webp" alt="PlayStation 1" width="150" height="32" style="width:150px;height:32px" loading="lazy" decoding="async"></li><li class="tile" title="PSP"><img src="assets/sys/psp.webp" alt="PSP" width="136" height="44" style="width:136px;height:44px" loading="lazy" decoding="async"></li></ul><ul class="chips" aria-hidden="true"><li class="tile" title="Nintendo DS"><img src="assets/sys/ds.webp" alt="" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy Advance"><img src="assets/sys/gba.webp" alt="" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy / Color"><img src="assets/sys/gb.webp" alt="" width="150" height="28" style="width:150px;height:28px" loading="lazy" decoding="async"></li><li class="tile" title="Super Nintendo"><img src="assets/sys/snes.webp" alt="" width="150" height="41" style="width:150px;height:41px" loading="lazy" decoding="async"></li><li class="tile" title="NES / Famicom"><img src="assets/sys/nes.webp" alt="" width="89" height="44" style="width:89px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="SEGA Mega Drive, Master System, Game Gear"><img src="assets/sys/sega.webp" alt="" width="144" height="44" style="width:144px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 64"><img src="assets/sys/n64.webp" alt="" width="150" height="34" style="width:150px;height:34px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 3DS"><img src="assets/sys/3ds.webp" alt="" width="150" height="30" style="width:150px;height:30px" loading="lazy" decoding="async"></li><li class="tile" title="Dreamcast"><img src="assets/sys/dc.webp" alt="" width="150" height="27" style="width:150px;height:27px" loading="lazy" decoding="async"></li><li class="tile" title="PlayStation 1"><img src="assets/sys/ps1.webp" alt="" width="150" height="32" style="width:150px;height:32px" loading="lazy" decoding="async"></li><li class="tile" title="PSP"><img src="assets/sys/psp.webp" alt="" width="136" height="44" style="width:136px;height:44px" loading="lazy" decoding="async"></li></ul></div>
         <div class="row rev"><ul class="chips"><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">PC Engine</li><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">Atari Lynx / 2600 / 7800</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">WonderSwan</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">Neo Geo Pocket</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker 2000/2003</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker XP/VX/Ace</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker MV/MZ</li><li><img src="assets/fluent3d_high_voltage.webp" alt="" width="24" height="24" loading="lazy">Flash</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Android (APK)</li><li><img src="assets/fluent3d_hot_beverage.webp" alt="" width="24" height="24" loading="lazy">Game Java (J2ME)</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Symbian / N-Gage</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">TyranoScript</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Kirikiri <small>thử nghiệm</small></li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Ren'Py</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">ONScripter</li></ul><ul class="chips" aria-hidden="true"><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">PC Engine</li><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">Atari Lynx / 2600 / 7800</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">WonderSwan</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">Neo Geo Pocket</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker 2000/2003</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker XP/VX/Ace</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker MV/MZ</li><li><img src="assets/fluent3d_high_voltage.webp" alt="" width="24" height="24" loading="lazy">Flash</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Android (APK)</li><li><img src="assets/fluent3d_hot_beverage.webp" alt="" width="24" height="24" loading="lazy">Game Java (J2ME)</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Symbian / N-Gage</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">TyranoScript</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Kirikiri <small>thử nghiệm</small></li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Ren'Py</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">ONScripter</li></ul></div>
       </div>
     </div>
@@ -568,7 +572,7 @@ footer a { color: var(--muted); }
 </div>
 
 <div class="dock" id="dock" aria-hidden="true">
-  <img src="assets/icon-192.png" alt="" width="40" height="40">
+  <img src="assets/icon-192.webp" alt="" width="40" height="40">
   <div class="t"><b>AowVN Monika</b><span><span data-ver>v0.7.4</span> · <span data-size>18,2 MB</span> · miễn phí</span></div>
   <a class="btn btn-main" data-apk tabindex="-1" href="https://github.com/aowvn-10diem/aowvn-monika/releases">Tải app</a>
 </div>
@@ -757,6 +761,15 @@ footer a { color: var(--muted); }
   var slides = [].slice.call(document.querySelectorAll(".slide")), vis = [].slice.call(document.querySelectorAll(".vis"));
   var dotsBox = document.getElementById("dots"), dots = [].slice.call(dotsBox ? dotsBox.querySelectorAll("button") : []);
   var n = slides.length; if (!n || n !== vis.length) return;
+  // Ảnh của trang 2-4 chỉ nạp sau khi trang chính đã xong (hoặc ngay khi người dùng chuyển tới trang đó)
+  function hydrate(el) {
+    [].slice.call(el.querySelectorAll("[data-src],[data-srcset]")).forEach(function (x) {
+      ["srcset", "src"].forEach(function (a) { var v = x.getAttribute("data-" + a); if (v) { x.setAttribute(a, v); x.removeAttribute("data-" + a); } });
+    });
+  }
+  function hydrateAll() { vis.forEach(hydrate); }
+  if (document.readyState === "complete") setTimeout(hydrateAll, 800);
+  else window.addEventListener("load", function () { (window.requestIdleCallback || function (f) { setTimeout(f, 1200); })(hydrateAll); });
   var DUR = 7000, cur = 0, timer = 0, holdMouse = false, holdFocus = false, offscreen = false;
   var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   dotsBox.style.setProperty("--dur", DUR + "ms");
@@ -770,6 +783,7 @@ footer a { color: var(--muted); }
       if (on) { el.removeAttribute("inert"); el.removeAttribute("aria-hidden"); } else { el.setAttribute("inert", ""); el.setAttribute("aria-hidden", "true"); }
       if (dots[k]) { if (on) dots[k].setAttribute("aria-current", "true"); else dots[k].removeAttribute("aria-current"); }
     });
+    hydrate(vis[i]); hydrate(vis[(i + 1) % n]);
     cur = i; restartBar(); arm();
   }
   dots.forEach(function (b, k) { b.addEventListener("click", function () { show(k, true); }); });
