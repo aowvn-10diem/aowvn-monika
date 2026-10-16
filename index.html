@@ -882,18 +882,24 @@ footer a { color: var(--muted); }
     return "https://dl.vietqr.io/pay?app=" + encodeURIComponent(appId) + "&ba=" + DON.acc + "@" + DON.code + "&am=" + amt + "&tn=" + plus(DON.memo) + "&bn=" + plus(DON.name) + "&url=" + encodeURIComponent(DON.ret);
   }
   // Số tiền tùy chọn: 1.000đ đến 500.000.000đ. Hợp lệ thì cập nhật liên kết ngân hàng (điện thoại) và đổi mã QR sang mã có sẵn số tiền (VietQR).
-  var AMT_MIN = 1000, AMT_MAX = 500000000, donQr = document.getElementById("don-qr"), STATIC_QR = donQr.getAttribute("data-src"), qrTimer = 0;
+  var lastChip = 100000, AMT_MIN = 1000, AMT_MAX = 500000000, donQr = document.getElementById("don-qr"), STATIC_QR = donQr.getAttribute("data-src"), qrTimer = 0;
   function qrFor(n) { return "https://img.vietqr.io/image/" + DON.code + "-" + DON.acc + "-compact2.png?amount=" + n + "&addInfo=" + encodeURIComponent(DON.memo) + "&accountName=" + encodeURIComponent(DON.name); }
   function setQr(n) { clearTimeout(qrTimer); qrTimer = setTimeout(function () { donQr.src = n ? qrFor(n) : STATIC_QR; }, 350); }
   donQr.addEventListener("error", function () { if (donQr.getAttribute("src") !== STATIC_QR) donQr.src = STATIC_QR; });
   function hints(msg, bad) { document.querySelectorAll(".don-amt-hint").forEach(function (h) { h.textContent = msg || ""; h.classList.toggle("bad", !!bad); }); }
+  // Ô trống hoặc số không hợp lệ: quay về số tiền của nút đã chọn gần nhất, để liên kết ngân hàng không giữ số cũ khác với mã QR
+  function useChip() {
+    amt = lastChip;
+    document.querySelectorAll("#don-amounts button[data-amt]").forEach(function (b) { b.setAttribute("aria-pressed", String(Number(b.dataset.amt) === lastChip)); });
+    if (donBanks) donBanks.querySelectorAll("a").forEach(function (l) { l.href = deeplink(l.dataset.app); });
+  }
   function resetCustom() { document.querySelectorAll(".don-amt-in").forEach(function (i) { i.value = ""; }); hints(""); setQr(0); }
   document.addEventListener("input", function (e) {
     var inp = e.target; if (!inp.classList || !inp.classList.contains("don-amt-in")) return;
     var raw = inp.value.replace(/\D/g, "").slice(0, 9), n = raw ? Number(raw) : 0, txt = raw ? n.toLocaleString("vi-VN") : "";
     document.querySelectorAll(".don-amt-in").forEach(function (i) { i.value = txt; });
-    if (!raw) { hints(""); setQr(0); return; }
-    if (n < AMT_MIN || n > AMT_MAX) { hints("Nhập từ 1.000đ đến 500.000.000đ", true); setQr(0); return; }
+    if (!raw) { hints(""); useChip(); setQr(0); return; }
+    if (n < AMT_MIN || n > AMT_MAX) { useChip(); hints("Nhập từ 1.000đ đến 500.000.000đ (đang dùng " + lastChip.toLocaleString("vi-VN") + "đ)", true); setQr(0); return; }
     amt = n;
     document.querySelectorAll("#don-amounts button").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
     if (donBanks) donBanks.querySelectorAll("a").forEach(function (l) { l.href = deeplink(l.dataset.app); });
@@ -1026,7 +1032,7 @@ footer a { color: var(--muted); }
     }
     var am = t.closest && t.closest("[data-amt]");
     if (am) {
-      amt = Number(am.dataset.amt);
+      amt = Number(am.dataset.amt); lastChip = amt;
       resetCustom();
       document.querySelectorAll("#don-amounts button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === am)); });
       donBanks.querySelectorAll("a").forEach(function (l) { l.href = deeplink(l.dataset.app); });
