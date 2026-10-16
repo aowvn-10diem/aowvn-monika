@@ -164,7 +164,7 @@ html:not(.js) .slide:not(:first-child), html:not(.js) .vis:not(:first-child), ht
 .node { position: absolute; translate: -50% -50%; display: grid; justify-items: center; gap: 6px; }
 .node img { width: 76px; height: 76px; filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .4)); }
 .node span { font-size: 13.5px; font-weight: 800; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
-.n1 { left: 50%; top: 15%; } .n2 { left: 80%; top: 68%; } .n3 { left: 20%; top: 68%; } .n4 { left: 86%; top: 14%; }
+.n1 { left: 50%; top: 15%; } .n2 { left: 80%; top: 68%; } .n3 { left: 20%; top: 68%; } .n4 { left: 82%; top: 11%; }
 .n4 img { width: 56px; height: 56px; }
 /* Biểu tượng Monika ở giữa, quanh có các nhãn */
 .brandmark { position: absolute; left: 50%; top: 50%; width: 34%; aspect-ratio: 1; translate: -50% -50%; border-radius: 24%; box-shadow: 0 0 0 10px color-mix(in srgb, var(--g2) 14%, transparent), 0 0 80px 10px color-mix(in srgb, var(--g3) 40%, transparent), var(--shadow); }
@@ -192,9 +192,8 @@ html:not(.js) .slide:not(:first-child), html:not(.js) .vis:not(:first-child), ht
 .chips li { list-style: none; border: 1px solid var(--night-line); border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 15px; display: inline-flex; gap: 8px; align-items: center; }
 .chips li small { color: var(--night-muted); font-weight: 600; font-size: 12.5px; }
 .chips li img { width: 24px; height: 24px; flex: none; }
-.chips li.tile { border: 0; border-radius: 18px; background: #fff; color: #24211F; flex-direction: column; justify-content: center; align-items: center; gap: 8px; width: 182px; height: 112px; padding: 12px 14px 10px; }
-.chips li.tile img { width: auto; height: auto; max-width: 130px; max-height: 46px; }
-.chips li.tile span { font-size: 11.5px; font-weight: 800; color: #6B645D; text-align: center; line-height: 1.25; white-space: normal; min-height: 2.5em; display: flex; align-items: center; }
+.chips li.tile { flex: none; border: 0; border-radius: 0; background: none; padding: 0 22px; height: 64px; justify-content: center; }
+.chips li.tile img { flex: none; max-width: none; }
 .chips { margin: 0; padding: 0; }
 .flow { display: grid; gap: 12px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
 .flow .row { display: flex; width: max-content; animation: flow 70s linear infinite; }
@@ -264,6 +263,24 @@ footer a { color: var(--muted); }
 /* Cửa sổ ủng hộ (hiện mỗi lần bấm tải) */
 .don { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(15, 12, 10, .6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .don[hidden] { display: none; }
+.don { opacity: 0; transition: opacity .3s ease; }
+.don.show { opacity: 1; }
+.don-card { opacity: 0; translate: 0 28px; scale: .96; transition: translate .5s cubic-bezier(.2, .9, .25, 1.04), scale .5s cubic-bezier(.2, .9, .25, 1.04), opacity .3s ease; }
+.don.show .don-card { opacity: 1; translate: 0 0; scale: 1; }
+.don-dl { display: grid; gap: 9px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); }
+.don-dl-head { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16px; }
+.don-dl-head svg { width: 22px; height: 22px; flex: none; color: var(--g2); }
+.don-dl-head span { margin-left: auto; color: var(--muted); font-weight: 700; font-size: 14px; white-space: nowrap; }
+.don-bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.don-bar i { display: block; height: 100%; border-radius: inherit; transform: scaleX(0); transform-origin: left; background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)); position: relative; overflow: hidden; }
+.don-bar i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .5), transparent); translate: -100% 0; animation: shim 1.4s ease-in-out infinite; }
+.don-dl small { color: var(--muted); font-size: 12.5px; font-weight: 600; line-height: 1.4; }
+.don-dl.nodl .don-bar { display: none; }
+@keyframes shim { to { translate: 100% 0; } }
+@keyframes dlbob { 0%, 100% { translate: 0 0; } 50% { translate: 0 3px; } }
+.don-dl-head svg { animation: dlbob 1.1s ease-in-out infinite; }
+.don-dl.nodl .don-dl-head svg { animation: none; }
+@media (prefers-reduced-motion: reduce) { .don, .don-card { transition: none; } .don-bar i::after, .don-dl-head svg { animation: none; } }
 .don-card { position: relative; width: min(760px, 100%); max-height: calc(100dvh - 32px); overflow: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 26px; padding: 28px; box-shadow: var(--shadow); display: grid; gap: 18px; }
 .don-x { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--chip); color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; font-family: inherit; }
 .don-card h2 { font-size: clamp(22px, 3.4vw, 30px); font-weight: 800; padding-right: 40px; }
@@ -288,7 +305,7 @@ footer a { color: var(--muted); }
 .don-skip { justify-self: center; border: 0; background: none; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; padding: 6px 12px; }
 @media (max-width: 620px) {
   .don { align-items: end; padding: 0; }
-  .don-card { border-radius: 24px 24px 0 0; max-height: 92dvh; padding: 22px 18px calc(18px + env(safe-area-inset-bottom, 0px)); }
+  .don-card { translate: 0 100%; scale: 1; border-radius: 24px 24px 0 0; max-height: 92dvh; padding: 22px 18px calc(18px + env(safe-area-inset-bottom, 0px)); }
   .don-body { grid-template-columns: 1fr; }
   .don-qr { width: 190px; justify-self: center; }
 }
@@ -408,7 +425,7 @@ footer a { color: var(--muted); }
             <div class="node n1 fl b"><img src="assets/fluent3d_lady_beetle.webp" alt="" width="76" height="76" loading="lazy" decoding="async"><span>Ghi nhận lỗi, crash</span></div>
             <div class="node n2 fl c"><img src="assets/fluent3d_wrench.webp" alt="" width="76" height="76" loading="lazy" decoding="async"><span>Agent tự sửa</span></div>
             <div class="node n3 fl d"><img src="assets/fluent3d_rocket.webp" alt="" width="76" height="76" loading="lazy" decoding="async"><span>Có ngay ở bản sau</span></div>
-            <div class="node n4 fl"><img src="assets/fluent3d_compass.webp" alt="" width="56" height="56" loading="lazy" decoding="async"><span>Bạn chỉ đạo</span></div>
+            <div class="node n4 fl"><img src="assets/fluent3d_compass.webp" alt="" width="56" height="56" loading="lazy" decoding="async"><span>Con người chỉ đạo</span></div>
           </div>
         </div>
         <div class="vis" data-i="2">
@@ -434,7 +451,7 @@ footer a { color: var(--muted); }
       <h2 id="sys-h">30 hệ máy, chơi ngay trong một app</h2>
       <p class="sub">Monika tự động nhận diện game và cài đặt lõi giả lập tương ứng, bạn chỉ việc tải game về, app sẽ lo phần còn lại.</p>
       <div class="flow" aria-label="Danh sách hệ máy được hỗ trợ">
-        <div class="row"><ul class="chips"><li class="tile"><img src="assets/sys/ds.webp" alt="Nintendo DS" loading="lazy" decoding="async"><span>Nintendo DS</span></li><li class="tile"><img src="assets/sys/gba.webp" alt="Game Boy Advance" loading="lazy" decoding="async"><span>Game Boy Advance</span></li><li class="tile"><img src="assets/sys/gb.webp" alt="Game Boy / Color" loading="lazy" decoding="async"><span>Game Boy / Color</span></li><li class="tile"><img src="assets/sys/snes.webp" alt="Super Nintendo" loading="lazy" decoding="async"><span>Super Nintendo</span></li><li class="tile"><img src="assets/sys/nes.webp" alt="NES / Famicom" loading="lazy" decoding="async"><span>NES / Famicom</span></li><li class="tile"><img src="assets/sys/sega.webp" alt="SEGA" loading="lazy" decoding="async"><span>Mega Drive · Master System · Game Gear</span></li><li class="tile"><img src="assets/sys/n64.webp" alt="Nintendo 64" loading="lazy" decoding="async"><span>Nintendo 64</span></li><li class="tile"><img src="assets/sys/3ds.webp" alt="Nintendo 3DS" loading="lazy" decoding="async"><span>Nintendo 3DS</span></li><li class="tile"><img src="assets/sys/dc.webp" alt="Dreamcast" loading="lazy" decoding="async"><span>Dreamcast</span></li><li class="tile"><img src="assets/sys/ps1.webp" alt="PlayStation 1" loading="lazy" decoding="async"><span>PlayStation 1</span></li><li class="tile"><img src="assets/sys/psp.webp" alt="PSP" loading="lazy" decoding="async"><span>PSP</span></li></ul><ul class="chips" aria-hidden="true"><li class="tile"><img src="assets/sys/ds.webp" alt="" loading="lazy" decoding="async"><span>Nintendo DS</span></li><li class="tile"><img src="assets/sys/gba.webp" alt="" loading="lazy" decoding="async"><span>Game Boy Advance</span></li><li class="tile"><img src="assets/sys/gb.webp" alt="" loading="lazy" decoding="async"><span>Game Boy / Color</span></li><li class="tile"><img src="assets/sys/snes.webp" alt="" loading="lazy" decoding="async"><span>Super Nintendo</span></li><li class="tile"><img src="assets/sys/nes.webp" alt="" loading="lazy" decoding="async"><span>NES / Famicom</span></li><li class="tile"><img src="assets/sys/sega.webp" alt="" loading="lazy" decoding="async"><span>Mega Drive · Master System · Game Gear</span></li><li class="tile"><img src="assets/sys/n64.webp" alt="" loading="lazy" decoding="async"><span>Nintendo 64</span></li><li class="tile"><img src="assets/sys/3ds.webp" alt="" loading="lazy" decoding="async"><span>Nintendo 3DS</span></li><li class="tile"><img src="assets/sys/dc.webp" alt="" loading="lazy" decoding="async"><span>Dreamcast</span></li><li class="tile"><img src="assets/sys/ps1.webp" alt="" loading="lazy" decoding="async"><span>PlayStation 1</span></li><li class="tile"><img src="assets/sys/psp.webp" alt="" loading="lazy" decoding="async"><span>PSP</span></li></ul></div>
+        <div class="row"><ul class="chips"><li class="tile" title="Nintendo DS"><img src="assets/sys/ds.webp" alt="Nintendo DS" width="150" height="19" style="width:150px;height:19px" decoding="async"></li><li class="tile" title="Game Boy Advance"><img src="assets/sys/gba.webp" alt="Game Boy Advance" width="150" height="19" style="width:150px;height:19px" decoding="async"></li><li class="tile" title="Game Boy / Color"><img src="assets/sys/gb.webp" alt="Game Boy / Color" width="150" height="28" style="width:150px;height:28px" decoding="async"></li><li class="tile" title="Super Nintendo"><img src="assets/sys/snes.webp" alt="Super Nintendo" width="150" height="41" style="width:150px;height:41px" decoding="async"></li><li class="tile" title="NES / Famicom"><img src="assets/sys/nes.webp" alt="NES / Famicom" width="89" height="44" style="width:89px;height:44px" decoding="async"></li><li class="tile" title="SEGA Mega Drive, Master System, Game Gear"><img src="assets/sys/sega.webp" alt="SEGA Mega Drive, Master System, Game Gear" width="144" height="44" style="width:144px;height:44px" decoding="async"></li><li class="tile" title="Nintendo 64"><img src="assets/sys/n64.webp" alt="Nintendo 64" width="150" height="34" style="width:150px;height:34px" decoding="async"></li><li class="tile" title="Nintendo 3DS"><img src="assets/sys/3ds.webp" alt="Nintendo 3DS" width="150" height="30" style="width:150px;height:30px" decoding="async"></li><li class="tile" title="Dreamcast"><img src="assets/sys/dc.webp" alt="Dreamcast" width="150" height="27" style="width:150px;height:27px" decoding="async"></li><li class="tile" title="PlayStation 1"><img src="assets/sys/ps1.webp" alt="PlayStation 1" width="150" height="32" style="width:150px;height:32px" decoding="async"></li><li class="tile" title="PSP"><img src="assets/sys/psp.webp" alt="PSP" width="136" height="44" style="width:136px;height:44px" decoding="async"></li></ul><ul class="chips" aria-hidden="true"><li class="tile" title="Nintendo DS"><img src="assets/sys/ds.webp" alt="" width="150" height="19" style="width:150px;height:19px" decoding="async"></li><li class="tile" title="Game Boy Advance"><img src="assets/sys/gba.webp" alt="" width="150" height="19" style="width:150px;height:19px" decoding="async"></li><li class="tile" title="Game Boy / Color"><img src="assets/sys/gb.webp" alt="" width="150" height="28" style="width:150px;height:28px" decoding="async"></li><li class="tile" title="Super Nintendo"><img src="assets/sys/snes.webp" alt="" width="150" height="41" style="width:150px;height:41px" decoding="async"></li><li class="tile" title="NES / Famicom"><img src="assets/sys/nes.webp" alt="" width="89" height="44" style="width:89px;height:44px" decoding="async"></li><li class="tile" title="SEGA Mega Drive, Master System, Game Gear"><img src="assets/sys/sega.webp" alt="" width="144" height="44" style="width:144px;height:44px" decoding="async"></li><li class="tile" title="Nintendo 64"><img src="assets/sys/n64.webp" alt="" width="150" height="34" style="width:150px;height:34px" decoding="async"></li><li class="tile" title="Nintendo 3DS"><img src="assets/sys/3ds.webp" alt="" width="150" height="30" style="width:150px;height:30px" decoding="async"></li><li class="tile" title="Dreamcast"><img src="assets/sys/dc.webp" alt="" width="150" height="27" style="width:150px;height:27px" decoding="async"></li><li class="tile" title="PlayStation 1"><img src="assets/sys/ps1.webp" alt="" width="150" height="32" style="width:150px;height:32px" decoding="async"></li><li class="tile" title="PSP"><img src="assets/sys/psp.webp" alt="" width="136" height="44" style="width:136px;height:44px" decoding="async"></li></ul></div>
         <div class="row rev"><ul class="chips"><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">PC Engine</li><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">Atari Lynx / 2600 / 7800</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">WonderSwan</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">Neo Geo Pocket</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker 2000/2003</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker XP/VX/Ace</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker MV/MZ</li><li><img src="assets/fluent3d_high_voltage.webp" alt="" width="24" height="24" loading="lazy">Flash</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Android (APK)</li><li><img src="assets/fluent3d_hot_beverage.webp" alt="" width="24" height="24" loading="lazy">Game Java (J2ME)</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Symbian / N-Gage</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">TyranoScript</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Kirikiri <small>thử nghiệm</small></li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Ren'Py</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">ONScripter</li></ul><ul class="chips" aria-hidden="true"><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">PC Engine</li><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">Atari Lynx / 2600 / 7800</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">WonderSwan</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">Neo Geo Pocket</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker 2000/2003</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker XP/VX/Ace</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker MV/MZ</li><li><img src="assets/fluent3d_high_voltage.webp" alt="" width="24" height="24" loading="lazy">Flash</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Android (APK)</li><li><img src="assets/fluent3d_hot_beverage.webp" alt="" width="24" height="24" loading="lazy">Game Java (J2ME)</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Symbian / N-Gage</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">TyranoScript</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Kirikiri <small>thử nghiệm</small></li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Ren'Py</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">ONScripter</li></ul></div>
       </div>
     </div>
@@ -517,6 +534,14 @@ footer a { color: var(--muted); }
   <div class="don-card">
     <button class="don-x" type="button" aria-label="Đóng" data-don-close>×</button>
     <h2 id="don-h">Ủng hộ chúng mình nhé</h2>
+    <div class="don-dl" id="don-dl" aria-live="polite">
+      <div class="don-dl-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <b id="don-dl-t">Đang tải Monika…</b><span id="don-dl-s"></span>
+      </div>
+      <div class="don-bar" role="progressbar" aria-label="Tiến độ tải, ước tính"><i id="don-bar"></i></div>
+      <small id="don-dl-n">Trình duyệt đang tải file về máy. Tiến độ thật xem ở thanh thông báo của trình duyệt.</small>
+    </div>
     <p class="don-msg">Chúng mình cố gắng phát triển Monika hoàn toàn miễn phí, nhưng AowVN vẫn cần phải chi trả chi phí cho máy chủ, AI. Đừng ngần ngại donate ủng hộ chúng mình nha, 200k, 100k hay 10k đều rất đáng trân trọng á.</p>
     <div class="don-body">
       <img class="don-qr" id="don-qr" data-src="assets/donate-qr.webp" alt="Mã QR chuyển khoản VietinBank, tài khoản 101867601261, VU DOAN BINH MINH" width="437" height="495">
@@ -636,30 +661,60 @@ footer a { color: var(--muted); }
         try { localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), a: a })); } catch (e) {}
       }).catch(function () {});
   }
-  function openDon() {
+  // Thanh tiến độ trong cửa sổ: trình duyệt không cho trang đọc tiến độ tải thật của file tải bằng liên kết,
+  // nên đây là thanh ước tính theo dung lượng và tốc độ mạng báo bởi trình duyệt (không bao giờ chạm 100%); tiến độ thật nằm ở thanh thông báo.
+  var dlBox = document.getElementById("don-dl"), dlBar = document.getElementById("don-bar"), dlNote = document.getElementById("don-dl-n"), dlRaf = 0, closeTimer = 0;
+  function stopProgress() { cancelAnimationFrame(dlRaf); }
+  function startProgress(real) {
+    stopProgress();
+    var ver = (document.querySelector("[data-ver]") || {}).textContent || "", size = (document.querySelector("[data-size]") || {}).textContent || "";
+    document.getElementById("don-dl-t").textContent = real ? "Đang tải Monika " + ver.trim() : "Đã mở trang tải ở tab mới";
+    document.getElementById("don-dl-s").textContent = real ? size.trim() : "";
+    dlBox.classList.toggle("nodl", !real);
+    dlBar.style.transform = "scaleX(0)";
+    if (!real) { dlNote.textContent = "Bấm tải file APK ở trang vừa mở. Cảm ơn bạn đã ghé qua."; return; }
+    dlNote.textContent = "Trình duyệt đang tải file về máy. Tiến độ thật xem ở thanh thông báo của trình duyệt.";
+    var m = size.match(/([\d.,]+)\s*MB/i), mb = m ? parseFloat(m[1].replace(",", ".")) : 18;
+    var c = navigator.connection, mbps = c && c.downlink ? c.downlink : 10;
+    var est = Math.min(40, Math.max(4, mb * 8 / (mbps * 0.7))) * 1000, t0 = performance.now() + 350, noted = false;
+    (function tick(now) {
+      var t = Math.max(0, now - t0), p;
+      if (t <= est) { var k = t / est; p = 0.9 * (1 - Math.pow(1 - k, 2)); }
+      else { p = 0.9 + 0.09 * (1 - Math.exp(-(t - est) / 9000)); if (!noted) { noted = true; dlNote.textContent = "Tải xong thì mở file APK trong thông báo của trình duyệt để cài."; } }
+      dlBar.style.transform = "scaleX(" + p.toFixed(4) + ")";
+      dlRaf = requestAnimationFrame(tick);
+    })(performance.now());
+  }
+  function openDon(real) {
     if (!don) return;
+    clearTimeout(closeTimer);
     lastFocus = document.activeElement;
     var q = document.getElementById("don-qr"); if (!q.getAttribute("src")) q.src = q.dataset.src;
     don.classList.toggle("is-mobile", isMobile);
     loadBanks();
     don.hidden = false;
+    void don.offsetWidth;
+    don.classList.add("show");
     document.body.style.overflow = "hidden";
-    var x = don.querySelector(".don-x"); if (x) x.focus();
+    startProgress(real !== false);
+    var x = don.querySelector(".don-x"); if (x) x.focus({ preventScroll: true });
   }
   function closeDon() {
     if (!don || don.hidden) return;
-    don.hidden = true;
+    don.classList.remove("show");
+    stopProgress();
     document.body.style.overflow = "";
-    if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
+    closeTimer = setTimeout(function () { don.hidden = true; }, 320);
+    if (lastFocus && lastFocus.focus) try { lastFocus.focus({ preventScroll: true }); } catch (e) {}
   }
   document.addEventListener("click", function (e) {
     var t = e.target, a = t.closest ? t.closest("[data-apk]") : null;
     if (a && !a.closest("#don")) {
-      if (/\.apk(\?|$)/i.test(a.href)) { setTimeout(openDon, 400); return; }
+      if (/\.apk(\?|$)/i.test(a.href)) { setTimeout(function () { openDon(true); }, 120); return; }
       // Link dự phòng (chưa lấy được bản mới): mở trang bản phát hành ở tab mới để popup vẫn hiện ở trang này
       e.preventDefault();
       window.open(a.href, "_blank", "noopener");
-      openDon();
+      openDon(false);
       return;
     }
     if (!don || don.hidden) return;
@@ -696,7 +751,7 @@ footer a { color: var(--muted); }
 </script>
 
 <script>
-// Phần đầu trang xoay: đổi chữ + hình, nút tải đứng yên. Tự chạy mỗi 7 giây; dừng khi rê chuột / lấy tiêu điểm / tab ẩn / hero ra khỏi màn hình;
+// Phần đầu trang xoay: đổi chữ + hình, nút tải đứng yên. Tự chạy mỗi 7 giây, hết trang 4 quay về trang 1; dừng khi rê chuột vào hàng chấm / lấy tiêu điểm bàn phím / tab ẩn / hero ra khỏi màn hình;
 // vuốt ngang để chuyển trang trên điện thoại; tắt tự chạy khi người dùng chọn giảm chuyển động.
 (function () {
   var slides = [].slice.call(document.querySelectorAll(".slide")), vis = [].slice.call(document.querySelectorAll(".vis"));
@@ -719,7 +774,7 @@ footer a { color: var(--muted); }
   }
   dots.forEach(function (b, k) { b.addEventListener("click", function () { show(k, true); }); });
   var rot = document.getElementById("rot"), stage = document.getElementById("stage");
-  [rot, stage, dotsBox].forEach(function (el) {
+  [dotsBox].forEach(function (el) {
     if (!el) return;
     el.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") { holdMouse = true; arm(); } });
     el.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") { holdMouse = false; restartBar(); arm(); } });
