@@ -20,7 +20,9 @@
 <link rel="dns-prefetch" href="https://www.aow.vn">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" type="image/webp" href="assets/shot-nds.webp" fetchpriority="high">
+<link rel="preload" as="image" type="image/avif" imagesrcset="assets/m/fold-480.avif 480w, assets/m/fold-960.avif 960w" imagesizes="(max-width: 900px) min(92vw, 420px), 480px" fetchpriority="high">
+<link rel="preload" as="image" type="image/avif" imagesrcset="assets/m/tilt-380.avif 380w, assets/m/tilt-760.avif 760w" imagesizes="(max-width: 900px) min(74vw, 340px), 380px">
+<script>document.documentElement.classList.add("js")</script>
 <!-- Font nạp không chặn hiển thị: chữ hiện ngay bằng font hệ thống, đổi sang Manrope khi tải xong -->
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"></noscript>
@@ -122,29 +124,64 @@ p { margin: 0; }
 .qr-card b { display: block; font-size: 15px; }
 .qr-card span { font-size: 13.5px; color: var(--muted); }
 
-/* Ảnh chụp trong app, xếp quạt */
-.stage { position: relative; height: 620px; }
-.phone { position: absolute; width: 196px; aspect-ratio: 9 / 19.5; border-radius: 34px; background: #121010; padding: 7px; box-shadow: var(--shadow); max-width: 100%; }
-.phone .screen { width: 100%; height: 100%; border-radius: 27px; overflow: hidden; background: #000; }
-.phone .screen img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.p-left { left: 0; top: 96px; rotate: -8deg; z-index: 1; }
-.p-right { right: 0; top: 96px; rotate: 8deg; z-index: 1; }
-.p-mid { left: 50%; top: 0; width: 226px; margin-left: -113px; z-index: 2; }
-.land { position: absolute; z-index: 3; left: 50%; bottom: 8px; width: 320px; margin-left: -190px; rotate: -4deg; padding: 6px; border-radius: 20px; background: #121010; box-shadow: var(--shadow); }
-.land img { width: 100%; height: auto; border-radius: 15px; }
-.float { position: absolute; width: 74px; height: 74px; z-index: 4; filter: drop-shadow(0 12px 16px rgba(60, 30, 10, .25)); }
-.f1 { top: 6px; left: 8%; }
-.f2 { bottom: 70px; right: 0; width: 86px; height: 86px; }
+/* Phần đầu trang xoay: chữ và hình đổi theo từng trang, nút tải đứng yên.
+   Mọi trang xếp chồng trong cùng một ô lưới nên chiều cao luôn bằng trang cao nhất, nút không nhảy. */
+.rot { display: grid; touch-action: pan-y; }
+.slide { grid-area: 1 / 1; opacity: 0; visibility: hidden; translate: 0 14px; transition: opacity .55s ease, translate .55s ease, visibility 0s .55s; }
+.slide.on { opacity: 1; visibility: visible; translate: 0 0; transition-delay: 0s; }
+.sh { font-size: clamp(30px, 4.2vw, 50px); font-weight: 800; line-height: 1.06; }
+.slide .sh + .lede { font-size: clamp(16px, 1.7vw, 18.5px); }
+.lede b { color: var(--ink); }
+html:not(.js) .slide:not(:first-child), html:not(.js) .vis:not(:first-child), html:not(.js) .dots { display: none; }
+.dots { display: flex; gap: 4px; margin: 18px 0 0 -4px; }
+.dots button { width: 38px; height: 28px; padding: 0 4px; border: 0; background: none; cursor: pointer; display: grid; align-items: center; }
+.dots i { display: block; height: 6px; border-radius: 999px; background: var(--line); position: relative; overflow: hidden; }
+.dots i::after { content: ""; position: absolute; inset: 0; transform: scaleX(0); transform-origin: left; background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)); }
+.dots button[aria-current="true"] { width: 64px; }
+.dots button[aria-current="true"] i::after { animation: prog var(--dur, 7s) linear forwards; }
+.dots.paused i::after { animation-play-state: paused; }
+.dots button:focus-visible { outline: 2px solid var(--g2); outline-offset: 2px; border-radius: 8px; }
+@keyframes prog { to { transform: scaleX(1); } }
+
+.stage { position: relative; height: 620px; touch-action: pan-y; }
+.vis { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility 0s .6s; }
+.vis.on { opacity: 1; visibility: visible; transition-delay: 0s; }
+.m { position: absolute; height: auto; filter: drop-shadow(0 26px 28px rgba(0, 0, 0, .5)); will-change: transform; }
+.m-tilt { width: 74%; right: 0; top: 0; z-index: 1; }
+.m-fold { width: 92%; left: 0; bottom: 3%; z-index: 2; }
+.m-land { width: 80%; left: 0; top: 38%; z-index: 1; }
+.m-nokia { width: 36%; right: 2%; top: 3%; z-index: 2; }
+.vis[data-i="2"] .t3 { top: 21%; right: auto; left: 7%; }
+.emo { position: absolute; width: 76px; height: 76px; z-index: 4; filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .4)); }
+.e1 { top: 4%; left: 6%; }
+.e2 { bottom: 0; right: 2%; width: 88px; height: 88px; }
 .blob { position: absolute; inset: 60px 0 20px 6%; border-radius: 48% 52% 46% 54% / 50% 46% 54% 50%; background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--g1) 40%, transparent), transparent 60%), radial-gradient(circle at 70% 60%, color-mix(in srgb, var(--g3) 38%, transparent), transparent 62%), radial-gradient(circle at 50% 90%, color-mix(in srgb, var(--g2) 30%, transparent), transparent 60%); filter: blur(10px); opacity: .9; }
+.tag { position: absolute; z-index: 5; display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px 7px 9px; font-weight: 800; font-size: 14.5px; white-space: nowrap; box-shadow: var(--shadow); }
+.tag img { width: 30px; height: 30px; }
+.t1 { top: 6%; left: 0; } .t2 { bottom: 6%; right: 0; } .t3 { top: 14%; right: 2%; } .t4 { bottom: 14%; left: 2%; }
+/* Vòng tự cải tiến */
+.loop { position: absolute; left: 50%; top: 50%; width: min(100%, 500px); aspect-ratio: 1; translate: -50% -50%; }
+.loop svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.loop .core { position: absolute; left: 50%; top: 50%; width: 28%; height: auto; translate: -50% -50%; filter: drop-shadow(0 18px 22px rgba(0, 0, 0, .5)); }
+.node { position: absolute; translate: -50% -50%; display: grid; justify-items: center; gap: 6px; }
+.node img { width: 76px; height: 76px; filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .4)); }
+.node span { font-size: 13.5px; font-weight: 800; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
+.n1 { left: 50%; top: 15%; } .n2 { left: 80%; top: 68%; } .n3 { left: 20%; top: 68%; } .n4 { left: 82%; top: 11%; }
+.n4 img { width: 56px; height: 56px; }
+/* Biểu tượng Monika ở giữa, quanh có các nhãn */
+.brandmark { position: absolute; left: 50%; top: 50%; width: 34%; aspect-ratio: 1; translate: -50% -50%; border-radius: 24%; box-shadow: 0 0 0 10px color-mix(in srgb, var(--g2) 14%, transparent), 0 0 80px 10px color-mix(in srgb, var(--g3) 40%, transparent), var(--shadow); }
 @media (prefers-reduced-motion: no-preference) {
-  .p-mid { animation: rise .9s cubic-bezier(.2, .8, .2, 1) both; }
-  .p-left { animation: rise .9s .12s cubic-bezier(.2, .8, .2, 1) both; }
-  .p-right { animation: rise .9s .2s cubic-bezier(.2, .8, .2, 1) both; }
-  .land { animation: rise .9s .32s cubic-bezier(.2, .8, .2, 1) both; }
-  .float { animation: bob 6s ease-in-out infinite; }
-  .f2 { animation-delay: -2s; }
-  @keyframes rise { from { translate: 0 44px; opacity: 0; } to { translate: 0 0; opacity: 1; } }
-  @keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
+  .fl { animation: hover 7s ease-in-out infinite; }
+  .fl.b { animation-duration: 8.6s; animation-delay: -2.4s; }
+  .fl.c { animation-duration: 6s; animation-delay: -1s; }
+  .fl.d { animation-duration: 7.6s; animation-delay: -3.5s; }
+  @keyframes hover { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-16px) rotate(1.6deg); } }
+  .spin { transform-origin: 50% 50%; animation: spin 48s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide, .vis, .dots button { transition: none; }
+  .dots button[aria-current="true"] i::after { animation: none; transform: scaleX(1); }
 }
 
 /* Dải hệ máy */
@@ -154,8 +191,11 @@ p { margin: 0; }
 .systems h2 { font-size: clamp(28px, 4vw, 44px); font-weight: 800; }
 .systems p.sub { color: var(--night-muted); max-width: 46em; }
 .chips { display: flex; flex-wrap: wrap; gap: 10px; }
-.chips li { list-style: none; border: 1px solid var(--night-line); border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 15px; display: inline-flex; gap: 8px; align-items: baseline; }
+.chips li { list-style: none; border: 1px solid var(--night-line); border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 15px; display: inline-flex; gap: 8px; align-items: center; }
 .chips li small { color: var(--night-muted); font-weight: 600; font-size: 12.5px; }
+.chips li img { width: 24px; height: 24px; flex: none; }
+.chips li.tile { flex: none; border: 0; border-radius: 0; background: none; padding: 0 22px; height: 64px; justify-content: center; }
+.chips li.tile img { flex: none; max-width: none; }
 .chips { margin: 0; padding: 0; }
 .flow { display: grid; gap: 12px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
 .flow .row { display: flex; width: max-content; animation: flow 70s linear infinite; }
@@ -225,9 +265,32 @@ footer a { color: var(--muted); }
 /* Cửa sổ ủng hộ (hiện mỗi lần bấm tải) */
 .don { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(15, 12, 10, .6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .don[hidden] { display: none; }
+.don { opacity: 0; transition: opacity .3s ease; }
+.don.show { opacity: 1; }
+.don-card { opacity: 0; translate: 0 28px; scale: .96; transition: translate .5s cubic-bezier(.2, .9, .25, 1.04), scale .5s cubic-bezier(.2, .9, .25, 1.04), opacity .3s ease; }
+.don.show .don-card { opacity: 1; translate: 0 0; scale: 1; }
+.don-dl { display: grid; gap: 9px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); }
+.don-dl-head { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 16px; }
+.don-dl-head svg { width: 22px; height: 22px; flex: none; color: var(--g2); }
+.don-dl-head span { margin-left: auto; color: var(--muted); font-weight: 700; font-size: 14px; white-space: nowrap; }
+.don-bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.don-bar i { display: block; height: 100%; border-radius: inherit; transform: scaleX(0); transform-origin: left; background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)); position: relative; overflow: hidden; }
+.don-bar i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .5), transparent); translate: -100% 0; animation: shim 1.4s ease-in-out infinite; }
+.don-dl small { color: var(--muted); font-size: 12.5px; font-weight: 600; line-height: 1.4; }
+.don-dl.nodl .don-bar { display: none; }
+@keyframes shim { to { translate: 100% 0; } }
+@keyframes dlbob { 0%, 100% { translate: 0 0; } 50% { translate: 0 3px; } }
+.don-dl-head svg { animation: dlbob 1.1s ease-in-out infinite; }
+.don-dl.nodl .don-dl-head svg { animation: none; }
+@media (prefers-reduced-motion: reduce) { .don, .don-card { transition: none; } .don-bar i::after, .don-dl-head svg { animation: none; } }
 .don-card { position: relative; width: min(760px, 100%); max-height: calc(100dvh - 32px); overflow: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 26px; padding: 28px; box-shadow: var(--shadow); display: grid; gap: 18px; }
+.don-snd { position: absolute; top: 12px; right: 58px; width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--chip); color: var(--ink); cursor: pointer; display: grid; place-items: center; }
+.don-snd svg { width: 20px; height: 20px; }
+.don-snd .off { display: none; }
+.don-snd[aria-pressed="true"] .on { display: none; }
+.don-snd[aria-pressed="true"] .off { display: block; }
 .don-x { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--chip); color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; font-family: inherit; }
-.don-card h2 { font-size: clamp(22px, 3.4vw, 30px); font-weight: 800; padding-right: 40px; }
+.don-card h2 { font-size: clamp(22px, 3.4vw, 30px); font-weight: 800; padding-right: 96px; }
 .don-msg { color: var(--muted); font-size: 16px; }
 .don-body { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
 .don-qr { width: 100%; height: auto; border-radius: 16px; background: #fff; }
@@ -249,7 +312,7 @@ footer a { color: var(--muted); }
 .don-skip { justify-self: center; border: 0; background: none; color: var(--muted); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; padding: 6px 12px; }
 @media (max-width: 620px) {
   .don { align-items: end; padding: 0; }
-  .don-card { border-radius: 24px 24px 0 0; max-height: 92dvh; padding: 22px 18px calc(18px + env(safe-area-inset-bottom, 0px)); }
+  .don-card { translate: 0 100%; scale: 1; border-radius: 24px 24px 0 0; max-height: 92dvh; padding: 22px 18px calc(18px + env(safe-area-inset-bottom, 0px)); }
   .don-body { grid-template-columns: 1fr; }
   .don-qr { width: 190px; justify-self: center; }
 }
@@ -267,7 +330,6 @@ footer a { color: var(--muted); }
 @media (max-width: 900px) {
   .hero .wrap { grid-template-columns: 1fr; }
   .stage { height: 560px; max-width: 460px; width: 100%; margin: 0 auto; }
-  .phone { width: 168px; } .p-mid { width: 196px; margin-left: -98px; } .land { width: 280px; margin-left: -160px; }
   .feats, .steps, .comm { grid-template-columns: 1fr 1fr; }
   .nav a.link { display: none; }
   .nav { gap: 12px; }
@@ -278,11 +340,9 @@ footer a { color: var(--muted); }
   body { font-size: 16px; }
   .hero { padding-block: 24px 48px; }
   .stage { height: 440px; }
-  .phone { width: 124px; border-radius: 24px; padding: 5px; } .phone .screen { border-radius: 19px; }
-  .p-left, .p-right { top: 78px; }
-  .p-mid { width: 152px; margin-left: -76px; }
-  .land { width: 200px; margin-left: -118px; padding: 4px; border-radius: 15px; } .land img { border-radius: 11px; }
-  .float { width: 52px; height: 52px; } .f2 { width: 60px; height: 60px; bottom: 60px; }
+  .emo { width: 52px; height: 52px; } .e2 { width: 60px; height: 60px; }
+  .node img { width: 54px; height: 54px; } .n4 img { width: 40px; height: 40px; } .node span { font-size: 11.5px; padding: 4px 9px; }
+  .tag { font-size: 12.5px; padding: 5px 12px 5px 7px; gap: 6px; } .tag img { width: 24px; height: 24px; }
   .feats, .steps, .comm { grid-template-columns: 1fr; }
   section.block { padding-block: 60px; }
   .btn-main { width: 100%; justify-content: center; }
@@ -312,8 +372,30 @@ footer a { color: var(--muted); }
   <section class="hero" aria-labelledby="hero-h">
     <div class="wrap">
       <div>
-        <h1 id="hero-h">Định nghĩa lại trải nghiệm <span class="grad">chơi game</span></h1>
-        <p class="lede">Monika tích hợp tất cả các giả lập cho tất cả hệ máy trên thế giới. Tự động giải nén, cài game, tự động cài patch Việt hóa. Tích hợp trình duyệt và hệ thống download.</p>
+        <div class="rot" id="rot" role="group" aria-roledescription="carousel" aria-label="Giới thiệu Monika">
+          <article class="slide on" id="sl0">
+            <h1 id="hero-h">Định nghĩa lại trải nghiệm <span class="grad">chơi game</span></h1>
+            <p class="lede">Monika tích hợp tất cả các giả lập cho tất cả hệ máy trên thế giới. Tự động giải nén, cài game, tự động cài patch Việt hóa. Tích hợp trình duyệt và hệ thống download.</p>
+          </article>
+          <article class="slide" id="sl1">
+            <h2 class="sh">Ứng dụng chủ động cải tiến <span class="grad">đầu tiên tại Việt Nam</span></h2>
+            <p class="lede">Toàn bộ quy trình do Agent tự thực hiện: fix lỗi, cải tiến, cập nhật. Ứng dụng tự động ghi nhận lỗi game, lỗi crash và chủ động sửa ngay ở phiên bản sau, tiết kiệm tới 80% công phát triển so với app thông thường. Con người chỉ đảm nhận việc chỉ đạo hướng đi hợp lý.</p>
+          </article>
+          <article class="slide" id="sl2">
+            <h2 class="sh">Hỗ trợ <span class="grad">game Android cũ</span></h2>
+            <p class="lede">Monika có cơ chế thông minh: tự tìm cách điều chỉnh, bổ sung thư viện và API của ứng dụng để chạy được trên Android hiện tại. Hệ thống cũng bao gồm Android ảo được tích hợp đi kèm.</p>
+          </article>
+          <article class="slide" id="sl3">
+            <h2 class="sh">Xây dựng để đáp ứng cho <span class="grad">cả tương lai</span></h2>
+            <p class="lede">Monika được xây dựng bằng ngôn ngữ mới, engine mới. Tất cả lõi giả lập đều được viết lại từ đầu, với hiệu suất được tối ưu <b>theo giờ</b>.</p>
+          </article>
+        </div>
+        <div class="dots" id="dots">
+          <button type="button" aria-label="Trang 1 trên 4: Định nghĩa lại trải nghiệm chơi game" aria-current="true"><i></i></button>
+          <button type="button" aria-label="Trang 2 trên 4: Ứng dụng chủ động cải tiến"><i></i></button>
+          <button type="button" aria-label="Trang 3 trên 4: Hỗ trợ game Android cũ"><i></i></button>
+          <button type="button" aria-label="Trang 4 trên 4: Xây dựng cho cả tương lai"><i></i></button>
+        </div>
         <div class="cta" id="hero-cta">
           <a class="btn btn-main" data-apk href="https://github.com/aowvn-10diem/aowvn-monika/releases">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
@@ -335,26 +417,51 @@ footer a { color: var(--muted); }
           <div><b>Đang xem trên máy tính?</b><span>Quét mã bằng camera điện thoại để mở trang này và tải app.</span></div>
         </div>
       </div>
-      <div class="stage" aria-hidden="true">
+      <div class="stage" id="stage" aria-hidden="true">
         <div class="blob"></div>
-        <div class="phone p-left"><div class="screen"><img src="assets/shot-java.webp" alt="" width="420" height="933" loading="eager"></div></div>
-        <div class="phone p-right"><div class="screen"><img src="assets/shot-gba.webp" alt="" width="420" height="933" loading="eager"></div></div>
-        <div class="phone p-mid"><div class="screen"><img src="assets/shot-nds.webp" alt="" width="420" height="933" loading="eager"></div></div>
-        <div class="land"><img src="assets/shot-land.webp" alt="" width="760" height="342" loading="eager"></div>
-        <img class="float f1" src="assets/fluent3d_video_game.webp" alt="" width="74" height="74">
-        <img class="float f2" src="assets/fluent3d_joystick.webp" alt="" width="86" height="86">
+        <div class="vis on" data-i="0">
+          <picture><source type="image/avif" srcset="assets/m/tilt-380.avif 380w, assets/m/tilt-760.avif 760w" sizes="(max-width: 900px) min(74vw, 340px), 380px"><img class="m m-tilt fl" src="assets/m/tilt-380.webp" srcset="assets/m/tilt-380.webp 380w, assets/m/tilt-760.webp 760w" sizes="(max-width: 900px) min(74vw, 340px), 380px" alt="" width="380" height="320" decoding="async"></picture>
+          <picture><source type="image/avif" srcset="assets/m/fold-480.avif 480w, assets/m/fold-960.avif 960w" sizes="(max-width: 900px) min(92vw, 420px), 480px"><img class="m m-fold fl b" src="assets/m/fold-480.webp" srcset="assets/m/fold-480.webp 480w, assets/m/fold-960.webp 960w" sizes="(max-width: 900px) min(92vw, 420px), 480px" alt="" width="480" height="336" decoding="async" fetchpriority="high"></picture>
+          <img class="emo e1 fl c" src="assets/fluent3d_video_game.webp" alt="" width="76" height="76">
+          <img class="emo e2 fl d" src="assets/fluent3d_joystick.webp" alt="" width="88" height="88">
+        </div>
+        <div class="vis" data-i="1">
+          <div class="loop">
+            <svg viewBox="0 0 400 400" focusable="false"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF8A3D"/><stop offset=".55" stop-color="#FF4F8B"/><stop offset="1" stop-color="#8B5CF6"/></linearGradient></defs><circle class="spin" cx="200" cy="200" r="140" fill="none" stroke="url(#lg)" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 13"/></svg>
+            <img class="core fl" data-src="assets/fluent3d_robot.webp" alt="" width="256" height="256" decoding="async">
+            <div class="node n1 fl b"><img data-src="assets/fluent3d_lady_beetle.webp" alt="" width="76" height="76" decoding="async"><span>Ghi nhận lỗi, crash</span></div>
+            <div class="node n2 fl c"><img data-src="assets/fluent3d_wrench.webp" alt="" width="76" height="76" decoding="async"><span>Agent tự sửa</span></div>
+            <div class="node n3 fl d"><img data-src="assets/fluent3d_rocket.webp" alt="" width="76" height="76" decoding="async"><span>Có ngay ở bản sau</span></div>
+            <div class="node n4 fl"><img data-src="assets/fluent3d_compass.webp" alt="" width="56" height="56" decoding="async"><span>Con người chỉ đạo</span></div>
+          </div>
+        </div>
+        <div class="vis" data-i="2">
+          <picture><source type="image/avif" data-srcset="assets/m/land-400.avif 400w, assets/m/land-800.avif 800w" sizes="(max-width: 900px) min(80vw, 368px), 416px"><img class="m m-land fl" data-src="assets/m/land-400.webp" data-srcset="assets/m/land-400.webp 400w, assets/m/land-800.webp 800w" sizes="(max-width: 900px) min(80vw, 368px), 416px" alt="" width="400" height="210" decoding="async"></picture>
+          <picture><source type="image/avif" data-srcset="assets/m/nokia-200.avif 200w, assets/m/nokia-400.avif 400w" sizes="(max-width: 900px) min(36vw, 166px), 190px"><img class="m m-nokia fl b" data-src="assets/m/nokia-200.webp" data-srcset="assets/m/nokia-200.webp 200w, assets/m/nokia-400.webp 400w" sizes="(max-width: 900px) min(36vw, 166px), 190px" alt="" width="200" height="465" decoding="async"></picture>
+          <div class="tag t1 fl b"><img data-src="assets/fluent3d_puzzle_piece.webp" alt="" width="30" height="30">Tự bổ sung thư viện, API</div>
+          <div class="tag t3 fl d"><img data-src="assets/fluent3d_mantelpiece_clock.webp" alt="" width="30" height="30">Game cũ vẫn chạy</div>
+          <div class="tag t2 fl c"><img data-src="assets/fluent3d_mobile_phone.webp" alt="" width="30" height="30">Android ảo tích hợp sẵn</div>
+          <div class="tag t4 fl"><img data-src="assets/fluent3d_hot_beverage.webp" alt="" width="30" height="30">Cả game Java đời đầu</div>
+        </div>
+        <div class="vis" data-i="3">
+          <img class="brandmark fl" data-src="assets/icon-192.webp" alt="" width="192" height="192" decoding="async">
+          <div class="tag t1 fl b"><img data-src="assets/fluent3d_high_voltage.webp" alt="" width="30" height="30">Hiệu suất cao</div>
+          <div class="tag t3 fl c"><img data-src="assets/fluent3d_dna.webp" alt="" width="30" height="30">Engine mới</div>
+          <div class="tag t4 fl d"><img data-src="assets/fluent3d_stopwatch.webp" alt="" width="30" height="30">Tối ưu theo giờ</div>
+          <div class="tag t2 fl"><img data-src="assets/fluent3d_telescope.webp" alt="" width="30" height="30">Sẵn sàng cho tương lai</div>
+        </div>
       </div>
     </div>
   </section>
 
   <section class="systems" aria-labelledby="sys-h">
     <div class="wrap">
-      <span class="kicker">Chơi được gì</span>
+      <span class="kicker">Phá bỏ giới hạn</span>
       <h2 id="sys-h">30 hệ máy, chơi ngay trong một app</h2>
-      <p class="sub">Lõi giả lập tự tải về khi bạn mở game lần đầu. Không cần cài thêm từng giả lập riêng.</p>
+      <p class="sub">Monika tự động nhận diện game và cài đặt lõi giả lập tương ứng, bạn chỉ việc tải game về, app sẽ lo phần còn lại.</p>
       <div class="flow" aria-label="Danh sách hệ máy được hỗ trợ">
-        <div class="row"><ul class="chips"><li>Nintendo DS</li><li>Game Boy Advance</li><li>Game Boy / Color</li><li>Super Nintendo</li><li>NES / Famicom</li><li>Sega Mega Drive</li><li>Master System</li><li>Game Gear</li><li>PC Engine</li><li>Nintendo 64</li><li>Nintendo 3DS <small>máy 64-bit</small></li><li>Dreamcast</li><li>Atari Lynx</li><li>Atari 2600</li><li>Atari 7800</li><li>WonderSwan</li><li>Neo Geo Pocket</li><li>PlayStation 1</li><li>PSP</li></ul><ul class="chips" aria-hidden="true"><li>Nintendo DS</li><li>Game Boy Advance</li><li>Game Boy / Color</li><li>Super Nintendo</li><li>NES / Famicom</li><li>Sega Mega Drive</li><li>Master System</li><li>Game Gear</li><li>PC Engine</li><li>Nintendo 64</li><li>Nintendo 3DS <small>máy 64-bit</small></li><li>Dreamcast</li><li>Atari Lynx</li><li>Atari 2600</li><li>Atari 7800</li><li>WonderSwan</li><li>Neo Geo Pocket</li><li>PlayStation 1</li><li>PSP</li></ul></div>
-        <div class="row rev"><ul class="chips"><li>RPG Maker 2000/2003</li><li>Flash</li><li>Android (APK)</li><li>Game Java (J2ME)</li><li>RPG Maker MV/MZ</li><li>TyranoScript</li><li>Kirikiri <small>thử nghiệm</small></li><li>Ren'Py</li><li>RPG Maker XP/VX/Ace</li><li>ONScripter</li><li>Symbian / N-Gage</li><li>Nintendo DS</li><li>Game Boy Advance</li><li>Game Boy / Color</li><li>Super Nintendo</li><li>NES / Famicom</li><li>Sega Mega Drive</li><li>Master System</li></ul><ul class="chips" aria-hidden="true"><li>RPG Maker 2000/2003</li><li>Flash</li><li>Android (APK)</li><li>Game Java (J2ME)</li><li>RPG Maker MV/MZ</li><li>TyranoScript</li><li>Kirikiri <small>thử nghiệm</small></li><li>Ren'Py</li><li>RPG Maker XP/VX/Ace</li><li>ONScripter</li><li>Symbian / N-Gage</li><li>Nintendo DS</li><li>Game Boy Advance</li><li>Game Boy / Color</li><li>Super Nintendo</li><li>NES / Famicom</li><li>Sega Mega Drive</li><li>Master System</li></ul></div>
+        <div class="row"><ul class="chips"><li class="tile" title="Nintendo DS"><img src="assets/sys/ds.webp" alt="Nintendo DS" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy Advance"><img src="assets/sys/gba.webp" alt="Game Boy Advance" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy / Color"><img src="assets/sys/gb.webp" alt="Game Boy / Color" width="150" height="28" style="width:150px;height:28px" loading="lazy" decoding="async"></li><li class="tile" title="Super Nintendo"><img src="assets/sys/snes.webp" alt="Super Nintendo" width="150" height="41" style="width:150px;height:41px" loading="lazy" decoding="async"></li><li class="tile" title="NES / Famicom"><img src="assets/sys/nes.webp" alt="NES / Famicom" width="89" height="44" style="width:89px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="SEGA Mega Drive, Master System, Game Gear"><img src="assets/sys/sega.webp" alt="SEGA Mega Drive, Master System, Game Gear" width="144" height="44" style="width:144px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 64"><img src="assets/sys/n64.webp" alt="Nintendo 64" width="150" height="34" style="width:150px;height:34px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 3DS"><img src="assets/sys/3ds.webp" alt="Nintendo 3DS" width="150" height="30" style="width:150px;height:30px" loading="lazy" decoding="async"></li><li class="tile" title="Dreamcast"><img src="assets/sys/dc.webp" alt="Dreamcast" width="150" height="27" style="width:150px;height:27px" loading="lazy" decoding="async"></li><li class="tile" title="PlayStation 1"><img src="assets/sys/ps1.webp" alt="PlayStation 1" width="150" height="32" style="width:150px;height:32px" loading="lazy" decoding="async"></li><li class="tile" title="PSP"><img src="assets/sys/psp.webp" alt="PSP" width="136" height="44" style="width:136px;height:44px" loading="lazy" decoding="async"></li></ul><ul class="chips" aria-hidden="true"><li class="tile" title="Nintendo DS"><img src="assets/sys/ds.webp" alt="" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy Advance"><img src="assets/sys/gba.webp" alt="" width="150" height="19" style="width:150px;height:19px" loading="lazy" decoding="async"></li><li class="tile" title="Game Boy / Color"><img src="assets/sys/gb.webp" alt="" width="150" height="28" style="width:150px;height:28px" loading="lazy" decoding="async"></li><li class="tile" title="Super Nintendo"><img src="assets/sys/snes.webp" alt="" width="150" height="41" style="width:150px;height:41px" loading="lazy" decoding="async"></li><li class="tile" title="NES / Famicom"><img src="assets/sys/nes.webp" alt="" width="89" height="44" style="width:89px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="SEGA Mega Drive, Master System, Game Gear"><img src="assets/sys/sega.webp" alt="" width="144" height="44" style="width:144px;height:44px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 64"><img src="assets/sys/n64.webp" alt="" width="150" height="34" style="width:150px;height:34px" loading="lazy" decoding="async"></li><li class="tile" title="Nintendo 3DS"><img src="assets/sys/3ds.webp" alt="" width="150" height="30" style="width:150px;height:30px" loading="lazy" decoding="async"></li><li class="tile" title="Dreamcast"><img src="assets/sys/dc.webp" alt="" width="150" height="27" style="width:150px;height:27px" loading="lazy" decoding="async"></li><li class="tile" title="PlayStation 1"><img src="assets/sys/ps1.webp" alt="" width="150" height="32" style="width:150px;height:32px" loading="lazy" decoding="async"></li><li class="tile" title="PSP"><img src="assets/sys/psp.webp" alt="" width="136" height="44" style="width:136px;height:44px" loading="lazy" decoding="async"></li></ul></div>
+        <div class="row rev"><ul class="chips"><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">PC Engine</li><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">Atari Lynx / 2600 / 7800</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">WonderSwan</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">Neo Geo Pocket</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker 2000/2003</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker XP/VX/Ace</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker MV/MZ</li><li><img src="assets/fluent3d_high_voltage.webp" alt="" width="24" height="24" loading="lazy">Flash</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Android (APK)</li><li><img src="assets/fluent3d_hot_beverage.webp" alt="" width="24" height="24" loading="lazy">Game Java (J2ME)</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Symbian / N-Gage</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">TyranoScript</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Kirikiri <small>thử nghiệm</small></li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Ren'Py</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">ONScripter</li></ul><ul class="chips" aria-hidden="true"><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">PC Engine</li><li><img src="assets/fluent3d_joystick.webp" alt="" width="24" height="24" loading="lazy">Atari Lynx / 2600 / 7800</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">WonderSwan</li><li><img src="assets/fluent3d_video_game.webp" alt="" width="24" height="24" loading="lazy">Neo Geo Pocket</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker 2000/2003</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker XP/VX/Ace</li><li><img src="assets/fluent3d_puzzle_piece.webp" alt="" width="24" height="24" loading="lazy">RPG Maker MV/MZ</li><li><img src="assets/fluent3d_high_voltage.webp" alt="" width="24" height="24" loading="lazy">Flash</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Android (APK)</li><li><img src="assets/fluent3d_hot_beverage.webp" alt="" width="24" height="24" loading="lazy">Game Java (J2ME)</li><li><img src="assets/fluent3d_mobile_phone.webp" alt="" width="24" height="24" loading="lazy">Symbian / N-Gage</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">TyranoScript</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Kirikiri <small>thử nghiệm</small></li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">Ren'Py</li><li><img src="assets/fluent3d_open_book.webp" alt="" width="24" height="24" loading="lazy">ONScripter</li></ul></div>
       </div>
     </div>
   </section>
@@ -434,8 +541,20 @@ footer a { color: var(--muted); }
 
 <div class="don" id="don" role="dialog" aria-modal="true" aria-labelledby="don-h" hidden>
   <div class="don-card">
+    <button class="don-snd" id="don-snd" type="button" aria-label="Tắt nhạc" aria-pressed="false">
+      <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+      <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>
+    </button>
     <button class="don-x" type="button" aria-label="Đóng" data-don-close>×</button>
     <h2 id="don-h">Ủng hộ chúng mình nhé</h2>
+    <div class="don-dl" id="don-dl" aria-live="polite">
+      <div class="don-dl-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <b id="don-dl-t">Đang tải Monika…</b><span id="don-dl-s"></span>
+      </div>
+      <div class="don-bar" role="progressbar" aria-label="Tiến độ tải, ước tính"><i id="don-bar"></i></div>
+      <small id="don-dl-n">Trình duyệt đang tải file về máy. Tiến độ thật xem ở thanh thông báo của trình duyệt.</small>
+    </div>
     <p class="don-msg">Chúng mình cố gắng phát triển Monika hoàn toàn miễn phí, nhưng AowVN vẫn cần phải chi trả chi phí cho máy chủ, AI. Đừng ngần ngại donate ủng hộ chúng mình nha, 200k, 100k hay 10k đều rất đáng trân trọng á.</p>
     <div class="don-body">
       <img class="don-qr" id="don-qr" data-src="assets/donate-qr.webp" alt="Mã QR chuyển khoản VietinBank, tài khoản 101867601261, VU DOAN BINH MINH" width="437" height="495">
@@ -462,7 +581,7 @@ footer a { color: var(--muted); }
 </div>
 
 <div class="dock" id="dock" aria-hidden="true">
-  <img src="assets/icon-192.png" alt="" width="40" height="40">
+  <img src="assets/icon-192.webp" alt="" width="40" height="40">
   <div class="t"><b>AowVN Monika</b><span><span data-ver>v0.7.4</span> · <span data-size>18,2 MB</span> · miễn phí</span></div>
   <a class="btn btn-main" data-apk tabindex="-1" href="https://github.com/aowvn-10diem/aowvn-monika/releases">Tải app</a>
 </div>
@@ -555,30 +674,89 @@ footer a { color: var(--muted); }
         try { localStorage.setItem(KEY, JSON.stringify({ t: Date.now(), a: a })); } catch (e) {}
       }).catch(function () {});
   }
-  function openDon() {
+  // Thanh tiến độ trong cửa sổ: trình duyệt không cho trang đọc tiến độ tải thật của file tải bằng liên kết,
+  // nên đây là thanh ước tính theo dung lượng và tốc độ mạng báo bởi trình duyệt (không bao giờ chạm 100%); tiến độ thật nằm ở thanh thông báo.
+  var dlBox = document.getElementById("don-dl"), dlBar = document.getElementById("don-bar"), dlNote = document.getElementById("don-dl-n"), dlRaf = 0, closeTimer = 0;
+  // Nhạc khi bấm tải: bật ngay trong cú bấm (đủ điều kiện tự phát của trình duyệt), mờ dần khi đóng; có nút tắt, nhớ lựa chọn.
+  var SND_KEY = "monika.snd", jingle = null, fadeRaf = 0, muted = false, VOL = 0.7;
+  try { muted = localStorage.getItem(SND_KEY) === "off"; } catch (e) {}
+  var sndBtn = document.getElementById("don-snd");
+  function paintSnd() { if (!sndBtn) return; sndBtn.setAttribute("aria-pressed", String(muted)); sndBtn.setAttribute("aria-label", muted ? "Bật nhạc" : "Tắt nhạc"); }
+  function ensureJingle() { if (!jingle) { jingle = new Audio("assets/snd/tai-ve.mp3"); jingle.preload = "auto"; jingle.volume = 0; } return jingle; }
+  function fadeTo(v, ms, done) {
+    cancelAnimationFrame(fadeRaf); if (!jingle) return;
+    var v0 = jingle.volume, t0 = performance.now();
+    (function step(now) {
+      var k = Math.min(1, (now - t0) / ms); jingle.volume = Math.max(0, Math.min(1, v0 + (v - v0) * k));
+      if (k < 1) fadeRaf = requestAnimationFrame(step); else if (done) done();
+    })(performance.now());
+  }
+  function playJingle() {
+    if (muted) return;
+    var a = ensureJingle(); try { a.currentTime = 0; } catch (e) {}
+    a.volume = 0; var pr = a.play(); if (pr && pr.catch) pr.catch(function () {});
+    fadeTo(VOL, 300);
+  }
+  function stopJingle() { if (jingle && !jingle.paused) fadeTo(0, 450, function () { jingle.pause(); }); }
+  if (sndBtn) sndBtn.addEventListener("click", function () {
+    muted = !muted; try { localStorage.setItem(SND_KEY, muted ? "off" : "on"); } catch (e) {}
+    paintSnd(); if (muted) stopJingle(); else playJingle();
+  });
+  paintSnd();
+  document.addEventListener("visibilitychange", function () { if (document.hidden && jingle && !jingle.paused) { cancelAnimationFrame(fadeRaf); jingle.pause(); } });
+  window.addEventListener("load", function () { (window.requestIdleCallback || function (f) { setTimeout(f, 2500); })(function () { if (!muted) ensureJingle(); }); });
+  function stopProgress() { cancelAnimationFrame(dlRaf); }
+  function startProgress(real) {
+    stopProgress();
+    var ver = (document.querySelector("[data-ver]") || {}).textContent || "", size = (document.querySelector("[data-size]") || {}).textContent || "";
+    document.getElementById("don-dl-t").textContent = real ? "Đang tải Monika " + ver.trim() : "Đã mở trang tải ở tab mới";
+    document.getElementById("don-dl-s").textContent = real ? size.trim() : "";
+    dlBox.classList.toggle("nodl", !real);
+    dlBar.style.transform = "scaleX(0)";
+    if (!real) { dlNote.textContent = "Bấm tải file APK ở trang vừa mở. Cảm ơn bạn đã ghé qua."; return; }
+    dlNote.textContent = "Trình duyệt đang tải file về máy. Tiến độ thật xem ở thanh thông báo của trình duyệt.";
+    var m = size.match(/([\d.,]+)\s*MB/i), mb = m ? parseFloat(m[1].replace(",", ".")) : 18;
+    var c = navigator.connection, mbps = c && c.downlink ? c.downlink : 10;
+    var est = Math.min(40, Math.max(4, mb * 8 / (mbps * 0.7))) * 1000, t0 = performance.now() + 350, noted = false;
+    (function tick(now) {
+      var t = Math.max(0, now - t0), p;
+      if (t <= est) { var k = t / est; p = 0.9 * (1 - Math.pow(1 - k, 2)); }
+      else { p = 0.9 + 0.09 * (1 - Math.exp(-(t - est) / 9000)); if (!noted) { noted = true; dlNote.textContent = "Tải xong thì mở file APK trong thông báo của trình duyệt để cài."; } }
+      dlBar.style.transform = "scaleX(" + p.toFixed(4) + ")";
+      dlRaf = requestAnimationFrame(tick);
+    })(performance.now());
+  }
+  function openDon(real) {
     if (!don) return;
+    clearTimeout(closeTimer);
     lastFocus = document.activeElement;
     var q = document.getElementById("don-qr"); if (!q.getAttribute("src")) q.src = q.dataset.src;
     don.classList.toggle("is-mobile", isMobile);
     loadBanks();
     don.hidden = false;
+    void don.offsetWidth;
+    don.classList.add("show");
     document.body.style.overflow = "hidden";
-    var x = don.querySelector(".don-x"); if (x) x.focus();
+    startProgress(real !== false);
+    var x = don.querySelector(".don-x"); if (x) x.focus({ preventScroll: true });
   }
   function closeDon() {
     if (!don || don.hidden) return;
-    don.hidden = true;
+    don.classList.remove("show");
+    stopProgress(); stopJingle();
     document.body.style.overflow = "";
-    if (lastFocus && lastFocus.focus) try { lastFocus.focus(); } catch (e) {}
+    closeTimer = setTimeout(function () { don.hidden = true; }, 320);
+    if (lastFocus && lastFocus.focus) try { lastFocus.focus({ preventScroll: true }); } catch (e) {}
   }
   document.addEventListener("click", function (e) {
     var t = e.target, a = t.closest ? t.closest("[data-apk]") : null;
     if (a && !a.closest("#don")) {
-      if (/\.apk(\?|$)/i.test(a.href)) { setTimeout(openDon, 400); return; }
+      playJingle();
+      if (/\.apk(\?|$)/i.test(a.href)) { setTimeout(function () { openDon(true); }, 120); return; }
       // Link dự phòng (chưa lấy được bản mới): mở trang bản phát hành ở tab mới để popup vẫn hiện ở trang này
       e.preventDefault();
       window.open(a.href, "_blank", "noopener");
-      openDon();
+      openDon(false);
       return;
     }
     if (!don || don.hidden) return;
@@ -614,5 +792,65 @@ footer a { color: var(--muted); }
 })();
 </script>
 
+<script>
+// Phần đầu trang xoay: đổi chữ + hình, nút tải đứng yên. Tự chạy mỗi 7 giây, hết trang 4 quay về trang 1; dừng khi rê chuột vào hàng chấm / lấy tiêu điểm bàn phím / tab ẩn / hero ra khỏi màn hình;
+// vuốt ngang để chuyển trang trên điện thoại; tắt tự chạy khi người dùng chọn giảm chuyển động.
+(function () {
+  var slides = [].slice.call(document.querySelectorAll(".slide")), vis = [].slice.call(document.querySelectorAll(".vis"));
+  var dotsBox = document.getElementById("dots"), dots = [].slice.call(dotsBox ? dotsBox.querySelectorAll("button") : []);
+  var n = slides.length; if (!n || n !== vis.length) return;
+  // Ảnh của trang 2-4 chỉ nạp sau khi trang chính đã xong (hoặc ngay khi người dùng chuyển tới trang đó)
+  function hydrate(el) {
+    [].slice.call(el.querySelectorAll("[data-src],[data-srcset]")).forEach(function (x) {
+      ["srcset", "src"].forEach(function (a) { var v = x.getAttribute("data-" + a); if (v) { x.setAttribute(a, v); x.removeAttribute("data-" + a); } });
+    });
+  }
+  function hydrateAll() { vis.forEach(hydrate); }
+  if (document.readyState === "complete") setTimeout(hydrateAll, 800);
+  else window.addEventListener("load", function () { (window.requestIdleCallback || function (f) { setTimeout(f, 1200); })(hydrateAll); });
+  var DUR = 7000, cur = 0, timer = 0, holdMouse = false, holdFocus = false, offscreen = false;
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  dotsBox.style.setProperty("--dur", DUR + "ms");
+  function held() { return reduce || holdMouse || holdFocus || offscreen || document.hidden; }
+  function restartBar() { var i = dots[cur] && dots[cur].firstElementChild; if (!i) return; i.style.animation = "none"; void i.offsetWidth; i.style.animation = ""; }
+  function arm() { clearTimeout(timer); dotsBox.classList.toggle("paused", held()); if (!held()) timer = setTimeout(function () { show(cur + 1); }, DUR); }
+  function show(i, user) {
+    i = (i + n) % n;
+    slides.forEach(function (el, k) {
+      var on = k === i; el.classList.toggle("on", on); vis[k].classList.toggle("on", on);
+      if (on) { el.removeAttribute("inert"); el.removeAttribute("aria-hidden"); } else { el.setAttribute("inert", ""); el.setAttribute("aria-hidden", "true"); }
+      if (dots[k]) { if (on) dots[k].setAttribute("aria-current", "true"); else dots[k].removeAttribute("aria-current"); }
+    });
+    hydrate(vis[i]); hydrate(vis[(i + 1) % n]);
+    cur = i; restartBar(); arm();
+  }
+  dots.forEach(function (b, k) { b.addEventListener("click", function () { show(k, true); }); });
+  var rot = document.getElementById("rot"), stage = document.getElementById("stage");
+  [dotsBox].forEach(function (el) {
+    if (!el) return;
+    el.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") { holdMouse = true; arm(); } });
+    el.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") { holdMouse = false; restartBar(); arm(); } });
+  });
+  dotsBox.addEventListener("focusin", function (e) { try { holdFocus = e.target.matches(":focus-visible"); } catch (x) { holdFocus = true; } arm(); });
+  dotsBox.addEventListener("focusout", function () { holdFocus = false; arm(); });
+  document.addEventListener("visibilitychange", function () { restartBar(); arm(); });
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function (es) { offscreen = !es[0].isIntersecting; restartBar(); arm(); }, { threshold: 0.25 }).observe(document.querySelector(".hero"));
+  }
+  // vuốt ngang
+  var sx = 0, sy = 0, tracking = false;
+  [rot, stage].forEach(function (el) {
+    if (!el) return;
+    el.addEventListener("pointerdown", function (e) { if (e.pointerType === "mouse") return; sx = e.clientX; sy = e.clientY; tracking = true; });
+    el.addEventListener("pointerup", function (e) {
+      if (!tracking) return; tracking = false;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.5) show(cur + (dx < 0 ? 1 : -1), true);
+    });
+    el.addEventListener("pointercancel", function () { tracking = false; });
+  });
+  show(0);
+})();
+</script>
 </body>
 </html>
