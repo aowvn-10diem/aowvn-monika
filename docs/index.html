@@ -284,8 +284,13 @@ footer a { color: var(--muted); }
 .don-dl.nodl .don-dl-head svg { animation: none; }
 @media (prefers-reduced-motion: reduce) { .don, .don-card { transition: none; } .don-bar i::after, .don-dl-head svg { animation: none; } }
 .don-card { position: relative; width: min(760px, 100%); max-height: calc(100dvh - 32px); overflow: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 26px; padding: 28px; box-shadow: var(--shadow); display: grid; gap: 18px; }
+.don-snd { position: absolute; top: 12px; right: 58px; width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--chip); color: var(--ink); cursor: pointer; display: grid; place-items: center; }
+.don-snd svg { width: 20px; height: 20px; }
+.don-snd .off { display: none; }
+.don-snd[aria-pressed="true"] .on { display: none; }
+.don-snd[aria-pressed="true"] .off { display: block; }
 .don-x { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--chip); color: var(--ink); font-size: 22px; line-height: 1; cursor: pointer; font-family: inherit; }
-.don-card h2 { font-size: clamp(22px, 3.4vw, 30px); font-weight: 800; padding-right: 40px; }
+.don-card h2 { font-size: clamp(22px, 3.4vw, 30px); font-weight: 800; padding-right: 96px; }
 .don-msg { color: var(--muted); font-size: 16px; }
 .don-body { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
 .don-qr { width: 100%; height: auto; border-radius: 16px; background: #fff; }
@@ -536,6 +541,10 @@ footer a { color: var(--muted); }
 
 <div class="don" id="don" role="dialog" aria-modal="true" aria-labelledby="don-h" hidden>
   <div class="don-card">
+    <button class="don-snd" id="don-snd" type="button" aria-label="Tắt nhạc" aria-pressed="false">
+      <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+      <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>
+    </button>
     <button class="don-x" type="button" aria-label="Đóng" data-don-close>×</button>
     <h2 id="don-h">Ủng hộ chúng mình nhé</h2>
     <div class="don-dl" id="don-dl" aria-live="polite">
@@ -668,6 +677,34 @@ footer a { color: var(--muted); }
   // Thanh tiến độ trong cửa sổ: trình duyệt không cho trang đọc tiến độ tải thật của file tải bằng liên kết,
   // nên đây là thanh ước tính theo dung lượng và tốc độ mạng báo bởi trình duyệt (không bao giờ chạm 100%); tiến độ thật nằm ở thanh thông báo.
   var dlBox = document.getElementById("don-dl"), dlBar = document.getElementById("don-bar"), dlNote = document.getElementById("don-dl-n"), dlRaf = 0, closeTimer = 0;
+  // Nhạc khi bấm tải: bật ngay trong cú bấm (đủ điều kiện tự phát của trình duyệt), mờ dần khi đóng; có nút tắt, nhớ lựa chọn.
+  var SND_KEY = "monika.snd", jingle = null, fadeRaf = 0, muted = false, VOL = 0.7;
+  try { muted = localStorage.getItem(SND_KEY) === "off"; } catch (e) {}
+  var sndBtn = document.getElementById("don-snd");
+  function paintSnd() { if (!sndBtn) return; sndBtn.setAttribute("aria-pressed", String(muted)); sndBtn.setAttribute("aria-label", muted ? "Bật nhạc" : "Tắt nhạc"); }
+  function ensureJingle() { if (!jingle) { jingle = new Audio("assets/snd/tai-ve.mp3"); jingle.preload = "auto"; jingle.volume = 0; } return jingle; }
+  function fadeTo(v, ms, done) {
+    cancelAnimationFrame(fadeRaf); if (!jingle) return;
+    var v0 = jingle.volume, t0 = performance.now();
+    (function step(now) {
+      var k = Math.min(1, (now - t0) / ms); jingle.volume = Math.max(0, Math.min(1, v0 + (v - v0) * k));
+      if (k < 1) fadeRaf = requestAnimationFrame(step); else if (done) done();
+    })(performance.now());
+  }
+  function playJingle() {
+    if (muted) return;
+    var a = ensureJingle(); try { a.currentTime = 0; } catch (e) {}
+    a.volume = 0; var pr = a.play(); if (pr && pr.catch) pr.catch(function () {});
+    fadeTo(VOL, 300);
+  }
+  function stopJingle() { if (jingle && !jingle.paused) fadeTo(0, 450, function () { jingle.pause(); }); }
+  if (sndBtn) sndBtn.addEventListener("click", function () {
+    muted = !muted; try { localStorage.setItem(SND_KEY, muted ? "off" : "on"); } catch (e) {}
+    paintSnd(); if (muted) stopJingle(); else playJingle();
+  });
+  paintSnd();
+  document.addEventListener("visibilitychange", function () { if (document.hidden && jingle && !jingle.paused) { cancelAnimationFrame(fadeRaf); jingle.pause(); } });
+  window.addEventListener("load", function () { (window.requestIdleCallback || function (f) { setTimeout(f, 2500); })(function () { if (!muted) ensureJingle(); }); });
   function stopProgress() { cancelAnimationFrame(dlRaf); }
   function startProgress(real) {
     stopProgress();
@@ -706,7 +743,7 @@ footer a { color: var(--muted); }
   function closeDon() {
     if (!don || don.hidden) return;
     don.classList.remove("show");
-    stopProgress();
+    stopProgress(); stopJingle();
     document.body.style.overflow = "";
     closeTimer = setTimeout(function () { don.hidden = true; }, 320);
     if (lastFocus && lastFocus.focus) try { lastFocus.focus({ preventScroll: true }); } catch (e) {}
@@ -714,6 +751,7 @@ footer a { color: var(--muted); }
   document.addEventListener("click", function (e) {
     var t = e.target, a = t.closest ? t.closest("[data-apk]") : null;
     if (a && !a.closest("#don")) {
+      playJingle();
       if (/\.apk(\?|$)/i.test(a.href)) { setTimeout(function () { openDon(true); }, 120); return; }
       // Link dự phòng (chưa lấy được bản mới): mở trang bản phát hành ở tab mới để popup vẫn hiện ở trang này
       e.preventDefault();
