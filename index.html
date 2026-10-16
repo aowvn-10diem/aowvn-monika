@@ -479,6 +479,29 @@ footer a { color: var(--muted); }
 @media (max-width: 620px) { .bgm { bottom: calc(86px + env(safe-area-inset-bottom)); left: 12px; width: 40px; height: 40px; } }
 @media (prefers-reduced-motion: reduce) { .bgm.playing::after { animation: none; opacity: 0; } }
 
+/* Chữ M 3D ở trang "Xây dựng cho tương lai" */
+.gl-logo { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; -webkit-mask-image: radial-gradient(ellipse closest-side, #000 70%, transparent 100%); mask-image: radial-gradient(ellipse closest-side, #000 70%, transparent 100%); }
+.fx3d .vis.logo-on .brandmark { display: none; }
+/* Ô nhập số tiền ủng hộ */
+.don-custom { display: grid; gap: 6px; min-width: 0; }
+.don-amt-field { min-width: 0; }
+.don.is-mobile #don-amounts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.don-custom label { font-size: 13px; font-weight: 800; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.don-custom label small { text-transform: none; letter-spacing: 0; font-weight: 600; }
+.don-amt-field { display: flex; align-items: center; border: 1.5px solid var(--line); background: var(--bg); border-radius: 14px; padding: 0 14px; transition: border-color .2s ease; }
+.don-amt-field:focus-within { border-color: var(--g2); }
+.don-amt-field input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--ink); font: inherit; font-weight: 800; font-size: 17px; padding: 11px 0; }
+.don-amt-field input::placeholder { color: var(--muted); font-weight: 600; }
+.don-amt-field span { font-weight: 800; color: var(--muted); }
+.don-amt-hint { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.don-amt-hint:empty { display: none; }
+.don-amt-hint.bad { color: #ff6b6b; }
+.don.is-mobile .don-custom-d { display: none; }
+.don.is-mobile .don-custom-m { grid-column: 1 / -1; gap: 3px; }
+.don.is-mobile .don-custom-m label { display: none; }
+.don.is-mobile .don-custom-m .don-amt-field { padding: 0 12px; border-radius: 12px; }
+.don.is-mobile .don-custom-m .don-amt-field input { font-size: 15px; padding: 7px 0; }
+
 /* ===== Hiệu ứng three.js (chỉ bật khi html.fx3d; không đủ điều kiện thì giao diện CSS như cũ) ===== */
 .gl { display: block; opacity: 0; transition: opacity 1.4s ease; pointer-events: none; }
 .gl.on { opacity: 1; }
@@ -608,6 +631,7 @@ footer a { color: var(--muted); }
           <div class="tag t4 fl"><img data-src="assets/fluent3d_hot_beverage.webp" alt="" width="30" height="30">Cả game Java đời đầu</div>
         </div>
         <div class="vis" data-i="3">
+          <canvas class="gl gl-logo" aria-hidden="true"></canvas>
           <img class="brandmark fl" data-src="assets/icon-192.webp" alt="" width="192" height="192" decoding="async">
           <div class="tag t1 fl b"><img data-src="assets/fluent3d_high_voltage.webp" alt="" width="30" height="30">Hiệu suất cao</div>
           <div class="tag t3 fl c"><img data-src="assets/fluent3d_dna.webp" alt="" width="30" height="30">Engine mới</div>
@@ -757,6 +781,11 @@ footer a { color: var(--muted); }
         <div class="don-row"><small>Số tài khoản</small><b class="mono" id="don-acc">101867601261</b><button class="don-copy" type="button" data-copy="#don-acc">Sao chép</button></div>
         <div class="don-row"><small>Chủ tài khoản</small><b>VU DOAN BINH MINH</b></div>
         <div class="don-row"><small>Nội dung chuyển khoản</small><b id="don-memo">Ung ho AowVN Monika</b><button class="don-copy" type="button" data-copy="#don-memo">Sao chép</button></div>
+        <div class="don-custom don-custom-d">
+          <label for="don-amt-d">Số tiền muốn ủng hộ <small>(không bắt buộc)</small></label>
+          <div class="don-amt-field"><input class="don-amt-in" id="don-amt-d" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" placeholder="Nhập số tiền, ví dụ 50.000" aria-describedby="don-hint-d"><span aria-hidden="true">đ</span></div>
+          <small class="don-amt-hint" id="don-hint-d" role="status" aria-live="polite"></small>
+        </div>
         <div class="don-mobile">
           <span class="don-label">Chọn số tiền</span>
           <div class="don-amounts" id="don-amounts">
@@ -764,6 +793,11 @@ footer a { color: var(--muted); }
             <button type="button" data-amt="50000" aria-pressed="false">50.000đ</button>
             <button type="button" data-amt="100000" aria-pressed="true">100.000đ</button>
             <button type="button" data-amt="200000" aria-pressed="false">200.000đ</button>
+            <div class="don-custom don-custom-m">
+              <label for="don-amt-m">Số tiền khác</label>
+              <div class="don-amt-field"><input class="don-amt-in" id="don-amt-m" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" placeholder="Số tiền khác, ví dụ 30.000" aria-describedby="don-hint-m"><span aria-hidden="true">đ</span></div>
+              <small class="don-amt-hint" id="don-hint-m" role="status" aria-live="polite"></small>
+            </div>
           </div>
           <span class="don-label">Chọn ngân hàng của bạn để chuyển nhanh</span>
           <div class="don-banks" id="don-banks"></div>
@@ -847,6 +881,25 @@ footer a { color: var(--muted); }
   function deeplink(appId) {
     return "https://dl.vietqr.io/pay?app=" + encodeURIComponent(appId) + "&ba=" + DON.acc + "@" + DON.code + "&am=" + amt + "&tn=" + plus(DON.memo) + "&bn=" + plus(DON.name) + "&url=" + encodeURIComponent(DON.ret);
   }
+  // Số tiền tùy chọn: 1.000đ đến 500.000.000đ. Hợp lệ thì cập nhật liên kết ngân hàng (điện thoại) và đổi mã QR sang mã có sẵn số tiền (VietQR).
+  var AMT_MIN = 1000, AMT_MAX = 500000000, donQr = document.getElementById("don-qr"), STATIC_QR = donQr.getAttribute("data-src"), qrTimer = 0;
+  function qrFor(n) { return "https://img.vietqr.io/image/" + DON.code + "-" + DON.acc + "-compact2.png?amount=" + n + "&addInfo=" + encodeURIComponent(DON.memo) + "&accountName=" + encodeURIComponent(DON.name); }
+  function setQr(n) { clearTimeout(qrTimer); qrTimer = setTimeout(function () { donQr.src = n ? qrFor(n) : STATIC_QR; }, 350); }
+  donQr.addEventListener("error", function () { if (donQr.getAttribute("src") !== STATIC_QR) donQr.src = STATIC_QR; });
+  function hints(msg, bad) { document.querySelectorAll(".don-amt-hint").forEach(function (h) { h.textContent = msg || ""; h.classList.toggle("bad", !!bad); }); }
+  function resetCustom() { document.querySelectorAll(".don-amt-in").forEach(function (i) { i.value = ""; }); hints(""); setQr(0); }
+  document.addEventListener("input", function (e) {
+    var inp = e.target; if (!inp.classList || !inp.classList.contains("don-amt-in")) return;
+    var raw = inp.value.replace(/\D/g, "").slice(0, 9), n = raw ? Number(raw) : 0, txt = raw ? n.toLocaleString("vi-VN") : "";
+    document.querySelectorAll(".don-amt-in").forEach(function (i) { i.value = txt; });
+    if (!raw) { hints(""); setQr(0); return; }
+    if (n < AMT_MIN || n > AMT_MAX) { hints("Nhập từ 1.000đ đến 500.000.000đ", true); setQr(0); return; }
+    amt = n;
+    document.querySelectorAll("#don-amounts button").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+    if (donBanks) donBanks.querySelectorAll("a").forEach(function (l) { l.href = deeplink(l.dataset.app); });
+    hints("Chuyển " + n.toLocaleString("vi-VN") + "đ, cảm ơn bạn nhiều!"); setQr(n);
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.classList && e.target.classList.contains("don-amt-in")) e.target.blur(); });
   function drawBanks(apps) {
     donBanks.innerHTML = "";
     apps.forEach(function (a) {
@@ -974,6 +1027,7 @@ footer a { color: var(--muted); }
     var am = t.closest && t.closest("[data-amt]");
     if (am) {
       amt = Number(am.dataset.amt);
+      resetCustom();
       document.querySelectorAll("#don-amounts button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === am)); });
       donBanks.querySelectorAll("a").forEach(function (l) { l.href = deeplink(l.dataset.app); });
     }
@@ -1025,6 +1079,7 @@ footer a { color: var(--muted); }
     });
     hydrate(vis[i]); hydrate(vis[(i + 1) % n]);
     cur = i; restartBar(); arm();
+    window.dispatchEvent(new CustomEvent("monika:slide", { detail: i }));
   }
   dots.forEach(function (b, k) { b.addEventListener("click", function () { show(k, true); }); });
   var rot = document.getElementById("rot"), stage = document.getElementById("stage");
@@ -1134,6 +1189,16 @@ if (d.classList.contains("fx3d")) {
         var dx = 0; pc.addEventListener("pointerdown", function (e) { dx = e.clientX; });
         pc.addEventListener("pointerup", function (e) { if (Math.abs(e.clientX - dx) < 8) { pick((cur + 1) % feats.length); hold = Date.now() + 9000; } });
       });
+      // Pha 4: chữ M 3D ở trang "Xây dựng cho tương lai" (chỉ vẽ khi trang đó đang hiện; dựng sớm để không giật lúc chuyển trang)
+      var lg = cv(".gl-logo"), lvis = cv('.vis[data-i="3"]'), logo = null;
+      onDead(lg, function () { lvis.classList.remove("logo-on"); });
+      setTimeout(function () {
+        try {
+          logo = m.mountLogo(lg, { gate: function () { return lvis.classList.contains("on"); }, count: mobile ? 160 : 360 });
+          lvis.classList.add("logo-on"); if (lvis.classList.contains("on")) logo.play();
+        } catch (e) { console.warn("three.js (chữ M):", e); }
+      }, 2500);
+      addEventListener("monika:slide", function (e) { if (e.detail === 3 && logo) logo.play(); });
       // Pha 3a
       var rc = cv(".gl-road");
       near(rc, function () { onDead(rc); m.mountRoad(rc, cv("#road")); });
@@ -1145,7 +1210,7 @@ if (d.classList.contains("fx3d")) {
         document.addEventListener("keydown", function (e) { if (e.key === "Escape") burst.stop(); });
         document.querySelectorAll("[data-don-close]").forEach(function (b) { b.addEventListener("click", function () { burst.stop(); }); });
       }
-      if (hud) setInterval(function () { hud.textContent = ["hero", "ring", "phone", "road"].map(function (n, i) { var c = [hero, ring, pc, rc][i]; return n + " " + (c.dataset.fps || "-") + (n === "phone" && c.dataset.paint ? " (vẽ " + c.dataset.paint + "ms)" : "") + (c.isConnected && getComputedStyle(c).display === "none" ? " [đã tắt]" : ""); }).join(" | ") + " fps"; }, 700);
+      if (hud) setInterval(function () { hud.textContent = ["hero", "ring", "phone", "road", "logo"].map(function (n, i) { var c = [hero, ring, pc, rc, lg][i]; return n + " " + (c.dataset.fps || "-") + (n === "phone" && c.dataset.paint ? " (vẽ " + c.dataset.paint + "ms)" : "") + (c.isConnected && getComputedStyle(c).display === "none" ? " [đã tắt]" : ""); }).join(" | ") + " fps"; }, 700);
     }).catch(function (e) { console.warn("three.js không nạp được, giữ giao diện CSS:", e); });
   };
   var start = function () { (window.requestIdleCallback || function (f) { setTimeout(f, 300); })(run, { timeout: 4000 }); };
