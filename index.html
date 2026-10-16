@@ -1124,21 +1124,15 @@ if (d.classList.contains("fx3d")) {
         onDead(pc, function () { ph.classList.remove("live"); feats.forEach(function (f) { f.classList.remove("on"); }); });
         var api = m.mountPhone(pc, { screens: screens, orbit: ["rocket", "joystick", "package", "sparkles", "high_voltage"].map(function (n) { return "assets/fluent3d_" + n + ".webp"; }) });
         ph.classList.add("live");
-        var cur = -1, pick = function (i) { if (i === cur) return; cur = i; api.setScreen(i); feats.forEach(function (f, k) { f.classList.toggle("on", k === i); }); };
-        var mq = matchMedia("(max-width: 900px)"), tick = false, scan = function () {
-          tick = false; if (mq.matches) return; var mid = innerHeight / 2, best = 0, bd = 1e9;
-          feats.forEach(function (f, k) { var r = f.getBoundingClientRect(); var dd = Math.abs(r.top + r.height / 2 - mid); if (dd < bd) { bd = dd; best = k; } });
-          pick(best);
-        };
-        addEventListener("scroll", function () { if (!tick) { tick = true; requestAnimationFrame(scan); } }, { passive: true });
-        feats.forEach(function (f, k) { f.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") pick(k); }); });
-        scan();
-        // Trên điện thoại (thẻ nằm dưới máy): tự chạy theo câu chuyện đọc web, xoay ngang chơi game, xoay dọc tải file; chạm vào máy để chuyển
-        var ST = [0, 2, 3, 4, 1, 5], si = 0, vis = false, adv = function () { si = (si + 1) % ST.length; pick(ST[si]); };
+        // Tự chạy từ trên xuống dưới (đọc web, tải, chơi game, tay cầm, lưu, vá) rồi lặp lại; chỉ chạy khi khối này đang hiện trên màn hình.
+        // Di chuột vào thẻ hoặc chạm vào máy thì chuyển ngay và dừng tự chạy ~9 giây.
+        var cur = -1, vis = false, hold = 0, pick = function (i) { if (i === cur) return; cur = i; api.setScreen(i); feats.forEach(function (f, k) { f.classList.toggle("on", k === i); }); };
         new IntersectionObserver(function (es) { vis = es[0].isIntersecting; }).observe(ph);
-        setInterval(function () { if (vis && mq.matches && !document.hidden) adv(); }, 4200);
+        pick(0);
+        setInterval(function () { if (vis && !document.hidden && Date.now() > hold) pick((cur + 1) % feats.length); }, 4200);
+        feats.forEach(function (f, k) { f.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") { pick(k); hold = Date.now() + 9000; } }); });
         var dx = 0; pc.addEventListener("pointerdown", function (e) { dx = e.clientX; });
-        pc.addEventListener("pointerup", function (e) { if (mq.matches && Math.abs(e.clientX - dx) < 8) adv(); });
+        pc.addEventListener("pointerup", function (e) { if (Math.abs(e.clientX - dx) < 8) { pick((cur + 1) % feats.length); hold = Date.now() + 9000; } });
       });
       // Pha 3a
       var rc = cv(".gl-road");
