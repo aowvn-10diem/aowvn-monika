@@ -1065,7 +1065,7 @@ footer a { color: var(--muted); }
 <script>
 // Nhạc nền: thử phát khi vào trang (trình duyệt thường chặn, nên phát ở lần chạm/bấm phím đầu tiên). Bấm tải thì nhạc nền nhỏ dần rồi dừng; đóng popup thì nhỏ dần trở lại.
 (function () {
-  var KEY = "monika.bgm", VOL = 0.3, a = null, want = true, ducked = false, raf = 0, started = false;
+  var KEY = "monika.bgm", VOL = 0.7, a = null, want = true, ducked = false, raf = 0, started = false;
   var btn = document.getElementById("bgm");
   var saver = navigator.connection && navigator.connection.saveData;
   try { var v = localStorage.getItem(KEY); want = v ? v === "on" : !saver; } catch (e) { want = !saver; }
