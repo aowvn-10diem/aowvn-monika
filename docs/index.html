@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="vi">
+<html lang="vi" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>AowVN Monika</title>
 <meta name="description" content="Monika là app Android chính thức của AowVN: đọc bài Việt hóa, tải game một chạm, tự giải nén và chơi ngay với giả lập có sẵn cho GBA, NDS, PS1, PSP và nhiều hệ máy khác.">
-<meta name="theme-color" content="#FBF6EE">
+<meta name="theme-color" content="#161412">
+<meta name="color-scheme" content="dark">
 <meta property="og:title" content="AowVN Monika — đọc bài, tải game, chơi ngay">
 <meta property="og:description" content="App Android chính thức của AowVN. Tải miễn phí.">
 <meta property="og:image" content="assets/icon-192.png">
@@ -61,14 +62,6 @@ window.__monikaRel = (function () {
   --display: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --r-xl: 32px; --r-lg: 22px; --r-md: 16px;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #161412; --surface: #211E1B; --ink: #F6EFE6; --muted: #ADA49A; --line: #332E2A; --chip: #2B2724;
-    --night: #0F0D0C; --night-ink: #F6EFE6; --night-muted: #A39A90; --night-line: #2E2925;
-    --ok: #5FD39B; --shadow: 0 30px 60px -28px rgba(0,0,0,.7), 0 12px 24px -16px rgba(0,0,0,.6);
-    color-scheme: dark;
-  }
 }
 :root[data-theme="dark"] {
   --bg: #161412; --surface: #211E1B; --ink: #F6EFE6; --muted: #ADA49A; --line: #332E2A; --chip: #2B2724;
@@ -303,10 +296,7 @@ footer a { color: var(--muted); }
 <header class="top" id="top">
   <div class="wrap">
     <a class="brand" href="#" aria-label="AowVN Monika, về đầu trang">
-      <picture>
-        <source srcset="assets/monika_wordmark_on_dark.webp" media="(prefers-color-scheme: dark)">
-        <img src="assets/monika_wordmark_on_light.webp" alt="Monika" width="73" height="26">
-      </picture>
+      <img src="assets/monika_wordmark_on_dark.webp" alt="Monika" width="73" height="26">
     </a>
     <nav class="nav" aria-label="Mục chính">
       <a class="link site" href="https://www.aow.vn" rel="noopener">Made by AowVN</a>
