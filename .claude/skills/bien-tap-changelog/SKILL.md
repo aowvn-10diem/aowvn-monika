@@ -29,10 +29,10 @@ Với mỗi tag: đọc mục hiện có trong `docs/CHANGELOG.md` (đã có PR/
 | Mở đầu bằng **Mới:** hoặc **Sửa lỗi:** (in đậm) | `- **Sửa lỗi:** Chạm màn hình lúc game NDS đang nạp không còn làm app treo.` |
 | Không dùng từ kỹ thuật: libretro, SIGSEGV, looper, CI, test, build, API, config, manifest, buildId, driver, Compose, XP3, JNI… Nếu bắt buộc nhắc tên (hệ máy, game), giữ tên người chơi biết: NDS, 3DS, PSP, Kirikiri, RPG Maker, Ren'Py, game Java | "bàn phím ảo cho game Java" chứ không "bàn phím J2ME" |
 | Nói rõ máy/hệ máy nào ảnh hưởng và việc cần làm (nếu có) | "Chỉ ảnh hưởng 3DS. Không cần làm gì, cập nhật là xong." |
-| Chưa kiểm trên máy thật thì nói thẳng, ngắn | "Bản thử: chưa kiểm trên máy thật." |
+| Người đọc là **người dùng**: chỉ nói **đã sửa gì** và **có gì mới**. Không ghi "chưa kiểm", "chưa rõ nguyên nhân", "chưa chạy thật", ghi chú về cách làm hay giới hạn của nhóm (sếp chốt 16/10). Cần ghi thì đưa vào dòng `Nội bộ:` | Sai: "Tốc độ thật trên máy chưa kiểm." Đúng: bỏ câu đó |
 | Giữ cụm nguồn cuối dòng `([#200](https://github.com/…/pull/200))` hoặc `([abc1234](…))` | trang tự ẩn cụm này, nhưng người làm cần truy vết |
 
-**Nội bộ**: thay đổi người dùng không thấy (kiểm thử, CI, tài liệu, giấy phép, tái cấu trúc) → mỗi mục một dòng bắt đầu `- Nội bộ: …`, viết ngắn. Trang gộp các dòng này vào mục thu gọn.
+**Nội bộ**: thay đổi người dùng không thấy (kiểm thử, CI, tài liệu, giấy phép, tái cấu trúc, chẩn đoán cho người làm) và mọi ghi chú của nhóm → mỗi mục một dòng bắt đầu `- Nội bộ: …`, viết ngắn. **Trang Lịch sử cập nhật không hiển thị các dòng này** (chỉ còn trong tệp để người làm truy vết); trang cũng tự bỏ các câu có "chưa kiểm/chưa rõ/chưa chạy thật" nếu còn sót.
 
 Ví dụ (v0.8.3, trước → sau):
 - Trước: "3DS: Monika không còn gọi lớp nạp driver GPU tùy biến (`libhook_impl.so`) khi mở lõi, nên máy bị văng ngay sau khi nạp lõi sẽ dùng driver hệ thống…"

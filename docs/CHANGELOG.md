@@ -6,11 +6,11 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 <!-- bien-tap: v0.8.3 -->
 > Phát hành ngày 13/10/2026 (UTC), bản thử nghiệm.
 
-- **Sửa lỗi:** Một số máy mở game 3DS bị văng ngay sau khi nạp lõi. Bản này không còn tự nạp lớp đồ họa tùy biến khi mở lõi, nên các máy đó có thể chơi được. Chưa kiểm trên máy 3DS thật. ([d199001](https://github.com/aowvn-10diem/aowvn-monika/commit/d199001b835eed66a15f58461ec9e387369eba86))
+- **Sửa lỗi:** Một số máy mở game 3DS bị văng ngay khi vào game. Bản này đã chỉnh để các máy đó có thể chơi được. ([d199001](https://github.com/aowvn-10diem/aowvn-monika/commit/d199001b835eed66a15f58461ec9e387369eba86))
 - **Sửa lỗi:** Chạm màn hình khi game Nintendo DS đang nạp không còn làm app treo. ([89ca662](https://github.com/aowvn-10diem/aowvn-monika/commit/89ca6624b8934faaeb753d8179a145a5f31a9713), [0027e6e](https://github.com/aowvn-10diem/aowvn-monika/commit/0027e6ec4bcda0c8102d9d0723148917913da5d4), [338921d](https://github.com/aowvn-10diem/aowvn-monika/commit/338921d16b2814fe54ae8921d4db59d742b1ef52))
-- **Mới:** Game Nintendo DS có thể vào nhanh hơn ở các lần sau, vì bước chuẩn bị của lõi được lưu lại. Tốc độ thật trên máy chưa kiểm. ([89ca662](https://github.com/aowvn-10diem/aowvn-monika/commit/89ca6624b8934faaeb753d8179a145a5f31a9713), [0027e6e](https://github.com/aowvn-10diem/aowvn-monika/commit/0027e6ec4bcda0c8102d9d0723148917913da5d4), [338921d](https://github.com/aowvn-10diem/aowvn-monika/commit/338921d16b2814fe54ae8921d4db59d742b1ef52))
-- **Mới:** Khi thanh tên game và menu đang tự ẩn, vùng mép hiện lại chúng có tên "Hiện tên game và menu" và dùng được bằng trợ năng, để mở lại menu ổn định hơn. ([98375af](https://github.com/aowvn-10diem/aowvn-monika/commit/98375af9c94bd5b6f079d999a391a273e00613d9), [413bfc3](https://github.com/aowvn-10diem/aowvn-monika/commit/413bfc3a83796d6241d80923e4eb1050be7febd3))
-- **Mới:** Bàn phím ảo của game Java đổi sang bộ nút mới của AowVN. Mặt phím luôn đục nên hai thanh "Độ mờ" và "Ép độ mờ" bị khóa, có ghi chú khi dùng bàn phím Monika. ([32b0c1b](https://github.com/aowvn-10diem/aowvn-monika/commit/32b0c1bac2c1de491d87dbfe471c3f32831e2eaf))
+- **Mới:** Game Nintendo DS có thể vào nhanh hơn ở các lần sau, vì bước chuẩn bị của lõi được lưu lại. ([89ca662](https://github.com/aowvn-10diem/aowvn-monika/commit/89ca6624b8934faaeb753d8179a145a5f31a9713), [0027e6e](https://github.com/aowvn-10diem/aowvn-monika/commit/0027e6ec4bcda0c8102d9d0723148917913da5d4), [338921d](https://github.com/aowvn-10diem/aowvn-monika/commit/338921d16b2814fe54ae8921d4db59d742b1ef52))
+- **Mới:** Khi thanh tên game và menu tự ẩn, chạm vùng mép màn hình để hiện lại; mở lại menu ổn định hơn và dùng được với trợ năng. ([98375af](https://github.com/aowvn-10diem/aowvn-monika/commit/98375af9c94bd5b6f079d999a391a273e00613d9), [413bfc3](https://github.com/aowvn-10diem/aowvn-monika/commit/413bfc3a83796d6241d80923e4eb1050be7febd3))
+- **Mới:** Bàn phím ảo của game Java đổi sang bộ nút mới của AowVN. ([32b0c1b](https://github.com/aowvn-10diem/aowvn-monika/commit/32b0c1bac2c1de491d87dbfe471c3f32831e2eaf))
 - Nội bộ: gói Kirikiri mới ghi mã phiên bản và đính kèm tệp ký hiệu để báo lỗi sập đọc được tên hàm; chỉ có hiệu lực khi phát hành gói Kirikiri mới. ([dd752c2](https://github.com/aowvn-10diem/aowvn-monika/commit/dd752c2504d15278e871b9be55bb017b2f3929a4))
 - Nội bộ: có cờ cấu hình để bật lại lớp đồ họa tùy biến của 3DS (mặc định tắt), dùng khi cần thử. ([d199001](https://github.com/aowvn-10diem/aowvn-monika/commit/d199001b835eed66a15f58461ec9e387369eba86))
 - Nội bộ: sửa các bài kiểm thử giao diện và dữ liệu Ren'Py cho ổn định; bản cài của người dùng không đổi. ([408b901](https://github.com/aowvn-10diem/aowvn-monika/commit/408b901e46a5eecf802a0615c5f6a8de20d16f47), [248395a](https://github.com/aowvn-10diem/aowvn-monika/commit/248395a31e9e4f0145da73e1d16ff396d44d32f4))
@@ -20,8 +20,8 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 > Phát hành ngày 11/10/2026 (UTC), bản thử nghiệm.
 
 - **Mới:** Khi game giả lập (gồm Nintendo DS) mở lâu, màn chờ hiện từng bước: tải lõi, giải nén, nạp game, khởi tạo, thay vì chỉ "Đang khởi động game…". ([be45e32](https://github.com/aowvn-10diem/aowvn-monika/commit/be45e327b6448c939f1bc185ffe307dc31c3a776))
-- **Mới:** Sau 60 giây màn chờ hiện nút "Sao chép chẩn đoán". Game vẫn tiếp tục nạp, không tự báo lỗi hay đổi lõi. Nguyên nhân chậm chưa rõ; chưa kiểm trên máy thật. ([be45e32](https://github.com/aowvn-10diem/aowvn-monika/commit/be45e327b6448c939f1bc185ffe307dc31c3a776))
-- **Sửa lỗi:** Game Kirikiri có script nằm sẵn trong tệp exe không còn bị báo "không tìm thấy tệp khởi động". Kirikiri vẫn là bản thử; chưa chạy thật trên máy. ([4b672c5](https://github.com/aowvn-10diem/aowvn-monika/commit/4b672c579bffba374193b7da32557b7247884b45))
+- **Mới:** Sau 60 giây màn chờ hiện nút "Sao chép chẩn đoán". Game vẫn tiếp tục nạp, không tự báo lỗi hay đổi lõi. ([be45e32](https://github.com/aowvn-10diem/aowvn-monika/commit/be45e327b6448c939f1bc185ffe307dc31c3a776))
+- **Sửa lỗi:** Game Kirikiri có kịch bản nằm sẵn trong tệp exe không còn bị báo "không tìm thấy tệp khởi động". ([4b672c5](https://github.com/aowvn-10diem/aowvn-monika/commit/4b672c579bffba374193b7da32557b7247884b45))
 - Nội bộ: chẩn đoán Kirikiri ghi thêm thông tin về script nhúng trong exe, để hỗ trợ báo lỗi. ([4b672c5](https://github.com/aowvn-10diem/aowvn-monika/commit/4b672c579bffba374193b7da32557b7247884b45))
 - Nội bộ: điểm danh hằng ngày và mốc đánh giá dùng một đồng hồ có thể thay khi kiểm thử; cách tính theo múi giờ giữ nguyên. ([04dfd6b](https://github.com/aowvn-10diem/aowvn-monika/commit/04dfd6b4f4bc3c1776e9b10054d911852c56d08f))
 
@@ -29,20 +29,20 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 <!-- bien-tap: v0.8.1 -->
 > Phát hành ngày 11/10/2026 (UTC), bản thử nghiệm.
 
-- **Mới:** Nintendo DS ở màn dọc xếp kiểu DraStic: hai màn hình game nằm trên và rộng hơn trước, bàn phím ảo ở dưới. Kích thước thật trên máy chưa kiểm. ([b116a93](https://github.com/aowvn-10diem/aowvn-monika/commit/b116a939f14b379b258e4e7cde117c93d10083be))
+- **Mới:** Nintendo DS ở màn dọc xếp kiểu DraStic: hai màn hình game nằm trên và rộng hơn trước, bàn phím ảo ở dưới. ([b116a93](https://github.com/aowvn-10diem/aowvn-monika/commit/b116a939f14b379b258e4e7cde117c93d10083be))
 - **Mới:** Lõi NDS mặc định dùng đúng tay cầm NDS có nút X và Y, thay vì tay cầm GBA. ([b116a93](https://github.com/aowvn-10diem/aowvn-monika/commit/b116a939f14b379b258e4e7cde117c93d10083be))
 - **Mới:** Thanh tên game, nút menu và gợi ý như "D-pad → Cần" tự ẩn sau vài giây khi chơi giả lập (NDS, PSP, GBA), Kirikiri, RPG Maker, Ren'Py và game web. Chạm mép màn hình để hiện lại. ([b116a93](https://github.com/aowvn-10diem/aowvn-monika/commit/b116a939f14b379b258e4e7cde117c93d10083be))
-- **Mới:** Game Java: nút menu chuyển xuống ô trống của bàn phím ảo, không đè lên màn hình game. Khi không có bàn phím Monika, nút nằm góc trên phải và mờ sau vài giây. Vị trí thật trên máy chưa kiểm. ([801752e](https://github.com/aowvn-10diem/aowvn-monika/commit/801752e8cd191742e046c63f915952a6bd3be823))
+- **Mới:** Game Java: nút menu chuyển xuống ô trống của bàn phím ảo, không đè lên màn hình game. Khi không có bàn phím Monika, nút nằm góc trên phải và mờ sau vài giây. ([801752e](https://github.com/aowvn-10diem/aowvn-monika/commit/801752e8cd191742e046c63f915952a6bd3be823))
 
 ## [v0.8.0](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.0) (Bản thử — Pre-release)
+<!-- bien-tap: v0.8.0 -->
+> Phát hành ngày 11/10/2026 (UTC), bản thử nghiệm.
 
-> Phát hành ngày 11/10/2026 (UTC), đánh dấu pre-release.
-
-- Chỉnh bố cục, tỉ lệ và khoảng cách hai màn Nintendo DS trong Cài đặt → Màn hình; lựa chọn có hiệu lực khi mở game tiếp theo. ([608b12a](https://github.com/aowvn-10diem/aowvn-monika/commit/608b12a9cad8950fd95816ae96bbd8a893dd2d6d))
-- Bộ nút dùng chung có bảng màu AowVN, viền pixel, bóng cứng và các trạng thái nhấn, chọn, vô hiệu hóa; hỗ trợ ba mức hiệu ứng. ([fb5edac](https://github.com/aowvn-10diem/aowvn-monika/commit/fb5edac0f1d885142839ffe05a0b43339d75522c))
-- Tay cầm libretro dùng mặt nút AowVN, giữ tín hiệu phím và rung; chữ nút đủ tương phản ở độ mờ mặc định. ([73a1a0f](https://github.com/aowvn-10diem/aowvn-monika/commit/73a1a0f99100c76d499380085f032834737690e1))
-- Chẩn đoán Kirikiri ghi tối đa năm mẫu tên mục ngắn; thông báo riêng khi chỉ mục đầy đủ có dấu hiệu tên băm và thiếu kịch bản đọc được, tránh nhận nhầm thư mục chỉ có tài nguyên. ([49bdbd5](https://github.com/aowvn-10diem/aowvn-monika/commit/49bdbd59e06da3e18063976a9df44a261c33b082))
-- Giữ dấu “+” trong tên tệp tải xuống lấy từ Content-Disposition dạng UTF-8, kể cả tên có dấu cách. ([3bcc30c](https://github.com/aowvn-10diem/aowvn-monika/commit/3bcc30cb21ad33b84d3423fb5f548ca1a5cf4db6))
+- **Mới:** Trong Cài đặt → Màn hình, chỉnh được bố cục, tỉ lệ và khoảng cách hai màn hình Nintendo DS; áp dụng ở lần mở game tiếp theo. ([608b12a](https://github.com/aowvn-10diem/aowvn-monika/commit/608b12a9cad8950fd95816ae96bbd8a893dd2d6d))
+- **Mới:** Bộ nút mới mang phong cách AowVN (viền pixel, bóng đổ cứng), có hiệu ứng khi nhấn và ba mức hiệu ứng để chọn. ([fb5edac](https://github.com/aowvn-10diem/aowvn-monika/commit/fb5edac0f1d885142839ffe05a0b43339d75522c))
+- **Mới:** Tay cầm ảo khi chơi giả lập dùng mặt nút AowVN; vẫn nhận phím và rung như trước, chữ trên nút rõ ở độ mờ mặc định. ([73a1a0f](https://github.com/aowvn-10diem/aowvn-monika/commit/73a1a0f99100c76d499380085f032834737690e1))
+- Nội bộ: chẩn đoán Kirikiri ghi tối đa năm mẫu tên mục ngắn, có thông báo riêng khi chỉ mục đầy đủ có dấu hiệu tên băm và thiếu kịch bản đọc được, tránh nhận nhầm thư mục chỉ có tài nguyên. ([49bdbd5](https://github.com/aowvn-10diem/aowvn-monika/commit/49bdbd59e06da3e18063976a9df44a261c33b082))
+- **Sửa lỗi:** Tên tệp tải xuống có dấu “+” hoặc dấu cách không còn bị đổi sai. ([3bcc30c](https://github.com/aowvn-10diem/aowvn-monika/commit/3bcc30cb21ad33b84d3423fb5f548ca1a5cf4db6))
 
 > V85c chưa gộp vào main tại thời điểm chốt danh sách, chuyển sang v0.8.1 theo [PM A29](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6099303176).
 
