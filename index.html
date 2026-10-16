@@ -1151,7 +1151,7 @@ if (d.classList.contains("fx3d")) {
         document.addEventListener("keydown", function (e) { if (e.key === "Escape") burst.stop(); });
         document.querySelectorAll("[data-don-close]").forEach(function (b) { b.addEventListener("click", function () { burst.stop(); }); });
       }
-      if (hud) setInterval(function () { hud.textContent = ["hero", "ring", "phone", "road"].map(function (n, i) { var c = [hero, ring, pc, rc][i]; return n + " " + (c.dataset.fps || "-"); }).join(" | ") + " fps"; }, 700);
+      if (hud) setInterval(function () { hud.textContent = ["hero", "ring", "phone", "road"].map(function (n, i) { var c = [hero, ring, pc, rc][i]; return n + " " + (c.dataset.fps || "-") + (n === "phone" && c.dataset.paint ? " (vẽ " + c.dataset.paint + "ms)" : "") + (c.isConnected && getComputedStyle(c).display === "none" ? " [đã tắt]" : ""); }).join(" | ") + " fps"; }, 700);
     }).catch(function (e) { console.warn("three.js không nạp được, giữ giao diện CSS:", e); });
   };
   var start = function () { (window.requestIdleCallback || function (f) { setTimeout(f, 300); })(run, { timeout: 4000 }); };
