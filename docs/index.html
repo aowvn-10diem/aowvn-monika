@@ -234,6 +234,32 @@ section.block { padding-block: 84px; }
 .note img { width: 28px; height: 28px; flex: none; }
 .install .cta { margin-top: 28px; }
 
+/* Lộ trình */
+.road { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; position: relative; }
+.road::before, .road::after { content: ""; position: absolute; top: 34px; left: 12.5%; height: 4px; border-radius: 4px; }
+.road::before { right: 12.5%; background: var(--line); }
+.road::after { width: 25%; background: linear-gradient(90deg, var(--ok), var(--g2)); }
+.road li { position: relative; display: grid; justify-items: center; align-content: start; text-align: center; gap: 10px; }
+.node-r { width: 70px; height: 70px; border-radius: 50%; background: var(--surface); border: 2px solid var(--line); display: grid; place-items: center; position: relative; z-index: 1; }
+.node-r img { width: 40px; height: 40px; }
+.road .done .node-r { border-color: var(--ok); }
+.road .doing .node-r { border-color: var(--g2); box-shadow: 0 0 0 6px color-mix(in srgb, var(--g2) 18%, transparent); }
+.badge-r { font-size: 12.5px; font-weight: 800; padding: 2px 11px; border-radius: 999px; border: 1.5px solid currentColor; color: var(--muted); }
+.road .done .badge-r { color: var(--ok); }
+.road .doing .badge-r { color: var(--g2); }
+.road h3 { font-size: 18px; font-weight: 800; line-height: 1.25; max-width: 14em; }
+.road-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.road-tags b { font-size: 12.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: var(--chip); }
+@media (prefers-reduced-motion: no-preference) { .road .doing .node-r { animation: pulse-r 2.4s ease-in-out infinite; } @keyframes pulse-r { 0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--g2) 18%, transparent); } 50% { box-shadow: 0 0 0 11px color-mix(in srgb, var(--g2) 6%, transparent); } } }
+@media (max-width: 760px) {
+  .road { grid-template-columns: 1fr; gap: 26px; }
+  .road::before { left: 34px; right: auto; top: 35px; bottom: 35px; width: 4px; height: auto; }
+  .road::after { left: 34px; top: 35px; width: 4px; height: calc((100% - 70px) / 3); background: linear-gradient(180deg, var(--ok), var(--g2)); }
+  .road li { grid-template-columns: 70px 1fr; column-gap: 16px; row-gap: 6px; justify-items: start; text-align: left; align-items: center; }
+  .node-r { grid-row: 1 / span 3; }
+  .road-tags { justify-content: flex-start; }
+}
+
 /* Hỏi đáp */
 .faq { display: grid; gap: 12px; max-width: 820px; }
 .faq details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 4px 20px; }
@@ -362,6 +388,7 @@ footer a { color: var(--muted); }
       <a class="link site" href="https://www.aow.vn" rel="noopener">Made by AowVN</a>
       <a class="link" href="#tinh-nang">Tính năng</a>
       <a class="link" href="#cai-dat">Cách cài</a>
+      <a class="link" href="#lo-trinh">Lộ trình</a>
       <a class="link" href="#hoi-dap">Hỏi đáp</a>
       <a class="btn btn-small" data-apk href="https://github.com/aowvn-10diem/aowvn-monika/releases">Tải app</a>
     </nav>
@@ -386,7 +413,7 @@ footer a { color: var(--muted); }
             <p class="lede">Monika có cơ chế thông minh: tự tìm cách điều chỉnh, bổ sung thư viện và API của ứng dụng để chạy được trên Android hiện tại. Hệ thống cũng bao gồm Android ảo được tích hợp đi kèm.</p>
           </article>
           <article class="slide" id="sl3">
-            <h2 class="sh">Xây dựng để đáp ứng cho <span class="grad">cả tương lai</span></h2>
+            <h2 class="sh">Xây dựng <span class="grad">cho tương lai</span></h2>
             <p class="lede">Monika được xây dựng bằng ngôn ngữ mới, engine mới. Tất cả lõi giả lập đều được viết lại từ đầu, với hiệu suất được tối ưu <b>theo giờ</b>.</p>
           </article>
         </div>
@@ -394,7 +421,7 @@ footer a { color: var(--muted); }
           <button type="button" aria-label="Trang 1 trên 4: Định nghĩa lại trải nghiệm chơi game" aria-current="true"><i></i></button>
           <button type="button" aria-label="Trang 2 trên 4: Ứng dụng chủ động cải tiến"><i></i></button>
           <button type="button" aria-label="Trang 3 trên 4: Hỗ trợ game Android cũ"><i></i></button>
-          <button type="button" aria-label="Trang 4 trên 4: Xây dựng cho cả tương lai"><i></i></button>
+          <button type="button" aria-label="Trang 4 trên 4: Xây dựng cho tương lai"><i></i></button>
         </div>
         <div class="cta" id="hero-cta">
           <a class="btn btn-main" data-apk href="https://github.com/aowvn-10diem/aowvn-monika/releases">
@@ -504,6 +531,35 @@ footer a { color: var(--muted); }
         </a>
         <span class="dl-note" data-dl hidden>Đã có <b data-dl-n>0</b> lượt tải</span>
       </div>
+    </div>
+  </section>
+
+  <section class="block" id="lo-trinh" aria-labelledby="road-h">
+    <div class="wrap">
+      <div class="head"><span class="kicker">Lộ trình</span><h2 id="road-h">Lộ trình phát triển</h2></div>
+      <ol class="road">
+        <li class="done">
+          <span class="node-r"><img src="assets/fluent3d_rocket.webp" alt="" width="40" height="40" loading="lazy" decoding="async"></span>
+          <span class="badge-r">Đã xong</span>
+          <h3>Ra mắt ứng dụng</h3>
+        </li>
+        <li class="doing">
+          <span class="node-r"><img src="assets/fluent3d_shield.webp" alt="" width="40" height="40" loading="lazy" decoding="async"></span>
+          <span class="badge-r">Đang làm</span>
+          <h3>Chạy ổn định tất cả giả lập</h3>
+        </li>
+        <li>
+          <span class="node-r"><img src="assets/fluent3d_mobile_phone.webp" alt="" width="40" height="40" loading="lazy" decoding="async"></span>
+          <span class="badge-r">Sắp tới</span>
+          <h3>Phát hành trên Google Play</h3>
+        </li>
+        <li>
+          <span class="node-r"><img src="assets/fluent3d_laptop.webp" alt="" width="40" height="40" loading="lazy" decoding="async"></span>
+          <span class="badge-r">Dự kiến</span>
+          <h3>Phát triển phiên bản iOS, Máy tính, Retro</h3>
+          <span class="road-tags"><b>iOS</b><b>Máy tính</b><b>Retro</b></span>
+        </li>
+      </ol>
     </div>
   </section>
 
