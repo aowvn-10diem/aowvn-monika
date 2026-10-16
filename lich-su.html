@@ -171,13 +171,20 @@ footer a { color: var(--muted); }
   // Bỏ cụm "([abc1234](link), [#12](link))" dẫn tới commit/PR: dành cho người làm, không phải người dùng
   var REFS = /\s*\(\s*\[[^\]]*\]\([^)]*\)(?:\s*,\s*\[[^\]]*\]\([^)]*\))*\s*\)/g;
 
+  // Người đọc là người dùng: chỉ giữ điều đã sửa và điều mới. Bỏ các câu ghi chú của nhóm như "chưa kiểm trên máy thật", "chưa rõ nguyên nhân".
+  function userText(t) {
+    var parts = t.match(/[^.;!?]+[.;!?]?\s*/g) || [t];
+    var r = parts.filter(function (x) { return !/\bchưa (?:kiểm|rõ|chạy thật|thử)/i.test(x); }).join("").replace(/\s+/g, " ").replace(/\s+([.,;])/g, "$1").replace(/[;,]$/, ".").trim();
+    return /^(\*\*[^*]+\*\*:?)?\s*$/.test(r) ? "" : r;
+  }
+
   function parse(md) {
     var out = [], cur = null;
     md.split(/\r?\n/).forEach(function (l) {
       var h = l.match(/^##\s+(.*)$/);
       if (h) {
         var m = h[1].match(/v?(\d+\.\d+\.\d+)/);
-        cur = m ? { tag: "v" + m[1], beta: /thử|pre-?release/i.test(h[1]), items: [], internal: [] } : null;
+        cur = m ? { tag: "v" + m[1], beta: /thử|pre-?release/i.test(h[1]), items: [] } : null;
         if (cur) out.push(cur);
         return;
       }
@@ -186,7 +193,9 @@ footer a { color: var(--muted); }
       if (!b) return;
       var t = b[1].replace(REFS, "").replace(/\s+([.,;])/g, "$1").trim();
       if (!t) return;
-      (/^Nội bộ/i.test(t) ? cur.internal : cur.items).push(t);
+      if (/^Nội bộ/i.test(t)) return; // việc của nhóm làm: không đưa lên trang cho người dùng
+      t = userText(t);
+      if (t) cur.items.push(t);
     });
     // Sắp phiên bản mới nhất lên đầu, không phụ thuộc thứ tự trong file
     function key(v) { return v.tag.slice(1).split(".").map(Number); }
@@ -213,7 +222,7 @@ footer a { color: var(--muted); }
     versions.forEach(function (v) {
       var r = byTag[v.tag];
       if (rels && !r) return; // chưa có bản phát hành thật (ví dụ ứng viên) thì không đưa lên trang
-      if (!v.items.length && !v.internal.length) return;
+      if (!v.items.length) return;
       var beta = r ? r.pre : v.beta;
       html += '<article class="rel"><header><h2>' + esc(v.tag) + "</h2>";
       if (first) html += '<span class="badge new">Mới nhất</span>';
@@ -223,7 +232,6 @@ footer a { color: var(--muted); }
       }
       html += "</header>";
       if (v.items.length) html += "<ul>" + v.items.map(function (t) { return "<li>" + inline(t) + "</li>"; }).join("") + "</ul>";
-      if (v.internal.length) html += "<details><summary>Thay đổi nội bộ (" + v.internal.length + ")</summary><ul>" + v.internal.map(function (t) { return "<li>" + inline(t) + "</li>"; }).join("") + "</ul></details>";
       if (r) html += '<a class="btn btn-small dlbtn" href="' + esc(r.url) + '">Tải bản ' + esc(v.tag) + "</a>";
       html += "</article>";
       first = false;
