@@ -2,7 +2,7 @@
 
 Soạn thừa lệnh sếp (Minh). PM đọc khi rảnh, không gấp. Nova không ghi "PM duyệt" ở đâu cả.
 
-**Kết luận:** trang web đã làm xong và lên live ngày 16/10 (đầu trang xoay, giao diện tối, lộ trình, logo hệ máy, popup tải có nhạc, ảnh nén). Sếp ra lệnh **tách trang web ra khỏi thư mục `docs/`**: "trang web thì chỉ có web thôi". Nova đã dựng nhánh `trang-web` (chỉ có tệp web). **Chưa có gì đổi trên trang thật**; chỉ khi sếp đổi nguồn GitHub Pages sang nhánh đó thì mới có hiệu lực. Việc này làm một số trang của PM không còn công khai, cần PM biết (mục 3).
+**Kết luận:** trang web đã làm xong và lên live ngày 16/10 (đầu trang xoay, giao diện tối, lộ trình, logo hệ máy, popup tải có nhạc, ảnh nén). Sếp ra lệnh **tách trang web ra khỏi thư mục `docs/`**: "trang web thì chỉ có web thôi". Nova đã dựng nhánh `trang-web` (chỉ có tệp web). **Sếp đã đổi nguồn GitHub Pages sang nhánh `trang-web`** (Pages dựng lần đầu từ nhánh này lúc 04:34 UTC ngày 16/10), nên trang thật giờ chạy từ nhánh đó. Một số trang của PM không còn công khai nên PM cần biết (mục 3). Sếp cũng ra lệnh **công khai bảng tiến độ**: đã đặt ở `https://monika.aow.vn/tien-do/`.
 
 ## 1. Đã lên live hôm nay (nhánh `docs/opus-tra-loi`, thư mục `/docs`)
 
@@ -23,7 +23,7 @@ Mỗi lần lên live, Nova xóa cache Cloudflare (mục 4). Các PR trên gộp
 | Việc | Trạng thái |
 |---|---|
 | **#261** tối ưu SEO (meta, Open Graph, JSON-LD gồm FAQPage, robots, sitemap, 404, ảnh chia sẻ 1200×630) | Mở, chờ sếp duyệt. Nội dung đã nằm sẵn trong nhánh `trang-web`, nên #261 sẽ thừa khi sếp chuyển nguồn Pages; nên đóng #261 sau đó. |
-| **Chuyển nguồn Pages** sang nhánh `trang-web` | Chỉ sếp làm được (Nova không có công cụ sửa cài đặt repo): Settings → Pages → Branch `trang-web`, thư mục `/ (root)`, Save. Tên miền tùy chỉnh giữ nguyên (tệp `CNAME` đã có ở gốc nhánh). Quay lại nếu lỗi: đặt nguồn về `docs/opus-tra-loi` thư mục `/docs`. |
+| **Chuyển nguồn Pages** sang nhánh `trang-web` | **Xong** (sếp làm 16/10). Quay lại nếu lỗi: Settings → Pages → nguồn `docs/opus-tra-loi`, thư mục `/docs`. Tên miền tùy chỉnh giữ nguyên (tệp `CNAME` ở gốc nhánh). |
 
 ## 3. Ảnh hưởng tới PM (cần PM đọc kỹ)
 
@@ -34,8 +34,10 @@ Mỗi lần lên live, Nova xóa cache Cloudflare (mục 4). Các PR trên gộp
 - App Android: `loginUrl` trỏ `www.aow.vn/p/device-login.html` (Blogger), không phụ thuộc Pages.
 - `lich-su.html` đọc `docs/CHANGELOG.md` trực tiếp từ nhánh `main` qua raw.githubusercontent, không đổi.
 
+**Bảng tiến độ đã được sếp quyết công khai** tại `/tien-do/` (nhánh `trang-web`, tệp `tien-do/index.html`, giao diện tối, có liên kết từ mục Lộ trình trên trang chủ). Bản hiện tại dựng từ `state.json` lúc 15/10 12:05 nên **đang cũ** (trang tự ghi "đã hơn 2 giờ"). Cập nhật bằng script mới `docs/opus/pm/bang-tien-do/dang-tien-do.py <thư-mục-gốc-checkout-nhánh-trang-web>`: chạy `build_public.py`, bọc khung HTML + meta SEO, ghi `tien-do/index.html`; rồi PR vào `trang-web` (hoặc sếp cho đẩy thẳng) và xóa cache Cloudflare cho `/tien-do/`. Lưu ý: trang công khai hiện toàn bộ nội dung `state.json` (đội, việc, nhật ký, điểm nghẽn); nếu PM muốn lược bớt thì lọc `state.json` trước khi dựng. Không có khóa hay token thật trong tệp (Nova đã quét).
+
 **PM cần quyết / sửa:**
-1. Bảng tiến độ có cần công khai không? Nếu có, chọn chỗ mới (Artifact, hoặc thêm một thư mục vào nhánh `trang-web`); `build_public.py` hiện chỉ ghi `public.html`, không ghi `docs/index.html` nữa.
+1. (Đã xử lý) Bảng tiến độ công khai: xem trên.
 2. Cập nhật các chỗ còn nhắc `docs/index.html` hoặc `github.io` là trang tải app: `.claude/skills/pm-kiem-thu/SKILL.md` dòng 12, `docs/opus/pm/prompt-kiem-thu-hien-tai.md` dòng 18, `docs/opus/pm/trang-thai-pm.json` (`public_page`, dòng 153), chú thích đầu `docs/opus/pm/bang-tien-do/build_public.py`. (`docs/opus/ket-qua/V49.md` là lịch sử, không sửa.)
 3. Sau khi chuyển, trang web sửa **chỉ ở nhánh `trang-web`** (tệp ở gốc, không còn tiền tố `docs/`). Tệp web còn nằm trong `docs/` của nhánh PM là bản cũ, nên xóa trong một PR riêng của PM sau khi sếp xác nhận trang thật chạy ổn.
 
