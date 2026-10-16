@@ -1157,14 +1157,14 @@ if (d.classList.contains("fx3d")) {
   var run = function () {
     import("./assets/three/fx.js").then(function (m) {
       var near = function (el, fn) {
-        var io = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { io.disconnect(); try { fn(); } catch (e) { console.warn("three.js:", e); } } }, { rootMargin: "500px 0px" });
+        var io = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { io.disconnect(); try { fn(); } catch (e) { console.warn("three.js:", e); } } }, { rootMargin: "300px 0px" });
         io.observe(el);
       };
       var onDead = function (c, fn) { c.addEventListener("fx:dead", function () { c.style.display = "none"; fn && fn(); }); };
       var hud = /[?&]hud/.test(q) ? document.body.appendChild(Object.assign(document.createElement("div"), { className: "gl-hud" })) : null;
       var cv = function (s) { return document.querySelector(s); };
       // Pha 1a
-      var hero = cv(".gl-hero"); onDead(hero); m.mountHero(hero, { count: mobile ? 2400 : 6000 });
+      var hero = cv(".gl-hero"); onDead(hero); m.mountHero(hero, { count: mobile ? 900 : 2400 });
       // Pha 1b
       var ring = cv(".gl-ring"), sys = cv(".systems");
       near(ring, function () {
@@ -1189,16 +1189,21 @@ if (d.classList.contains("fx3d")) {
         var dx = 0; pc.addEventListener("pointerdown", function (e) { dx = e.clientX; });
         pc.addEventListener("pointerup", function (e) { if (Math.abs(e.clientX - dx) < 8) { pick((cur + 1) % feats.length); hold = Date.now() + 9000; } });
       });
-      // Pha 4: chữ M 3D ở trang "Xây dựng cho tương lai" (chỉ vẽ khi trang đó đang hiện; dựng sớm để không giật lúc chuyển trang)
+      // Pha 4: chữ M 3D ở trang "Xây dựng cho tương lai": chỉ dựng khi người dùng xem tới trang 3 hoặc 4 của phần đầu, và chỉ vẽ khi trang 4 đang hiện
       var lg = cv(".gl-logo"), lvis = cv('.vis[data-i="3"]'), logo = null;
       onDead(lg, function () { lvis.classList.remove("logo-on"); });
-      setTimeout(function () {
+      var mkLogo = function () {
+        if (logo) return;
         try {
           logo = m.mountLogo(lg, { gate: function () { return lvis.classList.contains("on"); }, count: mobile ? 160 : 360 });
           lvis.classList.add("logo-on"); if (lvis.classList.contains("on")) logo.play();
         } catch (e) { console.warn("three.js (chữ M):", e); }
-      }, 2500);
-      addEventListener("monika:slide", function (e) { if (e.detail === 3 && logo) logo.play(); });
+      };
+      if (lvis.classList.contains("on")) mkLogo();
+      addEventListener("monika:slide", function (e) { if (e.detail === 2) mkLogo(); if (e.detail === 3) { mkLogo(); if (logo) logo.play(); } });
+      // Popup tải/donate mở: dừng mọi cảnh phía sau cho nhẹ máy
+      addEventListener("monika:don", function () { m.setPaused(true); });
+      addEventListener("monika:don-close", function () { m.setPaused(false); });
       // Pha 3a
       var rc = cv(".gl-road");
       near(rc, function () { onDead(rc); m.mountRoad(rc, cv("#road")); });
