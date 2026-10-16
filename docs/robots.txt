@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+# Tài liệu nội bộ của dự án, không cần lên kết quả tìm kiếm
+Disallow: /opus/
+Disallow: /tester/
+Disallow: /*.md$
+
+Sitemap: https://monika.aow.vn/sitemap.xml
