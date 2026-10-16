@@ -468,12 +468,24 @@ footer a { color: var(--muted); }
   .dock { display: flex; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .dock { transition: none; } }
+.bgm { position: fixed; left: 16px; bottom: 16px; z-index: 45; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 88%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--ink); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.bgm[hidden] { display: none; }
+.bgm svg { width: 22px; height: 22px; }
+.bgm .off { display: none; }
+.bgm.muted .on { display: none; }
+.bgm.muted .off { display: block; }
+.bgm.playing::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--g2) 55%, transparent); animation: bgmring 2.2s ease-out infinite; }
+@keyframes bgmring { from { opacity: .9; transform: scale(.85); } to { opacity: 0; transform: scale(1.3); } }
+@media (max-width: 620px) { .bgm { bottom: calc(86px + env(safe-area-inset-bottom)); left: 12px; width: 40px; height: 40px; } }
+@media (prefers-reduced-motion: reduce) { .bgm.playing::after { animation: none; opacity: 0; } }
+
 /* ===== Hiệu ứng three.js (chỉ bật khi html.fx3d; không đủ điều kiện thì giao diện CSS như cũ) ===== */
 .gl { display: block; opacity: 0; transition: opacity 1.4s ease; pointer-events: none; }
 .gl.on { opacity: 1; }
 .hero { position: relative; overflow: hidden; }
 .hero .wrap { position: relative; z-index: 1; }
 .gl-hero { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.gl-hero { -webkit-mask-image: linear-gradient(90deg, transparent 24%, rgba(0,0,0,.5) 46%, #000 68%); mask-image: linear-gradient(90deg, transparent 24%, rgba(0,0,0,.5) 46%, #000 68%); }
 .gl-ring { display: none; width: 100%; height: 230px; margin: 0 0 6px; pointer-events: auto; }
 .fx3d .gl-ring { display: block; }
 .systems.ring-on .flow .row:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
@@ -482,18 +494,22 @@ footer a { color: var(--muted); }
 .fx3d .phone3d { display: block; position: sticky; top: 92px; height: min(620px, calc(100vh - 120px)); border-radius: var(--r-lg); }
 .phone3d .poster { position: absolute; inset: 0; margin: auto; width: 150px; height: 150px; opacity: .9; }
 .phone3d.live .poster { display: none; }
-.gl-phone { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: auto; -webkit-mask-image: radial-gradient(ellipse 72% 68% at 50% 50%, #000 58%, transparent 100%); mask-image: radial-gradient(ellipse 72% 68% at 50% 50%, #000 58%, transparent 100%); }
-.fx3d .feats { grid-template-columns: 1fr 1fr; }
+.gl-phone { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: auto; -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 42%, transparent 100%); mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 42%, transparent 100%); }
+.fx3d .feats { grid-template-columns: 1fr; gap: 16px; }
+.fx3d .feat { grid-template-columns: 64px minmax(0, 1fr); column-gap: 18px; row-gap: 6px; align-items: start; padding: 24px; }
+.fx3d .feat img { grid-row: 1 / span 2; width: 56px; height: 56px; }
+.fx3d .feat h3, .fx3d .feat p { grid-column: 2; }
 .feat { transition: border-color .35s ease, box-shadow .35s ease, translate .35s ease; }
 .fx3d .feat.on { border-color: color-mix(in srgb, var(--g2) 60%, var(--line)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--g2) 13%, transparent), 0 14px 40px -18px color-mix(in srgb, var(--g2) 55%, transparent); translate: 0 -2px; }
 .road-sec .gl-road { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
 .don .gl-burst { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; transition: opacity .5s ease; }
 .gl-hud { position: fixed; left: 12px; bottom: 12px; z-index: 80; font: 700 12px/1.3 var(--mono); background: rgba(0,0,0,.7); color: #fff; padding: 8px 10px; border-radius: 10px; pointer-events: none; }
 @media (max-width: 900px) {
+  .gl-hero { -webkit-mask-image: linear-gradient(180deg, transparent 48%, #000 66%); mask-image: linear-gradient(180deg, transparent 48%, #000 66%); }
   .fx3d .feat-stage { grid-template-columns: 1fr; gap: 20px; }
   .fx3d .phone3d { position: relative; top: 0; height: 400px; }
 }
-@media (max-width: 620px) { .fx3d .feats { grid-template-columns: 1fr; } .fx3d .phone3d { height: 360px; } .gl-ring { height: 190px; } }
+@media (max-width: 620px) { .fx3d .phone3d { height: 380px; } .gl-ring { height: 190px; } .fx3d .feat { grid-template-columns: 52px minmax(0, 1fr); column-gap: 14px; padding: 20px; } .fx3d .feat img { width: 48px; height: 48px; } }
 
 </style>
 
@@ -759,6 +775,11 @@ footer a { color: var(--muted); }
   <canvas class="gl gl-burst" aria-hidden="true"></canvas>
 </div>
 
+<button class="bgm" id="bgm" type="button" hidden aria-label="Tắt nhạc nền" title="Nhạc nền">
+  <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+  <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/></svg>
+</button>
+
 <div class="dock" id="dock" aria-hidden="true">
   <img src="assets/icon-192.webp" alt="" width="40" height="40">
   <div class="t"><b>AowVN Monika</b><span><span data-ver>v0.7.4</span> · <span data-size>18,2 MB</span> · miễn phí</span></div>
@@ -924,6 +945,7 @@ footer a { color: var(--muted); }
     if (!don || don.hidden) return;
     don.classList.remove("show");
     stopProgress(); stopJingle();
+    window.dispatchEvent(new Event("monika:don-close"));
     document.body.style.overflow = "";
     closeTimer = setTimeout(function () { don.hidden = true; }, 320);
     if (lastFocus && lastFocus.focus) try { lastFocus.focus({ preventScroll: true }); } catch (e) {}
@@ -1040,6 +1062,38 @@ footer a { color: var(--muted); }
   new IntersectionObserver(function (es, o) { if (es[0].isIntersecting) { r.classList.add("in"); o.disconnect(); } }, { threshold: 0.3 }).observe(r);
 })();
 </script>
+<script>
+// Nhạc nền: thử phát khi vào trang (trình duyệt thường chặn, nên phát ở lần chạm/bấm phím đầu tiên). Bấm tải thì nhạc nền nhỏ dần rồi dừng; đóng popup thì nhỏ dần trở lại.
+(function () {
+  var KEY = "monika.bgm", VOL = 0.3, a = null, want = true, ducked = false, raf = 0, started = false;
+  var btn = document.getElementById("bgm");
+  var saver = navigator.connection && navigator.connection.saveData;
+  try { var v = localStorage.getItem(KEY); want = v ? v === "on" : !saver; } catch (e) { want = !saver; }
+  function ui() { btn.hidden = false; btn.classList.toggle("muted", !want); btn.classList.toggle("playing", want && !ducked && !!a && !a.paused); btn.setAttribute("aria-label", want ? "Tắt nhạc nền" : "Bật nhạc nền"); }
+  function ensure() { if (!a) { a = new Audio("assets/snd/nen.mp3"); a.loop = true; a.preload = "auto"; a.volume = 0; } return a; }
+  function ramp(to, ms, done) {
+    cancelAnimationFrame(raf); var x = ensure(), v0 = x.volume, t0 = performance.now();
+    (function step(now) { var k = Math.min(1, (now - t0) / ms); x.volume = Math.max(0, Math.min(1, v0 + (to - v0) * k)); if (k < 1) raf = requestAnimationFrame(step); else { if (done) done(); ui(); } })(t0);
+  }
+  function play() {
+    if (!want || ducked || document.hidden) return;
+    var x = ensure(), p = x.play();
+    var ok = function () { if (ducked || !want) { x.pause(); return; } started = true; ramp(VOL, 2500); ui(); };
+    if (p && p.then) p.then(ok, function () { /* chờ cử chỉ của người dùng */ }); else ok();
+  }
+  function stop(ms) { if (a && !a.paused) ramp(0, ms, function () { a.pause(); }); }
+  ["pointerdown", "keydown", "touchend"].forEach(function (n) { addEventListener(n, function f() { if (started) { removeEventListener(n, f, true); return; } play(); }, true); });
+  btn.addEventListener("click", function (e) {
+    e.stopPropagation(); want = !want;
+    try { localStorage.setItem(KEY, want ? "on" : "off"); } catch (x) {}
+    if (want) play(); else stop(500); ui();
+  });
+  addEventListener("monika:don", function () { ducked = true; stop(1800); ui(); });
+  addEventListener("monika:don-close", function () { ducked = false; if (started) play(); });
+  document.addEventListener("visibilitychange", function () { if (document.hidden) { if (a && !a.paused) { cancelAnimationFrame(raf); a.pause(); ui(); } } else if (started) play(); });
+  ui(); play();
+})();
+</script>
 <script type="module">
 // Nạp three.js muộn: sau khi trang tải xong và trình duyệt rảnh, chỉ khi html.fx3d (máy đủ điều kiện). Mỗi cảnh chỉ dựng khi cuộn gần tới.
 var d = document.documentElement;
@@ -1071,14 +1125,20 @@ if (d.classList.contains("fx3d")) {
         var api = m.mountPhone(pc, { screens: screens, orbit: ["rocket", "joystick", "package", "sparkles", "high_voltage"].map(function (n) { return "assets/fluent3d_" + n + ".webp"; }) });
         ph.classList.add("live");
         var cur = -1, pick = function (i) { if (i === cur) return; cur = i; api.setScreen(i); feats.forEach(function (f, k) { f.classList.toggle("on", k === i); }); };
-        var tick = false, scan = function () {
-          tick = false; var mid = innerHeight / 2, best = 0, bd = 1e9;
+        var mq = matchMedia("(max-width: 900px)"), tick = false, scan = function () {
+          tick = false; if (mq.matches) return; var mid = innerHeight / 2, best = 0, bd = 1e9;
           feats.forEach(function (f, k) { var r = f.getBoundingClientRect(); var dd = Math.abs(r.top + r.height / 2 - mid); if (dd < bd) { bd = dd; best = k; } });
           pick(best);
         };
         addEventListener("scroll", function () { if (!tick) { tick = true; requestAnimationFrame(scan); } }, { passive: true });
         feats.forEach(function (f, k) { f.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") pick(k); }); });
         scan();
+        // Trên điện thoại (thẻ nằm dưới máy): tự chạy theo câu chuyện đọc web, xoay ngang chơi game, xoay dọc tải file; chạm vào máy để chuyển
+        var ST = [0, 2, 3, 4, 1, 5], si = 0, vis = false, adv = function () { si = (si + 1) % ST.length; pick(ST[si]); };
+        new IntersectionObserver(function (es) { vis = es[0].isIntersecting; }).observe(ph);
+        setInterval(function () { if (vis && mq.matches && !document.hidden) adv(); }, 4200);
+        var dx = 0; pc.addEventListener("pointerdown", function (e) { dx = e.clientX; });
+        pc.addEventListener("pointerup", function (e) { if (mq.matches && Math.abs(e.clientX - dx) < 8) adv(); });
       });
       // Pha 3a
       var rc = cv(".gl-road");
