@@ -2,6 +2,19 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.4 (Đang chuẩn bị — Bản thử)
+
+> Chưa phát hành, chưa tạo tag. Danh sách theo main `bd9ac022`; không xác nhận kết quả chơi trên máy thật.
+
+- **Sửa lỗi:** Game không bị dọn tự động theo tuổi hoặc giới hạn bộ nhớ; chỉ dọn game khi chọn Dọn ngay trong Cài đặt → Bộ nhớ. ([84ab5b4](https://github.com/aowvn-10diem/aowvn-monika/commit/84ab5b4369187d88f84a6b5ef7848a1335f78db9))
+- **Sửa lỗi:** Khi mở game 3DS với thiết lập mặc định, ứng dụng bỏ bước nạp đồ họa tùy biến có thể gây văng. ([bd9ac02](https://github.com/aowvn-10diem/aowvn-monika/commit/bd9ac022377d078fc2046ead5dcafb075eb2e723))
+- **Mới:** Lỗi khi tải, nhập, mở game hoặc cài gói được ghi để hỗ trợ báo lỗi, theo lựa chọn gửi của người chơi. ([82d7007](https://github.com/aowvn-10diem/aowvn-monika/commit/82d7007772ca74f8db36bb80b0089c24a94694d3))
+- Nội bộ: báo cáo treo/hết bộ nhớ chỉ gắn phiên khi bằng chứng đúng tiến trình, tránh nhầm PID được dùng lại. ([eef398c](https://github.com/aowvn-10diem/aowvn-monika/commit/eef398c8a00ad946d9a80c344aec4ad58cc1bbf5))
+- Nội bộ: cấu hình Kirikiri trỏ gói 16 có mã phiên bản và ký hiệu hỗ trợ đọc báo lỗi. ([93a7e79](https://github.com/aowvn-10diem/aowvn-monika/commit/93a7e79b0e3fc24503fd298f4b316807c921ed54))
+- Nội bộ: thêm mã gom chữ ký báo lỗi và định tuyến việc sửa; không xác nhận bot đã kích hoạt. ([25302b5](https://github.com/aowvn-10diem/aowvn-monika/commit/25302b5d29b4bb5602548fbe63f6121899e6a8cc))
+- Nội bộ: chuẩn bị cổng kiểm chữ ký lỗi trước bản ổn định; chưa có phép đếm mọi phiên của V114. ([3fa449f](https://github.com/aowvn-10diem/aowvn-monika/commit/3fa449f6a1c7b061d77aa727a0353b57cce56930))
+- Nội bộ: chặn mã mới nuốt lỗi im lặng trong các luồng người dùng. ([23ccb8e](https://github.com/aowvn-10diem/aowvn-monika/commit/23ccb8e83f6bd33271104d98dfa8496ac9defa33))
+
 ## [v0.8.3](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.3) (Bản thử)
 <!-- bien-tap: v0.8.3 -->
 > Phát hành ngày 13/10/2026 (UTC), bản thử nghiệm.
