@@ -78,7 +78,9 @@ class AzaharModule(
     fun load() {
         if (loaded) return
         // Thư viện phụ (không kể main) có thể phụ thuộc lẫn nhau: thử nạp lặp tới khi hết tiến triển, rồi mới nạp main.
-        var pending = dir.listFiles().orEmpty().filter { it.name.endsWith(".so") && it.name != MAIN }
+        val d = def
+        val names = libsToLoad(dir.listFiles().orEmpty().map { it.name }, d?.hookLibs.orEmpty(), d?.customGpuDriver == true)
+        var pending = names.map { File(dir, it) }
         while (pending.isNotEmpty()) {
             val failed = pending.filter { runCatching { System.load(it.absolutePath) }.isFailure }
             if (failed.size == pending.size) break
@@ -89,6 +91,13 @@ class AzaharModule(
     }
 
     companion object {
+        /**
+         * Thư viện phụ cần `System.load` (không kể main). V118: bỏ [hookLibs] (lớp nạp driver adrenotools) khi không dùng driver tùy biến —
+         * nạp chúng làm `fopen` của lõi rơi vào `hook_fopen` chưa khởi tạo và sập native ở `createLogFile`.
+         */
+        fun libsToLoad(files: List<String>, hookLibs: List<String>, customGpuDriver: Boolean): List<String> =
+            files.filter { it.endsWith(".so") && it != MAIN && (customGpuDriver || it !in hookLibs) }.sorted()
+
         const val ID = "azahar"
         const val MAIN = "libcitra-android.so"
         const val ASSET = "engines/azahar.zip"
