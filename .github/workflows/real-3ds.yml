@@ -91,6 +91,19 @@ jobs:
             --format=json > "$RUNNER_TEMP/result.json" 2> "$RUNNER_TEMP/result.stderr"
           echo "$?" > "$RUNNER_TEMP/exit.txt"
           echo "Test Lab exit=$(cat "$RUNNER_TEMP/exit.txt")"
+          echo "== stderr Test Lab (đã che URL/bucket, 60 dòng cuối)"
+          tail -n 60 "$RUNNER_TEMP/result.stderr" | sed -E 's#https?://[^ )]+#<url>#g; s#gs://[^ /]+#gs://<bucket>#g'
+          echo "== kết quả Test Lab (đã rút gọn)"
+          python3 - <<'PY'
+          import json, os, re
+          try:
+              data = json.load(open(os.environ['RUNNER_TEMP'] + '/result.json'))
+          except Exception as error:
+              print('không đọc được result.json:', error); raise SystemExit
+          for item in data if isinstance(data, list) else [data]:
+              row = {k: item.get(k) for k in ('outcome', 'test_details', 'axis_value', 'test_axis_value') if k in item}
+              print(re.sub(r'https?://\S+', '<url>', json.dumps(row, ensure_ascii=False))[:800])
+          PY
       - name: Thu bằng chứng (log/crumb/exit/tombstone), bỏ PNG/APK/game
         if: ${{ always() && !inputs.fetch_only }}
         run: python3 scripts/collect-3ds-evidence.py --result "$RUNNER_TEMP/result.json" --stderr "$RUNNER_TEMP/result.stderr" --output r3ds-evidence --results-dir "real3ds-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
