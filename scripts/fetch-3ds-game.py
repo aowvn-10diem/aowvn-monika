@@ -36,22 +36,25 @@ def parse(text):
     raise SystemExit('secret TEST_GAME_3DS trống hoặc sai định dạng (cần: đuôi | link | ... hoặc một link https)')
 
 
-PIXELDRAIN = re.compile(r'https://(?:www\.)?pixeldrain\.(?:com|net|dev)/(u|l)/([A-Za-z0-9]+)')
+PIXELDRAIN = re.compile(r'https://(?:www\.)?pixeldrain\.(?:com|net|dev)/(u|l|d)/([A-Za-z0-9]+)')
 
 
-def direct(link):
-    """Pixeldrain: /u/<id> -> API tải trực tiếp; /l/<id> (danh sách) -> file lớn nhất trong danh sách."""
+def candidates(link):
+    """Các URL thử lần lượt. /d/<id> là trang file-manager mới: thử API filesystem rồi API file [CHƯA KIỂM từng dạng]."""
     m = PIXELDRAIN.match(link)
     if not m:
-        return link
-    if m.group(1) == 'u':
-        return f'https://pixeldrain.com/api/file/{m.group(2)}?download'
-    with urllib.request.urlopen(urllib.request.Request(f'https://pixeldrain.com/api/list/{m.group(2)}',
+        return [link]
+    kind, ident = m.groups()
+    if kind == 'd':
+        return [f'https://pixeldrain.com/api/filesystem/{ident}?attach', f'https://pixeldrain.com/api/file/{ident}?download']
+    if kind == 'u':
+        return [f'https://pixeldrain.com/api/file/{ident}?download']
+    with urllib.request.urlopen(urllib.request.Request(f'https://pixeldrain.com/api/list/{ident}',
                                                          headers={'User-Agent': 'monika-ci'}), timeout=60) as r:
         files = json.load(r).get('files', [])
     if not files:
         raise SystemExit('danh sách pixeldrain trống')
-    return f'https://pixeldrain.com/api/file/{max(files, key=lambda f: f.get("size", 0))["id"]}?download'
+    return [f'https://pixeldrain.com/api/file/{max(files, key=lambda f: f.get("size", 0))["id"]}?download']
 
 
 def sniff(path):
@@ -102,17 +105,18 @@ def main(out_dir):
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     raw = out / 'download.bin'
-    tried = direct(link)
-    print(f'Dạng link khai báo: {shape(link)} -> thử tải: {shape(tried)}')
-    final_url, content_type = download(tried, raw)
-    print(f'Dạng URL cuối: {shape(final_url)}')
-    size = raw.stat().st_size
-    if size < MIN_BYTES:
-        # Link rút gọn/tên miền phụ (vd pixeldra.in) đưa về trang xem: lấy /u/<id> hoặc /l/<id> của trang cuối rồi tải bằng API.
-        page = re.match(r'https://[^/]+(/[ul]/[A-Za-z0-9]+)', final_url)
-        if page and 'pixeldra' in final_url:
-            final_url, content_type = download(direct('https://pixeldrain.com' + page.group(1)), raw)
-            size = raw.stat().st_size
+    final_url, content_type, size = '', '?', 0
+    print(f'Dạng link khai báo: {shape(link)}')
+    for tried in candidates(link):
+        try:
+            final_url, content_type = download(tried, raw)
+        except SystemExit as error:
+            print(f'Thử {shape(tried)}: {error}')
+            continue
+        size = raw.stat().st_size
+        print(f'Thử {shape(tried)} -> {shape(final_url)}: {size} byte, {content_type}')
+        if size >= MIN_BYTES:
+            break
     print(f'Đã tải {size} byte (đuôi khai báo: {ext or "không"}, content-type: {content_type}, máy chủ cuối: {urllib.parse.urlsplit(final_url).netloc})')
     if size < MIN_BYTES:
         # Link không trỏ thẳng tới file game (trang web/lỗi/JSON): in đầu nội dung đã làm sạch để sếp biết link sai kiểu gì.
