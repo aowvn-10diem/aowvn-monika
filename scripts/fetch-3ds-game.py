@@ -71,6 +71,14 @@ def sniff(path):
     return 'other'
 
 
+def shape(url):
+    """Hình dạng URL để chẩn đoán, che mã: https://host/u/<id>?khóa1&khóa2 (không lộ link)."""
+    parts = urllib.parse.urlsplit(url)
+    path = re.sub(r'[A-Za-z0-9_-]{8,}', '<id>', parts.path)
+    keys = '&'.join(k for k in urllib.parse.parse_qs(parts.query, keep_blank_values=True))
+    return f'{parts.scheme}://{parts.netloc}{path}' + (f'?{keys}' if keys else '') + ('#...' if parts.fragment else '')
+
+
 def download(url, raw):
     request = urllib.request.Request(url, headers={'User-Agent': 'monika-ci'})
     try:
@@ -94,7 +102,10 @@ def main(out_dir):
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     raw = out / 'download.bin'
-    final_url, content_type = download(direct(link), raw)
+    tried = direct(link)
+    print(f'Dạng link khai báo: {shape(link)} -> thử tải: {shape(tried)}')
+    final_url, content_type = download(tried, raw)
+    print(f'Dạng URL cuối: {shape(final_url)}')
     size = raw.stat().st_size
     if size < MIN_BYTES:
         # Link rút gọn/tên miền phụ (vd pixeldra.in) đưa về trang xem: lấy /u/<id> hoặc /l/<id> của trang cuối rồi tải bằng API.
