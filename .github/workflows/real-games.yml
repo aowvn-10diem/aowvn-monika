@@ -1,0 +1,184 @@
+name: Game thật theo hệ máy (V124)
+
+# Chỉ chạy tay hoặc theo lịch 02:00 và 14:00 UTC. Không chạy trên pull_request: secret game thật không mở cho PR.
+on:
+  workflow_dispatch:
+    inputs:
+      systems:
+        description: 'Mã hệ cách nhau bằng dấu phẩy (trống = mọi hệ có secret)'
+        required: false
+        default: ''
+        type: string
+  schedule:
+    - cron: '0 2 * * *'
+    - cron: '0 14 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: real-games
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Dựng ma trận từ secret
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.build.outputs.matrix }}
+      count: ${{ steps.build.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Đọc secret, che link và mật khẩu
+        id: build
+        env:
+          SYSTEMS_INPUT: ${{ inputs.systems }}
+          TEST_GAME_NDS: ${{ secrets.TEST_GAME_NDS }}
+          TEST_GAME_GBA: ${{ secrets.TEST_GAME_GBA }}
+          TEST_GAME_GBC: ${{ secrets.TEST_GAME_GBC }}
+          TEST_GAME_SNES: ${{ secrets.TEST_GAME_SNES }}
+          TEST_GAME_NES: ${{ secrets.TEST_GAME_NES }}
+          TEST_GAME_GENESIS: ${{ secrets.TEST_GAME_GENESIS }}
+          TEST_GAME_SMS: ${{ secrets.TEST_GAME_SMS }}
+          TEST_GAME_GG: ${{ secrets.TEST_GAME_GG }}
+          TEST_GAME_PCE: ${{ secrets.TEST_GAME_PCE }}
+          TEST_GAME_N64: ${{ secrets.TEST_GAME_N64 }}
+          TEST_GAME_3DS: ${{ secrets.TEST_GAME_3DS }}
+          TEST_GAME_DC: ${{ secrets.TEST_GAME_DC }}
+          TEST_GAME_LYNX: ${{ secrets.TEST_GAME_LYNX }}
+          TEST_GAME_A2600: ${{ secrets.TEST_GAME_A2600 }}
+          TEST_GAME_A7800: ${{ secrets.TEST_GAME_A7800 }}
+          TEST_GAME_WS: ${{ secrets.TEST_GAME_WS }}
+          TEST_GAME_NGP: ${{ secrets.TEST_GAME_NGP }}
+          TEST_GAME_PS1: ${{ secrets.TEST_GAME_PS1 }}
+          TEST_GAME_PSP: ${{ secrets.TEST_GAME_PSP }}
+          TEST_GAME_RPG2K: ${{ secrets.TEST_GAME_RPG2K }}
+          TEST_GAME_FLASH: ${{ secrets.TEST_GAME_FLASH }}
+          TEST_GAME_JAVA: ${{ secrets.TEST_GAME_JAVA }}
+          TEST_GAME_RPGMV: ${{ secrets.TEST_GAME_RPGMV }}
+          TEST_GAME_TYRANO: ${{ secrets.TEST_GAME_TYRANO }}
+          TEST_GAME_KIRIKIRI: ${{ secrets.TEST_GAME_KIRIKIRI }}
+          TEST_GAME_RENPY: ${{ secrets.TEST_GAME_RENPY }}
+          TEST_GAME_RGSS: ${{ secrets.TEST_GAME_RGSS }}
+          TEST_GAME_ONSCRIPTER: ${{ secrets.TEST_GAME_ONSCRIPTER }}
+          TEST_GAME_SYMBIAN: ${{ secrets.TEST_GAME_SYMBIAN }}
+        run: |
+          set -eu
+          mkdir -p "$RUNNER_TEMP/real-games"
+          python3 scripts/real-games.py \
+            --systems "$SYSTEMS_INPUT" \
+            --matrix-out "$RUNNER_TEMP/real-games/matrix.json" \
+            --summary "$GITHUB_STEP_SUMMARY" \
+            --github-output "$GITHUB_OUTPUT"
+
+  test:
+    name: ${{ matrix.system }}/${{ matrix.ext }} (dòng ${{ matrix.line }})
+    needs: prepare
+    if: needs.prepare.outputs.count != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 15
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    env:
+          TEST_GAME_NDS: ${{ secrets.TEST_GAME_NDS }}
+          TEST_GAME_GBA: ${{ secrets.TEST_GAME_GBA }}
+          TEST_GAME_GBC: ${{ secrets.TEST_GAME_GBC }}
+          TEST_GAME_SNES: ${{ secrets.TEST_GAME_SNES }}
+          TEST_GAME_NES: ${{ secrets.TEST_GAME_NES }}
+          TEST_GAME_GENESIS: ${{ secrets.TEST_GAME_GENESIS }}
+          TEST_GAME_SMS: ${{ secrets.TEST_GAME_SMS }}
+          TEST_GAME_GG: ${{ secrets.TEST_GAME_GG }}
+          TEST_GAME_PCE: ${{ secrets.TEST_GAME_PCE }}
+          TEST_GAME_N64: ${{ secrets.TEST_GAME_N64 }}
+          TEST_GAME_3DS: ${{ secrets.TEST_GAME_3DS }}
+          TEST_GAME_DC: ${{ secrets.TEST_GAME_DC }}
+          TEST_GAME_LYNX: ${{ secrets.TEST_GAME_LYNX }}
+          TEST_GAME_A2600: ${{ secrets.TEST_GAME_A2600 }}
+          TEST_GAME_A7800: ${{ secrets.TEST_GAME_A7800 }}
+          TEST_GAME_WS: ${{ secrets.TEST_GAME_WS }}
+          TEST_GAME_NGP: ${{ secrets.TEST_GAME_NGP }}
+          TEST_GAME_PS1: ${{ secrets.TEST_GAME_PS1 }}
+          TEST_GAME_PSP: ${{ secrets.TEST_GAME_PSP }}
+          TEST_GAME_RPG2K: ${{ secrets.TEST_GAME_RPG2K }}
+          TEST_GAME_FLASH: ${{ secrets.TEST_GAME_FLASH }}
+          TEST_GAME_JAVA: ${{ secrets.TEST_GAME_JAVA }}
+          TEST_GAME_RPGMV: ${{ secrets.TEST_GAME_RPGMV }}
+          TEST_GAME_TYRANO: ${{ secrets.TEST_GAME_TYRANO }}
+          TEST_GAME_KIRIKIRI: ${{ secrets.TEST_GAME_KIRIKIRI }}
+          TEST_GAME_RENPY: ${{ secrets.TEST_GAME_RENPY }}
+          TEST_GAME_RGSS: ${{ secrets.TEST_GAME_RGSS }}
+          TEST_GAME_ONSCRIPTER: ${{ secrets.TEST_GAME_ONSCRIPTER }}
+          TEST_GAME_SYMBIAN: ${{ secrets.TEST_GAME_SYMBIAN }}
+    steps:
+      - name: Đọc lại đúng dòng và che link, mật khẩu
+        env:
+          SYSTEM: ${{ matrix.system }}
+          LINE: ${{ matrix.line }}
+        run: |
+          set -eu
+          python3 scripts/real-games.py \
+            --pick-system "$SYSTEM" \
+            --pick-line "$LINE" \
+            --env-file "$GITHUB_ENV"
+
+      - name: Dọn ổ trước khi tải
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /opt/ghc || true
+          df -h /
+
+      - name: Tải game (không lưu thành artifact)
+        run: |
+          set -u
+          D="$RUNNER_TEMP/game"
+          mkdir -p "$D"
+          if curl -fsSL --max-filesize 4294967296 -o "$D/game.$REAL_EXT" "$REAL_LINK"; then
+            echo "tai" > "$RUNNER_TEMP/status.txt"
+          else
+            echo "loi-tai" > "$RUNNER_TEMP/status.txt"
+          fi
+
+      - name: Giải nén (zip, rar, 7z; cần mật khẩu thì dùng mk=)
+        if: always()
+        run: |
+          set -u
+          D="$RUNNER_TEMP/game"
+          if [ "$(cat "$RUNNER_TEMP/status.txt" 2>/dev/null)" != "tai" ]; then
+            exit 0
+          fi
+          case "$REAL_EXT" in
+            zip|rar|7z)
+              ARGS="-y -o$D/out"
+              if [ -n "$REAL_PASSWORD" ]; then ARGS="$ARGS -p$REAL_PASSWORD"; fi
+              if 7z x $ARGS "$D/game.$REAL_EXT" >/dev/null 2>&1; then
+                echo "giai-nen-ok" >> "$RUNNER_TEMP/status.txt"
+              else
+                echo "loi-giai-nen" >> "$RUNNER_TEMP/status.txt"
+              fi
+              ;;
+            *)
+              echo "khong-can-giai-nen" >> "$RUNNER_TEMP/status.txt"
+              ;;
+          esac
+
+      - name: Kết quả của hệ này
+        if: always()
+        env:
+          SYSTEM: ${{ matrix.system }}
+          NOTE: ${{ matrix.note }}
+        run: |
+          STATUS=$(tr '\n' ' ' < "$RUNNER_TEMP/status.txt" 2>/dev/null || echo "chua-chay")
+          {
+            echo "| Hệ | Đuôi | Ghi chú | Kết quả |"
+            echo "| --- | --- | --- | --- |"
+            echo "| $SYSTEM | $REAL_EXT | $NOTE | $STATUS; máy ảo: chưa nối (bước sau V124) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Xóa game sau khi kiểm
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/game"
