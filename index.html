@@ -395,8 +395,12 @@ footer a { color: var(--muted); }
 .don-row small { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); font-weight: 700; }
 .don-row b { font-size: 17px; overflow-wrap: anywhere; }
 .don-copy { border: 0; border-radius: 999px; padding: 7px 14px; font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; background: var(--ink); color: var(--bg); }
-.don-mobile { display: none; gap: 10px; }
-.don.is-mobile .don-mobile { display: grid; order: -1; }
+.don-mobile { display: grid; gap: 10px; }
+.don.is-mobile .don-mobile { order: -1; }
+/* máy tính: hiện sẵn số tiền + ô tự nhập như điện thoại, nhưng không có danh sách ngân hàng */
+.don:not(.is-mobile) .don-mobile > .don-label:nth-child(3), .don:not(.is-mobile) #don-banks { display: none; }
+.don-amounts .don-custom-m { flex: 1 1 100%; }
+.don-amounts button { flex: 1 1 0; text-align: center; }
 .don-label { font-size: 13px; font-weight: 800; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
 .don-amounts { display: flex; flex-wrap: wrap; gap: 8px; }
 .don-amounts button { border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 8px 14px; font: inherit; font-weight: 800; font-size: 14.5px; cursor: pointer; }
@@ -430,6 +434,7 @@ footer a { color: var(--muted); }
   .don.is-mobile .don-mobile > .don-label:first-child { grid-column: 2; grid-row: 1; align-self: end; font-size: 12px; }
   .don.is-mobile #don-amounts { grid-column: 2; grid-row: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-content: start; }
   .don.is-mobile #don-amounts button { padding: 8px 4px; font-size: 13.5px; text-align: center; }
+  .don.is-mobile #don-amounts button:nth-of-type(3) { grid-column: 1 / -1; }
   .don.is-mobile .don-mobile > .don-label:nth-child(3) { grid-column: 1 / -1; grid-row: 3; font-size: 12px; }
   .don.is-mobile #don-banks { grid-column: 1 / -1; grid-row: 4; display: flex; gap: 8px; overflow-x: auto; max-height: none; padding: 2px 2px 6px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
   .don.is-mobile #don-banks a { flex: none; width: 82px; min-height: 74px; scroll-snap-align: start; }
@@ -501,11 +506,45 @@ footer a { color: var(--muted); }
 .don-amt-hint { font-size: 12.5px; font-weight: 600; color: var(--muted); }
 .don-amt-hint:empty { display: none; }
 .don-amt-hint.bad { color: #ff6b6b; }
-.don.is-mobile .don-custom-d { display: none; }
 .don.is-mobile .don-custom-m { grid-column: 1 / -1; gap: 3px; }
 .don.is-mobile .don-custom-m label { display: none; }
 .don.is-mobile .don-custom-m .don-amt-field { padding: 0 12px; border-radius: 12px; }
 .don.is-mobile .don-custom-m .don-amt-field input { font-size: 15px; padding: 7px 0; }
+
+/* Popup tải/ủng hộ gọn: vừa khít màn hình, không phải kéo xuống (sếp chốt 17/10) */
+.don-card { padding: 20px 24px; gap: 12px; }
+.don-card h2 { font-size: clamp(20px, 3vw, 26px); }
+.don-dl { padding: 10px 14px; gap: 6px; }
+.don-dl-head { font-size: 15px; }
+.don-msg { font-size: 14.5px; line-height: 1.45; }
+.don-body { grid-template-columns: 200px minmax(0, 1fr); gap: 16px; }
+.don-info, .don-mobile { gap: 8px; }
+.don-row { padding: 7px 12px; gap: 2px 10px; }
+.don-row small { font-size: 11.5px; }
+.don-row b { font-size: 15.5px; }
+.don-copy { padding: 6px 12px; font-size: 13px; }
+.don:not(.is-mobile) .don-info > .don-row:first-child { display: none; } /* tên ngân hàng đã có trên mã QR */
+.don-label { font-size: 12px; }
+.don-amounts { gap: 6px; }
+.don-amounts button { padding: 7px 10px; font-size: 14px; }
+.don-amt-field input { font-size: 16px; padding: 8px 0; }
+.don-custom label { font-size: 12px; }
+.don-skip { padding: 2px 12px; }
+@media (max-width: 620px) {
+  .don-card { padding: 12px 12px calc(8px + env(safe-area-inset-bottom, 0px)); gap: 8px; }
+  .don-card h2 { font-size: 18px; padding-right: 84px; }
+  .don-dl small { display: none; }
+  .don-dl { padding: 8px 10px; gap: 5px; }
+  .don-dl-head { font-size: 14px; }
+  .don-msg { font-size: 12.5px; line-height: 1.4; }
+  .don.is-mobile .don-info > .don-row:nth-child(3) { display: none; } /* tên chủ tài khoản đã có trên mã QR */
+  .don.is-mobile .don-row { padding: 5px 10px; }
+  .don.is-mobile .don-row b { font-size: 14.5px; }
+  .don.is-mobile #don-banks a { width: 74px; min-height: 62px; padding: 6px 4px; }
+  .don.is-mobile #don-banks img { width: 28px; height: 28px; }
+  .don.is-mobile #don-banks { padding-bottom: 2px; }
+  .don-skip { padding: 0 12px; font-size: 13px; }
+}
 
 /* ===== Hiệu ứng three.js (chỉ bật khi html.fx3d; không đủ điều kiện thì giao diện CSS như cũ) ===== */
 .gl { display: block; opacity: 0; transition: opacity 1.4s ease; pointer-events: none; }
@@ -530,7 +569,6 @@ footer a { color: var(--muted); }
 .feat { transition: border-color .35s ease, box-shadow .35s ease, translate .35s ease; }
 .fx3d .feat.on { border-color: color-mix(in srgb, var(--g2) 60%, var(--line)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--g2) 13%, transparent), 0 14px 40px -18px color-mix(in srgb, var(--g2) 55%, transparent); translate: 0 -2px; }
 .road-sec .gl-road { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
-.don .gl-burst { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; transition: opacity .5s ease; }
 .gl-hud { position: fixed; left: 12px; bottom: 12px; z-index: 80; font: 700 12px/1.3 var(--mono); background: rgba(0,0,0,.7); color: #fff; padding: 8px 10px; border-radius: 10px; pointer-events: none; }
 @media (max-width: 900px) {
   .gl-hero { -webkit-mask-image: linear-gradient(180deg, transparent 48%, #000 66%); mask-image: linear-gradient(180deg, transparent 48%, #000 66%); }
@@ -785,21 +823,15 @@ footer a { color: var(--muted); }
         <div class="don-row"><small>Số tài khoản</small><b class="mono" id="don-acc">101867601261</b><button class="don-copy" type="button" data-copy="#don-acc">Sao chép</button></div>
         <div class="don-row"><small>Chủ tài khoản</small><b>VU DOAN BINH MINH</b></div>
         <div class="don-row"><small>Nội dung chuyển khoản</small><b id="don-memo">Ung ho AowVN Monika</b><button class="don-copy" type="button" data-copy="#don-memo">Sao chép</button></div>
-        <div class="don-custom don-custom-d">
-          <label for="don-amt-d">Số tiền muốn ủng hộ <small>(không bắt buộc)</small></label>
-          <div class="don-amt-field"><input class="don-amt-in" id="don-amt-d" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" placeholder="Nhập số tiền, ví dụ 50.000" aria-describedby="don-hint-d"><span aria-hidden="true">đ</span></div>
-          <small class="don-amt-hint" id="don-hint-d" role="status" aria-live="polite"></small>
-        </div>
         <div class="don-mobile">
           <span class="don-label">Chọn số tiền</span>
           <div class="don-amounts" id="don-amounts">
-            <button type="button" data-amt="10000" aria-pressed="false">10.000đ</button>
-            <button type="button" data-amt="50000" aria-pressed="false">50.000đ</button>
             <button type="button" data-amt="100000" aria-pressed="true">100.000đ</button>
             <button type="button" data-amt="200000" aria-pressed="false">200.000đ</button>
+            <button type="button" data-amt="300000" aria-pressed="false">300.000đ</button>
             <div class="don-custom don-custom-m">
-              <label for="don-amt-m">Số tiền khác</label>
-              <div class="don-amt-field"><input class="don-amt-in" id="don-amt-m" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" placeholder="Số tiền khác, ví dụ 30.000" aria-describedby="don-hint-m"><span aria-hidden="true">đ</span></div>
+              <label for="don-amt-m">Hoặc tự nhập số tiền</label>
+              <div class="don-amt-field"><input class="don-amt-in" id="don-amt-m" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" placeholder="Tự nhập, vd 30.000" aria-describedby="don-hint-m"><span aria-hidden="true">đ</span></div>
               <small class="don-amt-hint" id="don-hint-m" role="status" aria-live="polite"></small>
             </div>
           </div>
@@ -810,7 +842,6 @@ footer a { color: var(--muted); }
     </div>
     <button class="don-skip" type="button" data-don-close>Để sau, cảm ơn</button>
   </div>
-  <canvas class="gl gl-burst" aria-hidden="true"></canvas>
 </div>
 
 <button class="bgm" id="bgm" type="button" hidden aria-label="Tắt nhạc nền" title="Nhạc nền">
@@ -989,6 +1020,16 @@ footer a { color: var(--muted); }
       dlRaf = requestAnimationFrame(tick);
     })(performance.now());
   }
+  // Popup luôn vừa khít khung nhìn: nếu nội dung vẫn cao hơn thì thu nhỏ nhẹ (zoom) để không có thanh cuộn
+  function fitDon() {
+    var card = don && don.querySelector(".don-card"); if (!card || don.hidden) return;
+    var avail = innerWidth <= 620 ? innerHeight * 0.94 : innerHeight - 32, zs = [1, .95, .9, .85, .8, .76, .72, .68];
+    for (var i = 0; i < zs.length; i++) {
+      var z = zs[i]; card.style.zoom = z === 1 ? "" : String(z); card.style.maxHeight = Math.floor(avail / z) + "px";
+      if (card.scrollHeight <= card.clientHeight + 1) break;
+    }
+  }
+  addEventListener("resize", fitDon); addEventListener("orientationchange", fitDon);
   function openDon(real) {
     if (!don) return;
     clearTimeout(closeTimer);
@@ -1003,6 +1044,7 @@ footer a { color: var(--muted); }
     startProgress(real !== false);
     window.dispatchEvent(new Event("monika:don"));
     var x = don.querySelector(".don-x"); if (x) x.focus({ preventScroll: true });
+    fitDon(); setTimeout(fitDon, 250); setTimeout(fitDon, 1200);
   }
   function closeDon() {
     if (!don || don.hidden) return;
@@ -1037,7 +1079,7 @@ footer a { color: var(--muted); }
     var am = t.closest && t.closest("[data-amt]");
     if (am) {
       amt = Number(am.dataset.amt); lastChip = amt;
-      resetCustom();
+      resetCustom(); setQr(amt);
       document.querySelectorAll("#don-amounts button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === am)); });
       donBanks.querySelectorAll("a").forEach(function (l) { l.href = deeplink(l.dataset.app); });
     }
@@ -1217,14 +1259,7 @@ if (d.classList.contains("fx3d")) {
       // Pha 3a
       var rc = cv(".gl-road");
       near(rc, function () { onDead(rc); m.mountRoad(rc, cv("#road")); });
-      // Pha 3b
-      var bc = cv(".gl-burst"), burst = null;
-      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        burst = m.mountBurst(bc);
-        addEventListener("monika:don", function () { burst.play(); });
-        document.addEventListener("keydown", function (e) { if (e.key === "Escape") burst.stop(); });
-        document.querySelectorAll("[data-don-close]").forEach(function (b) { b.addEventListener("click", function () { burst.stop(); }); });
-      }
+      // Đã bỏ hiệu ứng bong bóng 3D bắn ra khi bấm tải (sếp chốt 17/10)
       if (hud) setInterval(function () { hud.textContent = ["hero", "ring", "phone", "road", "logo"].map(function (n, i) { var c = [hero, ring, pc, rc, lg][i]; return n + " " + (c.dataset.fps || "-") + (n === "phone" && c.dataset.paint ? " (vẽ " + c.dataset.paint + "ms)" : "") + (c.isConnected && getComputedStyle(c).display === "none" ? " [đã tắt]" : ""); }).join(" | ") + " fps"; }, 700);
     }).catch(function (e) { console.warn("three.js không nạp được, giữ giao diện CSS:", e); });
   };
