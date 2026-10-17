@@ -34,7 +34,7 @@ Mỗi lần lên live, Nova xóa cache Cloudflare (mục 4). Các PR trên gộp
 - App Android: `loginUrl` trỏ `www.aow.vn/p/device-login.html` (Blogger), không phụ thuộc Pages.
 - `lich-su.html` đọc `docs/CHANGELOG.md` trực tiếp từ nhánh `main` qua raw.githubusercontent, không đổi.
 
-**Bảng tiến độ đã được sếp quyết công khai** tại `/tien-do/` (nhánh `trang-web`, tệp `tien-do/index.html`, giao diện tối, có liên kết từ mục Lộ trình trên trang chủ). Bản hiện tại dựng từ `state.json` lúc 15/10 12:05 nên **đang cũ** (trang tự ghi "đã hơn 2 giờ"). Cập nhật bằng script mới `docs/opus/pm/bang-tien-do/dang-tien-do.py <thư-mục-gốc-checkout-nhánh-trang-web>`: chạy `build_public.py`, bọc khung HTML + meta SEO, ghi `tien-do/index.html`; rồi PR vào `trang-web` (hoặc sếp cho đẩy thẳng) và xóa cache Cloudflare cho `/tien-do/`. Lưu ý: trang công khai hiện toàn bộ nội dung `state.json` (đội, việc, nhật ký, điểm nghẽn); nếu PM muốn lược bớt thì lọc `state.json` trước khi dựng. Không có khóa hay token thật trong tệp (Nova đã quét).
+**(Lịch sử, đã bị thay thế 17/10)** Ngày 16/10 sếp từng cho công khai bảng tiến độ tại `/tien-do/`. Ngày 17/10 sếp chốt ngược lại: trang đó là nội bộ nên **đã xóa** (PR #275 vào `trang-web`); monika.aow.vn chỉ dành cho người dùng. **Không dựng lại** trang này và không đưa `state.json` lên web. Script dựng trang (`dang-tien-do.py`) đã gỡ khỏi PR này.
 
 **PM cần quyết / sửa:**
 1. (Đã xử lý) Bảng tiến độ công khai: xem trên.
@@ -85,4 +85,4 @@ Mục treo mới cho mục 6: nguồn nhạc `tai-ve.mp3` vẫn chưa rõ; task 
 ## 8. Cập nhật 17/10 (lệnh sếp)
 
 - **monika.aow.vn dành cho người dùng, KHÔNG phải cho nội bộ dự án.** Không đưa bảng tiến độ, nhật ký đội, người phụ trách, mã việc, điểm nghẽn hay ghi chú nhóm lên web. Ghi chú này nằm ở đầu `index.html`, `lich-su.html` (nhánh `trang-web`) và trong `CLAUDE.md`.
-- Đã **xóa trang `tien-do/`** (bảng tiến độ chi tiết) và liên kết "Xem tiến độ chi tiết" (PR #275 vào `trang-web`). Mục Lộ trình tóm tắt 4 mốc trên trang chủ vẫn giữ. Vì vậy `docs/opus/pm/bang-tien-do/dang-tien-do.py` không còn dùng để đăng web; mục "công khai toàn bộ `state.json`" ở trên không còn hiệu lực.
+- Đã **xóa trang `tien-do/`** (bảng tiến độ chi tiết) và liên kết "Xem tiến độ chi tiết" (PR #275 vào `trang-web`). Mục Lộ trình tóm tắt 4 mốc trên trang chủ vẫn giữ. Vì vậy script `dang-tien-do.py` đã được gỡ khỏi PR này (không còn trong repo); mục "công khai toàn bộ `state.json`" ở trên không còn hiệu lực.
