@@ -10,6 +10,11 @@ on:
         options: [cubs, grizzly, snapdragon8gen3, mediatek-modern]
         default: cubs
         description: "Đúng một máy ARM64 thật (profile trong .github/testlab-devices.json; snapdragon8gen3 hiện không có trong catalog)"
+      rom:
+        type: choice
+        options: [synthetic, real]
+        default: synthetic
+        description: "synthetic = ROM giả 2 MiB tạo trên máy (thử engine khởi tạo, không đẩy game); real = tải game từ secret TEST_GAME_3DS (~2 GiB)"
       fetch_only:
         type: boolean
         default: false
@@ -41,9 +46,11 @@ jobs:
       - name: Cài SDK/NDK như bản dựng sản phẩm
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-33" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
       - name: Cài 7-Zip (giải RAR/7z/zip của gói game)
+        if: ${{ inputs.rom == 'real' }}
         run: sudo apt-get update -qq && sudo apt-get install -y -qq 7zip > /dev/null
       - name: Tải game 3DS từ secret (che link, không in tên)
         id: game
+        if: ${{ inputs.rom == 'real' }}
         env:
           TEST_GAME_3DS: ${{ secrets.TEST_GAME_3DS }}
         run: |
@@ -77,14 +84,15 @@ jobs:
           GAME_FILE: ${{ steps.game.outputs.file }}
         run: |
           set +e
-          ext="${GAME_FILE##*.}"
+          args=()
+          if [ -n "$GAME_FILE" ]; then args+=(--other-files "/sdcard/Download/monika-3ds.${GAME_FILE##*.}=${GAME_FILE}"); fi
           gcloud firebase test android run --project "$GCP_PROJECT" \
             --type instrumentation \
             --app app/build/outputs/apk/debug/app-universal-debug.apk \
             --test app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
             --test-runner-class vn.aow.monika.testlab.Azahar3dsRunner \
             --device "$DEVICE" \
-            --other-files "/sdcard/Download/monika-3ds.${ext}=${GAME_FILE}" \
+            "${args[@]}" \
             --timeout 20m --no-record-video \
             --directories-to-pull /sdcard/Android/data/com.aow.monika/files/r3ds \
             --results-dir "real3ds-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
