@@ -57,6 +57,24 @@ def candidates(link):
     return [f'https://pixeldrain.com/api/file/{max(files, key=lambda f: f.get("size", 0))["id"]}?download']
 
 
+def valid_game(path):
+    """Kiểm cấu trúc theo đuôi (không tin đuôi một mình): .3ds/.cci = NCSD@0x100, .cxi = NCCH@0x100, .3dsx = '3DSX'@0, .cia = header 0x2020."""
+    ext = path.suffix.lower().lstrip('.')
+    with path.open('rb') as f:
+        head = f.read(4)
+        f.seek(0x100)
+        at_100 = f.read(4)
+    if ext in ('3ds', 'cci'):
+        return at_100 == b'NCSD'
+    if ext == 'cxi':
+        return at_100 == b'NCCH'
+    if ext == '3dsx':
+        return head == b'3DSX'
+    if ext == 'cia':
+        return int.from_bytes(head, 'little') == 0x2020
+    return False
+
+
 def sniff(path):
     """Đoán loại theo nội dung, không tin đuôi khai báo: game / zip / rar / 7z / khác."""
     with path.open('rb') as f:
@@ -149,11 +167,8 @@ def main(out_dir):
         packed.unlink()
     else:
         raise SystemExit('tệp tải về không nhận ra được (không phải game/zip/rar/7z)')
-    if final.suffix in ('.3ds', '.cci') and final.stat().st_size > 0x104:
-        with final.open('rb') as f:
-            f.seek(0x100)
-            if f.read(4) != b'NCSD':
-                raise SystemExit('File .3ds/.cci không có dấu NCSD ở offset 0x100: không phải ROM 3DS hợp lệ (hoặc đã mã hóa lạ)')
+    if not valid_game(final):
+        raise SystemExit(f'File .{final.suffix[1:]} không có header 3DS hợp lệ (NCSD/NCCH/3DSX/CIA): không phải ROM hoặc chưa xác thực được, dừng.')
     print(f'Game sẵn sàng: đuôi {final.suffix[1:]}, {final.stat().st_size} byte')
 
 

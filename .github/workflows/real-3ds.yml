@@ -35,6 +35,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Cấm fetch_only với rom=synthetic (không có gì để kiểm)
+        if: ${{ inputs.fetch_only && inputs.rom != 'real' }}
+        run: |
+          echo "fetch_only chỉ có nghĩa với rom=real (kiểm secret TEST_GAME_3DS). Chọn rom=real hoặc bỏ fetch_only."
+          exit 1
       - name: Cấm chạy lại (rerun tốn thêm quota)
         env:
           ATTEMPT: ${{ github.run_attempt }}
