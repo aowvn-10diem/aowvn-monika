@@ -8,8 +8,25 @@ on:
       device:
         type: choice
         options: [cubs, grizzly, snapdragon8gen3, mediatek-modern]
-        default: snapdragon8gen3
-        description: "Đúng một máy ARM64 thật (profile trong .github/testlab-devices.json)"
+        default: cubs
+        description: "Đúng một máy ARM64 thật (profile trong .github/testlab-devices.json; snapdragon8gen3 hiện không có trong catalog)"
+      rom:
+        type: choice
+        options: [synthetic, real]
+        default: synthetic
+        description: "synthetic = ROM giả 2 MiB tạo trên máy (thử engine khởi tạo, không đẩy game); real = tải game từ secret TEST_GAME_3DS (~2 GiB)"
+      steps:
+        type: string
+        default: 'R1,R2,R3'
+        description: "Các bước runner chạy: R1 cài engine, R2 nhập game, R3 mở Azahar. Dùng 'R1' để kiểm riêng cài engine (bisect lỗi hạ tầng)"
+      peek_run_id:
+        type: string
+        default: ''
+        description: "Chỉ xem bằng chứng còn trong bucket Test Lab của lượt real-3ds có id này (không build, không máy, không quota)"
+      fetch_only:
+        type: boolean
+        default: false
+        description: "Chỉ tải và kiểm game từ secret, không build/không dùng máy Test Lab (không tốn quota)"
 
 permissions:
   contents: read
@@ -19,13 +36,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  peek:
+    if: ${{ inputs.peek_run_id != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Đọc bằng chứng Test Lab của lượt cũ (đã scrub)
+        env:
+          PEEK_RUN_ID: ${{ inputs.peek_run_id }}
+        run: |
+          [[ "$PEEK_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]] || { echo "peek_run_id phải là số nguyên dương"; exit 1; }
+          python3 scripts/peek-testlab.py --run-id "$PEEK_RUN_ID"
   real-3ds:
+    if: ${{ inputs.peek_run_id == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Cấm fetch_only với rom=synthetic (không có gì để kiểm)
+        if: ${{ inputs.fetch_only && inputs.rom != 'real' }}
+        run: |
+          echo "fetch_only chỉ có nghĩa với rom=real (kiểm secret TEST_GAME_3DS). Chọn rom=real hoặc bỏ fetch_only."
+          exit 1
       - name: Cấm chạy lại (rerun tốn thêm quota)
         env:
           ATTEMPT: ${{ github.run_attempt }}
@@ -36,20 +77,28 @@ jobs:
         with: {cache-provider: basic}
       - name: Cài SDK/NDK như bản dựng sản phẩm
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-33" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+      - name: Cài 7-Zip (giải RAR/7z/zip của gói game)
+        if: ${{ inputs.rom == 'real' }}
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq 7zip > /dev/null
       - name: Tải game 3DS từ secret (che link, không in tên)
         id: game
+        if: ${{ inputs.rom == 'real' }}
         env:
           TEST_GAME_3DS: ${{ secrets.TEST_GAME_3DS }}
         run: |
           python3 scripts/fetch-3ds-game.py "$RUNNER_TEMP/g"
           echo "file=$(ls "$RUNNER_TEMP"/g/monika-3ds.* | head -n1)" >> "$GITHUB_OUTPUT"
       - name: Build APK debug và instrumentation (không ký, không phát hành)
+        if: ${{ !inputs.fetch_only }}
         run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
       - uses: google-github-actions/auth@v2
+        if: ${{ !inputs.fetch_only }}
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - uses: google-github-actions/setup-gcloud@v3
+        if: ${{ !inputs.fetch_only }}
       - name: Chọn đúng một máy ARM64 vật lý
+        if: ${{ !inputs.fetch_only }}
         id: dev
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
@@ -60,41 +109,60 @@ jobs:
           python3 scripts/select-testlab-device.py --catalog "$RUNNER_TEMP/models.json" \
             --profile "$DEVICE_PROFILE" --output r3ds-evidence/selected-device.json --github-output "$GITHUB_OUTPUT"
       - name: Chạy game 3DS thật 90 giây trên máy Test Lab
+        if: ${{ !inputs.fetch_only }}
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
           DEVICE: ${{ steps.dev.outputs.device }}
           GAME_FILE: ${{ steps.game.outputs.file }}
+          RUN_STEPS: ${{ inputs.steps }}
+          ROM_MODE: ${{ inputs.rom }}
         run: |
           set +e
-          ext="${GAME_FILE##*.}"
+          args=()
+          if [ -n "$GAME_FILE" ]; then args+=(--other-files "/sdcard/Download/monika-3ds.${GAME_FILE##*.}=${GAME_FILE}"); fi
           gcloud firebase test android run --project "$GCP_PROJECT" \
             --type instrumentation \
             --app app/build/outputs/apk/debug/app-universal-debug.apk \
             --test app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
             --test-runner-class vn.aow.monika.testlab.Azahar3dsRunner \
             --device "$DEVICE" \
-            --other-files "/sdcard/Download/monika-3ds.${ext}=${GAME_FILE}" \
+            "${args[@]}" \
+            --environment-variables "^;^steps=${RUN_STEPS};rom=${ROM_MODE}" \
             --timeout 20m --no-record-video \
             --directories-to-pull /sdcard/Android/data/com.aow.monika/files/r3ds \
             --results-dir "real3ds-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
             --format=json > "$RUNNER_TEMP/result.json" 2> "$RUNNER_TEMP/result.stderr"
           echo "$?" > "$RUNNER_TEMP/exit.txt"
           echo "Test Lab exit=$(cat "$RUNNER_TEMP/exit.txt")"
+          echo "== stderr Test Lab (đã che URL/bucket, 60 dòng cuối)"
+          tail -n 60 "$RUNNER_TEMP/result.stderr" | sed -E 's#https?://[^ )]+#<url>#g; s#gs://[^ /]+#gs://<bucket>#g'
+          echo "== kết quả Test Lab (đã rút gọn)"
+          python3 - <<'PY'
+          import json, os, re
+          try:
+              data = json.load(open(os.environ['RUNNER_TEMP'] + '/result.json'))
+          except Exception as error:
+              print('không đọc được result.json:', error); raise SystemExit
+          for item in data if isinstance(data, list) else [data]:
+              row = {k: item.get(k) for k in ('outcome', 'test_details', 'axis_value', 'test_axis_value') if k in item}
+              print(re.sub(r'https?://\S+', '<url>', json.dumps(row, ensure_ascii=False))[:800])
+          PY
       - name: Thu bằng chứng (log/crumb/exit/tombstone), bỏ PNG/APK/game
-        if: always()
+        if: ${{ always() && !inputs.fetch_only }}
         run: python3 scripts/collect-3ds-evidence.py --result "$RUNNER_TEMP/result.json" --stderr "$RUNNER_TEMP/result.stderr" --output r3ds-evidence --results-dir "real3ds-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
       - name: Tóm tắt vào log job
-        if: always()
+        if: ${{ always() && !inputs.fetch_only }}
         run: |
           cd r3ds-evidence 2>/dev/null || exit 0
           for f in *summary.json *run.json *game-meta.txt; do [ -f "$f" ] && { echo "== $f"; cat "$f"; }; done
           for f in *-exit.txt *-crumbs.txt; do [ -f "$f" ] && { echo "== $f"; head -n 60 "$f"; }; done
           for f in *-crash.log; do [ -f "$f" ] && { echo "== $f"; head -n 40 "$f"; }; done
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: ${{ always() && !inputs.fetch_only }}
         with:
           name: r3ds-evidence
           path: r3ds-evidence/
           retention-days: 2
       - name: Kết luận theo Test Lab
+        if: ${{ !inputs.fetch_only }}
         run: test "$(cat "$RUNNER_TEMP/exit.txt")" = 0
