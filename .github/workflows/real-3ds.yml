@@ -1,0 +1,100 @@
+name: Test 3DS thật trên máy ARM (V125)
+
+# Tải game từ secret TEST_GAME_3DS (chỉ trong runner, đã che), đẩy vào 1 máy ARM64 thật của Firebase Test Lab,
+# chạy Azahar 90 giây và thu log/crumb/exit/tombstone. Không lưu game vào repo/artifact. Mỗi lượt tốn 1 đơn vị quota máy thật (5/ngày, dùng chung V56).
+on:
+  workflow_dispatch:
+    inputs:
+      device:
+        type: choice
+        options: [cubs, grizzly, snapdragon8gen3, mediatek-modern]
+        default: snapdragon8gen3
+        description: "Đúng một máy ARM64 thật (profile trong .github/testlab-devices.json)"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testlab-budget
+  cancel-in-progress: false
+
+jobs:
+  real-3ds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Cấm chạy lại (rerun tốn thêm quota)
+        env:
+          ATTEMPT: ${{ github.run_attempt }}
+        run: test "$ATTEMPT" = 1
+      - uses: actions/setup-java@v6
+        with: {distribution: temurin, java-version: 17}
+      - uses: gradle/actions/setup-gradle@v6
+        with: {cache-provider: basic}
+      - name: Cài SDK/NDK như bản dựng sản phẩm
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-33" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+      - name: Tải game 3DS từ secret (che link, không in tên)
+        id: game
+        env:
+          TEST_GAME_3DS: ${{ secrets.TEST_GAME_3DS }}
+        run: |
+          python3 scripts/fetch-3ds-game.py "$RUNNER_TEMP/g"
+          echo "file=$(ls "$RUNNER_TEMP"/g/monika-3ds.* | head -n1)" >> "$GITHUB_OUTPUT"
+      - name: Build APK debug và instrumentation (không ký, không phát hành)
+        run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Chọn đúng một máy ARM64 vật lý
+        id: dev
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+          DEVICE_PROFILE: ${{ inputs.device }}
+        run: |
+          mkdir -p r3ds-evidence
+          gcloud firebase test android models list --project "$GCP_PROJECT" --format=json > "$RUNNER_TEMP/models.json"
+          python3 scripts/select-testlab-device.py --catalog "$RUNNER_TEMP/models.json" \
+            --profile "$DEVICE_PROFILE" --output r3ds-evidence/selected-device.json --github-output "$GITHUB_OUTPUT"
+      - name: Chạy game 3DS thật 90 giây trên máy Test Lab
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+          DEVICE: ${{ steps.dev.outputs.device }}
+          GAME_FILE: ${{ steps.game.outputs.file }}
+        run: |
+          set +e
+          ext="${GAME_FILE##*.}"
+          gcloud firebase test android run --project "$GCP_PROJECT" \
+            --type instrumentation \
+            --app app/build/outputs/apk/debug/app-universal-debug.apk \
+            --test app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
+            --test-runner-class vn.aow.monika.testlab.Azahar3dsRunner \
+            --device "$DEVICE" \
+            --other-files "/sdcard/Download/monika-3ds.${ext}=${GAME_FILE}" \
+            --timeout 20m --no-record-video \
+            --directories-to-pull /sdcard/Android/data/com.aow.monika/files/r3ds \
+            --results-dir "real3ds-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --format=json > "$RUNNER_TEMP/result.json" 2> "$RUNNER_TEMP/result.stderr"
+          echo "$?" > "$RUNNER_TEMP/exit.txt"
+          echo "Test Lab exit=$(cat "$RUNNER_TEMP/exit.txt")"
+      - name: Thu bằng chứng (log/crumb/exit/tombstone), bỏ PNG/APK/game
+        if: always()
+        run: python3 scripts/collect-3ds-evidence.py --result "$RUNNER_TEMP/result.json" --stderr "$RUNNER_TEMP/result.stderr" --output r3ds-evidence --results-dir "real3ds-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+      - name: Tóm tắt vào log job
+        if: always()
+        run: |
+          cd r3ds-evidence 2>/dev/null || exit 0
+          for f in *summary.json *run.json *game-meta.txt; do [ -f "$f" ] && { echo "== $f"; cat "$f"; }; done
+          for f in *-exit.txt *-crumbs.txt; do [ -f "$f" ] && { echo "== $f"; head -n 60 "$f"; }; done
+          for f in *-crash.log; do [ -f "$f" ] && { echo "== $f"; head -n 40 "$f"; }; done
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: r3ds-evidence
+          path: r3ds-evidence/
+          retention-days: 2
+      - name: Kết luận theo Test Lab
+        run: test "$(cat "$RUNNER_TEMP/exit.txt")" = 0
