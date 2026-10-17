@@ -5,7 +5,9 @@
 Link dạng pixeldrain.com/u/<id> tự đổi sang API tải trực tiếp. Gói zip/7z/rar được giải bằng 7z.
 Không in link, mật khẩu hay tên game: chỉ in đuôi và dung lượng.
 """
+import json
 import os
+import shutil
 from pathlib import Path
 import re
 import subprocess
@@ -33,9 +35,39 @@ def parse(text):
     raise SystemExit('secret TEST_GAME_3DS trống hoặc sai định dạng (cần: đuôi | link | ... hoặc một link https)')
 
 
+PIXELDRAIN = re.compile(r'https://(?:www\.)?pixeldrain\.(?:com|net|dev)/(u|l)/([A-Za-z0-9]+)')
+
+
 def direct(link):
-    m = re.match(r'https://pixeldrain\.com/u/([A-Za-z0-9]+)', link)
-    return f'https://pixeldrain.com/api/file/{m.group(1)}?download' if m else link
+    """Pixeldrain: /u/<id> -> API tải trực tiếp; /l/<id> (danh sách) -> file lớn nhất trong danh sách."""
+    m = PIXELDRAIN.match(link)
+    if not m:
+        return link
+    if m.group(1) == 'u':
+        return f'https://pixeldrain.com/api/file/{m.group(2)}?download'
+    with urllib.request.urlopen(urllib.request.Request(f'https://pixeldrain.com/api/list/{m.group(2)}',
+                                                         headers={'User-Agent': 'monika-ci'}), timeout=60) as r:
+        files = json.load(r).get('files', [])
+    if not files:
+        raise SystemExit('danh sách pixeldrain trống')
+    return f'https://pixeldrain.com/api/file/{max(files, key=lambda f: f.get("size", 0))["id"]}?download'
+
+
+def sniff(path):
+    """Đoán loại theo nội dung, không tin đuôi khai báo: game / zip / rar / 7z / khác."""
+    with path.open('rb') as f:
+        head = f.read(8)
+        f.seek(0x100)
+        ncsd = f.read(4) == b'NCSD'
+    if ncsd:
+        return 'game'
+    if head.startswith(b'Rar!'):
+        return 'rar'
+    if head.startswith(b'PK'):
+        return 'zip'
+    if head.startswith(b'7z\xbc\xaf'):
+        return '7z'
+    return 'other'
 
 
 def main(out_dir):
@@ -63,15 +95,22 @@ def main(out_dir):
         head = re.sub(r'https?://\S+', '<url>', re.sub(r'[^\x20-\x7e\n]', ' ', head))
         print('Nội dung đầu (làm sạch):', head.replace('\n', ' ')[:300])
         raise SystemExit(f'Link không trả về file game (chỉ {size} byte < {MIN_BYTES}): cần link tải TRỰC TIẾP tới .3ds/.cci/.cia/.zip')
-    if ext in GAME_EXT:
-        final = raw.with_name('monika-3ds.' + ext)
+    kind = sniff(raw)
+    print(f'Loại theo nội dung: {kind}')
+    if kind == 'game' or (kind == 'other' and ext in GAME_EXT):  # .cia/.cxi/.3dsx không có NCSD: tin đuôi khai báo
+        final = raw.with_name('monika-3ds.' + (ext if ext in GAME_EXT else '3ds'))
         raw.rename(final)
-    else:
-        packed = raw.with_name('pack.' + (ext if ext in ARCHIVE_EXT else 'zip'))
+    elif kind in ARCHIVE_EXT:
+        packed = raw.with_name('pack.' + kind)
         raw.rename(packed)
-        args = ['7z', 'x', '-y', f'-o{out / "x"}', str(packed)] + ([f'-p{password}'] if password else [])
+        seven = shutil.which('7zz') or shutil.which('7z')
+        if not seven:
+            raise SystemExit('runner không có 7zz/7z')
+        args = [seven, 'x', '-y', f'-o{out / "x"}', str(packed)] + ([f'-p{password}'] if password else [])
         if subprocess.run(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
-            raise SystemExit('giải nén lỗi (sai mật khẩu hoặc gói hỏng)')
+            raise SystemExit('giải nén lỗi (sai mật khẩu, gói hỏng hoặc 7z không hỗ trợ định dạng này)')
+        names = [p.suffix.lower().lstrip('.') for p in (out / 'x').rglob('*') if p.is_file()]
+        print('Loại tệp trong gói:', sorted(set(names)))
         found = sorted((p for p in (out / 'x').rglob('*') if p.is_file() and p.suffix.lower().lstrip('.') in GAME_EXT),
                        key=lambda p: -p.stat().st_size)
         if not found:
@@ -79,6 +118,8 @@ def main(out_dir):
         final = out / ('monika-3ds' + found[0].suffix.lower())
         found[0].rename(final)
         packed.unlink()
+    else:
+        raise SystemExit('tệp tải về không nhận ra được (không phải game/zip/rar/7z)')
     if final.suffix in ('.3ds', '.cci') and final.stat().st_size > 0x104:
         with final.open('rb') as f:
             f.seek(0x100)

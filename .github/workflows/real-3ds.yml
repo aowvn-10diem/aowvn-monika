@@ -40,6 +40,8 @@ jobs:
         with: {cache-provider: basic}
       - name: Cài SDK/NDK như bản dựng sản phẩm
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-33" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+      - name: Cài 7-Zip (giải RAR/7z/zip của gói game)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq 7zip > /dev/null
       - name: Tải game 3DS từ secret (che link, không in tên)
         id: game
         env:
