@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -70,6 +71,18 @@ def sniff(path):
     return 'other'
 
 
+def download(url, raw):
+    request = urllib.request.Request(url, headers={'User-Agent': 'monika-ci'})
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response, raw.open('wb') as target:
+            while chunk := response.read(1 << 20):
+                target.write(chunk)
+            return response.geturl(), response.headers.get('Content-Type', '?')
+    except urllib.error.HTTPError as error:
+        body = re.sub(r'https?://\S+', '<url>', error.read(300).decode('utf-8', 'replace'))
+        raise SystemExit(f'Máy chủ trả HTTP {error.code}: {body}')
+
+
 def main(out_dir):
     secret = os.environ.get('TEST_GAME_3DS', '')
     if not secret.strip():
@@ -81,14 +94,15 @@ def main(out_dir):
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     raw = out / 'download.bin'
-    request = urllib.request.Request(direct(link), headers={'User-Agent': 'monika-ci'})
-    with urllib.request.urlopen(request, timeout=60) as response, raw.open('wb') as target:
-        content_type = response.headers.get('Content-Type', '?')
-        final_host = urllib.parse.urlsplit(response.geturl()).netloc
-        while chunk := response.read(1 << 20):
-            target.write(chunk)
+    final_url, content_type = download(direct(link), raw)
     size = raw.stat().st_size
-    print(f'Đã tải {size} byte (đuôi khai báo: {ext or "không"}, content-type: {content_type}, máy chủ cuối: {final_host})')
+    if size < MIN_BYTES:
+        # Link rút gọn/tên miền phụ (vd pixeldra.in) đưa về trang xem: lấy /u/<id> hoặc /l/<id> của trang cuối rồi tải bằng API.
+        page = re.match(r'https://[^/]+(/[ul]/[A-Za-z0-9]+)', final_url)
+        if page and 'pixeldra' in final_url:
+            final_url, content_type = download(direct('https://pixeldrain.com' + page.group(1)), raw)
+            size = raw.stat().st_size
+    print(f'Đã tải {size} byte (đuôi khai báo: {ext or "không"}, content-type: {content_type}, máy chủ cuối: {urllib.parse.urlsplit(final_url).netloc})')
     if size < MIN_BYTES:
         # Link không trỏ thẳng tới file game (trang web/lỗi/JSON): in đầu nội dung đã làm sạch để sếp biết link sai kiểu gì.
         head = raw.read_bytes()[:400].decode('utf-8', 'replace')
