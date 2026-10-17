@@ -27,11 +27,14 @@ class Azahar3dsRunner : Instrumentation() {
     private lateinit var evidence: File
     private var gamePid = 0
     private var onlySteps: Set<String>? = null
+    private var romMode: String? = null
     private val manager get() = targetContext.getSystemService(ActivityManager::class.java)
 
     override fun onCreate(arguments: Bundle?) {
         super.onCreate(arguments)
         onlySteps = arguments?.getString("steps")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
+        romMode = arguments?.getString("rom")
+        require(romMode == null || romMode == "real" || romMode == "synthetic") { "tham số rom không hợp lệ: $romMode" }
         start()
     }
 
@@ -85,7 +88,8 @@ class Azahar3dsRunner : Instrumentation() {
 
     private fun importGame(): File {
         val src = shell("ls /sdcard/Download/ 2>/dev/null | grep '^monika-3ds\\.'").trim().lineSequence().firstOrNull().orEmpty()
-        if (src.isEmpty()) {
+        check(romMode != "real" || src.isNotEmpty()) { "rom=real nhưng không thấy game trong Download (đẩy bằng --other-files thất bại)" }
+        if (romMode == "synthetic" || src.isEmpty()) {
             // Chế độ engine: ROM giả 2 MiB (chỉ có dấu NCSD) để thử khởi tạo engine mà không đẩy game thật lên máy.
             val fake = File(evidence.parentFile, "game-synthetic.3ds")
             fake.outputStream().use { out -> val block = ByteArray(1 shl 20); block[0x100] = 'N'.code.toByte(); block[0x101] = 'C'.code.toByte(); block[0x102] = 'S'.code.toByte(); block[0x103] = 'D'.code.toByte(); out.write(block); out.write(ByteArray(1 shl 20)) }

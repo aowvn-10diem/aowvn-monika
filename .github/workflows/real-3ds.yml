@@ -115,6 +115,7 @@ jobs:
           DEVICE: ${{ steps.dev.outputs.device }}
           GAME_FILE: ${{ steps.game.outputs.file }}
           RUN_STEPS: ${{ inputs.steps }}
+          ROM_MODE: ${{ inputs.rom }}
         run: |
           set +e
           args=()
@@ -126,7 +127,7 @@ jobs:
             --test-runner-class vn.aow.monika.testlab.Azahar3dsRunner \
             --device "$DEVICE" \
             "${args[@]}" \
-            --environment-variables "steps=${RUN_STEPS}" \
+            --environment-variables "^;^steps=${RUN_STEPS};rom=${ROM_MODE}" \
             --timeout 20m --no-record-video \
             --directories-to-pull /sdcard/Android/data/com.aow.monika/files/r3ds \
             --results-dir "real3ds-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
