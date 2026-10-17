@@ -16,6 +16,12 @@ App Android (Kotlin, Jetpack Compose) của aow.vn: đọc bài (Blogger feed), 
 - Không đẩy thẳng `main` khi chưa được duyệt, không phát hành khi PM chưa báo.
 - Muốn báo "thiếu khóa/secret/công cụ" → đọc skill `phat-hanh-apk` trước.
 
+## Trang web monika.aow.vn (lệnh sếp 17/10)
+- **Trang này dành cho NGƯỜI DÙNG (người chơi), KHÔNG phải cho nội bộ dự án.** Mã nguồn ở nhánh `trang-web` (GitHub Pages), không nằm ở `main`.
+- Chỉ đưa lên web nội dung người dùng cần: tải app, tính năng, hệ máy, hỏi đáp, lịch sử cập nhật (từ `docs/CHANGELOG.md`).
+- **Không** đưa lên web: bảng tiến độ, nhật ký đội, người phụ trách, mã việc (V..), điểm nghẽn, ghi chú nhóm, `state.json`. Trang `tien-do/` đã bị xóa.
+- Nhạc nền trang: sếp chốt giữ tự phát (17/10); nguồn/quyền MP3 do sếp chịu trách nhiệm.
+
 ## Báo động ngân sách (từ 06/10, sếp chốt)
 Hạn mức là tài nguyên hiếm nhất. Mọi agent:
 - Làm, ít nói. Báo cáo gộp theo lô, tối đa 3–5 dòng. Không trả lời "đã nhận", không báo sự kiện CI xanh.
