@@ -26,9 +26,14 @@ class Azahar3dsRunner : Instrumentation() {
     private val rows = JSONArray()
     private lateinit var evidence: File
     private var gamePid = 0
+    private var onlySteps: Set<String>? = null
     private val manager get() = targetContext.getSystemService(ActivityManager::class.java)
 
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); start() }
+    override fun onCreate(arguments: Bundle?) {
+        super.onCreate(arguments)
+        onlySteps = arguments?.getString("steps")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
+        start()
+    }
 
     override fun onStart() {
         evidence = File(checkNotNull(targetContext.getExternalFilesDir(null)), "r3ds").apply { mkdirs() }
@@ -40,9 +45,10 @@ class Azahar3dsRunner : Instrumentation() {
         )
         var failures = 0
         var blocked: String? = null
-        steps.forEachIndexed { index, (name, action) ->
+        val plan = steps.filter { onlySteps == null || it.first in onlySteps!! }
+        plan.forEachIndexed { index, (name, action) ->
             val status = Bundle().apply {
-                putString("id", "InstrumentationTestRunner"); putInt("numtests", steps.size)
+                putString("id", "InstrumentationTestRunner"); putInt("numtests", plan.size)
                 putString("class", javaClass.name); putString("test", name); putInt("current", index + 1)
             }
             sendStatus(1, status)
@@ -62,7 +68,7 @@ class Azahar3dsRunner : Instrumentation() {
             rows.put(row); writeSummary()
         }
         finish(-1, Bundle().apply {
-            putString("stream", "R3DS: ${steps.size} steps; $failures failures; $rows\n")
+            putString("stream", "R3DS: ${plan.size} steps; $failures failures; $rows\n")
             if (failures != 0) putString("shortMsg", "3DS thật: có bước lỗi, xem evidence")
         })
     }

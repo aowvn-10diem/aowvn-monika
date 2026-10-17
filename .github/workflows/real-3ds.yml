@@ -15,6 +15,10 @@ on:
         options: [synthetic, real]
         default: synthetic
         description: "synthetic = ROM giả 2 MiB tạo trên máy (thử engine khởi tạo, không đẩy game); real = tải game từ secret TEST_GAME_3DS (~2 GiB)"
+      steps:
+        type: string
+        default: 'R1,R2,R3'
+        description: "Các bước runner chạy: R1 cài engine, R2 nhập game, R3 mở Azahar. Dùng 'R1' để kiểm riêng cài engine (bisect lỗi hạ tầng)"
       peek_run_id:
         type: string
         default: ''
@@ -108,6 +112,7 @@ jobs:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
           DEVICE: ${{ steps.dev.outputs.device }}
           GAME_FILE: ${{ steps.game.outputs.file }}
+          RUN_STEPS: ${{ inputs.steps }}
         run: |
           set +e
           args=()
@@ -119,6 +124,7 @@ jobs:
             --test-runner-class vn.aow.monika.testlab.Azahar3dsRunner \
             --device "$DEVICE" \
             "${args[@]}" \
+            --environment-variables "steps=${RUN_STEPS}" \
             --timeout 20m --no-record-video \
             --directories-to-pull /sdcard/Android/data/com.aow.monika/files/r3ds \
             --results-dir "real3ds-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
