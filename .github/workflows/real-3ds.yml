@@ -15,6 +15,10 @@ on:
         options: [synthetic, real]
         default: synthetic
         description: "synthetic = ROM giả 2 MiB tạo trên máy (thử engine khởi tạo, không đẩy game); real = tải game từ secret TEST_GAME_3DS (~2 GiB)"
+      peek_run_id:
+        type: string
+        default: ''
+        description: "Chỉ xem bằng chứng còn trong bucket Test Lab của lượt real-3ds có id này (không build, không máy, không quota)"
       fetch_only:
         type: boolean
         default: false
@@ -28,7 +32,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  peek:
+    if: ${{ inputs.peek_run_id != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Đọc bằng chứng Test Lab của lượt cũ (đã scrub)
+        env:
+          PEEK_RUN_ID: ${{ inputs.peek_run_id }}
+        run: python3 scripts/peek-testlab.py --run-id "$PEEK_RUN_ID"
   real-3ds:
+    if: ${{ inputs.peek_run_id == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
