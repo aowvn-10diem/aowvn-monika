@@ -8,8 +8,12 @@ on:
       device:
         type: choice
         options: [cubs, grizzly, snapdragon8gen3, mediatek-modern]
-        default: snapdragon8gen3
-        description: "Đúng một máy ARM64 thật (profile trong .github/testlab-devices.json)"
+        default: cubs
+        description: "Đúng một máy ARM64 thật (profile trong .github/testlab-devices.json; snapdragon8gen3 hiện không có trong catalog)"
+      fetch_only:
+        type: boolean
+        default: false
+        description: "Chỉ tải và kiểm game từ secret, không build/không dùng máy Test Lab (không tốn quota)"
 
 permissions:
   contents: read
@@ -44,12 +48,16 @@ jobs:
           python3 scripts/fetch-3ds-game.py "$RUNNER_TEMP/g"
           echo "file=$(ls "$RUNNER_TEMP"/g/monika-3ds.* | head -n1)" >> "$GITHUB_OUTPUT"
       - name: Build APK debug và instrumentation (không ký, không phát hành)
+        if: ${{ !inputs.fetch_only }}
         run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
       - uses: google-github-actions/auth@v2
+        if: ${{ !inputs.fetch_only }}
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - uses: google-github-actions/setup-gcloud@v3
+        if: ${{ !inputs.fetch_only }}
       - name: Chọn đúng một máy ARM64 vật lý
+        if: ${{ !inputs.fetch_only }}
         id: dev
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
@@ -60,6 +68,7 @@ jobs:
           python3 scripts/select-testlab-device.py --catalog "$RUNNER_TEMP/models.json" \
             --profile "$DEVICE_PROFILE" --output r3ds-evidence/selected-device.json --github-output "$GITHUB_OUTPUT"
       - name: Chạy game 3DS thật 90 giây trên máy Test Lab
+        if: ${{ !inputs.fetch_only }}
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
           DEVICE: ${{ steps.dev.outputs.device }}
@@ -81,20 +90,21 @@ jobs:
           echo "$?" > "$RUNNER_TEMP/exit.txt"
           echo "Test Lab exit=$(cat "$RUNNER_TEMP/exit.txt")"
       - name: Thu bằng chứng (log/crumb/exit/tombstone), bỏ PNG/APK/game
-        if: always()
+        if: ${{ always() && !inputs.fetch_only }}
         run: python3 scripts/collect-3ds-evidence.py --result "$RUNNER_TEMP/result.json" --stderr "$RUNNER_TEMP/result.stderr" --output r3ds-evidence --results-dir "real3ds-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
       - name: Tóm tắt vào log job
-        if: always()
+        if: ${{ always() && !inputs.fetch_only }}
         run: |
           cd r3ds-evidence 2>/dev/null || exit 0
           for f in *summary.json *run.json *game-meta.txt; do [ -f "$f" ] && { echo "== $f"; cat "$f"; }; done
           for f in *-exit.txt *-crumbs.txt; do [ -f "$f" ] && { echo "== $f"; head -n 60 "$f"; }; done
           for f in *-crash.log; do [ -f "$f" ] && { echo "== $f"; head -n 40 "$f"; }; done
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: ${{ always() && !inputs.fetch_only }}
         with:
           name: r3ds-evidence
           path: r3ds-evidence/
           retention-days: 2
       - name: Kết luận theo Test Lab
+        if: ${{ !inputs.fetch_only }}
         run: test "$(cat "$RUNNER_TEMP/exit.txt")" = 0

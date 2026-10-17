@@ -10,10 +10,12 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
 
 GAME_EXT = {'3ds', 'cci', 'cia', 'cxi', '3dsx'}
 ARCHIVE_EXT = {'zip', '7z', 'rar'}
+MIN_BYTES = 1_000_000  # ROM 3DS nhỏ nhất vẫn hàng MB; nhỏ hơn thường là trang HTML/JSON lỗi
 
 
 def parse(text):
@@ -49,9 +51,18 @@ def main(out_dir):
     raw = out / 'download.bin'
     request = urllib.request.Request(direct(link), headers={'User-Agent': 'monika-ci'})
     with urllib.request.urlopen(request, timeout=60) as response, raw.open('wb') as target:
+        content_type = response.headers.get('Content-Type', '?')
+        final_host = urllib.parse.urlsplit(response.geturl()).netloc
         while chunk := response.read(1 << 20):
             target.write(chunk)
-    print(f'Đã tải {raw.stat().st_size} byte (đuôi khai báo: {ext or "không"})')
+    size = raw.stat().st_size
+    print(f'Đã tải {size} byte (đuôi khai báo: {ext or "không"}, content-type: {content_type}, máy chủ cuối: {final_host})')
+    if size < MIN_BYTES:
+        # Link không trỏ thẳng tới file game (trang web/lỗi/JSON): in đầu nội dung đã làm sạch để sếp biết link sai kiểu gì.
+        head = raw.read_bytes()[:400].decode('utf-8', 'replace')
+        head = re.sub(r'https?://\S+', '<url>', re.sub(r'[^\x20-\x7e\n]', ' ', head))
+        print('Nội dung đầu (làm sạch):', head.replace('\n', ' ')[:300])
+        raise SystemExit(f'Link không trả về file game (chỉ {size} byte < {MIN_BYTES}): cần link tải TRỰC TIẾP tới .3ds/.cci/.cia/.zip')
     if ext in GAME_EXT:
         final = raw.with_name('monika-3ds.' + ext)
         raw.rename(final)
@@ -68,6 +79,11 @@ def main(out_dir):
         final = out / ('monika-3ds' + found[0].suffix.lower())
         found[0].rename(final)
         packed.unlink()
+    if final.suffix in ('.3ds', '.cci') and final.stat().st_size > 0x104:
+        with final.open('rb') as f:
+            f.seek(0x100)
+            if f.read(4) != b'NCSD':
+                raise SystemExit('File .3ds/.cci không có dấu NCSD ở offset 0x100: không phải ROM 3DS hợp lệ (hoặc đã mã hóa lạ)')
     print(f'Game sẵn sàng: đuôi {final.suffix[1:]}, {final.stat().st_size} byte')
 
 
