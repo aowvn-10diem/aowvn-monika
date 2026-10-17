@@ -35,7 +35,7 @@ jobs:
         if: matrix.language == 'java-kotlin'
       - name: Cài NDK cho build app
         if: matrix.language == 'java-kotlin'
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'ndk;22.1.7171670' 'cmake;3.22.1' > /dev/null
+        run: bash scripts/ci-install-j2me-ndk.sh
       - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
