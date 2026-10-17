@@ -45,7 +45,10 @@ class Azahar3dsRunner : Instrumentation() {
         )
         var failures = 0
         var blocked: String? = null
+        val known = steps.map { it.first }.toSet()
+        require(onlySteps == null || (onlySteps!!.isNotEmpty() && known.containsAll(onlySteps!!))) { "tham số steps không hợp lệ: ${onlySteps}, chỉ nhận $known" }
         val plan = steps.filter { onlySteps == null || it.first in onlySteps!! }
+        check(plan.isNotEmpty()) { "không có bước nào để chạy" }
         plan.forEachIndexed { index, (name, action) ->
             val status = Bundle().apply {
                 putString("id", "InstrumentationTestRunner"); putInt("numtests", plan.size)

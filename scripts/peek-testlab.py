@@ -27,6 +27,9 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--attempt', default='1')
     args = parser.parse_args()
+    for value in (args.run_id, args.attempt):
+        if not re.fullmatch(r'[1-9][0-9]{0,19}', value):
+            raise SystemExit('run-id/attempt phải là số nguyên dương (không nhận ký tự đại diện)')
     prefix_name = f'real3ds-{args.run_id}-{args.attempt}'
     buckets = [line.strip() for line in run('gsutil', 'ls').stdout.splitlines() if line.strip().startswith('gs://')]
     for bucket in buckets:

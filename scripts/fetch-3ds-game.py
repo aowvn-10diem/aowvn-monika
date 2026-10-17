@@ -167,6 +167,8 @@ def main(out_dir):
         packed.unlink()
     else:
         raise SystemExit('tệp tải về không nhận ra được (không phải game/zip/rar/7z)')
+    if final.stat().st_size < MIN_BYTES:
+        raise SystemExit(f'Tệp game cuối chỉ {final.stat().st_size} byte (< {MIN_BYTES}): không phải ROM thật, dừng.')
     if not valid_game(final):
         raise SystemExit(f'File .{final.suffix[1:]} không có header 3DS hợp lệ (NCSD/NCCH/3DSX/CIA): không phải ROM hoặc chưa xác thực được, dừng.')
     print(f'Game sẵn sàng: đuôi {final.suffix[1:]}, {final.stat().st_size} byte')

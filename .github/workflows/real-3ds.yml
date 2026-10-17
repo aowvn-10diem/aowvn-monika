@@ -51,7 +51,9 @@ jobs:
       - name: Đọc bằng chứng Test Lab của lượt cũ (đã scrub)
         env:
           PEEK_RUN_ID: ${{ inputs.peek_run_id }}
-        run: python3 scripts/peek-testlab.py --run-id "$PEEK_RUN_ID"
+        run: |
+          [[ "$PEEK_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]] || { echo "peek_run_id phải là số nguyên dương"; exit 1; }
+          python3 scripts/peek-testlab.py --run-id "$PEEK_RUN_ID"
   real-3ds:
     if: ${{ inputs.peek_run_id == '' }}
     runs-on: ubuntu-latest
