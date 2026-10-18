@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Test offline cho scripts/fetch-3ds-game.py: parse secret, URL ứng viên Pixeldrain, nhận dạng gói, kiểm header game, từ chối trang HTML nhỏ."""
+import contextlib
+import io
 import http.server
 import importlib.util
 import os
@@ -7,6 +9,7 @@ from pathlib import Path
 import tempfile
 import threading
 import unittest
+from unittest import mock
 
 SPEC = importlib.util.spec_from_file_location('fetch3ds', Path(__file__).resolve().parent / 'fetch-3ds-game.py')
 mod = importlib.util.module_from_spec(SPEC)
@@ -32,7 +35,45 @@ class Fetch3dsTest(unittest.TestCase):
         self.assertEqual(mod.candidates('https://x.test/f.zip'), ['https://x.test/f.zip'])
 
     def test_shape_hides_ids(self):
-        self.assertEqual(mod.shape('https://pixeldrain.com/d/AbCdEf12XYZ?attach#x'), 'https://pixeldrain.com/d/<id>?attach#...')
+        self.assertEqual(mod.shape('https://pixeldrain.com/d/AbCdEf12XYZ?attach#x'), 'pixeldrain.com')
+
+    def test_shape_keeps_only_hostname_with_userinfo_and_short_tokens(self):
+        for url in (
+            'https://user:pass@FILES.example:8443/a/B7?key=short#fragment',
+            'https://FILES.example/a/b?q=v#f',
+            'https://other:credential@FILES.example/x',
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(mod.shape(url), 'files.example')
+        self.assertEqual(mod.shape('https://[broken/path?secret=value'), 'không rõ')
+        self.assertEqual(mod.shape('/relative/path?secret=value'), 'không rõ')
+
+    def test_main_logs_only_source_and_redirect_hostname(self):
+        source = 'https://alice:sourcePass@source.example/a/X7?key=sourceToken#sourceFragment'
+        redirect = 'https://bob:redirectPass@redirect.example:8443/b/Y8?key=redirectToken#redirectFragment'
+        def download(url, raw):
+            self.assertEqual(url, source)
+            data = bytearray(mod.MIN_BYTES)
+            data[0x100:0x104] = b'NCSD'
+            raw.write_bytes(data)
+            return redirect, 'application/octet-stream'
+        output = io.StringIO()
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.dict(os.environ, {'TEST_GAME_3DS': 'fixture'}), \
+                mock.patch.object(mod, 'parse', return_value=('3ds', source, '')), \
+                mock.patch.object(mod, 'candidates', return_value=[source]), \
+                mock.patch.object(mod, 'download', side_effect=download), \
+                contextlib.redirect_stdout(output):
+            mod.main(directory)
+        # GitHub masking instructions intentionally receive the original URL; normal logs must not.
+        lines = [line for line in output.getvalue().splitlines() if not line.startswith('::add-mask::')]
+        normal = '\n'.join(lines)
+        self.assertIn('Dạng link khai báo: source.example', normal)
+        self.assertIn('Thử source.example -> redirect.example:', normal)
+        self.assertIn('máy chủ cuối: redirect.example)', normal)
+        for private in ('alice', 'sourcePass', 'X7', 'sourceToken', 'sourceFragment',
+                        'bob', 'redirectPass', 'Y8', 'redirectToken', 'redirectFragment', '8443', 'https://'):
+            self.assertNotIn(private, normal)
 
     def test_valid_game_headers(self):
         with tempfile.TemporaryDirectory() as d:

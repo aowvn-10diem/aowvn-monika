@@ -93,11 +93,11 @@ def sniff(path):
 
 
 def shape(url):
-    """Hình dạng URL để chẩn đoán, che mã: https://host/u/<id>?khóa1&khóa2 (không lộ link)."""
-    parts = urllib.parse.urlsplit(url)
-    path = re.sub(r'[A-Za-z0-9_-]{8,}', '<id>', parts.path)
-    keys = '&'.join(k for k in urllib.parse.parse_qs(parts.query, keep_blank_values=True))
-    return f'{parts.scheme}://{parts.netloc}{path}' + (f'?{keys}' if keys else '') + ('#...' if parts.fragment else '')
+    """Chỉ giữ hostname; userinfo, port, path, query và fragment không được đưa vào log."""
+    try:
+        return urllib.parse.urlsplit(url).hostname or 'không rõ'
+    except ValueError:
+        return 'không rõ'
 
 
 def download(url, raw):
@@ -135,7 +135,7 @@ def main(out_dir):
         print(f'Thử {shape(tried)} -> {shape(final_url)}: {size} byte, {content_type}')
         if size >= MIN_BYTES:
             break
-    print(f'Đã tải {size} byte (đuôi khai báo: {ext or "không"}, content-type: {content_type}, máy chủ cuối: {urllib.parse.urlsplit(final_url).netloc})')
+    print(f'Đã tải {size} byte (đuôi khai báo: {ext or "không"}, content-type: {content_type}, máy chủ cuối: {shape(final_url)})')
     if size < MIN_BYTES:
         # Link không trỏ thẳng tới file game (trang web/lỗi/JSON): in đầu nội dung đã làm sạch để sếp biết link sai kiểu gì.
         head = raw.read_bytes()[:400].decode('utf-8', 'replace')
