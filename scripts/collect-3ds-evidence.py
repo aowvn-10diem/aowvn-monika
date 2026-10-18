@@ -49,8 +49,9 @@ def collect(result, stderr, output, prefix_name):
             raw = budget.read(['gsutil', 'cat', uri])
             data = budget.export(safe.redact(raw, name, v56.scrub, v56.scrub_json))
             dest = output / f'evidence-{index}-{name}'
-            dest.write_bytes(data)
+            # Track before writing so an I/O failure also removes a partial file.
             written.append(dest)
+            dest.write_bytes(data)
         report.update(collection='COLLECTED', files=len(written), bytes=budget.exported)
     except (safe.EvidenceError, OSError) as error:
         for path in written:

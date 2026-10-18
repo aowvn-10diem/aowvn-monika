@@ -89,6 +89,20 @@ class EvidenceTest(unittest.TestCase):
             self.assertEqual(('BLOCKED', 0, 0), (report['collection'], report['files'], report['bytes']))
             self.assertEqual(['collection.json'], [p.name for p in (root/'out').iterdir()])
 
+    def test_collector_removes_partial_file_after_write_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); result = root/'result'; result.write_text('gs://fake/result')
+            listing = (PREFIX+'device/r3ds/R1-crumbs.txt').encode()
+            original = Path.write_bytes
+            def fail_after_partial(path, data):
+                original(path, data[:1])
+                raise OSError('simulated disk failure')
+            with patch.object(safe, 'read_bounded', side_effect=[listing, b'R3DS OK']), patch.object(Path, 'write_bytes', fail_after_partial), contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaises(SystemExit):
+                    collector.collect(result, root/'missing', root/'out', 'real3ds-123-1')
+            self.assertEqual(['collection.json'], [p.name for p in (root/'out').iterdir()])
+            self.assertEqual('BLOCKED', json.loads((root/'out/collection.json').read_text())['collection'])
+
     def test_collector_exports_only_scrubbed_counted_text(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); result = root/'result'; result.write_text('gs://fake/result')
