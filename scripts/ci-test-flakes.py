@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Summarize same-head Android unit-test outcomes from saved Actions logs.
+"""Summarize same-suite Android unit-test outcomes from saved Actions logs.
 
 The input is a JSON object with an ``executions`` array. Each execution has
-``run_id``, ``attempt``, ``workflow``, ``head_sha``, ``tests_ran``,
+``run_id``, ``attempt``, ``workflow``, ``suite``, ``head_sha``, ``tests_ran``,
 ``tests_conclusion`` (``success`` or ``failure``), and optionally
 ``log_path``. Failure logs may be plain text or a downloaded Actions ZIP.
 
-This tool is offline by design. It compares only executions of an identical
-head SHA, where the tested source is unchanged. It reports an empirical
-same-head retry rate, not a population-wide probability for test suites that
-have different test inventories.
+This tool is offline by design. It compares executions only when the head SHA,
+workflow, and test-suite identity match. It reports an empirical same-suite
+rate, not a population-wide probability for test suites with different test
+inventories.
 """
 
 from __future__ import annotations
@@ -75,10 +75,16 @@ def load_manifest(path: Path) -> list[dict[str, object]]:
     for index, row in enumerate(executions):
         if not isinstance(row, dict):
             raise ValueError(f"execution {index} must be an object")
-        required = ("run_id", "attempt", "workflow", "head_sha", "tests_ran", "tests_conclusion")
+        required = ("run_id", "attempt", "workflow", "suite", "head_sha", "tests_ran", "tests_conclusion")
         missing = [key for key in required if key not in row]
         if missing:
             raise ValueError(f"execution {index} is missing: {', '.join(missing)}")
+        workflow = str(row["workflow"]).strip()
+        if not workflow:
+            raise ValueError(f"execution {index} has an empty workflow")
+        suite = row["suite"]
+        if not isinstance(suite, str) or not suite.strip():
+            raise ValueError(f"execution {index} has an invalid suite; use a non-empty string")
         sha = str(row["head_sha"]).lower()
         if not re.fullmatch(r"[0-9a-f]{40}", sha):
             raise ValueError(f"execution {index} has an invalid 40-character head_sha")
@@ -86,6 +92,8 @@ def load_manifest(path: Path) -> list[dict[str, object]]:
             raise ValueError(f"execution {index} has an invalid tests_conclusion")
 
         item = dict(row)
+        item["workflow"] = workflow
+        item["suite"] = suite.strip()
         item["head_sha"] = sha
         item["failed_cases"] = []
         item["summaries"] = []
@@ -99,39 +107,46 @@ def load_manifest(path: Path) -> list[dict[str, object]]:
     return parsed
 
 
+def execution_scope(row: dict[str, object]) -> tuple[str, str]:
+    """Return the manifest's explicit workflow and test-suite identity."""
+    return str(row["workflow"]).strip(), str(row["suite"]).strip()
+
+
 def analyze(executions: list[dict[str, object]], threshold: float = 0.02) -> dict[str, object]:
     """Calculate failure ratios for named cases on heads where they failed.
 
     A case is eligible only when its name appears in a completed failure log
-    for that exact SHA. Green suite runs at that same SHA count as passes. A
-    failed suite with a parsed summary counts each known case not listed among
-    its failures as a pass. Failed runs without a completion summary are
-    excluded from the per-case denominator.
+    for the same head SHA, workflow, and test-suite identity. Green executions
+    in that same scope count as passes. A failed suite with a parsed summary
+    counts each known case not listed among its failures as a pass. Failed runs
+    without a completion summary are excluded from the per-case denominator.
     """
     if threshold < 0 or threshold > 1:
         raise ValueError("threshold must be between 0 and 1")
 
-    known_by_sha: dict[str, set[str]] = defaultdict(set)
+    known_by_scope: dict[tuple[str, str, str], set[str]] = defaultdict(set)
     unclassified_failures = 0
     eligible_executions = 0
     for row in executions:
         if not row.get("tests_ran") or row.get("tests_conclusion") not in ("success", "failure"):
             continue
         sha = str(row["head_sha"])
+        workflow, suite = execution_scope(row)
         cases = set(row.get("failed_cases", []))
         summaries = row.get("summaries", [])
         if row["tests_conclusion"] == "failure":
             if not summaries or not cases or summaries[-1].get("failed") != len(cases):
                 unclassified_failures += 1
                 continue
-            known_by_sha[sha].update(cases)
+            known_by_scope[(sha, workflow, suite)].update(cases)
 
-    counts: dict[tuple[str, str], dict[str, int]] = defaultdict(lambda: {"failed": 0, "passed": 0})
+    counts: dict[tuple[str, str, str, str], dict[str, int]] = defaultdict(lambda: {"failed": 0, "passed": 0})
     for row in executions:
         if not row.get("tests_ran") or row.get("tests_conclusion") not in ("success", "failure"):
             continue
         sha = str(row["head_sha"])
-        known_cases = known_by_sha.get(sha, set())
+        workflow, suite = execution_scope(row)
+        known_cases = known_by_scope.get((sha, workflow, suite), set())
         if not known_cases:
             continue
         cases = set(row.get("failed_cases", []))
@@ -142,34 +157,43 @@ def analyze(executions: list[dict[str, object]], threshold: float = 0.02) -> dic
             continue
         eligible_executions += 1
         for case in known_cases:
-            counts[(sha, case)]["failed" if case in cases else "passed"] += 1
+            counts[(sha, workflow, suite, case)]["failed" if case in cases else "passed"] += 1
 
-    totals: dict[str, dict[str, object]] = {}
-    for (sha, case), count in counts.items():
-        row = totals.setdefault(case, {"failed": 0, "passed": 0, "heads": set()})
+    totals: dict[tuple[str, str, str], dict[str, object]] = {}
+    for (sha, workflow, suite, case), count in counts.items():
+        row = totals.setdefault((workflow, suite, case), {
+            "workflow": workflow, "suite": suite, "test": case,
+            "failed": 0, "passed": 0, "heads": set(),
+        })
         row["failed"] = int(row["failed"]) + count["failed"]
         row["passed"] = int(row["passed"]) + count["passed"]
         row["heads"].add(sha)
 
     cases_out = []
-    for case, count in totals.items():
+    for count in totals.values():
         failed = int(count["failed"])
         passed = int(count["passed"])
         total = failed + passed
         rate = failed / total if total else 0.0
         cases_out.append({
-            "test": case,
+            "workflow": count["workflow"],
+            "suite": count["suite"],
+            "test": count["test"],
             "failed": failed,
             "passed": passed,
             "attempts": total,
-            "same_head_rate": rate,
+            "same_head_workflow_suite_rate": rate,
             "heads": len(count["heads"]),
             "candidate_over_threshold": failed > 0 and passed > 0 and rate > threshold,
         })
-    cases_out.sort(key=lambda item: (-int(item["candidate_over_threshold"]), -float(item["same_head_rate"]), str(item["test"])))
+    cases_out.sort(key=lambda item: (
+        -int(item["candidate_over_threshold"]),
+        -float(item["same_head_workflow_suite_rate"]),
+        str(item["workflow"]), str(item["suite"]), str(item["test"]),
+    ))
 
     return {
-        "scope": "same-head only; not a population-wide test probability",
+        "scope": "same head SHA + workflow + test suite; not a population-wide test probability",
         "threshold": threshold,
         "eligible_suite_executions": eligible_executions,
         "unclassified_failed_suites": unclassified_failures,

@@ -24,44 +24,66 @@ class CiTestFlakesTest(unittest.TestCase):
         self.assertEqual(parsed["failed_cases"], ["ExampleTest.transient"])
         self.assertEqual(parsed["summaries"], [{"total": 12, "failed": 1, "skipped": 2}])
 
-    def test_calculates_only_same_head_retry_rate(self):
+    def test_calculates_only_same_head_workflow_retry_rate(self):
         rows = [
-            {"run_id": 1, "attempt": 1, "workflow": "Build", "head_sha": SHA_A,
+            {"run_id": 1, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": True, "tests_conclusion": "failure", "failed_cases": ["ExampleTest.transient"],
              "summaries": [{"total": 3, "failed": 1, "skipped": 0}]},
-            {"run_id": 1, "attempt": 2, "workflow": "Build", "head_sha": SHA_A,
+            {"run_id": 1, "attempt": 2, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": True, "tests_conclusion": "success", "failed_cases": [], "summaries": []},
-            {"run_id": 2, "attempt": 1, "workflow": "Build", "head_sha": SHA_B,
+            {"run_id": 2, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_B,
              "tests_ran": True, "tests_conclusion": "success", "failed_cases": [], "summaries": []},
         ]
         result = ci.analyze(rows)
         self.assertEqual(result["candidate_count"], 1)
         self.assertEqual(result["tests"][0]["failed"], 1)
         self.assertEqual(result["tests"][0]["passed"], 1)
-        self.assertEqual(result["tests"][0]["same_head_rate"], 0.5)
+        self.assertEqual(result["tests"][0]["same_head_workflow_suite_rate"], 0.5)
         self.assertEqual(result["tests"][0]["heads"], 1)
+
+    def test_does_not_count_other_workflows_or_suites_as_passes(self):
+        rows = [
+            {"run_id": 1, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
+             "tests_ran": True, "tests_conclusion": "failure", "failed_cases": ["ExampleTest.transient"],
+             "summaries": [{"total": 3, "failed": 1, "skipped": 0}]},
+            {"run_id": 1, "attempt": 2, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
+             "tests_ran": True, "tests_conclusion": "success", "failed_cases": [], "summaries": []},
+            {"run_id": 2, "attempt": 1, "workflow": "Coverage", "suite": "unit", "head_sha": SHA_A,
+             "tests_ran": True, "tests_conclusion": "success", "failed_cases": [], "summaries": []},
+            {"run_id": 3, "attempt": 1, "workflow": "Build", "suite": "smoke", "head_sha": SHA_A,
+             "tests_ran": True, "tests_conclusion": "success", "failed_cases": [], "summaries": []},
+        ]
+        result = ci.analyze(rows)
+        self.assertEqual(len(result["tests"]), 1)
+        self.assertEqual(result["tests"][0]["workflow"], "Build")
+        self.assertEqual(result["tests"][0]["suite"], "unit")
+        self.assertEqual(result["tests"][0]["failed"], 1)
+        self.assertEqual(result["tests"][0]["passed"], 1)
+        self.assertEqual(result["tests"][0]["attempts"], 2)
+        self.assertEqual(result["tests"][0]["same_head_workflow_suite_rate"], 0.5)
 
     def test_all_red_on_same_head_is_not_called_random(self):
         rows = [
-            {"run_id": 1, "attempt": 1, "workflow": "Build", "head_sha": SHA_A,
+            {"run_id": 1, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": True, "tests_conclusion": "failure", "failed_cases": ["ExampleTest.broken"],
              "summaries": [{"total": 3, "failed": 1, "skipped": 0}]},
-            {"run_id": 2, "attempt": 1, "workflow": "Coverage", "head_sha": SHA_A,
+            {"run_id": 2, "attempt": 1, "workflow": "Coverage", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": True, "tests_conclusion": "failure", "failed_cases": ["ExampleTest.broken"],
              "summaries": [{"total": 3, "failed": 1, "skipped": 0}]},
         ]
         result = ci.analyze(rows)
-        self.assertEqual(result["tests"][0]["same_head_rate"], 1.0)
-        self.assertFalse(result["tests"][0]["candidate_over_threshold"])
+        self.assertEqual(result["tests"][0]["same_head_workflow_suite_rate"], 1.0)
+        self.assertEqual(len(result["tests"]), 2)
+        self.assertTrue(all(not row["candidate_over_threshold"] for row in result["tests"]))
 
     def test_pretest_and_unclassified_failures_do_not_enter_case_denominator(self):
         rows = [
-            {"run_id": 1, "attempt": 1, "workflow": "Build", "head_sha": SHA_A,
+            {"run_id": 1, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": True, "tests_conclusion": "failure", "failed_cases": ["ExampleTest.transient"],
              "summaries": [{"total": 3, "failed": 1, "skipped": 0}]},
-            {"run_id": 2, "attempt": 1, "workflow": "Build", "head_sha": SHA_A,
+            {"run_id": 2, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": True, "tests_conclusion": "failure", "failed_cases": [], "summaries": []},
-            {"run_id": 3, "attempt": 1, "workflow": "Build", "head_sha": SHA_A,
+            {"run_id": 3, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": False, "tests_conclusion": "failure", "failed_cases": [], "summaries": []},
         ]
         result = ci.analyze(rows)
@@ -70,13 +92,13 @@ class CiTestFlakesTest(unittest.TestCase):
 
     def test_incomplete_failure_names_do_not_become_false_passes(self):
         rows = [
-            {"run_id": 1, "attempt": 1, "workflow": "Build", "head_sha": SHA_A,
+            {"run_id": 1, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": True, "tests_conclusion": "failure", "failed_cases": ["ExampleTest.a"],
              "summaries": [{"total": 4, "failed": 1, "skipped": 0}]},
-            {"run_id": 2, "attempt": 1, "workflow": "Build", "head_sha": SHA_A,
+            {"run_id": 2, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": True, "tests_conclusion": "failure", "failed_cases": ["ExampleTest.a"],
              "summaries": [{"total": 4, "failed": 2, "skipped": 0}]},
-            {"run_id": 3, "attempt": 1, "workflow": "Build", "head_sha": SHA_A,
+            {"run_id": 3, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": True, "tests_conclusion": "success", "failed_cases": [], "summaries": []},
         ]
         result = ci.analyze(rows)
@@ -106,6 +128,7 @@ class CiTestFlakesTest(unittest.TestCase):
                 "run_id": 7,
                 "attempt": 1,
                 "workflow": "Build",
+                "suite": "unit",
                 "head_sha": SHA_A,
                 "tests_ran": True,
                 "tests_conclusion": "failure",
@@ -117,14 +140,14 @@ class CiTestFlakesTest(unittest.TestCase):
 
     def test_rate_threshold_is_strictly_greater_than_threshold(self):
         rows = [
-            {"run_id": 1, "attempt": 1, "workflow": "Build", "head_sha": SHA_A,
+            {"run_id": 1, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": True, "tests_conclusion": "failure", "failed_cases": ["ExampleTest.transient"],
              "summaries": [{"total": 3, "failed": 1, "skipped": 0}]},
-            {"run_id": 2, "attempt": 1, "workflow": "Build", "head_sha": SHA_A,
+            {"run_id": 2, "attempt": 1, "workflow": "Build", "suite": "unit", "head_sha": SHA_A,
              "tests_ran": True, "tests_conclusion": "success", "failed_cases": [], "summaries": []},
         ]
         result = ci.analyze(rows, threshold=0.5)
-        self.assertEqual(result["tests"][0]["same_head_rate"], 0.5)
+        self.assertEqual(result["tests"][0]["same_head_workflow_suite_rate"], 0.5)
         self.assertFalse(result["tests"][0]["candidate_over_threshold"])
 
 
