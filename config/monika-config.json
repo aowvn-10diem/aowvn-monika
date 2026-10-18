@@ -1,6 +1,6 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 43,
+  "configVersion": 44,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 41,
@@ -189,8 +189,7 @@
       "pad": "n3ds",
       "thumbnails": [
         "Nintendo - Nintendo 3DS"
-      ],
-      "engine": "azahar"
+      ]
     },
     {
       "id": "dc",
