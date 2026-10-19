@@ -4,6 +4,7 @@ import contextlib
 import io
 import json
 import os
+import shlex
 import tempfile
 import unittest
 from pathlib import Path
@@ -151,28 +152,45 @@ class MainTest(unittest.TestCase):
 
 
 class PickTest(unittest.TestCase):
-    def test_pick_writes_the_line_to_env_file_and_masks_first(self):
+    def test_pick_writes_the_line_to_out_file_and_masks_first(self):
         env = {"GAMES": f"# bỏ qua\nnds | {LINK_A} | ghi chú | mk={PASSWORD}\n"}
         with tempfile.TemporaryDirectory() as tmp:
-            env_file = Path(tmp) / "github-env"
+            out_file = Path(tmp) / "pick.env"
             stdout = io.StringIO()
             with mock.patch.dict(os.environ, env, clear=True), contextlib.redirect_stdout(stdout):
                 code = real_games.main(["--config", str(self.config(tmp)), "--pick-system", "nds",
-                                        "--pick-line", "2", "--env-file", str(env_file)])
-            text = env_file.read_text(encoding="utf-8")
+                                        "--pick-line", "2", "--out-file", str(out_file)])
+            text = out_file.read_text(encoding="utf-8")
+            mode = out_file.stat().st_mode & 0o777
         self.assertEqual(code, 0)
         self.assertEqual(stdout.getvalue().splitlines(), [f"::add-mask::{LINK_A}", f"::add-mask::{PASSWORD}"])
         self.assertIn(f"REAL_LINK={LINK_A}\n", text)
         self.assertIn(f"REAL_PASSWORD={PASSWORD}\n", text)
         self.assertIn("REAL_EXT=nds\n", text)
-        self.assertIn("REAL_NOTE=ghi chú\n", text)
+        self.assertIn("REAL_NOTE='ghi chú'\n", text)
+        self.assertEqual(mode, 0o600)
+
+    def test_pick_file_values_round_trip_through_shell_quoting(self):
+        note = 'a "b" $(id) `x`; c'
+        env = {"GAMES": f"nds | {LINK_A} | {note} | mk={PASSWORD}\n"}
+        with tempfile.TemporaryDirectory() as tmp:
+            out_file = Path(tmp) / "pick.env"
+            with mock.patch.dict(os.environ, env, clear=True), contextlib.redirect_stdout(io.StringIO()):
+                real_games.main(["--config", str(self.config(tmp)), "--pick-system", "nds",
+                                 "--pick-line", "1", "--out-file", str(out_file)])
+            values = {}
+            for line in out_file.read_text(encoding="utf-8").splitlines():
+                key, _, value = shlex.split(line)[0].partition("=")
+                values[key] = value
+        self.assertEqual(values["REAL_NOTE"], note)
+        self.assertEqual(values["REAL_PASSWORD"], PASSWORD)
 
     def test_pick_refuses_a_line_that_is_not_valid(self):
         env = {"GAMES": f"gb | {LINK_B}\n"}
         with tempfile.TemporaryDirectory() as tmp:
             with mock.patch.dict(os.environ, env, clear=True), self.assertRaises(SystemExit) as caught:
                 real_games.main(["--config", str(self.config(tmp)), "--pick-system", "nds",
-                                 "--pick-line", "1", "--env-file", str(Path(tmp) / "env")])
+                                 "--pick-line", "1", "--out-file", str(Path(tmp) / "env")])
         self.assertIn("không có dòng 1 hợp lệ", str(caught.exception))
         self.assertNotIn(LINK_B, str(caught.exception))
 
@@ -181,13 +199,13 @@ class PickTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with mock.patch.dict(os.environ, env, clear=True), self.assertRaises(SystemExit):
                 real_games.main(["--config", str(self.config(tmp)), "--pick-system", "nds",
-                                 "--pick-line", "1", "--env-file", str(Path(tmp) / "env")])
+                                 "--pick-line", "1", "--out-file", str(Path(tmp) / "env")])
 
     def test_pick_refuses_apk(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(SystemExit):
                 real_games.main(["--config", str(self.config(tmp)), "--pick-system", "apk",
-                                 "--pick-line", "1", "--env-file", str(Path(tmp) / "env")])
+                                 "--pick-line", "1", "--out-file", str(Path(tmp) / "env")])
 
     def config(self, directory):
         path = Path(directory) / "config.json"

@@ -74,6 +74,7 @@ jobs:
             --summary "$GITHUB_STEP_SUMMARY" \
             --github-output "$GITHUB_OUTPUT"
 
+
   test:
     name: ${{ matrix.system }}/${{ matrix.ext }} (dòng ${{ matrix.line }})
     needs: prepare
@@ -85,18 +86,23 @@ jobs:
       max-parallel: 15
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
-      - name: Đọc lại đúng dòng và che link, mật khẩu
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Đọc lại đúng dòng, che link và mật khẩu, ghi file tạm
         env:
           SYSTEM: ${{ matrix.system }}
           LINE: ${{ matrix.line }}
-          # Chỉ bước này thấy secret của đúng hệ này; các bước sau chỉ dùng REAL_* đã che.
+          # Chỉ bước này thấy secret của đúng hệ này; các bước sau đọc file tạm, không qua env.
           GAMES: ${{ secrets[format('TEST_GAME_{0}', matrix.secret)] }}
         run: |
           set -eu
+          mkdir -p "$RUNNER_TEMP/real-games"
           python3 scripts/real-games.py \
             --pick-system "$SYSTEM" \
             --pick-line "$LINE" \
-            --env-file "$GITHUB_ENV"
+            --out-file "$RUNNER_TEMP/real-games/pick.env"
 
       - name: Dọn ổ trước khi tải
         run: |
@@ -107,6 +113,7 @@ jobs:
       - name: Tải game (không lưu thành artifact)
         run: |
           set -u
+          . "$RUNNER_TEMP/real-games/pick.env"
           D="$RUNNER_TEMP/game"
           mkdir -p "$D"
           if curl -fsSL --max-filesize 4294967296 -o "$D/game.$REAL_EXT" "$REAL_LINK"; then
@@ -123,11 +130,12 @@ jobs:
           if [ "$(cat "$RUNNER_TEMP/status.txt" 2>/dev/null)" != "tai" ]; then
             exit 0
           fi
+          . "$RUNNER_TEMP/real-games/pick.env"
           case "$REAL_EXT" in
             zip|rar|7z)
-              ARGS="-y -o$D/out"
-              if [ -n "$REAL_PASSWORD" ]; then ARGS="$ARGS -p$REAL_PASSWORD"; fi
-              if 7z x $ARGS "$D/game.$REAL_EXT" >/dev/null 2>&1; then
+              args=(x -y "-o$D/out")
+              if [ -n "$REAL_PASSWORD" ]; then args+=("-p$REAL_PASSWORD"); fi
+              if 7z "${args[@]}" "$D/game.$REAL_EXT" >/dev/null 2>&1; then
                 echo "giai-nen-ok" >> "$RUNNER_TEMP/status.txt"
               else
                 echo "loi-giai-nen" >> "$RUNNER_TEMP/status.txt"
@@ -144,13 +152,19 @@ jobs:
           SYSTEM: ${{ matrix.system }}
           NOTE: ${{ matrix.note }}
         run: |
+          set -u
+          REAL_EXT=""
+          if [ -f "$RUNNER_TEMP/real-games/pick.env" ]; then . "$RUNNER_TEMP/real-games/pick.env"; fi
           STATUS=$(tr '\n' ' ' < "$RUNNER_TEMP/status.txt" 2>/dev/null || echo "chua-chay")
           {
             echo "| Hệ | Đuôi | Ghi chú | Kết quả |"
             echo "| --- | --- | --- | --- |"
             echo "| $SYSTEM | $REAL_EXT | $NOTE | $STATUS; máy ảo: chưa nối (bước sau V124) |"
           } >> "$GITHUB_STEP_SUMMARY"
+          case "$STATUS" in
+            *loi-*) echo "::error::$SYSTEM: tải hoặc giải nén game lỗi"; exit 1 ;;
+          esac
 
-      - name: Xóa game sau khi kiểm
+      - name: Xóa game và file tạm sau khi kiểm
         if: always()
-        run: rm -rf "$RUNNER_TEMP/game"
+        run: rm -rf "$RUNNER_TEMP/game" "$RUNNER_TEMP/real-games/pick.env"

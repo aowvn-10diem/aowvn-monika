@@ -10,6 +10,7 @@ Không in link hay mật khẩu ra ngoài lệnh `::add-mask::`. Lỗi chỉ ghi
 import argparse
 import json
 import os
+import shlex
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -99,10 +100,11 @@ def build(systems, env, requested):
     return matrix, rows, errors, masks
 
 
-def pick(systems, text, system_id, line, env_file):
-    """Đọc lại đúng một dòng hợp lệ và ghi REAL_* vào env_file (GITHUB_ENV). Che link và mật khẩu trước.
+def pick(systems, text, system_id, line, out_file):
+    """Đọc lại đúng một dòng hợp lệ, che link và mật khẩu, rồi ghi REAL_* vào out_file (file tạm, quyền 600).
 
     text: nội dung secret TEST_GAME_<MÃ HỆ>, job kiểm truyền qua biến GAMES chỉ ở bước đọc dòng.
+    Không ghi vào GITHUB_ENV: các bước sau đọc file này bằng shell, không qua env.
     """
     if system_id in EXCLUDED_SYSTEMS or system_id not in systems:
         raise SystemExit(f"hệ {system_id} không nằm trong V124")
@@ -113,11 +115,12 @@ def pick(systems, text, system_id, line, env_file):
     for value in (entry["link"], entry["password"]):
         if value:
             print(f"::add-mask::{value}")
-    with open(env_file, "a", encoding="utf-8") as out:
-        out.write(f"REAL_LINK={entry['link']}\n")
-        out.write(f"REAL_PASSWORD={entry['password']}\n")
-        out.write(f"REAL_EXT={entry['ext']}\n")
-        out.write(f"REAL_NOTE={entry['note']}\n")
+    with open(out_file, "w", encoding="utf-8") as out:
+        os.chmod(out_file, 0o600)
+        out.write(f"REAL_LINK={shlex.quote(entry['link'])}\n")
+        out.write(f"REAL_PASSWORD={shlex.quote(entry['password'])}\n")
+        out.write(f"REAL_EXT={shlex.quote(entry['ext'])}\n")
+        out.write(f"REAL_NOTE={shlex.quote(entry['note'])}\n")
     return 0
 
 
@@ -138,12 +141,12 @@ def main(argv=None):
     parser.add_argument("--github-output", default="")
     parser.add_argument("--pick-system", default="", help="chế độ đọc lại một dòng: mã hệ")
     parser.add_argument("--pick-line", type=int, default=0, help="chế độ đọc lại một dòng: số dòng")
-    parser.add_argument("--env-file", default="", help="chế độ đọc lại một dòng: GITHUB_ENV")
+    parser.add_argument("--out-file", default="", help="chế độ đọc lại một dòng: file tạm cho các bước sau")
     args = parser.parse_args(argv)
 
     systems = load_systems(args.config)
     if args.pick_system:
-        return pick(systems, os.environ.get("GAMES", ""), args.pick_system, args.pick_line, args.env_file)
+        return pick(systems, os.environ.get("GAMES", ""), args.pick_system, args.pick_line, args.out_file)
     if not args.matrix_out:
         parser.error("cần --matrix-out khi dựng ma trận")
     requested = {part.strip() for part in args.systems.split(",") if part.strip()}
