@@ -225,11 +225,18 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
     private fun setUp() {
         val dir = AzaharConfig.userDir(this)
         AzaharBridge.userDir = dir.absolutePath + "/"
+        // V118: vệt trước/sau từng lệnh JNI để báo cáo native chỉ ra đúng bước sập (vệt sống sót qua SIGSEGV).
+        Diagnostics.crumb(this, "azahar", "setUp: setUserDirectory")
         NativeLibrary.setUserDirectory(dir.absolutePath)
+        Diagnostics.crumb(this, "azahar", "setUp: createLogFile")
         NativeLibrary.createLogFile()
+        Diagnostics.crumb(this, "azahar", "setUp: createConfigFile")
         NativeLibrary.createConfigFile()
+        Diagnostics.crumb(this, "azahar", "setUp: AzaharConfig.write")
         AzaharConfig.write(this)
+        Diagnostics.crumb(this, "azahar", "setUp: reloadSettings")
         NativeLibrary.reloadSettings()
+        Diagnostics.crumb(this, "azahar", "setUp: xong phần nền")
         val redirect = File(dir, "gpu/vk_file_redirect").apply { mkdirs() }
         val drivers = File(filesDir, "gpu_driver").apply { mkdirs() }
         val moduleDir = File(filesDir, "engines/azahar").absolutePath + "/"

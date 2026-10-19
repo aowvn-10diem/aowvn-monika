@@ -68,6 +68,12 @@ data class ModuleDef(
      * (21 báo cáo v0.8.2) và không bắt được bằng try/catch, nên chỉ bật khi thật sự có driver tùy biến.
      */
     val customGpuDriver: Boolean = false,
+    /**
+     * Chỉ module "azahar": thư viện của lớp nạp driver (adrenotools) — chỉ để `initializeGpuDriver` tự nạp theo đường dẫn, KHÔNG được `System.load` vào app.
+     * V118: `libfile_redirect_hook.so` xuất `fopen` → `hook_fopen` (libhook_impl.so) đọc biến toàn cục chưa khởi tạo (null, lệch 0x68) nên
+     * `createLogFile` sập ngay lúc mở lõi (fp 8be340e6, 214 lượt v0.8.2–0.8.3). Khi [customGpuDriver] = false các thư viện này bị bỏ qua lúc nạp.
+     */
+    val hookLibs: List<String> = listOf("libhook_impl.so", "libfile_redirect_hook.so", "libmain_hook.so", "libgsl_alloc_hook.so"),
 )
 
 @Serializable
