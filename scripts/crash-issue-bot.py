@@ -227,8 +227,10 @@ def main():
         count = live(Client(base.rstrip("/"), auth), Client("https://api.github.com", gh_auth), repo,
                      {"Sol": os.environ.get("CRASH_ASSIGNEE_SOL", ""), "Sonnet": os.environ.get("CRASH_ASSIGNEE_SONNET", "")})
         print("Issue mutations:", count)  # Never print reports, headers, credentials or signed URLs.
-    except (ValueError, KeyError, TypeError, json.JSONDecodeError):
-        print("BLOCKED: invalid configuration, input, network or state; inspect offline tests.", file=sys.stderr)
+    except (ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
+        # Exact ValueError messages are controlled by this script; subclasses may contain private input.
+        reason = str(error) if type(error) is ValueError else type(error).__name__
+        print("BLOCKED: " + reason, file=sys.stderr)
         sys.exit(2)
 
 
