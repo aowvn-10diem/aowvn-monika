@@ -46,7 +46,7 @@ jobs:
 
       - name: Cache emsdk
         id: emsdk-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ env.EMSDK_HOME }}
           key: emsdk-onsyuri-v1
@@ -138,7 +138,7 @@ jobs:
           grep -n "abiFilter" src/src/android/app/build.gradle.kts | head -3
 
       - name: Cache Gradle + ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
@@ -248,7 +248,7 @@ jobs:
           sudo apt-get install -y build-essential libc6-dev
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'ndk;25.1.8937393' 'cmake;3.22.1' 'platforms;android-34'
       - name: Cache FFmpeg như workflow nguồn
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: src/src/emu/android/build/ffmpeg-cache
           key: symbian-ffmpeg-${{ runner.os }}-${{ hashFiles('src/src/emu/android/app/build.gradle', 'src/src/external/ffmpeg/**') }}
