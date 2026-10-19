@@ -135,7 +135,8 @@ class MainTest(unittest.TestCase):
         self.assertNotIn(LINK_A, stdout.replace(f"::add-mask::{LINK_A}", ""))
         self.assertIn("| nds | nds | ghi chú | chờ chạy |", summary)
         entry = json.loads(matrix)["include"][0]
-        self.assertEqual(set(entry), {"system", "ext", "note", "line"})
+        self.assertEqual(set(entry), {"system", "secret", "ext", "note", "line"})
+        self.assertEqual(entry["secret"], "NDS")
         self.assertNotIn(LINK_A, matrix)
         self.assertNotIn(PASSWORD, matrix)
         self.assertIn("count=1", github_output)
@@ -151,7 +152,7 @@ class MainTest(unittest.TestCase):
 
 class PickTest(unittest.TestCase):
     def test_pick_writes_the_line_to_env_file_and_masks_first(self):
-        env = {"TEST_GAME_NDS": f"# bỏ qua\nnds | {LINK_A} | ghi chú | mk={PASSWORD}\n"}
+        env = {"GAMES": f"# bỏ qua\nnds | {LINK_A} | ghi chú | mk={PASSWORD}\n"}
         with tempfile.TemporaryDirectory() as tmp:
             env_file = Path(tmp) / "github-env"
             stdout = io.StringIO()
@@ -167,13 +168,20 @@ class PickTest(unittest.TestCase):
         self.assertIn("REAL_NOTE=ghi chú\n", text)
 
     def test_pick_refuses_a_line_that_is_not_valid(self):
-        env = {"TEST_GAME_NDS": f"gb | {LINK_B}\n"}
+        env = {"GAMES": f"gb | {LINK_B}\n"}
         with tempfile.TemporaryDirectory() as tmp:
             with mock.patch.dict(os.environ, env, clear=True), self.assertRaises(SystemExit) as caught:
                 real_games.main(["--config", str(self.config(tmp)), "--pick-system", "nds",
                                  "--pick-line", "1", "--env-file", str(Path(tmp) / "env")])
         self.assertIn("không có dòng 1 hợp lệ", str(caught.exception))
         self.assertNotIn(LINK_B, str(caught.exception))
+
+    def test_pick_reads_only_games_not_other_secret_names(self):
+        env = {"TEST_GAME_NDS": f"nds | {LINK_A}\n"}
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.dict(os.environ, env, clear=True), self.assertRaises(SystemExit):
+                real_games.main(["--config", str(self.config(tmp)), "--pick-system", "nds",
+                                 "--pick-line", "1", "--env-file", str(Path(tmp) / "env")])
 
     def test_pick_refuses_apk(self):
         with tempfile.TemporaryDirectory() as tmp:

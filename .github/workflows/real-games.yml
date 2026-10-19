@@ -84,41 +84,13 @@ jobs:
       fail-fast: false
       max-parallel: 15
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
-    env:
-          TEST_GAME_NDS: ${{ secrets.TEST_GAME_NDS }}
-          TEST_GAME_GBA: ${{ secrets.TEST_GAME_GBA }}
-          TEST_GAME_GBC: ${{ secrets.TEST_GAME_GBC }}
-          TEST_GAME_SNES: ${{ secrets.TEST_GAME_SNES }}
-          TEST_GAME_NES: ${{ secrets.TEST_GAME_NES }}
-          TEST_GAME_GENESIS: ${{ secrets.TEST_GAME_GENESIS }}
-          TEST_GAME_SMS: ${{ secrets.TEST_GAME_SMS }}
-          TEST_GAME_GG: ${{ secrets.TEST_GAME_GG }}
-          TEST_GAME_PCE: ${{ secrets.TEST_GAME_PCE }}
-          TEST_GAME_N64: ${{ secrets.TEST_GAME_N64 }}
-          TEST_GAME_3DS: ${{ secrets.TEST_GAME_3DS }}
-          TEST_GAME_DC: ${{ secrets.TEST_GAME_DC }}
-          TEST_GAME_LYNX: ${{ secrets.TEST_GAME_LYNX }}
-          TEST_GAME_A2600: ${{ secrets.TEST_GAME_A2600 }}
-          TEST_GAME_A7800: ${{ secrets.TEST_GAME_A7800 }}
-          TEST_GAME_WS: ${{ secrets.TEST_GAME_WS }}
-          TEST_GAME_NGP: ${{ secrets.TEST_GAME_NGP }}
-          TEST_GAME_PS1: ${{ secrets.TEST_GAME_PS1 }}
-          TEST_GAME_PSP: ${{ secrets.TEST_GAME_PSP }}
-          TEST_GAME_RPG2K: ${{ secrets.TEST_GAME_RPG2K }}
-          TEST_GAME_FLASH: ${{ secrets.TEST_GAME_FLASH }}
-          TEST_GAME_JAVA: ${{ secrets.TEST_GAME_JAVA }}
-          TEST_GAME_RPGMV: ${{ secrets.TEST_GAME_RPGMV }}
-          TEST_GAME_TYRANO: ${{ secrets.TEST_GAME_TYRANO }}
-          TEST_GAME_KIRIKIRI: ${{ secrets.TEST_GAME_KIRIKIRI }}
-          TEST_GAME_RENPY: ${{ secrets.TEST_GAME_RENPY }}
-          TEST_GAME_RGSS: ${{ secrets.TEST_GAME_RGSS }}
-          TEST_GAME_ONSCRIPTER: ${{ secrets.TEST_GAME_ONSCRIPTER }}
-          TEST_GAME_SYMBIAN: ${{ secrets.TEST_GAME_SYMBIAN }}
     steps:
       - name: Đọc lại đúng dòng và che link, mật khẩu
         env:
           SYSTEM: ${{ matrix.system }}
           LINE: ${{ matrix.line }}
+          # Chỉ bước này thấy secret của đúng hệ này; các bước sau chỉ dùng REAL_* đã che.
+          GAMES: ${{ secrets[format('TEST_GAME_{0}', matrix.secret)] }}
         run: |
           set -eu
           python3 scripts/real-games.py \

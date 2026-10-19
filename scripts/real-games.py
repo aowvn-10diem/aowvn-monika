@@ -88,8 +88,10 @@ def build(systems, env, requested):
             errors.append(f"{name}: {problem}")
             rows.append((system_id, "-", "", "bỏ qua: " + problem))
         for entry in entries:
-            # Ma trận đi qua output giữa các job: không mang link hay mật khẩu. Job kiểm đọc lại từ secret.
-            matrix.append({key: entry[key] for key in ("system", "ext", "note", "line")})
+            # Ma trận đi qua output giữa các job: không mang link hay mật khẩu. Job kiểm đọc lại từ secret của hệ.
+            item = {key: entry[key] for key in ("system", "ext", "note", "line")}
+            item["secret"] = system_id.upper()
+            matrix.append(item)
             masks.append(entry["link"])
             if entry["password"]:
                 masks.append(entry["password"])
@@ -97,11 +99,13 @@ def build(systems, env, requested):
     return matrix, rows, errors, masks
 
 
-def pick(systems, env, system_id, line, env_file):
-    """Đọc lại đúng một dòng hợp lệ và ghi REAL_* vào env_file (GITHUB_ENV). Che link và mật khẩu trước."""
+def pick(systems, text, system_id, line, env_file):
+    """Đọc lại đúng một dòng hợp lệ và ghi REAL_* vào env_file (GITHUB_ENV). Che link và mật khẩu trước.
+
+    text: nội dung secret TEST_GAME_<MÃ HỆ>, job kiểm truyền qua biến GAMES chỉ ở bước đọc dòng.
+    """
     if system_id in EXCLUDED_SYSTEMS or system_id not in systems:
         raise SystemExit(f"hệ {system_id} không nằm trong V124")
-    text = env.get(secret_name(system_id), "")
     entries, _ = parse_secret(text, system_id, systems[system_id].get("extensions", []))
     entry = next((item for item in entries if item["line"] == line), None)
     if entry is None:
@@ -139,7 +143,7 @@ def main(argv=None):
 
     systems = load_systems(args.config)
     if args.pick_system:
-        return pick(systems, dict(os.environ), args.pick_system, args.pick_line, args.env_file)
+        return pick(systems, os.environ.get("GAMES", ""), args.pick_system, args.pick_line, args.env_file)
     if not args.matrix_out:
         parser.error("cần --matrix-out khi dựng ma trận")
     requested = {part.strip() for part in args.systems.split(",") if part.strip()}
