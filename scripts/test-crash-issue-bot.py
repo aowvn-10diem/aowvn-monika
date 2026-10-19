@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import copy
 import importlib.util
+import contextlib
+import io
+import json
 import pathlib
 import unittest
 from unittest.mock import patch
@@ -31,6 +34,52 @@ class BotTest(unittest.TestCase):
             def open(self, request, timeout): return Response()
         with patch.object(bot.urllib.request, "build_opener", return_value=Opener()):
             self.assertEqual(bot.Client("https://api.github.com", "fake").call("/repos/o/r/assignees/fixture"), {})
+
+    def test_main_blocked_reason_keeps_private_exception_messages_hidden(self):
+        class PrivateValueError(ValueError): pass
+        private = "private report/header/token fixture"
+        cases = [
+            (ValueError("HTTP request failed: 401"), "HTTP request failed: 401"),
+            (KeyError(private), "KeyError"),
+            (TypeError(private), "TypeError"),
+            (json.JSONDecodeError(private, private, 0), "JSONDecodeError"),
+            (PrivateValueError(private), "PrivateValueError"),
+        ]
+        for error, expected in cases:
+            with self.subTest(kind=type(error).__name__):
+                stdout, stderr = io.StringIO(), io.StringIO()
+                with patch.object(bot.sys, "argv", ["crash-issue-bot.py", "--fixture", "unused"]), \
+                     patch("builtins.open"), patch.object(bot.json, "load", side_effect=error), \
+                     contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                    with self.assertRaises(SystemExit) as exit_status:
+                        bot.main()
+                self.assertEqual(exit_status.exception.code, 2)
+                self.assertEqual(stdout.getvalue(), "")
+                self.assertEqual(stderr.getvalue(), "BLOCKED: " + expected + "\n")
+                self.assertNotIn(private, stderr.getvalue())
+
+    def test_http_library_value_error_never_exposes_header_value(self):
+        for raw, expected in [("Invalid header value b'private-token-fixture'", "invalid HTTP request configuration"),
+                              ("redirect blocked", "redirect blocked")]:
+            with self.subTest(raw=raw):
+                opener = unittest.mock.Mock()
+                opener.open.side_effect = ValueError(raw)
+                with patch.object(bot.urllib.request, "build_opener", return_value=opener):
+                    with self.assertRaises(ValueError) as raised:
+                        bot.Client("https://worker.invalid", "fake").call("/reports")
+                self.assertIs(type(raised.exception), ValueError)
+                self.assertEqual(str(raised.exception), expected)
+
+    def test_http_401_reason_contains_only_status_code(self):
+        private = "private report/header/token fixture"
+        failure = bot.urllib.error.HTTPError("https://private.invalid", 401, private, {"Authorization": private}, None)
+        opener = unittest.mock.Mock()
+        opener.open.side_effect = failure
+        with patch.object(bot.urllib.request, "build_opener", return_value=opener):
+            with self.assertRaises(ValueError) as raised:
+                bot.Client("https://worker.invalid", "fake").call("/reports")
+        self.assertIs(type(raised.exception), ValueError)
+        self.assertEqual(str(raised.exception), "HTTP request failed: 401")
 
     def test_signature_frames_core_kind_and_normalized_java_location(self):
         a = bot.plan([record(1)], [], OWNERS)[0]

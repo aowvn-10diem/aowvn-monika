@@ -157,6 +157,10 @@ class Client:
             raise ValueError("HTTP request failed: " + str(error.code)) from None
         except (OSError, urllib.error.URLError):
             raise ValueError("network request failed") from None
+        except ValueError as error:
+            # HTTP libraries may include header values in ValueError messages.
+            reason = "redirect blocked" if str(error) == "redirect blocked" else "invalid HTTP request configuration"
+            raise ValueError(reason) from None
         if len(content) > MAX_BYTES:
             raise ValueError("response exceeds budget")
         return json.loads(content)
@@ -227,8 +231,10 @@ def main():
         count = live(Client(base.rstrip("/"), auth), Client("https://api.github.com", gh_auth), repo,
                      {"Sol": os.environ.get("CRASH_ASSIGNEE_SOL", ""), "Sonnet": os.environ.get("CRASH_ASSIGNEE_SONNET", "")})
         print("Issue mutations:", count)  # Never print reports, headers, credentials or signed URLs.
-    except (ValueError, KeyError, TypeError, json.JSONDecodeError):
-        print("BLOCKED: invalid configuration, input, network or state; inspect offline tests.", file=sys.stderr)
+    except (ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
+        # Exact ValueError messages are controlled by this script; subclasses may contain private input.
+        reason = str(error) if type(error) is ValueError else type(error).__name__
+        print("BLOCKED: " + reason, file=sys.stderr)
         sys.exit(2)
 
 
