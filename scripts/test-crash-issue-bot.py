@@ -58,6 +58,18 @@ class BotTest(unittest.TestCase):
                 self.assertEqual(stderr.getvalue(), "BLOCKED: " + expected + "\n")
                 self.assertNotIn(private, stderr.getvalue())
 
+    def test_http_library_value_error_never_exposes_header_value(self):
+        for raw, expected in [("Invalid header value b'private-token-fixture'", "invalid HTTP request configuration"),
+                              ("redirect blocked", "redirect blocked")]:
+            with self.subTest(raw=raw):
+                opener = unittest.mock.Mock()
+                opener.open.side_effect = ValueError(raw)
+                with patch.object(bot.urllib.request, "build_opener", return_value=opener):
+                    with self.assertRaises(ValueError) as raised:
+                        bot.Client("https://worker.invalid", "fake").call("/reports")
+                self.assertIs(type(raised.exception), ValueError)
+                self.assertEqual(str(raised.exception), expected)
+
     def test_http_401_reason_contains_only_status_code(self):
         private = "private report/header/token fixture"
         failure = bot.urllib.error.HTTPError("https://private.invalid", 401, private, {"Authorization": private}, None)
