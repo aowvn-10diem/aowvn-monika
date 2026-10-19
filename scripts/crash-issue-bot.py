@@ -219,7 +219,9 @@ def main():
             return
         if not args.apply:
             raise ValueError("choose offline fixture or explicitly authorized apply")
-        auth = os.environ.get("CRASH_ADMIN_TOKEN", "")
+        auth = os.environ.get("CRASH_ADMIN_TOKEN", "").strip()
+        if any(not 0x20 <= ord(char) <= 0x7e for char in auth):
+            raise ValueError("CRASH_ADMIN_TOKEN has invalid characters")
         gh_auth = os.environ.get("GITHUB_TOKEN", "")
         repo = os.environ.get("GITHUB_REPOSITORY", "")
         base = os.environ.get("CRASH_URL", "https://aowvn-monika-crash.aowvn-system.workers.dev")

@@ -58,6 +58,55 @@ class BotTest(unittest.TestCase):
                 self.assertEqual(stderr.getvalue(), "BLOCKED: " + expected + "\n")
                 self.assertNotIn(private, stderr.getvalue())
 
+    def test_main_strips_outer_token_whitespace_before_building_clients(self):
+        for supplied in ["fixture-token", " \t\r\nfixture-token\r\n\t ", "!fixture ~"]:
+            with self.subTest(supplied=supplied):
+                stdout, stderr = io.StringIO(), io.StringIO()
+                with patch.object(bot.sys, "argv", ["crash-issue-bot.py", "--apply"]), \
+                     patch.dict(bot.os.environ, {"CRASH_ADMIN_TOKEN": supplied, "GITHUB_TOKEN": "fake-github",
+                                                "GITHUB_REPOSITORY": "o/r"}, clear=True), \
+                     patch.object(bot, "Client") as client, patch.object(bot, "live", return_value=0) as live, \
+                     contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                    bot.main()
+                self.assertEqual(client.call_args_list[0].args[1], supplied.strip())
+                self.assertEqual(client.call_args_list[1].args[1], "fake-github")
+                live.assert_called_once()
+                self.assertEqual(stdout.getvalue(), "Issue mutations: 0\n")
+                self.assertEqual(stderr.getvalue(), "")
+
+    def test_main_rejects_non_printable_or_non_ascii_token_before_clients(self):
+        for char in ["\x00", "\t", "\r", "\n", "\x1f", "\x7f", "\x80", "đ", "\u200b"]:
+            with self.subTest(char=repr(char)):
+                stdout, stderr = io.StringIO(), io.StringIO()
+                with patch.object(bot.sys, "argv", ["crash-issue-bot.py", "--apply"]), \
+                     patch.object(bot.os, "environ", {"CRASH_ADMIN_TOKEN": "private-fixture" + char + "tail",
+                                                    "GITHUB_TOKEN": "fake-github", "GITHUB_REPOSITORY": "o/r"}), \
+                     patch.object(bot, "Client") as client, patch.object(bot, "live") as live, \
+                     contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                    with self.assertRaises(SystemExit) as exit_status:
+                        bot.main()
+                self.assertEqual(exit_status.exception.code, 2)
+                client.assert_not_called()
+                live.assert_not_called()
+                self.assertEqual(stdout.getvalue(), "")
+                self.assertEqual(stderr.getvalue(), "BLOCKED: CRASH_ADMIN_TOKEN has invalid characters\n")
+                self.assertNotIn("private-fixture", stderr.getvalue())
+
+    def test_main_empty_token_after_strip_keeps_missing_credentials_guard(self):
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with patch.object(bot.sys, "argv", ["crash-issue-bot.py", "--apply"]), \
+             patch.dict(bot.os.environ, {"CRASH_ADMIN_TOKEN": " \t\r\n ", "GITHUB_TOKEN": "fake-github",
+                                        "GITHUB_REPOSITORY": "o/r"}, clear=True), \
+             patch.object(bot, "Client") as client, patch.object(bot, "live") as live, \
+             contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            with self.assertRaises(SystemExit) as exit_status:
+                bot.main()
+        self.assertEqual(exit_status.exception.code, 2)
+        client.assert_not_called()
+        live.assert_not_called()
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertEqual(stderr.getvalue(), "BLOCKED: missing runtime credentials/repository\n")
+
     def test_http_library_value_error_never_exposes_header_value(self):
         for raw, expected in [("Invalid header value b'private-token-fixture'", "invalid HTTP request configuration"),
                               ("redirect blocked", "redirect blocked")]:
