@@ -198,10 +198,11 @@ object GameSaveTransfer {
         }
     }
 
-    // Lõi không hỗ trợ serializeState có thể để lại file 0 byte. Không xuất placeholder
-    // vào ZIP; snapshot gốc vẫn giữ nó để rollback khôi phục đúng file trước giao dịch.
+    // Lõi có thể để lại RAM/state placeholder 0 byte mà bước nhập sẽ từ chối.
+    // Chỉ bỏ placeholder này khỏi ZIP; file rỗng trong RMS/cây save vẫn giữ nguyên.
+    // Snapshot gốc không lọc để rollback khôi phục đúng file trước giao dịch.
     private fun archiveFiles(files: Map<String, ByteArray>): Map<String, ByteArray> =
-        files.filter { (name, bytes) -> !name.startsWith("state/") || bytes.isNotEmpty() }
+        files.filter { (name, bytes) -> bytes.isNotEmpty() || (name != "ram.srm" && !name.startsWith("state/")) }
 
     private fun hash(game: Game): String {
         val entry = game.entry ?: throw SaveTransferException("Game không có file để đối chiếu.")
