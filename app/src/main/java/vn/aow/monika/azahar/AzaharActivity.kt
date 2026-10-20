@@ -65,6 +65,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
     private lateinit var gamePath: String
     private lateinit var title: String
     private lateinit var systemName: String
+    private var saveTransferLease: java.io.Closeable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,6 +82,14 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         gamePath = intent.getStringExtra(EXTRA_GAME) ?: return finish()
         systemName = intent.getStringExtra(EXTRA_SYSTEM).orEmpty()
         title = intent.getStringExtra(EXTRA_TITLE) ?: File(gamePath).nameWithoutExtension
+        try {
+            saveTransferLease = vn.aow.monika.library.GameSaveGate.acquire(filesDir)
+        } catch (error: java.io.IOException) {
+            if (error !is vn.aow.monika.library.SaveTransferException) Diagnostics.recordHandled(this,
+                "app:save-lock", "Không mở được kho save", java.io.IOException(error.javaClass.simpleName))
+            android.widget.Toast.makeText(this, "Kho save đang bận. Hãy chuyển save xong rồi mở game.", android.widget.Toast.LENGTH_LONG).show()
+            finish(); return
+        }
         val module = AppGraph.azahar
         Diagnostics.begin(this, "azahar", "azahar", module.info(), File(gamePath).name, systemName)
         AzaharBridge.portrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
@@ -331,6 +340,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
     }
 
     override fun onDestroy() {
+        try {
         super.onDestroy()
         Choreographer.getInstance().removeFrameCallback(this)
         AzaharBridge.onExit = {}; AzaharBridge.onFirstFrame = {}; AzaharBridge.onError = {}
@@ -339,6 +349,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
             if (started) runCatching { NativeLibrary.stopEmulation() }
             android.os.Process.killProcess(android.os.Process.myPid())
         }
+        } finally { saveTransferLease?.close(); saveTransferLease = null }
     }
 
     // ---- Nhập liệu ----

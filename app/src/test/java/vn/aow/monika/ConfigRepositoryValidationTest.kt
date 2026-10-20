@@ -41,6 +41,8 @@ class ConfigRepositoryValidationTest {
             """{"saveDirectory":"../games","sizes":[512]}""",
             """{"imports":{"sav":"run-code"},"sizes":[512]}""",
             """{"sizes":[512],"targetBytes":1024}""",
+            """{"kind":"psp","treeDirectory":"../game","imports":{"zip":"psp-tree"}}""",
+            """{"kind":"3ds","nativeDirectory":"/outside","imports":{"zip":"3ds-tree"}}""",
         )
         payloads.forEach { profile ->
             org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
@@ -50,17 +52,24 @@ class ConfigRepositoryValidationTest {
     }
 
     @Test fun oldCacheWithoutExperimentalFlagFallsBackToBundledWarning() {
-        assertEquals(47, bundled)
+        assertEquals(48, bundled)
         cache.writeText(valid(38))
         val current = repo().current
-        assertEquals(47, current.configVersion)
+        assertEquals(48, current.configVersion)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
+    }
+
+    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled48() {
+        cache.writeText("""{"configVersion":47,"saveTransfer":{"systems":{}}}""")
+        val current = repo().current
+        assertEquals(48, current.configVersion)
+        assertEquals(setOf("java", "nds", "gba", "3ds", "psp", "ps1"), current.saveTransfer.systems.keys)
     }
 
     @Test fun cache39FallsBackToBundledDocumentConfiguration() {
         cache.writeText("""{"configVersion":39,"documentExtensions":[]}""")
         val current = repo().current
-        assertEquals(47, current.configVersion)
+        assertEquals(48, current.configVersion)
         assertEquals(listOf("pdf", "doc", "docx", "txt", "epub"), current.documentExtensions)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }

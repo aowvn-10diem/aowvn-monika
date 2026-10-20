@@ -1,6 +1,6 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 47,
+  "configVersion": 48,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 41,
@@ -1368,6 +1368,48 @@
           8192,
           32768,
           65536,
+          131072
+        ],
+        "targetBytes": 0
+      },
+      "3ds": {
+        "kind": "3ds",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "zip": "3ds-tree"
+        },
+        "sizes": [],
+        "targetBytes": 0,
+        "treeDirectory": "Citra",
+        "nativeDirectory": "azahar"
+      },
+      "psp": {
+        "kind": "psp",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "zip": "psp-tree"
+        },
+        "sizes": [],
+        "targetBytes": 0,
+        "treeDirectory": "PSP/SAVEDATA",
+        "nativeDirectory": "azahar"
+      },
+      "ps1": {
+        "kind": "raw",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "mcr": "ps1",
+          "mcd": "ps1",
+          "srm": "ps1",
+          "gme": "ps1"
+        },
+        "sizes": [
           131072
         ],
         "targetBytes": 0
