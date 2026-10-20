@@ -5,7 +5,7 @@ import org.junit.Test
 import vn.aow.monika.azahar.AzaharModule
 import vn.aow.monika.config.ModuleDef
 
-/** V118: không `System.load` thư viện lớp nạp driver (adrenotools) khi không dùng driver tùy biến. */
+/** V118: hook phải để initializer tự nạp, không được vào `System.load` trước `createLogFile`. */
 class AzaharLoadLibsTest {
     private val pack = listOf(
         "libcitra-android.so", "libSPIRV-Tools-shared.so", "libyuv.so", "libhook_impl.so",
@@ -14,12 +14,24 @@ class AzaharLoadLibsTest {
     private val hooks = ModuleDef(version = "t").hookLibs
 
     @Test fun skipsHookLibsByDefault() {
-        assertEquals(listOf("libSPIRV-Tools-shared.so", "libyuv.so"), AzaharModule.libsToLoad(pack, hooks, customGpuDriver = false))
+        assertEquals(listOf("libSPIRV-Tools-shared.so", "libyuv.so"), AzaharModule.libsToLoad(pack, hooks))
     }
 
-    @Test fun loadsHookLibsWhenCustomDriverOn() {
-        val got = AzaharModule.libsToLoad(pack, hooks, customGpuDriver = true)
-        assertEquals(setOf("libSPIRV-Tools-shared.so", "libyuv.so", "libhook_impl.so", "libfile_redirect_hook.so", "libmain_hook.so", "libgsl_alloc_hook.so"), got.toSet())
+    @Test fun customDriverMustNotLoadHooksBeforeCreateLogFile() {
+        val module = ModuleDef(version = "t", customGpuDriver = true)
+        assertEquals(
+            "Bật driver tùy biến cũng phải để initializeGpuDriver tự nạp hook, sau createLogFile",
+            listOf("libSPIRV-Tools-shared.so", "libyuv.so"),
+            AzaharModule.libsToLoad(pack, module.hookLibs),
+        )
+    }
+
+    @Test fun respectsConfiguredHookNamesAndKeepsOtherDependencies() {
+        val configuredHooks = hooks + "libextra_driver_hook.so"
+        assertEquals(
+            listOf("libSPIRV-Tools-shared.so", "libaudio.so", "libyuv.so"),
+            AzaharModule.libsToLoad(pack + listOf("libextra_driver_hook.so", "libaudio.so"), configuredHooks),
+        )
     }
 
     @Test fun defaultHookLibsCoverShippedPack() {

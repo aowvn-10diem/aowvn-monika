@@ -2,9 +2,15 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
-## v0.8.4 (Đang chuẩn bị — Bản thử)
+## v0.8.5 (Đang chuẩn bị — Bản thử)
 
-> Chưa phát hành, chưa tạo tag. Danh sách theo main `bd9ac022`; không xác nhận kết quả chơi trên máy thật.
+> Chưa phát hành, chưa tạo tag. Bản vá ưu tiên 3DS theo main `8a96ff3`; chưa xác nhận đã chơi được trên máy thật. V125 (#281) và vệt JNI V118-crumb chưa gộp, không thuộc bản này.
+
+- **Sửa lỗi:** Chỉnh cách khởi động game 3DS để không nạp sớm thư viện đồ họa tùy biến, kể cả khi bật trình điều khiển riêng. ([bb22c29](https://github.com/aowvn-10diem/aowvn-monika/commit/bb22c29d14928577d9c62ed949ea2f261b321da6), [#282](https://github.com/aowvn-10diem/aowvn-monika/pull/282))
+
+## [v0.8.4](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.4) (Bản thử)
+
+> Phát hành ngày 17/10/2026 (UTC), bản thử nghiệm. Danh sách theo main `bd9ac022`; không xác nhận kết quả chơi trên máy thật.
 
 - **Sửa lỗi:** Game không bị dọn tự động theo tuổi hoặc giới hạn bộ nhớ; chỉ dọn game khi chọn Dọn ngay trong Cài đặt → Bộ nhớ. ([84ab5b4](https://github.com/aowvn-10diem/aowvn-monika/commit/84ab5b4369187d88f84a6b5ef7848a1335f78db9))
 - **Sửa lỗi:** Khi mở game 3DS với thiết lập mặc định, ứng dụng bỏ bước nạp đồ họa tùy biến có thể gây văng. ([bd9ac02](https://github.com/aowvn-10diem/aowvn-monika/commit/bd9ac022377d078fc2046ead5dcafb075eb2e723))
