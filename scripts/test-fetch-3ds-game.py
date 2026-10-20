@@ -75,6 +75,43 @@ class Fetch3dsTest(unittest.TestCase):
                         'bob', 'redirectPass', 'Y8', 'redirectToken', 'redirectFragment', '8443', 'https://'):
             self.assertNotIn(private, normal)
 
+    def _serve(self, status, content_type, body):
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(status); self.send_header('Content-Type', content_type); self.send_header('Content-Length', str(len(body)))
+                self.end_headers(); self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+        server = http.server.HTTPServer(('127.0.0.1', 0), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.shutdown)
+        return f'http://127.0.0.1:{server.server_port}/a'
+
+    def _run_main_capturing(self, url):
+        output = io.StringIO()
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.dict(os.environ, {'TEST_GAME_3DS': 'fixture'}), \
+                mock.patch.object(mod, 'parse', return_value=('3ds', url, '')), \
+                contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as caught:
+            mod.main(directory)
+        return output.getvalue() + str(caught.exception)
+
+    def test_http_error_body_with_loose_token_is_not_logged(self):
+        url = self._serve(403, 'text/plain', b'denied token=looseTokenQ9 password=loosePassZ3 https://x.example/looseTokenQ9')
+        logged = self._run_main_capturing(url)
+        self.assertIn('HTTP 403', logged)
+        for private in ('looseTokenQ9', 'loosePassZ3', 'denied'):
+            self.assertNotIn(private, logged)
+
+    def test_small_response_body_with_loose_token_is_not_logged(self):
+        url = self._serve(200, 'text/html; charset=looseTokenR4', b'<html>token=looseTokenQ9 password=loosePassZ3</html>')
+        logged = self._run_main_capturing(url)
+        self.assertIn('không trả về file game', logged)
+        for private in ('looseTokenQ9', 'loosePassZ3', 'looseTokenR4', '<html>'):
+            self.assertNotIn(private, logged)
+
     def test_valid_game_headers(self):
         with tempfile.TemporaryDirectory() as d:
             ncsd = bytearray(0x400); ncsd[0x100:0x104] = b'NCSD'

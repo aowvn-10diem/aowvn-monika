@@ -106,10 +106,11 @@ def download(url, raw):
         with urllib.request.urlopen(request, timeout=60) as response, raw.open('wb') as target:
             while chunk := response.read(1 << 20):
                 target.write(chunk)
-            return response.geturl(), response.headers.get('Content-Type', '?')
+            kind = re.match(r'[\w.+-]+/[\w.+-]+', response.headers.get('Content-Type', ''))
+            return response.geturl(), kind.group(0) if kind else '?'
     except urllib.error.HTTPError as error:
-        body = re.sub(r'https?://\S+', '<url>', error.read(300).decode('utf-8', 'replace'))
-        raise SystemExit(f'Máy chủ trả HTTP {error.code}: {body}')
+        # Không in thân phản hồi: máy chủ có thể lặp lại riêng token/mật khẩu mà ::add-mask:: của URL đầy đủ không bắt được.
+        raise SystemExit(f'Máy chủ trả HTTP {error.code}')
 
 
 def main(out_dir):
@@ -137,10 +138,7 @@ def main(out_dir):
             break
     print(f'Đã tải {size} byte (đuôi khai báo: {ext or "không"}, content-type: {content_type}, máy chủ cuối: {shape(final_url)})')
     if size < MIN_BYTES:
-        # Link không trỏ thẳng tới file game (trang web/lỗi/JSON): in đầu nội dung đã làm sạch để sếp biết link sai kiểu gì.
-        head = raw.read_bytes()[:400].decode('utf-8', 'replace')
-        head = re.sub(r'https?://\S+', '<url>', re.sub(r'[^\x20-\x7e\n]', ' ', head))
-        print('Nội dung đầu (làm sạch):', head.replace('\n', ' ')[:300])
+        # Link không trỏ thẳng tới file game (trang web/lỗi/JSON): chỉ báo kiểu nội dung và cỡ, không in nội dung phản hồi.
         raise SystemExit(f'Link không trả về file game (chỉ {size} byte < {MIN_BYTES}): cần link tải TRỰC TIẾP tới .3ds/.cci/.cia/.zip')
     kind = sniff(raw)
     print(f'Loại theo nội dung: {kind}')
