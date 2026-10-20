@@ -27,6 +27,8 @@ class SaveFormatsTest {
         val padded = SaveFormats.convert(odd, "sav", gba)
         assertEquals(32768, padded.size); assertArrayEquals(odd, padded.copyOf(9000))
         assertTrue(padded.drop(9000).all { it == 0xff.toByte() })
+        val compressed = "NocashGbaBackupMediaSavDataFile".toByteArray() + ByteArray(8192)
+        rejected { SaveFormats.convert(compressed, "sav", nds) }
         rejected { SaveFormats.convert(ByteArray(511), "sav", gba) }
         rejected { SaveFormats.convert(ByteArray(131073), "sav", gba) }
         rejected { SaveFormats.convert(ByteArray(8192), "state", gba) }
@@ -39,6 +41,8 @@ class SaveFormatsTest {
         val dsv = raw + SaveFormats.DSV_TEXT.toByteArray() + meta + SaveFormats.DSV_COOKIE.toByteArray()
         assertEquals(122, dsv.size - raw.size)
         assertArrayEquals(raw, SaveFormats.convert(dsv, "dsv", nds))
+        assertArrayEquals(raw, SaveFormats.convert(dsv, "sav", nds)) // Đuôi bị đổi nhưng cookie/text còn nguyên.
+        rejected { SaveFormats.convert(dsv, "sav", gba) }
         assertArrayEquals(raw, SaveFormats.convert(raw, "sav", nds))
         assertArrayEquals(raw, SaveFormats.convert(raw, "srm", nds))
         rejected { SaveFormats.convert(dsv.copyOf(dsv.size - 1), "dsv", nds) }
@@ -51,6 +55,7 @@ class SaveFormatsTest {
         for (name in listOf("../game.sav", "/game.sav", "saves/../../rom.gba", "x\\y.sav", "x:y.sav")) {
             rejected { SaveFormats.archive(zip(name to ByteArray(512)).inputStream()) }
         }
+        rejected { SaveFormats.archive(zip("Game.sav" to ByteArray(512), "game.sav" to ByteArray(512)).inputStream()) }
         rejected { SaveFormats.archive(zip().inputStream()) }
         rejected { SaveFormats.read(ByteArray(20).inputStream(), 19) }
         assertEquals(setOf("Game.sav"), SaveFormats.archive(zip("Game.sav" to ByteArray(512)).inputStream()).keys)

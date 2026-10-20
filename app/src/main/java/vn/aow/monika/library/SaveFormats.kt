@@ -43,7 +43,7 @@ object SaveFormats {
                 val name = entry.name.removeSuffix("/")
                 checked(safePath(name), "ZIP chứa đường dẫn không an toàn.")
                 if (entry.isDirectory) continue
-                checked(name !in result, "ZIP có tên file trùng.")
+                checked(result.keys.none { it.equals(name, ignoreCase = true) }, "ZIP có tên file trùng hoặc chỉ khác chữ hoa/thường.")
                 val bytes = read(zip, minOf(MAX_FILE, (MAX_TOTAL - total).toInt()))
                 total += bytes.size
                 result[name] = bytes
@@ -58,8 +58,16 @@ object SaveFormats {
         path.split('/').all { it.isNotEmpty() && it != "." && it != ".." }
 
     fun convert(bytes: ByteArray, extension: String, profile: SaveProfile): ByteArray {
-        val converter = profile.imports[extension.lowercase(Locale.ROOT)]
-        checked(converter == "raw" || converter == "desmume", "File không khớp hệ hoặc định dạng save chưa được hỗ trợ.")
+        val configured = profile.imports[extension.lowercase(Locale.ROOT)]
+        checked(configured == "raw" || configured == "desmume", "File không khớp hệ hoặc định dạng save chưa được hỗ trợ.")
+        val cookie = DSV_COOKIE.toByteArray(Charsets.US_ASCII)
+        val hasDsvCookie = bytes.size >= cookie.size && bytes.copyOfRange(bytes.size - cookie.size, bytes.size).contentEquals(cookie)
+        val converter = if (hasDsvCookie) {
+            checked("desmume" in profile.imports.values, "File DeSmuME không khớp hệ đã chọn.")
+            "desmume"
+        } else configured
+        checked(!String(bytes.take(31).toByteArray(), Charsets.US_ASCII).startsWith("NocashGbaBackupMediaSavDataFile"),
+            "Save nén No\$GBA chưa được hỗ trợ. Hãy xuất save thô.")
         val raw = if (converter == "desmume") desmume(bytes) else bytes.copyOf()
         val sizes = profile.sizes.sorted()
         checked(sizes.isNotEmpty() && sizes.all { it in 1..MAX_FILE }, "Cấu hình kích thước save không hợp lệ.")
