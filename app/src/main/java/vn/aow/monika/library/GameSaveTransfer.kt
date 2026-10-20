@@ -317,6 +317,7 @@ object GameSaveTransfer {
         if (current.suite != null && before.isNotEmpty()) {
             try {
                 SaveFormats.validateRms(before.mapKeys { it.key.removePrefix("rms/") })
+            // diag: bỏ qua ghi thêm vì lỗi RMS được ném tiếp kèm nguyên nhân để UI báo và không ghi dữ liệu.
             } catch (e: java.io.IOException) {
                 throw SaveTransferException("RMS hiện tại bị hỏng; chưa nhập để giữ nguyên dữ liệu và tránh bản sao lưu không khôi phục được.").apply { initCause(e) }
             }
