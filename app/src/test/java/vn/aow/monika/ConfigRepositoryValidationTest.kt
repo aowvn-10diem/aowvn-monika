@@ -36,18 +36,31 @@ class ConfigRepositoryValidationTest {
             .forEach { it.deleteRecursively() }
     }
 
+    @Test fun unsafeSaveProfilesAreRejectedBeforeCaching() {
+        val payloads = listOf(
+            """{"saveDirectory":"../games","sizes":[512]}""",
+            """{"imports":{"sav":"run-code"},"sizes":[512]}""",
+            """{"sizes":[512],"targetBytes":1024}""",
+        )
+        payloads.forEach { profile ->
+            org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
+                ConfigValidation.parse("""{"saveTransfer":{"systems":{"gba":$profile}}}""", 0)
+            }
+        }
+    }
+
     @Test fun oldCacheWithoutExperimentalFlagFallsBackToBundledWarning() {
-        assertEquals(44, bundled)
+        assertEquals(47, bundled)
         cache.writeText(valid(38))
         val current = repo().current
-        assertEquals(44, current.configVersion)
+        assertEquals(47, current.configVersion)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
 
     @Test fun cache39FallsBackToBundledDocumentConfiguration() {
         cache.writeText("""{"configVersion":39,"documentExtensions":[]}""")
         val current = repo().current
-        assertEquals(44, current.configVersion)
+        assertEquals(47, current.configVersion)
         assertEquals(listOf("pdf", "doc", "docx", "txt", "epub"), current.documentExtensions)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }

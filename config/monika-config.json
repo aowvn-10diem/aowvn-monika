@@ -1,6 +1,6 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 44,
+  "configVersion": 47,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 41,
@@ -1314,5 +1314,64 @@
     "hiddenTags": [
       "Nhà Tù AowVN"
     ]
+  },
+  "saveTransfer": {
+    "systems": {
+      "java": {
+        "kind": "rms",
+        "saveDirectory": "data",
+        "stateDirectory": "",
+        "extension": "",
+        "imports": {
+          "rsh": "rms",
+          "rsr": "rms"
+        },
+        "sizes": [],
+        "targetBytes": 0
+      },
+      "nds": {
+        "kind": "raw",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "sav": "raw",
+          "srm": "raw",
+          "dsv": "desmume"
+        },
+        "sizes": [
+          512,
+          8192,
+          32768,
+          65536,
+          131072,
+          262144,
+          524288,
+          1048576,
+          2097152,
+          4194304,
+          8388608
+        ],
+        "targetBytes": 0
+      },
+      "gba": {
+        "kind": "raw",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "sav": "raw",
+          "srm": "raw"
+        },
+        "sizes": [
+          512,
+          8192,
+          32768,
+          65536,
+          131072
+        ],
+        "targetBytes": 0
+      }
+    }
   }
 }

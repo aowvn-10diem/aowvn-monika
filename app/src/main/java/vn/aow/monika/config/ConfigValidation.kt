@@ -14,6 +14,7 @@ internal object ConfigValidation {
         require(root is JsonObject) { "Config phải là object" }
         visit(root, "config")
         val cfg = ConfigRepository.parse(text)
+        cfg.saveTransfer.validate()
         require(cfg.configVersion >= minimumVersion) { "configVersion thấp hơn bản đang dùng" }
         return cfg
     }

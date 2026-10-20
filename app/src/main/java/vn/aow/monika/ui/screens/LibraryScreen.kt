@@ -650,6 +650,7 @@ private fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
     var last by remember { mutableStateOf<Game?>(null) }
     if (game != null) last = game
     val g = last
+    val saveActions = rememberGameSaveActions(g)
     val prefs = AppGraph.prefs
     // Thành tựu RetroAchievements: chỉ khi đã đăng nhập và băm được game này (xem achievements/RaGameIndex).
     val raCreds by AppGraph.ra.creds.collectAsState()
@@ -692,10 +693,14 @@ private fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
             add(SheetAction(if (g.external) "Ẩn khỏi Thư viện" else "Xóa game", R.drawable.ic_fluent_delete_24_regular) { onDelete(g) })
         },
         header = if (g == null) null else ({
-            SheetRow(
-                (g.entry ?: g.dir).path, subtitle = if (g.external) "Game có sẵn trong máy" else "Thư mục game của Monika",
-                icon = R.drawable.ic_fluent_folder_open_24_regular,
-            )
+            Column {
+                SheetRow(
+                    (g.entry ?: g.dir).path, subtitle = if (g.external) "Game có sẵn trong máy" else "Thư mục game của Monika",
+                    icon = R.drawable.ic_fluent_folder_open_24_regular,
+                )
+                GameSaveButtons(vn.aow.monika.library.GameSaveTransfer.supported(g, AppGraph.config.current),
+                    saveActions.busy, saveActions.onExport, saveActions.onImport)
+            }
         }),
     )
     GameAchievementsSheet(raOpen) { raOpen = null }
