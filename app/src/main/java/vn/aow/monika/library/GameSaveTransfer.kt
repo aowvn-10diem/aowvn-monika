@@ -164,6 +164,11 @@ object GameSaveTransfer {
         }
     }
 
+    // Lõi không hỗ trợ serializeState có thể để lại file 0 byte. Không xuất placeholder
+    // vào ZIP; snapshot gốc vẫn giữ nó để rollback khôi phục đúng file trước giao dịch.
+    private fun archiveFiles(files: Map<String, ByteArray>): Map<String, ByteArray> =
+        files.filter { (name, bytes) -> !name.startsWith("state/") || bytes.isNotEmpty() }
+
     private fun hash(game: Game): String {
         val entry = game.entry ?: throw SaveTransferException("Game không có file để đối chiếu.")
         SaveFormats.checked(entry.length() in 1..(1024L * 1024 * 1024), "File game không hợp lệ để đối chiếu save.")
@@ -187,7 +192,7 @@ object GameSaveTransfer {
 
     fun export(context: Context, game: Game, output: OutputStream) = transfer(context) {
         val target = target(context, game)
-        val files = snapshot(target)
+        val files = archiveFiles(snapshot(target))
         SaveFormats.checked(files.isNotEmpty(), "Game chưa có save hoặc state để xuất.")
         if (target.suite != null) SaveFormats.validateRms(files.mapKeys { it.key.removePrefix("rms/") })
         val manifest = GameSaveManifest(system = target.system, gameSha256 = hash(game), core = target.core,
@@ -260,14 +265,15 @@ object GameSaveTransfer {
             "Cấu hình save đã đổi. Hãy chọn lại file để nhập.")
         SaveFormats.checked(plan.gameSha256 != null && plan.gameSha256 == hash(current.game), "File game đã đổi. Hãy chọn lại save.")
         val before = snapshot(current)
+        val backupFiles = archiveFiles(before)
         // Sao lưu TOÀN BỘ save/state cũ trước lần thay đổi đầu tiên, kể cả file sẽ bị thay thế/xóa trong RMS.
         val backupDir = GameSavePaths.child(context.filesDir, "save-backups").apply { check(mkdirs() || isDirectory) }
         val backup = File(backupDir, "${UUID.randomUUID()}.zip")
         val oldManifest = GameSaveManifest(system = current.system, gameSha256 = hash(current.game), core = current.core,
-            coreVersion = current.coreVersion, files = before.keys.toList())
+            coreVersion = current.coreVersion, files = backupFiles.keys.toList())
         val backupTemp = File.createTempFile(".save-backup-", ".tmp", backupDir)
         try {
-            backupTemp.outputStream().use { writeZip(it, before + ("monika-save.json" to json.encodeToString(oldManifest).toByteArray())) }
+            backupTemp.outputStream().use { writeZip(it, backupFiles + ("monika-save.json" to json.encodeToString(oldManifest).toByteArray())) }
             Files.move(backupTemp.toPath(), backup.toPath(), StandardCopyOption.ATOMIC_MOVE)
         } finally { backupTemp.delete() }
         val deletes = if (current.suite == null) emptySet() else {

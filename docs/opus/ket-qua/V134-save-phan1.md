@@ -10,6 +10,8 @@ Thư viện → menu của game → **Xuất save** / **Nhập save**. SAF tạo
 
 Xuất ZIP `<tên game>-<hệ>-<ngày>.zip`, gồm SRAM/RMS, các state Monika hiện có và manifest SHA-256 của file game + hệ/lõi/phiên bản lõi. Không có ROM, đường dẫn game, tài khoản hay báo cáo crash. Java cần mở/cài game một lần; đối chiếu MIDlet-Name và MIDlet-Vendor với manifest bản đã cài, không đoán suite từ tên JAR.
 
+State 0 byte do lõi không hỗ trợ lưu state được bỏ khỏi ZIP xuất và ZIP backup; không xóa file gốc. State có dữ liệu vẫn giữ nguyên byte. Snapshot dùng riêng cho rollback giữ cả file rỗng để khôi phục đúng trạng thái trước giao dịch; không nới kiểm tra file rỗng khi nhập. Regression test kiểm cả xuất → nhập → khôi phục backup khi có state rỗng và lỗi ghi giữa chừng khôi phục file rỗng.
+
 Nhập file lẻ hoặc ZIP. Gói Monika phải khớp SHA-256 ROM và hệ/lõi; state chỉ khớp cùng phiên bản lõi. Save thô ngoài không có mã nhận diện hệ/game: kiểm tên ROM/tên hiển thị, báo rõ giới hạn này và yêu cầu xác nhận đúng game trước khi nhập. Không nhận state ngoài vì không xác minh được lõi/phiên bản. Không coi tên file là bằng chứng game chắc chắn.
 
 RMS ngoài: ZIP một thư mục suite (`data/<suite>/`, `<suite>/`, hoặc file ở gốc ZIP); header `.rsh` và đủ record `.rsr`, phiên bản MIDRMS 3.0 không mã hóa. Tên thư mục khác suite bị chặn. File `.rsr` lẻ cần kho header/record của game đã tồn tại để kiểm số record/ID; header `.rsh` lẻ chỉ nhận khi số record bằng 0. File có bản RMS khác/mã hóa bị từ chối thay vì sửa đoán. Nguồn ngoài không mang định danh MIDlet nên hộp thoại luôn cảnh báo cần cùng game/nhà phát hành.

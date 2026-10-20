@@ -119,6 +119,60 @@ class GameSaveTransferTest {
         } finally { ram.delete();t.states.values.forEach { it.delete() };dir.deleteRecursively();backupRoot.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() } }
     }
 
+    @Test fun emptyStatesAreOmittedFromExportAndRestorableBackupButValidStateSurvives() {
+        val app=ApplicationProvider.getApplicationContext<android.app.Application>()
+        val dir=Files.createTempDirectory("save-empty-state").toFile()
+        val game=target(dir).game
+        val t=GameSaveTransfer.target(app,game)
+        val ram=t.ram!!
+        val validState="state/slot2.state"
+        val backupRoot=File(app.filesDir,"save-backups")
+        val known=backupRoot.listFiles().orEmpty().toSet()
+        try {
+            ram.parentFile!!.mkdirs();ram.writeBytes(ByteArray(8192){3})
+            t.states.forEach { (name,file) ->
+                file.parentFile!!.mkdirs();file.writeBytes(if(name==validState) byteArrayOf(7) else byteArrayOf())
+            }
+            val zip=ByteArrayOutputStream();assertEquals(2,GameSaveTransfer.export(app,game,zip))
+            val files=SaveFormats.archive(zip.toByteArray().inputStream())
+            assertEquals(setOf("ram.srm",validState,"monika-save.json"),files.keys)
+            assertArrayEquals(byteArrayOf(7),files.getValue(validState))
+            t.states.filterKeys { it!=validState }.values.forEach { assertTrue(it.isFile);assertEquals(0L,it.length()) }
+            val plan=GameSaveTransfer.prepare(app,game,"save.zip",zip.toByteArray().inputStream())
+            ram.writeBytes(ByteArray(8192){8})
+            val result=GameSaveTransfer.commit(app,plan)
+            assertTrue(ram.readBytes().all { it==3.toByte() })
+            val backup=result.backup.inputStream().use { SaveFormats.archive(it) }
+            assertEquals(files.keys,backup.keys)
+            val undo=result.backup.inputStream().use { GameSaveTransfer.prepare(app,game,"backup.zip",it) }
+            GameSaveTransfer.commit(app,undo)
+            assertTrue(ram.readBytes().all { it==8.toByte() })
+            assertArrayEquals(byteArrayOf(7),t.states.getValue(validState).readBytes())
+            t.states.filterKeys { it!=validState }.values.forEach { assertTrue(it.isFile);assertEquals(0L,it.length()) }
+            assertTrue(game.entry!!.exists())
+        } finally { ram.delete();t.states.values.forEach { it.delete() };dir.deleteRecursively();backupRoot.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() } }
+    }
+
+    @Test fun failedWriteRestoresExistingEmptyStateFromUnfilteredSnapshot() {
+        val dir=Files.createTempDirectory("save-empty-rollback").toFile()
+        try {
+            val t=target(dir)
+            val state=t.states.getValue("state/slot1.state")
+            state.parentFile!!.mkdirs();state.writeBytes(byteArrayOf())
+            t.ram!!.parentFile!!.mkdirs();t.ram.writeBytes(ByteArray(512){3})
+            val before=GameSaveTransfer.snapshot(t)
+            assertTrue(before.containsKey("state/slot1.state"))
+            var moves=0
+            rejected { GameSaveTransfer.replace(t,linkedMapOf("state/slot1.state" to byteArrayOf(9),"ram.srm" to ByteArray(512){8}),emptySet(),before) { from,to ->
+                if(++moves==2) throw IOException("injected second move failure")
+                Files.move(from.toPath(),to.toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING);Unit
+            } }
+            assertTrue(state.isFile);assertEquals(0L,state.length())
+            assertArrayEquals(before.getValue("ram.srm"),t.ram.readBytes())
+            assertTrue(t.game.entry!!.exists())
+        } finally { dir.deleteRecursively() }
+    }
+
     @Test fun fileLockRejectsSecondOwnerAndReleasesOnClose() {
         val dir=Files.createTempDirectory("save-lock").toFile()
         try {
