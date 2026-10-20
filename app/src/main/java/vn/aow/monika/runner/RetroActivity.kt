@@ -132,9 +132,11 @@ class RetroActivity : ComponentActivity() {
         cheats = CheatController(this, key, intent.getStringExtra(EXTRA_SYSTEM_ID).orEmpty(), listOf(title, File(gamePath).nameWithoutExtension), LibretroCheats { retroView })
         // Lõi melondsds lưu riêng (không dùng lẫn file save/state của lõi cũ như desmume): định dạng không đảm bảo giống nhau,
         // ghi đè nhầm có thể làm mất tiến trình. Đổi lại lõi cũ thì save cũ vẫn còn nguyên.
-        val saveKey = if (coreId == "melondsds") "$key-melondsds" else key
-        sramFile = File(File(filesDir, "saves").apply { mkdirs() }, "$saveKey.srm")
-        stateFile = File(File(filesDir, "states").apply { mkdirs() }, "$saveKey.state")
+        val profile = AppGraph.config.current.saveTransfer.systems[intent.getStringExtra(EXTRA_SYSTEM_ID)]
+        sramFile = vn.aow.monika.library.GameSavePaths.ram(filesDir, gamePath, coreId, profile)
+        stateFile = vn.aow.monika.library.GameSavePaths.state(filesDir, gamePath, coreId, profile)
+        sramFile.parentFile!!.mkdirs()
+        stateFile.parentFile!!.mkdirs()
         refreshSlots()
 
         val startup = StartupProgress(android.os.SystemClock::elapsedRealtime) { message ->

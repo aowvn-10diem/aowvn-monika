@@ -38,6 +38,8 @@ data class MonikaConfig(
     val modules: Map<String, ModuleDef> = emptyMap(),
     /** Tài liệu trong thư viện được mở bằng ứng dụng ngoài, không đưa vào danh sách game. */
     val documentExtensions: List<String> = listOf("pdf", "doc", "docx", "txt", "epub"),
+    /** Xuất/nhập save theo hệ, mặc định tương thích cách lưu trước V134. */
+    val saveTransfer: SaveTransferConfig = SaveTransferConfig(),
 ) {
     fun system(id: String): SystemDef? = systems.firstOrNull { it.id == id }
     fun externalApp(id: String): ExternalApp? = externalApps.firstOrNull { it.id == id }
