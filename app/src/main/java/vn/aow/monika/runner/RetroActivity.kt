@@ -47,6 +47,7 @@ import java.io.File
  */
 class RetroActivity : ComponentActivity() {
     private var retroView: GLRetroView? = null
+    private var saveTransferLease: java.io.Closeable? = null
     private lateinit var sramFile: File
     private lateinit var stateFile: File
     private lateinit var root: FrameLayout
@@ -106,6 +107,15 @@ class RetroActivity : ComponentActivity() {
         clock = PlayClock(intent.getStringExtra(PlayClock.EXTRA_KEY))
         val coreId = intent.getStringExtra(EXTRA_CORE) ?: return finish()
         val gamePath = intent.getStringExtra(EXTRA_GAME) ?: return finish()
+        try {
+            saveTransferLease = vn.aow.monika.library.GameSaveGate.acquire(filesDir)
+        } catch (error: java.io.IOException) {
+            if (error !is vn.aow.monika.library.SaveTransferException) Diagnostics.recordHandled(this,
+                "app:save-lock", "Không mở được kho save", java.io.IOException(error.javaClass.simpleName))
+            android.widget.Toast.makeText(this, "Kho save đang bận hoặc chưa mở được. Hãy thử lại sau khi chuyển save xong.", android.widget.Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
         val systemName = intent.getStringExtra(EXTRA_SYSTEM).orEmpty()
         // Ghi "phiên chơi" để nếu lõi native sập thì lần mở Monika kế tiếp có đủ thông tin lập báo cáo (xem Diagnostics).
         Diagnostics.begin(this, "libretro", coreId, AppGraph.cores.info(coreId), File(gamePath).name, systemName)
@@ -547,7 +557,7 @@ class RetroActivity : ComponentActivity() {
     private var loadingGone = false
 
     override fun onDestroy() {
-        super.onDestroy()
+        try { super.onDestroy() } finally { saveTransferLease?.close(); saveTransferLease = null }
         if (isFinishing) {
             // Thoát bình thường: xóa phiên (không báo lỗi) rồi TẮT tiến trình game → lõi native giải phóng sạch RAM,
             // lần chơi sau chạy tiến trình mới (không dính trạng thái/leak của lõi lần trước).

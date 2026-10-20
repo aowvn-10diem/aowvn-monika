@@ -5,6 +5,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -17,6 +18,11 @@ import java.nio.file.Files
 @RunWith(RobolectricTestRunner::class)
 @Config(application = TestApp::class, sdk = [34])
 class GameSaveTransferTest {
+    @Before fun nativePathFixture() {
+        // CoreManager đọc ABI của app; Robolectric mặc định không có nativeLibraryDir.
+        ApplicationProvider.getApplicationContext<android.app.Application>().applicationInfo.nativeLibraryDir = "/fake/arm64"
+    }
+
     private fun target(dir: File, core: String = "mgba"): SaveTarget {
         val rom = File(dir, "Fixture.gba").apply { writeText("synthetic ROM identity fixture, not a playable ROM") }
         val game = Game(dir, "Fixture", AppGraph.config.current.system("gba"), rom)
@@ -111,6 +117,17 @@ class GameSaveTransferTest {
             assertTrue(ram.readBytes().all { it==8.toByte() });assertArrayEquals(byteArrayOf(7),state.readBytes())
             assertTrue(game.entry!!.exists())
         } finally { ram.delete();t.states.values.forEach { it.delete() };dir.deleteRecursively();backupRoot.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() } }
+    }
+
+    @Test fun fileLockRejectsSecondOwnerAndReleasesOnClose() {
+        val dir=Files.createTempDirectory("save-lock").toFile()
+        try {
+            val gameLease=GameSaveGate.acquire(dir)
+            rejected { GameSaveGate.acquire(dir).close() }
+            gameLease.close()
+            GameSaveGate.acquire(dir).use { assertTrue(File(dir,"save-transfer.lock").exists()) }
+            GameSaveGate.acquire(dir).close()
+        } finally { dir.deleteRecursively() }
     }
 
     @Test fun pathsMatchLegacyKeysRespectConfigAndBlockTraversalSymlink() {

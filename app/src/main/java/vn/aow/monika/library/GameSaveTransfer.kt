@@ -82,6 +82,15 @@ internal data class SaveImportPlan(val target: SaveTarget, val writes: Map<Strin
 object GameSaveTransfer {
     private val json = Json { ignoreUnknownKeys = false }
     private val lock = Any()
+    @Volatile var busy: Boolean = false
+        private set
+    private fun <T> transfer(context: Context, block: () -> T): T = synchronized(lock) {
+        requireStopped(context)
+        GameSaveGate.acquire(context.filesDir).use {
+            busy = true
+            try { block() } finally { busy = false }
+        }
+    }
     fun supported(game: Game, config: MonikaConfig): Boolean = game.system?.id in setOf("java", "nds", "gba") &&
         config.saveTransfer.systems.containsKey(game.system!!.id) && game.entry?.isFile == true && !game.locked && !game.evicted
 
@@ -91,7 +100,7 @@ object GameSaveTransfer {
     private fun requireStopped(context: Context) {
         val processes = (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).runningAppProcesses
             ?: throw SaveTransferException("Không kiểm tra được màn chơi. Hãy đóng game và mở lại Monika.")
-        SaveFormats.checked(processes.none { it.processName in setOf(context.packageName + ":midlet", context.packageName + ":game") },
+        SaveFormats.checked(processes.none { it.processName == context.packageName + ":midlet" },
             "Hãy thoát hoàn toàn màn chơi trước khi xuất hoặc nhập save.")
     }
 
@@ -158,16 +167,25 @@ object GameSaveTransfer {
     private fun hash(game: Game): String {
         val entry = game.entry ?: throw SaveTransferException("Game không có file để đối chiếu.")
         SaveFormats.checked(entry.length() in 1..(1024L * 1024 * 1024), "File game không hợp lệ để đối chiếu save.")
+        val expectedSize = entry.length()
+        val modified = entry.lastModified()
+        var read = 0L
         val digest = MessageDigest.getInstance("SHA-256")
         entry.inputStream().use { input ->
             val buffer = ByteArray(65536)
-            while (true) { val n = input.read(buffer); if (n < 0) break; digest.update(buffer, 0, n) }
+            while (true) {
+                val n = input.read(buffer); if (n < 0) break
+                read += n
+                SaveFormats.checked(read <= expectedSize, "File game đổi trong lúc đối chiếu save.")
+                digest.update(buffer, 0, n)
+            }
         }
+        SaveFormats.checked(read == expectedSize && entry.length() == expectedSize && entry.lastModified() == modified,
+            "File game đổi trong lúc đối chiếu save.")
         return digest.digest().joinToString("") { "%02x".format(it) }
     }
 
-    fun export(context: Context, game: Game, output: OutputStream) = synchronized(lock) {
-        requireStopped(context)
+    fun export(context: Context, game: Game, output: OutputStream) = transfer(context) {
         val target = target(context, game)
         val files = snapshot(target)
         SaveFormats.checked(files.isNotEmpty(), "Game chưa có save hoặc state để xuất.")
@@ -178,8 +196,7 @@ object GameSaveTransfer {
         files.size
     }
 
-    internal fun prepare(context: Context, game: Game, filename: String, input: InputStream): SaveImportPlan = synchronized(lock) {
-        requireStopped(context)
+    internal fun prepare(context: Context, game: Game, filename: String, input: InputStream): SaveImportPlan = transfer(context) {
         val target = target(context, game)
         val buffered = input.buffered()
         buffered.mark(4); val signature = ByteArray(4); val count = buffered.read(signature); buffered.reset()
@@ -211,6 +228,7 @@ object GameSaveTransfer {
             val parent = files.keys.first().substringBeforeLast('/', "")
             SaveFormats.checked(parent.isEmpty() || parent.substringAfterLast('/') == target.suite, "Thư mục RMS không khớp suite Java đã cài.")
             var rms = files.mapKeys { it.key.substringAfterLast('/') }
+            SaveFormats.checked(rms.keys.all { target.profile.imports[File(it).extension] == "rms" }, "Đuôi RMS không được cấu hình hệ này cho phép.")
             if (rms.size == 1 && rms.keys.single().endsWith(".rsr")) {
                 rms = snapshot(target).mapKeys { it.key.removePrefix("rms/") } + rms
             }
@@ -236,8 +254,7 @@ object GameSaveTransfer {
         return SaveImportPlan(target, writes, warning)
     }
 
-    internal fun commit(context: Context, plan: SaveImportPlan): SaveImportResult = synchronized(lock) {
-        requireStopped(context)
+    internal fun commit(context: Context, plan: SaveImportPlan): SaveImportResult = transfer(context) {
         val current = target(context, plan.target.game)
         SaveFormats.checked(current.core == plan.target.core && current.coreVersion == plan.target.coreVersion && current.profile == plan.target.profile && current.root == plan.target.root,
             "Cấu hình save đã đổi. Hãy chọn lại file để nhập.")

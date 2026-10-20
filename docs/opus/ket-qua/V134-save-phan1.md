@@ -14,6 +14,8 @@ Nhập file lẻ hoặc ZIP. Gói Monika phải khớp SHA-256 ROM và hệ/lõi
 
 RMS ngoài: ZIP một thư mục suite (`data/<suite>/`, `<suite>/`, hoặc file ở gốc ZIP); header `.rsh` và đủ record `.rsr`, phiên bản MIDRMS 3.0 không mã hóa. Tên thư mục khác suite bị chặn. File `.rsr` lẻ cần kho header/record của game đã tồn tại để kiểm số record/ID; header `.rsh` lẻ chỉ nhận khi số record bằng 0. File có bản RMS khác/mã hóa bị từ chối thay vì sửa đoán. Nguồn ngoài không mang định danh MIDlet nên hộp thoại luôn cảnh báo cần cùng game/nhà phát hành.
 
+Khóa file OS giữa tiến trình chính và màn chơi Retro ngăn đọc/ghi đồng thời, tự nhả khi tiến trình chết; service tải trước không giữ khóa. Launcher không mở game khi giao dịch trong tiến trình chính đang bận; Java cần thoát tiến trình MIDlet.
+
 Trước ghi: kiểm toàn gói, giới hạn số mục/byte, chặn đường dẫn tuyệt đối, traversal, symlink, tên trùng, lẫn nhiều game. Tối đa 256 mục ZIP (kể manifest), 32 MiB/file, 64 MiB tổng, dành 64 KiB cho manifest. Giữ toàn bộ save/state cũ trong `filesDir/save-backups/<UUID>.zip` trước thay đổi đầu tiên. Ghi staging cùng thư mục + atomic rename; lỗi giữa chừng khôi phục các đích đã chạm, giữ lỗi khôi phục nếu có. Chỉ xóa record RMS dư của kho vừa nhập, sau khi sao lưu; không gọi xóa game, ROM, bản save của game/lõi khác. Có nút **Lưu bản sao cũ** sau nhập để xuất backup qua SAF. Backup không tự bị dọn.
 
 ## Nguồn gốc đã đọc trước khi code
