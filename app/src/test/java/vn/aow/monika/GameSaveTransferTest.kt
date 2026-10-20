@@ -63,6 +63,88 @@ class GameSaveTransferTest {
         } finally { dir.deleteRecursively() }
     }
 
+    private fun withInstalledJavaFixture(block: (android.app.Application, Game, SaveTarget) -> Unit) {
+        val app=ApplicationProvider.getApplicationContext<android.app.Application>()
+        javax.microedition.util.ContextHolder.setApplication(app)
+        val prefs=app.getSharedPreferences(app.packageName+"_preferences",android.content.Context.MODE_PRIVATE)
+        val oldPreference=prefs.getString("emulator_dir",null)
+        val oldRoot=ru.playsoftware.j2meloader.config.Config.getEmulatorDir()
+        val dir=Files.createTempDirectory("save-java-installed").toFile()
+        val backupRoot=File(app.filesDir,"save-backups")
+        val known=backupRoot.listFiles().orEmpty().toSet()
+        try {
+            check(prefs.edit().putString("emulator_dir",dir.absolutePath).commit())
+            val installed=File(ru.playsoftware.j2meloader.config.Config.getAppDir(),"v134-fixture").apply { mkdirs() }
+            val manifest="Manifest-Version: 1.0\r\nMIDlet-Name: RMS fixture\r\nMIDlet-Vendor: Synthetic fixture\r\n\r\n"
+            File(installed,"converted.dex.conf").writeText(manifest)
+            val jad=File(dir,"Fixture.jad").apply { writeText(manifest) }
+            val game=Game(dir,"RMS fixture",AppGraph.config.current.system("java"),jad)
+            val t=GameSaveTransfer.target(app,game)
+            t.root.mkdirs()
+            block(app,game,t)
+        } finally {
+            // Restore Config's listener target before removing a previously absent preference.
+            prefs.edit().putString("emulator_dir",oldRoot).commit()
+            if(oldPreference==null) prefs.edit().remove("emulator_dir").commit()
+            else prefs.edit().putString("emulator_dir",oldPreference).commit()
+            dir.deleteRecursively()
+            backupRoot.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+        }
+    }
+    private fun rmsZip(files: Map<String,ByteArray>): ByteArray = ByteArrayOutputStream().also { out ->
+        java.util.zip.ZipOutputStream(out).use { zip -> files.forEach { (name,bytes) ->
+            zip.putNextEntry(java.util.zip.ZipEntry(name));zip.write(bytes);zip.closeEntry()
+        } }
+    }.toByteArray()
+
+    @Test fun corruptExistingJavaRmsBlocksCommitBeforeBackupOrAnyWrite() = withInstalledJavaFixture { app,game,t ->
+        val valid=SaveFormatsTest().rms()
+        val incoming=rmsZip(valid)
+        val backupRoot=File(app.filesDir,"save-backups")
+        val known=backupRoot.listFiles().orEmpty().toSet()
+        val rom=game.entry!!.readBytes()
+        for ((name,bytes) in listOf("progress.rsh" to byteArrayOf(),"progress.1.rsr" to byteArrayOf(),
+            "orphan.99.rsr" to byteArrayOf(),"progress.1.rsr" to byteArrayOf(1,2))) {
+            t.root.listFiles().orEmpty().forEach { it.delete() }
+            valid.forEach { (key,value) -> File(t.root,key).writeBytes(value) }
+            File(t.root,name).writeBytes(bytes)
+            val before=GameSaveTransfer.snapshot(t)
+            val plan=GameSaveTransfer.prepare(app,game,"valid-rms.zip",incoming.inputStream())
+            val error=assertThrows(IOException::class.java) { GameSaveTransfer.commit(app,plan) }
+            assertTrue(error.message.orEmpty().contains("RMS hiện tại bị hỏng"))
+            val after=GameSaveTransfer.snapshot(t)
+            assertEquals(before.keys,after.keys)
+            before.forEach { (key,value) -> assertArrayEquals(value,after.getValue(key)) }
+            assertEquals(known,backupRoot.listFiles().orEmpty().toSet())
+            assertFalse(t.root.walkTopDown().any { it.name.startsWith(".monika-") })
+            assertArrayEquals(rom,game.entry.readBytes())
+        }
+    }
+
+    @Test fun validZeroPayloadJavaRecordSurvivesExportImportAndBackupRestore() = withInstalledJavaFixture { app,game,t ->
+        val regular=SaveFormatsTest().rms()
+        val zeroRecord=ByteArrayOutputStream().also { out -> DataOutputStream(out).use {
+            it.writeInt(1);it.writeInt(0);it.writeInt(0)
+        } }.toByteArray()
+        val zero=regular+("progress.1.rsr" to zeroRecord)
+        SaveFormats.validateRms(zero)
+        zero.forEach { (name,bytes) -> File(t.root,name).writeBytes(bytes) }
+        val exported=ByteArrayOutputStream()
+        assertEquals(2,GameSaveTransfer.export(app,game,exported))
+        val archive=SaveFormats.archive(exported.toByteArray().inputStream())
+        assertArrayEquals(zeroRecord,archive.getValue("rms/progress.1.rsr"))
+        val plan=GameSaveTransfer.prepare(app,game,"zero-payload.zip",exported.toByteArray().inputStream())
+        regular.forEach { (name,bytes) -> File(t.root,name).writeBytes(bytes) }
+        val result=GameSaveTransfer.commit(app,plan)
+        assertArrayEquals(zeroRecord,File(t.root,"progress.1.rsr").readBytes())
+        val undo=result.backup.inputStream().use { GameSaveTransfer.prepare(app,game,"backup.zip",it) }
+        GameSaveTransfer.commit(app,undo)
+        regular.forEach { (name,bytes) -> assertArrayEquals(bytes,File(t.root,name).readBytes()) }
+        val again=result.backup.inputStream().use { SaveFormats.archive(it) }
+        SaveFormats.validateRms((again-"monika-save.json").mapKeys { it.key.removePrefix("rms/") })
+        assertTrue(game.entry!!.isFile)
+    }
+
     @Test fun javaRmsFolderIsOneSuiteAndSingleRecordNeedsExistingWholeStore() {
         val dir = Files.createTempDirectory("rms-test").toFile()
         try {

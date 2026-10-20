@@ -199,7 +199,7 @@ object GameSaveTransfer {
     }
 
     // Lõi có thể để lại RAM/state placeholder 0 byte mà bước nhập sẽ từ chối.
-    // Chỉ bỏ placeholder này khỏi ZIP; file rỗng trong RMS/cây save vẫn giữ nguyên.
+    // Chỉ bỏ placeholder này khỏi ZIP; không lọc mất RMS/cây save. RMS phải hợp lệ trước backup.
     // Snapshot gốc không lọc để rollback khôi phục đúng file trước giao dịch.
     private fun archiveFiles(files: Map<String, ByteArray>): Map<String, ByteArray> =
         files.filter { (name, bytes) -> bytes.isNotEmpty() || (name != "ram.srm" && !name.startsWith("state/")) }
@@ -313,6 +313,14 @@ object GameSaveTransfer {
             "Cấu hình save đã đổi. Hãy chọn lại file để nhập.")
         SaveFormats.checked(plan.gameSha256 != null && plan.gameSha256 == hash(current.game), "File game đã đổi. Hãy chọn lại save.")
         val before = snapshot(current)
+        // RMS hỏng không được bỏ file để làm backup có vẻ hợp lệ. Dừng trước tạo ZIP/ghi save.
+        if (current.suite != null && before.isNotEmpty()) {
+            try {
+                SaveFormats.validateRms(before.mapKeys { it.key.removePrefix("rms/") })
+            } catch (e: java.io.IOException) {
+                throw SaveTransferException("RMS hiện tại bị hỏng; chưa nhập để giữ nguyên dữ liệu và tránh bản sao lưu không khôi phục được.").apply { initCause(e) }
+            }
+        }
         val backupFiles = archiveFiles(before)
         // Sao lưu TOÀN BỘ save/state cũ trước lần thay đổi đầu tiên, kể cả file sẽ bị thay thế/xóa trong RMS.
         val backupDir = GameSavePaths.child(context.filesDir, "save-backups").apply { check(mkdirs() || isDirectory) }
