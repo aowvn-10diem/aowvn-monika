@@ -150,6 +150,17 @@ class ConfigTest {
     }
 
     @Test
+    fun `V119 loi NDS am thanh bo dem thuong va desmume chi may manh moi 512x384`() {
+        for (id in listOf("desmume", "melonds", "melondsds")) {
+            assertFalse("$id phải tắt âm thanh độ trễ thấp (đỡ rè khi CPU chưa kịp)", cfg.cores.getValue(id).lowLatencyAudio)
+        }
+        val ds = cfg.cores.getValue("desmume")
+        assertEquals("256x192", ds.options["desmume_internal_resolution"])
+        assertEquals("256x192", ds.perf.getValue("lite")["desmume_internal_resolution"])
+        assertEquals("512x384", ds.perf.getValue("full")["desmume_internal_resolution"])
+    }
+
+    @Test
     fun `GBA tat color correction o mac dinh goc va moi style`() {
         val core = cfg.cores.getValue("mgba")
         val display = requireNotNull(core.display)
