@@ -144,7 +144,7 @@ jobs:
           except Exception as error:
               print('không đọc được result.json:', error); raise SystemExit
           for item in data if isinstance(data, list) else [data]:
-              row = {k: item.get(k) for k in ('outcome', 'test_details', 'axis_value', 'test_axis_value') if k in item}
+              row = {k: item.get(k) for k in ('outcome', 'axis_value', 'test_axis_value') if k in item}
               print(re.sub(r'gs://\S+', 'gs://<bucket>', re.sub(r'https?://\S+', '<url>', json.dumps(row, ensure_ascii=False)))[:800])
           PY
       - name: Thu bằng chứng (log/crumb/exit/tombstone), bỏ PNG/APK/game
