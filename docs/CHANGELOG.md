@@ -2,6 +2,22 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.6 (Đang chuẩn bị — Bản thử)
+
+> Chưa tạo tag hoặc phát hành. Danh sách đối chiếu main `4f59179`; đây là bản thử để kiểm chuyển save, chưa xác nhận tương thích/chơi tiếp trên điện thoại. Sửa gốc lỗi Azahar dành cho bản sau theo [PM6285561724](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6285561724). Phần save 3DS/PSP/PS1 ở #312 chưa gộp, chưa thuộc danh sách này.
+
+- **Mới:** Game Java có nút **Xuất save / Nhập save** trong Thư viện, chuyển kho RMS đúng bộ game qua trình chọn tệp Android; không xuất game JAR. Chưa kiểm save thật JL-Mod/J2ME Loader. ([f08d6e8](https://github.com/aowvn-10diem/aowvn-monika/commit/f08d6e8eecd983bfddad5503503aca14ab17c6ce))
+- **Mới:** Nintendo DS và GBA có thể xuất ZIP save của Monika hoặc nhập save thô SAV/SRM; DS nhận DSV DeSmuME có footer hợp lệ, kể cả khi đổi đuôi. ZIP Monika đối chiếu mã game/lõi; save thô vẫn cần người chơi chọn đúng game và bản vùng. Không xác nhận mọi save từ trình giả lập khác đều tương thích. ([f08d6e8](https://github.com/aowvn-10diem/aowvn-monika/commit/f08d6e8eecd983bfddad5503503aca14ab17c6ce))
+- **An toàn:** Trước khi nhập, Monika sao lưu save cũ và có nút **Lưu bản sao cũ**; hủy trước xác nhận không ghi save. Không chuyển save khi game đang mở; state rỗng được bỏ khỏi ZIP, state còn lại cần đúng lõi/phiên bản. Save thật, SAF và khôi phục trên máy chưa được kiểm. ([f08d6e8](https://github.com/aowvn-10diem/aowvn-monika/commit/f08d6e8eecd983bfddad5503503aca14ab17c6ce))
+
+### Cách thử chuyển save
+
+1. Giữ một bản save tốt bên ngoài Monika trước khi thử. Thoát màn chơi, vào **Thư viện → menu game Java/NDS/GBA → Xuất save**, chọn nơi giữ ZIP bằng trình chọn tệp Android.
+2. Chọn **Nhập save**, chọn ZIP vừa xuất hoặc định dạng ngoài phù hợp. Kiểm đúng tên game/hệ/cảnh báo rồi chọn **Sao lưu và nhập**; chọn **Hủy** nếu chưa chắc. Với Java, cần đủ kho RMS đúng suite; không chọn JAR. State ngoài không thuộc ZIP Monika chưa được hỗ trợ.
+3. Chọn **Lưu bản sao cũ** để giữ ZIP dự phòng, rồi mở game và kiểm tiến trình đã lưu. Nếu cần, thoát game và nhập ZIP dự phòng để thử khôi phục. Ghi kết quả máy/lõi/định dạng và bước tái hiện vào `docs/TEST-THUC-TE.md`; chưa có bằng chứng chơi tiếp và khôi phục trên máy thật thì không ghi đã ổn định.
+
+> **Lỗi đang xử lý trước khi cắt bản:** ZIP chứa RAM 0 byte có thể bị bước nhập từ chối. Sửa và test RAM rỗng đang ở [#312](https://github.com/aowvn-10diem/aowvn-monika/pull/312), chưa gộp tại mốc chốt trên; không coi lỗi đã sửa trong main. Nếu chuyển save lỗi hoặc mất tiến trình, dừng thử trên bản save duy nhất và giữ bản dự phòng. Chưa đủ bằng chứng máy thật để lên stable.
+
 ## v0.8.5 (Đang chuẩn bị — Bản thử)
 
 > Chưa phát hành, chưa tạo tag. Bản vá ưu tiên 3DS theo main `8a96ff3`; chưa xác nhận đã chơi được trên máy thật. V125 (#281) và vệt JNI V118-crumb chưa gộp, không thuộc bản này.
