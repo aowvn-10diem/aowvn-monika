@@ -153,6 +153,62 @@ class GameSaveTransferTest {
         } finally { ram.delete();t.states.values.forEach { it.delete() };dir.deleteRecursively();backupRoot.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() } }
     }
 
+    @Test fun emptyRamIsOmittedFromExportAndBackupWhileValidStateRoundTrips() {
+        val app=ApplicationProvider.getApplicationContext<android.app.Application>()
+        val dir=Files.createTempDirectory("save-empty-ram").toFile()
+        val game=target(dir).game
+        val t=GameSaveTransfer.target(app,game)
+        val ram=t.ram!!;val state=t.states.getValue("state/slot1.state")
+        val backupRoot=File(app.filesDir,"save-backups")
+        val known=backupRoot.listFiles().orEmpty().toSet()
+        try {
+            ram.parentFile!!.mkdirs();ram.writeBytes(byteArrayOf())
+            state.parentFile!!.mkdirs();state.writeBytes(byteArrayOf(7))
+            val zip=ByteArrayOutputStream();assertEquals(1,GameSaveTransfer.export(app,game,zip))
+            val exported=SaveFormats.archive(zip.toByteArray().inputStream())
+            assertEquals(setOf("state/slot1.state","monika-save.json"),exported.keys)
+            assertTrue(ram.isFile);assertEquals(0L,ram.length())
+            val imported=GameSaveTransfer.prepare(app,game,"save.zip",zip.toByteArray().inputStream())
+            assertEquals(setOf("state/slot1.state"),imported.writes.keys)
+            state.writeBytes(byteArrayOf(8))
+            val result=GameSaveTransfer.commit(app,imported)
+            assertArrayEquals(byteArrayOf(7),state.readBytes())
+            val backup=result.backup.inputStream().use { SaveFormats.archive(it) }
+            assertEquals(exported.keys,backup.keys)
+            val undo=result.backup.inputStream().use { GameSaveTransfer.prepare(app,game,"backup.zip",it) }
+            GameSaveTransfer.commit(app,undo)
+            assertArrayEquals(byteArrayOf(8),state.readBytes())
+            assertTrue(ram.isFile);assertEquals(0L,ram.length())
+            // ZIP ngoài/Monika tự chèn SRAM rỗng vẫn bị từ chối; không hạ guard nhập.
+            val meta=Json.decodeFromString<GameSaveManifest>(exported.getValue("monika-save.json").toString(Charsets.UTF_8))
+            val invalid=exported + ("ram.srm" to byteArrayOf()) +
+                ("monika-save.json" to Json.encodeToString(meta.copy(files=meta.files+"ram.srm")).toByteArray())
+            rejected { GameSaveTransfer.plan(t,invalid) { meta.gameSha256 } }
+            state.delete()
+            val empty=ByteArrayOutputStream()
+            rejected { GameSaveTransfer.export(app,game,empty) }
+            assertEquals(0,empty.size());assertTrue(game.entry!!.exists())
+        } finally { ram.delete();t.states.values.forEach { it.delete() };dir.deleteRecursively();backupRoot.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() } }
+    }
+
+    @Test fun failedWriteRestoresEmptyRamFromUnfilteredSnapshot() {
+        val dir=Files.createTempDirectory("save-empty-ram-rollback").toFile()
+        try {
+            val t=target(dir);val ram=t.ram!!;val state=t.states.getValue("state/slot1.state")
+            ram.parentFile!!.mkdirs();ram.writeBytes(byteArrayOf())
+            state.parentFile!!.mkdirs();state.writeBytes(byteArrayOf(7))
+            val before=GameSaveTransfer.snapshot(t)
+            assertTrue(before.containsKey("ram.srm"));assertEquals(0,before.getValue("ram.srm").size)
+            var moves=0
+            rejected { GameSaveTransfer.replace(t,linkedMapOf("ram.srm" to ByteArray(8192){9},"state/slot1.state" to byteArrayOf(8)),emptySet(),before) { from,to ->
+                if(++moves==2) throw IOException("injected second move failure")
+                Files.move(from.toPath(),to.toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING);Unit
+            } }
+            assertTrue(ram.isFile);assertEquals(0L,ram.length())
+            assertArrayEquals(byteArrayOf(7),state.readBytes());assertTrue(t.game.entry!!.exists())
+        } finally { dir.deleteRecursively() }
+    }
+
     @Test fun failedWriteRestoresExistingEmptyStateFromUnfilteredSnapshot() {
         val dir=Files.createTempDirectory("save-empty-rollback").toFile()
         try {

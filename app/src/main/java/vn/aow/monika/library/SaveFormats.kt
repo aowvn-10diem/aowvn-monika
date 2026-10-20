@@ -59,6 +59,7 @@ object SaveFormats {
 
     fun convert(bytes: ByteArray, extension: String, profile: SaveProfile): ByteArray {
         val configured = profile.imports[extension.lowercase(Locale.ROOT)]
+        if (configured == "ps1") return ConsoleSaveFormats.ps1(bytes)
         checked(configured == "raw" || configured == "desmume", "File không khớp hệ hoặc định dạng save chưa được hỗ trợ.")
         val cookie = DSV_COOKIE.toByteArray(Charsets.US_ASCII)
         val hasDsvCookie = bytes.size >= cookie.size && bytes.copyOfRange(bytes.size - cookie.size, bytes.size).contentEquals(cookie)
