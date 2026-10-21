@@ -36,7 +36,7 @@ jobs:
             echo "::error::Chỉ chạy trên main, không chạy trên $GITHUB_REF"
             exit 1
           fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Đọc secret, che link và mật khẩu
@@ -93,7 +93,7 @@ jobs:
       max-parallel: 15
       matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 

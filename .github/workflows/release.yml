@@ -43,7 +43,7 @@ jobs:
       create: ${{ steps.guard.outputs.create }}
       prerelease: ${{ steps.guard.outputs.prerelease }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: {fetch-depth: 0, persist-credentials: false}
       - name: Fetch main for ancestor gate
         run: git fetch origin refs/heads/main:refs/remotes/origin/main --tags
@@ -93,7 +93,7 @@ jobs:
           subprocess.run(['gh', 'api', '--method', 'POST', repo + '/git/refs', '--input', '-'],
                          input=payload, text=True, check=True, stdout=subprocess.DEVNULL)
           PY
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ needs.preflight.outputs.tag }}
           fetch-depth: 0
@@ -184,7 +184,7 @@ jobs:
     permissions: {contents: read}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
