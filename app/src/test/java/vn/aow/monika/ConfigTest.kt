@@ -31,6 +31,18 @@ class ConfigTest {
         assertEquals(listOf("md"), ConfigRepository.parse("""{"documentExtensions":["md"]}""").documentExtensions)
     }
 
+    @Test fun saveProfilesAreConfigFirstAndOldJsonHasSafeDefaults() {
+        val defaults = vn.aow.monika.config.defaultSaveProfiles()
+        assertEquals(setOf("java", "nds", "gba", "3ds", "psp", "ps1"), defaults.keys)
+        assertEquals(defaults, cfg.saveTransfer.systems)
+        assertEquals(defaults, ConfigRepository.parse("{}").saveTransfer.systems)
+        val custom = ConfigRepository.parse("""{"saveTransfer":{"systems":{"gba":{"saveDirectory":"saves-v2","imports":{"sav":"raw"},"sizes":[512,1024],"targetBytes":1024}}}}""")
+        val profile = custom.saveTransfer.systems.getValue("gba")
+        assertEquals("saves-v2", profile.saveDirectory)
+        assertEquals(1024, vn.aow.monika.library.SaveFormats.convert(ByteArray(512), "sav", profile).size)
+        assertFalse(custom.saveTransfer.systems.containsKey("nds"))
+    }
+
     private fun configLiterals(element: JsonElement, path: String = ""): List<Pair<String, JsonElement>> = when (element) {
         is JsonObject -> element.entries.flatMap { (key, value) ->
             val childPath = if (path.isEmpty()) key else "$path.$key"
@@ -135,7 +147,7 @@ class ConfigTest {
 
     @Test
     fun `rgss ghim goi cong khai va van giu Joiplay du phong`() {
-        assertEquals(43, cfg.configVersion)
+        assertEquals(49, cfg.configVersion)
         val module = cfg.modules["rgss"] ?: error("modules.rgss thiếu")
         assertEquals("engines-rgss-6", module.version)
         assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/engines-rgss-6/rgss-arm64-v8a.zip", module.url)
@@ -153,7 +165,7 @@ class ConfigTest {
     fun `GBA tat color correction o mac dinh goc va moi style`() {
         val core = cfg.cores.getValue("mgba")
         val display = requireNotNull(core.display)
-        assertEquals(43, cfg.configVersion)
+        assertEquals(49, cfg.configVersion)
         assertEquals("OFF", core.options["mgba_color_correction"])
         assertEquals("lcd", display.default)
         assertTrue(display.styles.isNotEmpty())
@@ -252,6 +264,8 @@ class ThreeDsConfigTest {
     @org.junit.Test fun threeDsIsWiredAndArm64Only() {
         val s = cfg.system("3ds")!!
         org.junit.Assert.assertEquals("citra", s.core)
+        // [A53] 18/10: Azahar sập khi vào game trên 0.8.5, 3DS tạm chạy lõi libretro citra. Sửa xong Azahar thì bật lại engine.
+        org.junit.Assert.assertNull(s.engine)
         org.junit.Assert.assertEquals(listOf("arm64-v8a"), cfg.cores["citra"]!!.abis)
         org.junit.Assert.assertEquals(vn.aow.monika.runner.PadLayout.N3DS, vn.aow.monika.runner.padFor("citra", s.pad))
         org.junit.Assert.assertTrue("3ds" in s.extensions)

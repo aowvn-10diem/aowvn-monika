@@ -23,7 +23,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - name: Chạy đủ 6 test N04, báo lỗi sau khi chạy hết
+      - name: Chạy đủ 7 test N04, báo lỗi sau khi chạy hết
         run: |
           python3 - <<'PY'
           import subprocess
@@ -37,6 +37,7 @@ jobs:
               'test-prepare-core-pins.py',
               'test-verify-apk-cert.py',
               'test-changelog-pending.py',
+              'test-real-games.py',
           )
           failed = []
           for case in cases:
@@ -48,3 +49,5 @@ jobs:
           print('N04 scripts: ' + str(len(cases)) + ' executed; failed=' + ','.join(failed))
           raise SystemExit(1 if failed else 0)
           PY
+      - name: Kiểm thử lại NDK bằng SDK giả (V123, offline)
+        run: python3 scripts/test-ci-install-j2me-ndk.py
