@@ -29,6 +29,13 @@ jobs:
       matrix: ${{ steps.build.outputs.matrix }}
       count: ${{ steps.build.outputs.count }}
     steps:
+      # Chặn chạy tay trên nhánh khác: nhánh khác có thể sửa chính workflow này để in secret.
+      - name: Chỉ chạy trên main
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Chỉ chạy trên main, không chạy trên $GITHUB_REF"
+            exit 1
+          fi
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
