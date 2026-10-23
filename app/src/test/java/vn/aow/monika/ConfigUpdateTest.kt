@@ -8,6 +8,7 @@ import okhttp3.Protocol
 import okhttp3.Response
 import okhttp3.ResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -18,6 +19,7 @@ import org.robolectric.annotation.Config
 import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.library.GameLibrary
 import vn.aow.monika.library.GameStorage
+import vn.aow.monika.runner.CoreManager
 import vn.aow.monika.ui.TestApp
 import java.io.File
 
@@ -40,11 +42,14 @@ class ConfigUpdateTest {
             .body(ResponseBody.create(null, reply)).build()
     }.build())
 
-    /** Config chỉ đổi phần `systems`: thêm hệ "V132" nhận đuôi .v132rom. */
+    /** Config chỉ đổi 2 phần: thêm hệ "V132" (nhận đuôi .v132rom) và thêm lõi "v132core". */
     private fun payload(version: Int) =
-        """{"configVersion":$version,"systems":[{"id":"v132","name":"V132","runner":"libretro","extensions":["v132rom"]}]}"""
+        """{"configVersion":$version,"systems":[{"id":"v132","name":"V132","runner":"libretro","extensions":["v132rom"]}],""" +
+            """"cores":{"v132core":{"version":"1","url":"https://example.test/v132core.zip"}}}"""
 
     @Before fun clean() {
+        // CoreManager đọc thư mục thư viện native; Robolectric mặc định để null.
+        app.applicationInfo.nativeLibraryDir = "/fake/arm64"
         listOf(cache, File(cache.path + ".new"), File(cache.path + ".bak"), File(app.filesDir, "config.checked"), File(app.filesDir, "diag"))
             .forEach { it.deleteRecursively() }
         File(app.filesDir, "device-games.json").delete()
@@ -67,6 +72,17 @@ class ConfigUpdateTest {
         assertEquals("v132", detected(repo))
     }
 
+    /** Danh sách lõi đọc lại theo bản mới: lõi mới trong config có ngay, lõi bị bỏ thì mất. */
+    @Test fun coreListFollowsNewConfig() = runBlocking {
+        val repo = repo()
+        val cores = CoreManager(app, OkHttpClient(), repo)
+        assertFalse(cores.supports("v132core"))
+
+        reply = payload(bundled + 1)
+        assertTrue(repo.refresh(force = true).isSuccess)
+        assertTrue(cores.supports("v132core"))
+    }
+
     @Test fun lowerVersionIsIgnoredAndCacheIsNotOverwritten() = runBlocking {
         val repo = repo()
         reply = payload(bundled - 1)
@@ -74,6 +90,7 @@ class ConfigUpdateTest {
 
         assertEquals(bundled, repo.config.value.configVersion)
         assertNull(detected(repo))
+        assertFalse(CoreManager(app, OkHttpClient(), repo).supports("v132core"))
         assertTrue(!cache.exists())
     }
 }
