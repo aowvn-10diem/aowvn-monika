@@ -407,6 +407,14 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
 		}
 		if (params == null) {
 			params = new ProfileModel(configDir);
+			// Aow Monika V135: kích thước đoán từ JAD/manifest/ảnh chỉ áp cho cấu hình mới (chưa có config.json).
+			int width = getIntent().getIntExtra(MonikaScreenDefaults.EXTRA_SCREEN_WIDTH, 0);
+			int height = getIntent().getIntExtra(MonikaScreenDefaults.EXTRA_SCREEN_HEIGHT, 0);
+			int[] screen = MonikaScreenDefaults.screenForNewConfig(false, width, height);
+			if (screen != null) {
+				params.screenWidth = screen[0];
+				params.screenHeight = screen[1];
+			}
 		}
 	}
 
