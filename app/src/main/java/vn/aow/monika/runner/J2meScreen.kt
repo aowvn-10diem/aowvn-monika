@@ -31,6 +31,7 @@ object J2meScreenDetector {
         // JAD trước manifest: JAD là descriptor theo máy, có thể ghi đè kích thước trong jar.
         val sources = listOfNotNull(jad?.let { "jad" to it }, jar?.let { "manifest" to it })
         for ((kind, source) in sources) {
+            // diag: bỏ qua nguồn JAD/jar đọc lỗi, chuyển sang nguồn kế tiếp.
             val text = runCatching {
                 if (kind == "jad") source.readText() else readManifest(source)
             }.getOrNull() ?: continue
@@ -41,6 +42,7 @@ object J2meScreenDetector {
             }
         }
         jar?.let { game ->
+            // diag: bỏ qua jar không mở được, dùng mặc định trong config.
             runCatching { guessByImage(game, cfg) }.getOrNull()?.let { return it }
         }
         return fallback
@@ -107,6 +109,7 @@ object J2meScreenDetector {
                 if (entry.isDirectory) continue
                 if (entry.name.substringAfterLast('.', "").lowercase() !in imageExtensions) continue
                 scanned++
+                // diag: bỏ qua ảnh hỏng hoặc lạ định dạng, xét ảnh tiếp theo.
                 val size = runCatching { readImageSize(zip, entry, cfg.maxImageBytes) }.getOrNull() ?: continue
                 if (size !in presets) continue
                 val current = best
