@@ -1,61 +1,62 @@
 #!/usr/bin/env python3
-"""Thu bằng chứng test 3DS thật từ Test Lab (thư mục r3ds): log/crumb/exit/tombstone, KHÔNG PNG, KHÔNG game, KHÔNG APK.
-
-Dùng lại scrub của collect-testlab-evidence.py. Không in bucket, không in tên game.
-"""
+"""Export bounded scrubbed text/JSON evidence, never a ROM/APK/protobuf/URI listing."""
 import argparse
 import importlib.util
 import json
-import os
 from pathlib import Path
 import re
-import subprocess
 
 HERE = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location('v56_collect', HERE / 'collect-testlab-evidence.py')
-v56 = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(v56)
-
-MAX_FILE = 4 * 1024 * 1024
-MAX_TOTAL = 20 * 1024 * 1024
-NAMES = re.compile(r'(?:summary\.json|run\.json|game-meta\.txt|t\d+\.txt|R[1-3]-(?:exit|crumbs)\.txt|R[1-3]-(?:pid|crash)\.log|R[1-3]-\d+-tombstone\.pb)')
 
 
-def allowed(uri):
-    return uri.startswith('gs://') and '/r3ds/' in uri and '..' not in uri.split('/') and bool(NAMES.fullmatch(uri.rsplit('/', 1)[-1]))
+def load(name, filename):
+    spec = importlib.util.spec_from_file_location(name, HERE / filename)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+v56 = load('v56_collect', 'collect-testlab-evidence.py')
+safe = load('r3ds_safe', 'r3ds-safe-evidence.py')
 
 
 def collect(result, stderr, output, prefix_name):
     output.mkdir(parents=True, exist_ok=True)
-    transport = ''.join(p.read_text(errors='replace') if p.exists() else '' for p in (result, stderr))
-    match = re.search(r'storage/browser/([A-Za-z0-9._-]+)', transport) or re.search(r'gs://([A-Za-z0-9._-]+)/', transport)
-    report = {'collection': 'BLOCKED', 'files': 0, 'bytes': 0, 'reason': 'không tìm thấy bucket kết quả Test Lab'}
-    total = 0
-    if match:
+    report = {'collection': 'BLOCKED', 'files': 0, 'bytes': 0}
+    written = []
+    budget = safe.Budget()
+    try:
+        if not re.fullmatch(r'real3ds-[1-9][0-9]{0,19}-[1-9][0-9]{0,19}', prefix_name):
+            raise safe.EvidenceError('invalid run scope')
+        transport = ''
+        for path in (result, stderr):
+            if path.exists():
+                with path.open('rb') as stream:
+                    data = stream.read(safe.MAX_LIST + 1)
+                if len(data) > safe.MAX_LIST:
+                    raise safe.EvidenceError('transport metadata too large')
+                transport += data.decode('utf-8', errors='replace')
+        match = re.search(r'storage/browser/([A-Za-z0-9._-]+)', transport) or re.search(r'gs://([A-Za-z0-9._-]+)/', transport)
+        if not match:
+            raise safe.EvidenceError('results bucket unavailable')
         prefix = f'gs://{match.group(1)}/{prefix_name}/'
-        listed = subprocess.run(['gsutil', 'ls', '-r', prefix + '**'], capture_output=True, text=True)
-        report['reason'] = 'gsutil ls lỗi' if listed.returncode else 'không có tệp bằng chứng'
-        for uri in listed.stdout.splitlines() if listed.returncode == 0 else []:
-            if not allowed(uri):
-                continue
-            dest = output / uri[len(prefix):].replace('/', '__')
-            data = subprocess.run(['gsutil', 'cat', uri], capture_output=True).stdout
-            if len(data) > MAX_FILE or total + len(data) > MAX_TOTAL:
-                continue
-            if dest.suffix == '.json':
-                try:
-                    data = json.dumps(v56.scrub_json(json.loads(data)), ensure_ascii=False, indent=2).encode()
-                except ValueError:
-                    continue
-            elif dest.suffix in ('.log', '.txt'):
-                data = v56.scrub(data.decode(errors='replace')).encode()
+        listed = budget.read(['gsutil', 'ls', '-r', prefix + '**'], safe.MAX_LIST)
+        uris = safe.objects(listed, prefix)
+        if not uris:
+            raise safe.EvidenceError('no permitted evidence')
+        for index, uri in enumerate(uris):
+            name = uri.rsplit('/', 1)[-1]
+            raw = budget.read(['gsutil', 'cat', uri])
+            data = budget.export(safe.redact(raw, name, v56.scrub, v56.scrub_json))
+            dest = output / f'evidence-{index}-{name}'
+            # Track before writing so an I/O failure also removes a partial file.
+            written.append(dest)
             dest.write_bytes(data)
-            total += len(data)
-            report['files'] += 1
-        report['bytes'] = total
-        if report['files']:
-            report['collection'] = 'COLLECTED'
-            report.pop('reason', None)
+        report.update(collection='COLLECTED', files=len(written), bytes=budget.exported)
+    except (safe.EvidenceError, OSError) as error:
+        for path in written:
+            path.unlink(missing_ok=True)
+        report['reason'] = str(error) if isinstance(error, safe.EvidenceError) else 'evidence I/O failed'
     (output / 'collection.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     print(f'3DS collection: {report["collection"]}; files={report["files"]}; bytes={report["bytes"]}')
     if report['collection'] != 'COLLECTED':

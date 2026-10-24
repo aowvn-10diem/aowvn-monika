@@ -26,9 +26,17 @@ class Azahar3dsRunner : Instrumentation() {
     private val rows = JSONArray()
     private lateinit var evidence: File
     private var gamePid = 0
+    private var onlySteps: Set<String>? = null
+    private var romMode: String? = null
     private val manager get() = targetContext.getSystemService(ActivityManager::class.java)
 
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); start() }
+    override fun onCreate(arguments: Bundle?) {
+        super.onCreate(arguments)
+        onlySteps = arguments?.getString("steps")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet()
+        romMode = arguments?.getString("rom")
+        require(romMode == null || romMode == "real" || romMode == "synthetic") { "tham số rom không hợp lệ: $romMode" }
+        start()
+    }
 
     override fun onStart() {
         evidence = File(checkNotNull(targetContext.getExternalFilesDir(null)), "r3ds").apply { mkdirs() }
@@ -40,9 +48,13 @@ class Azahar3dsRunner : Instrumentation() {
         )
         var failures = 0
         var blocked: String? = null
-        steps.forEachIndexed { index, (name, action) ->
+        val known = steps.map { it.first }.toSet()
+        require(onlySteps == null || (onlySteps!!.isNotEmpty() && known.containsAll(onlySteps!!))) { "tham số steps không hợp lệ: ${onlySteps}, chỉ nhận $known" }
+        val plan = steps.filter { onlySteps == null || it.first in onlySteps!! }
+        check(plan.isNotEmpty()) { "không có bước nào để chạy" }
+        plan.forEachIndexed { index, (name, action) ->
             val status = Bundle().apply {
-                putString("id", "InstrumentationTestRunner"); putInt("numtests", steps.size)
+                putString("id", "InstrumentationTestRunner"); putInt("numtests", plan.size)
                 putString("class", javaClass.name); putString("test", name); putInt("current", index + 1)
             }
             sendStatus(1, status)
@@ -62,7 +74,7 @@ class Azahar3dsRunner : Instrumentation() {
             rows.put(row); writeSummary()
         }
         finish(-1, Bundle().apply {
-            putString("stream", "R3DS: ${steps.size} steps; $failures failures; $rows\n")
+            putString("stream", "R3DS: ${plan.size} steps; $failures failures; $rows\n")
             if (failures != 0) putString("shortMsg", "3DS thật: có bước lỗi, xem evidence")
         })
     }
@@ -75,32 +87,50 @@ class Azahar3dsRunner : Instrumentation() {
     }
 
     private fun importGame(): File {
-        val src = shell("ls /sdcard/Download/ | grep '^monika-3ds\\.'").trim().lineSequence().firstOrNull().orEmpty()
-        check(src.isNotEmpty()) { "không thấy game đẩy bằng --other-files" }
+        val src = shell("ls /sdcard/Download/ 2>/dev/null | grep '^monika-3ds\\.'").trim().lineSequence().firstOrNull().orEmpty()
+        check(romMode != "real" || src.isNotEmpty()) { "rom=real nhưng không thấy game trong Download (đẩy bằng --other-files thất bại)" }
+        if (romMode == "synthetic" || src.isEmpty()) {
+            // Chế độ engine: ROM giả 2 MiB (chỉ có dấu NCSD) để thử khởi tạo engine mà không đẩy game thật lên máy.
+            val fake = File(evidence.parentFile, "game-synthetic.3ds")
+            fake.outputStream().use { out -> val block = ByteArray(1 shl 20); block[0x100] = 'N'.code.toByte(); block[0x101] = 'C'.code.toByte(); block[0x102] = 'S'.code.toByte(); block[0x103] = 'D'.code.toByte(); out.write(block); out.write(ByteArray(1 shl 20)) }
+            File(evidence, "game-meta.txt").writeText("synthetic=true bytes=${fake.length()}\n")
+            return fake
+        }
         val dest = File(evidence.parentFile, "game-" + src.substringAfterLast('.')).also { it.delete() }
         shell("cp /sdcard/Download/$src ${dest.absolutePath}")
         check(dest.isFile && dest.length() > 1_000_000) { "chép game lỗi (size=${dest.length()})" }
-        File(evidence, "game-meta.txt").writeText("ext=${src.substringAfterLast('.')} bytes=${dest.length()}\n")
+        File(evidence, "game-meta.txt").writeText("synthetic=false ext=${src.substringAfterLast('.')} bytes=${dest.length()}\n")
         return dest
     }
 
     private fun run(game: File) {
+        val synthetic = game.name.startsWith("game-synthetic")
         targetContext.startActivity(Intent().setComponent(ComponentName(targetContext, "vn.aow.monika.azahar.AzaharActivity"))
             .putExtra("game", game.absolutePath).putExtra("system", "Nintendo 3DS").putExtra("title", "R3DS")
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+        val startedAt = System.currentTimeMillis()
         waitFor("tiến trình :game", 20000) { findPid() > 0 }
         gamePid = findPid()
         var rendered = false
         var diedAt = -1
-        for (t in 1..18) { // 90 giây, 5 giây/lần
+        val ticks = if (synthetic) 6 else 18 // 30 giây (ROM giả) hoặc 90 giây (ROM thật), 5 giây/lần
+        for (t in 1..ticks) {
             SystemClock.sleep(5000)
             if (findPid() != gamePid) { diedAt = t * 5; break }
-            if (t % 3 == 0) rendered = rendered || shotStats("t${t * 5}")
+            if (!synthetic && t % 3 == 0) rendered = rendered || shotStats("t${t * 5}")
         }
-        val row = JSONObject().put("rendered", rendered).put("diedAtSec", diedAt)
+        val reachedSetup = Breadcrumbs.read(targetContext, gamePid, 200).any { it.contains("setUp: xong phần nền") }
+        val nativeCrash = Build.VERSION.SDK_INT >= 30 && manager.getHistoricalProcessExitReasons(targetContext.packageName, 0, 20)
+            .any { it.timestamp >= startedAt && it.processName.endsWith(":game") && it.reason == ApplicationExitInfo.REASON_CRASH_NATIVE }
+        val row = JSONObject().put("synthetic", synthetic).put("rendered", rendered).put("diedAtSec", diedAt)
+            .put("reachedSetup", reachedSetup).put("nativeCrash", nativeCrash)
         File(evidence, "run.json").writeText(row.toString())
-        check(diedAt < 0) { "tiến trình game chết sau ${diedAt}s (xem exit/crash/crumb)" }
-        check(rendered) { "game sống 90s nhưng khung hình chỉ một màu (màn đen/trắng)" }
+        check(!nativeCrash) { "native crash trong :game (xem exit/crumbs/tombstone), reachedSetup=$reachedSetup" }
+        check(reachedSetup) { "không tới được cuối setUp() (xem crumbs để biết bước dừng)" }
+        if (!synthetic) {
+            check(diedAt < 0) { "tiến trình game chết sau ${diedAt}s (xem exit/crash/crumb)" }
+            check(rendered) { "game sống 90s nhưng khung hình chỉ một màu (màn đen/trắng)" }
+        }
     }
 
     private fun findPid() = manager.runningAppProcesses.orEmpty().firstOrNull { it.processName == "${targetContext.packageName}:game" }?.pid ?: 0
