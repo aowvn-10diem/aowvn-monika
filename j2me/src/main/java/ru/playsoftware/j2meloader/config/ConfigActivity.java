@@ -401,6 +401,8 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
 
 	void loadConfig() {
 		params = ProfilesManager.loadConfig(configDir);
+		// Aow Monika V135: chưa có config.json = cấu hình mới (kể cả khi sao từ profile mặc định).
+		boolean newConfig = params == null;
 		if (params == null && defProfile != null) {
 			FileUtils.copyFiles(new File(Config.getProfilesDir(), defProfile), configDir, null);
 			params = ProfilesManager.loadConfig(configDir);
@@ -408,6 +410,10 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
 		if (params == null) {
 			params = new ProfileModel(configDir);
 		}
+		// Kích thước đoán từ JAD/manifest/ảnh chỉ áp cho cấu hình mới; game đã có config.json thì giữ nguyên.
+		int width = getIntent().getIntExtra(MonikaScreenDefaults.EXTRA_SCREEN_WIDTH, 0);
+		int height = getIntent().getIntExtra(MonikaScreenDefaults.EXTRA_SCREEN_HEIGHT, 0);
+		MonikaScreenDefaults.applyToNewConfig(newConfig, params, width, height);
 	}
 
 	private void showShaderSettings(View v) {

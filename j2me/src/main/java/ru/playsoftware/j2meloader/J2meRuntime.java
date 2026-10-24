@@ -75,10 +75,21 @@ public final class J2meRuntime {
 	 */
 	public static Intent openGameIntent(android.content.Context context, Uri uri) {
 		// Aow Monika: đi thẳng màn chuẩn bị + chạy game (không qua danh sách app của J2ME Loader).
-		return new Intent(Intent.ACTION_VIEW)
+		return openGameIntent(context, uri, 0, 0);
+	}
+
+	/**
+	 * Aow Monika V135: kèm kích thước màn hình đoán từ JAD/manifest/ảnh của game.
+	 * 0 = không áp (J2ME Loader dùng mặc định của nó).
+	 */
+	public static Intent openGameIntent(android.content.Context context, Uri uri, int screenWidth, int screenHeight) {
+		Intent intent = new Intent(Intent.ACTION_VIEW)
 				.setClass(context, ru.woesss.j2me.installer.MonikaLaunchActivity.class)
 				.setDataAndType(uri, "application/java-archive")
 				.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+		intent.putExtra(ru.playsoftware.j2meloader.config.MonikaScreenDefaults.EXTRA_SCREEN_WIDTH, screenWidth);
+		intent.putExtra(ru.playsoftware.j2meloader.config.MonikaScreenDefaults.EXTRA_SCREEN_HEIGHT, screenHeight);
+		return intent;
 	}
 
 	/** Mở danh sách game Java đã cài trong J2ME Loader. */
