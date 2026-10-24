@@ -42,10 +42,13 @@ class ConfigUpdateTest {
             .body(ResponseBody.create(null, reply)).build()
     }.build())
 
-    /** Config chỉ đổi 2 phần: thêm hệ "V132" (nhận đuôi .v132rom) và thêm lõi "v132core". */
-    private fun payload(version: Int) =
-        """{"configVersion":$version,"systems":[{"id":"v132","name":"V132","runner":"libretro","extensions":["v132rom"]}],""" +
-            """"cores":{"v132core":{"version":"1","url":"https://example.test/v132core.zip"}}}"""
+    /** Config chỉ đổi 2 phần: thêm hệ "V132" (nhận đuôi .v132rom) và (tùy chọn) lõi "v132core". */
+    private fun payload(version: Int, withCore: Boolean = true): String {
+        val systems =
+            """"systems":[{"id":"v132","name":"V132","runner":"libretro","extensions":["v132rom"]}]"""
+        val cores = if (withCore) ""","cores":{"v132core":{"version":"1","url":"https://example.test/v132core.zip"}}""" else ""
+        return """{"configVersion":$version,$systems$cores}"""
+    }
 
     @Before fun clean() {
         // CoreManager đọc thư mục thư viện native; Robolectric mặc định để null.
@@ -81,6 +84,11 @@ class ConfigUpdateTest {
         reply = payload(bundled + 1)
         assertTrue(repo.refresh(force = true).isSuccess)
         assertTrue(cores.supports("v132core"))
+
+        // Bản mới hơn bỏ lõi → danh sách lõi cũng bỏ theo, không cần khởi động lại.
+        reply = payload(bundled + 2, withCore = false)
+        assertTrue(repo.refresh(force = true).isSuccess)
+        assertFalse(cores.supports("v132core"))
     }
 
     @Test fun lowerVersionIsIgnoredAndCacheIsNotOverwritten() = runBlocking {
