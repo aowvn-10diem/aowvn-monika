@@ -19,4 +19,19 @@ public final class MonikaScreenDefaults {
 		if (configExists || width <= 0 || height <= 0) return null;
 		return new int[]{width, height};
 	}
+
+	/**
+	 * Áp kích thước đoán cho cấu hình MỚI. Cấu hình mới sao từ profile mặc định đã có file sẵn
+	 * nên phải ghi lại ngay, để lần mở sau vẫn giữ kích thước đoán được.
+	 *
+	 * @return true nếu đã ghi kích thước vào {@code params}
+	 */
+	public static boolean applyToNewConfig(boolean newConfig, ProfileModel params, int width, int height) {
+		int[] screen = screenForNewConfig(!newConfig, width, height);
+		if (screen == null) return false;
+		params.screenWidth = screen[0];
+		params.screenHeight = screen[1];
+		if (!params.isNew) ProfilesManager.saveConfig(params);
+		return true;
+	}
 }

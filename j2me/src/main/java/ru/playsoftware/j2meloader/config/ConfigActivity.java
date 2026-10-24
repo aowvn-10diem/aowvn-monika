@@ -410,18 +410,10 @@ public class ConfigActivity extends AppCompatActivity implements View.OnClickLis
 		if (params == null) {
 			params = new ProfileModel(configDir);
 		}
-		if (newConfig) {
-			// Kích thước đoán từ JAD/manifest/ảnh chỉ áp cho cấu hình mới; game đã có config.json thì giữ nguyên.
-			int width = getIntent().getIntExtra(MonikaScreenDefaults.EXTRA_SCREEN_WIDTH, 0);
-			int height = getIntent().getIntExtra(MonikaScreenDefaults.EXTRA_SCREEN_HEIGHT, 0);
-			int[] screen = MonikaScreenDefaults.screenForNewConfig(false, width, height);
-			if (screen != null) {
-				params.screenWidth = screen[0];
-				params.screenHeight = screen[1];
-				// Cấu hình sao từ profile mặc định đã có file sẵn → ghi lại để lần sau vẫn giữ kích thước đoán được.
-				if (!params.isNew) ProfilesManager.saveConfig(params);
-			}
-		}
+		// Kích thước đoán từ JAD/manifest/ảnh chỉ áp cho cấu hình mới; game đã có config.json thì giữ nguyên.
+		int width = getIntent().getIntExtra(MonikaScreenDefaults.EXTRA_SCREEN_WIDTH, 0);
+		int height = getIntent().getIntExtra(MonikaScreenDefaults.EXTRA_SCREEN_HEIGHT, 0);
+		MonikaScreenDefaults.applyToNewConfig(newConfig, params, width, height);
 	}
 
 	private void showShaderSettings(View v) {
