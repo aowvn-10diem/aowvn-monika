@@ -28,12 +28,13 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 - **Sửa lỗi:** Chỉnh cách khởi động game 3DS để không nạp sớm thư viện đồ họa tùy biến, kể cả khi bật trình điều khiển riêng. ([bb22c29](https://github.com/aowvn-10diem/aowvn-monika/commit/bb22c29d14928577d9c62ed949ea2f261b321da6), [#282](https://github.com/aowvn-10diem/aowvn-monika/pull/282))
 
 ## [v0.8.4](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.4) (Bản thử)
+<!-- bien-tap: v0.8.4 -->
+> Phát hành ngày 17/10/2026 (UTC), bản thử nghiệm.
 
-> Phát hành ngày 17/10/2026 (UTC), bản thử nghiệm. Danh sách theo main `bd9ac022`; không xác nhận kết quả chơi trên máy thật.
-
-- **Sửa lỗi:** Game không bị dọn tự động theo tuổi hoặc giới hạn bộ nhớ; chỉ dọn game khi chọn Dọn ngay trong Cài đặt → Bộ nhớ. ([84ab5b4](https://github.com/aowvn-10diem/aowvn-monika/commit/84ab5b4369187d88f84a6b5ef7848a1335f78db9))
-- **Sửa lỗi:** Khi mở game 3DS với thiết lập mặc định, ứng dụng bỏ bước nạp đồ họa tùy biến có thể gây văng. ([bd9ac02](https://github.com/aowvn-10diem/aowvn-monika/commit/bd9ac022377d078fc2046ead5dcafb075eb2e723))
-- **Mới:** Lỗi khi tải, nhập, mở game hoặc cài gói được ghi để hỗ trợ báo lỗi, theo lựa chọn gửi của người chơi. ([82d7007](https://github.com/aowvn-10diem/aowvn-monika/commit/82d7007772ca74f8db36bb80b0089c24a94694d3))
+- **Sửa lỗi:** Game không còn bị tự dọn theo tuổi hoặc khi thiếu bộ nhớ; chỉ dọn khi bạn chọn Dọn ngay trong Cài đặt → Bộ nhớ. ([84ab5b4](https://github.com/aowvn-10diem/aowvn-monika/commit/84ab5b4369187d88f84a6b5ef7848a1335f78db9))
+- **Sửa lỗi:** Game 3DS khi mở với thiết lập mặc định không còn đi qua bước đồ họa tùy biến, bước có thể làm game bị văng. ([bd9ac02](https://github.com/aowvn-10diem/aowvn-monika/commit/bd9ac022377d078fc2046ead5dcafb075eb2e723))
+- **Mới:** Khi tải, nhập, mở game hoặc cài gói bị lỗi, app ghi lại thông tin để hỗ trợ báo lỗi, nếu bạn chọn gửi. ([82d7007](https://github.com/aowvn-10diem/aowvn-monika/commit/82d7007772ca74f8db36bb80b0089c24a94694d3))
+- Nội bộ: danh sách theo main `bd9ac022`; chưa xác nhận kết quả chơi trên máy thật.
 - Nội bộ: báo cáo treo/hết bộ nhớ chỉ gắn phiên khi bằng chứng đúng tiến trình, tránh nhầm PID được dùng lại. ([eef398c](https://github.com/aowvn-10diem/aowvn-monika/commit/eef398c8a00ad946d9a80c344aec4ad58cc1bbf5))
 - Nội bộ: cấu hình Kirikiri trỏ gói 16 có mã phiên bản và ký hiệu hỗ trợ đọc báo lỗi. ([93a7e79](https://github.com/aowvn-10diem/aowvn-monika/commit/93a7e79b0e3fc24503fd298f4b316807c921ed54))
 - Nội bộ: thêm mã gom chữ ký báo lỗi và định tuyến việc sửa; không xác nhận bot đã kích hoạt. ([25302b5](https://github.com/aowvn-10diem/aowvn-monika/commit/25302b5d29b4bb5602548fbe63f6121899e6a8cc))
