@@ -4,6 +4,8 @@
 #   PMXEM   #N               review cuối ghi "Cần PM xem"
 #   TAU     cat|cho|len-on-dinh <chi tiết>   nhịp phát hành 2 ngày
 #   LOI     <chữ ký> x<số> <bản>            chữ ký lỗi mới kể từ lượt trước
+#   COVAN   #339 <link>                      Cố vấn gửi PM (trả lời hoặc CẢNH BÁO): đọc và xử lý
+#   THU     #337 <link>                      DeepSeek báo PM: đọc và trả lời
 #   SEP     <câu>                            chỉ khi chặn cả dự án
 # Không in gì ngoài dòng "YEN" = lượt này không có việc.
 # Trạng thái giữa các lượt: $STATE (mặc định ~/.cache/monika-pm/luot.json, không commit).
@@ -55,5 +57,18 @@ import json,sys; p,top=sys.argv[1:]; s=json.load(open(p)); s['lastReport']=top; 
 EOF
   fi
 fi
+
+# 4. Hộp thư gửi PM: Cố vấn (#339, COVAN) và DeepSeek (#337, THU), comment mới kể từ lượt trước.
+for box in "339 COVAN [Cố vấn" "337 THU [DeepSeek"; do
+  read -r n lab pat <<<"$box"
+  since=$(python3 -c "import json;print(json.load(open('$STATE')).get('mail$n','2026-10-24T00:00:00Z'))")
+  rows=$(gh api "repos/$R/issues/$n/comments?since=$since&per_page=50" \
+    --jq ".[]|select(.created_at>\"$since\")|select(.body|startswith(\"$pat\"))|\"\(.created_at) \(.html_url)\"")
+  [ -z "$rows" ] && continue
+  while IFS= read -r l; do out+=("$lab #$n ${l#* }"); done <<<"$rows"
+  python3 - "$STATE" "mail$n" "$(echo "$rows" | tail -1 | cut -d' ' -f1)" <<'EOF'
+import json,sys; p,k,v=sys.argv[1:]; s=json.load(open(p)); s[k]=v; json.dump(s,open(p,'w'))
+EOF
+done
 
 [ ${#out[@]} -eq 0 ] && echo YEN || printf '%s\n' "${out[@]}"
