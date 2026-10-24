@@ -22,7 +22,7 @@ jobs:
     env:
       PACKS_REPO: aowvn-10diem/aowvn-monika-packs
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Kiểm secret
         env:
           T: ${{ secrets.PACKS_TOKEN }}
