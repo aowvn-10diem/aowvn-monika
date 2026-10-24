@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="412" height="915" viewBox="0 0 412 915" role="img" aria-labelledby="title desc">
+  <title id="title">Mock V122 — bố cục Thư viện Aow Monika</title>
+  <desc id="desc">Thư viện có trạng thái quét ngắn gọn, một hàng Tiếp tục chơi, lưới game đang có và nhóm Đã dọn riêng.</desc>
+  <!-- Màu lấy từ LightColors, primaryGradient và FloatingDock trong ui/theme/Theme.kt. -->
+  <defs>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFB052"/>
+      <stop offset=".5" stop-color="#FF7F78"/>
+      <stop offset="1" stop-color="#E95CC8"/>
+    </linearGradient>
+    <linearGradient id="cool" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8076FF"/>
+      <stop offset="1" stop-color="#628DF4"/>
+    </linearGradient>
+    <linearGradient id="art1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7665E8"/>
+      <stop offset="1" stop-color="#4C8BEA"/>
+    </linearGradient>
+    <linearGradient id="art2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF9E5E"/>
+      <stop offset="1" stop-color="#E95CC8"/>
+    </linearGradient>
+    <linearGradient id="dock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A292D"/>
+      <stop offset="1" stop-color="#1C1B1E"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#1E1818" flood-opacity=".13"/>
+    </filter>
+  </defs>
+
+  <rect width="412" height="915" fill="#F4F5F2"/>
+  <!-- Thanh trạng thái -->
+  <text x="24" y="25" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="700" fill="#181719">9:41</text>
+  <g transform="translate(335 14)" fill="none" stroke="#181719" stroke-width="1.8" stroke-linecap="round">
+    <path d="M0 8h3M6 6h3M12 3h3"/>
+    <path d="M20 4c4-4 10-4 14 0M23 7c2-2 6-2 8 0M27 10h.1"/>
+    <rect x="39" y="1" width="20" height="11" rx="3" stroke-width="1.4"/>
+    <rect x="41" y="3" width="13" height="7" rx="1.5" fill="#181719" stroke="none"/>
+    <path d="M60 4v5"/>
+  </g>
+
+  <!-- Header -->
+  <text x="24" y="72" font-family="Manrope, Arial, sans-serif" font-size="23" font-weight="700" fill="#181719">Thư viện</text>
+  <text x="24" y="96" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#737077">6 game trong máy · 1 tài liệu</text>
+  <circle cx="368" cy="70" r="23" fill="#FFFFFF" filter="url(#shadow)"/>
+  <g transform="translate(358 60)" fill="#181719">
+    <rect width="7" height="7" rx="2"/><rect x="12" width="7" height="7" rx="2"/>
+    <rect y="12" width="7" height="7" rx="2"/><rect x="12" y="12" width="7" height="7" rx="2"/>
+  </g>
+
+  <!-- Trạng thái quét: tách bộ đếm khỏi tiêu đề để không bị cắt -->
+  <rect x="20" y="108" width="372" height="49" rx="17" fill="#FFFFFF"/>
+  <circle cx="41" cy="132" r="8" fill="none" stroke="#FF806E" stroke-width="2"/>
+  <path d="M47 138l5 5" stroke="#FF806E" stroke-width="2" stroke-linecap="round"/>
+  <text x="60" y="137" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="600" fill="#181719">Đang quét máy</text>
+  <text x="374" y="137" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#737077">750 thư mục</text>
+  <rect x="20" y="153" width="372" height="4" rx="2" fill="#E1E1DE"/>
+  <rect x="20" y="153" width="168" height="4" rx="2" fill="url(#accent)"/>
+
+  <!-- Tìm kiếm và lọc -->
+  <rect x="20" y="168" width="372" height="43" rx="22" fill="#FFFFFF"/>
+  <circle cx="41" cy="188" r="6" fill="none" stroke="#737077" stroke-width="1.7"/>
+  <path d="M45 193l4 4" stroke="#737077" stroke-width="1.7" stroke-linecap="round"/>
+  <text x="59" y="193" font-family="Manrope, Arial, sans-serif" font-size="13" fill="#A4A1A6">Tìm game trong thư viện</text>
+  <rect x="20" y="221" width="70" height="31" rx="16" fill="url(#accent)"/>
+  <text x="55" y="241" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF">Tất cả</text>
+  <rect x="98" y="221" width="88" height="31" rx="16" fill="#ECEDEA"/>
+  <text x="142" y="241" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" font-weight="600" fill="#353337">Gần đây</text>
+  <rect x="194" y="221" width="122" height="31" rx="16" fill="#ECEDEA"/>
+  <text x="255" y="241" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" font-weight="600" fill="#353337">Theo hệ máy ▾</text>
+
+  <!-- Một hàng tiếp tục chơi -->
+  <text x="20" y="282" font-family="Manrope, Arial, sans-serif" font-size="18" font-weight="700" fill="#181719">Tiếp tục chơi</text>
+  <text x="392" y="282" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" fill="#737077">GẦN ĐÂY</text>
+  <rect x="20" y="294" width="372" height="96" rx="25" fill="#1E1D1F" filter="url(#shadow)"/>
+  <rect x="31" y="305" width="74" height="74" rx="18" fill="url(#accent)"/>
+  <circle cx="68" cy="342" r="19" fill="#FFFFFF" fill-opacity=".2"/>
+  <path d="M54 342h9m-4-4v8m21-5h.1m5 5h.1" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  <text x="119" y="332" font-family="Manrope, Arial, sans-serif" font-size="14" font-weight="700" fill="#FFFFFF">Tựa game đang chơi</text>
+  <text x="119" y="354" font-family="Manrope, Arial, sans-serif" font-size="11" fill="#C8C5CB">GBA · Chơi gần đây · 24 phút</text>
+  <rect x="119" y="364" width="104" height="4" rx="2" fill="#555257"/>
+  <rect x="119" y="364" width="62" height="4" rx="2" fill="url(#accent)"/>
+  <circle cx="352" cy="342" r="25" fill="url(#accent)"/>
+  <path d="M348 332l13 10-13 10z" fill="#FFFFFF"/>
+
+  <!-- Lưới các game đang có -->
+  <text x="20" y="423" font-family="Manrope, Arial, sans-serif" font-size="18" font-weight="700" fill="#181719">Game trong máy</text>
+  <text x="392" y="423" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="12" font-weight="600" fill="#737077">4 game</text>
+
+  <g filter="url(#shadow)">
+    <rect x="20" y="436" width="180" height="126" rx="20" fill="#FFFFFF"/>
+    <rect x="20" y="436" width="180" height="72" rx="20" fill="url(#art1)"/>
+    <path d="M20 490q34-24 63-2t58-2q29-17 59 4v18H20z" fill="#FFFFFF" fill-opacity=".19"/>
+    <circle cx="149" cy="455" r="12" fill="#FFD979" fill-opacity=".9"/>
+    <text x="32" y="530" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="700" fill="#181719">Tựa game 01</text>
+    <text x="32" y="548" font-family="Manrope, Arial, sans-serif" font-size="10" fill="#737077">GBA · Đã chơi 4 giờ</text>
+  </g>
+  <rect x="32" y="553" width="54" height="3" rx="1.5" fill="#E1E1DE"/>
+
+  <g filter="url(#shadow)">
+    <rect x="212" y="436" width="180" height="126" rx="20" fill="#FFFFFF"/>
+    <rect x="212" y="436" width="180" height="72" rx="20" fill="url(#art2)"/>
+    <path d="M212 485q26-18 55 0t58-1q37-18 67 2v22H212z" fill="#FFFFFF" fill-opacity=".22"/>
+    <path d="M333 448l5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2z" fill="#FFF3D1" fill-opacity=".9"/>
+    <text x="224" y="530" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="700" fill="#181719">Tựa game 02</text>
+    <text x="224" y="548" font-family="Manrope, Arial, sans-serif" font-size="10" fill="#737077">NDS · Chưa chơi</text>
+  </g>
+  <rect x="224" y="553" width="54" height="3" rx="1.5" fill="#E1E1DE"/>
+
+  <g filter="url(#shadow)">
+    <rect x="20" y="574" width="180" height="126" rx="20" fill="#FFFFFF"/>
+    <rect x="20" y="574" width="180" height="72" rx="20" fill="url(#cool)"/>
+    <circle cx="67" cy="602" r="18" fill="#FFFFFF" fill-opacity=".2"/>
+    <path d="M58 603h18m-9-9v18" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <text x="32" y="668" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="700" fill="#181719">Tựa game 03</text>
+    <text x="32" y="686" font-family="Manrope, Arial, sans-serif" font-size="10" fill="#737077">PSP · Đã chơi 1 giờ</text>
+  </g>
+  <rect x="32" y="691" width="54" height="3" rx="1.5" fill="#E1E1DE"/>
+
+  <g filter="url(#shadow)">
+    <rect x="212" y="574" width="180" height="126" rx="20" fill="#FFFFFF"/>
+    <rect x="212" y="574" width="180" height="72" rx="20" fill="#66CFF3"/>
+    <path d="M212 629q31-32 67-4t55-8q30-20 58 4v25H212z" fill="#FFFFFF" fill-opacity=".32"/>
+    <circle cx="349" cy="594" r="9" fill="#FFF5D7"/>
+    <text x="224" y="668" font-family="Manrope, Arial, sans-serif" font-size="13" font-weight="700" fill="#181719">Tựa game 04</text>
+    <text x="224" y="686" font-family="Manrope, Arial, sans-serif" font-size="10" fill="#737077">SNES · Chưa chơi</text>
+  </g>
+  <rect x="224" y="691" width="54" height="3" rx="1.5" fill="#E1E1DE"/>
+
+  <!-- Nhóm game đã dọn tách khỏi lưới chính -->
+  <path d="M20 715h372" stroke="#E1E1DE" stroke-width="1"/>
+  <text x="20" y="741" font-family="Manrope, Arial, sans-serif" font-size="17" font-weight="700" fill="#181719">Đã dọn</text>
+  <text x="392" y="741" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="11" fill="#737077">2 game · save vẫn giữ</text>
+  <rect x="20" y="752" width="180" height="58" rx="17" fill="#F1F2EF"/>
+  <rect x="30" y="762" width="38" height="38" rx="12" fill="#E1E1DE"/>
+  <path d="M39 782a10 10 0 1 1 17-7M56 772v6h-6" fill="none" stroke="#737077" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="76" y="777" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" fill="#353337">Tựa game 05</text>
+  <text x="76" y="794" font-family="Manrope, Arial, sans-serif" font-size="9" fill="#737077">Save vẫn giữ</text>
+  <rect x="148" y="768" width="44" height="27" rx="14" fill="url(#accent)"/>
+  <text x="170" y="786" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="8" font-weight="700" fill="#FFFFFF">Tải lại</text>
+  <rect x="20" y="752" width="180" height="58" rx="17" fill="none" stroke="#E1E1DE"/>
+
+  <rect x="212" y="752" width="180" height="58" rx="17" fill="#F1F2EF"/>
+  <rect x="222" y="762" width="38" height="38" rx="12" fill="#E1E1DE"/>
+  <path d="M231 782a10 10 0 1 1 17-7M248 772v6h-6" fill="none" stroke="#737077" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="268" y="777" font-family="Manrope, Arial, sans-serif" font-size="11" font-weight="700" fill="#353337">Tựa game 06</text>
+  <text x="268" y="794" font-family="Manrope, Arial, sans-serif" font-size="9" fill="#737077">Save vẫn giữ</text>
+  <rect x="340" y="768" width="44" height="27" rx="14" fill="url(#accent)"/>
+  <text x="362" y="786" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="8" font-weight="700" fill="#FFFFFF">Tải lại</text>
+  <rect x="212" y="752" width="180" height="58" rx="17" fill="none" stroke="#E1E1DE"/>
+
+  <!-- Menu nổi theo FloatingDock -->
+  <rect x="31" y="826" width="350" height="66" rx="34" fill="url(#dock)" filter="url(#shadow)"/>
+  <rect x="174" y="831" width="56" height="56" rx="28" fill="url(#accent)"/>
+  <g fill="#EDE9F0" transform="translate(58 847)">
+    <path d="M0 12l12-10 12 10v13H3V12zm7 13v-8h7v8" fill="none" stroke="#EDE9F0" stroke-width="2" stroke-linejoin="round"/>
+  </g>
+  <g fill="#EDE9F0" transform="translate(123 846)">
+    <path d="M4 2h14a4 4 0 0 1 4 4v15H0V6a4 4 0 0 1 4-4zm3 4v9m5-9v9m5-9v9" fill="none" stroke="#EDE9F0" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(190 846)" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linejoin="round">
+    <rect x="1" y="2" width="22" height="20" rx="4"/>
+    <path d="M6 7h12M6 11h12M6 15h8"/>
+  </g>
+  <g transform="translate(255 846)" fill="none" stroke="#EDE9F0" stroke-width="2" stroke-linecap="round">
+    <circle cx="10" cy="10" r="7"/><path d="M15 15l5 5"/>
+  </g>
+  <g transform="translate(321 846)" fill="none" stroke="#EDE9F0" stroke-width="2" stroke-linecap="round">
+    <circle cx="11" cy="11" r="9"/><path d="M8 8a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3h.1"/>
+  </g>
+  <rect x="157" y="904" width="98" height="4" rx="2" fill="#181719" fill-opacity=".72"/>
+</svg>
