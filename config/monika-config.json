@@ -1,13 +1,13 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 44,
+  "configVersion": 49,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
-    "latestVersionCode": 41,
-    "latestVersionName": "0.7.6",
+    "latestVersionCode": 51,
+    "latestVersionName": "0.8.6",
     "minVersionCode": 1,
-    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.6/AowVN-Monika-v0.7.6.apk",
-    "changelog": "Bản thử 0.7.6: sửa lỗi mở game Kirikiri (startup.tjs)"
+    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.6/AowVN-Monika-v0.8.6.apk",
+    "changelog": "Bản thử 0.8.6: xuất/nhập save Java, NDS/GBA, 3DS/PSP/PS1 và sao lưu trước nhập. Sửa ZIP RAM rỗng, chặn RMS hỏng. Save thật/SAF trên điện thoại chưa kiểm."
   },
   "feed": {
     "url": "https://www.aow.vn/feeds/posts/default",
@@ -1314,5 +1314,106 @@
     "hiddenTags": [
       "Nhà Tù AowVN"
     ]
+  },
+  "saveTransfer": {
+    "systems": {
+      "java": {
+        "kind": "rms",
+        "saveDirectory": "data",
+        "stateDirectory": "",
+        "extension": "",
+        "imports": {
+          "rsh": "rms",
+          "rsr": "rms"
+        },
+        "sizes": [],
+        "targetBytes": 0
+      },
+      "nds": {
+        "kind": "raw",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "sav": "raw",
+          "srm": "raw",
+          "dsv": "desmume"
+        },
+        "sizes": [
+          512,
+          8192,
+          32768,
+          65536,
+          131072,
+          262144,
+          524288,
+          1048576,
+          2097152,
+          4194304,
+          8388608
+        ],
+        "targetBytes": 0
+      },
+      "gba": {
+        "kind": "raw",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "sav": "raw",
+          "srm": "raw"
+        },
+        "sizes": [
+          512,
+          8192,
+          32768,
+          65536,
+          131072
+        ],
+        "targetBytes": 0
+      },
+      "3ds": {
+        "kind": "3ds",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "zip": "3ds-tree"
+        },
+        "sizes": [],
+        "targetBytes": 0,
+        "treeDirectory": "Citra",
+        "nativeDirectory": "azahar"
+      },
+      "psp": {
+        "kind": "psp",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "zip": "psp-tree"
+        },
+        "sizes": [],
+        "targetBytes": 0,
+        "treeDirectory": "PSP/SAVEDATA",
+        "nativeDirectory": "azahar"
+      },
+      "ps1": {
+        "kind": "raw",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "mcr": "ps1",
+          "mcd": "ps1",
+          "srm": "ps1",
+          "gme": "ps1"
+        },
+        "sizes": [
+          131072
+        ],
+        "targetBytes": 0
+      }
+    }
   }
 }
