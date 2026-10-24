@@ -29,6 +29,8 @@ import android.content.res.Configuration;
 import android.media.AudioManager;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
+import android.content.Context;
+import android.hardware.input.InputManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -37,7 +39,10 @@ import android.text.InputType;
 import android.text.TextUtils;
 import android.text.method.DigitsKeyListener;
 import android.util.TypedValue;
+import android.os.SystemClock;
+import android.view.InputDevice;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -73,6 +78,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.microedition.lcdui.keyboard.KeyMapper;
+import ru.playsoftware.j2meloader.AowPad;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
@@ -200,6 +207,11 @@ public class MicroActivity extends AppCompatActivity {
 
 	@Override
 	public void onPause() {
+		InputManager im = (InputManager) getSystemService(Context.INPUT_SERVICE);
+		if (im != null) {
+			im.unregisterInputDeviceListener(padListener);
+		}
+		releasePad(0);
 		hideSoftInput();
 		super.onPause();
 	}
@@ -500,8 +512,85 @@ public class MicroActivity extends AppCompatActivity {
 		alertBuilder.create().show();
 	}
 
+	/** Hướng D-pad đang giữ từ hat/cần analog của tay cầm (0 = không). V120. */
+	private int padDirection;
+	/** Nút tay cầm đang giữ (mã Android), để nhả khi rút tay cầm hoặc tạm dừng. */
+	private final java.util.Set<Integer> heldPadKeys = new java.util.HashSet<>();
+	private final InputManager.InputDeviceListener padListener = new InputManager.InputDeviceListener() {
+		@Override
+		public void onInputDeviceAdded(int deviceId) {
+		}
+
+		@Override
+		public void onInputDeviceChanged(int deviceId) {
+		}
+
+		@Override
+		public void onInputDeviceRemoved(int deviceId) {
+			releasePad(deviceId);
+		}
+	};
+
+	/** Nhả hướng và mọi nút tay cầm đang giữ, khỏi kẹt phím khi rút tay cầm hoặc mất tiêu điểm. */
+	private void releasePad(int deviceId) {
+		setPadDirection(0, deviceId);
+		for (Integer keyCode : new java.util.ArrayList<>(heldPadKeys)) {
+			sendPadKey(KeyEvent.ACTION_UP, keyCode, deviceId);
+		}
+		heldPadKeys.clear();
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		InputManager im = (InputManager) getSystemService(Context.INPUT_SERVICE);
+		if (im != null) {
+			im.registerInputDeviceListener(padListener, null);
+		}
+	}
+
+	@Override
+	public boolean dispatchGenericMotionEvent(MotionEvent ev) {
+		if (ev.getAction() == MotionEvent.ACTION_MOVE
+				&& (ev.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
+			setPadDirection(AowPad.direction(
+					ev.getAxisValue(MotionEvent.AXIS_HAT_X), ev.getAxisValue(MotionEvent.AXIS_HAT_Y),
+					ev.getAxisValue(MotionEvent.AXIS_X), ev.getAxisValue(MotionEvent.AXIS_Y)), ev.getDeviceId());
+			return true;
+		}
+		return super.dispatchGenericMotionEvent(ev);
+	}
+
+	private void setPadDirection(int direction, int deviceId) {
+		if (direction == padDirection) {
+			return;
+		}
+		if (padDirection != 0) {
+			sendPadKey(KeyEvent.ACTION_UP, padDirection, deviceId);
+		}
+		padDirection = direction;
+		if (direction != 0) {
+			sendPadKey(KeyEvent.ACTION_DOWN, direction, deviceId);
+		}
+	}
+
+	private void sendPadKey(int action, int keyCode, int deviceId) {
+		long now = SystemClock.uptimeMillis();
+		dispatchKeyEvent(new KeyEvent(now, now, action, keyCode, 0, 0, deviceId, 0, 0, InputDevice.SOURCE_GAMEPAD));
+	}
+
 	@Override
 	public boolean dispatchKeyEvent(KeyEvent event) {
+		// Nút tay cầm: nguồn GAMEPAD, hoặc mã KEYCODE_BUTTON_* dù tay cầm báo nguồn bàn phím (KeyMapper nhận cả hai).
+		boolean pad = (event.getSource() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
+				|| (event.getKeyCode() >= KeyEvent.KEYCODE_BUTTON_A && event.getKeyCode() <= KeyEvent.KEYCODE_BUTTON_MODE);
+		if (pad && event.getKeyCode() != KeyEvent.KEYCODE_MENU) {
+			if (event.getAction() == KeyEvent.ACTION_DOWN) {
+				heldPadKeys.add(event.getKeyCode());
+			} else if (event.getAction() == KeyEvent.ACTION_UP) {
+				heldPadKeys.remove(event.getKeyCode());
+			}
+		}
 		if (event.getKeyCode() == KeyEvent.KEYCODE_MENU)
 			if (current instanceof Canvas && binding.displayableContainer.dispatchKeyEvent(event)) {
 				return true;
