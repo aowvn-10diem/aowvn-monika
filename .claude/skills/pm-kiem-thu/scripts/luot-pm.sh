@@ -7,7 +7,7 @@
 #   COVAN   #339 <link>                      Cố vấn gửi PM (trả lời hoặc CẢNH BÁO): đọc và xử lý
 #   THU     #337 <link>                      DeepSeek báo PM: đọc và trả lời
 #   SEP     <câu>                            chỉ khi chặn cả dự án
-# Không in gì ngoài dòng "YEN" = lượt này không có việc.
+# Không in gì ngoài dòng "YEN" = lượt này không có việc (kể cả khi kết quả y hệt lượt trước, chưa quá 12 giờ).
 # Trạng thái giữa các lượt: $STATE (mặc định ~/.cache/monika-pm/luot.json, không commit).
 set -uo pipefail
 R=aowvn-10diem/aowvn-monika
@@ -70,5 +70,18 @@ for box in "339 COVAN [Cố vấn" "337 THU [DeepSeek"; do
 import json,sys; p,k,v=sys.argv[1:]; s=json.load(open(p)); s[k]=v; json.dump(s,open(p,'w'))
 EOF
 done
+
+# 5. Chống lặp (tiết kiệm token): kết quả y hệt lượt trước và chưa quá 12 giờ → coi như YEN,
+#    vì PM đã xử lý hoặc đang chờ người khác. Đổi bất kỳ dòng nào (sha mới, PR mới) là in lại ngay.
+if [ ${#out[@]} -gt 0 ]; then
+  sig=$(printf '%s\n' "${out[@]}" | sed -E 's/tuoi=[0-9]+h//' | sort | sha1sum | cut -c1-12)
+  if python3 - "$STATE" "$sig" <<'EOF'
+import json,sys,time; p,sig=sys.argv[1:]; s=json.load(open(p)); now=int(time.time())
+same = s.get('lastSig')==sig and now-s.get('lastSigAt',0) < 12*3600
+if not same: s['lastSig']=sig; s['lastSigAt']=now; json.dump(s,open(p,'w'))
+sys.exit(0 if same else 1)
+EOF
+  then out=(); fi
+fi
 
 [ ${#out[@]} -eq 0 ] && echo YEN || printf '%s\n' "${out[@]}"
