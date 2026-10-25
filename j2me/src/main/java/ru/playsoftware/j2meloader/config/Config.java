@@ -108,6 +108,14 @@ public class Config {
 	}
 
 	public static void startApp(Context context, String name, String path) {
+		startApp(context, name, path, 0, 0);
+	}
+
+	/**
+	 * Aow Monika V135: [screenWidth]/[screenHeight] là kích thước đoán từ JAD/manifest/ảnh của game.
+	 * Chỉ ghi vào cấu hình MỚI; game đã có config.json (kể cả sếp đã chỉnh tay) thì giữ nguyên.
+	 */
+	public static void startApp(Context context, String name, String path, int screenWidth, int screenHeight) {
 		int end = path.lastIndexOf(File.separatorChar);
 		int start = path.lastIndexOf(File.separatorChar, end - 1);
 		if (start > 0) {
@@ -116,11 +124,16 @@ public class Config {
 					.append(MIDLET_CONFIG_FILE)
 					.toString();
 			File configFile = new File(configPath);
+			int[] screen = MonikaScreenDefaults.screenForNewConfig(configFile.exists(), screenWidth, screenHeight);
 			if (!configFile.exists()) {
 				// Aow Monika: game mới chưa có cấu hình → ConfigActivity tự tạo cấu hình mặc định rồi chạy luôn
 				// (không hiện màn cài đặt riêng của game). Chỉ hiện khi người dùng chủ động mở cài đặt (openSettings).
 				Intent intent = new Intent(Intent.ACTION_DEFAULT, Uri.parse(path), context, ConfigActivity.class);
 				intent.putExtra(KEY_MIDLET_NAME, name);
+				if (screen != null) {
+					intent.putExtra(MonikaScreenDefaults.EXTRA_SCREEN_WIDTH, screen[0]);
+					intent.putExtra(MonikaScreenDefaults.EXTRA_SCREEN_HEIGHT, screen[1]);
+				}
 				context.startActivity(intent);
 				return;
 			}
