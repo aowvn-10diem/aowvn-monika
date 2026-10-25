@@ -65,12 +65,13 @@ class FilterTest(unittest.TestCase):
         for prefix in ("[Cố vấn → sếp]", "[PM → sếp]"):
             with self.subTest(prefix=prefix):
                 self.assertTrue(bot.should_forward("vudoanbinhminh", prefix + " nội dung", bot.DEFAULT_ALLOWED))
-                self.assertTrue(bot.should_forward("aowvn-10diem", "\n  " + prefix + " nội dung", bot.DEFAULT_ALLOWED))
+                self.assertTrue(bot.should_forward("aowvn-10diem", prefix + "\nnội dung", bot.DEFAULT_ALLOWED))
 
     def test_ignores_other_authors_and_prefixes(self):
         self.assertFalse(bot.should_forward("someone", PREFIX + " nội dung", bot.DEFAULT_ALLOWED))
         self.assertFalse(bot.should_forward("", PREFIX + " nội dung", bot.DEFAULT_ALLOWED))
         self.assertFalse(bot.should_forward("aowvn-10diem", "chào " + PREFIX, bot.DEFAULT_ALLOWED))
+        self.assertFalse(bot.should_forward("aowvn-10diem", "\n  " + PREFIX + " nội dung", bot.DEFAULT_ALLOWED))
         self.assertFalse(bot.should_forward("aowvn-10diem", "[Cố vấn → sếp hộ] nội dung", bot.DEFAULT_ALLOWED))
         self.assertFalse(bot.should_forward("aowvn-10diem", PREFIX + " nội dung", ("nguoi-khac",)))
 

@@ -23,7 +23,7 @@ def allowed_logins(raw):
 def should_forward(author, body, names):
     if not author or author not in names:
         return False
-    return body.lstrip().startswith(PREFIXES)
+    return body.startswith(PREFIXES)
 
 
 def telegram_text(body, url):
