@@ -105,7 +105,11 @@ public class MonikaLaunchActivity extends AppCompatActivity {
 
 	private void run(AppItem app) {
 		if (app == null) { fail("Cài game xong nhưng không tìm thấy game."); return; }
-		Config.startApp(this, app.getTitle(), app.getPathExt());
+		int screenWidth = getIntent().getIntExtra(
+				ru.playsoftware.j2meloader.config.MonikaScreenDefaults.EXTRA_SCREEN_WIDTH, 0);
+		int screenHeight = getIntent().getIntExtra(
+				ru.playsoftware.j2meloader.config.MonikaScreenDefaults.EXTRA_SCREEN_HEIGHT, 0);
+		Config.startApp(this, app.getTitle(), app.getPathExt(), screenWidth, screenHeight);
 		finish();
 		overridePendingTransition(0, 0);
 	}
