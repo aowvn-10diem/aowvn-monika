@@ -1,0 +1,56 @@
+name: Báo sếp qua Telegram (V146)
+
+# Comment GitHub có tiền tố [Cố vấn → sếp] / [PM → sếp] → nhắn Telegram cho sếp.
+# Thân comment là dữ liệu không tin cậy: chỉ vào qua env, đóng JSON trong Python,
+# không ghép vào lệnh shell. Không cần quyền repo nên permissions rỗng.
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    paths:
+      - scripts/telegram-bao-sep.py
+      - scripts/test-telegram-bao-sep.py
+      - .github/workflows/telegram-bao-sep.yml
+
+permissions: {}
+
+concurrency:
+  group: telegram-bao-sep-${{ github.event.comment.id || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Chạy test offline (N04)
+        run: python3 scripts/test-telegram-bao-sep.py
+
+  gui:
+    # Lọc sớm theo tiền tố để không cấp runner cho mọi comment; script vẫn lọc tác giả chính xác.
+    if: >-
+      github.event_name == 'issue_comment' &&
+      (startsWith(github.event.comment.body, '[Cố vấn → sếp]') ||
+      startsWith(github.event.comment.body, '[PM → sếp]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Lọc tác giả/tiền tố rồi gửi Telegram
+        env:
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+          ALLOWED_LOGINS: ${{ vars.TELEGRAM_ALLOWED_LOGINS }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 scripts/telegram-bao-sep.py
