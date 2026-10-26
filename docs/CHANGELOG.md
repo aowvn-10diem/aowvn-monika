@@ -2,6 +2,15 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.7 (Đang chuẩn bị — Bản thử)
+<!-- bien-tap: v0.8.7 -->
+> Bản thử đang chuẩn bị.
+
+- **Mới:** Game Java mới mở tự chọn kích thước màn hình theo game; giữ nguyên thiết lập của game đã chơi. ([c423ebf](https://github.com/aowvn-10diem/aowvn-monika/commit/c423ebfeafca7953554beee2222b0ade5e941d01))
+- **Sửa lỗi:** Khi có cấu hình mới, Thư viện và danh sách lõi tự cập nhật, không cần đóng rồi mở lại ứng dụng. ([4546615](https://github.com/aowvn-10diem/aowvn-monika/commit/4546615b0ee8bb3e6566e3813abe77458894aa5d))
+- Nội bộ: tách các thành phần Thư viện để dễ bảo trì, giữ nguyên cách sử dụng. ([c900740](https://github.com/aowvn-10diem/aowvn-monika/commit/c9007401f0dbf24b8046b0b3d41e161b3e519062))
+- Nội bộ: thêm bot gửi thông báo Telegram cho người phụ trách dự án. ([55943a1](https://github.com/aowvn-10diem/aowvn-monika/commit/55943a171e6428e6b6bc873a7ff3ab0ad3b63f76))
+
 ## v0.8.6 (Đang chuẩn bị — Bản thử)
 
 > Chưa tạo tag hoặc phát hành. Danh sách đối chiếu main `adcbecc`, đã gồm phần save 3DS/PSP/PS1 của #312 theo [PM6292996531](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6292996531). Đây là bản thử để kiểm chuyển save, chưa xác nhận tương thích/chơi tiếp trên điện thoại. Sửa gốc lỗi Azahar dành cho bản sau theo [PM6285561724](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6285561724).
