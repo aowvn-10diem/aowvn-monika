@@ -2,7 +2,16 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
-## v0.8.6 (Bản ổn định)
+## v0.8.7 (Đang chuẩn bị — Bản thử)
+<!-- bien-tap: v0.8.7 -->
+> Bản thử đang chuẩn bị.
+
+- **Mới:** Game Java mới mở tự chọn kích thước màn hình theo game; giữ nguyên thiết lập của game đã chơi. ([c423ebf](https://github.com/aowvn-10diem/aowvn-monika/commit/c423ebfeafca7953554beee2222b0ade5e941d01))
+- **Sửa lỗi:** Khi có cấu hình mới, Thư viện và danh sách lõi tự cập nhật, không cần đóng rồi mở lại ứng dụng. ([4546615](https://github.com/aowvn-10diem/aowvn-monika/commit/4546615b0ee8bb3e6566e3813abe77458894aa5d))
+- Nội bộ: tách các thành phần Thư viện để dễ bảo trì, giữ nguyên cách sử dụng. ([c900740](https://github.com/aowvn-10diem/aowvn-monika/commit/c9007401f0dbf24b8046b0b3d41e161b3e519062))
+- Nội bộ: thêm bot gửi thông báo Telegram cho người phụ trách dự án. ([55943a1](https://github.com/aowvn-10diem/aowvn-monika/commit/55943a171e6428e6b6bc873a7ff3ab0ad3b63f76))
+
+## [v0.8.6](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.6) (Bản ổn định)
 <!-- bien-tap: v0.8.6 -->
 > Phát hành ngày 20/10/2026 (UTC) dạng bản thử; lên bản ổn định ngày 25/10/2026 (UTC).
 
@@ -24,7 +33,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 > **Lưu ý:** Bản này chưa sửa gốc lỗi khởi động 3DS do Azahar; việc đó dành cho bản sau. Nếu chuyển save lỗi hoặc mất tiến trình, dừng thử trên bản save duy nhất và giữ bản dự phòng.
 
-## v0.8.5 (Bản thử)
+## [v0.8.5](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.5) (Bản thử)
 <!-- bien-tap: v0.8.5 -->
 > Phát hành ngày 18/10/2026 (UTC), bản thử nghiệm.
 

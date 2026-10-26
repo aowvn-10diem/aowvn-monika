@@ -113,7 +113,9 @@ fun LibraryScreen(onSettings: () -> Unit) {
 
     val playedTick by AppGraph.prefs.playedTick.collectAsState()
     val infoTick by AppGraph.gameInfo.updated.collectAsState()
-    LaunchedEffect(reloadKey, playedTick, infoTick) {
+    // V132: cấu hình từ xa tăng bản → quét lại danh sách, không cần khởi động lại app.
+    val config by AppGraph.config.config.collectAsState()
+    LaunchedEffect(reloadKey, playedTick, infoTick, config.configVersion) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             val listed = withContext(Dispatchers.IO) { AppGraph.library.list() to AppGraph.library.cachedDocuments }
             documents = listed.second
