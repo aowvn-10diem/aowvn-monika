@@ -16,7 +16,7 @@
 3. **Ủng hộ qua chuyển khoản (VietQR).** Config có thông tin tài khoản nhận tiền. Play hạn chế thanh toán ngoài cho nội dung số. Kế hoạch đề xuất ẩn ở bản Play, chờ sếp quyết. Tài liệu này không ghi số tài khoản.
 4. **Email hoặc kênh liên hệ chính thức** cho Play: [CHƯA KIỂM], chưa có trong repo.
 5. **Ngày hiệu lực** và **thời hạn lưu báo lỗi trên máy chủ**: [chờ sếp].
-6. **Ảnh khung màn hình khi dịch** (đọc ảnh trực tiếp, nhà cung cấp AI do người dùng cấu hình). Đã khai trong chính sách và Data safety. PM tạm khai 27/10: thu thập có, tùy chọn (người dùng bật); chia sẻ không [CHƯA KIỂM theo biểu mẫu Play hiện hành].
+6. **Ảnh khung màn hình khi dịch** (đọc ảnh trực tiếp, nhà cung cấp/endpoint AI do người dùng cấu hình). Đã khai trong chính sách và Data safety. PM tạm khai 27/10: thu thập có, tùy chọn (người dùng bật); chia sẻ không [CHƯA KIỂM theo biểu mẫu Play hiện hành].
 
 ## Đối chiếu mã đã làm (trên `origin/main` da1235dc)
 
@@ -24,7 +24,7 @@
 - **SDK bên thứ ba:** không thấy SDK phân tích, quảng cáo hay báo lỗi trong `gradle/libs.versions.toml` và `app/build.gradle.kts`.
 - **Báo lỗi:** gửi JSON POST tới `crash.endpoint` trong config (Cloudflare Worker của AowVN). Nội dung và bộ lọc xem `app/src/main/java/vn/aow/monika/diag/Diagnostics.kt`. Bộ lọc thay đường dẫn riêng tư, token, khóa bí mật và email.
 - **Đăng nhập:** `account/Account.kt`, dùng Firebase qua aow.vn và đổi token qua `securetoken.googleapis.com`.
-- **Dịch màn hình:** `translate/ScreenTranslator.kt`. Chỉ chạy khi người dùng chọn nhà cung cấp và nhập khóa API. Dữ liệu không qua máy chủ AowVN. Chế độ đọc ảnh trực tiếp gửi JPEG khung màn hình tới nhà cung cấp AI (provider `ai`, API kiểu OpenAI có thể gồm Gemini) khi người dùng bật đọc ảnh trực tiếp (`translate/Translators.kt:74`). Provider `google` (Google Cloud Translation) không dùng đường này.
+- **Dịch màn hình:** `translate/ScreenTranslator.kt`. Chỉ chạy khi người dùng chọn nhà cung cấp và nhập khóa API. Dữ liệu không qua máy chủ AowVN. Chế độ đọc ảnh trực tiếp gửi JPEG khung màn hình tới nhà cung cấp/endpoint AI do người dùng cấu hình (provider `ai`, có thể gồm Gemini) khi người dùng bật đọc ảnh trực tiếp (`translate/Translators.kt:74`). Provider `google` (Google Cloud Translation) không dùng đường này.
 - **Tải cấu hình:** `REMOTE_CONFIG_URL` trỏ tới Cloudflare Worker, không gửi thông tin cá nhân.
 
 ## Bản Play (V150) làm thay đổi gì

@@ -23,7 +23,7 @@ Before sending, the app replaces private file paths, tokens, secret keys, and em
 
 **Google account (optional).** If you sign in with Google through aow.vn, the app stores on the device: a user ID (uid), your name, email, profile photo, and sign-in tokens. Tokens are kept in the app's private storage. [UNVERIFIED: which features need sign-in, and what data goes to Firebase when you use them]
 
-**On-screen translation (optional).** You choose the translation provider and enter that provider's API key yourself. Text recognised on your screen is sent directly to the provider you chose, not through AowVN's server. If you turn on direct image reading (AI vision) and choose an AI provider (an OpenAI-style API such as OpenAI, Gemini or OpenRouter, set up with your own address and key), the current screen frame, as a JPEG image, is sent to that provider to be read and translated. [owner to decide: how this is declared under Play's data rules]
+**On-screen translation (optional).** You choose the translation provider and enter that provider's API key yourself. Text recognised on your screen is sent directly to the provider you chose, not through AowVN's server. If you turn on direct image reading (AI vision) and choose an AI provider or endpoint you configure (which may include Gemini), the current screen frame, as a JPEG image, is sent to that provider to be read and translated. [owner to decide: how this is declared under Play's data rules]
 
 **Configuration download.** The app downloads a configuration file (system list, links, notice settings) from AowVN's server. That request contains no personal information.
 
