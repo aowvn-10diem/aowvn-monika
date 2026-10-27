@@ -2,6 +2,7 @@
 # [A40] Một lượt PM tự động, đọc rẻ: in tối đa ~15 dòng, mỗi dòng bắt đầu bằng nhãn việc cần làm.
 #   GOP     #N <sha>        PR đủ luật gộp (Đạt đúng head + CI bắt buộc xanh, không còn "Cần sửa")
 #   PMXEM   #N               review cuối ghi "Cần PM xem"
+#   CHO     #N <sha7> thieu-Dat <ai>   CI xanh, có Đạt nhưng thiếu người duyệt, head > 24 giờ: nhắc người đó ở #119
 #   TAU     cat|cho|len-on-dinh <chi tiết>   nhịp phát hành 2 ngày
 #   LOI     <chữ ký> x<số> <bản>            chữ ký lỗi mới kể từ lượt trước
 #   COVAN   #339 <link>                      Cố vấn gửi PM (trả lời hoặc CẢNH BÁO): đọc và xử lý
@@ -22,16 +23,25 @@ for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user
   [ "$draft" = "true" ] && continue
   ci=$(gh api "repos/$R/commits/$sha/check-runs?per_page=60" --jq '[.check_runs[]|select(.name|test("^(build|coverage|n04-tests|analyze)"))|.conclusion//"chay"]|unique|join(",")')
   # Kết luận Luna 3 / Luna Ultra trên đúng head (review hoặc comment có "Kết luận").
-  verdicts=$( { gh api "repos/$R/pulls/$p/reviews?per_page=100" --jq ".[]|select(.commit_id==\"$sha\")|[.submitted_at,(.body|gsub(\"\\n\";\" \"))]|@tsv"; \
-               gh api "repos/$R/issues/$p/comments?per_page=100" --jq ".[]|select(.body|test(\"${sha:0:7}\"))|[.created_at,(.body|gsub(\"\\n\";\" \"))]|@tsv"; } \
-             | sort | grep -oE 'Kết luận:?\**:? *(Đạt|Cần sửa|Cần PM xem)' | sed -E 's/.*(Đạt|Cần sửa|Cần PM xem)/\1/')
+  raw=$( { gh api "repos/$R/pulls/$p/reviews?per_page=100" --jq ".[]|select(.commit_id==\"$sha\")|[.submitted_at,(.body|gsub(\"\\n\";\" \"))]|@tsv"; \
+           gh api "repos/$R/issues/$p/comments?per_page=100" --jq ".[]|select(.body|test(\"${sha:0:7}\"))|[.created_at,(.body|gsub(\"\\n\";\" \"))]|@tsv"; } | sort)
+  verdicts=$(echo "$raw" | grep -oE 'Kết luận:?\**:? *(Đạt|Cần sửa|Cần PM xem)' | sed -E 's/.*(Đạt|Cần sửa|Cần PM xem)/\1/')
   last=$(echo "$verdicts" | tail -1)
   files=$(gh api "repos/$R/pulls/$p/files?per_page=100" --jq '.[].filename')
   need=1; echo "$files" | grep -qvE '^(docs/|.*\.md$)' && need=2   # app/CI cần Luna 3 + Luna Ultra
   dat=$(echo "$verdicts" | grep -c '^Đạt$')
   if [ "$last" = "Cần PM xem" ]; then out+=("PMXEM #$p"); continue; fi
   echo "$ci" | grep -qE 'failure|cancelled|chay' && continue
-  [ "$last" = "Đạt" ] && [ "$dat" -ge "$need" ] && out+=("GOP #$p $sha")
+  [ "$last" = "Đạt" ] && [ "$dat" -ge "$need" ] && { out+=("GOP #$p $sha"); continue; }
+  # Kẹt im lặng: CI xanh, có Đạt nhưng chưa đủ người duyệt, head đã quá 24 giờ → nhắc đúng người còn thiếu.
+  if [ "$last" = "Đạt" ] && [ "$dat" -lt "$need" ]; then
+    hage=$(( ( $(date -u +%s) - $(date -u -d "$(gh api "repos/$R/commits/$sha" --jq .commit.committer.date)" +%s) ) / 3600 ))
+    if [ "$hage" -ge 24 ]; then
+      dat_by=$(echo "$raw" | grep -E 'Kết luận:?\**:? *Đạt')
+      miss=""; echo "$dat_by" | grep -q 'Luna 3' || miss="Luna 3"; echo "$dat_by" | grep -q 'Luna Ultra' || miss="${miss:+$miss+}Luna Ultra"
+      out+=("CHO #$p ${sha:0:7} thieu-Dat ${miss// /_} tuoi=${hage}h")
+    fi
+  fi
 done
 
 # 2. Nhịp phát hành: ≥ 44 giờ từ bản gần nhất và main có commit mới → cắt bản.
