@@ -350,3 +350,9 @@ Với các hàng GPL, việc repo source của Monika có public hay private kh�
 
 - GitHub API recursive tree của [`renpy-build@7bfab40c1174f622f644b24669afd5fb167fbb79`](https://github.com/renpy/renpy-build/tree/7bfab40c1174f622f644b24669afd5fb167fbb79) trả `truncated=false`; không có đường dẫn `LICENSE`, `COPYING` hoặc `NOTICE`. README.rst tại commit này mô tả hệ thống build và tải các thành phần bên thứ ba, nhưng không gán giấy phép cho các class RAPT Android.
 - Lịch sử API trong khoảng 12–18/05/2026 trả một commit `7bfab40` (13/05); archive RAPT vẫn có entry thời gian 16/05. Các mốc này không chứng minh archive được tạo từ commit đó, và cây repo không bổ sung license mapping cho các tệp. Giữ **[CHƯA KIỂM]** đối với license chính xác của `org/renpy/android`, hai patch Monika và source revision chính xác; xem §§6.15, 6.21–6.23.
+
+### 6.25 Đối chiếu `main` sau PR #370 (27/10/2026)
+
+- GitHub Branch API xác nhận `main` tại `cec454e9d63bb68536a0f42e445fd54005bee79e`. Compare từ main `da1235dcc17bab9a70443ced2999bda8e0e3ed17` tới `cec454e` có 2 commit, 3 đường dẫn: `app/src/test/java/vn/aow/monika/ConfigRepositoryValidationTest.kt`, `app/src/test/java/vn/aow/monika/ConfigTest.kt`, `config/monika-config.json`. Bằng chứng: [compare](https://github.com/aowvn-10diem/aowvn-monika/compare/da1235dcc17bab9a70443ced2999bda8e0e3ed17...cec454e9d63bb68536a0f42e445fd54005bee79e).
+- Patch config ghi `configVersion` 52 → 53 và bỏ tiền tố “Bản thử” khỏi `app.changelog`; các trường liên kết engine/core không đổi. Compare không có `settings.gradle.kts`, `gradle/libs.versions.toml`, `LICENSE`, `COPYING`, `NOTICE`, mã engine hay module build. Do đó bằng chứng này không thay đổi mapping giấy phép trước đó.
+- Đây chỉ là đối chiếu các đường dẫn đổi kể từ `da1235`, không phải kiểm kê giấy phép toàn repo lần nữa. Những kết luận chưa có bằng chứng upstream hoặc liên kết binary–source ở §§6.1, 6.2, 6.4 và 6.24 tiếp tục **[CHƯA KIỂM]**.
