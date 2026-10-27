@@ -10,7 +10,7 @@
 | Nhật ký và chẩn đoán lỗi (nhật ký kỹ thuật, vệt thao tác, trạng thái máy) | Có | Không | Tự động (mặc định bật), tắt được | Đã lọc đường dẫn riêng tư, token, khóa, email |
 | Tên game đang chạy khi lỗi | Có | Không | Tự động, cùng báo lỗi | Chỉ khi lỗi xảy ra trong lúc chơi |
 | Mô tả và ảnh do người dùng gửi khi báo lỗi | Có | Không | Tùy chọn (người dùng chủ động gửi) | Chỉ gửi khi người dùng bấm gửi |
-| Ảnh khung màn hình khi dịch (chỉ khi bật đọc ảnh trực tiếp và chọn nhà cung cấp không phải Google) | Có, khi bật | Có, tới nhà cung cấp người dùng chọn [CHƯA KIỂM] | Tùy chọn (người dùng bật) | [chờ sếp: cách phân loại theo biểu mẫu Play] |
+| Ảnh khung màn hình khi dịch (chỉ khi bật đọc ảnh trực tiếp và chọn nhà cung cấp không phải Google) | Có, tùy chọn (người dùng bật) | Không. Người dùng chủ động gửi tới nhà cung cấp họ chọn, không qua máy chủ AowVN [CHƯA KIỂM theo biểu mẫu Play hiện hành] | Tùy chọn (người dùng bật) | PM tạm khai 27/10, chưa đối chiếu biểu mẫu |
 | Email, tên, ảnh đại diện, mã người dùng (đăng nhập Google) | Có, nếu đăng nhập | [CHƯA KIỂM] | Tùy chọn | Chờ sếp quyết (xem README) |
 | Vị trí, danh bạ, ảnh và video cá nhân, âm thanh | Không | Không | — | Ứng dụng không xin các quyền này |
 | Thông tin thanh toán | Không | Không | — | Ủng hộ chuyển khoản ngoài ứng dụng; chờ sếp quyết ẩn ở bản Play |
@@ -28,7 +28,7 @@ Phần dịch màn hình: dữ liệu chữ được gửi tới nhà cung cấp
 | Diagnostics and logs (technical logs, action trail, device state) | Yes | No | Automatic (on by default); can be turned off | Private paths, tokens, keys, and emails are removed first |
 | Name of the game running when the error occurred | Yes | No | Automatic, with error reports | Only if the error happened during play |
 | Description and screenshot a user sends with a report | Yes | No | Optional (user sends it) | Sent only when the user presses send |
-| Screen frame image sent for translation (only with direct image reading on and a non-Google provider) | Yes, when turned on | Yes, to the provider the user chose [UNVERIFIED] | Optional (user turns it on) | [owner to decide: how to classify under Play forms] |
+| Screen frame image sent for translation (only with direct image reading on and a non-Google provider) | Yes, when turned on | No. The user sends it to the provider they chose, not through AowVN's server [UNVERIFIED under the current Play form] | Optional (user turns it on) | PM's provisional entry, 27/10; not yet checked against the Play form |
 | Email, name, profile photo, user ID (Google sign-in) | Yes, if signed in | [UNVERIFIED] | Optional | Owner to decide (see README) |
 | Location, contacts, photos and videos, audio | No | No | — | The app does not request these |
 | Financial information | No | No | — | Donations are by bank transfer outside the app; owner to decide whether to hide them in the Play build |
