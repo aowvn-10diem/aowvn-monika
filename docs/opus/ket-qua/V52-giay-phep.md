@@ -362,3 +362,31 @@ Với các hàng GPL, việc repo source của Monika có public hay private kh�
 - [Config tại main `cec454e`](https://github.com/aowvn-10diem/aowvn-monika/blob/cec454e9d63bb68536a0f42e445fd54005bee79e/config/monika-config.json) đặt `cores.desmume.url` là `https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip`; không khai báo `cores.desmume.artifacts`. Đã tải ABI `arm64-v8a` trực tiếp từ URL đó lúc khoảng 04:57 UTC; HTTP `Last-Modified` là 24/10/2026 06:38:02 GMT. ZIP có 847.738 byte, SHA-256 `390c11ffb5308dd2f03366dc758f837b223a2a087298f07ac38e8a9aee47b383`, chứa đúng một file `desmume_libretro_android.so` (3.363.168 byte; SHA-256 `d4c4147f6cec697011815b456ed458f34aa0b711864f1c533234cb42230612e2`).
 - `strings` trên DSO in `git 95b4d79`. GitHub API phân giải marker này trong repo `libretro/desmume` thành commit [`95b4d798731caa809125b6c3c11d17cc332ff6ef`](https://github.com/libretro/desmume/commit/95b4d798731caa809125b6c3c11d17cc332ff6ef). Tại commit đó, upstream [`license.txt`](https://github.com/libretro/desmume/blob/95b4d798731caa809125b6c3c11d17cc332ff6ef/license.txt#L1-L9) và [`desmume/COPYING`](https://github.com/libretro/desmume/blob/95b4d798731caa809125b6c3c11d17cc332ff6ef/desmume/COPYING#L1-L9) đều là GNU GPL version 2; metadata core tại snapshot libretro-super cũng ghi GPLv2 (§6.5).
 - Bằng chứng marker nối artifact đã tải với revision hiển thị trong binary, nhưng không chứng minh build tái lập. Khi phát object code, GPLv2 §3 yêu cầu chuyển Corresponding Source hoặc dùng một phương thức phân phối được nêu trong giấy phép; chuyển repo sang private không bỏ nghĩa vụ cung cấp source cho người nhận. URL cấu hình vẫn là `latest`, nên hash/revision của lần tải sau và 18 core còn lại vẫn **[CHƯA KIỂM]** cho artifact cụ thể.
+
+### 6.27 Fingerprint 19 URL libretro `latest` (ABI ARM64, 27/10/2026)
+
+- Đã tải URL `cores.<id>.url` trong [config main `cec454e`](https://github.com/aowvn-10diem/aowvn-monika/blob/cec454e9d63bb68536a0f42e445fd54005bee79e/config/monika-config.json), thay `{abi}` bằng `arm64-v8a`, cho 19 core không có mapping `artifacts`. Mỗi ZIP có đúng một file `.so`; cột thời gian là HTTP `Last-Modified`, SHA-256 được tính trên ZIP tải về lúc khoảng 04:58 UTC. Các URL đích và kết quả:
+
+| Core | Last-Modified (GMT) | SHA-256 ZIP |
+|---|---|---|
+| `desmume` | 24/10/2026 06:38:02 | `390c11ffb5308dd2f03366dc758f837b223a2a087298f07ac38e8a9aee47b383` |
+| `melonds` | 24/10/2026 07:51:36 | `afe800d32c64a437c0c37e808a640e09d89ec20c3f1a6a4316ad2acb3d704924` |
+| `pcsx_rearmed` | 25/10/2026 06:44:30 | `7cfa223ee4245ebcc9e8bb9f653748bc8636a3352dccda10a481b6a43db0f77f` |
+| `ppsspp` | 25/10/2026 18:28:36 | `5b7fe8434415529269ac434dfe05986e3d43f1b81f47d3b0f5fcc6fc0c571681` |
+| `easyrpg` | 26/10/2026 07:00:18 | `2352686f03a40867fe1a9f6588497c9c81742da1cf44c900f1cdedb302620dc1` |
+| `snes9x` | 25/10/2026 06:09:22 | `09818b4215be46b27f99e84c2bc0eb37711e4b2de40d42e751f32219a2ff29c3` |
+| `nestopia` | 24/10/2026 07:04:46 | `be281a245cd663cf62049832eeba1ce9d53baea419eab7aa59fcfbde3e6dce9d` |
+| `genesis_plus_gx` | 24/10/2026 07:24:28 | `af3ea8b66dd0822d53bb878955d187d48c97652397f9525a966db2c73a1f31f8` |
+| `mednafen_pce_fast` | 24/10/2026 07:41:42 | `79187ea6aef46f3674f2e90a9f020b1384cf4e5155a28d40682c4be8164c357a` |
+| `mupen64plus_next_gles3` | 24/10/2026 07:57:42 | `95eb2d46a59fdf85a3c76139aef511f38aed0a87738bd0d2be7403d10f9633d2` |
+| `parallel_n64` | 23/10/2026 01:59:26 | `a1cbbf94a7559e4cd1cbb81cf51e2cf8eb4033b0a29d5cec445d3c0878ea2540` |
+| `flycast` | 25/10/2026 06:30:22 | `fe3df16e2555bc4b700d9f32d000dcc993bd7f116a8c2838871714bf16f38183` |
+| `handy` | 24/10/2026 06:44:50 | `fef5cd00a9e073760283e91091a7ec1604b5e86c3d9615f522ca8fcfcc1a9912` |
+| `stella2014` | 24/10/2026 07:24:12 | `12c82a7b53db014904f23bd68f7b740055331f1368066c4e721ca0354f16bb1a` |
+| `prosystem` | 24/10/2026 07:25:34 | `a8c7a58573562e4524d030d1aa747d739cb6c5852778b07f1e8f797ff38518ef` |
+| `mednafen_wswan` | 24/10/2026 07:39:18 | `f921ffda901235af12ea368845e952e53f5ac7224be418b823480d6df227a259` |
+| `mednafen_ngp` | 24/10/2026 07:40:10 | `1c81401d309bb382673a27b6f01a2d58bd2b42a43adee2320ebf52ba4a815be4` |
+| `citra` | 26/10/2026 07:26:32 | `e8af44f19f62b69264c22aa5198215ce93eaea01af0d344346d0ea91e48e1dc8` |
+| `melondsds` | 26/10/2026 06:09:32 | `80be6b41d1bb83d6c5ab0328065c38e7624982ba53663506ef7ef2e0b2974cb0` |
+
+- Quét chuỗi ASCII trong 19 DSO bằng `strings`/biểu thức tìm `git <7–40 ký tự hex>` và `commit|revision|rev` kèm hash chỉ tìm thấy marker `git 95b4d79` ở `desmume` (§6.26). Kết quả không chứng minh 18 binary còn lại không có dấu nhận dạng theo định dạng khác. Giữ `[CHƯA KIỂM]` cho revision/source/license gắn với 18 binary đó; URL `latest` vẫn có thể đổi sau lần tải này.
