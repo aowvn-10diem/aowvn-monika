@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-27T17:00:00Z",
+ "updatedAt": "2026-10-27T17:15:00Z",
  "mainSha": "9897563",
  "app": "v0.8.3 bản thử · ổn định chờ lượt cài thật",
  "nextCheck": "2026-10-14T05:08:50Z",
@@ -1117,28 +1117,28 @@
    "title": "Bot Telegram: in mã HTTP + description khi lỗi",
    "owner": "Sol 2",
    "status": "cho",
-   "note": "Giao 26/10 00:16 ([PM → Sol 2] 6405388591). Chưa có PR [CHƯA KIỂM phiên Sol 2]."
+   "note": "Giao 26/10 00:16 ([PM → Sol 2] 6405388591). Chưa có PR [CHƯA KIỂM phiên Sol 2]. Giao lại đúng tiền tố [PM → Sol 2] 27/10 17:15 UTC (comment 6448420051)."
   },
   {
    "code": "V146b",
    "title": "Telegram sếp → đội qua repo nội bộ",
    "owner": "Sol 2",
    "status": "cho",
-   "note": "Giao 25/10 17:10 (6400621189). Repo aowvn-monika-noibo còn trống 27/10."
+   "note": "Giao 25/10 17:10 (6400621189). Repo aowvn-monika-noibo còn trống 27/10. Giao lại đúng tiền tố [PM → Sol 2] 27/10 17:15 UTC (comment 6448420051)."
   },
   {
    "code": "V150",
    "title": "Tách bản Play (flavor play)",
    "owner": "Sol 2",
    "status": "cho",
-   "note": "Giao 26/10 11:19 trong tin [PM] chung, KHÔNG có tiền tố [PM → Sol 2] nên Sol 2 chưa nhận; giao lại 27/10."
+   "note": "Giao 26/10 11:19 trong tin [PM] chung, KHÔNG có tiền tố [PM → Sol 2] nên Sol 2 chưa nhận. Giao lại đúng tiền tố [PM → Sol 2] 27/10 17:15 UTC (comment 6448420051)."
   },
   {
    "code": "V145",
    "title": "Rà APK không còn bí mật",
    "owner": "Sol 2",
    "status": "cho",
-   "note": "Giao 20/10 dạng '@Sol 2:' và 26/10 trong tin [PM] chung, đều không có tiền tố [PM → Sol 2]; giao lại 27/10."
+   "note": "Giao 20/10 dạng '@Sol 2:' và 26/10 trong tin [PM] chung, đều không có tiền tố [PM → Sol 2]. Giao lại đúng tiền tố [PM → Sol 2] 27/10 17:15 UTC (comment 6448420051)."
   }
  ],
  "gates": [
