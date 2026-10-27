@@ -36,7 +36,7 @@ jobs:
     env:
       EMSDK_HOME: /opt/emsdk
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Lấy mã nguồn OnscripterYuri
         run: |
@@ -230,7 +230,7 @@ jobs:
     env:
       EKA_REF: ${{ inputs.eka2l1_ref }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Lấy EKA2L1 đúng ref và submodule
         run: |
           git clone --filter=blob:none --no-checkout https://github.com/EKA2L1/EKA2L1.git src
