@@ -10,6 +10,7 @@
 | Nhật ký và chẩn đoán lỗi (nhật ký kỹ thuật, vệt thao tác, trạng thái máy) | Có | Không | Tự động (mặc định bật), tắt được | Đã lọc đường dẫn riêng tư, token, khóa, email |
 | Tên game đang chạy khi lỗi | Có | Không | Tự động, cùng báo lỗi | Chỉ khi lỗi xảy ra trong lúc chơi |
 | Mô tả và ảnh do người dùng gửi khi báo lỗi | Có | Không | Tùy chọn (người dùng chủ động gửi) | Chỉ gửi khi người dùng bấm gửi |
+| Ảnh khung màn hình khi dịch (chỉ khi bật đọc ảnh trực tiếp và chọn nhà cung cấp không phải Google) | Có, khi bật | Có, tới nhà cung cấp người dùng chọn [CHƯA KIỂM] | Tùy chọn (người dùng bật) | [chờ sếp: cách phân loại theo biểu mẫu Play] |
 | Email, tên, ảnh đại diện, mã người dùng (đăng nhập Google) | Có, nếu đăng nhập | [CHƯA KIỂM] | Tùy chọn | Chờ sếp quyết (xem README) |
 | Vị trí, danh bạ, ảnh và video cá nhân, âm thanh | Không | Không | — | Ứng dụng không xin các quyền này |
 | Thông tin thanh toán | Không | Không | — | Ủng hộ chuyển khoản ngoài ứng dụng; chờ sếp quyết ẩn ở bản Play |
@@ -17,7 +18,7 @@
 
 Ghi chú về mã hóa và xóa: dữ liệu gửi đi qua HTTPS [CHƯA KIỂM: xác nhận toàn bộ endpoint đều HTTPS]. Người dùng có thể yêu cầu xóa báo lỗi [chờ sếp: kênh và thời hạn].
 
-Phần dịch màn hình: dữ liệu chữ được gửi tới nhà cung cấp người dùng tự chọn, không qua máy chủ AowVN. Khai theo cách Play yêu cầu về dữ liệu đi qua bên thứ ba do người dùng khởi tạo. [CHƯA KIỂM: cách khai đúng]
+Phần dịch màn hình: dữ liệu chữ được gửi tới nhà cung cấp người dùng tự chọn, không qua máy chủ AowVN. Khi bật đọc ảnh trực tiếp và chọn nhà cung cấp không phải Google, ảnh khung màn hình (JPEG) cũng được gửi tới nhà cung cấp đó; xem dòng riêng ở bảng trên. Khai theo cách Play yêu cầu về dữ liệu đi qua bên thứ ba do người dùng khởi tạo. [CHƯA KIỂM: cách khai đúng]
 
 ## B. Data collected and shared (English)
 
@@ -27,6 +28,7 @@ Phần dịch màn hình: dữ liệu chữ được gửi tới nhà cung cấp
 | Diagnostics and logs (technical logs, action trail, device state) | Yes | No | Automatic (on by default); can be turned off | Private paths, tokens, keys, and emails are removed first |
 | Name of the game running when the error occurred | Yes | No | Automatic, with error reports | Only if the error happened during play |
 | Description and screenshot a user sends with a report | Yes | No | Optional (user sends it) | Sent only when the user presses send |
+| Screen frame image sent for translation (only with direct image reading on and a non-Google provider) | Yes, when turned on | Yes, to the provider the user chose [UNVERIFIED] | Optional (user turns it on) | [owner to decide: how to classify under Play forms] |
 | Email, name, profile photo, user ID (Google sign-in) | Yes, if signed in | [UNVERIFIED] | Optional | Owner to decide (see README) |
 | Location, contacts, photos and videos, audio | No | No | — | The app does not request these |
 | Financial information | No | No | — | Donations are by bank transfer outside the app; owner to decide whether to hide them in the Play build |
@@ -34,4 +36,4 @@ Phần dịch màn hình: dữ liệu chữ được gửi tới nhà cung cấp
 
 Encryption and deletion: data is sent over HTTPS [UNVERIFIED: confirm every endpoint]. Users can request deletion of error reports [owner to decide: channel and retention].
 
-On-screen translation: recognised text goes to the provider the user chose, not through AowVN's server. Declare it the way Play requires for user-initiated third-party sharing. [UNVERIFIED: correct declaration]
+On-screen translation: recognised text goes to the provider the user chose, not through AowVN's server. With direct image reading on and a non-Google provider, the screen frame (JPEG) also goes to that provider; see the table above. Declare it the way Play requires for user-initiated third-party sharing. [UNVERIFIED: correct declaration]

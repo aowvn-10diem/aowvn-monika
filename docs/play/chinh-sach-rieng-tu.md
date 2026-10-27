@@ -23,7 +23,7 @@ Trước khi gửi, ứng dụng thay đường dẫn riêng tư, token, khóa b
 
 **Tài khoản Google (tùy chọn).** Nếu bạn đăng nhập bằng Google qua trang aow.vn, ứng dụng lưu trên máy: mã người dùng (uid), tên, email, ảnh đại diện và token đăng nhập. Token nằm trong vùng lưu riêng của ứng dụng. [CHƯA KIỂM: tính năng nào cần đăng nhập, và dữ liệu nào được gửi tới Firebase khi dùng tính năng đó]
 
-**Dịch chữ trên màn hình (tùy chọn).** Bạn tự chọn nhà cung cấp dịch và nhập khóa API của họ. Chữ nhận diện được trên màn hình được gửi trực tiếp tới nhà cung cấp bạn chọn, không đi qua máy chủ AowVN.
+**Dịch chữ trên màn hình (tùy chọn).** Bạn tự chọn nhà cung cấp dịch và nhập khóa API của họ. Chữ nhận diện được trên màn hình được gửi trực tiếp tới nhà cung cấp bạn chọn, không đi qua máy chủ AowVN. Nếu bạn bật đọc ảnh trực tiếp (AI đọc ảnh) và chọn nhà cung cấp khác Google, ảnh khung màn hình hiện tại (định dạng JPEG) được gửi tới nhà cung cấp đó để đọc và dịch. [chờ sếp: cách khai theo biểu mẫu Play]
 
 **Tải cấu hình.** Ứng dụng tải tệp cấu hình (danh sách hệ máy, liên kết, thông báo) từ máy chủ AowVN. Yêu cầu này không chứa thông tin cá nhân.
 
