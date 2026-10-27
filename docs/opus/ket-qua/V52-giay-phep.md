@@ -389,4 +389,4 @@ Với các hàng GPL, việc repo source của Monika có public hay private kh�
 | `citra` | 26/10/2026 07:26:32 | `e8af44f19f62b69264c22aa5198215ce93eaea01af0d344346d0ea91e48e1dc8` |
 | `melondsds` | 26/10/2026 06:09:32 | `80be6b41d1bb83d6c5ab0328065c38e7624982ba53663506ef7ef2e0b2974cb0` |
 
-- Quét chuỗi ASCII trong 19 DSO bằng `strings`/biểu thức tìm `git <7–40 ký tự hex>` và `commit|revision|rev` kèm hash chỉ tìm thấy marker `git 95b4d79` ở `desmume` (§6.26). Kết quả không chứng minh 18 binary còn lại không có dấu nhận dạng theo định dạng khác. Giữ `[CHƯA KIỂM]` cho revision/source/license gắn với 18 binary đó; URL `latest` vẫn có thể đổi sau lần tải này.
+- Quét bytes của 19 DSO bằng biểu thức `(?i)\bgit\s+([0-9a-f]{7,40})\b|\b(?:commit|revision|rev)[ :=]+([0-9a-f]{7,40})\b` chỉ tìm thấy marker `git 95b4d79` ở `desmume` (§6.26). Kết quả không chứng minh 18 binary còn lại không có dấu nhận dạng theo định dạng khác. Giữ `[CHƯA KIỂM]` cho revision/source/license gắn với 18 binary đó; URL `latest` vẫn có thể đổi sau lần tải này.
