@@ -1,13 +1,13 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 52,
+  "configVersion": 53,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 52,
     "latestVersionName": "0.8.7",
     "minVersionCode": 1,
     "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.7/AowVN-Monika-v0.8.7.apk",
-    "changelog": "Bản thử: game Java mới mở tự chọn kích thước màn hình, Thư viện tự làm mới khi có cập nhật."
+    "changelog": "Game Java mới mở tự chọn kích thước màn hình, Thư viện tự làm mới khi có cập nhật."
   },
   "feed": {
     "url": "https://www.aow.vn/feeds/posts/default",
