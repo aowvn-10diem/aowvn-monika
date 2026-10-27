@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-10-18T11:09:45Z",
+ "updatedAt": "2026-10-27T17:00:00Z",
  "mainSha": "9897563",
  "app": "v0.8.3 bản thử · ổn định chờ lượt cài thật",
  "nextCheck": "2026-10-14T05:08:50Z",
@@ -1097,6 +1097,48 @@
    "owner": "Luna Ultra",
    "status": "cho",
    "note": ""
+  },
+  {
+   "code": "V118",
+   "title": "3DS sập (vá System.load trước createLogFile)",
+   "owner": "Sol 2",
+   "status": "xong",
+   "note": "#282 gộp 18/10 04:48 UTC, Luna 3 + Luna Ultra Đạt head 3aaa890, run 39085864461 xanh."
+  },
+  {
+   "code": "V123",
+   "title": "CI tải NDK: thử lại có giới hạn, xác minh bản cài",
+   "owner": "Sol 2",
+   "status": "xong",
+   "note": "#243 gộp 18/10 06:22 UTC."
+  },
+  {
+   "code": "V146-fix",
+   "title": "Bot Telegram: in mã HTTP + description khi lỗi",
+   "owner": "Sol 2",
+   "status": "cho",
+   "note": "Giao 26/10 00:16 ([PM → Sol 2] 6405388591). Chưa có PR [CHƯA KIỂM phiên Sol 2]."
+  },
+  {
+   "code": "V146b",
+   "title": "Telegram sếp → đội qua repo nội bộ",
+   "owner": "Sol 2",
+   "status": "cho",
+   "note": "Giao 25/10 17:10 (6400621189). Repo aowvn-monika-noibo còn trống 27/10."
+  },
+  {
+   "code": "V150",
+   "title": "Tách bản Play (flavor play)",
+   "owner": "Sol 2",
+   "status": "cho",
+   "note": "Giao 26/10 11:19 trong tin [PM] chung, KHÔNG có tiền tố [PM → Sol 2] nên Sol 2 chưa nhận; giao lại 27/10."
+  },
+  {
+   "code": "V145",
+   "title": "Rà APK không còn bí mật",
+   "owner": "Sol 2",
+   "status": "cho",
+   "note": "Giao 20/10 dạng '@Sol 2:' và 26/10 trong tin [PM] chung, đều không có tiền tố [PM → Sol 2]; giao lại 27/10."
   }
  ],
  "gates": [
@@ -2491,12 +2533,38 @@
    "kind": "dev",
    "status": "dang",
    "role": "App, CI, config, script, chẩn đoán lỗi. Quay lại sớm 07/10.",
-   "now": "Ưu tiên 0: V64 sửa bộ nhớ resolver Kirikiri (chặn RC). Sau đó V56 Test Lab, V60.",
+   "now": "Config 53 (#370 gộp 27/10), #369 crash desmume; sau đó Azahar 0.8.8, V152, V153, V155.",
    "match": [
     "sol"
    ],
-   "lastSeen": "2026-10-08T05:00:00Z",
-   "channel": "Thư tra-loi-sol-*"
+   "lastSeen": "2026-10-27T02:43:42Z",
+   "channel": "Issue #119, tiền tố [Sol → PM], nhánh sol/*"
+  },
+  {
+   "id": "sol-high",
+   "name": "Sol High",
+   "kind": "dev",
+   "status": "cho",
+   "role": "Phiên Sol riêng (effort cao).",
+   "now": "Không có việc đang mở. Tin cuối [Sol High → PM] ở #119 ngày 13/10.",
+   "match": [
+    "sol high"
+   ],
+   "lastSeen": "2026-10-13T03:47:47Z",
+   "channel": "Issue #119, tiền tố [Sol High → PM]"
+  },
+  {
+   "id": "sol-2",
+   "name": "Sol 2",
+   "kind": "dev",
+   "status": "cho",
+   "role": "Đội ChatGPT, trước đây nhận vai Sol High; PM phụ khi hạn mức Claude chạm 90%.",
+   "now": "Việc cuối có bằng chứng: #282 V118 (gộp 18/10 04:48) và #243 V123 (gộp 18/10 06:22). Đang chờ: V146-fix và V146b (giao đúng tiền tố 25–26/10, chưa phản hồi); V150 và V145 (giao 26/10 sai tiền tố, Sol 2 chưa nhận). Sau 18/10 không có comment [Sol 2 → PM] ở #119, không có nhánh sol2/* mới, repo noibo còn trống.",
+   "match": [
+    "sol 2"
+   ],
+   "lastSeen": "2026-10-18T01:16:14Z",
+   "channel": "Issue #119, đọc tin có [PM → Sol 2] hoặc [PM → đội]; báo bằng [Sol 2 → PM]; nhánh sol2/*"
   },
   {
    "id": "luna",

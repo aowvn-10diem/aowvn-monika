@@ -774,10 +774,25 @@ h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: u
     var h = Math.round(m / 60); if (h < 48) return { txt: h + " giờ trước", h: h };
     return { txt: Math.round(h / 24) + " ngày trước", h: h };
   }
+  // Mỗi tên trong owner (tách theo " · ", ","; bỏ phần ngoặc) thuộc thành viên có khóa DÀI NHẤT khớp đầu tên,
+  // để "Sol 2", "Sol High", "Luna Ultra", "Haiku-2" không bị tính nhầm cho "Sol", "Luna", "Haiku" (sếp chốt 27/10).
+  function keysOf(m) { return arr(m.match).map(function (k) { return String(k).toLowerCase(); }); }
+  function ownerOf(token, s) {
+    var best = null, len = 0;
+    arr(s.team).forEach(function (mm) {
+      keysOf(mm).forEach(function (k) {
+        var hit = token === k || (token.indexOf(k) === 0 && /[\s(]/.test(token.charAt(k.length)));
+        if (hit && k.length > len) { best = mm.id; len = k.length; }
+      });
+    });
+    return best;
+  }
   function memTasks(m, s) {
-    var keys = arr(m.match).map(function (k) { return String(k).toLowerCase(); });
-    if (!keys.length) return [];
-    return arr(s.tasks).filter(function (t) { var o = String(t.owner || "").toLowerCase(); return keys.some(function (k) { return o.indexOf(k) >= 0; }); });
+    if (!keysOf(m).length) return [];
+    return arr(s.tasks).filter(function (t) {
+      var toks = String(t.owner || "").toLowerCase().replace(/\([^)]*\)/g, "").split(/\s*[·,]\s*/);
+      return toks.some(function (tok) { tok = tok.trim(); return tok && ownerOf(tok, s) === m.id; });
+    });
   }
   function zoneOf(m) {
     if (m.zone) return m.zone;
