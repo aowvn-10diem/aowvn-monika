@@ -68,12 +68,22 @@ EOF
   fi
 fi
 
-# 4. Hộp thư gửi PM: Cố vấn (#339, COVAN) và DeepSeek (#337, THU), comment mới kể từ lượt trước.
-for box in "339 COVAN [Cố vấn" "337 THU [DeepSeek"; do
+# 4. Hộp thư gửi PM, comment mới kể từ lượt trước (regex jq trên đầu comment):
+#    Cố vấn #339 (COVAN), DeepSeek #337 (THU), Nova #90, Haiku #94, đội ChatGPT #119 (HOP).
+#    #119: mọi tin [Sol… → PM] (Sol, Sol 2, Sol High); tin Luna chỉ khi có "Cần PM". Sếp duyệt 27/10.
+for box in "339 COVAN ^\\\\[Cố vấn" "337 THU ^\\\\[DeepSeek" "90 HOP ^\\\\[Nova" "94 HOP ^\\\\[Haiku" \
+           "119 HOP ^\\\\[Sol[^\\\\]]*→ *PM|^\\\\[Luna[^\\\\]]*→ *PM\\\\].*Cần PM"; do
   read -r n lab pat <<<"$box"
-  since=$(python3 -c "import json;print(json.load(open('$STATE')).get('mail$n','2026-10-24T00:00:00Z'))")
-  rows=$(gh api "repos/$R/issues/$n/comments?since=$since&per_page=50" \
-    --jq ".[]|select(.created_at>\"$since\")|select(.body|startswith(\"$pat\"))|\"\(.created_at) \(.html_url)\"")
+  # Hộp thư chưa có mốc thì bắt đầu từ 6 giờ trước (tránh dội lại tin cũ).
+  since=$(python3 -c "import json,time;print(json.load(open('$STATE')).get('mail$n',time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(time.time()-6*3600))))")
+  # Phân trang tay (gh --paginate hỏng qua proxy): lặp page tới khi trang < 100.
+  rows=""; for pg in 1 2 3 4 5; do
+    page=$(gh api "repos/$R/issues/$n/comments?since=$since&per_page=100&page=$pg" \
+      --jq ".[]|select(.created_at>\"$since\")|select(.body|gsub(\"\\n\";\" \")|test(\"$pat\"))|\"\(.created_at) \(.html_url)\"")
+    rows+="${page:+$page$'\n'}"
+    [ "$(gh api "repos/$R/issues/$n/comments?since=$since&per_page=100&page=$pg" --jq length)" -lt 100 ] && break
+  done
+  rows=$(printf '%s' "$rows" | sed '/^$/d')
   [ -z "$rows" ] && continue
   while IFS= read -r l; do out+=("$lab #$n ${l#* }"); done <<<"$rows"
   python3 - "$STATE" "mail$n" "$(echo "$rows" | tail -1 | cut -d' ' -f1)" <<'EOF'
