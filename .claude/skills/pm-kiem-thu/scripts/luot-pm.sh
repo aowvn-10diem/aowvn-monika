@@ -50,7 +50,9 @@ age_h=$(( ( $(date -u +%s) - $(date -u -d "$tagdate" +%s) ) / 3600 ))
 ahead=$(gh api "repos/$R/compare/$tag...main" --jq '.ahead_by' 2>/dev/null || echo 0)
 dl=$(gh api "repos/$R/releases/tags/$tag" --jq '[.assets[]|select(.name|endswith(".apk"))|.download_count]|add // 0')
 pre=$(gh api "repos/$R/releases/tags/$tag" --jq '.prerelease')
-if [ "$ahead" -gt 0 ] && [ "$age_h" -ge 44 ]; then out+=("TAU cat $tag+${ahead}commit tuoi=${age_h}h")
+# Chỉ cắt khi có đổi mã chạy trong APK (không tính test, docs, workflow, config: config đi qua Cloudflare).
+appchg=$(gh api "repos/$R/compare/$tag...main" --jq '[.files[]?.filename|select(test("^(app/src/main/|app/build\\.gradle|j2me/|dexlib/|gradle/libs)"))]|length' 2>/dev/null || echo 0)
+if [ "$ahead" -gt 0 ] && [ "$age_h" -ge 44 ] && [ "${appchg:-0}" -gt 0 ]; then out+=("TAU cat $tag+${ahead}commit app=${appchg}tep tuoi=${age_h}h")
 elif [ "$pre" = "true" ] && [ "$age_h" -ge 24 ] && [ "$dl" -ge 3 ]; then out+=("TAU len-on-dinh $tag tai=$dl tuoi=${age_h}h (kiểm LOI trước)")
 fi
 
