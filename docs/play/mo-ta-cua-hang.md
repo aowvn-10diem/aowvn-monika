@@ -12,8 +12,8 @@
 
 > Aow Monika là ứng dụng của cộng đồng aow.vn, gom mọi thứ vào một chỗ:
 >
-> • Đọc bài viết từ aow.vn, lọc theo nhãn, và nhận thông báo khi có bài mới.
 > • Thư viện: chọn file game bạn có, Monika nhận diện hệ máy và mở bằng trình chạy phù hợp.
+> • Đọc bài viết từ aow.vn, lọc theo nhãn, và nhận thông báo khi có bài mới.
 > • Chơi game trên các hệ máy được hỗ trợ [chờ sếp: danh sách hệ máy của bản Play].
 > • Chuyển save giữa máy và file ZIP. Monika sao lưu save cũ trước khi ghi đè.
 > • Bàn phím ảo và điều khiển cho game Java.
@@ -35,8 +35,8 @@
 
 > Aow Monika is an app from the aow.vn community, bringing everything into one place:
 >
-> • Read posts from aow.vn, filter by tag, and get notified when new posts arrive.
 > • Library: pick game files you own, and Monika recognises the system and opens them with a suitable player.
+> • Read posts from aow.vn, filter by tag, and get notified when new posts arrive.
 > • Play games on supported systems [owner to decide: the Play build's system list].
 > • Transfer saves between your device and ZIP files. Monika backs up the old save before overwriting.
 > • On-screen keyboard and controls for Java games.

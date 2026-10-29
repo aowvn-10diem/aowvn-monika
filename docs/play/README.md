@@ -13,7 +13,7 @@
 
 1. **Đăng nhập Google (tùy chọn).** App lưu uid, tên, email, ảnh đại diện và token trên máy. Điều này **không khớp** với giả định "không thu thông tin cá nhân" trong [A67]. Cần chọn: giữ đăng nhập trong bản Play và khai đầy đủ, hay ẩn đăng nhập trong bản Play. PM đề xuất 27/10: ẩn ở bản Play, chờ sếp chốt.
 2. **Tự gửi báo lỗi đang bật mặc định.** `Prefs.autoSendCrash` mặc định `true`, và config `crash.autoSend` cũng `true`. Phải khai thu thập dữ liệu thiết bị và nhật ký. Cần chọn: giữ mặc định bật (có thông báo rõ), hay tắt mặc định trong bản Play.
-3. **Ủng hộ qua chuyển khoản (VietQR).** Config có thông tin tài khoản nhận tiền. Play hạn chế thanh toán ngoài cho nội dung số. Kế hoạch đề xuất ẩn ở bản Play, chờ sếp quyết. Tài liệu này không ghi số tài khoản.
+3. **Ủng hộ qua chuyển khoản (VietQR).** Config có thông tin tài khoản nhận tiền. Sếp chốt [A68] 29/10: bản Play bỏ VietQR và mọi link ủng hộ, chỉ ghi chữ kêu gọi ủng hộ trên aow.vn, không gắn link. Tài liệu này không ghi số tài khoản.
 4. **Email hoặc kênh liên hệ chính thức** cho Play: [CHƯA KIỂM], chưa có trong repo.
 5. **Ngày hiệu lực** và **thời hạn lưu báo lỗi trên máy chủ**: [chờ sếp].
 6. **Ảnh khung màn hình khi dịch** (đọc ảnh trực tiếp, nhà cung cấp/endpoint AI do người dùng cấu hình). Đã khai trong chính sách và Data safety. PM tạm khai 27/10: thu thập có, tùy chọn (người dùng bật); chia sẻ không [CHƯA KIỂM theo biểu mẫu Play hiện hành].
