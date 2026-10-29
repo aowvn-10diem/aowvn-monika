@@ -21,6 +21,7 @@ out=()
 # 1. PR: kết luận mới nhất trên đúng head + CI bắt buộc.
 for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user.login|test("dependabot")|not)|.number'); do
   read -r sha draft < <(gh api "repos/$R/pulls/$p" --jq '"\(.head.sha) \(.draft)"')
+  [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || continue   # API lỗi/hạn mức: bỏ qua, không bao giờ in GOP thiếu sha
   ci=$(gh api "repos/$R/commits/$sha/check-runs?per_page=60" --jq '[.check_runs[]|select(.name|test("^(build|coverage|n04-tests|analyze)"))|.conclusion//"chay"]|unique|join(",")')
   # Kết luận Luna 3 / Luna Ultra trên đúng head (review hoặc comment có "Kết luận").
   raw=$( { gh api "repos/$R/pulls/$p/reviews?per_page=100" --jq ".[]|select(.commit_id==\"$sha\")|[.submitted_at,(.body|gsub(\"\\n\";\" \"))]|@tsv"; \
