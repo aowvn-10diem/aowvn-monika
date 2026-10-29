@@ -2,34 +2,47 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
-## v0.8.6 (Đang chuẩn bị — Bản thử)
+## v0.8.7 (Đang chuẩn bị — Bản thử)
+<!-- bien-tap: v0.8.7 -->
+> Bản thử đang chuẩn bị.
 
-> Chưa tạo tag hoặc phát hành. Danh sách đối chiếu main `adcbecc`, đã gồm phần save 3DS/PSP/PS1 của #312 theo [PM6292996531](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6292996531). Đây là bản thử để kiểm chuyển save, chưa xác nhận tương thích/chơi tiếp trên điện thoại. Sửa gốc lỗi Azahar dành cho bản sau theo [PM6285561724](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6285561724).
+- **Mới:** Game Java mới mở tự chọn kích thước màn hình theo game; giữ nguyên thiết lập của game đã chơi. ([c423ebf](https://github.com/aowvn-10diem/aowvn-monika/commit/c423ebfeafca7953554beee2222b0ade5e941d01))
+- **Sửa lỗi:** Khi có cấu hình mới, Thư viện và danh sách lõi tự cập nhật, không cần đóng rồi mở lại ứng dụng. ([4546615](https://github.com/aowvn-10diem/aowvn-monika/commit/4546615b0ee8bb3e6566e3813abe77458894aa5d))
+- Nội bộ: tách các thành phần Thư viện để dễ bảo trì, giữ nguyên cách sử dụng. ([c900740](https://github.com/aowvn-10diem/aowvn-monika/commit/c9007401f0dbf24b8046b0b3d41e161b3e519062))
+- Nội bộ: thêm bot gửi thông báo Telegram cho người phụ trách dự án. ([55943a1](https://github.com/aowvn-10diem/aowvn-monika/commit/55943a171e6428e6b6bc873a7ff3ab0ad3b63f76))
 
-- **Mới:** Game Java có nút **Xuất save / Nhập save** trong Thư viện, chuyển kho RMS đúng bộ game qua trình chọn tệp Android; không xuất game JAR. Chưa kiểm save thật JL-Mod/J2ME Loader. ([f08d6e8](https://github.com/aowvn-10diem/aowvn-monika/commit/f08d6e8eecd983bfddad5503503aca14ab17c6ce))
-- **Mới:** Nintendo DS và GBA có thể xuất ZIP save của Monika hoặc nhập save thô SAV/SRM; DS nhận DSV DeSmuME có footer hợp lệ, kể cả khi đổi đuôi. ZIP Monika đối chiếu mã game/lõi; save thô vẫn cần người chơi chọn đúng game và bản vùng. Không xác nhận mọi save từ trình giả lập khác đều tương thích. ([f08d6e8](https://github.com/aowvn-10diem/aowvn-monika/commit/f08d6e8eecd983bfddad5503503aca14ab17c6ce))
-- **An toàn:** Trước khi nhập, Monika sao lưu save cũ và có nút **Lưu bản sao cũ**; hủy trước xác nhận không ghi save. Không chuyển save khi game đang mở; state rỗng được bỏ khỏi ZIP, state còn lại cần đúng lõi/phiên bản. Save thật, SAF và khôi phục trên máy chưa được kiểm. ([f08d6e8](https://github.com/aowvn-10diem/aowvn-monika/commit/f08d6e8eecd983bfddad5503503aca14ab17c6ce))
-- **Mới:** Chuyển save 3DS theo title ID của đúng game trong cây Citra/Azahar; nhận bản sao đã giải mã có đủ định danh, chặn cây mơ hồ hoặc container mã hóa. PSP nhận ZIP SAVEDATA có DISC_ID/PARAM.SFO khớp game, giữ dữ liệu nguyên byte; không tự giải mã hay đổi khóa. Chưa kiểm save thật hoặc chơi tiếp trên điện thoại. ([adcbecc](https://github.com/aowvn-10diem/aowvn-monika/commit/adcbeccaa4b433c479b6ef9230cf9ba84a69b0c3))
-- **Mới:** PS1 nhận thẻ nhớ thứ nhất MCR hợp lệ và GME có header đúng; không nhập thẻ thiếu, thẻ dùng chung hoặc thẻ thứ hai. Sao lưu trước khi thay dữ liệu. ([adcbecc](https://github.com/aowvn-10diem/aowvn-monika/commit/adcbeccaa4b433c479b6ef9230cf9ba84a69b0c3))
-- **Sửa lỗi:** Bỏ RAM/state placeholder 0 byte khỏi ZIP xuất và backup để có thể nhập lại. Kho RMS Java cũ rỗng/hỏng bị chặn trước tạo backup hoặc ghi save, giữ nguyên dữ liệu; record payload 0 byte có header hợp lệ vẫn được giữ và khôi phục. ([adcbecc](https://github.com/aowvn-10diem/aowvn-monika/commit/adcbeccaa4b433c479b6ef9230cf9ba84a69b0c3))
+## [v0.8.6](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.6) (Bản ổn định)
+<!-- bien-tap: v0.8.6 -->
+> Phát hành ngày 20/10/2026 (UTC) dạng bản thử; lên bản ổn định ngày 25/10/2026 (UTC).
 
-### Cách thử chuyển save
+- **Mới:** Trong Thư viện, game Java có nút **Xuất save** và **Nhập save** để lưu và nạp lại tiến trình qua trình chọn tệp Android. Không xuất file game JAR. ([f08d6e8](https://github.com/aowvn-10diem/aowvn-monika/commit/f08d6e8eecd983bfddad5503503aca14ab17c6ce))
+- **Mới:** Game Nintendo DS và GBA có thể xuất save thành file ZIP của Monika, hoặc nhập save thô dạng SAV/SRM. Save DS từ DeSmuME nhận được kể cả khi đã đổi đuôi file. Nhập save thô thì chọn đúng game và đúng bản vùng. Không phải mọi save từ trình giả lập khác đều dùng được. ([f08d6e8](https://github.com/aowvn-10diem/aowvn-monika/commit/f08d6e8eecd983bfddad5503503aca14ab17c6ce))
+- **An toàn:** Trước khi nhập, Monika tự sao lưu save cũ. Nút **Lưu bản sao cũ** giữ thêm một file dự phòng. Bấm Hủy trước khi xác nhận thì save không bị ghi đè. Không xuất hay nhập save khi game đang mở. ([f08d6e8](https://github.com/aowvn-10diem/aowvn-monika/commit/f08d6e8eecd983bfddad5503503aca14ab17c6ce))
+- **Mới:** Game 3DS được chuyển save đúng cho từng game trên Citra/Azahar. Game PSP nhận file ZIP save của đúng game và giữ nguyên dữ liệu, Monika không tự đổi hay giải mã. Monika từ chối khi không xác định được game hoặc save bị mã hóa. ([adcbecc](https://github.com/aowvn-10diem/aowvn-monika/commit/adcbeccaa4b433c479b6ef9230cf9ba84a69b0c3))
+- **Mới:** PS1 nhập được thẻ nhớ (file MCR hoặc GME) đúng của game. Thẻ thiếu dữ liệu, thẻ dùng chung hoặc thẻ nhớ thứ hai sẽ bị từ chối. Monika sao lưu trước khi thay dữ liệu. ([adcbecc](https://github.com/aowvn-10diem/aowvn-monika/commit/adcbeccaa4b433c479b6ef9230cf9ba84a69b0c3))
+- **Sửa lỗi:** File save xuất ra giờ nhập lại được; không còn file trống làm hỏng ZIP. Save Java hỏng hoặc rỗng bị chặn trước khi sao lưu hoặc ghi đè, dữ liệu cũ được giữ nguyên. ([adcbecc](https://github.com/aowvn-10diem/aowvn-monika/commit/adcbeccaa4b433c479b6ef9230cf9ba84a69b0c3))
+- Nội bộ: ZIP xuất bỏ RAM/state 0 byte; kho RMS Java rỗng hoặc hỏng bị chặn trước backup. Record 0 byte có header hợp lệ vẫn được giữ.
+- Nội bộ: phạm vi save thật đã kiểm (game nào, SAF, khôi phục, điện thoại) chưa ghi chi tiết trong repo; cần PM xác nhận trước khi ghi "đã kiểm".
+- Nội bộ: ghi kết quả thử save (máy, lõi, định dạng, bước tái hiện) vào `docs/TEST-THUC-TE.md`; chưa có bằng chứng chơi tiếp và khôi phục trên máy thật thì không ghi đã ổn định.
 
-1. Giữ một bản save tốt bên ngoài Monika trước khi thử. Thoát màn chơi, vào **Thư viện → menu game Java/NDS/GBA/3DS/PSP/PS1 → Xuất save**, chọn nơi giữ ZIP bằng trình chọn tệp Android. Với save cây 3DS/PSP, cần kho của đúng game đã được tạo.
-2. Chọn **Nhập save**, chọn ZIP vừa xuất hoặc định dạng ngoài phù hợp. Kiểm đúng tên game/hệ/cảnh báo rồi chọn **Sao lưu và nhập**; chọn **Hủy** nếu chưa chắc. Với Java, cần đủ kho RMS đúng suite; không chọn JAR. Với 3DS/PSP, kiểm title ID/DISC_ID và cấu trúc bản sao; không chọn ROM hoặc toàn kho nhiều game. Với PS1, dùng thẻ MCR/GME hợp lệ của đúng game. State ngoài không thuộc ZIP Monika chưa được hỗ trợ.
-3. Chọn **Lưu bản sao cũ** để giữ ZIP dự phòng, rồi mở game và kiểm tiến trình đã lưu. Nếu cần, thoát game và nhập ZIP dự phòng để thử khôi phục. Ghi kết quả máy/lõi/định dạng và bước tái hiện vào `docs/TEST-THUC-TE.md`; chưa có bằng chứng chơi tiếp và khôi phục trên máy thật thì không ghi đã ổn định.
+### Cách chuyển save
 
-> **Cần kiểm trên máy thật:** Save thật, SAF, chơi tiếp và khôi phục trên điện thoại còn chưa kiểm; CI dùng fixture tổng hợp. Nếu chuyển save lỗi hoặc mất tiến trình, dừng thử trên bản save duy nhất và giữ bản dự phòng. Chưa đủ bằng chứng máy thật để lên stable; phần save không xác nhận đã sửa lỗi khởi động Azahar.
+1. Trước khi thử, giữ một bản save tốt bên ngoài Monika. Thoát game, vào **Thư viện → menu game (Java, NDS, GBA, 3DS, PSP hoặc PS1) → Xuất save**, rồi chọn nơi lưu file ZIP bằng trình chọn tệp Android. Với 3DS và PSP, game phải đã có thư mục save trên máy.
+2. Chọn **Nhập save**, rồi chọn file ZIP vừa xuất hoặc file save phù hợp. Kiểm tên game, hệ máy và cảnh báo trên màn hình; nếu chưa chắc, chọn **Hủy**. Với game Java, không chọn file JAR. Với 3DS và PSP, không chọn ROM hay cả kho nhiều game. Với PS1, dùng đúng file thẻ nhớ của game. Save trạng thái (state) lấy từ nơi khác chưa được hỗ trợ.
+3. Chọn **Lưu bản sao cũ** để giữ file dự phòng, rồi mở game kiểm tra tiến trình đã lưu. Nếu có lỗi, thoát game và nhập lại file dự phòng.
 
-## v0.8.5 (Đang chuẩn bị — Bản thử)
+> **Lưu ý:** Bản này chưa sửa gốc lỗi khởi động 3DS do Azahar; việc đó dành cho bản sau. Nếu chuyển save lỗi hoặc mất tiến trình, dừng thử trên bản save duy nhất và giữ bản dự phòng.
 
-> Chưa phát hành, chưa tạo tag. Bản vá ưu tiên 3DS theo main `8a96ff3`; chưa xác nhận đã chơi được trên máy thật. V125 (#281) và vệt JNI V118-crumb chưa gộp, không thuộc bản này.
+## [v0.8.5](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.5) (Bản thử)
+<!-- bien-tap: v0.8.5 -->
+> Phát hành ngày 18/10/2026 (UTC), bản thử nghiệm.
 
-- **Sửa lỗi:** Chỉnh cách khởi động game 3DS để không nạp sớm thư viện đồ họa tùy biến, kể cả khi bật trình điều khiển riêng. ([bb22c29](https://github.com/aowvn-10diem/aowvn-monika/commit/bb22c29d14928577d9c62ed949ea2f261b321da6), [#282](https://github.com/aowvn-10diem/aowvn-monika/pull/282))
+- **Sửa lỗi:** Game 3DS có thể bị văng khi mới khởi động. Bản này đổi cách nạp đồ họa lúc khởi động, kể cả khi bật tùy chọn đồ họa riêng. ([bb22c29](https://github.com/aowvn-10diem/aowvn-monika/commit/bb22c29d14928577d9c62ed949ea2f261b321da6), [#282](https://github.com/aowvn-10diem/aowvn-monika/pull/282))
+- Nội bộ: chưa xác nhận đã chơi được trên máy thật; V125 (#281) và vệt JNI V118-crumb chưa gộp, không thuộc bản này.
 
 ## [v0.8.4](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.4) (Bản thử)
-
-> Phát hành ngày 17/10/2026 (UTC), bản thử nghiệm. Danh sách theo main `bd9ac022`; không xác nhận kết quả chơi trên máy thật.
+<!-- bien-tap: v0.8.4 -->
+> Phát hành ngày 17/10/2026 (UTC), bản thử nghiệm.
 
 - **Sửa lỗi:** Game không bị dọn tự động theo tuổi hoặc giới hạn bộ nhớ; chỉ dọn game khi chọn Dọn ngay trong Cài đặt → Bộ nhớ. ([84ab5b4](https://github.com/aowvn-10diem/aowvn-monika/commit/84ab5b4369187d88f84a6b5ef7848a1335f78db9))
 - **Sửa lỗi:** Khi mở game 3DS với thiết lập mặc định, ứng dụng bỏ bước nạp đồ họa tùy biến có thể gây văng. ([bd9ac02](https://github.com/aowvn-10diem/aowvn-monika/commit/bd9ac022377d078fc2046ead5dcafb075eb2e723))
