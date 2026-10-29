@@ -25,4 +25,4 @@ Tham gia cộng đồng và đọc bài mới tại [aow.vn](https://www.aow.vn)
 
 GPL-3.0 (do dùng [LibretroDroid](https://github.com/Swordfish90/LibretroDroid), GPL-3.0). Khi phát hành APK phải công khai mã nguồn.
 
-Mã nguồn tương ứng với mỗi APK có trong repo này.
+Mã nguồn app ở repo này; nguồn từng lõi/engine xem docs/opus/ket-qua/V52-giay-phep.md.
