@@ -1,7 +1,7 @@
 # Mọi phiên bản thư viện nằm ở đây. Nâng cấp = sửa 1 dòng.
 [versions]
 kover = "0.9.11"
-agp = "8.7.3"
+agp = "9.4.1"
 kotlin = "2.0.21"
 coreKtx = "1.15.0"
 splashscreen = "1.0.1"
