@@ -7,7 +7,6 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.Choreographer
 import android.view.Gravity
-import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.SurfaceHolder
@@ -36,6 +35,7 @@ import org.citra.citra_emu.NativeLibrary
 import vn.aow.monika.AppGraph
 import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.runner.CoreOptions
+import vn.aow.monika.runner.GamepadInput
 import vn.aow.monika.runner.InGameOverlay
 import vn.aow.monika.runner.InGameState
 import vn.aow.monika.runner.PadLayout
@@ -330,10 +330,13 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
     override fun onResume() {
         super.onResume()
         clock?.resume()
+        inputDevices.registerInputDeviceListener(deviceListener, null)
         if (started && paused && surfaceOk) resumeEmu()
     }
 
     override fun onPause() {
+        inputDevices.unregisterInputDeviceListener(deviceListener)
+        releasePad()
         clock?.pause()
         if (started) { paused = true; runCatching { NativeLibrary.pauseEmulation() } }
         super.onPause()
@@ -355,26 +358,16 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
     // ---- Nhập liệu ----
 
     private fun key(action: Int, keyCode: Int): Boolean {
-        val btn = when (keyCode) {
-            KeyEvent.KEYCODE_BUTTON_A -> NativeLibrary.ButtonType.BUTTON_B // theo VỊ TRÍ: nút dưới = B của 3DS
-            KeyEvent.KEYCODE_BUTTON_B -> NativeLibrary.ButtonType.BUTTON_A
-            KeyEvent.KEYCODE_BUTTON_X -> NativeLibrary.ButtonType.BUTTON_Y
-            KeyEvent.KEYCODE_BUTTON_Y -> NativeLibrary.ButtonType.BUTTON_X
-            KeyEvent.KEYCODE_BUTTON_L1 -> NativeLibrary.ButtonType.TRIGGER_L
-            KeyEvent.KEYCODE_BUTTON_R1 -> NativeLibrary.ButtonType.TRIGGER_R
-            KeyEvent.KEYCODE_BUTTON_L2 -> NativeLibrary.ButtonType.BUTTON_ZL
-            KeyEvent.KEYCODE_BUTTON_R2 -> NativeLibrary.ButtonType.BUTTON_ZR
-            KeyEvent.KEYCODE_BUTTON_START -> NativeLibrary.ButtonType.BUTTON_START
-            KeyEvent.KEYCODE_BUTTON_SELECT -> NativeLibrary.ButtonType.BUTTON_SELECT
-            KeyEvent.KEYCODE_BUTTON_MODE -> NativeLibrary.ButtonType.BUTTON_HOME
-            KeyEvent.KEYCODE_DPAD_UP -> NativeLibrary.ButtonType.DPAD_UP
-            KeyEvent.KEYCODE_DPAD_DOWN -> NativeLibrary.ButtonType.DPAD_DOWN
-            KeyEvent.KEYCODE_DPAD_LEFT -> NativeLibrary.ButtonType.DPAD_LEFT
-            KeyEvent.KEYCODE_DPAD_RIGHT -> NativeLibrary.ButtonType.DPAD_RIGHT
-            else -> return false
-        }
+        val btn = AzaharPadMap.button(keyCode)
+        if (btn < 0) return false
         if (!started) return true
-        val state = if (action == KeyEvent.ACTION_DOWN) NativeLibrary.ButtonState.PRESSED else NativeLibrary.ButtonState.RELEASED
+        return press(btn, action == KeyEvent.ACTION_DOWN)
+    }
+
+    private fun press(btn: Int, down: Boolean): Boolean {
+        if (!started) return true
+        if (down) heldButtons += btn else heldButtons -= btn
+        val state = if (down) NativeLibrary.ButtonState.PRESSED else NativeLibrary.ButtonState.RELEASED
         return runCatching { NativeLibrary.onGamePadEvent(NativeLibrary.TOUCHSCREEN_DEVICE, btn, state) }.getOrDefault(false)
     }
 
@@ -394,20 +387,41 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         }
     }
 
+    // Tay cầm thật (V120): nút, hat, cần analog, cò. Tay cầm báo nguồn nào cũng nhận; BACK để hệ thống xử lý.
+    private val padAxes = GamepadInput.Tracker()
+    private val heldButtons = HashSet<Int>()
+    private val inputDevices by lazy { getSystemService(android.hardware.input.InputManager::class.java) }
+    private val deviceListener = object : android.hardware.input.InputManager.InputDeviceListener {
+        override fun onInputDeviceAdded(deviceId: Int) = Unit
+        override fun onInputDeviceChanged(deviceId: Int) = Unit
+        override fun onInputDeviceRemoved(deviceId: Int) = releasePad() // rút tay cầm đang giữ nút/cần: nhả hết, khỏi kẹt phím
+    }
+
+    /** Đưa trục về giữa và nhả mọi nút đang giữ (rút tay cầm, tạm dừng). */
+    private fun releasePad() {
+        sendPad(padAxes.reset())
+        heldButtons.toList().forEach { press(it, false) }
+        heldButtons.clear()
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        val fromPad = event.source and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD ||
-            event.source and InputDevice.SOURCE_DPAD == InputDevice.SOURCE_DPAD
-        if (fromPad && event.keyCode != KeyEvent.KEYCODE_BACK && key(event.action, event.keyCode)) return true
+        if (GamepadInput.isPadKey(event.source, event.keyCode) && key(event.action, event.keyCode)) return true
         return super.dispatchKeyEvent(event)
     }
 
-    override fun onGenericMotionEvent(e: MotionEvent): Boolean {
-        if (e.source and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK && e.action == MotionEvent.ACTION_MOVE) {
-            stick(NativeLibrary.ButtonType.STICK_LEFT, e.getAxisValue(MotionEvent.AXIS_X), e.getAxisValue(MotionEvent.AXIS_Y))
-            stick(NativeLibrary.ButtonType.STICK_C, e.getAxisValue(MotionEvent.AXIS_Z), e.getAxisValue(MotionEvent.AXIS_RZ))
+    override fun dispatchGenericMotionEvent(e: MotionEvent): Boolean {
+        if (e.action == MotionEvent.ACTION_MOVE && GamepadInput.isPadMotion(e.source)) {
+            sendPad(padAxes.update(GamepadInput.axesOf(e)))
             return true
         }
-        return super.onGenericMotionEvent(e)
+        return super.dispatchGenericMotionEvent(e)
+    }
+
+    private fun sendPad(changes: List<GamepadInput.Change>) {
+        for (c in changes) for (o in AzaharPadMap.out(c)) when (o) {
+            is AzaharPadMap.Out.Press -> press(o.button, o.down)
+            is AzaharPadMap.Out.Stick -> stick(o.id, o.x, o.y)
+        }
     }
 
     // ---- Lưu / tải trạng thái: ô 0 = Tự lưu (quick save), 1–3 = ô của người chơi ----
