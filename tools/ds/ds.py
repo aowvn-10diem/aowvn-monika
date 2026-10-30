@@ -5,6 +5,7 @@ Chỉ dùng thư viện chuẩn. Key đọc từ biến môi trường (xem ds-c
 Lệnh: run | batch | usage | mcp   (chi tiết: tools/ds/README.md)
 """
 import argparse
+import fnmatch
 import json
 import os
 import sys
@@ -27,6 +28,26 @@ class ApiError(Exception):
     def __init__(self, code, body):
         super().__init__(f"HTTP {code}: {body}")
         self.code = code
+
+
+class AccessError(Exception):
+    pass
+
+
+REPO = os.path.realpath(os.path.join(HERE, "..", ".."))
+
+
+def check_readable(path):
+    """Chặn file nhạy cảm và đường dẫn ngoài thư mục cho phép trước khi gửi nội dung cho bên thứ ba."""
+    real = os.path.realpath(path)
+    roots = [os.path.realpath(os.path.join(REPO, r)) for r in CFG["allowedRoots"]]
+    roots += [os.path.realpath(r) for r in os.environ.get("DS_EXTRA_ROOTS", "").split(os.pathsep) if r]
+    if not any(real == r or real.startswith(r + os.sep) for r in roots):
+        raise AccessError(f"{path}: nằm ngoài thư mục cho phép (đặt DS_EXTRA_ROOTS nếu cần thêm thư mục tạm)")
+    # kiểm cả tên gốc lẫn tên sau khi theo liên kết, để symlink không lách được
+    names = {os.path.basename(path).lower(), os.path.basename(real).lower()}
+    if ".git" in real.split(os.sep) or any(fnmatch.fnmatch(n, g.lower()) for n in names for g in CFG["blockedGlobs"]):
+        raise AccessError(f"{path}: file nhạy cảm, không gửi ra ngoài")
 
 
 def api_key():
@@ -122,6 +143,7 @@ def post(body, key):
 
 
 def read_text(path):
+    check_readable(path)
     with open(path, encoding="utf-8", errors="replace") as f:
         return f.read()
 
@@ -277,7 +299,7 @@ def cmd_mcp(_args):
                 p = msg["params"]
                 try:
                     resp["result"] = {"content": [{"type": "text", "text": call_tool(budget, p["name"], p.get("arguments", {}))}]}
-                except (ApiError, BudgetError, OSError) as e:
+                except (ApiError, BudgetError, AccessError, OSError) as e:
                     resp["result"] = {"content": [{"type": "text", "text": f"lỗi: {e}"}], "isError": True}
             else:
                 resp["error"] = {"code": -32601, "message": f"không hỗ trợ {method}"}
@@ -308,7 +330,7 @@ def main():
     args = ap.parse_args()
     try:
         args.fn(args)
-    except (ApiError, BudgetError, OSError) as e:
+    except (ApiError, BudgetError, AccessError, OSError) as e:
         sys.exit(f"lỗi: {e}")
 
 

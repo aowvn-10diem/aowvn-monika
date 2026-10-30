@@ -5,6 +5,9 @@ Cổng gọi API, chỉ dùng thư viện chuẩn Python. Cấu hình ở `ds-co
 ## Key
 Đặt biến môi trường `TOKENIZE_API_KEY` (hoặc `TOKENIZE_KEY_FILE` trỏ tới file chứa key). **Không bao giờ commit key**, không in ra log.
 
+## File được phép gửi
+Mọi file đưa vào `-s`, `-i` hoặc `files` phải nằm trong repo và không khớp `blockedGlobs` (`*.jks`, `*.keystore`, `*.p12`, `*.pem`, `.env*`, `local.properties`, `keystore.properties`, `google-services.json`, ...; xem `ds-config.json`). Thư mục `.git` và symlink trỏ tới file bị chặn cũng bị từ chối. Cần dùng thư mục tạm ngoài repo thì đặt `DS_EXTRA_ROOTS=/đường/dẫn`. Kiểm: `python3 -m unittest discover -s tools/ds -p test_ds.py`.
+
 ## Phân luồng
 | `tier` | Model | Dùng cho |
 |---|---|---|

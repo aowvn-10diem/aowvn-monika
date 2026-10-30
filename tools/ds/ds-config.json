@@ -13,6 +13,11 @@
   "margin": 0.85,
   "ledger": "~/.cache/ds/ledger.jsonl",
   "planEnds": "2026-11-06",
+  "allowedRoots": ["."],
+  "blockedGlobs": [
+    "*.jks", "*.keystore", "*.p12", "*.pfx", "*.pem", "*.key", ".env", ".env.*",
+    "local.properties", "keystore.properties", "google-services.json", "id_rsa*", "*.mobileprovision"
+  ],
   "windows": [
     { "name": "5h", "seconds": 18000, "tokens": 12800000, "requests": 400 },
     { "name": "24h", "seconds": 86400, "tokens": 25600000, "requests": 1200 },
