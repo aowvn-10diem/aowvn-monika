@@ -1,0 +1,21 @@
+{
+  "endpoint": "https://tokenize.vn/v1/messages",
+  "keyEnv": "TOKENIZE_API_KEY",
+  "keyFileEnv": "TOKENIZE_KEY_FILE",
+  "routes": {
+    "simple": "deepseek-v4.1-flash",
+    "hard": "deepseek-v4-pro"
+  },
+  "maxTokens": { "simple": 4096, "hard": 8192 },
+  "maxTokensCap": 16384,
+  "workers": 4,
+  "timeout": 300,
+  "margin": 0.85,
+  "ledger": "~/.cache/ds/ledger.jsonl",
+  "planEnds": "2026-11-06",
+  "windows": [
+    { "name": "5h", "seconds": 18000, "tokens": 12800000, "requests": 400 },
+    { "name": "24h", "seconds": 86400, "tokens": 25600000, "requests": 1200 },
+    { "name": "7d", "seconds": 604800, "tokens": 128000000, "requests": 5600 }
+  ]
+}
