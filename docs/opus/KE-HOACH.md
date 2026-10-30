@@ -20,6 +20,19 @@
 > | Haiku-2 | Tiền duyệt khi có head mới |
 > | Sol | Chờ; hỗ trợ #210 nếu kẹt quá 2 giờ |
 
+> ## DS-worker (Deepseek API điều khiển) — sếp chốt 30/10/2026, hết hạn gói 06/11/2026
+> **Phân vai:** DS-worker = DeepSeek qua Tokenize (`tools/ds/ds.py`, PR #381), do phiên **Deepseek API** (Sonnet 5.5, cloud) điều khiển. Chỉ nhận việc có nhãn `ds-ok` dưới đây; Deepseek API rà mọi đầu ra trước khi commit; mỗi việc 1 PR nhỏ, tiền tố `[viec-<mã>]`, Luna tiền duyệt. Hộp thư: `hop-thu/pm-hoi-003-ds-lo-1.md`.
+> **Không giao DS:** `AppGraph.kt`, ký/phát hành APK, engine native, config (`configVersion`/Cloudflare), kiến trúc, tiền duyệt PR, mọi thứ có secret/keystore/ROM/file người dùng. Tokenize là bên thứ ba.
+>
+> | Mã | Việc | Tier | Kiểm bằng | Ghi chú | Trạng thái |
+> |---|---|---|---|---|---|
+> | DS-01 | Dịch 41 chuỗi còn thiếu ở `j2me/src/main/res/values-vi/strings.xml` (so với `values/`, bỏ `translatable="false"`) | simple | Script: 0 khóa thiếu, giữ nguyên `%s`/`%1$d`/`\n`/thực thể XML; XML hợp lệ; CI xanh | `ds-ok` · lô 1 | giao 30/10 |
+> | DS-02 | Rà chính tả, dấu, nhất quán thuật ngữ chuỗi giao diện: `app/src/main/res/values/strings.xml` + chuỗi `Text("…")` trong `app/src/main/java/vn/aow/monika/**` | simple | Báo cáo `docs/ds/ra-soat-chuoi-ui.md` (file:dòng · hiện tại · đề xuất · lý do); không sửa `.kt` | `ds-ok` · lô 1 · PR docs-only | giao 30/10 |
+> | DS-03 | Unit test cho `cheats/ChtFormat.kt` và `library/ConsoleSaveFormats.kt` (chưa có test riêng; xem `SaveFormatsTest` để khỏi trùng) | hard | `./gradlew testDebugUnitTest` trên CI xanh; chỉ thêm file trong `app/src/test` | `ds-ok` · lô 1 · lộ lỗi thật thì ghi mô tả PR, không sửa mã chính | giao 30/10 |
+> | DS-04 | Gom crash đang mở (issue bot crash) thành bảng chữ ký · tần suất · hệ máy · người phụ trách | simple | `docs/ds/tong-hop-crash.md`, mỗi dòng trỏ issue | `ds-ok` · lô 2 · đầu vào cho Sol, không tự sửa | chờ lô 1 |
+> | DS-05 | L09 đồng bộ tài liệu: `README.md`, `docs/opus/HANDOFF-SONNET.md`, `docs/KIEN-TRUC-tay.md` lệch với main hiện tại | hard | PR docs-only, mỗi chỗ sửa trỏ file:dòng mã nguồn | `ds-ok` · lô 2 | chờ lô 1 |
+> | DS-06 | Dịch mô tả/chú thích tiếng Anh trong `docs/**` còn sót sang tiếng Việt | simple | PR docs-only, không đổi lệnh/đường dẫn | `ds-ok` · lô 2 | chờ lô 1 |
+
 ## 1. Mốc
 
 | Mốc | Nội dung | Phương án | Trạng thái |
