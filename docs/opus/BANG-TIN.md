@@ -28,4 +28,4 @@ Trạng thái: `mở` (chờ người nhận) · `đã trả lời` (chờ bên 
 | 007 | CI bị chặn vì thanh toán Actions (sếp cần xử lý billing, G10); báo V16/V18 | V16/V18 | sếp cần xem | mở | 03/10/2026 |
 | 008 | V18 kẹt: Kirikiri nhúng sập SIGSEGV trên máy ảo với mọi game tự sinh; đề xuất chuyển K2–K8 sang máy ARM thật (G9) + V19 trên RGSS | V18/V19 | sếp cần xem | mở | 03/10/2026 |
 | PM-002 | Kirikiri máy thật: lỗi chọn nhầm patch*.xp3 đã sửa (V26); xin miễn điều kiện CI 'patch được nạp' (không chạy được Kirikiri trên máy ảo) | V26 | PM quyết trước khi gửi sếp bản 0.7.4 | đã trả lời (`pm-tra-loi-002.md`), chờ PM | 04/10/2026 |
-| PM-003 | Giao lô 1 DS-worker: DS-01 dịch j2me vi, DS-02 rà chuỗi UI, DS-03 test ChtFormat/ConsoleSaveFormats; góp ý #381 chặn file nhạy cảm | DS-01..03 | Deepseek API làm | mở | 30/10/2026 |
+| PM-003 | Giao lô 1 DS-worker: DS-01 dịch j2me vi, DS-02 rà chuỗi UI, DS-03 test ChtFormat/ConsoleSaveFormats; góp ý #381 chặn file nhạy cảm | DS-01..03 | Deepseek API làm | đã trả lời (`pm-tra-loi-003.md`), chờ PM | 30/10/2026 |
