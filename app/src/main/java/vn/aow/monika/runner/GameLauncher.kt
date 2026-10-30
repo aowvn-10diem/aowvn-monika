@@ -32,6 +32,7 @@ sealed interface LaunchResult {
 class GameLauncher(private val configRepo: ConfigRepository) {
 
     fun launch(activity: Activity, game: Game, experimentalConfirmed: Boolean = false): LaunchResult {
+        if (vn.aow.monika.library.GameSaveTransfer.busy) return LaunchResult.Failed("Đang chuyển save. Hãy chờ xong rồi mở game.")
         val system = game.system ?: return LaunchResult.Failed(
             if (game.needsExtract) "Game chưa được giải nén. Bấm \"Giải nén\" (nhập mật khẩu nếu có)."
             else "Chưa nhận diện được loại game này."
@@ -68,7 +69,13 @@ class GameLauncher(private val configRepo: ConfigRepository) {
             }
             "j2me" -> {
                 // J2ME Loader nhúng sẵn: lần đầu cài (chuyển .jar → .dex), các lần sau chạy luôn.
-                activity.startActivity(ru.playsoftware.j2meloader.J2meRuntime.openGameIntent(activity, Installer.uriFor(activity, entry)))
+                // V135: đoán màn hình từ JAD/manifest/ảnh trong jar; J2ME Loader chỉ áp khi game chưa có config.
+                val screen = J2meScreenDetector.detect(entry.takeIf { it.isFile }, configRepo.current.j2meScreen)
+                activity.startActivity(
+                    ru.playsoftware.j2meloader.J2meRuntime.openGameIntent(
+                        activity, Installer.uriFor(activity, entry), screen.width, screen.height,
+                    )
+                )
                 LaunchResult.Started
             }
             "external" -> {

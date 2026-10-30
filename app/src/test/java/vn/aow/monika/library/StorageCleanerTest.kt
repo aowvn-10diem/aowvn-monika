@@ -67,6 +67,45 @@ class StorageCleanerTest {
 
     private fun payload(dir: File) = File(dir, "data.bin")
 
+    @Test fun defaultCleaningKeepsUnplayedGamesOverAgeAndBudgetButStillCleansCaches() {
+        prefs.autoDeleteGameDays = 1 // prefs cũ không cho phép dọn game tự động
+        prefs.autoDeleteMediaDays = 1
+        prefs.autoDeleteCoreDays = 1
+        prefs.cacheLimitBytes = 1
+        val newlyImported = game("just-imported", 400, 0)
+        val oldUnplayed = game("old-unplayed", 500, 90)
+        val m = media("old.jpg", 100, 90)
+        val c = core("old-core", 300, 90)
+        val newBytes = payload(newlyImported).readBytes()
+        val oldBytes = payload(oldUnplayed).readBytes()
+
+        val report = StorageCleaner.clean(context)
+
+        assertTrue(newlyImported.exists() && oldUnplayed.exists())
+        assertTrue(newBytes.contentEquals(payload(newlyImported).readBytes()))
+        assertTrue(oldBytes.contentEquals(payload(oldUnplayed).readBytes()))
+        assertNotNull(GameMeta.read(newlyImported))
+        assertNotNull(GameMeta.read(oldUnplayed))
+        assertTrue(report.removedGames.isEmpty())
+        assertFalse(m.exists())
+        assertFalse(c.exists())
+        assertEquals(400L, report.freed)
+        assertEquals(900L, StorageCleaner.usage(context).games)
+    }
+
+    @Test fun gamesDoNotForceFreshMediaOrCoresOutOfAutomaticBudget() {
+        prefs.cacheLimitBytes = 600
+        val g = game("large-game", 1000, 0)
+        val m = media("fresh.jpg", 200, 0)
+        val c = core("fresh-core", 300, 0)
+
+        val report = StorageCleaner.clean(context)
+
+        assertTrue(payload(g).exists() && m.exists() && c.exists())
+        assertTrue(report.removedGames.isEmpty())
+        assertEquals(0L, report.freed)
+    }
+
     @Test fun usageGroupsMediaCoresAndOnlyDownloadedUnpinnedGames() {
         media("a.jpg", 100, 1)
         core("mgba", 300, 1)
@@ -93,7 +132,7 @@ class StorageCleanerTest {
         val oldGame = game("old-game", 500, 20, title = "Game cũ")
         val newGame = game("new-game", 400, 2, title = "Game mới")
 
-        val report = StorageCleaner.clean(context)
+        val report = StorageCleaner.clean(context, allowGameEviction = true)
 
         assertFalse(oldMedia.exists())
         assertTrue(newMedia.exists())
@@ -125,7 +164,7 @@ class StorageCleanerTest {
         val dir = game("played", 500, 60)
         prefs.markPlayed(dir.path) // lần chơi gần nhất = bây giờ
 
-        val report = StorageCleaner.clean(context)
+        val report = StorageCleaner.clean(context, allowGameEviction = true)
 
         assertTrue(payload(dir).exists())
         assertTrue(report.removedGames.isEmpty())
@@ -138,7 +177,7 @@ class StorageCleanerTest {
         prefs.pinnedGames = setOf(pinned.path)
         val userAdded = game("user-added", 500, 90, postUrl = null)
 
-        val report = StorageCleaner.clean(context)
+        val report = StorageCleaner.clean(context, allowGameEviction = true)
 
         assertTrue(payload(pinned).exists())
         assertTrue(payload(userAdded).exists())
@@ -152,7 +191,7 @@ class StorageCleanerTest {
         val newerGame = game("newer", 400, 5, title = "Mới hơn")
         prefs.cacheLimitBytes = 600
 
-        val report = StorageCleaner.clean(context)
+        val report = StorageCleaner.clean(context, allowGameEviction = true)
 
         assertFalse(m.exists())
         assertFalse(c.exists())
@@ -178,11 +217,23 @@ class StorageCleanerTest {
         val other = game("other", 400, 30)
         prefs.cacheLimitBytes = 100
 
-        val report = StorageCleaner.clean(context, protect = protected)
+        val report = StorageCleaner.clean(context, protect = protected, allowGameEviction = true)
 
         assertTrue(payload(protected).exists())
         assertFalse(payload(other).exists())
         assertEquals(listOf("other"), report.removedGames)
+    }
+
+    /** V117: game vừa nhập, chưa chơi lần nào, phải sống qua clean() mặc định (không protect) khi bộ nhớ vượt giới hạn. */
+    @Test fun freshlyImportedUnplayedGameSurvivesDefaultCleanWhenOverLimit() {
+        prefs.cacheLimitBytes = 100
+        val fresh = game("vua-nhap", 400, 0, title = "Vừa nhập")
+        assertEquals(0L, prefs.lastPlayed(fresh.path))
+
+        val report = StorageCleaner.clean(context)
+
+        assertTrue(payload(fresh).exists())
+        assertTrue(report.removedGames.isEmpty())
     }
 
     @Test fun mediaOnlyClearsMediaRegardlessOfAgeAndLimitButNotCoresOrGames() {
@@ -216,11 +267,11 @@ class StorageCleanerTest {
     @Test fun alreadyCleanedGameIsSkippedAndNeverReportedTwice() {
         val dir = game("cleaned", 500, 20)
         prefs.autoDeleteGameDays = 10
-        StorageCleaner.clean(context)
+        StorageCleaner.clean(context, allowGameEviction = true)
         assertNotNull(GameMeta.read(dir))
         assertEquals(0L, StorageCleaner.usage(context).games)
 
-        val second = StorageCleaner.clean(context)
+        val second = StorageCleaner.clean(context, allowGameEviction = true)
 
         assertTrue(second.removedGames.isEmpty())
         assertEquals(0L, second.freed)

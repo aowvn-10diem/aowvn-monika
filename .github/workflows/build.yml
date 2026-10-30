@@ -33,7 +33,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with: {cache-provider: basic}
       - name: Cài NDK cho J2ME Loader
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+        run: bash scripts/ci-install-j2me-ndk.sh
       - name: Kiểm bản giả Win32API (Ruby)
         run: |
           ruby scripts/test-rgss-compat.rb

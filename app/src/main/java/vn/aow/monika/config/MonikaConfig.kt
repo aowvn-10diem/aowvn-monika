@@ -38,6 +38,10 @@ data class MonikaConfig(
     val modules: Map<String, ModuleDef> = emptyMap(),
     /** Tài liệu trong thư viện được mở bằng ứng dụng ngoài, không đưa vào danh sách game. */
     val documentExtensions: List<String> = listOf("pdf", "doc", "docx", "txt", "epub"),
+    /** Xuất/nhập save theo hệ, mặc định tương thích cách lưu trước V134. */
+    val saveTransfer: SaveTransferConfig = SaveTransferConfig(),
+    /** V135: đoán độ phân giải game Java lần đầu mở; game đã có config thì giữ nguyên. */
+    val j2meScreen: J2meScreenConfig = J2meScreenConfig(),
 ) {
     fun system(id: String): SystemDef? = systems.firstOrNull { it.id == id }
     fun externalApp(id: String): ExternalApp? = externalApps.firstOrNull { it.id == id }
@@ -68,6 +72,12 @@ data class ModuleDef(
      * (21 báo cáo v0.8.2) và không bắt được bằng try/catch, nên chỉ bật khi thật sự có driver tùy biến.
      */
     val customGpuDriver: Boolean = false,
+    /**
+     * Chỉ module "azahar": thư viện của lớp nạp driver (adrenotools) — chỉ để `initializeGpuDriver` tự nạp theo đường dẫn, KHÔNG được `System.load` vào app.
+     * V118: `libfile_redirect_hook.so` xuất `fopen` → `hook_fopen` (libhook_impl.so) đọc biến toàn cục chưa khởi tạo (null, lệch 0x68) nên
+     * `createLogFile` sập ngay lúc mở lõi (fp 8be340e6, 214 lượt v0.8.2–0.8.3). Khi [customGpuDriver] = false các thư viện này bị bỏ qua lúc nạp.
+     */
+    val hookLibs: List<String> = listOf("libhook_impl.so", "libfile_redirect_hook.so", "libmain_hook.so", "libgsl_alloc_hook.so"),
 )
 
 @Serializable
@@ -344,4 +354,23 @@ data class DownloadHost(
     val mode: String,
     val pattern: String? = null,
     val directUrl: String? = null,
+)
+
+/**
+ * V135: đoán độ phân giải màn hình game Java (J2ME) khi mở lần đầu.
+ * Chỉ dùng cho cấu hình MỚI của J2ME Loader — game đã có `config.json` (kể cả sếp đã chỉnh tay) thì không ghi đè.
+ */
+@Serializable
+data class J2meScreenConfig(
+    /** Thuộc tính trong JAD/manifest chứa kích thước game được thiết kế, theo thứ tự ưu tiên. */
+    val attributes: List<String> = emptyList(),
+    /** Độ phân giải điện thoại J2ME thường gặp ([rộng, cao]); dùng khi jar không khai báo mà có ảnh trùng khớp. */
+    val presets: List<List<Int>> = emptyList(),
+    /** Số tệp ảnh tối đa đọc trong jar khi đoán. */
+    val maxImages: Int = 200,
+    /** Số byte đầu mỗi tệp ảnh được đọc (đủ cho header PNG/GIF/JPEG); <= 0 = không đoán theo ảnh. */
+    val maxImageBytes: Int = 128 * 1024,
+    /** Không đoán được thì dùng kích thước này (mặc định cũ của J2ME Loader). */
+    val defaultWidth: Int = 240,
+    val defaultHeight: Int = 320,
 )

@@ -6,6 +6,10 @@ import android.os.Build
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import ru.playsoftware.j2meloader.J2meRuntime
 import vn.aow.monika.library.CacheCleanWorker
@@ -51,10 +55,21 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
         // Lần đầu: tải sẵn các lõi phổ biến (GBA, NES...) kèm thông báo; đã đủ lõi thì worker thoát ngay.
         runCatching { vn.aow.monika.library.CorePrefetchWorker.enqueue(this) }
         scope.launch {
-            // Lấy cấu hình mới; nếu chu kỳ kiểm tra bài đổi thì đặt lịch lại.
-            AppGraph.config.refresh().onSuccess {
-                NewPostWorker.schedule(this@MonikaApp, it.feed.pollMinutes)
-                // Config mới có thể thêm lõi tải sẵn / nâng version lõi.
+            while (true) {
+                // Lấy cấu hình mới; nếu chu kỳ kiểm tra bài đổi thì đặt lịch lại.
+                AppGraph.config.refresh().onSuccess {
+                    NewPostWorker.schedule(this@MonikaApp, it.feed.pollMinutes)
+                    // Config mới có thể thêm lõi tải sẵn / nâng version lõi.
+                    runCatching { vn.aow.monika.library.CorePrefetchWorker.enqueue(this@MonikaApp) }
+                }
+                // V132: đang mở app lâu vẫn kiểm tra lại sau mỗi 6 giờ (refresh tự bỏ qua nếu chưa tới hạn).
+                delay(vn.aow.monika.config.ConfigRepository.MIN_REFRESH_MS)
+            }
+        }
+        // V132: cấu hình mới nhận giữa phiên (kể cả bấm "Cập nhật cấu hình") → lõi đọc lại, xếp tải lại.
+        scope.launch {
+            AppGraph.config.config.map { it.configVersion }.distinctUntilChanged().drop(1).collect {
+                NewPostWorker.schedule(this@MonikaApp, AppGraph.config.current.feed.pollMinutes)
                 runCatching { vn.aow.monika.library.CorePrefetchWorker.enqueue(this@MonikaApp) }
             }
         }
