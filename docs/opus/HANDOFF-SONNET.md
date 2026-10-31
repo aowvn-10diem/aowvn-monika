@@ -38,7 +38,7 @@
 
 - **Hạn mức lưu trữ Actions đã đầy một lần (03/10/2026, 14 GB artifact, chủ yếu APK debug 83 MB mỗi lần push):** đã xóa 370 artifact bằng `curl -X DELETE https://api.github.com/repos/aowvn-10diem/aowvn-monika/actions/artifacts/<id>` (proxy tự gắn quyền); GitHub tính lại hạn mức mỗi 6–12 giờ nên có thể còn chặn tải lên một lúc. Đã đặt retention ngắn + `continue-on-error` cho mọi `upload-artifact` — job không đỏ chỉ vì tải artifact lỗi. Workflow cần artifact ở job khác (hiện không có) sẽ phải dùng release.
 
-## 5. Trạng thái (cập nhật 08/10/2026)
+## 5. Trạng thái (ảnh chụp 08/10/2026; số hiện hành xem `app/build.gradle.kts`, `config/monika-config.json` và `docs/opus/KE-HOACH.md`)
 - **Mốc main:** `app/build.gradle.kts` đặt app 0.7.7 (`versionCode` 42); `config/monika-config.json` đặt `configVersion` 36 và bản cập nhật 0.7.6/code 41. Tag v0.7.7 chưa tồn tại; v0.7.6 là prerelease (06/10), stable gần nhất v0.7.3. Nguồn: main `b870f2b`, các tệp trên và [release v0.7.6](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.7.6).
 - **Gói theo config main:** Azahar `662d412` (arm64-v8a), Kirikiri `6e61ce3-aow2` (arm64-v8a), RGSS `engines-rgss-6` (arm64-v8a), 7-Zip `16.02-2.02` (arm64-v8a và armeabi-v7a). Đây là metadata cấu hình trong `modules`; không chứng minh gói tải được hay game chạy trên thiết bị.
 - **Kirikiri:** PR #86/#91/#93 bổ sung chẩn đoán lối vào và kiểm `startup.tjs`; ảnh app 0.7.6 vẫn ghi nhận nhánh `NotFound` cho một game. Nguyên nhân cụ thể, game/ROM khác, âm thanh, chạm, lưu/tải, tua nhanh và thiết bị thật **[CHƯA KIỂM]**; xem `docs/opus/ket-qua/V26.md`.

@@ -6,7 +6,7 @@ App Android "tất cả trong một" cho cộng đồng [aow.vn](https://www.aow
 
 ## Hệ máy hỗ trợ
 
-- **Chạy trong app:** NDS, GBA, GBC, PS1, PSP, 3DS, RPG Maker (2000/2003, XP/VX/Ace), Kirikiri, Java (J2ME).
+- **Chạy trong app:** NDS, GBA, GBC, SNES, NES, Mega Drive/Genesis, Master System, Game Gear, PC Engine, N64, 3DS, Dreamcast, Atari Lynx, Atari 2600, Atari 7800, WonderSwan, Neo Geo Pocket, PS1, PSP, RPG Maker (2000/2003, XP/VX/Ace), Kirikiri, Java (J2ME).
 - **Chạy dạng web:** Flash, RPG Maker MV/MZ, TyranoScript, ONScripter.
 - **App ngoài:** Ren'Py (JoiPlay).
 

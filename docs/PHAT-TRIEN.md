@@ -6,7 +6,7 @@ Tài liệu kỹ thuật và nguồn gốc của app, chuyển từ README khi l
 
 **Mốc mã nguồn:** main [`b870f2b`](https://github.com/aowvn-10diem/aowvn-monika/commit/b870f2ba09a1969babcb08b832d910e712bffcce) (08/10/2026) đặt app 0.7.7 (`versionCode` 42) và `configVersion` 36. Config hiện vẫn báo bản cập nhật 0.7.6 (`versionCode` 41); v0.7.7 chưa có tag/release. Tag v0.7.6 là bản thử (pre-release); bản stable gần nhất là v0.7.3. Chơi game/ROM thật và thiết bị thật vẫn **[CHƯA KIỂM]**.
 
-Metadata gói trong config main: Azahar `662d412` (arm64-v8a), Kirikiri `6e61ce3-aow2` (arm64-v8a), RGSS `engines-rgss-6` (arm64-v8a), 7-Zip `16.02-2.02` (arm64-v8a và armeabi-v7a). Đây là phiên bản/ABI được cấu hình, không xác nhận tải gói hay chơi game thành công.
+Metadata gói trong config main: Azahar `662d412` (arm64-v8a), Kirikiri `6e61ce3-aow3` (arm64-v8a), RGSS `engines-rgss-6` (arm64-v8a), 7-Zip `16.02-2.02` (arm64-v8a và armeabi-v7a). Đây là phiên bản/ABI được cấu hình, không xác nhận tải gói hay chơi game thành công.
 
 ## Tính năng
 
