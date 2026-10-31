@@ -19,9 +19,27 @@ Trạng thái: **KẾ HOẠCH**, chưa áp dụng. Người viết: Nova. Ngư�
 | `crash.endpoint` | Địa chỉ Worker thu báo cáo | Giữ trong APK (bắt buộc), nhưng Worker phải kiểm: kích thước, tần suất, `User-Agent`/phiên bản; token quản trị luôn là secret (đã vậy) |
 | `archivePasswords`, `downloadHosts` | Dữ liệu vận hành | Chuyển lớp "overlay" sang Worker/KV (P1b) |
 
+## Ưu tiên số 1 (lệnh sếp 31/10 tối): bản người khác tự build phải KHÔNG dùng được dịch vụ của AowVN
+Mục tiêu: bản fork không xem được bài/diễn đàn trong app, không có tải Pixeldrain tự động, không tự tải lõi giả lập.
+
+Hiện trạng (đã kiểm trong mã/config, 31/10): app gọi **thẳng** các địa chỉ công khai — feed `www.aow.vn/feeds/posts/default`, diễn đàn `forum.aowvn.org/api/...`, Pixeldrain `pixeldrain.com/api/file/<id>`, lõi libretro từ `buildbot.libretro.com`, gói engine/module từ release `aowvn-monika-packs`. Vì công khai nên bản fork chạy y hệt bản chính thức; không có cổng nào để chặn.
+
+Thiết kế "cổng" (một Worker, một chữ ký):
+| Cổng | Việc | Cách |
+|---|---|---|
+| G0 | Chữ ký yêu cầu | OkHttp client duy nhất ở `AppGraph.kt` thêm header `X-Monika-Sig` = HMAC(ts + đường dẫn) bằng `MONIKA_GATE_SECRET`. Secret nạp lúc build **release** từ GitHub Secret vào `BuildConfig` (không có trong repo). Bản fork không có secret ⇒ Worker trả 403. Thêm kiểm hash chứng thư và rate limit |
+| G1 | Bài viết + diễn đàn | Worker `/feed`, `/forum/*` lấy từ Blogger/Flarum rồi trả lại (cache); `feed.url`, `forum.baseUrl` trong config trỏ về Worker |
+| G2 | Pixeldrain tự động | `downloadHosts[].directUrl` trỏ `/pd/<id>`; Worker xác thực rồi 302 sang Pixeldrain (dùng khóa API Pixeldrain đặt ở secret Worker, không phải ở app) |
+| G3 | Lõi + engine + module | Repo `aowvn-monika-packs` chuyển **riêng tư**; Worker stream/302 có chữ ký ngắn hạn; lõi libretro mirror vào kho riêng (giữ `sha256` trong config) |
+
+Giới hạn nói thẳng: (1) bài trên aow.vn và file Pixeldrain vẫn mở được bằng trình duyệt — cổng chỉ chặn **trải nghiệm trong app**; (2) người biết dịch ngược bản APK chính thức vẫn trích được secret — giảm bằng xoay secret mỗi bản, rate limit, và khóa theo chứng thư; (3) bản đã cài đang gọi thẳng nên phải **giữ đường cũ** cho tới khi ép cập nhật bằng `minVersionCode`, nếu không người dùng cũ hỏng.
+
+Ghi chú vận hành: tạo secret (GitHub + Cloudflare), đổi repo packs sang riêng tư và triển khai Worker là việc của sếp/chủ repo — phiên Nova không có quyền Cloudflare/secret. Mọi trường mới trong `MonikaConfig.kt` phải có mặc định; tăng `configVersion` + đồng bộ Cloudflare theo thứ tự: Worker lên trước → config mới sau → ép bản cũ lên sau cùng.
+
 ## Thứ tự ưu tiên
 | # | Việc | Rủi ro | Ai | Ghi chú |
 |---|---|---|---|---|
+| P0 | **Cổng G0–G3** (mục trên): Worker + chữ ký + trỏ config về Worker. Đây là việc duy nhất làm bản fork "không chạy được" | Rủi ro cao: đổi đường tải của mọi người dùng, cần giữ đường cũ + thử máy thật | PM chốt → Sonnet làm Worker + `AppGraph`; sếp tạo secret, đổi repo packs |  |
 | P1a | **Tách config**: `config/` trong repo chỉ còn phần công khai + `bootstrap`; phần nhạy cảm (donate, archivePasswords, downloadHosts…) nằm ở KV, Worker hợp nhất khi phục vụ | Trung bình: lần chạy đầu offline mất mục donate/mật khẩu nén → cần mặc định an toàn trong `MonikaConfig.kt` | PM chốt thiết kế → Sonnet làm → Luna duyệt | Phải tăng `configVersion` + đồng bộ Cloudflare (`sync-config.yml`); thử trên máy thật |
 | P1b | Test config (`ConfigTest`) chấp nhận khóa vắng ở asset nhưng có ở overlay | Thấp | cùng PR P1a | |
 | P1c | (Tùy chọn) đưa URL gói/engine về domain riêng qua Worker redirect | Thấp | sau P1a | Không bắt buộc |
