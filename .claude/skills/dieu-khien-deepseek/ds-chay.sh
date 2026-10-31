@@ -18,7 +18,7 @@ if [ ! -f "$DS" ]; then
 fi
 grep -q post_stream "$DS" || (cd "$WORK/ds" && patch -p1 -s < "$SKILL/ds-stream-effort.patch") || { echo "áp bản vá lỗi"; exit 3; }
 [ -n "${TOKENIZE_API_KEY:-}${TOKENIZE_KEY_FILE:-}" ] || { echo "thiếu key: TOKENIZE_API_KEY chưa có trong môi trường phiên (báo sếp, đừng tự tìm key)"; exit 4; }
-case $tier in hard) mt=${DS_MAX_TOKENS:-30000};; *) mt=${DS_MAX_TOKENS:-14000};; esac
+mt=${DS_MAX_TOKENS:-30000}  # DS nghĩ rất dài: trần 16.000 làm nhiều lượt rỗng
 export DS_STREAM=1 DS_EXTRA_ROOTS="$REPO:$WORK"
 for i in 1 2 3; do
   msg=$(python3 "$DS" run -t "$tier" -e "$effort" -s "$sys" ${1:+-i "$@"} --max-tokens "$mt" -o "$out" -p "$prompt" 2>&1) && { echo "$msg"; exit 0; }

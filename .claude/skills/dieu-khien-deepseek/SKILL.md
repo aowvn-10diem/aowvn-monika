@@ -24,6 +24,7 @@ $S/ds-chay.sh hard high $DS_WORK/he-thong.txt $DS_WORK/ra.md "chỉ thị ngắn
 - **Không commit `tools/` hay `.mcp.json` vào PR việc** (luật PM-003). Giữ bản ds.py ở `$DS_WORK`, repo sạch (hook dừng phiên sẽ kêu nếu có file untracked).
 - `ds.py` từ chối tệp nhạy cảm (`*.pem`, `.env`, `local.properties`, `google-services.json`...) và tệp ngoài repo/`DS_EXTRA_ROOTS`. Đừng lách. Chỉ đưa tệp đã `git show` từ nhánh, kiểm không có secret.
 - Mức dùng: `python3 $DS_WORK/ds/tools/ds/ds.py usage`. Sổ đếm theo từng máy; không chạy lô chồng giờ với phiên khác.
+- Công cụ khác trong thư mục skill: `kt-lint.sh <tệp.kt...>` (quét mẫu chuỗi `"$tên_..."` bằng quy tắc, chạy trên test DS viết); `ds-agent.sh` (DS như nhân sự trong worktree riêng, xem mục 8).
 - Mẫu prompt đã chạy tốt ở `mau/` (đổi phần NHIỆM VỤ theo việc): `ra-soat-chuoi`, `viet-test`, `kiem-thu`, `dong-bo-tai-lieu`. Bảng sự thật từ mã: `trich-su-that.sh origin/main > $DS_WORK/su-that.md`.
 
 ## 3. Chọn model và effort
@@ -31,8 +32,9 @@ $S/ds-chay.sh hard high $DS_WORK/he-thong.txt $DS_WORK/ra.md "chỉ thị ngắn
 |---|---|---|
 | Viết test cho mã có sẵn | 12/12 đúng (ChtFormat); 6/7 (1 test sai offset) | 11/11 đúng; 7/7 |
 | Rà văn phong có ngữ cảnh đầy đủ | 5 mục: 4 đúng + 1 hedged | 5 mục: 3 dùng được, 2 sở thích |
-| Người kiểm thử bắt lỗi biên dịch | bắt 1/1 | bắt 1/2 (lượt sau bỏ sót) |
-| Người kiểm thử bắt lỗi sai offset (khi yêu cầu kiểm dữ liệu dựng) | bắt | bắt |
+| Người kiểm thử bắt lỗi cú pháp (`$i_code`) | bắt 3/3 lượt hoàn tất (+2 lượt rỗng do hết trần token) | bắt 2/5 (không ổn định) |
+| Người kiểm thử bắt lỗi ngữ nghĩa sai offset (khi dặn kiểm dữ liệu dựng) | bắt 5/5 | bắt 5/5 |
+| Báo lỗi nhầm trên file đúng (đối chứng âm) | 0/3 | 0/3 |
 - **Tham số:** `reasoning_effort` ∈ `none|low|high|max`, chạy cả `/v1/messages` (ds.py) lẫn `/chat/completions` (OpenCode). `none` = không suy nghĩ. **Dùng `high`**; `max` làm server hay cắt kết nối và chưa thấy tốt hơn. Bỏ tham số = mặc định của Tokenize (cũng có suy nghĩ).
 - Hai model **ngang nhau** ở các việc đo được và bổ sung nhau (mỗi bên bắt vài mục bên kia sót). Việc quan trọng: chạy cả hai rồi hợp nhất. Flash rẻ hơn nên làm bản đầu.
 
@@ -57,7 +59,7 @@ $S/ds-chay.sh hard high $DS_WORK/he-thong.txt $DS_WORK/ra.md "chỉ thị ngắn
 - Mỗi mục: `git show origin/main:<file> | sed -n '<dòng>p'` so với trích dẫn của DS. Sai dòng hay sai nguyên văn là bỏ. Đếm **tỉ lệ phải bỏ/sửa**.
 - **Ngưỡng dừng và báo sếp:** hơn 30% đầu ra phải sửa tay, hoặc cache dưới 80% dù tiền tố ≥ 20k token.
 - Test DS viết: tự lần từng offset/regex/`check(...)` của mã chính, tìm lỗi biên dịch (đọc như trình biên dịch). Đây là chỗ hai lỗi thật đã lộ: `"cheat$i_code"` (không biên dịch) và test ghi sai offset (`bytes[1]` thay vì `16*2048+1`, nên `assertThrows` không bao giờ ném).
-- **DS làm người kiểm thử chỉ là lớp phụ**: không ổn định (Pro bắt 1/2 lần). Yêu cầu nó kiểm rõ "dữ liệu dựng có chạm đúng điều kiện/offset mà tên test nói không". Lớp chốt là bạn đọc và CI.
+- **Chính sách rà test đã chốt sau 22 request đo (P1):** (1) DS viết test (Flash và Pro, `high`); (2) chạy `kt-lint.sh` trước, chắc chắn, bắt mẫu chuỗi `"$tên_..."` (bắt đúng `$i_code`, 0 báo nhầm trên 379 tệp Kotlin của repo); (3) hai model kiểm thử NGỮ NGHĨA bằng `mau/kiem-thu.system.txt` (hợp nhất: mục nào một bên báo thì tôi xem; 5/5 cả hai, 0 báo nhầm); (4) tôi rà tay; (5) CI chốt. **Đừng dựa DS bắt lỗi cú pháp** (Pro 2/5; hai model chưa lần nào cùng bắt trong một lượt). Việc kiểm thử cũng cần `DS_MAX_TOKENS=30000`: trần 16.000 làm 3/8 lượt rỗng.
 - Đừng đẩy nhận định của DS về mã chính thành sự thật; ghi vào mô tả PR dưới nhãn "phát hiện, không sửa" (ví dụ `toInt()` tràn với chỉ số quá lớn).
 
 ## 7. Việc hợp và không hợp (đã đo)
@@ -68,5 +70,13 @@ $S/ds-chay.sh hard high $DS_WORK/he-thong.txt $DS_WORK/ra.md "chỉ thị ngắn
 | Người kiểm thử đọc mã (lớp phụ) | Việc có dữ liệu sẵn và cơ học (DS-04): dùng script |
 | Đề xuất đồng bộ tài liệu từ bảng sự thật | Dữ kiện ngoài bảng (trạng thái PR, ai làm gì): để DS đoán là bịa |
 
-## 8. Checklist mỗi phiên
-1. `TOKENIZE_API_KEY` có không (chỉ có/không). 2. `git fetch origin main ccr-37c8378a-bgfkia`. 3. Đọc `KE-HOACH.md` mục DS-worker và `BANG-TIN.md` (thư PM mới). 4. Kiểm tiền đề việc (mục 4.1). 5. Làm nóng cache, chạy flash + pro ở `high`. 6. Rà từng mục, tính tỉ lệ. 7. Một PR nhỏ/việc, header `Deepseek API`, ghi rõ chưa chạy Gradle. 8. Báo PM ≤5 dòng; chi phí/key/số dư báo sếp.
+## 8. Chế độ agent lồng: DS như một nhân sự trong môi trường Claude Code (đã thử thật)
+`ds-agent.sh <flash|pro> <worktree> <chi-thi.md> [lượt]` chạy một bản Claude Code (CLI có sẵn trong container) lồng bên trong, trỏ `ANTHROPIC_BASE_URL=https://tokenize.vn`, `ANTHROPIC_MODEL=deepseek-v4.1-flash|deepseek-v4-pro`. DS có vòng lặp đọc → sửa → đọc lại, tự khám phá mã (grep, đọc tệp), tự tạo tệp.
+- **Bắt buộc, đã kiểm:** môi trường container có `GH_TOKEN`, `GITHUB_TOKEN`, khóa AWS, token Google Cloud, token phiên. Script chạy bằng `env -i` (chỉ truyền proxy cục bộ, CA công cộng, khóa Tokenize của chính nó). Quyền: `--permission-mode dontAsk` + chỉ `Read/Edit/Write/Glob/Grep(./**)` + cấm `Bash/WebFetch/WebSearch/Task`. **Đừng chỉ cấp `Read` chung**: lúc đó DS đọc được `/etc/hostname` ngoài thư mục; với luật `./**` thì đọc ngoài thư mục bị từ chối.
+- DS không có Bash nên không chạy lệnh và không đẩy được GitHub. Quy trình: `git worktree add $DS_WORK/wt-<mã> -b deepseek/<mã> origin/main` → `ds-agent.sh` → tôi xem `git diff`, `kt-lint.sh`, rà tay → tôi commit/push/PR. Dọn: `git worktree remove --force`.
+- **Chưa kiểm:** đọc `/proc/...` (bộ kiểm duyệt chặn phép thử, suy luận từ luật `./**`); bật Bash cho DS (không khuyến nghị nếu không có sandbox); phiên cloud chính của sếp có tự đổi sang DS được không.
+- **Phép thử `PlayClock.kt` (Pro, không PR):** 17 lượt, ~66 giây, ~31k token vào / 6k ra; DS tự tìm ra cơ chế thật (`Prefs.postGameEvent` ghi `filesDir/game-events.log`, `Prefs.kt:205,208`) và viết 6 test khớp mã. Rủi ro còn lại, chính DS nêu: `AppGraph.prefs` là singleton nên có thể không khớp `app.filesDir` của test; chỉ CI xác nhận được. Agent hợp việc cần khám phá ngữ cảnh; việc rõ ràng thì `ds-chay.sh` một lần rẻ hơn.
+- Chạy việc thật của DS ở chế độ này vẫn theo ngưỡng mục 6 và nhãn `ds-ok`.
+
+## 9. Checklist mỗi phiên
+1. `TOKENIZE_API_KEY` có không (chỉ có/không). 2. `git fetch origin main ccr-37c8378a-bgfkia`. 3. Đọc `KE-HOACH.md` mục DS-worker và `BANG-TIN.md` (thư PM mới). 4. Kiểm tiền đề việc (mục 4.1). 5. Làm nóng cache, chạy flash + pro ở `high`. 6. Rà từng mục, tính tỉ lệ. 7. Chạy `kt-lint.sh` trên test DS viết. 8. Một PR nhỏ/việc, header `Deepseek API`, ghi rõ chưa chạy Gradle. 9. Báo PM ≤5 dòng; chi phí/key/số dư báo sếp.
