@@ -45,6 +45,7 @@ Hạn mức là tài nguyên hiếm nhất. Mọi agent:
 | Giải nén zip/rar/7z | `giai-nen` |
 | Game Java (J2ME Loader) | `j2me-loader` |
 | Màn hình, theme, animation, test UI | `giao-dien-monika` |
+| Giao việc cho DeepSeek (Tokenize), việc nhãn `ds-ok`, "Deepseek API" | `dieu-khien-deepseek` |
 | Feed/Cloudflare/Pixeldrain, vá ROM, backlog | `tham-khao-du-an` |
 | PM kiểm hộp thư, bảng tiến độ | `pm-kiem-thu` |
 | Lượt tiền duyệt định kỳ (Nova, Haiku) | `tien-duyet` |

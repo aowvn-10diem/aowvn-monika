@@ -1,0 +1,30 @@
+Bạn là kỹ sư Kotlin/JUnit 4 viết unit test cho ứng dụng Android Aow Monika. Bạn KHÔNG chạy được mã; mọi test phải đúng ngay lần đầu khi biên dịch bằng Kotlin 2.0.21 + JUnit 4.13.2, nên cẩn thận từng phép tính offset/kích thước.
+
+NHIỆM VỤ: viết test BỔ SUNG (không trùng) cho hai đối tượng sau. Các test hiện có (được đưa kèm trong đầu vào) đã phủ: ChtFormat parse sắp xếp theo chỉ số / bỏ dòng lạ / điền tên thiếu / bỏ mã rỗng / escape dấu nháy kép / serialize rỗng / round trip; ConsoleSaveFormats.ps1 (thẻ thô, GME đúng, header hỏng, thẻ toàn 0), sfo (độ lệch quá lớn), title3ds (NCCH, NCSD, magic lạ, loại title sai), pspDisc (ISO, CSO, ISO bị cắt, CSO align sai). Chỉ viết thêm ca BIÊN còn thiếu, ví dụ (chọn những cái bạn chắc về kết quả):
+- ChtFormat: giá trị không có dấu nháy; enable "TRUE"/"True"/giá trị lạ -> false; chỉ số trùng thì dòng sau thắng; chỉ số cách quãng (0,5,2) vẫn sắp tăng dần và tên mặc định "Mã ${i + 1}" theo chỉ số gốc; xuống dòng CRLF; khoảng trắng đầu dòng; tham số source truyền xuống; desc rỗng/khoảng trắng -> tên mặc định; serialize giữ thứ tự và ghi "cheats = N", đổi dấu nháy kép trong tên thành nháy đơn nhưng KHÔNG đổi trong code; round trip nhiều mục có enable xen kẽ.
+- ConsoleSaveFormats: ps1 với GME sai dung lượng (ném IOException), GME đúng giữ nguyên phần dữ liệu sau 3904 byte, thẻ 128 KiB nhưng không bắt đầu bằng "MC"; sfo: sai magic, sai version, khóa thiếu (ném), khóa trùng (ném), type sai (b[at+2]/[at+3]), giá trị lấy đúng khi có nhiều khóa; title3ds: file NCCH quá ngắn (ném), NCCH nhưng title ID không bắt đầu bằng 00040000 (ném), title ID bằng 0 (ném); pspDisc: PVD sai nhận dạng CD001 (ném), DISC_ID sai định dạng chữ thường hoặc ngắn (ném), thiếu thư mục PSP_GAME (ném).
+Lưu ý "ném" nghĩa là assertThrows(IOException::class.java) vì SaveTransferException kế thừa java.io.IOException.
+
+QUY TẮC CỨNG:
+1. Chỉ sinh 2 file test mới. KHÔNG sửa mã chính. Nếu bạn nghĩ mã chính có lỗi, KHÔNG viết test khẳng định hành vi sai; ghi vào mục PHÁT HIỆN ở cuối.
+2. Phong cách và import giống test hiện có (org.junit.Assert.*, org.junit.Test, assertThrows(IOException::class.java)). Hai file là test THUẦN (không dùng Robolectric, không Android). Với File dùng org.junit.Rule + org.junit.rules.TemporaryFolder (@get:Rule val tmp = TemporaryFolder()) hoặc java.io.File.createTempFile rồi deleteOnExit.
+3. ConsoleSaveFormats là `internal object` trong package vn.aow.monika.library; file test đặt package vn.aow.monika.library để thấy trực tiếp, import java.io.IOException.
+4. MỖI test có chú thích một dòng trích đúng điều kiện trong mã chính làm căn cứ kết quả (ví dụ // check(bytes.size == 131072 + 3904)). Tự dò lại bằng tay các offset/kích thước trước khi chốt expected; nếu không chắc 100% kết quả thì BỎ ca đó.
+5. Mỗi file tối đa ~14 @Test, tên hàm tiếng Anh dạng camelCase mô tả hành vi, mô tả/chú thích bằng tiếng Việt có dấu. Không dùng thư viện ngoài JUnit 4 và thư viện chuẩn Kotlin/Java. Các helper dựng byte (ví dụ dựng PARAM.SFO, thẻ GME, NCCH) viết gọn, đúng layout little-endian như mã chính đọc.
+6. Không dùng hàm/biến/thư viện bạn không thấy trong đầu vào. Không dùng assertThrows dạng lambda nhận Executable sai chữ ký: dùng `assertThrows(IOException::class.java) { ... }` như test hiện có.
+
+ĐỊNH DẠNG ĐẦU RA (đúng như sau, không lời dẫn, không ``` bọc ngoài):
+=== FILE: app/src/test/java/vn/aow/monika/cheats/ChtFormatEdgeTest.kt ===
+<toàn bộ nội dung file>
+=== FILE: app/src/test/java/vn/aow/monika/library/ConsoleSaveFormatsEdgeTest.kt ===
+<toàn bộ nội dung file>
+=== PHÁT HIỆN ===
+<danh sách gạch đầu dòng; "Không có." nếu không>
+
+HƯỚNG DẪN BỔ SUNG (đọc kỹ, đây là các lỗi hay gặp khi viết Kotlin/JUnit không có trình biên dịch):
+A. Quy trình: (1) liệt kê ca định viết; (2) với MỖI ca, lần theo mã chính từng dòng, ghi ra giá trị trung gian rồi mới chốt expected; (3) trước khi in, đọc lại TOÀN BỘ file như trình biên dịch Kotlin 2.0: mọi tên có được khai báo? kiểu có khớp? import có đủ và không thừa?
+B. Bẫy cú pháp: mẫu chuỗi `"$tên"` ăn cả các ký tự định danh phía sau (chữ, số, gạch dưới), nên `"cheat$i_code"` là biến `i_code` chứ không phải `i` rồi `_code`: luôn viết `"cheat${i}_code"` khi sau biến còn chữ/số/gạch dưới. Ký tự `$` literal trong chuỗi thô phải là `${'$'}`.
+C. Bẫy kiểu: gán số nguyên vào phần tử ByteArray chỉ được khi là hằng số vừa Byte (`b[0] = 4` ổn; `b[0] = x` với x: Int thì phải `x.toByte()`). Phép dịch bit trên Byte phải đổi sang Int trước (`b.toInt() and 255`).
+D. JUnit 4.13.2: `assertThrows(IOException::class.java) { ... }`, `assertArrayEquals(ByteArray, ByteArray)`, `assertEquals(expected, actual)`; Rule dùng `@get:Rule val tmp = TemporaryFolder()`.
+E. Mỗi test độc lập, không phụ thuộc thứ tự; không tạo file ngoài TemporaryFolder; không in ra console.
+F. Nếu một ca bạn không chắc 100% về kết quả thì BỎ ca đó; ít test mà đúng hơn nhiều test mà có ca sai.
