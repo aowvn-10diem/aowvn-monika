@@ -32,3 +32,9 @@ Với `-o`/`out`, nội dung không vào ngữ cảnh của agent gọi, chỉ i
 - Cỡ mỗi request lý tưởng khoảng 21–32 nghìn token mới (trần token ÷ trần request của gói).
 - Bộ đếm (`~/.cache/ds/ledger.jsonl`) giữ dưới 85% trần mỗi cửa sổ, chạm trần thì dừng và báo. Sổ này chỉ nằm trong máy hiện tại; phiên cloud mới bắt đầu từ 0.
 - Kết quả của model khác phải được người/agent rà trước khi commit.
+
+## Mức suy nghĩ và streaming
+- `-e/--effort none|low|high|max` (hoặc trường `effort` trong job `batch` và tool MCP) đặt `reasoning_effort`. `none` tắt suy nghĩ; bỏ trống thì dùng mặc định của Tokenize (cũng có suy nghĩ). Đo thực tế: dùng `high`; `max` hay bị server cắt kết nối và chưa thấy tốt hơn. Khối suy nghĩ vẫn bị tính token.
+- `DS_STREAM=1` bật streaming: server gửi dữ liệu liên tục nên request dài (đầu vào lớn, effort cao) không bị cắt kết nối (`Remote end closed connection`, `Connection reset by peer`). Nên bật cho mọi việc dài.
+- Việc `hard` với đầu vào lớn: đặt `--max-tokens 30000`. Nếu DS nghĩ hết trần thì tệp ra rỗng (cờ `CẮT-CỤT`).
+- Tối đa ~3 request song song; chạy 8 cùng lúc từ nguội làm cache 0% và dễ bị cắt kết nối.

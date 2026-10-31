@@ -142,13 +142,44 @@ def post(body, key):
             raise ApiError(0, str(e))
 
 
+def post_stream(body, key):
+    """Bản streaming (bật bằng DS_STREAM=1): server gửi dữ liệu liên tục nên request dài không bị cắt kết nối."""
+    req = urllib.request.Request(
+        CFG["endpoint"],
+        data=json.dumps(dict(body, stream=True)).encode("utf-8"),
+        headers={"Authorization": f"Bearer {key}", "anthropic-version": "2023-06-01", "Content-Type": "application/json"},
+    )
+    text, usage, stop = [], {}, None
+    try:
+        with urllib.request.urlopen(req, timeout=CFG["timeout"]) as resp:
+            for raw in resp:
+                line = raw.decode("utf-8", "replace").strip()
+                if not line.startswith("data:"):
+                    continue
+                d = line[5:].strip()
+                if d == "[DONE]":
+                    break
+                ev = json.loads(d)
+                t = ev.get("type")
+                if t == "message_start":
+                    usage.update(ev.get("message", {}).get("usage", {}))
+                elif t == "content_block_delta" and ev.get("delta", {}).get("type") == "text_delta":
+                    text.append(ev["delta"]["text"])
+                elif t == "message_delta":
+                    usage.update(ev.get("usage", {}))
+                    stop = ev.get("delta", {}).get("stop_reason") or stop
+    except urllib.error.HTTPError as e:
+        raise ApiError(e.code, e.read().decode("utf-8", "replace")[:300])
+    return {"content": [{"type": "text", "text": "".join(text)}], "usage": usage, "stop_reason": stop}
+
+
 def read_text(path):
     check_readable(path)
     with open(path, encoding="utf-8", errors="replace") as f:
         return f.read()
 
 
-def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, model=None):
+def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, model=None, effort=None):
     """Một lần gọi. Phần cố định (system, file) đứng trước, chỉ thị đứng cuối để trúng cache."""
     model = model or CFG["routes"][tier]
     max_tokens = max_tokens or CFG["maxTokens"][tier]
@@ -156,10 +187,12 @@ def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, m
     for attempt in range(2):
         row = budget.reserve((len(user) + len(system or "")) // 3 + max_tokens)
         body = {"model": model, "max_tokens": max_tokens, "messages": [{"role": "user", "content": user}]}
+        if effort:
+            body["reasoning_effort"] = effort
         if system:
             body["system"] = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
         try:
-            resp = post(body, key)
+            resp = post_stream(body, key) if os.environ.get("DS_STREAM") else post(body, key)
         except Exception:
             budget.release(row)
             raise
@@ -197,7 +230,7 @@ def summary(r, out=None):
 
 def cmd_run(args):
     budget, key = Budget(), api_key()
-    r = run_job(budget, key, args.tier, args.prompt, args.input or (), read_text(args.system) if args.system else None, args.max_tokens, args.model)
+    r = run_job(budget, key, args.tier, args.prompt, args.input or (), read_text(args.system) if args.system else None, args.max_tokens, args.model, args.effort)
     if args.out:
         write_out(args.out, r["text"])
         print(summary(r, args.out))
@@ -219,7 +252,7 @@ def cmd_batch(args):
             return jid, "bỏ-qua: chạm trần", None
         try:
             system = read_text(job["system_file"]) if job.get("system_file") else None
-            r = run_job(budget, key, job.get("tier", "simple"), job["prompt"], job.get("files", ()), system, job.get("max_tokens"), job.get("model"))
+            r = run_job(budget, key, job.get("tier", "simple"), job["prompt"], job.get("files", ()), system, job.get("max_tokens"), job.get("model"), job.get("effort"))
             write_out(job["out"], r["text"])
             return jid, summary(r, job["out"]), r
         except BudgetError as e:
@@ -256,6 +289,7 @@ TOOLS = [
                 "system": {"type": "string"},
                 "out_file": {"type": "string"},
                 "max_tokens": {"type": "integer"},
+                "effort": {"type": "string", "enum": ["none", "low", "high", "max"]},
             },
         },
     },
@@ -268,7 +302,7 @@ def call_tool(budget, name, a):
         return budget.report()
     if name != "deepseek_chat":
         raise ApiError(0, f"không có tool {name}")
-    r = run_job(budget, api_key(), a.get("tier", "simple"), a["prompt"], a.get("files", ()), a.get("system"), a.get("max_tokens"))
+    r = run_job(budget, api_key(), a.get("tier", "simple"), a["prompt"], a.get("files", ()), a.get("system"), a.get("max_tokens"), None, a.get("effort"))
     if a.get("out_file"):
         write_out(a["out_file"], r["text"])
         return summary(r, a["out_file"])
@@ -320,6 +354,7 @@ def main():
     r.add_argument("-p", "--prompt", required=True)
     r.add_argument("-o", "--out", help="ghi kết quả ra file, chỉ in một dòng tóm tắt")
     r.add_argument("--max-tokens", type=int)
+    r.add_argument("-e", "--effort", choices=["none", "low", "high", "max"], help="mức suy nghĩ (reasoning_effort); bỏ trống = mặc định của Tokenize")
     r.set_defaults(fn=cmd_run)
     b = sub.add_parser("batch", help="chạy nhiều việc song song từ file jsonl")
     b.add_argument("jobs", help='mỗi dòng: {"id","tier","system_file","files","prompt","out"}')
