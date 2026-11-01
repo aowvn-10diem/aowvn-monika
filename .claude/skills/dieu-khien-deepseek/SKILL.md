@@ -16,12 +16,12 @@ Số đo ở đây lấy từ lô DS-worker 30–31/10/2026 (PM-003, ~29 request
 
 ## 2. Chạy nhanh (đừng dựng tay)
 ```bash
-export DS_WORK=<thư mục scratchpad của phiên>      # nơi đặt bản sao ds.py; mọi tệp (system, đầu vào, đầu ra) PHẢI nằm trong $DS_WORK/ds/io/
-mkdir -p $DS_WORK/ds/io
+export DS_WORK=<thư mục scratchpad của phiên>      # nơi đặt bản sao ds.py; mọi tệp (system, đầu vào, đầu ra) PHẢI nằm trong $DS_WORK/ds/tools/ds/.work/
+mkdir -p $DS_WORK/ds/tools/ds/.work
 S=.claude/skills/dieu-khien-deepseek
-$S/ds-chay.sh hard high $DS_WORK/ds/io/he-thong.txt $DS_WORK/ds/io/ra.md "chỉ thị ngắn" -- $DS_WORK/ds/io/dau-vao-1.txt $DS_WORK/ds/io/dau-vao-2.txt
+$S/ds-chay.sh hard high $DS_WORK/ds/tools/ds/.work/he-thong.txt $DS_WORK/ds/tools/ds/.work/ra.md "chỉ thị ngắn" -- $DS_WORK/ds/tools/ds/.work/dau-vao-1.txt $DS_WORK/ds/tools/ds/.work/dau-vao-2.txt
 ```
-`ds-chay.sh` tự: lấy `tools/ds/ds.py` từ `origin/main` (hoặc nhánh PR #381 `ccr-37c8378a-bgfkia` nếu chưa gộp) vào `$DS_WORK/ds/`, áp `ds-stream-effort.patch` (streaming + cờ `--effort`), bật streaming, thử lại khi bị cắt kết nối (không thử lại lỗi chặn tệp/thiếu key), in một dòng tóm tắt (model, token mới, cache %). Cờ `CẮT-CỤT` hoặc file ra rỗng nghĩa là DS nghĩ hết `max_tokens` (xem mục 5).
+`ds-chay.sh` tự: lấy `tools/ds/ds.py` từ `origin/main` (hoặc nhánh PR #381 `ccr-37c8378a-bgfkia` nếu chưa gộp) vào `$DS_WORK/ds/`, áp `ds-stream-effort.patch` (chỉ còn streaming; `--effort` và tự thử lại đã vào #381 theo PM) khi `ds.py` chưa có `post_stream`, bật streaming, thử lại khi bị cắt kết nối (không thử lại lỗi chặn tệp/thiếu key), in một dòng tóm tắt (model, token mới, cache %). Cờ `CẮT-CỤT` hoặc file ra rỗng nghĩa là DS nghĩ hết `max_tokens` (xem mục 5).
 - **Không commit `tools/` hay `.mcp.json` vào PR việc** (luật PM-003). Giữ bản ds.py ở `$DS_WORK`, repo sạch (hook dừng phiên sẽ kêu nếu có file untracked).
 - `ds.py` từ chối tệp nhạy cảm (`*.pem`, `.env`, `local.properties`, `google-services.json`...) và mọi đường dẫn ngoài "repo" của ds.py (đọc lẫn ghi `-o`; **không còn** biến `DS_EXTRA_ROOTS`, Luna đã chặn ở #381). Đừng lách. Chỉ đưa tệp đã `git show` từ nhánh, kiểm không có secret.
 - Mức dùng: `python3 $DS_WORK/ds/tools/ds/ds.py usage`. Sổ đếm theo từng máy; không chạy lô chồng giờ với phiên khác.
@@ -53,7 +53,7 @@ $S/ds-chay.sh hard high $DS_WORK/ds/io/he-thong.txt $DS_WORK/ds/io/ra.md "chỉ 
 | `Remote end closed connection` / `Connection reset by peer` | request không-streaming dài (effort max, đầu vào lớn) hoặc nhiều request cùng lúc | dùng streaming (wrapper đã bật), `high`, ≤3 song song |
 | Tệp ra rỗng, `ra` = đúng `max_tokens` | DS nghĩ hết trần, chưa kịp viết (đầu vào lớn, effort cao) | `hard` đầu vào lớn dùng `DS_MAX_TOKENS=30000` (theo cấu hình OpenCode của sếp, model cho tới 32.768); khối suy nghĩ vẫn bị tính tiền |
 | cache 0% | chạy song song từ nguội | làm nóng bằng 1 request tuần tự |
-| `nằm ngoài thư mục cho phép` | tệp ngoài `$DS_WORK/ds` | đặt trong `$DS_WORK/ds/io/` (wrapper báo mã 5 trước khi gọi) |
+| `nằm ngoài thư mục cho phép` | tệp ngoài `$DS_WORK/ds` | đặt trong `$DS_WORK/ds/tools/ds/.work/` (cùng tên thư mục tạm PM chốt cho repo: `tools/ds/.work/`; wrapper báo mã 5 trước khi gọi) |
 | Gradle không chạy được | cloud không có Android SDK, Maven trả 429, tải compiler ngoài bị chặn | **CI là phép biên dịch duy nhất**; ghi rõ "chưa chạy Gradle" trong PR |
 
 ## 6. Rà đầu ra (bắt buộc, trước mọi commit)
@@ -78,6 +78,8 @@ $S/ds-chay.sh hard high $DS_WORK/ds/io/he-thong.txt $DS_WORK/ds/io/ra.md "chỉ 
 - **Chưa kiểm:** đọc `/proc/...` (bộ kiểm duyệt chặn phép thử, suy luận từ luật `./**`); bật Bash cho DS (không khuyến nghị nếu không có sandbox); phiên cloud chính của sếp có tự đổi sang DS được không.
 - **Phép thử `PlayClock.kt` (Pro, không PR):** 17 lượt, ~66 giây, ~31k token vào / 6k ra; DS tự tìm ra cơ chế thật (`Prefs.postGameEvent` ghi `filesDir/game-events.log`, `Prefs.kt:205,208`) và viết 6 test khớp mã. Rủi ro còn lại, chính DS nêu: `AppGraph.prefs` là singleton nên có thể không khớp `app.filesDir` của test; chỉ CI xác nhận được. Agent hợp việc cần khám phá ngữ cảnh; việc rõ ràng thì `ds-chay.sh` một lần rẻ hơn.
 - Chạy việc thật của DS ở chế độ này vẫn theo ngưỡng mục 6 và nhãn `ds-ok`.
+
+- **Khi `git merge` báo xung đột: DỪNG.** Đã có lần gộp nhánh #381 vào PR xếp chồng, `test_ds.py` xung đột, script vẫn `git add -A && commit && push` và đẩy dấu xung đột lên GitHub. Hợp nhất bằng `git merge --no-commit`, kiểm `git diff --name-only --diff-filter=U` rỗng, chạy test, rồi mới commit.
 
 ## 9. Checklist mỗi phiên
 1. `TOKENIZE_API_KEY` có không (chỉ có/không). 2. `git fetch origin main ccr-37c8378a-bgfkia`. 3. Đọc `KE-HOACH.md` mục DS-worker và `BANG-TIN.md` (thư PM mới). 4. Kiểm tiền đề việc (mục 4.1). 5. Làm nóng cache, chạy flash + pro ở `high`. 6. Rà từng mục, tính tỉ lệ. 7. Chạy `kt-lint.sh` trên test DS viết. 8. Một PR nhỏ/việc, header `Deepseek API`, ghi rõ chưa chạy Gradle. 9. Báo PM ≤5 dòng; chi phí/key/số dư báo sếp.
