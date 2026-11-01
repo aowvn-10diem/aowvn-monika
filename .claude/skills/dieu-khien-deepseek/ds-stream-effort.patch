@@ -1,8 +1,8 @@
 diff --git a/tools/ds/ds.py b/tools/ds/ds.py
-index 356d15e2..336ef18f 100644
+index 8fba453c..363d0bcb 100644
 --- a/tools/ds/ds.py
 +++ b/tools/ds/ds.py
-@@ -144,13 +144,44 @@ def post(body, key):
+@@ -171,13 +171,44 @@ def post(body, key):
              raise ApiError(0, str(e))
  
  
@@ -48,7 +48,7 @@ index 356d15e2..336ef18f 100644
      """Một lần gọi. Phần cố định (system, file) đứng trước, chỉ thị đứng cuối để trúng cache."""
      model = model or CFG["routes"][tier]
      max_tokens = max_tokens or CFG["maxTokens"][tier]
-@@ -158,10 +189,12 @@ def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, m
+@@ -185,10 +216,12 @@ def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, m
      for attempt in range(2):
          row = budget.reserve((len(user) + len(system or "")) // 3 + max_tokens)
          body = {"model": model, "max_tokens": max_tokens, "messages": [{"role": "user", "content": user}]}
@@ -62,7 +62,7 @@ index 356d15e2..336ef18f 100644
          except Exception:
              budget.release(row)
              raise
-@@ -207,7 +240,7 @@ def cmd_run(args):
+@@ -234,7 +267,7 @@ def cmd_run(args):
      if args.out:
          check_writable(args.out)  # chặn trước khi tốn token
      budget, key = Budget(), api_key()
@@ -71,7 +71,7 @@ index 356d15e2..336ef18f 100644
      if args.out:
          write_out(args.out, r["text"])
          print(summary(r, args.out))
-@@ -231,7 +264,7 @@ def cmd_batch(args):
+@@ -258,7 +291,7 @@ def cmd_batch(args):
              return jid, "bỏ-qua: chạm trần", None
          try:
              system = read_text(job["system_file"]) if job.get("system_file") else None
@@ -80,7 +80,7 @@ index 356d15e2..336ef18f 100644
              write_out(job["out"], r["text"])
              return jid, summary(r, job["out"]), r
          except BudgetError as e:
-@@ -268,6 +301,7 @@ TOOLS = [
+@@ -295,6 +328,7 @@ TOOLS = [
                  "system": {"type": "string"},
                  "out_file": {"type": "string"},
                  "max_tokens": {"type": "integer"},
@@ -88,7 +88,7 @@ index 356d15e2..336ef18f 100644
              },
          },
      },
-@@ -282,7 +316,7 @@ def call_tool(budget, name, a):
+@@ -309,7 +343,7 @@ def call_tool(budget, name, a):
          raise ApiError(0, f"không có tool {name}")
      if a.get("out_file"):
          check_writable(a["out_file"])
@@ -97,7 +97,7 @@ index 356d15e2..336ef18f 100644
      if a.get("out_file"):
          write_out(a["out_file"], r["text"])
          return summary(r, a["out_file"])
-@@ -334,6 +368,7 @@ def main():
+@@ -361,6 +395,7 @@ def main():
      r.add_argument("-p", "--prompt", required=True)
      r.add_argument("-o", "--out", help="ghi kết quả ra file, chỉ in một dòng tóm tắt")
      r.add_argument("--max-tokens", type=int)
