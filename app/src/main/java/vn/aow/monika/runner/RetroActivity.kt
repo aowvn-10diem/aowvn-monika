@@ -566,7 +566,7 @@ class RetroActivity : ComponentActivity() {
         for (c in changes) when (c) {
             is GamepadInput.Change.Hat -> view.sendMotionEvent(GLRetroView.MOTION_SOURCE_DPAD, c.x.toFloat(), c.y.toFloat(), 0)
             is GamepadInput.Change.Stick -> view.sendMotionEvent(if (c.right) GLRetroView.MOTION_SOURCE_ANALOG_RIGHT else GLRetroView.MOTION_SOURCE_ANALOG_LEFT, c.x, c.y, 0)
-            is GamepadInput.Change.Trigger -> view.sendKeyEvent(
+            is GamepadInput.Change.Trigger -> view.sendPadKey(
                 if (c.down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP,
                 if (c.right) KeyEvent.KEYCODE_BUTTON_R2 else KeyEvent.KEYCODE_BUTTON_L2,
             )

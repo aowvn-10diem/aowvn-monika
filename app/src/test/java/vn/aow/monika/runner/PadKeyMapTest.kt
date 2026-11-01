@@ -6,7 +6,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * V159: một bảng ánh xạ nút mặt cho mọi hệ + ba đường nhập (overlay, tay cầm thật, `onKeyDown`) ra cùng nút lõi.
+ * V159: một bảng ánh xạ nút mặt cho mọi hệ. Overlay và tay cầm thật được kiểm trực tiếp; `onKeyDown` gọi
+ * cùng `GLRetroView.sendPadKey` nên đi đúng một đường với tay cầm thật (không lặp assertion giả).
  *
  * Căn cứ thứ tự nút của lõi (đọc mã nguồn từng lõi, xem PR):
  * - gambatte `libgambatte/libretro/libretro.cpp`: `JOYPAD_A` = A, `JOYPAD_B` = B (B ở đáy).
@@ -73,9 +74,9 @@ class PadKeyMapTest {
         assertEquals(PadLayout.N64, padFor("parallel_n64", null))
     }
 
-    // ---- Ba đường nhập ra cùng một nút ----
+    // ---- Overlay và tay cầm thật ra cùng một nút ----
 
-    @Test fun overlayTayCamVaOnKeyDownRaCungMotNut() {
+    @Test fun overlayVaTayCamRaCungMotNut() {
         data class Row(val core: String, val label: String, val padKey: Int, val joypad: String)
 
         // padKey = nút THẬT ở đúng vị trí mà overlay vẽ nhãn đó (dưới = BUTTON_A, phải = BUTTON_B,
@@ -113,12 +114,13 @@ class PadKeyMapTest {
         for (r in rows) {
             val layout = padFor(r.core, null)
             val overlay = libretroButton(PadKeyMap.toNativeKey(PadFaceKeys.key(layout, r.label)))
-            val pad = libretroButton(PadKeyMap.toNativeKey(r.padKey))       // dispatchKeyEvent / nhả phím
-            val keyDown = libretroButton(PadKeyMap.toNativeKey(r.padKey))   // GLRetroView.onKeyDown
+            val pad = libretroButton(PadKeyMap.toNativeKey(r.padKey)) // dispatchKeyEvent / nhả phím
 
             assertEquals("overlay ${r.core} ${r.label}", r.joypad, overlay)
             assertEquals("tay cầm ${r.core} ${r.label}", r.joypad, pad)
-            assertEquals("onKeyDown ${r.core} ${r.label}", r.joypad, keyDown)
+            // `onKeyDown` không có entry point thuần chạy được trên JVM (GLRetroView là Android View).
+            // Nó gọi `sendPadKey(event.keyCode)` — cùng đúng một biểu thức với tay cầm thật ở trên —
+            // nên không thêm assertion lặp lại; đường này được bảo đảm bởi cửa duy nhất `GLRetroView.sendPadKey`.
         }
     }
 
