@@ -133,5 +133,49 @@ class SendTest(unittest.TestCase):
         self.assertEqual(1, code)
 
 
+class ErrorLineTest(unittest.TestCase):
+    """V146-fix: lỗi Telegram in mã HTTP + description, cắt 120 ký tự, không lộ bí mật."""
+
+    URL = "https://api.telegram.org/bot123:secret-token/sendMessage"
+
+    def http_error(self, payload, code=400, reason="Bad Request"):
+        return bot.urllib.error.HTTPError(
+            self.URL, code, reason, None, io.BytesIO(json.dumps(payload).encode("utf-8"))
+        )
+
+    def run_error(self, error):
+        opener = FakeOpener(error=error)
+        out = io.StringIO()
+        with redirect_stdout(out):
+            code = bot.run(env(), opener)
+        self.assertEqual(1, code)
+        return out.getvalue()
+
+    def test_http_code_and_description_are_printed(self):
+        line = self.run_error(self.http_error({"ok": False, "error_code": 400, "description": "Bad Request: chat not found"}))
+        self.assertIn("HTTP 400", line)
+        self.assertIn("chat not found", line)
+
+    def test_description_is_cut_to_120(self):
+        line = self.run_error(self.http_error({"ok": False, "description": "x" * 500}))
+        self.assertLessEqual(len(line.strip()), 120 + len("gui that bai: "))
+
+    def test_no_url_token_or_chat_id_in_error(self):
+        for error in (
+            self.http_error({"ok": False, "description": "Bad Request: chat not found"}),
+            bot.urllib.error.URLError("mạng hỏng " + self.URL),
+        ):
+            with self.subTest(error=type(error).__name__):
+                line = self.run_error(error)
+                self.assertNotIn("secret-token", line)
+                self.assertNotIn("123:", line)
+                self.assertNotIn("-1001234567890", line)
+                self.assertNotIn("api.telegram.org", line)
+
+    def test_network_error_without_http_still_reports_type(self):
+        line = self.run_error(bot.urllib.error.URLError("mạng hỏng"))
+        self.assertIn("URLError", line)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
