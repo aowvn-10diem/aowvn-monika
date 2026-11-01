@@ -9,7 +9,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 - **Mới:** Khi có bản cập nhật quan trọng, app sẽ báo ngay lúc mở và có sẵn nút tải bản mới, để bạn luôn dùng bản đã sửa lỗi. ([dd1fa2d](https://github.com/aowvn-10diem/aowvn-monika/commit/dd1fa2d6c7c21ac8df9d02ec63be6b1fa55d25aa))
 - **Sửa lỗi:** Tay cầm bấm được đủ nút, phím hướng, núm xoay analog và nút L/R khi chơi game giả lập (GBA, NDS, SNES…), 3DS và game Java. ([3ebb002](https://github.com/aowvn-10diem/aowvn-monika/commit/3ebb002582d35c32a805c096ea1b97ee70ce0598))
 - **Sửa lỗi:** Rút tay cầm giữa lúc chơi không còn bị kẹt nút (nhân vật tự chạy hoặc tự bấm mãi). ([3ebb002](https://github.com/aowvn-10diem/aowvn-monika/commit/3ebb002582d35c32a805c096ea1b97ee70ce0598))
-- Nội bộ: hệ thống nhận báo lỗi có giới hạn số lần gửi và thời gian chờ gửi lại điều chỉnh được. Mã đã gộp, cần xác nhận triển khai máy chủ. Tương thích từng tay cầm cần thử thêm trên máy thật. ([d925c64](https://github.com/aowvn-10diem/aowvn-monika/commit/d925c6418818a405c969fac24276be32b64402ab))
+- Nội bộ: hệ thống nhận báo lỗi có giới hạn số lần gửi và thời gian chờ gửi lại điều chỉnh được. Mã đã gộp, cần xác nhận đã triển khai. Tương thích từng tay cầm cần thử thêm trên máy thật. ([d925c64](https://github.com/aowvn-10diem/aowvn-monika/commit/d925c6418818a405c969fac24276be32b64402ab))
 
 ## [v0.8.7](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.7) (Bản ổn định)
 <!-- bien-tap: v0.8.7 -->
