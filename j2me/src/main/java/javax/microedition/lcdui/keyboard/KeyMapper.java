@@ -27,6 +27,7 @@ import androidx.collection.SparseArrayCompat;
 
 import java.util.List;
 
+import ru.playsoftware.j2meloader.AowPad;
 import ru.playsoftware.j2meloader.config.ProfileModel;
 
 public class KeyMapper {
@@ -223,6 +224,9 @@ public class KeyMapper {
 		map.append(KeyEvent.KEYCODE_DPAD_LEFT, KEY_LEFT);
 		map.append(KeyEvent.KEYCODE_DPAD_RIGHT, KEY_RIGHT);
 		map.append(KeyEvent.KEYCODE_ENTER, KEY_FIRE);
+		for (int[] pair : AowPad.KEYS) { // tay cầm thật (V120)
+			map.append(pair[0], pair[1]);
+		}
 		map.append(KeyEvent.KEYCODE_DEL, KEY_CLEAR);
 		return map;
 	}

@@ -30,6 +30,8 @@ android {
             "String", "REMOTE_CONFIG_URL",
             "\"https://aowvn-monika.aowvn-system.workers.dev/config.json\""
         )
+        // [A65] flavor `play` (V150) đặt false: màn "Cần cập nhật" chỉ ghi "Cập nhật trên Google Play", không mở link APK ngoài.
+        buildConfigField("boolean", "APK_DOWNLOAD_ALLOWED", "true")
     }
 
     flavorDimensions += "distribution"

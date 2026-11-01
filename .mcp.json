@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ds": {
+      "command": "python3",
+      "args": ["tools/ds/ds.py", "mcp"]
+    }
+  }
+}
