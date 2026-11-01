@@ -158,7 +158,11 @@ class ErrorLineTest(unittest.TestCase):
 
     def test_description_is_cut_to_120(self):
         line = self.run_error(self.http_error({"ok": False, "description": "x" * 500}))
-        self.assertLessEqual(len(line.strip()), 120 + len("gui that bai: "))
+        text = line.strip()[len("gui that bai: "):]
+        # Giới hạn 120 áp cho riêng description; mã HTTP không bị cắt mất.
+        self.assertTrue(text.startswith("HTTP 400 "), text[:20])
+        self.assertEqual(120, len(text[len("HTTP 400 "):]))
+        self.assertLessEqual(len(line.strip()), len("gui that bai: HTTP 400 ") + 120)
 
     def test_no_url_token_or_chat_id_in_error(self):
         for error in (
