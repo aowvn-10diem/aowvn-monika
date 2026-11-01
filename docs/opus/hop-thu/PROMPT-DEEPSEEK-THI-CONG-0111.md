@@ -40,21 +40,26 @@ Gộp PR, ghi "PM duyệt", push main, force push, rebase nhánh người khác,
 ## Khối riêng DeepSeek 1 (bảo vệ repo + ép cập nhật)
 
 ```
-Bạn là DeepSeek 1. Việc theo thứ tự:
+Bạn là DeepSeek 1. Việc theo thứ tự, lỗi sếp báo làm ngay sau V157. Hết việc thì báo #337 để PM giao tiếp, không ngồi chờ:
 | Ưu tiên | Mã | Việc | Đạt khi |
 |---|---|---|---|
 | 1 GẤP | V157 | Ép cập nhật [A71]: app đọc `app.minVersionCode` (trường đã có trong `MonikaConfig.kt`, hiện app chưa dùng). Bản cài < min thì hiện màn chặn toàn màn hình "Cần cập nhật" với nút tải `apkUrl` (bản GitHub); bản Play thì chỉ ghi "Cập nhật trên Google Play", không link APK. Không chặn khi chưa tải được config (offline giữ chạy). Không đổi giá trị `minVersionCode` trong config (PM đặt sau khi phát hành). Mục tiêu: PR sẵn sàng duyệt trong ngày 02/11/2026 để vào bản 0.8.8. | Test Robolectric: min > bản cài → chặn; min ≤ bản cài → không chặn; offline → không chặn; flavor play không có link APK. CI xanh |
-| 2 | P1a | Tách config nhạy cảm (`account.donate`, `archivePasswords`, `downloadHosts`) sang overlay theo chốt PM: overlay đi kèm lần tải config hiện có (không thêm lượt gọi Worker); offline dùng overlay lấy thành công lần cuối; chưa từng có thì tắt đúng tính năng đó. Không đổi Cloudflare (sếp đồng bộ). | Test: có overlay / overlay cũ / không overlay; `ConfigTest` xanh; tăng `configVersion` |
-| 3 | G3 | Tải gói lõi qua liên kết ký ngắn hạn do Worker cấp, để sếp chuyển repo `aowvn-monika-packs` sang riêng tư [A70]. Bản đã cài vẫn dùng URL cũ tới khi đường mới chạy và sếp đổi quyền repo. Thứ tự: Worker → config → sếp đổi quyền. | Thiết kế + mã có test; ước lượng lượt gọi Worker/ngày cho 1000 người; không chứa secret |
+| 2 | V160 | Màn NDS hiển thị không kín màn (sếp báo 01/11, ảnh: dọc chỉ ~65% chiều ngang, viền đen lớn). Làm theo kiểu DraStic: dọc thì 2 màn xếp chồng, rộng hết chiều ngang, giữ tỉ lệ 4:3, phím ảo trong suốt đè lên nửa dưới; ngang thì 2 màn cạnh nhau. Bố cục và độ trong suốt phím nằm trong config, không hard-code. | Test bố cục dọc/ngang trên 3 kích thước màn (Robolectric); ảnh chụp trước/sau trong PR (không chụp game có bản quyền, dùng màn test) |
+| 3 | V161 | Game Java xoay ngang bị lỗi (sếp báo 01/11). Tái hiện bằng jar tự tạo, tìm nguyên nhân, sửa. Bắt đầu sau khi #241 (Nova, cùng đụng `MicroActivity.java`) gộp. Chưa rõ triệu chứng thì hỏi PM ở #337. | Test tái hiện; CI xanh |
+| 4 | P1a | Tách config nhạy cảm (`account.donate`, `archivePasswords`, `downloadHosts`) sang overlay theo chốt PM: overlay đi kèm lần tải config hiện có (không thêm lượt gọi Worker); offline dùng overlay lấy thành công lần cuối; chưa từng có thì tắt đúng tính năng đó. Không đổi Cloudflare (sếp đồng bộ). | Test: có overlay / overlay cũ / không overlay; `ConfigTest` xanh; tăng `configVersion` |
+| 5 | G3 | Tải gói lõi qua liên kết ký ngắn hạn do Worker cấp, để sếp chuyển repo `aowvn-monika-packs` sang riêng tư [A70]. Bản đã cài vẫn dùng URL cũ tới khi đường mới chạy và sếp đổi quyền repo. Thứ tự: Worker → config → sếp đổi quyền. | Thiết kế + mã có test; ước lượng lượt gọi Worker/ngày cho 1000 người; không chứa secret |
 ```
 
 ## Khối riêng DeepSeek 2 (Worker + báo lỗi, nhận lại từ Sol)
 
 ```
-Bạn là DeepSeek 2. Việc theo thứ tự (V153, V155 nhận lại từ Sol 1; V146-fix nhận từ Sol 2):
+Bạn là DeepSeek 2. Việc theo thứ tự, lỗi sếp báo làm trước (V153, V155 nhận lại từ Sol 1; V146-fix nhận từ Sol 2). Hết việc thì báo #337 để PM giao tiếp, không ngồi chờ:
 | Ưu tiên | Mã | Việc | Đạt khi |
 |---|---|---|---|
-| 1 | V146-fix | Bot Telegram: khi lỗi in mã HTTP + `description`, cắt 120 ký tự. Không in URL, token, chat_id. | Test offline; CI xanh |
-| 2 | V153 | Rate limit Worker theo IP [A66] (giới hạn mỗi IP theo cửa sổ thời gian, trả 429 kèm Retry-After). Không làm tăng lượt gọi Worker; cấu hình ngưỡng không hard-code. | Test đơn vị cho ngưỡng/cửa sổ; ước lượng chi phí cho 1000 người |
-| 3 | V155 | Báo lỗi/crash gửi kèm SHA-256 chứng thư ký của APK, để phân biệt bản chính thức với bản tự build. Worker ghi trường này, không chặn báo lỗi. | Test: chữ ký đúng/khác/thiếu; không đổi định dạng báo lỗi cũ (tương thích ngược) |
+| 1 | V159 | GBA: nút A và B bị đảo (sếp báo 01/11). Nova đã ghi nghi vấn ở mô tả #241: `GLRetroView.onKeyDown` gốc hoán A↔B còn overlay/tay cầm gửi mã thô. Sửa để overlay và tay cầm thật cùng đúng, kiểm mọi hệ libretro có A/B (GB, GBA, NES, SNES, NDS, PSP). Ánh xạ nằm trong config/pad. Bắt đầu trên main sau khi #241 gộp. | Test ánh xạ từng hệ; CI xanh |
+| 2 | V162 | Ẩn phím ảo: (a) trước tiên thêm nút ẩn/hiện phím nhanh khi đang chơi; (b) rồi tự ẩn khi có tay cầm kết nối, tự hiện khi rút. Áp cho Retro, Azahar, J2ME. Sau khi #241 gộp. | Test bật/tắt và sự kiện cắm/rút tay cầm |
+| 3 | V163 | PSP không nhận cần analog tròn của tay cầm (sếp báo 01/11). #241 đã đưa cần analog vào Retro qua `dispatchGenericMotionEvent`; sau khi #241 gộp, kiểm PPSSPP nhận cần trái (`RETRO_DEVICE_ANALOG`), thiếu thì sửa. | Test trục analog → giá trị lõi; mô tả nói rõ phần [CHƯA KIỂM] tay cầm thật |
+| 4 | V146-fix | Bot Telegram: khi lỗi in mã HTTP + `description`, cắt 120 ký tự. Không in URL, token, chat_id. | Test offline; CI xanh |
+| 5 | V153 | Rate limit Worker theo IP [A66] (giới hạn mỗi IP theo cửa sổ thời gian, trả 429 kèm Retry-After). Không làm tăng lượt gọi Worker; cấu hình ngưỡng không hard-code. | Test đơn vị cho ngưỡng/cửa sổ; ước lượng chi phí cho 1000 người |
+| 6 | V155 | Báo lỗi/crash gửi kèm SHA-256 chứng thư ký của APK, để phân biệt bản chính thức với bản tự build. Worker ghi trường này, không chặn báo lỗi. | Test: chữ ký đúng/khác/thiếu; không đổi định dạng báo lỗi cũ (tương thích ngược) |
 ```
