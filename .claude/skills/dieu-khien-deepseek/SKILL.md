@@ -16,13 +16,14 @@ Số đo ở đây lấy từ lô DS-worker 30–31/10/2026 (PM-003, ~29 request
 
 ## 2. Chạy nhanh (đừng dựng tay)
 ```bash
-export DS_WORK=<thư mục scratchpad của phiên>      # mọi tệp tạm (system, đầu vào, đầu ra) để ở đây, KHÔNG trong repo
+export DS_WORK=<thư mục scratchpad của phiên>      # nơi đặt bản sao ds.py; mọi tệp (system, đầu vào, đầu ra) PHẢI nằm trong $DS_WORK/ds/io/
+mkdir -p $DS_WORK/ds/io
 S=.claude/skills/dieu-khien-deepseek
-$S/ds-chay.sh hard high $DS_WORK/he-thong.txt $DS_WORK/ra.md "chỉ thị ngắn" -- $DS_WORK/dau-vao-1.txt $DS_WORK/dau-vao-2.txt
+$S/ds-chay.sh hard high $DS_WORK/ds/io/he-thong.txt $DS_WORK/ds/io/ra.md "chỉ thị ngắn" -- $DS_WORK/ds/io/dau-vao-1.txt $DS_WORK/ds/io/dau-vao-2.txt
 ```
 `ds-chay.sh` tự: lấy `tools/ds/ds.py` từ `origin/main` (hoặc nhánh PR #381 `ccr-37c8378a-bgfkia` nếu chưa gộp) vào `$DS_WORK/ds/`, áp `ds-stream-effort.patch` (streaming + cờ `--effort`), bật streaming, đặt `DS_EXTRA_ROOTS`, thử lại khi bị cắt kết nối (không thử lại lỗi chặn tệp/thiếu key), in một dòng tóm tắt (model, token mới, cache %). Cờ `CẮT-CỤT` hoặc file ra rỗng nghĩa là DS nghĩ hết `max_tokens` (xem mục 5).
 - **Không commit `tools/` hay `.mcp.json` vào PR việc** (luật PM-003). Giữ bản ds.py ở `$DS_WORK`, repo sạch (hook dừng phiên sẽ kêu nếu có file untracked).
-- `ds.py` từ chối tệp nhạy cảm (`*.pem`, `.env`, `local.properties`, `google-services.json`...) và tệp ngoài repo/`DS_EXTRA_ROOTS`. Đừng lách. Chỉ đưa tệp đã `git show` từ nhánh, kiểm không có secret.
+- `ds.py` từ chối tệp nhạy cảm (`*.pem`, `.env`, `local.properties`, `google-services.json`...) và mọi đường dẫn ngoài "repo" của ds.py (đọc lẫn ghi `-o`; **không còn** biến `DS_EXTRA_ROOTS`, Luna đã chặn ở #381). Đừng lách. Chỉ đưa tệp đã `git show` từ nhánh, kiểm không có secret.
 - Mức dùng: `python3 $DS_WORK/ds/tools/ds/ds.py usage`. Sổ đếm theo từng máy; không chạy lô chồng giờ với phiên khác.
 - Công cụ khác trong thư mục skill: `kt-lint.sh <tệp.kt...>` (quét mẫu chuỗi `"$tên_..."` bằng quy tắc, chạy trên test DS viết); `ds-agent.sh` (DS như nhân sự trong worktree riêng, xem mục 8).
 - Mẫu prompt đã chạy tốt ở `mau/` (đổi phần NHIỆM VỤ theo việc): `ra-soat-chuoi`, `viet-test`, `kiem-thu`, `dong-bo-tai-lieu`. Bảng sự thật từ mã: `trich-su-that.sh origin/main > $DS_WORK/su-that.md`.
@@ -52,7 +53,7 @@ $S/ds-chay.sh hard high $DS_WORK/he-thong.txt $DS_WORK/ra.md "chỉ thị ngắn
 | `Remote end closed connection` / `Connection reset by peer` | request không-streaming dài (effort max, đầu vào lớn) hoặc nhiều request cùng lúc | dùng streaming (wrapper đã bật), `high`, ≤3 song song |
 | Tệp ra rỗng, `ra` = đúng `max_tokens` | DS nghĩ hết trần, chưa kịp viết (đầu vào lớn, effort cao) | `hard` đầu vào lớn dùng `DS_MAX_TOKENS=30000` (theo cấu hình OpenCode của sếp, model cho tới 32.768); khối suy nghĩ vẫn bị tính tiền |
 | cache 0% | chạy song song từ nguội | làm nóng bằng 1 request tuần tự |
-| `nằm ngoài thư mục cho phép` | tệp ngoài repo | để trong `$DS_WORK`; wrapper đã đặt `DS_EXTRA_ROOTS` |
+| `nằm ngoài thư mục cho phép` | tệp ngoài `$DS_WORK/ds` | đặt trong `$DS_WORK/ds/io/` (wrapper báo mã 5 trước khi gọi) |
 | Gradle không chạy được | cloud không có Android SDK, Maven trả 429, tải compiler ngoài bị chặn | **CI là phép biên dịch duy nhất**; ghi rõ "chưa chạy Gradle" trong PR |
 
 ## 6. Rà đầu ra (bắt buộc, trước mọi commit)
