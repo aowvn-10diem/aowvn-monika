@@ -52,7 +52,6 @@ import kotlinx.coroutines.withContext
 import vn.aow.monika.R
 import vn.aow.monika.library.GameStorage
 import vn.aow.monika.ui.theme.CircleButton
-import vn.aow.monika.ui.theme.DockClearance
 import vn.aow.monika.ui.theme.EmptyState
 import vn.aow.monika.ui.theme.GradientProgress
 import vn.aow.monika.ui.theme.Illustration
@@ -111,7 +110,9 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> U
     val dm = context.getSystemService(DownloadManager::class.java)
 
     Screen {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // V152 (targetSdk 36, edge-to-edge bắt buộc): cộng phần thanh hệ thống dưới vào khoảng chừa của menu nổi.
+        val bottomClearance = vn.aow.monika.ui.theme.dockContentClearance()
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottomClearance), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item { if (header != null) header() else MonikaHeader("Tải xuống") }
             storage?.let { s -> item { StorageCard(s) } }
             item { SectionRow("Đang tải xuống", active.size) }

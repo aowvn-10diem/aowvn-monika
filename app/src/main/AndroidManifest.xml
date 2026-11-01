@@ -32,7 +32,8 @@
         android:requestLegacyExternalStorage="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.Monika"
-        tools:targetApi="35">
+        android:enableOnBackInvokedCallback="true"
+        tools:targetApi="36">
 
         <!-- V53: nội bộ cùng UID; VIEW .jar/.jad vẫn vào ui.MainActivity. -->
         <activity android:name="ru.playsoftware.j2meloader.MainActivity"
@@ -75,16 +76,20 @@
             </intent-filter>
         </activity>
 
+        <!-- V152 (targetSdk 36): màn lớn (≥600dp) BỎ android:screenOrientation → hệ thống tự do xoay/đổi cỡ.
+             Mọi activity chạy game phải tự xử lý đổi cỡ, KHÔNG để hệ thống tạo lại (tạo lại = mất phiên game):
+             configChanges phủ đủ orientation/screenSize/screenLayout/smallestScreenSize/density/uiMode/layoutDirection. -->
         <activity
             android:name=".runner.RetroActivity"
             android:process=":game"
-            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|layoutDirection|keyboard|keyboardHidden|navigation"
             android:screenOrientation="fullUser"
             android:theme="@style/Theme.Monika.Fullscreen" />
 
         <activity
             android:name=".runner.EnginePrepActivity"
             android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|layoutDirection|keyboard|keyboardHidden|navigation"
             android:theme="@style/Theme.Monika.Fullscreen" />
 
         <activity
@@ -97,7 +102,7 @@
             android:name=".runner.RgssGameActivity"
             android:process=":game"
             android:taskAffinity="com.aow.monika.rgss"
-            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize|density|uiMode|layoutDirection"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|layoutDirection|keyboard|keyboardHidden|navigation"
             android:screenOrientation="sensorLandscape"
             android:windowSoftInputMode="adjustPan"
             android:exported="false"
@@ -107,7 +112,7 @@
             android:name=".runner.RenpyGameActivity"
             android:process=":game"
             android:taskAffinity="com.aow.monika.renpy"
-            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize|density|uiMode|layoutDirection"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|layoutDirection|keyboard|keyboardHidden|navigation"
             android:screenOrientation="sensorLandscape"
             android:windowSoftInputMode="adjustPan"
             android:exported="false"
@@ -117,7 +122,7 @@
             android:name=".runner.KirikiriGameActivity"
             android:process=":game"
             android:taskAffinity="com.aow.monika.kirikiri"
-            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|layoutDirection|keyboard|keyboardHidden|navigation"
             android:screenOrientation="sensorLandscape"
             android:windowSoftInputMode="adjustPan"
             android:exported="false"
@@ -126,19 +131,19 @@
         <activity
             android:name=".azahar.AzaharActivity"
             android:process=":game"
-            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|layoutDirection|keyboard|keyboardHidden|navigation"
             android:screenOrientation="fullUser"
             android:theme="@style/Theme.Monika.Fullscreen" />
 
         <activity
             android:name=".azahar.AzaharInstallActivity"
             android:process=":game"
-            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|layoutDirection|keyboard|keyboardHidden|navigation"
             android:theme="@style/Theme.Monika.Fullscreen" />
 
         <activity
             android:name=".runner.WebGameActivity"
-            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|smallestScreenSize"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|layoutDirection|keyboard|keyboardHidden|navigation"
             android:screenOrientation="fullUser"
             android:hardwareAccelerated="true"
             android:theme="@style/Theme.Monika.Fullscreen" />

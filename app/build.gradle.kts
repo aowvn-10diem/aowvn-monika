@@ -9,14 +9,15 @@ plugins {
 
 android {
     namespace = "vn.aow.monika"
-    compileSdk = 35
+    // V152: Android 16 (API 36). targetSdk 36 → bắt buộc edge-to-edge, màn lớn bỏ khoá xoay, predictive back mặc định.
+    compileSdk = 36
     // Cùng NDK với :j2me: để AGP có llvm-strip và cắt ký hiệu debug khỏi libc++_shared/oboe/javam3g/mmapi... (≈ −14 MB APK; trước đó log báo "Unable to strip").
     ndkVersion = "22.1.7171670"
 
     defaultConfig {
         applicationId = "com.aow.monika"
         minSdk = 26 // Android 8.0+
-        targetSdk = 35
+        targetSdk = 36
         // Tăng versionCode mỗi lần phát hành; app so số này với config để nhắc cập nhật.
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
@@ -120,7 +121,7 @@ val loaderDex by tasks.registering(JavaExec::class) {
         ?: Properties().also { p -> rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(p::load) }.getProperty("sdk.dir")
     doFirst {
         out.get().asFile.deleteRecursively(); out.get().asFile.mkdirs()
-        args("--release", "--min-api", "21", "--lib", "$sdk/platforms/android-35/android.jar", "--output", out.get().asFile.absolutePath, jar.get().archiveFile.get().asFile.absolutePath)
+        args("--release", "--min-api", "21", "--lib", "$sdk/platforms/android-36/android.jar", "--output", out.get().asFile.absolutePath, jar.get().archiveFile.get().asFile.absolutePath)
     }
     inputs.files(jar.map { it.archiveFile })
     outputs.dir(out)

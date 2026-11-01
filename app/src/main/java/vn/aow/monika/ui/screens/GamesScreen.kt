@@ -54,7 +54,6 @@ import vn.aow.monika.R
 import vn.aow.monika.feed.Post
 import vn.aow.monika.ui.theme.ChipBar
 import vn.aow.monika.ui.theme.DarkButton
-import vn.aow.monika.ui.theme.DockClearance
 import vn.aow.monika.ui.theme.EmptyState
 import vn.aow.monika.ui.theme.Monika
 import vn.aow.monika.ui.theme.MonikaCard
@@ -126,7 +125,9 @@ fun GamesScreen(onOpen: (Post) -> Unit, focusSearch: Boolean = false, vm: FeedVi
     LaunchedEffect(focusSearch) { if (focusSearch) runCatching { focus.requestFocus() } }
 
     Screen {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DockClearance), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // V152 (targetSdk 36, edge-to-edge bắt buộc): chừa thêm đúng phần thanh hệ thống dưới, không chỉ 110dp của menu nổi.
+        val bottomClearance = vn.aow.monika.ui.theme.dockContentClearance()
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomClearance), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // Đầu trang tối kiểu "Tìm kiếm" của design: ô tìm + bộ lọc.
             item {
                 Column(
