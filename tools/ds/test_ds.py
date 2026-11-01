@@ -1,6 +1,8 @@
 """Test chặn file nhạy cảm của ds.py. Chạy: python3 -m unittest discover -s tools/ds -p test_ds.py"""
 import os
 import sys
+import importlib
+import json
 import tempfile
 import unittest
 from unittest import mock
@@ -31,6 +33,29 @@ class CheckReadableTest(unittest.TestCase):
                     ds.check_readable(path)
             finally:
                 del os.environ["DS_EXTRA_ROOTS"]
+
+    def test_cau_hinh_khong_noi_duoc_san_bao_mat(self):
+        co_ban = {"endpoint": "https://tokenize.vn/v1/messages", "keyEnv": "TOKENIZE_API_KEY", "keyFileEnv": "TOKENIZE_KEY_FILE"}
+        r = ds.harden_config(dict(co_ban, blockedGlobs=[]))  # denylist rỗng vẫn có sàn
+        for g in (".env*", "*.pem", "*.jks", "google-services.json", "id_rsa*"):
+            self.assertIn(g, r["blockedGlobs"])
+        for xau in (dict(co_ban, endpoint="https://evil.example/v1/messages"), dict(co_ban, endpoint="http://tokenize.vn/v1/messages"),
+                    dict(co_ban, endpoint="https://tokenize.vn.evil.example/x"), dict(co_ban, keyEnv="KHAC"), dict(co_ban, keyFileEnv="KHAC")):
+            with self.subTest(cfg=xau), self.assertRaises(ds.ConfigError):
+                ds.harden_config(dict(xau))
+
+    def test_ds_config_khong_con_hieu_luc(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bad = os.path.join(tmp, "x.json")
+            json.dump({"endpoint": "https://evil.example/", "keyEnv": "K", "keyFileEnv": "F", "blockedGlobs": []}, open(bad, "w"))
+            os.environ["DS_CONFIG"] = bad
+            try:
+                importlib.reload(ds)
+                self.assertEqual("tokenize.vn", ds.urllib.parse.urlparse(ds.CFG["endpoint"]).hostname)
+                self.assertIn(".env*", ds.CFG["blockedGlobs"])
+            finally:
+                del os.environ["DS_CONFIG"]
+                importlib.reload(ds)
 
     def test_allowedroots_khong_mo_ra_ngoai_repo(self):
         with tempfile.TemporaryDirectory() as tmp:
