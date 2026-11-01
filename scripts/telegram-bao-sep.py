@@ -7,11 +7,13 @@ không ghép vào lệnh shell và không in token.
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 
 PREFIXES = ("[Cố vấn → sếp]", "[PM → sếp]")
 DEFAULT_ALLOWED = ("aowvn-10diem", "vudoanbinhminh")
 MAX_CHARS = 600
+MAX_ERROR_CHARS = 120
 API = "https://api.telegram.org/bot{token}/sendMessage"
 
 
@@ -40,6 +42,26 @@ def post_json(url, payload, opener=urllib.request.urlopen):
         return response.status
 
 
+def error_line(error):
+    """Dòng log cho lần gửi hỏng: mã HTTP + description, cắt 120 ký tự.
+
+    Chỉ lấy số mã và trường `description` do Telegram trả về; không in URL
+    gọi API (chứa token), không in chat_id, không in chuỗi lỗi thô.
+    """
+    if isinstance(error, urllib.error.HTTPError):
+        description = ""
+        try:
+            payload = json.loads(error.read().decode("utf-8", "replace"))
+            if isinstance(payload, dict):
+                description = str(payload.get("description") or "").strip()
+        except Exception:
+            description = ""
+        text = f"HTTP {error.code} {description}".strip()
+    else:
+        text = type(error).__name__
+    return text[:MAX_ERROR_CHARS]
+
+
 def run(env, opener=urllib.request.urlopen):
     token = (env.get("TELEGRAM_BOT_TOKEN") or "").strip()
     chat_id = (env.get("TELEGRAM_CHAT_ID") or "").strip()
@@ -63,7 +85,7 @@ def run(env, opener=urllib.request.urlopen):
             opener,
         )
     except Exception as error:
-        print("gui that bai: " + type(error).__name__)
+        print("gui that bai: " + error_line(error))
         return 1
     print("da gui: status=" + str(status))
     return 0
