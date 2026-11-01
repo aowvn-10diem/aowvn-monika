@@ -30,6 +30,9 @@ class ConfigRepository(
     private val cacheFile = File(context.filesDir, ASSET_NAME)
     private val atomicCache = AtomicFile(cacheFile)
     private val refreshLock = Mutex()
+    /** true khi cấu hình đang chạy đến từ máy chủ (bản cache đã tải hoặc vừa tải), false khi chỉ có bản đóng trong APK. */
+    private val _remoteApplied = MutableStateFlow(false)
+    val remoteApplied: StateFlow<Boolean> = _remoteApplied
     private val _config = MutableStateFlow(loadLocal())
     val config: StateFlow<MonikaConfig> = _config
     val current: MonikaConfig get() = _config.value
@@ -37,9 +40,11 @@ class ConfigRepository(
     private fun loadLocal(): MonikaConfig {
         val bundled = parse(context.assets.open(ASSET_NAME).bufferedReader().use { it.readText() })
         if (!cacheFile.exists() && !File(cacheFile.path + ".bak").exists()) return bundled
-        return runCatching {
+        val remote = runCatching {
             ConfigValidation.parse(String(atomicCache.readFully(), Charsets.UTF_8), bundled.configVersion)
-        }.onFailure { reportInvalid(it) }.getOrDefault(bundled)
+        }.onFailure { reportInvalid(it) }.getOrNull() ?: return bundled
+        _remoteApplied.value = true
+        return remote
     }
 
     private fun reportInvalid(error: Throwable) {
@@ -77,6 +82,7 @@ class ConfigRepository(
                 step("ghi-cache")
                 writeCache(text) // Đổi nguyên khối trước khi thay StateFlow; ghi lỗi giữ bản cũ.
                 _config.value = cfg
+                _remoteApplied.value = true
                 runCatching { checkedFile.writeText("ok") }
                 cfg
             }.onFailure {
