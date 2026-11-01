@@ -156,7 +156,7 @@ class Budget:
         return "\n".join(lines)
 
 
-def post(body, key):
+def post(body, key, on_retry=None):
     req = urllib.request.Request(
         CFG["endpoint"],
         data=json.dumps(body).encode("utf-8"),
@@ -172,11 +172,15 @@ def post(body, key):
                 return json.load(resp)
         except urllib.error.HTTPError as e:
             if e.code in (429, 500, 502, 503, 504) and attempt < 3:
+                if on_retry:
+                    on_retry(lost=False)  # server đã trả lỗi: tính 1 request, chưa chắc tiêu token
                 time.sleep(min(float(e.headers.get("Retry-After") or 2 ** (attempt + 1)), 60))
                 continue
             raise ApiError(e.code, e.read().decode("utf-8", "replace")[:300])
         except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException, json.JSONDecodeError) as e:
             if attempt < 3:
+                if on_retry:
+                    on_retry(lost=True)  # mất phản hồi: server có thể đã xử lý và tiêu hạn mức
                 time.sleep(2 ** (attempt + 1))
                 continue
             raise ApiError(0, str(e))
@@ -210,6 +214,8 @@ def post_stream(body, key):
                     stop = ev.get("delta", {}).get("stop_reason") or stop
     except urllib.error.HTTPError as e:
         raise ApiError(e.code, e.read().decode("utf-8", "replace")[:300])
+    except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException, json.JSONDecodeError) as e:
+        raise ApiError(0, str(e))  # bản streaming không tự thử lại; báo mất phản hồi để lượt này vẫn được tính vào sổ
     return {"content": [{"type": "text", "text": "".join(text)}], "usage": usage, "stop_reason": stop}
 
 
@@ -225,17 +231,30 @@ def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, m
     max_tokens = max_tokens or CFG["maxTokens"][tier]
     user = "\n".join([f'<file path="{p}">\n{read_text(p)}\n</file>' for p in files] + [prompt])
     for attempt in range(2):
-        row = budget.reserve((len(user) + len(system or "")) // 3 + max_tokens)
+        est = (len(user) + len(system or "")) // 3 + max_tokens
+        cur = [budget.reserve(est)]  # danh sách để hàm lồng gán lại được
         body = {"model": model, "max_tokens": max_tokens, "messages": [{"role": "user", "content": user}]}
         if effort:
             body["reasoning_effort"] = effort
         if system:
             body["system"] = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
+        def on_retry(lost):
+            # lượt vừa gửi có thể đã được server tính dù mất phản hồi: ghi sổ bảo thủ rồi mới đặt chỗ cho lượt mới
+            budget.settle(cur[0], est if lost else 0, {"model": model, "retry": True})
+            cur[0] = None
+            cur[0] = budget.reserve(est)
+
         try:
-            resp = post_stream(body, key) if os.environ.get("DS_STREAM") else post(body, key)
-        except Exception:
-            budget.release(row)
+            resp = post_stream(body, key) if os.environ.get("DS_STREAM") else post(body, key, on_retry)
+        except ApiError as e:  # lượt cuối thất bại: vẫn tính (mất phản hồi = đủ token ước tính, bị từ chối = 1 request)
+            if cur[0] is not None:
+                budget.settle(cur[0], est if e.code == 0 else 0, {"model": model, "failed": True})
             raise
+        except Exception:
+            if cur[0] is not None:
+                budget.release(cur[0])
+            raise
+        row = cur[0]
         u = resp.get("usage", {})
         fresh = u.get("input_tokens", 0) + u.get("cache_creation_input_tokens", 0)
         cached = u.get("cache_read_input_tokens", 0)
