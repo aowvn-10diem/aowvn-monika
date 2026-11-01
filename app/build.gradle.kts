@@ -121,6 +121,11 @@ val playConfig by tasks.registering(Exec::class) {
 android.sourceSets["play"].assets.srcDir(playConfig.map {
     layout.buildDirectory.dir("generated/play-assets").get().asFile
 })
+// AGP chuyển srcDir thành File khi tạo một số task nên vẫn cần cạnh dependency tường minh.
+tasks.matching {
+    it.name.startsWith("mergePlay") && it.name.endsWith("Assets") ||
+        it.name.contains("Play") && it.name.contains("lint", ignoreCase = true)
+}.configureEach { dependsOn(playConfig) }
 
 // Test trên máy tính: lấy lib7-Zip-JBinding.so bản Linux (cùng bản 16.02) để chạy code 7-Zip của Android.
 val sevenZipTestNatives: Configuration by configurations.creating
@@ -161,6 +166,10 @@ val loaderAsset by tasks.registering(Sync::class) {
 }
 // Provider giữ quan hệ tạo → dùng cho mọi tác vụ đọc assets, gồm cả lint model bản release.
 android.sourceSets["github"].assets.srcDir(loaderAsset.map { it.destinationDir })
+tasks.matching {
+    it.name.startsWith("mergeGithub") && it.name.endsWith("Assets") ||
+        it.name.contains("Github") && it.name.contains("lint", ignoreCase = true)
+}.configureEach { dependsOn(loaderAsset) }
 tasks.withType<Test>().matching { it.name.contains("Github") }.configureEach { dependsOn(loaderAsset, arscStripped) }
 
 // ARSCLib đóng kèm bản sao lớp CỦA ANDROID (org.xmlpull.v1.*, android.util.AttributeSet, android.content.res.XmlResourceParser).
