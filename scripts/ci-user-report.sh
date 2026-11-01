@@ -11,7 +11,7 @@ collect_exit() {
 }
 trap collect_exit EXIT
 adb root >/dev/null; adb wait-for-device
-adb install -r app/build/outputs/apk/debug/app-universal-debug.apk >/dev/null
+adb install -r app/build/outputs/apk/github/debug/app-github-universal-debug.apk >/dev/null
 UID_APP=$(adb shell stat -c %u "/data/data/$PKG" | tr -d '\r')
 BASE="/data/data/$PKG/files"
 python3 - "$SCRATCH/web/rgss.zip" "$SCRATCH/pack" <<'PY'

@@ -2,8 +2,8 @@ package vn.aow.monika.translate
 
 import android.content.Context
 import android.util.Base64
-import vn.aow.monika.apkinstall.repack.AndroidKeystoreWrap
-import vn.aow.monika.apkinstall.repack.KeyWrap
+import vn.aow.monika.security.AndroidKeystoreWrap
+import vn.aow.monika.security.KeyWrap
 
 /**
  * Cài đặt dịch màn hình. Khóa API do người dùng tự nhập, mã hóa bằng Android Keystore, chỉ lưu trên máy này.

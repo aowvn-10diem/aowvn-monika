@@ -30,7 +30,7 @@ jobs:
       - name: ROM tự sinh và bridge x86_64 chỉ trong APK CI
         run: python3 scripts/ci-nds-fixture.py prepare --out "$RUNNER_TEMP/v106"
       - name: Build APK debug fixture
-        run: ./gradlew assembleDebug --console=plain
+        run: ./gradlew assembleGithubDebug --console=plain
       - name: Maestro và KVM
         run: |
           curl -fsSL https://get.maestro.mobile.dev | bash

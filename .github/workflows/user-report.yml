@@ -42,7 +42,7 @@ jobs:
       - name: Chỉ engine và fixture tự sinh
         run: python3 scripts/ci-user-report.py --scratch "$RUNNER_TEMP/user-report" --pack-file "$RUNNER_TEMP/user-report-engine/rgss.zip"
       - name: APK debug với fixture (unit đã chạy trên config chuẩn)
-        run: ./gradlew assembleDebug --console=plain
+        run: ./gradlew assembleGithubDebug --console=plain
       - name: Bật KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

@@ -5,7 +5,7 @@ import io.github.muntashirakon.adb.AbsAdbConnectionManager
 import io.github.muntashirakon.adb.AdbPairingRequiredException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import vn.aow.monika.apkinstall.repack.AndroidKeystoreWrap
+import vn.aow.monika.security.AndroidKeystoreWrap
 import vn.aow.monika.apkinstall.repack.RepackKeyStore
 import java.io.File
 import java.io.OutputStream
