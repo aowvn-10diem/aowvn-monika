@@ -11,6 +11,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.library.GameStorage
+import vn.aow.monika.runner.RgssCompat
 import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
@@ -45,7 +46,20 @@ class PlayDistributionTest {
 
     @Test fun importsStayInsidePrivateStorage() {
         val root = GameStorage.root(app).canonicalPath
-        assertTrue(root.startsWith(app.filesDir.canonicalPath + "/"))
+        assertTrue(root.startsWith(app.filesDir.canonicalPath + File.separator))
         assertFalse(GameStorage.isPublic(app))
+    }
+
+    @Test fun attributionRemainsAvailableInPlayAssets() {
+        val j2me = app.assets.open("licenses/j2me-loader.txt").bufferedReader().use { it.readText() }
+        val icons = app.assets.open("licenses/fluent-system-icons.txt").bufferedReader().use { it.readText() }
+        assertTrue(j2me.contains("Apache License"))
+        assertTrue(icons.contains("Microsoft Corporation"))
+    }
+
+    @Test fun rgssCompatibilityScriptsCanBeLoaded() {
+        val script = RgssCompat.ensure(app)
+        assertTrue(script.readText().contains("module MonikaWin32"))
+        assertTrue(app.assets.open("rgss/monika-ruby18.rb").use { it.readBytes().isNotEmpty() })
     }
 }

@@ -102,8 +102,9 @@ android {
     sourceSets["test"].java.setSrcDirs(emptyList<String>())
     sourceSets["testGithub"].java.srcDir("src/test/java")
     sourceSets["testGithub"].resources.srcDirs("src/test/resources", "../cloudflare/crash-worker/fixtures")
-    sourceSets["main"].assets.setSrcDirs(emptyList<String>())
-    sourceSets["github"].assets.srcDirs("src/main/assets", "../config")
+    // Ghi công, cheat và script RGSS dùng chung; chỉ catalog gốc dành cho GitHub.
+    sourceSets["main"].assets.srcDir("src/main/assets")
+    sourceSets["github"].assets.srcDir("../config")
     sourceSets["androidTest"].java.setSrcDirs(emptyList<String>())
     sourceSets["androidTestGithub"].java.srcDir("src/androidTest/java")
     sourceSets["androidTestGithub"].assets.srcDirs("src/androidTest/assets", layout.buildDirectory.dir("generated/v56-assets"))

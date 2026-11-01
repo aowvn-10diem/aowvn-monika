@@ -16,6 +16,10 @@ FORBIDDEN_CLASSES = (
 )
 FORBIDDEN_TEXT = ('img.vietqr.io', 'vote-game.html', 'Tải bản mới', 'monika-loader.dex')
 FORBIDDEN_PERMISSIONS = ('REQUEST_INSTALL_PACKAGES', 'MANAGE_EXTERNAL_STORAGE', 'QUERY_ALL_PACKAGES')
+REQUIRED_ASSETS = (
+    'assets/licenses/j2me-loader.txt', 'assets/licenses/fluent-system-icons.txt',
+    'assets/rgss/monika-win32api.rb', 'assets/rgss/monika-ruby18.rb',
+)
 
 
 def decoded_manifest(apk, raw):
@@ -31,6 +35,9 @@ def decoded_manifest(apk, raw):
 
 def check(apk):
     with zipfile.ZipFile(apk) as archive:
+        for name in REQUIRED_ASSETS:
+            if name not in archive.namelist() or not archive.read(name).strip():
+                raise ValueError('Play thiếu ghi công hoặc script tương thích: ' + name)
         manifest = decoded_manifest(apk, archive.read('AndroidManifest.xml'))
         if 'com.aow.monika.play' not in manifest:
             raise ValueError('Sai applicationId bản Play')

@@ -3,7 +3,10 @@
 import copy
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -27,17 +30,19 @@ class PlayDistributionTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.apk = Path(self.temp.name, 'play.apk')
-        self.source = json.loads((ROOT / 'config/monika-config.json').read_text())
+        self.source = json.loads((ROOT / 'config/monika-config.json').read_text(encoding='utf-8'))
         self.original = copy.deepcopy(self.source)
         self.cfg = policy.for_play(self.source)
 
-    def fixture(self, dex=b'dex fixture', extra=None, manifest=None, cfg=None):
+    def fixture(self, dex=b'dex fixture', extra=None, manifest=None, cfg=None, omit=None):
         contents = {
             'AndroidManifest.xml': manifest or b'<manifest package="com.aow.monika.play"/>',
             'classes.dex': dex,
             'assets/monika-config.json': json.dumps(self.cfg if cfg is None else cfg).encode(),
+            **{name: b'nonempty asset fixture' for name in scanner.REQUIRED_ASSETS},
             **(extra or {}),
         }
+        if omit: contents.pop(omit)
         with zipfile.ZipFile(self.apk, 'w') as archive:
             for name, data in contents.items(): archive.writestr(name, data)
 
@@ -48,6 +53,26 @@ class PlayDistributionTest(unittest.TestCase):
         self.assertTrue(self.source['app']['apkUrl'])
         self.assertTrue(self.source['account']['donate'])
         self.assertTrue(all(not s.get('allowExternalApp') for s in self.cfg['systems']))
+
+    def test_missing_or_empty_attribution_and_rgss_assets_are_rejected(self):
+        for name in scanner.REQUIRED_ASSETS:
+            with self.subTest(asset=name):
+                self.fixture(omit=name)
+                with self.assertRaises(ValueError): scanner.check(self.apk)
+                self.fixture(extra={name: b''})
+                with self.assertRaises(ValueError): scanner.check(self.apk)
+
+    def test_cli_preserves_vietnamese_with_non_utf8_default_encoding(self):
+        source = Path(self.temp.name, 'source.json')
+        output = Path(self.temp.name, 'play.json')
+        source.write_text(json.dumps(self.source, ensure_ascii=False), encoding='utf-8')
+        result = subprocess.run(
+            [sys.executable, '-X', 'utf8=0', str(ROOT / 'scripts/play-config.py'), str(source), str(output)],
+            env={**os.environ, 'LC_ALL': 'C', 'PYTHONUTF8': '0', 'PYTHONCOERCECLOCALE': '0'},
+            capture_output=True,
+        )
+        self.assertEqual(0, result.returncode, result.stderr.decode('utf-8', errors='replace'))
+        self.assertEqual(self.cfg, json.loads(output.read_text(encoding='utf-8')))
 
     def test_every_forbidden_class_is_rejected_even_without_r8(self):
         for marker in scanner.FORBIDDEN_CLASSES:
