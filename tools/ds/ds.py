@@ -11,6 +11,7 @@ import os
 import sys
 import threading
 import time
+import http.client
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -174,7 +175,7 @@ def post(body, key):
                 time.sleep(min(float(e.headers.get("Retry-After") or 2 ** (attempt + 1)), 60))
                 continue
             raise ApiError(e.code, e.read().decode("utf-8", "replace")[:300])
-        except (urllib.error.URLError, TimeoutError) as e:
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException, json.JSONDecodeError) as e:
             if attempt < 3:
                 time.sleep(2 ** (attempt + 1))
                 continue

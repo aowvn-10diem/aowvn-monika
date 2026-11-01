@@ -3,10 +3,13 @@ import os
 import sys
 import importlib
 import json
+import http.client
 import http.server
+import io
 import tempfile
 import threading
 import unittest
+import urllib.error
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -113,10 +116,9 @@ class _GiaNganSach:
         pass
 
 
-class _GiaPhanHoi:
-    """Giả phản hồi streaming: lặp từng dòng SSE, dùng được trong with."""
-    def __init__(self, lines):
-        self._lines = [(l + "\n").encode("utf-8") for l in lines]
+class _GiaResp:
+    def __init__(self, data):
+        self._data = data
 
     def __enter__(self):
         return self
@@ -124,51 +126,65 @@ class _GiaPhanHoi:
     def __exit__(self, *a):
         return False
 
-    def __iter__(self):
-        return iter(self._lines)
+    def read(self, *a):
+        return self._data
 
 
-class StreamingEffortTest(unittest.TestCase):
-    def test_post_stream_ghep_chu_va_usage(self):
-        sse = [
-            "event: message_start",
-            'data: {"type":"message_start","message":{"usage":{"input_tokens":5,"cache_read_input_tokens":2}}}',
-            'data: {"type":"content_block_delta","delta":{"type":"thinking_delta","thinking":"suy nghi"}}',
-            'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"Xin "}}',
-            'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"chao"}}',
-            'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":9}}',
-            "data: [DONE]",
-        ]
-        with mock.patch.object(ds.OPENER, "open", return_value=_GiaPhanHoi(sse)):
-            r = ds.post_stream({"model": "m"}, "khoa-gia")
-        self.assertEqual("Xin chao", r["content"][0]["text"])  # bỏ khối suy nghĩ, chỉ lấy chữ
-        self.assertEqual({"input_tokens": 5, "cache_read_input_tokens": 2, "output_tokens": 9}, r["usage"])
-        self.assertEqual("end_turn", r["stop_reason"])
+class RetryEffortTest(unittest.TestCase):
+    def _post(self, hanh_vi):
+        dem = {"n": 0}
 
-    def _chay(self, effort, stream):
+        def gia_open(req, timeout=None):
+            h = hanh_vi[min(dem["n"], len(hanh_vi) - 1)]
+            dem["n"] += 1
+            if isinstance(h, Exception):
+                raise h
+            return _GiaResp(h)
+
+        with mock.patch.object(ds.OPENER, "open", gia_open), mock.patch.object(ds.time, "sleep", lambda s: None):
+            try:
+                return ds.post({"model": "m"}, "khoa-gia"), dem["n"]
+            except ds.ApiError as e:
+                return e, dem["n"]
+
+    def test_thu_lai_khi_bi_cat_ket_noi(self):
+        r, n = self._post([ConnectionResetError(), http.client.RemoteDisconnected("dong"), b'{"ok": 1}'])
+        self.assertEqual(({"ok": 1}, 3), (r, n))
+
+    def test_thu_lai_khi_json_bi_cat_giua_chung(self):
+        r, n = self._post([b'{"ok":', b'{"ok": 2}'])
+        self.assertEqual(({"ok": 2}, 2), (r, n))
+
+    def test_het_luot_thi_bao_loi_ro(self):
+        r, n = self._post([ConnectionResetError()])
+        self.assertIsInstance(r, ds.ApiError)
+        self.assertEqual((0, 4), (r.code, n))
+
+    def test_loi_4xx_khong_thu_lai(self):
+        loi = urllib.error.HTTPError("u", 400, "bad", http.client.HTTPMessage(), io.BytesIO(b"loi"))
+        r, n = self._post([loi])
+        self.assertIsInstance(r, ds.ApiError)
+        self.assertEqual((400, 1), (r.code, n))
+
+    def _gui(self, effort):
         gui = {}
 
         def gia_post(body, key):
             gui.update(body)
             return {"content": [{"type": "text", "text": "ok"}], "usage": {"input_tokens": 1, "output_tokens": 1}, "stop_reason": "end_turn"}
 
-        env = {"DS_STREAM": "1"} if stream else {}
-        with mock.patch.dict(os.environ, env, clear=False), \
-                mock.patch.object(ds, "post" if not stream else "post_stream", gia_post):
-            if not stream:
-                os.environ.pop("DS_STREAM", None)
+        with mock.patch.object(ds, "post", gia_post):
             ds.run_job(_GiaNganSach(), "khoa-gia", "simple", "chi thi", effort=effort)
         return gui
 
     def test_effort_di_vao_than_yeu_cau(self):
-        self.assertEqual("high", self._chay("high", False)["reasoning_effort"])
-        self.assertEqual("none", self._chay("none", False)["reasoning_effort"])
+        self.assertEqual("high", self._gui("high")["reasoning_effort"])
+        self.assertEqual("none", self._gui("none")["reasoning_effort"])
+        self.assertNotIn("reasoning_effort", self._gui(None))
 
-    def test_khong_effort_thi_khong_gui_truong(self):
-        self.assertNotIn("reasoning_effort", self._chay(None, False))
-
-    def test_ds_stream_chon_ham_streaming(self):
-        self.assertEqual("max", self._chay("max", True)["reasoning_effort"])
+    def test_tool_mcp_co_effort(self):
+        props = [t for t in ds.TOOLS if t["name"] == "deepseek_chat"][0]["inputSchema"]["properties"]
+        self.assertEqual(["none", "low", "high", "max"], props["effort"]["enum"])
 
 
 class RedirectTest(unittest.TestCase):
@@ -218,6 +234,50 @@ class RedirectTest(unittest.TestCase):
         thay, loi = self._chay()
         self.assertEqual([], thay, "host đích không được nhận yêu cầu nào")
         self.assertEqual(302, loi.code)
+
+
+class _GiaPhanHoi:
+    """Giả phản hồi streaming: lặp từng dòng SSE, dùng được trong with."""
+    def __init__(self, lines):
+        self._lines = [(l + "\n").encode("utf-8") for l in lines]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def __iter__(self):
+        return iter(self._lines)
+
+
+class StreamingTest(unittest.TestCase):
+    def test_post_stream_ghep_chu_va_usage(self):
+        sse = [
+            "event: message_start",
+            'data: {"type":"message_start","message":{"usage":{"input_tokens":5,"cache_read_input_tokens":2}}}',
+            'data: {"type":"content_block_delta","delta":{"type":"thinking_delta","thinking":"suy nghi"}}',
+            'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"Xin "}}',
+            'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"chao"}}',
+            'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":9}}',
+            "data: [DONE]",
+        ]
+        with mock.patch.object(ds.OPENER, "open", return_value=_GiaPhanHoi(sse)):
+            r = ds.post_stream({"model": "m"}, "khoa-gia")
+        self.assertEqual("Xin chao", r["content"][0]["text"])  # bỏ khối suy nghĩ, chỉ lấy chữ
+        self.assertEqual({"input_tokens": 5, "cache_read_input_tokens": 2, "output_tokens": 9}, r["usage"])
+        self.assertEqual("end_turn", r["stop_reason"])
+
+    def test_ds_stream_chon_ham_streaming(self):
+        gui = {}
+
+        def gia_stream(body, key):
+            gui.update(body)
+            return {"content": [{"type": "text", "text": "ok"}], "usage": {"input_tokens": 1, "output_tokens": 1}, "stop_reason": "end_turn"}
+
+        with mock.patch.dict(os.environ, {"DS_STREAM": "1"}), mock.patch.object(ds, "post_stream", gia_stream):
+            ds.run_job(_GiaNganSach(), "khoa-gia", "simple", "chi thi", effort="max")
+        self.assertEqual("max", gui["reasoning_effort"])
 
 
 if __name__ == "__main__":
