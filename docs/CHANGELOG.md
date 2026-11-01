@@ -4,8 +4,9 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 ## v0.8.8 (Đang chuẩn bị — Bản thử)
 
-- Nội bộ: chuẩn bị phiên bản 0.8.8 (53); danh sách thay đổi sẽ cập nhật sau khi các bản sửa được gộp.
-- Nội bộ: chờ V157 ép cập nhật; chưa nằm trong phạm vi mã hiện tại của bản 0.8.8.
+- **Mới:** Từ bản 0.8.8, Monika có thể yêu cầu cập nhật trước khi tiếp tục nếu máy chủ đặt mức phiên bản tối thiểu. Cổng này chỉ có hiệu lực trên bản đã có tính năng; bản 0.8.7 vẫn chỉ nhận thông báo trong Cài đặt. Chưa từng nhận được cấu hình máy chủ thì mất mạng không tự khóa ứng dụng. ([dd1fa2d](https://github.com/aowvn-10diem/aowvn-monika/commit/dd1fa2d6c7c21ac8df9d02ec63be6b1fa55d25aa))
+- **Sửa lỗi:** Nhận nút, phím hướng, cần analog và cò của tay cầm khi chơi qua Retro, Azahar và Java; nhả phím đang giữ khi rút tay cầm. Khả năng tương thích từng tay cầm cần thử trên máy thật. ([3ebb002](https://github.com/aowvn-10diem/aowvn-monika/commit/3ebb002582d35c32a805c096ea1b97ee70ce0598))
+- Nội bộ: dịch vụ nhận báo lỗi có thể điều chỉnh giới hạn gửi và trả thời gian nên thử lại khi vượt hạn mức; mã đã gộp, triển khai máy chủ [CHƯA KIỂM]. ([d925c64](https://github.com/aowvn-10diem/aowvn-monika/commit/d925c6418818a405c969fac24276be32b64402ab))
 
 ## v0.8.7 (Đang chuẩn bị — Bản thử)
 <!-- bien-tap: v0.8.7 -->
