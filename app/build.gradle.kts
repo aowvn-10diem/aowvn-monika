@@ -101,7 +101,6 @@ android {
     sourceSets["testGithub"].resources.srcDirs("src/test/resources", "../cloudflare/crash-worker/fixtures")
     sourceSets["main"].assets.setSrcDirs(emptyList<String>())
     sourceSets["github"].assets.srcDirs("src/main/assets", "../config")
-    sourceSets["play"].assets.srcDir(layout.buildDirectory.dir("generated/play-assets"))
     sourceSets["androidTest"].java.setSrcDirs(emptyList<String>())
     sourceSets["androidTestGithub"].java.srcDir("src/androidTest/java")
     sourceSets["androidTestGithub"].assets.srcDirs("src/androidTest/assets", layout.buildDirectory.dir("generated/v56-assets"))
@@ -119,7 +118,9 @@ val playConfig by tasks.registering(Exec::class) {
     outputs.file(output)
     commandLine("python3", script.absolutePath, source.absolutePath, output.get().asFile.absolutePath)
 }
-tasks.matching { it.name.startsWith("mergePlay") && it.name.endsWith("Assets") }.configureEach { dependsOn(playConfig) }
+android.sourceSets["play"].assets.srcDir(playConfig.map {
+    layout.buildDirectory.dir("generated/play-assets").get().asFile
+})
 
 // Test trên máy tính: lấy lib7-Zip-JBinding.so bản Linux (cùng bản 16.02) để chạy code 7-Zip của Android.
 val sevenZipTestNatives: Configuration by configurations.creating
@@ -158,9 +159,8 @@ val loaderAsset by tasks.registering(Sync::class) {
     from(layout.buildDirectory.dir("generated/loader-dex")) { include("classes.dex"); rename { "monika-loader.dex" } }
     into(layout.buildDirectory.dir("generated/loader-assets"))
 }
-android.sourceSets["github"].assets.srcDir(layout.buildDirectory.dir("generated/loader-assets"))
-// Mọi tác vụ đọc thư mục assets (gộp assets, lint...) phải đợi bộ nạp được dựng xong.
-tasks.matching { it.name.matches(Regex("mergeGithub.*Assets")) || it.name.contains("lintGithub", ignoreCase = true) }.configureEach { dependsOn(loaderAsset) }
+// Provider giữ quan hệ tạo → dùng cho mọi tác vụ đọc assets, gồm cả lint model bản release.
+android.sourceSets["github"].assets.srcDir(loaderAsset.map { it.destinationDir })
 tasks.withType<Test>().matching { it.name.contains("Github") }.configureEach { dependsOn(loaderAsset, arscStripped) }
 
 // ARSCLib đóng kèm bản sao lớp CỦA ANDROID (org.xmlpull.v1.*, android.util.AttributeSet, android.content.res.XmlResourceParser).
