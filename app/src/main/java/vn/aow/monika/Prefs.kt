@@ -200,6 +200,10 @@ class Prefs(private val context: Context) {
         get() = gsp.getFloat("pad_opacity", sp.getFloat("pad_opacity", 0.65f))
         set(value) = gsp.edit().putFloat("pad_opacity", value).apply()
 
+    /** Độ mờ người chơi đã tự chỉnh (null = chưa chỉnh, dùng mặc định từ config). */
+    fun savedPadOpacity(): Float? =
+        if (gsp.contains("pad_opacity") || sp.contains("pad_opacity")) padOpacity else null
+
     // ---- Sự kiện từ tiến trình game gửi về (ghi vào file nối đuôi, tiến trình chính nhặt khi quay lại) ----
 
     private fun eventsFile() = java.io.File(context.filesDir, "game-events.log")

@@ -1,6 +1,6 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 53,
+  "configVersion": 54,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 52,
@@ -1084,7 +1084,10 @@
         "defaultRatio": "2",
         "gapKey": "melonds_screen_gap",
         "gapMax": 32,
-        "defaultGap": 0
+        "defaultGap": 0,
+        "overlayPad": true,
+        "padOpacity": 0.55,
+        "landscapeLayout": "left-right"
       }
     }
   },
