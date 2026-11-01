@@ -47,6 +47,16 @@ with open(os.path.join(HERE, "ds-config.json"), encoding="utf-8") as _f:
         sys.exit(f"lỗi cấu hình: {_e}")
 
 
+class _KhongTheoRedirect(urllib.request.HTTPRedirectHandler):
+    """Không theo redirect: urllib mặc định chép nguyên header (kể cả Authorization: Bearer key) sang host đích."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None  # urlopen khi đó ném HTTPError(30x) và ds.py báo ApiError
+
+
+OPENER = urllib.request.build_opener(_KhongTheoRedirect)
+
+
 class BudgetError(Exception):
     pass
 
@@ -157,7 +167,7 @@ def post(body, key):
     )
     for attempt in range(4):
         try:
-            with urllib.request.urlopen(req, timeout=CFG["timeout"]) as resp:
+            with OPENER.open(req, timeout=CFG["timeout"]) as resp:
                 return json.load(resp)
         except urllib.error.HTTPError as e:
             if e.code in (429, 500, 502, 503, 504) and attempt < 3:

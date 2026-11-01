@@ -3,7 +3,9 @@ import os
 import sys
 import importlib
 import json
+import http.server
 import tempfile
+import threading
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -96,6 +98,55 @@ class CheckReadableTest(unittest.TestCase):
     def test_chan_thu_muc_git(self):
         with self.assertRaises(ds.AccessError):
             ds.check_readable(os.path.join(ds.REPO, ".git", "config"))
+
+
+class RedirectTest(unittest.TestCase):
+    """Khóa Bearer không được chuyển tiếp khi server trả redirect sang host khác (urllib mặc định chép header)."""
+
+    def _chay(self):
+        thay = []
+
+        class Dich(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                thay.append(dict(self.headers))
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"{}")
+            do_POST = do_GET
+
+            def log_message(self, *a):
+                pass
+
+        dich = http.server.HTTPServer(("127.0.0.1", 0), Dich)
+
+        class Nguon(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                self.send_response(302)
+                self.send_header("Location", f"http://127.0.0.1:{dich.server_port}/lay-key")
+                self.end_headers()
+
+            def log_message(self, *a):
+                pass
+
+        nguon = http.server.HTTPServer(("127.0.0.1", 0), Nguon)
+        for sv in (dich, nguon):
+            threading.Thread(target=sv.serve_forever, daemon=True).start()
+        cu = ds.CFG["endpoint"]
+        ds.CFG["endpoint"] = f"http://127.0.0.1:{nguon.server_port}/v1/messages"
+        try:
+            with self.assertRaises(ds.ApiError) as cm:
+                ds.post({"model": "m"}, "khoa-bi-mat")
+        finally:
+            ds.CFG["endpoint"] = cu
+            for sv in (dich, nguon):
+                sv.shutdown()
+                sv.server_close()
+        return thay, cm.exception
+
+    def test_redirect_khong_chuyen_tiep_authorization(self):
+        thay, loi = self._chay()
+        self.assertEqual([], thay, "host đích không được nhận yêu cầu nào")
+        self.assertEqual(302, loi.code)
 
 
 if __name__ == "__main__":
