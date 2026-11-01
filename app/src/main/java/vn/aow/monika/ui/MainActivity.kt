@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         askPermissions()
         handleIntent(intent)
-        setContent { MonikaTheme { MonikaNav(deepLink.value) { deepLink.value = null } } }
+        setContent { MonikaTheme { MonikaRoot(deepLink.value) { deepLink.value = null } } }
     }
 
     override fun onResume() {
@@ -153,6 +153,25 @@ fun NavHostController.goTab(route: String) = navigate(route) {
     popUpTo(graph.findStartDestination().id) { saveState = true }
     launchSingleTop = true
     restoreState = true
+}
+
+/** Toàn bộ giao diện: chặn "Cần cập nhật" (V157 [A71]) trước khi vào điều hướng chính. */
+@Composable
+private fun MonikaRoot(deepLink: String?, onDeepLinkHandled: () -> Unit) {
+    val cfg by AppGraph.config.config.collectAsState()
+    val fromServer by AppGraph.config.remoteApplied.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    ForceUpdateGate(
+        app = cfg.app,
+        installedVersionCode = vn.aow.monika.BuildConfig.VERSION_CODE,
+        configFromServer = fromServer,
+        apkDownloadAllowed = vn.aow.monika.BuildConfig.APK_DOWNLOAD_ALLOWED,
+        onDownloadApk = { url ->
+            scope.launch { runCatching { AppGraph.downloader.enqueue(url, isTool = true) } }
+            android.widget.Toast.makeText(context, "Đang tải bản mới…", android.widget.Toast.LENGTH_SHORT).show()
+        },
+    ) { MonikaNav(deepLink, onDeepLinkHandled) }
 }
 
 @Composable
