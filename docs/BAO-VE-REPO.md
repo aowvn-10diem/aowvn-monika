@@ -36,6 +36,27 @@ Giới hạn nói thẳng: (1) bài trên aow.vn và file Pixeldrain vẫn mở 
 
 Ghi chú vận hành: tạo secret (GitHub + Cloudflare), đổi repo packs sang riêng tư và triển khai Worker là việc của sếp/chủ repo — phiên Nova không có quyền Cloudflare/secret. Mọi trường mới trong `MonikaConfig.kt` phải có mặc định; tăng `configVersion` + đồng bộ Cloudflare theo thứ tự: Worker lên trước → config mới sau → ép bản cũ lên sau cùng.
 
+## Quyết định đã chốt (PM + sếp, 01/11) và ước lượng tải
+- **[A70]** Repo packs chuyển riêng tư. Thứ tự: Worker → config → sếp đổi quyền repo.
+- **[A71]** Ép cập nhật từ thứ Hai 02/11/2026 (`minVersionCode`).
+- Mã G3 và việc ép cập nhật (V157) giao DeepSeek 1 (#337). **PR này chỉ là tài liệu thiết kế**, không chứa mã.
+- **P1a (overlay):** phần nhạy cảm đi kèm lần tải config hiện có, không thêm lượt gọi Worker. Offline dùng bản overlay lấy thành công lần cuối; chưa từng có thì tắt đúng tính năng đó. Giá trị không nằm trong APK hay repo.
+- **G0 chỉ là rào thấp:** secret HMAC nằm trong APK release nên dịch ngược lấy được ([A66]). Nó chặn bản fork lười, không chặn người cố tình.
+
+### Ước lượng lượt gọi Worker (giả định, cần số đo thật)
+Giả định mỗi người dùng/ngày (lấy từ `feed.pollMinutes=60`, `forum.limit=6`): thăm dò feed nền ~24, mở app/xem bài ~5, diễn đàn ~5, giải link Pixeldrain ~3, config ~2 ⇒ **~40 lượt/người/ngày ⇒ ~40.000 lượt/ngày cho 1000 người dùng hàng ngày**. Chỉ số 1000 người đồng thời cùng lúc là đỉnh vài nghìn lượt/phút, không phải tổng ngày.
+
+Cách giảm (theo luật tiết kiệm Worker 26/10):
+| Biện pháp | Tác dụng |
+|---|---|
+| Cache biên (Cache API / `Cache-Control`) cho `/feed`, `/forum/*`: 5–10 phút | Blogger/Flarum chỉ bị gọi ~1 lần/vài phút, không phụ thuộc số người |
+| Thăm dò nền: giãn `pollMinutes` hoặc dùng `If-None-Match` (Worker trả 304 rẻ) | Cắt phần lớn 24 lượt nền |
+| Pixeldrain: Worker chỉ 302, không stream | Không tốn băng thông Worker |
+| G3 lõi/engine: link có chữ ký TTL ngắn, tệp lớn qua R2/CDN, không qua Worker | Tránh trần CPU/băng thông |
+| Config + overlay: một lần tải, cache cục bộ theo `configVersion` | Không thêm lượt |
+
+[CHƯA KIỂM] Hạn mức gói Cloudflare hiện tại của sếp (số lượt/ngày, CPU/lượt) và số người dùng hàng ngày thật — cần sếp/PM cung cấp trước khi chốt Worker.
+
 ## Thứ tự ưu tiên
 | # | Việc | Rủi ro | Ai | Ghi chú |
 |---|---|---|---|---|
