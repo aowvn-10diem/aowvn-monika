@@ -9,6 +9,7 @@
 #   COVAN   #339 <link>                      Cố vấn gửi PM (trả lời hoặc CẢNH BÁO): đọc và xử lý
 #   THU     #337 <link>                      DeepSeek báo PM: đọc và trả lời
 #   SEP     <câu>                            chỉ khi chặn cả dự án
+#   DUNG    <đội> tu=<giờ UTC> <số giờ>h        đội thi công im ≥ 2 giờ (7–23 giờ VN): báo sếp ngay qua [PM → sếp] + thread
 # Không in gì ngoài dòng "YEN" = lượt này không có việc (kể cả khi kết quả y hệt lượt trước, chưa quá 12 giờ).
 # Trạng thái giữa các lượt: $STATE (mặc định ~/.cache/monika-pm/luot.json, không commit).
 set -uo pipefail
@@ -94,10 +95,27 @@ import json,sys; p,k,v=sys.argv[1:]; s=json.load(open(p)); s[k]=v; json.dump(s,o
 EOF
 done
 
+# 4b. Canh đội thi công (sếp 01/11): trong 7–23 giờ VN, đội im (không push nhánh, không comment) ≥ 2 giờ → DUNG.
+#     1 lượt gọi /activity + 1 lượt đọc comment mỗi hộp thư; nhãn giữ nguyên "tu=" nên chống lặp 12 giờ vẫn chặn báo trùng.
+h_vn=$(TZ=Asia/Ho_Chi_Minh date +%-H)
+if [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; then
+  act=$(gh api "repos/$R/activity?per_page=100" --jq '.[]|"\(.ref) \(.timestamp)"' 2>/dev/null)
+  since=$(date -u -d '-24 hours' +%FT%TZ)
+  for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Sol 2|sol2/|119|\\[Sol 2"; do
+    IFS='|' read -r ten nhanh hop tien <<<"$doi"
+    t1=$(echo "$act" | grep -E "^refs/heads/$nhanh" | awk '{print $2}' | sort | tail -1)
+    t2=$(gh api "repos/$R/issues/$hop/comments?since=$since&per_page=100" --jq ".[]|select(.body|test(\"^$tien\"))|.created_at" 2>/dev/null | sort | tail -1)
+    last=$(printf '%s\n%s\n' "$t1" "$t2" | sort | tail -1)
+    [ -z "$last" ] && last=$since
+    gio=$(( ( $(date -u +%s) - $(date -u -d "$last" +%s) ) / 3600 ))
+    [ "$gio" -ge 2 ] && out+=("DUNG $ten tu=$last ${gio}h")
+  done
+fi
+
 # 5. Chống lặp (tiết kiệm token): kết quả y hệt lượt trước và chưa quá 12 giờ → coi như YEN,
 #    vì PM đã xử lý hoặc đang chờ người khác. Đổi bất kỳ dòng nào (sha mới, PR mới) là in lại ngay.
 if [ ${#out[@]} -gt 0 ]; then
-  sig=$(printf '%s\n' "${out[@]}" | sed -E 's/tuoi=[0-9]+h//' | sort | sha1sum | cut -c1-12)
+  sig=$(printf '%s\n' "${out[@]}" | sed -E 's/tuoi=[0-9]+h//; s/ [0-9]+h$//' | sort | sha1sum | cut -c1-12)
   if python3 - "$STATE" "$sig" <<'EOF'
 import json,sys,time; p,sig=sys.argv[1:]; s=json.load(open(p)); now=int(time.time())
 same = s.get('lastSig')==sig and now-s.get('lastSigAt',0) < 12*3600
