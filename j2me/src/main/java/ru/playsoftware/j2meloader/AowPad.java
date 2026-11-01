@@ -16,6 +16,19 @@ public final class AowPad {
 	 * Bảng mặc định {mã Android, mã MIDP}: A/Start/giữa D-pad = Fire, B = phím mềm phải (thoát/quay lại),
 	 * X = phím mềm trái, Y = 0, Select = *, L1/R1 = 1/3 (đường chéo ở nhiều game). Hồ sơ tùy chỉnh ghi đè được.
 	 */
+	/**
+	 * Phím này là của tay cầm (cần ghi vào danh sách đang giữ để nhả khi rút tay cầm)? Nguồn GAMEPAD hoặc DPAD
+	 * (có tay cầm chỉ báo DPAD cho bốn hướng), hoặc mã KEYCODE_BUTTON_A..MODE dù nguồn báo bàn phím. MENU để menu xử lý.
+	 */
+	public static boolean isPadKey(int source, int keyCode) {
+		if (keyCode == KeyEvent.KEYCODE_MENU) {
+			return false;
+		}
+		return (source & android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD
+				|| (source & android.view.InputDevice.SOURCE_DPAD) == android.view.InputDevice.SOURCE_DPAD
+				|| (keyCode >= KeyEvent.KEYCODE_BUTTON_A && keyCode <= KeyEvent.KEYCODE_BUTTON_MODE);
+	}
+
 	public static final int[][] KEYS = {
 			{KeyEvent.KEYCODE_DPAD_CENTER, Canvas.KEY_FIRE},
 			{KeyEvent.KEYCODE_BUTTON_A, Canvas.KEY_FIRE},

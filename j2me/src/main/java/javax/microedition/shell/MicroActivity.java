@@ -581,10 +581,8 @@ public class MicroActivity extends AppCompatActivity {
 
 	@Override
 	public boolean dispatchKeyEvent(KeyEvent event) {
-		// Nút tay cầm: nguồn GAMEPAD, hoặc mã KEYCODE_BUTTON_* dù tay cầm báo nguồn bàn phím (KeyMapper nhận cả hai).
-		boolean pad = (event.getSource() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
-				|| (event.getKeyCode() >= KeyEvent.KEYCODE_BUTTON_A && event.getKeyCode() <= KeyEvent.KEYCODE_BUTTON_MODE);
-		if (pad && event.getKeyCode() != KeyEvent.KEYCODE_MENU) {
+		// Nút tay cầm: nguồn GAMEPAD hoặc DPAD, hoặc mã KEYCODE_BUTTON_* dù tay cầm báo nguồn bàn phím (KeyMapper nhận cả hai).
+		if (AowPad.isPadKey(event.getSource(), event.getKeyCode())) {
 			if (event.getAction() == KeyEvent.ACTION_DOWN) {
 				heldPadKeys.add(event.getKeyCode());
 			} else if (event.getAction() == KeyEvent.ACTION_UP) {

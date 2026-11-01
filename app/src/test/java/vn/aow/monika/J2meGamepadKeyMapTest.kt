@@ -1,5 +1,6 @@
 package vn.aow.monika
 
+import android.view.InputDevice
 import android.view.KeyEvent
 import org.junit.Assert.*
 import org.junit.Test
@@ -27,6 +28,18 @@ class J2meGamepadKeyMapTest {
         assertEquals("trùng mã Android", keys.size, keys.toSet().size)
         val dpad = setOf(KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT)
         assertTrue("bốn hướng D-pad vẫn do KeyMapper xử lý", keys.none { it in dpad })
+    }
+
+    @Test fun phimTayCamGhiVaoDanhSachGiuDeNhaKhiRutTayCam() {
+        val keyboard = InputDevice.SOURCE_KEYBOARD
+        // Tay cầm chỉ báo DPAD cho bốn hướng: phải được ghi để releasePad() gửi ACTION_UP khi rút.
+        assertTrue(AowPad.isPadKey(InputDevice.SOURCE_DPAD or keyboard, KeyEvent.KEYCODE_DPAD_UP))
+        assertTrue(AowPad.isPadKey(InputDevice.SOURCE_GAMEPAD or keyboard, KeyEvent.KEYCODE_DPAD_LEFT))
+        // Nút BUTTON_* tính là tay cầm dù nguồn báo bàn phím.
+        assertTrue(AowPad.isPadKey(keyboard, KeyEvent.KEYCODE_BUTTON_A))
+        // Bàn phím thường, MENU không bị ghi.
+        assertFalse(AowPad.isPadKey(keyboard, KeyEvent.KEYCODE_A))
+        assertFalse(AowPad.isPadKey(InputDevice.SOURCE_GAMEPAD, KeyEvent.KEYCODE_MENU))
     }
 
     @Test fun hatUuTienHonCanVaCanCoVungChet() {
