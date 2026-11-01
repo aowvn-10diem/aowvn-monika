@@ -104,7 +104,7 @@ if [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; then
   for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Sol 2|sol2/|119|\\[Sol 2"; do
     IFS='|' read -r ten nhanh hop tien <<<"$doi"
     t1=$(echo "$act" | grep -E "^refs/heads/$nhanh" | awk '{print $2}' | sort | tail -1)
-    t2=$(gh api "repos/$R/issues/$hop/comments?since=$since&per_page=100" --jq ".[]|select(.body|test(\"^$tien\"))|.created_at" 2>/dev/null | sort | tail -1)
+    t2=$(gh api "repos/$R/issues/$hop/comments?since=$since&per_page=100" --jq ".[]|select(.body|test(\"^$tien\"))|.updated_at" 2>/dev/null | sort | tail -1)
     last=$(printf '%s\n%s\n' "$t1" "$t2" | sort | tail -1)
     [ -z "$last" ] && last=$since
     gio=$(( ( $(date -u +%s) - $(date -u -d "$last" +%s) ) / 3600 ))

@@ -69,5 +69,14 @@ Trả về đúng mẫu:
 5. Hết bảng → ghi "hết việc" ở #337 rồi vẫn giữ nhịp kiểm tin.
 6. Commit/push tiến độ ít nhất mỗi giờ ở mọi phiên con, để phiên bị ngắt không mất việc.
 
+## 6b. Chống nghỉ (sếp 01/11, bắt buộc)
+PM có lượt tự động mỗi giờ: nếu cả đội không push nhánh `deepseek*/` và không có comment `[Trưởng nhóm DeepSeek …]`/`[DeepSeek …]` ở #337 trong **2 giờ** (7–23 giờ VN), PM báo sếp qua Telegram là đội đang đứng. Để không bị báo oan và không thực sự đứng:
+1. **Nhịp tim mỗi giờ:** tạo MỘT comment cố định ở #337 mở đầu `[Trưởng nhóm DeepSeek → PM] nhịp:` và mỗi lượt kiểm tin **sửa lại** comment đó (`gh api -X PATCH repos/aowvn-10diem/aowvn-monika/issues/comments/<id> -f body=...`), không tạo comment mới. Nội dung 3 dòng: giờ UTC; phiên con đang chạy (mã việc); PR đang chờ duyệt. PM đọc thời điểm sửa để biết đội còn sống.
+2. **Lịch ngoài phiên (để phiên chết vẫn được đánh thức):** trên Windows tạo Task Scheduler chạy mỗi giờ phút :05 từ 07:05 tới 23:05, gọi OpenCode chế độ không tương tác trong thư mục repo, với lời nhắn "Kiểm tin theo mục 6 và 6b prompt Trưởng nhóm rồi làm tiếp". Mẫu (kiểm cú pháp bằng `opencode run --help` trước, cờ có thể khác) [CHƯA KIỂM]:
+   `schtasks /Create /SC HOURLY /TN "Monika-TruongNhom-KiemTin" /ST 07:05 /ET 23:06 /TR "powershell -NoProfile -Command cd <thư mục repo>; opencode run --continue 'Kiểm tin theo mục 6 và 6b prompt Trưởng nhóm rồi làm tiếp'"`
+   Báo PM ở #337 tên tác vụ, giờ chạy, và log 2 lần chạy liền để chứng minh lịch hoạt động.
+3. **Không bao giờ ngồi chờ khi còn việc:** mỗi lượt, nếu bảng mục 5 còn việc mà số phiên con đang chạy < 3 thì giao thêm ngay. Phiên con chết hoặc treo thì mở lại đúng `sessionID` hoặc giao lại việc đó.
+4. **Chỉ được im** khi: hết bảng (đã ghi "hết việc"), hoặc mọi việc còn lại đều bị chặn (ghi lý do chặn vào nhịp tim). Khi đó nhịp tim vẫn cập nhật mỗi giờ.
+
 ## 7. Bắt đầu
-Ghi ở #337: `[Trưởng nhóm DeepSeek → PM] khởi động <date -u>, chế độ phiên con, lịch: có/không`. Rồi chạy `explore` lập bảng tệp cho đợt 1 và giao 5 phiên con.
+Ghi ở #337: `[Trưởng nhóm DeepSeek → PM] khởi động <date -u>, chế độ phiên con, lịch: có/không`, tạo comment nhịp tim (mục 6b.1) và lịch Task Scheduler (6b.2). Rồi chạy `explore` lập bảng tệp cho đợt 1 và giao 5 phiên con.
