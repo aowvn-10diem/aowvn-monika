@@ -169,7 +169,7 @@ class RetryEffortTest(unittest.TestCase):
     def _gui(self, effort):
         gui = {}
 
-        def gia_post(body, key):
+        def gia_post(body, key, on_retry=None):
             gui.update(body)
             return {"content": [{"type": "text", "text": "ok"}], "usage": {"input_tokens": 1, "output_tokens": 1}, "stop_reason": "end_turn"}
 
@@ -185,6 +185,89 @@ class RetryEffortTest(unittest.TestCase):
     def test_tool_mcp_co_effort(self):
         props = [t for t in ds.TOOLS if t["name"] == "deepseek_chat"][0]["inputSchema"]["properties"]
         self.assertEqual(["none", "low", "high", "max"], props["effort"]["enum"])
+
+
+class _SoGhi:
+    """Sổ đếm giả ghi lại từng lần đặt chỗ, ghi sổ và nhả chỗ (không ghi ledger thật)."""
+    def __init__(self, gioi_han_dat_cho=None):
+        self.dat, self.ghi, self.nha = [], [], 0
+        self.gioi_han = gioi_han_dat_cho
+
+    def reserve(self, est):
+        if self.gioi_han is not None and len(self.dat) >= self.gioi_han:
+            raise ds.BudgetError("chạm trần")
+        row = {"id": len(self.dat)}
+        self.dat.append(est)
+        return row
+
+    def release(self, row):
+        self.nha += 1
+
+    def settle(self, row, actual, extra):
+        self.ghi.append((actual, extra))
+
+
+class RetryBudgetTest(unittest.TestCase):
+    def _chay(self, hanh_vi, so):
+        dem = {"n": 0}
+
+        def gia_open(req, timeout=None):
+            h = hanh_vi[min(dem["n"], len(hanh_vi) - 1)]
+            dem["n"] += 1
+            if isinstance(h, Exception):
+                raise h
+            return _GiaResp(h)
+
+        ok = b'{"content":[{"type":"text","text":"ok"}],"usage":{"input_tokens":10,"output_tokens":5},"stop_reason":"end_turn"}'
+        hanh_vi = [ok if h == "ok" else h for h in hanh_vi]
+        with mock.patch.object(ds.OPENER, "open", gia_open), mock.patch.object(ds.time, "sleep", lambda s: None):
+            try:
+                return ds.run_job(so, "khoa-gia", "simple", "chi thi"), dem["n"], None
+            except Exception as e:
+                return None, dem["n"], e
+
+    def test_moi_luot_mat_phan_hoi_deu_duoc_tinh_du_token_uoc_tinh(self):
+        so = _SoGhi()
+        r, n, loi = self._chay([ConnectionResetError(), ConnectionResetError(), "ok"], so)
+        self.assertIsNone(loi)
+        self.assertEqual(3, n)
+        self.assertEqual(3, len(so.dat))  # 3 lần đặt chỗ cho 3 request thật sự gửi đi
+        est = so.dat[0]
+        self.assertEqual([est, est, 15], [g[0] for g in so.ghi])  # hai lượt mất phản hồi tính đủ ước tính, lượt cuối tính số thật
+        self.assertEqual(0, so.nha)
+
+    def test_het_luot_van_tinh_ca_4_request(self):
+        so = _SoGhi()
+        _, n, loi = self._chay([ConnectionResetError()], so)
+        self.assertIsInstance(loi, ds.ApiError)
+        self.assertEqual(4, n)
+        self.assertEqual(4, len(so.ghi))
+        self.assertTrue(all(g[0] == so.dat[0] for g in so.ghi))
+        self.assertEqual(0, so.nha)
+
+    def test_loi_http_bi_tu_choi_tinh_request_khong_tinh_token(self):
+        loi5xx = urllib.error.HTTPError("u", 503, "bận", http.client.HTTPMessage(), io.BytesIO(b"x"))
+        so = _SoGhi()
+        r, n, loi = self._chay([loi5xx, "ok"], so)
+        self.assertIsNone(loi)
+        self.assertEqual(2, len(so.dat))
+        self.assertEqual([0, 15], [g[0] for g in so.ghi])
+
+    def test_loi_4xx_tinh_1_request_khong_thu_lai(self):
+        loi400 = urllib.error.HTTPError("u", 400, "sai", http.client.HTTPMessage(), io.BytesIO(b"x"))
+        so = _SoGhi()
+        _, n, loi = self._chay([loi400], so)
+        self.assertIsInstance(loi, ds.ApiError)
+        self.assertEqual((1, 1), (n, len(so.ghi)))
+        self.assertEqual(0, so.ghi[0][0])
+
+    def test_cham_tran_khi_thu_lai_thi_dung_va_luot_truoc_da_duoc_ghi(self):
+        so = _SoGhi(gioi_han_dat_cho=1)  # chỉ cho đặt chỗ lượt đầu
+        _, n, loi = self._chay([ConnectionResetError()], so)
+        self.assertIsInstance(loi, ds.BudgetError)
+        self.assertEqual(1, n)  # không gửi thêm khi hết hạn mức
+        self.assertEqual(1, len(so.ghi))  # lượt đã gửi vẫn được ghi sổ
+        self.assertEqual(so.dat[0], so.ghi[0][0])
 
 
 class RedirectTest(unittest.TestCase):
