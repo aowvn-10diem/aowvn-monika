@@ -6,13 +6,14 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 <!-- bien-tap: v0.8.8 -->
 > Phát hành ngày 01/11/2026 (UTC), bản thử nghiệm.
 
-- **Mới:** Từ bản 0.8.8, nếu máy chủ đặt phiên bản tối thiểu, Monika sẽ yêu cầu cập nhật trước khi tiếp tục. Bản 0.8.7 chỉ nhận thông báo cập nhật trong Cài đặt. Nếu chưa từng kết nối máy chủ, mất mạng vẫn dùng app bình thường. ([dd1fa2d](https://github.com/aowvn-10diem/aowvn-monika/commit/dd1fa2d6c7c21ac8df9d02ec63be6b1fa55d25aa))
-- **Sửa lỗi:** Tay cầm nay nhận đủ nút, phím hướng, cần analog và cò khi chơi qua Retro, Azahar (3DS) và game Java; thả phím đang giữ khi rút tay cầm. ([3ebb002](https://github.com/aowvn-10diem/aowvn-monika/commit/3ebb002582d35c32a805c096ea1b97ee70ce0598))
+- **Mới:** Khi có bản cập nhật quan trọng, app sẽ báo ngay lúc mở và có sẵn nút tải bản mới, để bạn luôn dùng bản đã sửa lỗi. ([dd1fa2d](https://github.com/aowvn-10diem/aowvn-monika/commit/dd1fa2d6c7c21ac8df9d02ec63be6b1fa55d25aa))
+- **Sửa lỗi:** Tay cầm (gamepad) bấm được đủ nút, phím hướng, núm xoay analog và nút vai L/R khi chơi game giả lập (GBA, NDS, SNES…), 3DS và game Java. ([3ebb002](https://github.com/aowvn-10diem/aowvn-monika/commit/3ebb002582d35c32a805c096ea1b97ee70ce0598))
+- **Sửa lỗi:** Rút tay cầm giữa lúc chơi không còn bị kẹt nút (nhân vật tự chạy hoặc tự bấm mãi). ([3ebb002](https://github.com/aowvn-10diem/aowvn-monika/commit/3ebb002582d35c32a805c096ea1b97ee70ce0598))
 - Nội bộ: dịch vụ nhận báo lỗi có giới hạn gửi và thời gian thử lại điều chỉnh được; khi vượt hạn mức trả về thời gian chờ. Mã đã gộp, cần xác nhận triển khai máy chủ. Tương thích từng tay cầm cần thử thêm trên máy thật. ([d925c64](https://github.com/aowvn-10diem/aowvn-monika/commit/d925c6418818a405c969fac24276be32b64402ab))
 
-## v0.8.7 (Đang chuẩn bị — Bản thử)
+## [v0.8.7](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.7) (Bản ổn định)
 <!-- bien-tap: v0.8.7 -->
-> Bản thử đang chuẩn bị.
+> Phát hành ngày 26/10/2026 (UTC) dạng bản thử; lên bản ổn định ngày 27/10/2026 (UTC).
 
 - **Mới:** Game Java mới mở tự chọn kích thước màn hình theo game; giữ nguyên thiết lập của game đã chơi. ([c423ebf](https://github.com/aowvn-10diem/aowvn-monika/commit/c423ebfeafca7953554beee2222b0ade5e941d01))
 - **Sửa lỗi:** Khi có cấu hình mới, Thư viện và danh sách lõi tự cập nhật, không cần đóng rồi mở lại ứng dụng. ([4546615](https://github.com/aowvn-10diem/aowvn-monika/commit/4546615b0ee8bb3e6566e3813abe77458894aa5d))
