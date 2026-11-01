@@ -3,6 +3,7 @@ package vn.aow.monika
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -10,6 +11,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.runner.DsFrame
+import vn.aow.monika.runner.DsScreen
 import vn.aow.monika.ui.TestApp
 
 /**
@@ -56,5 +58,45 @@ class DsPadLayoutTest {
         assertEquals("left-right", s.landscapeLayout)
         // Giá trị bố cục màn ngang phải là một lựa chọn có thật của lõi.
         assertEquals(1, s.layouts.count { it.value == s.landscapeLayout })
+    }
+
+    /**
+     * V160 (Luna 3): xoay ngang→dọc phải trả lại bố cục người chơi đã lưu, không ghi đè bằng mặc định config.
+     */
+    @Test fun rotateBackToPortraitKeepsSavedLayout() {
+        val s = screen("melondsds", "layoutKey", "defaultLayout")
+        val saved = mapOf(s.layoutKey to "hybrid-bottom")
+        assertEquals("left-right", DsScreen.rotationLayout(s, saved, landscape = true))
+        assertEquals("hybrid-bottom", DsScreen.rotationLayout(s, saved, landscape = false))
+        val configDefault = s.layouts.single { it.id == s.defaultLayout }.value
+        assertNotEquals(configDefault, DsScreen.rotationLayout(s, saved, landscape = false))
+    }
+
+    /** Chưa từng chọn bố cục: về dọc dùng mặc định của config (config là mặc định, không phải ghi đè). */
+    @Test fun portraitWithoutSavedChoiceUsesConfigDefault() {
+        val s = screen("melondsds", "layoutKey", "defaultLayout")
+        val configDefault = s.layouts.single { it.id == s.defaultLayout }.value
+        assertEquals(configDefault, DsScreen.rotationLayout(s, emptyMap(), landscape = false))
+    }
+
+    /**
+     * V160: màn ngang xếp hai màn cạnh nhau (2 × 256×192 = 512×192) phải vừa khít 3 cỡ máy, không cắt,
+     * và dùng bố cục ngang của config; xếp chồng như màn dọc thì hụt chiều ngang rất nhiều.
+     */
+    @Test fun landscapeSideBySideFitsThreeScreenSizes() {
+        val s = screen("melondsds", "landscapeLayout", "layoutKey")
+        for ((size, _, _) in phones) {
+            val landscapeW = maxOf(size.first, size.second)
+            val landscapeH = minOf(size.first, size.second)
+            val sideScale = minOf(landscapeW / 512f, landscapeH / 192f)
+            val sideW = 512 * sideScale
+            val sideH = 192 * sideScale
+            assertTrue("${landscapeW}x$landscapeH: cặp màn chỉ $sideW/$landscapeW px", sideW >= landscapeW * 0.99f)
+            assertTrue("${landscapeW}x$landscapeH: cặp màn cao $sideH/$landscapeH px", sideH <= landscapeH + 0.5f)
+            // Bố cục chồng dọc (như màn dọc) trên màn ngang chỉ dùng được ~1/3 chiều rộng.
+            val stackedW = 256 * minOf(landscapeW / 256f, landscapeH / 384f)
+            assertTrue("${landscapeW}x$landscapeH: cạnh nhau $sideW ≤ chồng dọc $stackedW", sideW >= stackedW * 1.5f)
+            assertEquals("left-right", DsScreen.rotationLayout(s, emptyMap(), landscape = true))
+        }
     }
 }

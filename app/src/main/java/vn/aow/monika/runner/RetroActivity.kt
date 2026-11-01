@@ -81,7 +81,6 @@ class RetroActivity : ComponentActivity() {
     private var padLayout = PadLayout.GBA
     // V160: bố cục + độ mờ tay cầm ảo lấy từ config `cores.<id>.screen` (không hard-code).
     private var overlayPad = false
-    private var portraitLayoutValue = ""
     private var autoSwitchedLayout = false
 
     /** Kiểu hiển thị (lõi có khai báo `display` trong config): bộ lọc + co giãn số nguyên + lưới LCD + tùy chọn lõi. */
@@ -129,7 +128,6 @@ class RetroActivity : ComponentActivity() {
         // V160: bố cục + độ trong suốt tay cầm ảo lấy từ config (không hard-code).
         val screenCfg = AppGraph.config.current.cores[coreId]?.screen
         overlayPad = screenCfg?.overlayPad == true
-        portraitLayoutValue = screenCfg?.layouts?.firstOrNull { it.id == screenCfg.defaultLayout }?.value ?: "top-bottom"
         aspect = AppGraph.config.current.cores[coreId]?.aspectRatio ?: DEFAULT_ASPECT[coreId] ?: 4f / 3f
         val prefs = AppGraph.prefs
         val tier = EmuTier.detect(this, prefs.emuPerf)
@@ -447,19 +445,19 @@ class RetroActivity : ComponentActivity() {
 
     /**
      * V160: xoay máy thì đổi bố cục hai màn theo config (`screen.landscapeLayout`, vd. "left-right").
-     * Chỉ đổi khi config có đặt; về dọc trả lại bố cục mặc định của config.
+     * Về dọc trả lại lựa chọn bố cục người chơi đã lưu (Cài đặt → Màn hình / Tùy chọn giả lập);
+     * config chỉ là mặc định khi người chơi chưa từng chọn.
      */
     private fun applyScreenLayout(orientation: Int) {
         val screen = AppGraph.config.current.cores[core]?.screen ?: return
         if (screen.layoutKey.isBlank() || screen.landscapeLayout.isBlank()) return
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            if (autoSwitchedLayout) return
-            retroView?.updateVariables(Variable(screen.layoutKey, screen.landscapeLayout))
-            autoSwitchedLayout = true
-        } else if (autoSwitchedLayout) {
-            if (portraitLayoutValue.isNotBlank()) retroView?.updateVariables(Variable(screen.layoutKey, portraitLayoutValue))
-            autoSwitchedLayout = false
-        }
+        val landscape = orientation == Configuration.ORIENTATION_LANDSCAPE
+        // Chỉ ghi khi đổi chiều thật sự (tránh ghi lại mỗi lần cấu hình đổi vì lý do khác).
+        if (landscape == autoSwitchedLayout) return
+        // Đọc lại lựa chọn đã lưu mỗi lần xoay: người chơi có thể vừa đổi bố cục trong game.
+        val value = DsScreen.rotationLayout(screen, CoreOptions.saved(this, core), landscape)
+        if (value.isNotBlank()) retroView?.updateVariables(Variable(screen.layoutKey, value))
+        autoSwitchedLayout = landscape
     }
 
     /** Đọc danh sách tùy chọn lõi đang chạy (lõi tự khai báo) rồi mở bảng chỉnh. */
