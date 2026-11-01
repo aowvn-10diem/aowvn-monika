@@ -43,7 +43,7 @@ def post_json(url, payload, opener=urllib.request.urlopen):
 
 
 def error_line(error):
-    """Dòng log cho lần gửi hỏng: mã HTTP + description, cắt 120 ký tự.
+    """Dòng log cho lần gửi hỏng: mã HTTP + description, cắt riêng description 120 ký tự.
 
     Chỉ lấy số mã và trường `description` do Telegram trả về; không in URL
     gọi API (chứa token), không in chat_id, không in chuỗi lỗi thô.
@@ -56,10 +56,9 @@ def error_line(error):
                 description = str(payload.get("description") or "").strip()
         except Exception:
             description = ""
-        text = f"HTTP {error.code} {description}".strip()
-    else:
-        text = type(error).__name__
-    return text[:MAX_ERROR_CHARS]
+        # Cắt riêng phần mô tả; mã HTTP luôn còn nguyên ở đầu dòng log.
+        return f"HTTP {error.code} {description[:MAX_ERROR_CHARS]}".strip()
+    return type(error).__name__[:MAX_ERROR_CHARS]
 
 
 def run(env, opener=urllib.request.urlopen):
