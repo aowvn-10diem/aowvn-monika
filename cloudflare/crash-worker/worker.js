@@ -102,6 +102,10 @@ export default {
         system: s(r.system, 60) || s(ss?.system, 60) || "unknown",
         stage: s(r.stage, 40) || s(ss?.stage, 40) || "unknown",
       });
+      // V155: chứng thư ký APK (SHA-256 64 hex thường) để phân biệt bản chính thức với bản tự build.
+      // Thiếu hoặc sai dạng thì bỏ qua — không chặn báo cáo, không đổi JSON của báo cáo cũ.
+      const cert = typeof r.certSha256 === "string" ? r.certSha256.trim().toLowerCase() : "";
+      if (/^[0-9a-f]{64}$/.test(cert)) slim.certSha256 = cert;
       if (image) slim.image = image;
       let stored = JSON.stringify(slim);
       // Ưu tiên ảnh hợp lệ, bớt chữ nếu JSON chuẩn hóa thêm default vượt ngân sách.

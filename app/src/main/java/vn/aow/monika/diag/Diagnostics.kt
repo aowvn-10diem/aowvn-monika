@@ -5,6 +5,7 @@ import android.app.ApplicationExitInfo
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import vn.aow.monika.BuildConfig
 import java.io.File
+import java.security.MessageDigest
 import java.util.UUID
 
 /**
@@ -92,6 +94,14 @@ object Diagnostics {
         @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
         @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
         val stage: String = "",
+        /**
+         * V155: SHA-256 (hex thường) của chứng thư ký APK đang chạy, để phân biệt bản chính thức
+         * với bản tự build. Rỗng/không có = không đọc được; không chặn việc gửi báo cáo.
+         * `EncodeDefault.NEVER` giữ nguyên định dạng JSON cũ khi trường trống.
+         */
+        @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+        @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+        val certSha256: String = "",
     ) {
         fun toText(): String = scrub(null, buildString {
             appendLine("== Báo lỗi Aow Monika ==")
@@ -599,9 +609,31 @@ object Diagnostics {
     }
 
     internal fun reportJson(c: Context?, r: Report): String {
-        val safe = UserGameReport.bounded(sanitized(c, r)) { json.encodeToString(Report.serializer(), it) }
+        val filled = if (c != null && r.certSha256.isEmpty()) r.copy(certSha256 = certSha256(c)) else r
+        val safe = UserGameReport.bounded(sanitized(c, filled)) { json.encodeToString(Report.serializer(), it) }
         return json.encodeToString(Report.serializer(), safe)
     }
+
+    /** SHA-256 dạng hex thường; tách riêng để kiểm được bằng véc-tơ chuẩn, không cần máy thật. */
+    internal fun sha256Hex(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 0xFF) }
+
+    /**
+     * V155: SHA-256 chứng thư ký của APK đang chạy. Trả chuỗi rỗng khi không đọc được
+     * (máy lạ, bản build không ký, ROM cook…) — **không** ném lỗi và không chặn gửi báo cáo.
+     */
+    internal fun certSha256(c: Context): String = runCatching {
+        val pm = c.packageManager
+        val signature = if (Build.VERSION.SDK_INT >= 28) {
+            pm.getPackageInfo(c.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+                .signingInfo?.apkContentsSigners?.firstOrNull()
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getPackageInfo(c.packageName, PackageManager.GET_SIGNATURES).signatures?.firstOrNull()
+        }
+        val bytes = signature?.toByteArray()
+        if (bytes == null || bytes.isEmpty()) "" else sha256Hex(bytes)
+    }.getOrDefault("")
 
     /** Người chơi chủ động báo lỗi, không gộp làm mất mô tả/ảnh của lần gửi khác. */
     fun recordUser(c: Context, type: String, description: String, image: ReportImage?,

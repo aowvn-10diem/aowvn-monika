@@ -161,3 +161,43 @@ test('V103 incomplete index without cursor fails instead of claiming complete', 
   const response=await worker.fetch(new Request('https://example.test/report-index',{headers:{authorization:'Bearer fixture-only'}}),env);
   assert.equal(response.status,503);assert.equal((await response.json()).error,'incomplete_index');
 });
+
+
+// ---- V155: SHA-256 chung thu ky APK ----
+
+const CERT = "9f2c".repeat(16); // 64 hex thuong
+
+test("V155 certSha256 dung duoc ghi va doc lai nguyen ven", async () => {
+  const c = setup();
+  assert.equal((await c.post({ ...fixture, certSha256: CERT })).status, 200);
+  const entry = (await (await c.read("/reports")).json()).reports[0];
+  assert.equal((await (await c.read(`/reports/${entry.id}`)).json()).certSha256, CERT);
+});
+
+test("V155 chung thu khac van duoc ghi: phan biet duoc ban chinh thuc", async () => {
+  const c = setup();
+  const other = "0".repeat(64);
+  await c.post({ ...fixture, certSha256: CERT });
+  await c.post({ ...fixture, certSha256: other });
+  const ids = [...c.data.keys()].filter((k) => k.startsWith("r:"));
+  const certs = ids.map((id) => JSON.parse(c.data.get(id).value).certSha256).sort();
+  assert.deepEqual(certs, [other, CERT].sort());
+});
+
+test("V155 thieu hoac sai dang certSha256 thi bo qua, bao cao van duoc nhan", async () => {
+  for (const value of [undefined, "", "abc", "g".repeat(64), "a".repeat(63), "a".repeat(65), 12345, null, ["a".repeat(64)]]) {
+    const c = setup();
+    const report = { ...fixture };
+    if (value !== undefined) report.certSha256 = value;
+    assert.equal((await c.post(report)).status, 200, JSON.stringify(value));
+    const id = [...c.data.keys()].find((k) => k.startsWith("r:"));
+    assert.equal("certSha256" in JSON.parse(c.data.get(id).value), false, JSON.stringify(value));
+  }
+});
+
+test("V155 certSha256 viet hoa duoc chuan hoa ve chu thuong", async () => {
+  const c = setup();
+  assert.equal((await c.post({ ...fixture, certSha256: CERT.toUpperCase() })).status, 200);
+  const id = [...c.data.keys()].find((k) => k.startsWith("r:"));
+  assert.equal(JSON.parse(c.data.get(id).value).certSha256, CERT);
+});
