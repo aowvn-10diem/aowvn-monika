@@ -109,6 +109,7 @@ if { [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; } || [ "$(date -u +%s)" -lt "$(dat
   for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Sol 2|sol2/|119|\\[Sol 2" "Kiểm thử|kiemthu/|337|\\[(Trưởng nhóm )?Kiểm thử" "Duyệt DeepSeek|duyet/|337|\\[(Trưởng nhóm )?Duyệt DeepSeek"; do
     IFS='|' read -r ten nhanh hop tien <<<"$doi"
     t1=$(echo "$act" | grep -E "^refs/heads/$nhanh" | awk '{print $2}' | sort | tail -1)
+    tien=${tien//\\/\\\\}   # jq cần "\\[" (một "\[" là escape sai, lỗi bị nuốt nên trước đây chỉ đọc được lần push)
     t2=$(gh api "repos/$R/issues/$hop/comments?since=$since&per_page=100" --jq ".[]|select(.body|test(\"^$tien\"))|.updated_at" 2>/dev/null | sort | tail -1)
     last=$(printf '%s\n%s\n' "$t1" "$t2" | sort | tail -1)
     [ -z "$last" ] && continue   # đội chưa hoạt động trong 24 giờ (chưa khởi động): không báo
