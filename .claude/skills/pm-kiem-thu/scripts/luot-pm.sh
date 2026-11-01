@@ -106,7 +106,7 @@ if [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; then
     t1=$(echo "$act" | grep -E "^refs/heads/$nhanh" | awk '{print $2}' | sort | tail -1)
     t2=$(gh api "repos/$R/issues/$hop/comments?since=$since&per_page=100" --jq ".[]|select(.body|test(\"^$tien\"))|.updated_at" 2>/dev/null | sort | tail -1)
     last=$(printf '%s\n%s\n' "$t1" "$t2" | sort | tail -1)
-    [ -z "$last" ] && last=$since
+    [ -z "$last" ] && continue   # đội chưa hoạt động trong 24 giờ (chưa khởi động): không báo
     gio=$(( ( $(date -u +%s) - $(date -u -d "$last" +%s) ) / 3600 ))
     [ "$gio" -ge 2 ] && out+=("DUNG $ten tu=$last ${gio}h")
   done
