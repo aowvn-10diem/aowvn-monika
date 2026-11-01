@@ -32,6 +32,21 @@ class CheckReadableTest(unittest.TestCase):
             finally:
                 del os.environ["DS_EXTRA_ROOTS"]
 
+    def test_allowedroots_khong_mo_ra_ngoai_repo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "ghi-chu.txt")
+            open(path, "w").close()
+            cu = list(ds.CFG["allowedRoots"])
+            try:
+                for root in (tmp, "/tmp", "../..", ".."):
+                    ds.CFG["allowedRoots"] = [root]
+                    with self.subTest(root=root), self.assertRaises(ds.AccessError):
+                        ds.check_readable(path)
+                    with self.subTest(root=root, loai="ghi"), self.assertRaises(ds.AccessError):
+                        ds.check_writable(path)
+            finally:
+                ds.CFG["allowedRoots"] = cu
+
     def test_chan_env_moi_bien_the(self):
         for name in (".env", ".env.local", ".envrc", ".env.production"):
             with self.subTest(name=name), self.assertRaises(ds.AccessError):
