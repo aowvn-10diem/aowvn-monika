@@ -26,12 +26,12 @@
 >
 > | Mã | Việc | Tier | Kiểm bằng | Ghi chú | Trạng thái |
 > |---|---|---|---|---|---|
-> | DS-01 | Dịch 41 chuỗi còn thiếu ở `j2me/src/main/res/values-vi/strings.xml` (so với `values/`, bỏ `translatable="false"`) | simple | Script: 0 khóa thiếu, giữ nguyên `%s`/`%1$d`/`\n`/thực thể XML; XML hợp lệ; CI xanh | `ds-ok` · lô 1 | giao 30/10 |
-> | DS-02 | Rà chính tả, dấu, nhất quán thuật ngữ chuỗi giao diện: `app/src/main/res/values/strings.xml` + chuỗi `Text("…")` trong `app/src/main/java/vn/aow/monika/**` | simple | Báo cáo `docs/ds/ra-soat-chuoi-ui.md` (file:dòng · hiện tại · đề xuất · lý do); không sửa `.kt` | `ds-ok` · lô 1 · PR docs-only | giao 30/10 |
-> | DS-03 | Unit test cho `cheats/ChtFormat.kt` và `library/ConsoleSaveFormats.kt` (chưa có test riêng; xem `SaveFormatsTest` để khỏi trùng) | hard | `./gradlew testDebugUnitTest` trên CI xanh; chỉ thêm file trong `app/src/test` | `ds-ok` · lô 1 · lộ lỗi thật thì ghi mô tả PR, không sửa mã chính | giao 30/10 |
-> | DS-04 | Gom crash đang mở (issue bot crash) thành bảng chữ ký · tần suất · hệ máy · người phụ trách | simple | `docs/ds/tong-hop-crash.md`, mỗi dòng trỏ issue | `ds-ok` · lô 2 · đầu vào cho Sol, không tự sửa | chờ lô 1 |
-> | DS-05 | L09 đồng bộ tài liệu: `README.md`, `docs/opus/HANDOFF-SONNET.md`, `docs/KIEN-TRUC-tay.md` lệch với main hiện tại | hard | PR docs-only, mỗi chỗ sửa trỏ file:dòng mã nguồn | `ds-ok` · lô 2 | chờ lô 1 |
-> | DS-06 | Dịch mô tả/chú thích tiếng Anh trong `docs/**` còn sót sang tiếng Việt | simple | PR docs-only, không đổi lệnh/đường dẫn | `ds-ok` · lô 2 | chờ lô 1 |
+> | DS-01 | Dịch 41 chuỗi còn thiếu ở `j2me/src/main/res/values-vi/strings.xml` (so với `values/`, bỏ `translatable="false"`) | simple | Script: 0 khóa thiếu, giữ nguyên `%s`/`%1$d`/`\n`/thực thể XML; XML hợp lệ; CI xanh | `ds-ok` · lô 1 | **hủy 01/11**: `values/` vốn là tiếng Việt, không có gì để dịch; đóng #382 |
+> | DS-02 | Rà chính tả, dấu, nhất quán thuật ngữ chuỗi giao diện: `app/src/main/res/values/strings.xml` + chuỗi `Text("…")` trong `app/src/main/java/vn/aow/monika/**` | simple | Báo cáo `docs/ds/ra-soat-chuoi-ui.md` (file:dòng · hiện tại · đề xuất · lý do); không sửa `.kt` | `ds-ok` · lô 1 · PR docs-only | **hủy 01/11**: ~50% mục phải bỏ (>30%), DS kém phán xét văn phong |
+> | DS-03 | Unit test cho `cheats/ChtFormat.kt` và `library/ConsoleSaveFormats.kt` (chưa có test riêng; xem `SaveFormatsTest` để khỏi trùng) | hard | `./gradlew testDebugUnitTest` trên CI xanh; chỉ thêm file trong `app/src/test` | `ds-ok` · lô 1 · lộ lỗi thật thì ghi mô tả PR, không sửa mã chính | PR #383 (31 test, sửa tay 1/31), chờ 2 Đạt |
+> | DS-04 | Gom crash đang mở (issue bot crash) thành bảng chữ ký · tần suất · hệ máy · người phụ trách | simple | `docs/ds/tong-hop-crash.md`, mỗi dòng trỏ issue | `ds-ok` · lô 2 · đầu vào cho Sol, không tự sửa | giao 01/11 |
+> | DS-05 | L09 đồng bộ tài liệu: `README.md`, `docs/opus/HANDOFF-SONNET.md`, `docs/KIEN-TRUC-tay.md` lệch với main hiện tại | hard | PR docs-only, mỗi chỗ sửa trỏ file:dòng mã nguồn | lô 2 | **bỏ 01/11** (phán xét, giống DS-02) |
+> | DS-06 | Dịch mô tả/chú thích tiếng Anh trong `docs/**` còn sót sang tiếng Việt | simple | PR docs-only, không đổi lệnh/đường dẫn | `ds-ok` · lô 2 | giao 01/11 |
 
 ## 1. Mốc
 
