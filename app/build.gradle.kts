@@ -21,8 +21,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 52
-        versionName = "0.8.7"
+        versionCode = 53
+        versionName = "0.8.8"
         // V56: runner chỉ nằm trong APK instrumentation, không thêm lối vào app phát hành.
         testInstrumentationRunner = "vn.aow.monika.testlab.KirikiriArmRunner"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
@@ -30,6 +30,8 @@ android {
             "String", "REMOTE_CONFIG_URL",
             "\"https://aowvn-monika.aowvn-system.workers.dev/config.json\""
         )
+        // [A65] flavor `play` (V150) đặt false: màn "Cần cập nhật" chỉ ghi "Cập nhật trên Google Play", không mở link APK ngoài.
+        buildConfigField("boolean", "APK_DOWNLOAD_ALLOWED", "true")
     }
 
     // Khóa ký bản phát hành lấy từ biến môi trường (GitHub Secrets), không bao giờ lưu trong repo.

@@ -2,6 +2,7 @@
 
 - Địa chỉ: `https://aowvn-monika-crash.aowvn-system.workers.dev`
 - `POST /report` — app gửi báo lỗi (JSON, tối đa 60.000 byte UTF-8, 20 báo cáo/giờ/IP, chỉ lưu băm IP). Lưu KV `aowvn-monika-crash-reports`, giữ 60 ngày.
+- Ngưỡng chống spam (V153) đổi bằng biến môi trường của Worker: `RATE_LIMIT_MAX` (mặc định `20`) và `RATE_LIMIT_WINDOW_SECONDS` (mặc định `3600`, tối đa `604800`). Quá ngưỡng trả `429` kèm header `Retry-After` = số giây còn lại của cửa sổ. Env sai/thiếu thì dùng mặc định; mỗi báo cáo vẫn 1 đọc + 2 ghi KV, không thêm lượt gọi Worker.
 - `GET /stats`, `GET /reports`, `GET /reports/<id>` — xem báo cáo, cần header `Authorization: Bearer <mã quản trị>`.
 - Mã quản trị là secret `ADMIN_TOKEN` của Worker (không ghi trong repo). Mất mã thì nhờ dựng lại Worker với mã mới.
 - Xem nhanh: `CRASH_ADMIN_TOKEN=... scripts/crash-reports.sh` (tóm tắt) hoặc `... scripts/crash-reports.sh <id>` (chi tiết).

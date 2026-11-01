@@ -8,8 +8,8 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
-import android.view.InputDevice
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.WindowManager
 import android.widget.FrameLayout
@@ -528,16 +528,56 @@ class RetroActivity : ComponentActivity() {
         lifecycleScope.launch { delay(ms); if (ui.toast == text) ui.toast = null }
     }
 
-    /** Chuyển phím từ tay cầm thật vào game. */
+    // ---- Tay cầm thật (V120): nút, hat, cần analog, cò. Tay cầm báo nguồn nào cũng nhận; BACK để hệ thống xử lý. ----
+
+    private val padAxes = GamepadInput.Tracker()
+    private val heldPadKeys = HashSet<Int>()
+    private val inputDevices by lazy { getSystemService(android.hardware.input.InputManager::class.java) }
+    private val deviceListener = object : android.hardware.input.InputManager.InputDeviceListener {
+        override fun onInputDeviceAdded(deviceId: Int) = Unit
+        override fun onInputDeviceChanged(deviceId: Int) = Unit
+        override fun onInputDeviceRemoved(deviceId: Int) = releasePad() // rút tay cầm đang giữ nút/cần: nhả hết, khỏi kẹt phím
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val view = retroView
-        val fromGamepad = event.source and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD ||
-            event.source and InputDevice.SOURCE_DPAD == InputDevice.SOURCE_DPAD
-        if (view != null && fromGamepad && event.keyCode != KeyEvent.KEYCODE_BACK) {
+        if (view != null && GamepadInput.isPadKey(event.source, event.keyCode)) {
+            when (event.action) {
+                KeyEvent.ACTION_DOWN -> heldPadKeys += event.keyCode
+                KeyEvent.ACTION_UP -> heldPadKeys -= event.keyCode
+            }
             view.sendKeyEvent(event.action, event.keyCode)
             return true
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    /** Chặn ở mức Activity để cần/hat tới game dù tiêu điểm đang ở lớp giao diện phủ. */
+    override fun dispatchGenericMotionEvent(ev: MotionEvent): Boolean {
+        if (retroView != null && ev.action == MotionEvent.ACTION_MOVE && GamepadInput.isPadMotion(ev.source)) {
+            sendPad(padAxes.update(GamepadInput.axesOf(ev)))
+            return true
+        }
+        return super.dispatchGenericMotionEvent(ev)
+    }
+
+    private fun sendPad(changes: List<GamepadInput.Change>) {
+        val view = retroView ?: return
+        for (c in changes) when (c) {
+            is GamepadInput.Change.Hat -> view.sendMotionEvent(GLRetroView.MOTION_SOURCE_DPAD, c.x.toFloat(), c.y.toFloat(), 0)
+            is GamepadInput.Change.Stick -> view.sendMotionEvent(if (c.right) GLRetroView.MOTION_SOURCE_ANALOG_RIGHT else GLRetroView.MOTION_SOURCE_ANALOG_LEFT, c.x, c.y, 0)
+            is GamepadInput.Change.Trigger -> view.sendKeyEvent(
+                if (c.down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP,
+                if (c.right) KeyEvent.KEYCODE_BUTTON_R2 else KeyEvent.KEYCODE_BUTTON_L2,
+            )
+        }
+    }
+
+    private fun releasePad() {
+        sendPad(padAxes.reset())
+        val view = retroView ?: return heldPadKeys.clear()
+        heldPadKeys.forEach { view.sendKeyEvent(KeyEvent.ACTION_UP, it) }
+        heldPadKeys.clear()
     }
 
     private var clock: PlayClock? = null
@@ -545,9 +585,12 @@ class RetroActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         clock?.resume()
+        inputDevices.registerInputDeviceListener(deviceListener, null)
     }
 
     override fun onPause() {
+        inputDevices.unregisterInputDeviceListener(deviceListener)
+        releasePad()
         clock?.pause()
         saveSram()
         super.onPause()

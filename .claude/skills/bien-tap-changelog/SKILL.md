@@ -32,6 +32,19 @@ Với mỗi tag: đọc mục hiện có trong `docs/CHANGELOG.md` (đã có PR/
 | Người đọc là **người dùng**: chỉ nói **đã sửa gì** và **có gì mới**. Không ghi "chưa kiểm", "chưa rõ nguyên nhân", "chưa chạy thật", ghi chú về cách làm hay giới hạn của nhóm (sếp chốt 16/10). Cần ghi thì đưa vào dòng `Nội bộ:` | Sai: "Tốc độ thật trên máy chưa kiểm." Đúng: bỏ câu đó |
 | Giữ cụm nguồn cuối dòng `([#200](https://github.com/…/pull/200))` hoặc `([abc1234](…))` | trang tự ẩn cụm này, nhưng người làm cần truy vết |
 
+### Sếp nhắc 01/11 (bắt buộc)
+Bản v0.8.8 đầu tiên vẫn khó hiểu với người thường. Trước khi mở PR, đọc lại từng dòng như một người chơi chưa từng nghe về app:
+- Chỉ trả lời hai câu: **app đã sửa được gì** và **có gì mới dùng được**. Lợi ích đặt đầu câu.
+- Cấm thêm các từ người chơi không biết: máy chủ, phiên bản tối thiểu, cấu hình, Retro, Azahar, lõi, flavor, overlay, Worker, hạn mức. Gọi theo thứ người chơi thấy: "game GBA", "game 3DS", "tay cầm", "núm xoay analog", "nút L/R".
+- Không giải thích trường hợp hiếm ("nếu chưa từng kết nối…", "bản 0.8.7 chỉ…"). Không nhắc bản cũ trừ khi người dùng phải làm gì.
+- Một lỗi người chơi gặp = một dòng riêng, tả triệu chứng họ từng thấy ("bị kẹt nút", "màn hình nhỏ, viền đen").
+- Tiêu đề và dòng `>` phải đúng trạng thái phát hành thật (bản thử hay ổn định, ngày), đối chiếu GitHub Releases.
+
+| Sai (v0.8.8 bản đầu) | Đúng |
+|---|---|
+| Từ bản 0.8.8, nếu máy chủ đặt phiên bản tối thiểu, Monika sẽ yêu cầu cập nhật trước khi tiếp tục… | Khi có bản cập nhật quan trọng, app sẽ báo ngay lúc mở và có sẵn nút tải bản mới. |
+| Tay cầm nay nhận đủ nút, phím hướng, cần analog và cò khi chơi qua Retro, Azahar (3DS)… | Tay cầm bấm được đủ nút, phím hướng, núm xoay analog và nút L/R khi chơi game GBA, NDS, 3DS và game Java. |
+
 **Nội bộ**: thay đổi người dùng không thấy (kiểm thử, CI, tài liệu, giấy phép, tái cấu trúc, chẩn đoán cho người làm) và mọi ghi chú của nhóm → mỗi mục một dòng bắt đầu `- Nội bộ: …`, viết ngắn. **Trang Lịch sử cập nhật không hiển thị các dòng này** (chỉ còn trong tệp để người làm truy vết); trang cũng tự bỏ các câu có "chưa kiểm/chưa rõ/chưa chạy thật" nếu còn sót.
 
 Ví dụ (v0.8.3, trước → sau):
