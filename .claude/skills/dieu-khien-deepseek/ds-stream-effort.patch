@@ -1,8 +1,8 @@
 diff --git a/tools/ds/ds.py b/tools/ds/ds.py
-index dcda43a5..b848fab0 100644
+index 89f81b12..af7d5c9c 100644
 --- a/tools/ds/ds.py
 +++ b/tools/ds/ds.py
-@@ -182,6 +182,37 @@ def post(body, key):
+@@ -186,6 +186,39 @@ def post(body, key, on_retry=None):
              raise ApiError(0, str(e))
  
  
@@ -34,18 +34,20 @@ index dcda43a5..b848fab0 100644
 +                    stop = ev.get("delta", {}).get("stop_reason") or stop
 +    except urllib.error.HTTPError as e:
 +        raise ApiError(e.code, e.read().decode("utf-8", "replace")[:300])
++    except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException, json.JSONDecodeError) as e:
++        raise ApiError(0, str(e))  # bản streaming không tự thử lại; báo mất phản hồi để lượt này vẫn được tính vào sổ
 +    return {"content": [{"type": "text", "text": "".join(text)}], "usage": usage, "stop_reason": stop}
 +
 +
  def read_text(path):
      check_readable(path)
      with open(path, encoding="utf-8", errors="replace") as f:
-@@ -201,7 +232,7 @@ def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, m
-         if system:
-             body["system"] = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
+@@ -212,7 +245,7 @@ def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, m
+             cur[0] = budget.reserve(est)
+ 
          try:
--            resp = post(body, key)
-+            resp = post_stream(body, key) if os.environ.get("DS_STREAM") else post(body, key)
-         except Exception:
-             budget.release(row)
-             raise
+-            resp = post(body, key, on_retry)
++            resp = post_stream(body, key) if os.environ.get("DS_STREAM") else post(body, key, on_retry)
+         except ApiError as e:  # lượt cuối thất bại: vẫn tính (mất phản hồi = đủ token ước tính, bị từ chối = 1 request)
+             if cur[0] is not None:
+                 budget.settle(cur[0], est if e.code == 0 else 0, {"model": model, "failed": True})
