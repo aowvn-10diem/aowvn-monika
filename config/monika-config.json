@@ -1,11 +1,5 @@
 {
-  "documentExtensions": [
-    "pdf",
-    "doc",
-    "docx",
-    "txt",
-    "epub"
-  ],
+  "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
   "configVersion": 54,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
@@ -1327,58 +1321,19 @@
       "Nokia-MIDlet-Target-Display-Size"
     ],
     "presets": [
-      [
-        96,
-        65
-      ],
-      [
-        128,
-        128
-      ],
-      [
-        128,
-        160
-      ],
-      [
-        160,
-        128
-      ],
-      [
-        176,
-        208
-      ],
-      [
-        176,
-        220
-      ],
-      [
-        208,
-        208
-      ],
-      [
-        240,
-        260
-      ],
-      [
-        240,
-        320
-      ],
-      [
-        320,
-        240
-      ],
-      [
-        352,
-        416
-      ],
-      [
-        360,
-        640
-      ],
-      [
-        480,
-        800
-      ]
+      [96, 65],
+      [128, 128],
+      [128, 160],
+      [160, 128],
+      [176, 208],
+      [176, 220],
+      [208, 208],
+      [240, 260],
+      [240, 320],
+      [320, 240],
+      [352, 416],
+      [360, 640],
+      [480, 800]
     ],
     "maxImages": 200,
     "maxImageBytes": 131072,
