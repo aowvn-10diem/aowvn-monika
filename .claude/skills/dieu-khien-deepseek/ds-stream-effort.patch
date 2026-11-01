@@ -1,5 +1,5 @@
 diff --git a/tools/ds/ds.py b/tools/ds/ds.py
-index 89f81b12..af7d5c9c 100644
+index 9ff6a34a..8a8edf9a 100644
 --- a/tools/ds/ds.py
 +++ b/tools/ds/ds.py
 @@ -186,6 +186,39 @@ def post(body, key, on_retry=None):
@@ -50,4 +50,4 @@ index 89f81b12..af7d5c9c 100644
 +            resp = post_stream(body, key) if os.environ.get("DS_STREAM") else post(body, key, on_retry)
          except ApiError as e:  # lượt cuối thất bại: vẫn tính (mất phản hồi = đủ token ước tính, bị từ chối = 1 request)
              if cur[0] is not None:
-                 budget.settle(cur[0], est if e.code == 0 else 0, {"model": model, "failed": True})
+                 budget.settle(cur[0], est if (e.code == 0 or e.code >= 500) else 0, {"model": model, "failed": True})
