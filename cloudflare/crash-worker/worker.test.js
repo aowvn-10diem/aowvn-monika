@@ -6,18 +6,28 @@ import worker, { MAX_BODY } from "./worker.js";
 globalThis.crypto ??= webcrypto;
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/app-report.json", import.meta.url)));
 
-function setup() {
+function setup(extra = {}) {
   const data = new Map();
   const env = { ADMIN_TOKEN: "local-fixture-only", REPORTS: {
     get: async (k) => data.get(k)?.value ?? null,
     put: async (k, value, options) => data.set(k, { value, options }),
     list: async ({ prefix }) => ({ list_complete: true, keys: [...data].filter(([k]) => k.startsWith(prefix)).map(([name, r]) => ({ name, metadata: r.options.metadata })) }),
-  } };
+  }, ...extra };
   const request = (path, init = {}) => worker.fetch(new Request(`https://example.test${path}`, init), env);
   const post = (report) => request("/report", { method: "POST", body: JSON.stringify(report) });
   const read = (path) => request(path, { headers: { authorization: "Bearer local-fixture-only" } });
-  return { data, request, post, read };
+  return { data, env, request, post, read };
 }
+
+// V153: điều khiển đồng hồ để kiểm ranh giới cửa sổ mà không phải chờ.
+async function atTime(ms, fn) {
+  const real = Date.now;
+  Date.now = () => ms;
+  try { return await fn(); } finally { Date.now = real; }
+}
+
+const IP = "203.0.113.9";
+const withIp = (path, init = {}) => ({ ...init, headers: { ...(init.headers || {}), "CF-Connecting-IP": IP } });
 
 test("JSON app → POST → KV → GET giữ đủ thông tin chẩn đoán", async () => {
   const c = setup();
@@ -160,4 +170,80 @@ test('V103 incomplete index without cursor fails instead of claiming complete', 
   const env={ADMIN_TOKEN:'fixture-only',REPORTS:{list:async()=>({list_complete:false,keys:[]})}};
   const response=await worker.fetch(new Request('https://example.test/report-index',{headers:{authorization:'Bearer fixture-only'}}),env);
   assert.equal(response.status,503);assert.equal((await response.json()).error,'incomplete_index');
+});
+
+
+// ---- V153: rate limit theo IP, ngưỡng/cửa sổ lấy từ env ----
+
+const postWithIp = (c, report, init = {}) => c.request("/report", {
+  method: "POST",
+  body: JSON.stringify(report),
+  headers: { "CF-Connecting-IP": IP, ...(init.headers || {}) },
+});
+
+test("V153 mac dinh 20 bao cao/cua so, 429 kem Retry-After dung khoang", async () => {
+  const c = setup();
+  for (let i = 0; i < 20; i++) assert.equal((await postWithIp(c, fixture)).status, 200);
+  const denied = await postWithIp(c, fixture);
+  assert.equal(denied.status, 429);
+  assert.equal((await denied.json()).error, "rate_limited");
+  const retryAfter = Number(denied.headers.get("retry-after"));
+  assert.ok(Number.isInteger(retryAfter) && retryAfter >= 1 && retryAfter <= 3600, `retry-after=${retryAfter}`);
+});
+
+test("V153 RATE_LIMIT_MAX doi nguong", async () => {
+  const c = setup({ RATE_LIMIT_MAX: "3" });
+  for (let i = 0; i < 3; i++) assert.equal((await postWithIp(c, fixture)).status, 200);
+  assert.equal((await postWithIp(c, fixture)).status, 429);
+  const other = postWithIp(c, fixture, { headers: { "CF-Connecting-IP": "198.51.100.7" } });
+  assert.equal((await other).status, 200);
+});
+
+test("V153 RATE_LIMIT_WINDOW_SECONDS doi cua so va Retry-After bam moc cua so", async () => {
+  const base = 1791860040000; // chia het cho 60.000 ms
+  const c = setup({ RATE_LIMIT_MAX: "2", RATE_LIMIT_WINDOW_SECONDS: "60" });
+  assert.equal(await atTime(base, () => postWithIp(c, fixture).then((r) => r.status)), 200);
+  assert.equal(await atTime(base + 1000, () => postWithIp(c, fixture).then((r) => r.status)), 200);
+  const denied = await atTime(base + 2000, () => postWithIp(c, fixture));
+  assert.equal(denied.status, 429);
+  assert.equal(denied.headers.get("retry-after"), "58");
+  const lastSecond = await atTime(base + 59999, () => postWithIp(c, fixture));
+  assert.equal(lastSecond.headers.get("retry-after"), "1");
+  assert.equal(await atTime(base + 60000, () => postWithIp(c, fixture).then((r) => r.status)), 200);
+});
+
+test("V153 env sai hoac <=0 thi dung mac dinh", async () => {
+  for (const extra of [
+    { RATE_LIMIT_MAX: "abc", RATE_LIMIT_WINDOW_SECONDS: "" },
+    { RATE_LIMIT_MAX: "0", RATE_LIMIT_WINDOW_SECONDS: "-5" },
+    { RATE_LIMIT_MAX: "1.5", RATE_LIMIT_WINDOW_SECONDS: "1e9" },
+  ]) {
+    const c = setup(extra);
+    for (let i = 0; i < 20; i++) assert.equal((await postWithIp(c, fixture)).status, 200, JSON.stringify(extra));
+    assert.equal((await postWithIp(c, fixture)).status, 429, JSON.stringify(extra));
+  }
+});
+
+test("V153 chi luu bam IP, khong luu IP trong khoa hay gia tri", async () => {
+  const c = setup();
+  assert.equal((await postWithIp(c, fixture)).status, 200);
+  const keys = [...c.data.keys()];
+  assert.equal(keys.filter((k) => k.startsWith("rl:")).length, 1);
+  for (const k of keys) assert.equal(k.includes(IP), false);
+  for (const v of c.data.values()) assert.equal(String(v.value).includes(IP), false);
+  const rlKey = keys.find((k) => k.startsWith("rl:"));
+  assert.match(rlKey, /^rl:\d+:[0-9a-f]{16}$/);
+});
+
+test("V153 gioi han khong lam tang so lan goi KV tren moi bao cao", async () => {
+  let gets = 0, puts = 0;
+  const c = setup();
+  const kv = c.env.REPORTS;
+  c.env.REPORTS = {
+    ...kv,
+    get: async (k) => { gets++; return kv.get(k); },
+    put: async (k, v, o) => { puts++; return kv.put(k, v, o); },
+  };
+  assert.equal((await postWithIp(c, fixture)).status, 200);
+  assert.deepEqual([gets, puts], [1, 2]); // 1 doc han muc + 1 ghi han muc + 1 ghi bao cao
 });
