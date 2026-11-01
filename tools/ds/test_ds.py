@@ -101,7 +101,6 @@ class CheckReadableTest(unittest.TestCase):
             ds.check_readable(os.path.join(ds.REPO, ".git", "config"))
 
 
-<<<<<<< HEAD
 class _GiaNganSach:
     """Sổ đếm giả: không ghi sổ thật vào ~/.cache."""
     def reserve(self, est):
@@ -170,7 +169,8 @@ class StreamingEffortTest(unittest.TestCase):
 
     def test_ds_stream_chon_ham_streaming(self):
         self.assertEqual("max", self._chay("max", True)["reasoning_effort"])
-=======
+
+
 class RedirectTest(unittest.TestCase):
     """Khóa Bearer không được chuyển tiếp khi server trả redirect sang host khác (urllib mặc định chép header)."""
 
@@ -218,7 +218,6 @@ class RedirectTest(unittest.TestCase):
         thay, loi = self._chay()
         self.assertEqual([], thay, "host đích không được nhận yêu cầu nào")
         self.assertEqual(302, loi.code)
->>>>>>> origin/ccr-37c8378a-bgfkia
 
 
 if __name__ == "__main__":
