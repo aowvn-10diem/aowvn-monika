@@ -12,12 +12,39 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-with open(os.environ.get("DS_CONFIG", os.path.join(HERE, "ds-config.json")), encoding="utf-8") as _f:
-    CFG = json.load(_f)
+# Sàn bảo mật nằm trong mã, không phụ thuộc cấu hình: cấu hình chỉ được siết thêm, không được nới.
+SECURITY_FLOOR_GLOBS = ("*.jks", "*.keystore", "*.p12", "*.pfx", "*.pem", "*.key", ".env*", "local.properties",
+                        "keystore.properties", "google-services.json", "id_rsa*", "*.mobileprovision")
+ALLOWED_ENDPOINT_HOSTS = ("tokenize.vn",)
+KEY_ENV, KEY_FILE_ENV = "TOKENIZE_API_KEY", "TOKENIZE_KEY_FILE"
+
+
+class ConfigError(Exception):
+    pass
+
+
+def harden_config(cfg):
+    """Gộp sàn bảo mật vào cấu hình; từ chối endpoint lạ hoặc tên biến key khác (không thể đổi nguồn key/đích gửi)."""
+    u = urllib.parse.urlparse(str(cfg.get("endpoint", "")))
+    if u.scheme != "https" or u.hostname not in ALLOWED_ENDPOINT_HOSTS:
+        raise ConfigError(f"endpoint phải là https://{ALLOWED_ENDPOINT_HOSTS[0]}/..., không phải {cfg.get('endpoint')!r}")
+    if cfg.get("keyEnv") != KEY_ENV or cfg.get("keyFileEnv") != KEY_FILE_ENV:
+        raise ConfigError(f"keyEnv/keyFileEnv phải là {KEY_ENV}/{KEY_FILE_ENV}")
+    cfg["blockedGlobs"] = sorted(set(cfg.get("blockedGlobs", ())) | set(SECURITY_FLOOR_GLOBS))
+    return cfg
+
+
+# Chỉ đọc ds-config.json cạnh ds.py (đổi cấu hình phải qua PR được rà); không có biến môi trường thay cấu hình.
+with open(os.path.join(HERE, "ds-config.json"), encoding="utf-8") as _f:
+    try:
+        CFG = harden_config(json.load(_f))
+    except ConfigError as _e:
+        sys.exit(f"lỗi cấu hình: {_e}")
 
 
 class BudgetError(Exception):
@@ -41,7 +68,7 @@ def check_readable(path):
     """Chặn file nhạy cảm và đường dẫn ngoài thư mục cho phép trước khi gửi nội dung cho bên thứ ba."""
     real = os.path.realpath(path)
     roots = [os.path.realpath(os.path.join(REPO, r)) for r in CFG["allowedRoots"]]
-    # cấu hình (kể cả DS_CONFIG) không được mở quyền ra ngoài repo: gốc tuyệt đối hay "../.." đều bị loại
+    # cấu hình không được mở quyền ra ngoài repo: gốc tuyệt đối hay "../.." đều bị loại
     if any(not (r == REPO or r.startswith(REPO + os.sep)) for r in roots):
         raise AccessError("allowedRoots trỏ ra ngoài repo: cấu hình không hợp lệ")
     if not any(real == r or real.startswith(r + os.sep) for r in roots):
