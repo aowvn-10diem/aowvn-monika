@@ -245,13 +245,28 @@ class RetryBudgetTest(unittest.TestCase):
         self.assertTrue(all(g[0] == so.dat[0] for g in so.ghi))
         self.assertEqual(0, so.nha)
 
-    def test_loi_http_bi_tu_choi_tinh_request_khong_tinh_token(self):
+    def test_5xx_tinh_du_uoc_tinh_vi_chua_ro_co_tinh_phi(self):
         loi5xx = urllib.error.HTTPError("u", 503, "bận", http.client.HTTPMessage(), io.BytesIO(b"x"))
         so = _SoGhi()
         r, n, loi = self._chay([loi5xx, "ok"], so)
         self.assertIsNone(loi)
         self.assertEqual(2, len(so.dat))
+        self.assertEqual([so.dat[0], 15], [g[0] for g in so.ghi])
+
+    def test_429_chi_tinh_request_khong_tinh_token(self):
+        loi429 = urllib.error.HTTPError("u", 429, "nhanh quá", http.client.HTTPMessage(), io.BytesIO(b"x"))
+        so = _SoGhi()
+        r, n, loi = self._chay([loi429, "ok"], so)
+        self.assertIsNone(loi)
         self.assertEqual([0, 15], [g[0] for g in so.ghi])
+
+    def test_5xx_het_luot_van_tinh_du_uoc_tinh(self):
+        loi5xx = urllib.error.HTTPError("u", 502, "x", http.client.HTTPMessage(), io.BytesIO(b"x"))
+        so = _SoGhi()
+        _, n, loi = self._chay([loi5xx], so)
+        self.assertIsInstance(loi, ds.ApiError)
+        self.assertEqual((4, 4), (n, len(so.ghi)))
+        self.assertTrue(all(g[0] == so.dat[0] for g in so.ghi))
 
     def test_loi_4xx_tinh_1_request_khong_thu_lai(self):
         loi400 = urllib.error.HTTPError("u", 400, "sai", http.client.HTTPMessage(), io.BytesIO(b"x"))

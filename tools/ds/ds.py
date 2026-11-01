@@ -173,7 +173,7 @@ def post(body, key, on_retry=None):
         except urllib.error.HTTPError as e:
             if e.code in (429, 500, 502, 503, 504) and attempt < 3:
                 if on_retry:
-                    on_retry(lost=False)  # server đã trả lỗi: tính 1 request, chưa chắc tiêu token
+                    on_retry(lost=e.code != 429)  # 429 bị từ chối trước khi xử lý: chỉ tính 1 request; 5xx chưa rõ có tính phí nên tính đủ ước tính
                 time.sleep(min(float(e.headers.get("Retry-After") or 2 ** (attempt + 1)), 60))
                 continue
             raise ApiError(e.code, e.read().decode("utf-8", "replace")[:300])
@@ -248,7 +248,7 @@ def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, m
             resp = post_stream(body, key) if os.environ.get("DS_STREAM") else post(body, key, on_retry)
         except ApiError as e:  # lượt cuối thất bại: vẫn tính (mất phản hồi = đủ token ước tính, bị từ chối = 1 request)
             if cur[0] is not None:
-                budget.settle(cur[0], est if e.code == 0 else 0, {"model": model, "failed": True})
+                budget.settle(cur[0], est if (e.code == 0 or e.code >= 500) else 0, {"model": model, "failed": True})
             raise
         except Exception:
             if cur[0] is not None:

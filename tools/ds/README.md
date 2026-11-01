@@ -27,7 +27,7 @@ Với `-o`/`out`, nội dung không vào ngữ cảnh của agent gọi, chỉ i
 
 ## Mức suy nghĩ (`--effort`) và thử lại
 - `-e/--effort none|low|high|max` (cũng là trường `effort` trong job `batch` và tool MCP `deepseek_chat`) đặt `reasoning_effort`. `none` tắt suy nghĩ; bỏ trống thì dùng mặc định của Tokenize (cũng có suy nghĩ). Đo thực tế: dùng `high`; `max` hay làm server cắt kết nối và chưa thấy tốt hơn. Khối suy nghĩ vẫn bị tính token; việc `hard` với đầu vào lớn nên đặt `--max-tokens 30000`.
-- `post()` tự thử lại (tối đa 4 lần, chờ tăng dần) khi bị cắt kết nối (`ConnectionError`, `RemoteDisconnected`), hết thời gian, hoặc phản hồi JSON bị cắt giữa chừng; lỗi 429/5xx cũng thử lại. Lỗi 4xx khác báo ngay, không thử lại. **Hạch toán bảo thủ:** mỗi lượt gửi đều vào sổ đếm: lượt mất phản hồi (server có thể đã xử lý) tính đủ token ước tính, lượt bị server từ chối tính 1 request, lượt cuối tính số thật; chạm trần thì dừng, không gửi thêm.
+- `post()` tự thử lại (tối đa 4 lần, chờ tăng dần) khi bị cắt kết nối (`ConnectionError`, `RemoteDisconnected`), hết thời gian, hoặc phản hồi JSON bị cắt giữa chừng; lỗi 429/5xx cũng thử lại. Lỗi 4xx khác báo ngay, không thử lại. **Hạch toán bảo thủ:** mỗi lượt gửi đều vào sổ đếm: lượt mất phản hồi (server có thể đã xử lý) tính đủ token ước tính, lỗi 5xx cũng tính đủ ước tính (chưa có quy tắc từ Tokenize rằng 5xx không tính phí), lỗi 429 và 4xx chỉ tính 1 request, lượt cuối tính số thật; chạm trần thì dừng, không gửi thêm.
 
 ## Quy tắc dùng để rẻ và trúng cache
 - Phần cố định (quy ước, glossary, ngữ cảnh lớn) đặt vào **`system`** (`-s`), không đưa qua `-i`. Đo thực tế: system lớn trúng cache ~74% từ lần gọi thứ hai, qua `-i` chỉ ~33%.
