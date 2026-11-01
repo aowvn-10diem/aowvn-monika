@@ -41,9 +41,8 @@ def check_readable(path):
     """Chặn file nhạy cảm và đường dẫn ngoài thư mục cho phép trước khi gửi nội dung cho bên thứ ba."""
     real = os.path.realpath(path)
     roots = [os.path.realpath(os.path.join(REPO, r)) for r in CFG["allowedRoots"]]
-    roots += [os.path.realpath(r) for r in os.environ.get("DS_EXTRA_ROOTS", "").split(os.pathsep) if r]
     if not any(real == r or real.startswith(r + os.sep) for r in roots):
-        raise AccessError(f"{path}: nằm ngoài thư mục cho phép (đặt DS_EXTRA_ROOTS nếu cần thêm thư mục tạm)")
+        raise AccessError(f"{path}: nằm ngoài thư mục cho phép (chỉ trong repo)")
     # kiểm cả tên gốc lẫn tên sau khi theo liên kết, để symlink không lách được
     names = {os.path.basename(path).lower(), os.path.basename(real).lower()}
     if ".git" in real.split(os.sep) or any(fnmatch.fnmatch(n, g.lower()) for n in names for g in CFG["blockedGlobs"]):
@@ -216,7 +215,13 @@ def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, m
     }
 
 
+def check_writable(path):
+    """Ghi kết quả chỉ trong repo, không vào .git, không đè tên nhạy cảm (cùng luật với check_readable)."""
+    check_readable(path)
+
+
 def write_out(path, text):
+    check_writable(path)
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
@@ -229,6 +234,8 @@ def summary(r, out=None):
 
 
 def cmd_run(args):
+    if args.out:
+        check_writable(args.out)  # chặn trước khi tốn token
     budget, key = Budget(), api_key()
     r = run_job(budget, key, args.tier, args.prompt, args.input or (), read_text(args.system) if args.system else None, args.max_tokens, args.model, args.effort)
     if args.out:
@@ -243,6 +250,8 @@ def cmd_batch(args):
     budget, key = Budget(), api_key()
     with open(args.jobs, encoding="utf-8") as f:
         jobs = [json.loads(line) for line in f if line.strip()]
+    for j in jobs:
+        check_writable(j["out"])  # chặn cả lô trước khi tốn token
     jobs.sort(key=lambda j: (j.get("system_file", ""), j.get("tier", "simple")))  # cùng tiền tố đứng cạnh nhau
     stop = threading.Event()
 
@@ -302,6 +311,8 @@ def call_tool(budget, name, a):
         return budget.report()
     if name != "deepseek_chat":
         raise ApiError(0, f"không có tool {name}")
+    if a.get("out_file"):
+        check_writable(a["out_file"])
     r = run_job(budget, api_key(), a.get("tier", "simple"), a["prompt"], a.get("files", ()), a.get("system"), a.get("max_tokens"), None, a.get("effort"))
     if a.get("out_file"):
         write_out(a["out_file"], r["text"])

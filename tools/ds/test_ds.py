@@ -19,17 +19,31 @@ class CheckReadableTest(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(ds.AccessError):
                 ds.check_readable(os.path.join(ds.REPO, "app", name))
 
-    def test_chan_ngoai_repo(self):
+    def test_chan_ngoai_repo_ke_ca_khi_dat_bien_cu(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "ghi-chu.txt")
             open(path, "w").close()
             with self.assertRaises(ds.AccessError):
                 ds.check_readable(path)
-            os.environ["DS_EXTRA_ROOTS"] = tmp
+            os.environ["DS_EXTRA_ROOTS"] = tmp  # biến cũ không còn hiệu lực
             try:
-                ds.check_readable(path)
+                with self.assertRaises(ds.AccessError):
+                    ds.check_readable(path)
             finally:
                 del os.environ["DS_EXTRA_ROOTS"]
+
+    def test_chan_env_moi_bien_the(self):
+        for name in (".env", ".env.local", ".envrc", ".env.production"):
+            with self.subTest(name=name), self.assertRaises(ds.AccessError):
+                ds.check_readable(os.path.join(ds.REPO, "app", name))
+
+    def test_ghi_chi_trong_repo(self):
+        ds.check_writable(os.path.join(ds.REPO, "docs", "ds", "ra.md"))
+        with tempfile.TemporaryDirectory() as tmp, self.assertRaises(ds.AccessError):
+            ds.check_writable(os.path.join(tmp, "ra.md"))
+        for bad in (os.path.join(ds.REPO, ".git", "hooks", "x"), os.path.join(ds.REPO, "app", "khoa.pem"), os.path.join(ds.REPO, ".envrc")):
+            with self.subTest(path=bad), self.assertRaises(ds.AccessError):
+                ds.check_writable(bad)
 
     def test_symlink_khong_lach_duoc(self):
         with tempfile.TemporaryDirectory(dir=ds.REPO) as tmp:

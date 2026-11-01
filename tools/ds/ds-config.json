@@ -15,7 +15,7 @@
   "planEnds": "2026-11-06",
   "allowedRoots": ["."],
   "blockedGlobs": [
-    "*.jks", "*.keystore", "*.p12", "*.pfx", "*.pem", "*.key", ".env", ".env.*",
+    "*.jks", "*.keystore", "*.p12", "*.pfx", "*.pem", "*.key", ".env*",
     "local.properties", "keystore.properties", "google-services.json", "id_rsa*", "*.mobileprovision"
   ],
   "windows": [
