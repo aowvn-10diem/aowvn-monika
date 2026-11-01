@@ -79,6 +79,7 @@ import javax.microedition.util.ContextHolder;
 
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
+import ru.playsoftware.j2meloader.AowLandscapePad;
 import ru.playsoftware.j2meloader.R;
 import ru.playsoftware.j2meloader.config.ProfileModel;
 
@@ -334,15 +335,26 @@ public abstract class Canvas extends Displayable {
 		// Aow Monika: khung game là "màn hình máy" bo tròn, cách mép; máy ngang thì nằm giữa 2 cụm phím.
 		int offX = 0;
 		int offY = 0;
+		boolean monikaLandscape = false;
 		VirtualKeyboard monikaVk = ContextHolder.getVk();
 		if (monikaVk != null && monikaVk.isMonika() && !(skinLayer != null && skinLayer.hasDisplayFrame())) {
 			float density = ContextHolder.getAppContext().getResources().getDisplayMetrics().density;
 			float side = monikaVk.getMonikaSideWidth(displayWidth, displayHeight);
-			int edge = (int) (12 * density);
-			offX = side > 0 ? (int) side : edge;
-			offY = (int) ((side > 0 ? 12 : 28) * density);
-			scaledDisplayWidth = displayWidth - 2 * offX;
-			scaledDisplayHeight = scaledDisplayHeight - offY - (side > 0 ? edge : 0);
+			if (side > 0) {
+				// V161: máy ngang — khung game nằm GIỮA 2 cụm phím, cùng phép tính với AowLandscapePad.
+				float[] band = AowLandscapePad.band(displayWidth, displayHeight, density);
+				offX = (int) band[0];
+				offY = (int) band[1];
+				scaledDisplayWidth = (int) (band[2] - band[0]);
+				scaledDisplayHeight = (int) (band[3] - band[1]) - settings.screenPadding * 2;
+				monikaLandscape = true;
+			} else {
+				int edge = (int) (12 * density);
+				offX = edge;
+				offY = (int) (28 * density);
+				scaledDisplayWidth = displayWidth - 2 * offX;
+				scaledDisplayHeight = scaledDisplayHeight - offY;
+			}
 		}
 
 		if (settings.screenWidth > 0) {
@@ -396,6 +408,12 @@ public abstract class Canvas extends Displayable {
 				// just stretch the picture to full screen
 				onWidth = scaledDisplayWidth;
 				onHeight = scaledDisplayHeight;
+				if (monikaLandscape) {
+					// V161: máy ngang — KHÔNG kéo giãn méo, giữ đúng tỉ lệ khung hình của game.
+					int[] fit = AowLandscapePad.fit(width, height, scaledDisplayWidth, scaledDisplayHeight);
+					onWidth = fit[0];
+					onHeight = fit[1];
+				}
 				if (scaleRatio > 100) {
 					scaleRatio = 100;
 				}
@@ -426,6 +444,12 @@ public abstract class Canvas extends Displayable {
 				onX = (scaledDisplayWidth - onWidth) / 2;
 				onY = scaledDisplayHeight - onHeight;
 			}
+		}
+
+		if (monikaLandscape) {
+			// V161: máy ngang — khung game luôn ở GIỮA khung dành cho game, hai bên là 2 cụm phím.
+			onX = (scaledDisplayWidth - onWidth) / 2;
+			onY = (scaledDisplayHeight - onHeight) / 2;
 		}
 
 		if (skinLayer != null && skinLayer.hasDisplayFrame()) {
