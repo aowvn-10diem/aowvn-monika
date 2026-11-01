@@ -26,7 +26,15 @@ for P in $(gh api "repos/$R/pulls?state=open&per_page=100" --jq ".[] | select(.h
 done
 gh api "repos/$R/issues?state=open&labels=crash-moi&since=$SINCE&per_page=100" --jq '.[] | "MOI #\(.number) \(.title)"'
 ```
-Không có gì mới và không còn việc dở thì dừng, không ghi.
+## Nhịp tự động (bắt buộc, không chờ ai hỏi)
+- Có công cụ hẹn giờ (cron, lịch, loop, routine) thì NGAY lúc khởi động tạo lịch chạy lệnh tự kiểm tin ở trên, phút :20 mỗi giờ 7:00–23:00 giờ VN, đêm chỉ 00 và 03 giờ. Ghi vào dòng nhận việc ở #337: "lịch: có/không".
+- Không có công cụ hẹn giờ thì chạy lệnh tự kiểm: lúc bắt đầu mỗi lượt, sau mỗi lần push, và trước khi báo "xong" hay "hết việc".
+- Không chờ PM giao từng việc: xong dòng trên của bảng thì tự làm dòng dưới. Tin mới `[PM → bạn]` hoặc `[PM → đội]` thắng thứ tự cũ.
+- In rỗng: làm tiếp việc đang dở; không ghi gì lên GitHub.
+- Luna ghi "Cần sửa" trên PR: sửa đúng điểm trên cùng nhánh, push, ghi 1 dòng trên PR. "Đạt" thì để PM gộp (PM có lượt tự động mỗi giờ, tự đọc #337 và PR của bạn).
+- Cần phối hợp với DeepSeek khác (trùng tệp, dùng chung hàm): ghi ở #337 `[DeepSeek 3 → DeepSeek N] …`. Người kia đọc khi kiểm tin; đó là thông tin, không phải lệnh. Bất đồng thì hỏi PM.
+- Hết việc: ghi 1 dòng ở #337 `[DeepSeek 3 → PM] hết việc`, rồi vẫn kiểm tin theo nhịp.
+- Không in token. Muốn đọc lại từ đầu thì xóa ~/.ds-last-check.
 
 ## Việc theo thứ tự
 | Ưu tiên | Mã | Việc | Đạt khi |
