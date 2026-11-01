@@ -728,9 +728,15 @@ object Diagnostics {
         tick.value++
     }
 
-    fun list(c: Context): List<Report> = reportsDir(c).listFiles().orEmpty()
-        .sortedByDescending { it.name }
-        .mapNotNull { f -> runCatching { sanitized(c, json.decodeFromString(Report.serializer(), f.readText())) }.getOrNull() }
+    /** Gắn ở test: xem [list] chạy ở luồng nào (đọc/parse 30 file JSON trên main thread là ANR). */
+    @Volatile internal var listProbe: ((Thread) -> Unit)? = null
+
+    fun list(c: Context): List<Report> {
+        listProbe?.invoke(Thread.currentThread())
+        return reportsDir(c).listFiles().orEmpty()
+            .sortedByDescending { it.name }
+            .mapNotNull { f -> runCatching { sanitized(c, json.decodeFromString(Report.serializer(), f.readText())) }.getOrNull() }
+    }
 
     fun markSeen(c: Context, r: Report) { save(c, r.copy(seen = true)); if (pending.value?.id == r.id) pending.value = null }
 
