@@ -6,7 +6,7 @@ Cổng gọi API, chỉ dùng thư viện chuẩn Python. Cấu hình ở `ds-co
 Đặt biến môi trường `TOKENIZE_API_KEY` (hoặc `TOKENIZE_KEY_FILE` trỏ tới file chứa key). **Không bao giờ commit key**, không in ra log.
 
 ## File được phép gửi
-Mọi file đưa vào `-s`, `-i`, `files` và nơi ghi `-o`/`out`/`out_file` phải nằm trong repo và không khớp `blockedGlobs` (`*.jks`, `*.keystore`, `*.p12`, `*.pem`, `.env*`, `local.properties`, `keystore.properties`, `google-services.json`, ...; xem `ds-config.json`). Thư mục `.git` và symlink trỏ tới file bị chặn cũng bị từ chối. Không có ngoại lệ cho đường dẫn ngoài repo: cần thư mục tạm thì tạo trong repo (đã ignore, ví dụ qua `.git/info/exclude`). Kiểm: `python3 -m unittest discover -s tools/ds -p test_ds.py`.
+Mọi file đưa vào `-s`, `-i`, `files` và nơi ghi `-o`/`out`/`out_file` phải nằm trong repo và không khớp `blockedGlobs` (`*.jks`, `*.keystore`, `*.p12`, `*.pem`, `.env*`, `local.properties`, `keystore.properties`, `google-services.json`, ...; xem `ds-config.json`). Thư mục `.git` và symlink trỏ tới file bị chặn cũng bị từ chối. Không có ngoại lệ cho đường dẫn ngoài repo: tệp tạm (system, đầu vào, đầu ra) đặt trong `tools/ds/.work/` (đã có trong `.gitignore`, không commit). Kiểm: `python3 -m unittest discover -s tools/ds -p test_ds.py`.
 
 ## Phân luồng
 | `tier` | Model | Dùng cho |
@@ -24,6 +24,10 @@ python3 tools/ds/ds.py usage                     # mức dùng theo cửa sổ 5
 python3 tools/ds/ds.py mcp                       # MCP stdio (đã khai báo trong .mcp.json)
 ```
 Với `-o`/`out`, nội dung không vào ngữ cảnh của agent gọi, chỉ in một dòng tóm tắt (token mới, cache %).
+
+## Mức suy nghĩ (`--effort`) và thử lại
+- `-e/--effort none|low|high|max` (cũng là trường `effort` trong job `batch` và tool MCP `deepseek_chat`) đặt `reasoning_effort`. `none` tắt suy nghĩ; bỏ trống thì dùng mặc định của Tokenize (cũng có suy nghĩ). Đo thực tế: dùng `high`; `max` hay làm server cắt kết nối và chưa thấy tốt hơn. Khối suy nghĩ vẫn bị tính token; việc `hard` với đầu vào lớn nên đặt `--max-tokens 30000`.
+- `post()` tự thử lại (tối đa 4 lần, chờ tăng dần) khi bị cắt kết nối (`ConnectionError`, `RemoteDisconnected`), hết thời gian, hoặc phản hồi JSON bị cắt giữa chừng; lỗi 429/5xx cũng thử lại. Lỗi 4xx khác báo ngay, không thử lại.
 
 ## Quy tắc dùng để rẻ và trúng cache
 - Phần cố định (quy ước, glossary, ngữ cảnh lớn) đặt vào **`system`** (`-s`), không đưa qua `-i`. Đo thực tế: system lớn trúng cache ~74% từ lần gọi thứ hai, qua `-i` chỉ ~33%.

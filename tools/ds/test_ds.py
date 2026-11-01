@@ -3,10 +3,14 @@ import os
 import sys
 import importlib
 import json
+import http.client
 import http.server
+import io
 import tempfile
 import threading
 import unittest
+import urllib.error
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ds  # noqa: E402
@@ -98,6 +102,89 @@ class CheckReadableTest(unittest.TestCase):
     def test_chan_thu_muc_git(self):
         with self.assertRaises(ds.AccessError):
             ds.check_readable(os.path.join(ds.REPO, ".git", "config"))
+
+
+class _GiaNganSach:
+    """Sổ đếm giả: không ghi sổ thật vào ~/.cache."""
+    def reserve(self, est):
+        return {}
+
+    def release(self, row):
+        pass
+
+    def settle(self, row, actual, extra):
+        pass
+
+
+class _GiaResp:
+    def __init__(self, data):
+        self._data = data
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def read(self, *a):
+        return self._data
+
+
+class RetryEffortTest(unittest.TestCase):
+    def _post(self, hanh_vi):
+        dem = {"n": 0}
+
+        def gia_open(req, timeout=None):
+            h = hanh_vi[min(dem["n"], len(hanh_vi) - 1)]
+            dem["n"] += 1
+            if isinstance(h, Exception):
+                raise h
+            return _GiaResp(h)
+
+        with mock.patch.object(ds.OPENER, "open", gia_open), mock.patch.object(ds.time, "sleep", lambda s: None):
+            try:
+                return ds.post({"model": "m"}, "khoa-gia"), dem["n"]
+            except ds.ApiError as e:
+                return e, dem["n"]
+
+    def test_thu_lai_khi_bi_cat_ket_noi(self):
+        r, n = self._post([ConnectionResetError(), http.client.RemoteDisconnected("dong"), b'{"ok": 1}'])
+        self.assertEqual(({"ok": 1}, 3), (r, n))
+
+    def test_thu_lai_khi_json_bi_cat_giua_chung(self):
+        r, n = self._post([b'{"ok":', b'{"ok": 2}'])
+        self.assertEqual(({"ok": 2}, 2), (r, n))
+
+    def test_het_luot_thi_bao_loi_ro(self):
+        r, n = self._post([ConnectionResetError()])
+        self.assertIsInstance(r, ds.ApiError)
+        self.assertEqual((0, 4), (r.code, n))
+
+    def test_loi_4xx_khong_thu_lai(self):
+        loi = urllib.error.HTTPError("u", 400, "bad", http.client.HTTPMessage(), io.BytesIO(b"loi"))
+        r, n = self._post([loi])
+        self.assertIsInstance(r, ds.ApiError)
+        self.assertEqual((400, 1), (r.code, n))
+
+    def _gui(self, effort):
+        gui = {}
+
+        def gia_post(body, key):
+            gui.update(body)
+            return {"content": [{"type": "text", "text": "ok"}], "usage": {"input_tokens": 1, "output_tokens": 1}, "stop_reason": "end_turn"}
+
+        with mock.patch.object(ds, "post", gia_post):
+            ds.run_job(_GiaNganSach(), "khoa-gia", "simple", "chi thi", effort=effort)
+        return gui
+
+    def test_effort_di_vao_than_yeu_cau(self):
+        self.assertEqual("high", self._gui("high")["reasoning_effort"])
+        self.assertEqual("none", self._gui("none")["reasoning_effort"])
+        self.assertNotIn("reasoning_effort", self._gui(None))
+
+    def test_tool_mcp_co_effort(self):
+        props = [t for t in ds.TOOLS if t["name"] == "deepseek_chat"][0]["inputSchema"]["properties"]
+        self.assertEqual(["none", "low", "high", "max"], props["effort"]["enum"])
 
 
 class RedirectTest(unittest.TestCase):

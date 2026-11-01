@@ -11,6 +11,7 @@ import os
 import sys
 import threading
 import time
+import http.client
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -174,7 +175,7 @@ def post(body, key):
                 time.sleep(min(float(e.headers.get("Retry-After") or 2 ** (attempt + 1)), 60))
                 continue
             raise ApiError(e.code, e.read().decode("utf-8", "replace")[:300])
-        except (urllib.error.URLError, TimeoutError) as e:
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException, json.JSONDecodeError) as e:
             if attempt < 3:
                 time.sleep(2 ** (attempt + 1))
                 continue
@@ -187,7 +188,7 @@ def read_text(path):
         return f.read()
 
 
-def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, model=None):
+def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, model=None, effort=None):
     """Một lần gọi. Phần cố định (system, file) đứng trước, chỉ thị đứng cuối để trúng cache."""
     model = model or CFG["routes"][tier]
     max_tokens = max_tokens or CFG["maxTokens"][tier]
@@ -195,6 +196,8 @@ def run_job(budget, key, tier, prompt, files=(), system=None, max_tokens=None, m
     for attempt in range(2):
         row = budget.reserve((len(user) + len(system or "")) // 3 + max_tokens)
         body = {"model": model, "max_tokens": max_tokens, "messages": [{"role": "user", "content": user}]}
+        if effort:
+            body["reasoning_effort"] = effort
         if system:
             body["system"] = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
         try:
@@ -244,7 +247,7 @@ def cmd_run(args):
     if args.out:
         check_writable(args.out)  # chặn trước khi tốn token
     budget, key = Budget(), api_key()
-    r = run_job(budget, key, args.tier, args.prompt, args.input or (), read_text(args.system) if args.system else None, args.max_tokens, args.model)
+    r = run_job(budget, key, args.tier, args.prompt, args.input or (), read_text(args.system) if args.system else None, args.max_tokens, args.model, args.effort)
     if args.out:
         write_out(args.out, r["text"])
         print(summary(r, args.out))
@@ -268,7 +271,7 @@ def cmd_batch(args):
             return jid, "bỏ-qua: chạm trần", None
         try:
             system = read_text(job["system_file"]) if job.get("system_file") else None
-            r = run_job(budget, key, job.get("tier", "simple"), job["prompt"], job.get("files", ()), system, job.get("max_tokens"), job.get("model"))
+            r = run_job(budget, key, job.get("tier", "simple"), job["prompt"], job.get("files", ()), system, job.get("max_tokens"), job.get("model"), job.get("effort"))
             write_out(job["out"], r["text"])
             return jid, summary(r, job["out"]), r
         except BudgetError as e:
@@ -305,6 +308,7 @@ TOOLS = [
                 "system": {"type": "string"},
                 "out_file": {"type": "string"},
                 "max_tokens": {"type": "integer"},
+                "effort": {"type": "string", "enum": ["none", "low", "high", "max"]},
             },
         },
     },
@@ -319,7 +323,7 @@ def call_tool(budget, name, a):
         raise ApiError(0, f"không có tool {name}")
     if a.get("out_file"):
         check_writable(a["out_file"])
-    r = run_job(budget, api_key(), a.get("tier", "simple"), a["prompt"], a.get("files", ()), a.get("system"), a.get("max_tokens"))
+    r = run_job(budget, api_key(), a.get("tier", "simple"), a["prompt"], a.get("files", ()), a.get("system"), a.get("max_tokens"), None, a.get("effort"))
     if a.get("out_file"):
         write_out(a["out_file"], r["text"])
         return summary(r, a["out_file"])
@@ -371,6 +375,7 @@ def main():
     r.add_argument("-p", "--prompt", required=True)
     r.add_argument("-o", "--out", help="ghi kết quả ra file, chỉ in một dòng tóm tắt")
     r.add_argument("--max-tokens", type=int)
+    r.add_argument("-e", "--effort", choices=["none", "low", "high", "max"], help="mức suy nghĩ (reasoning_effort); bỏ trống = mặc định của Tokenize")
     r.set_defaults(fn=cmd_run)
     b = sub.add_parser("batch", help="chạy nhiều việc song song từ file jsonl")
     b.add_argument("jobs", help='mỗi dòng: {"id","tier","system_file","files","prompt","out"}')
