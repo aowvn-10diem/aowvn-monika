@@ -204,7 +204,7 @@ class RetroActivity : ComponentActivity() {
                     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
                     InGameOverlay(
                         state = ui, system = systemName, title = title, layout = layout, showPad = ready,
-                        send = { action, k -> if (ready) retroView?.sendKeyEvent(action, k) },
+                        send = { action, k -> if (ready) retroView?.sendPadKey(action, k) },
                         onBack = { finish() },
                         onSave = { saveState() },
                         onLoad = { loadState() },
@@ -546,7 +546,7 @@ class RetroActivity : ComponentActivity() {
                 KeyEvent.ACTION_DOWN -> heldPadKeys += event.keyCode
                 KeyEvent.ACTION_UP -> heldPadKeys -= event.keyCode
             }
-            view.sendKeyEvent(event.action, event.keyCode)
+            view.sendPadKey(event.action, event.keyCode)
             return true
         }
         return super.dispatchKeyEvent(event)
@@ -576,7 +576,7 @@ class RetroActivity : ComponentActivity() {
     private fun releasePad() {
         sendPad(padAxes.reset())
         val view = retroView ?: return heldPadKeys.clear()
-        heldPadKeys.forEach { view.sendKeyEvent(KeyEvent.ACTION_UP, it) }
+        heldPadKeys.forEach { view.sendPadKey(KeyEvent.ACTION_UP, it) }
         heldPadKeys.clear()
     }
 

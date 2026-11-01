@@ -502,28 +502,26 @@ private fun DPad(send: (Int, Int) -> Unit) = MonikaDPad(send)
 
 @Composable
 private fun FaceButtons(layout: PadLayout, send: (Int, Int) -> Unit, motion: (Int, Float, Float) -> Unit) {
-    val bottom = KeyEvent.KEYCODE_BUTTON_A
-    val right = KeyEvent.KEYCODE_BUTTON_B
-    val left = KeyEvent.KEYCODE_BUTTON_X
-    val top = KeyEvent.KEYCODE_BUTTON_Y
+    // V159: mã phím lấy từ bảng chung PadFaceKeys, không hard-code tại đây.
+    fun key(label: String) = PadFaceKeys.key(layout, label)
     when (layout) {
         PadLayout.GB, PadLayout.GBA, PadLayout.RPG -> Box(Modifier.size(width = 160.dp, height = 130.dp)) {
-            RoundKey("B", bottom, send, Modifier.align(Alignment.BottomStart))
-            RoundKey("A", right, send, Modifier.align(Alignment.TopEnd))
+            RoundKey("B", key("B"), send, Modifier.align(Alignment.BottomStart))
+            RoundKey("A", key("A"), send, Modifier.align(Alignment.TopEnd))
         }
-        PadLayout.NDS, PadLayout.SNES, PadLayout.N3DS -> Diamond(send, listOf("X" to top, "Y" to left, "A" to right, "B" to bottom))
-        PadLayout.PS, PadLayout.PSP -> Diamond(send, listOf("△" to top, "□" to left, "○" to right, "×" to bottom))
-        PadLayout.DC -> Diamond(send, listOf("Y" to top, "X" to left, "B" to right, "A" to bottom))
+        PadLayout.NDS, PadLayout.SNES, PadLayout.N3DS -> Diamond(send, listOf("X" to key("X"), "Y" to key("Y"), "A" to key("A"), "B" to key("B")))
+        PadLayout.PS, PadLayout.PSP -> Diamond(send, listOf("△" to key("△"), "□" to key("□"), "○" to key("○"), "×" to key("×")))
+        PadLayout.DC -> Diamond(send, listOf("Y" to key("Y"), "X" to key("X"), "B" to key("B"), "A" to key("A")))
         PadLayout.GEN -> Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(0.dp), verticalAlignment = Alignment.Bottom) {
-            RoundKey("A", left, send)
-            RoundKey("B", bottom, send, Modifier.padding(bottom = 18.dp))
-            RoundKey("C", right, send, Modifier.padding(bottom = 36.dp))
+            RoundKey("A", key("A"), send)
+            RoundKey("B", key("B"), send, Modifier.padding(bottom = 18.dp))
+            RoundKey("C", key("C"), send, Modifier.padding(bottom = 36.dp))
         }
         PadLayout.N64 -> Box(Modifier.size(width = 224.dp, height = 190.dp)) {
             Box(Modifier.align(Alignment.TopEnd)) { CKeys(motion) }
             // C giữ ma trận 2×2 bên phải; A/B bên trái, không chồng vùng chạm 72 dp.
-            RoundKey("B", left, send, Modifier.align(Alignment.TopStart))
-            RoundKey("A", bottom, send, Modifier.align(Alignment.BottomStart))
+            RoundKey("B", key("B"), send, Modifier.align(Alignment.TopStart))
+            RoundKey("A", key("A"), send, Modifier.align(Alignment.BottomStart))
         }
     }
 }

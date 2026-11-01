@@ -34,6 +34,7 @@ import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.coroutineScope
 import com.swordfish.libretrodroid.KtUtils.awaitUninterruptibly
 import com.swordfish.libretrodroid.gamepad.GamepadsManager
+import com.swordfish.libretrodroid.gamepad.PadKeyMap
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -155,6 +156,14 @@ class GLRetroView(
         queueEvent { LibretroDroid.onKeyEvent(port, action, keyCode) }
     }
 
+    /**
+     * V159: cửa duy nhất cho nút bấm từ overlay, tay cầm thật và `onKeyDown`. Hoán nút mặt theo vị trí
+     * ([PadKeyMap]) rồi mới gửi, nên ba đường luôn ra cùng một nút của lõi.
+     */
+    fun sendPadKey(action: Int, keyCode: Int, port: Int = 0) {
+        sendKeyEvent(action, PadKeyMap.toNativeKey(keyCode), port)
+    }
+
     fun sendMotionEvent(source: Int, xAxis: Float, yAxis: Float, port: Int = 0) {
         queueEvent { LibretroDroid.onMotionEvent(port, source, xAxis, yAxis) }
     }
@@ -274,22 +283,20 @@ class GLRetroView(
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        val mappedKey = GamepadsManager.getGamepadKeyEvent(keyCode)
         val port = (event?.device?.controllerNumber ?: 0) - 1
 
         if (event != null && port >= 0 && keyCode in GamepadsManager.GAMEPAD_KEYS) {
-            sendKeyEvent(KeyEvent.ACTION_DOWN, mappedKey, port)
+            sendPadKey(KeyEvent.ACTION_DOWN, keyCode, port)
             return true
         }
         return super.onKeyDown(keyCode, event)
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-        val mappedKey = GamepadsManager.getGamepadKeyEvent(keyCode)
         val port = (event?.device?.controllerNumber ?: 0) - 1
 
         if (event != null && port >= 0 && keyCode in GamepadsManager.GAMEPAD_KEYS) {
-            sendKeyEvent(KeyEvent.ACTION_UP, mappedKey, port)
+            sendPadKey(KeyEvent.ACTION_UP, keyCode, port)
             return true
         }
         return super.onKeyUp(keyCode, event)
