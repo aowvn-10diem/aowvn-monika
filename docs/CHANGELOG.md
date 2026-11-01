@@ -2,6 +2,11 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.8 (Đang chuẩn bị — Bản thử)
+
+- Nội bộ: chuẩn bị phiên bản 0.8.8 (53); danh sách thay đổi sẽ cập nhật sau khi các bản sửa được gộp.
+- Nội bộ: chờ V157 ép cập nhật; chưa nằm trong phạm vi mã hiện tại của bản 0.8.8.
+
 ## v0.8.7 (Đang chuẩn bị — Bản thử)
 <!-- bien-tap: v0.8.7 -->
 > Bản thử đang chuẩn bị.
