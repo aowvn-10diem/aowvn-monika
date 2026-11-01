@@ -21,7 +21,7 @@ async function readBody(req) {
   for (const chunk of chunks) { data.set(chunk, offset); offset += chunk.byteLength; }
   return new TextDecoder().decode(data);
 }
-const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*" } });
+const json = (o, status = 200, extra = {}) => new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", ...extra } });
 const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
 const s = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
 
@@ -67,6 +67,26 @@ export function reportImage(image, kind) {
   }
   if (!scan || !ended) throw new Error("bad_image");
   return { mime: "image/jpeg", data: image.data, width, height };
+}
+
+export const RATE_LIMIT_DEFAULT_MAX = 20;
+export const RATE_LIMIT_DEFAULT_WINDOW_SECONDS = 3600;
+export const RATE_LIMIT_MAX_WINDOW_SECONDS = 604800;
+
+// V153: ngưỡng/cửa sổ lấy từ env, chỉ nhận số nguyên dương viết thường;
+// env lạ/thiếu thì rơi về mặc định (20 báo cáo/giờ), không chặn nhầm.
+const positive = (value, fallback, upper) => {
+  const text = typeof value === "number" ? String(value) : (typeof value === "string" ? value.trim() : "");
+  if (!/^\d+$/.test(text)) return fallback;
+  const n = Number(text);
+  return Number.isSafeInteger(n) && n > 0 && n <= upper ? n : fallback;
+};
+
+export function rateLimitConfig(env) {
+  return {
+    max: positive(env && env.RATE_LIMIT_MAX, RATE_LIMIT_DEFAULT_MAX, 100000),
+    windowSeconds: positive(env && env.RATE_LIMIT_WINDOW_SECONDS, RATE_LIMIT_DEFAULT_WINDOW_SECONDS, RATE_LIMIT_MAX_WINDOW_SECONDS),
+  };
 }
 
 export default {
@@ -115,12 +135,20 @@ export default {
       }
       if (bytes(stored) > MAX_BODY) return json({ ok: false, error: "too_large" }, 413);
 
-      // Chống spam: tối đa 20 báo cáo / giờ / IP (chỉ lưu băm IP, không lưu IP).
-      const hour = Math.floor(Date.now() / 3600000);
-      const rk = `rl:${hour}:${await sha(req.headers.get("CF-Connecting-IP") || "?")}`;
+      // Chống spam (V153): tối đa `max` báo cáo / cửa sổ / IP, ngưỡng và độ dài
+      // cửa sổ lấy từ env (RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_SECONDS; mặc định
+      // 20 báo cáo/giờ). Chỉ lưu băm IP, không lưu IP. Không thêm lượt gọi KV:
+      // mỗi báo cáo vẫn 1 đọc hạn mức + 1 ghi hạn mức + 1 ghi báo cáo.
+      const limit = rateLimitConfig(env);
+      const now = Date.now();
+      const windowMs = limit.windowSeconds * 1000;
+      const rk = `rl:${Math.floor(now / windowMs)}:${await sha(req.headers.get("CF-Connecting-IP") || "?")}`;
       const n = parseInt((await env.REPORTS.get(rk)) || "0", 10);
-      if (n >= 20) return json({ ok: false, error: "rate_limited" }, 429);
-      await env.REPORTS.put(rk, String(n + 1), { expirationTtl: 7200 });
+      if (n >= limit.max) {
+        const retryAfter = Math.max(1, Math.ceil((windowMs - (now % windowMs)) / 1000));
+        return json({ ok: false, error: "rate_limited" }, 429, { "retry-after": String(retryAfter) });
+      }
+      await env.REPORTS.put(rk, String(n + 1), { expirationTtl: Math.max(60, limit.windowSeconds * 2) });
 
       const id = `r:${String(Date.now()).padStart(13, "0")}:${crypto.randomUUID().slice(0, 8)}`;
       const meta = { k: slim.kind, c: slim.core || slim.session?.core || "", y: slim.system || slim.session?.system || "", g: (slim.session?.game || "").slice(0, 60), a: slim.app.slice(0, 40), st: slim.stage || slim.session?.stage || "", t: slim.time, component: slim.component, fp: slim.fingerprint, count: slim.count };
