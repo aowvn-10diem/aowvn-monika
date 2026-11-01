@@ -19,7 +19,6 @@ on:
       - .maestro-rgss-real/**
 permissions:
   contents: read
-  actions: read
 concurrency:
   group: v25-${{ github.ref }}
   cancel-in-progress: true
@@ -29,15 +28,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      # Artifact của Build RGSS run 7 trên main (92746a3), cùng binary gói draft7.
-      # Không cần quyền ghi release; hết hạn artifact thì dừng, không rơi latest/draft.
-      - uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          artifact-ids: 11287384479
-          run-id: 37161839408
-          github-token: ${{ github.token }}
-          path: ${{ runner.temp }}/v25-engine
+      # Gói RGSS7 tải thẳng asset công khai của release engines-rgss-7 (ẩn danh, không token).
+      # Artifact cũ của run 37161839408 đã hết hạn ("Found 0 artifact(s)"); release đã công khai.
+      - name: Tải gói RGSS7 công khai trước khi checkout
+        env:
+          RGSS_TAG: ${{ inputs.rgss_tag || 'engines-rgss-7' }}
+        run: |
+          set -euo pipefail
+          [[ "$RGSS_TAG" =~ ^engines-rgss-[0-9]+$ ]]
+          mkdir -p "$RUNNER_TEMP/v25-engine"
+          curl -fsSL --retry 3 --retry-delay 5 \
+            -o "$RUNNER_TEMP/v25-engine/rgss-arm64-v8a.zip" \
+            "https://github.com/aowvn-10diem/aowvn-monika/releases/download/$RGSS_TAG/rgss-arm64-v8a.zip"
       - name: Kiểm snapshot RGSS7 bất biến trước khi dùng
         env:
           RGSS_TAG: ${{ inputs.rgss_tag || 'engines-rgss-7' }}
