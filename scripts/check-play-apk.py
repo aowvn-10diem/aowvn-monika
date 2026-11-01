@@ -12,6 +12,7 @@ FORBIDDEN_CLASSES = (
     b'Lvn/aow/monika/download/', b'Lvn/aow/monika/apkinstall/',
     b'Lvn/aow/monika/browser/InAppBrowserActivity', b'Lvn/aow/monika/ui/screens/SupportStrip',
     b'Lvn/aow/monika/config/DonateConfig',
+    b'Lvn/aow/monika/ui/ForceUpdateScreenKt',
 )
 FORBIDDEN_TEXT = ('img.vietqr.io', 'vote-game.html', 'Tải bản mới', 'monika-loader.dex')
 FORBIDDEN_PERMISSIONS = ('REQUEST_INSTALL_PACKAGES', 'MANAGE_EXTERNAL_STORAGE', 'QUERY_ALL_PACKAGES')

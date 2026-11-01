@@ -18,6 +18,10 @@ import java.io.File
 class PlayDistributionTest {
     private val app get() = ApplicationProvider.getApplicationContext<Application>()
 
+    @Test fun apkDownloadIsDisabledInPlayBuild() {
+        assertFalse(BuildConfig.APK_DOWNLOAD_ALLOWED)
+    }
+
     @Test fun legacyCacheAndRefreshCannotRestoreExternalDistribution() = runBlocking {
         val cache = File(app.filesDir, ConfigRepository.ASSET_NAME)
         cache.writeText("""{"configVersion":999,"app":{"apkUrl":"https://example.test/update.apk"}}""")

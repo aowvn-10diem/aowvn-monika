@@ -41,6 +41,7 @@ android {
             dimension = "distribution"
             applicationId = "com.aow.monika.play"
             buildConfigField("String", "REMOTE_CONFIG_URL", "\"\"")
+            buildConfigField("boolean", "APK_DOWNLOAD_ALLOWED", "false")
         }
     }
 
