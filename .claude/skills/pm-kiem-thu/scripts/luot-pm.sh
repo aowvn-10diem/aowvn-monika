@@ -32,6 +32,10 @@ for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user
   files=$(gh api "repos/$R/pulls/$p/files?per_page=100" --jq '.[].filename')
   need=1; echo "$files" | grep -qvE '^(docs/|.*\.md$)' && need=2   # app/CI cần Luna 3 + Luna Ultra
   dat=$(echo "$verdicts" | grep -c '^Đạt$')
+  # Đội Duyệt DeepSeek (PM chốt 01/11): tính tối đa 1 Đạt, PR mã vẫn cần ≥ 1 Đạt của Luna.
+  ds=$(echo "$raw" | grep -E '\[Duyệt DeepSeek' | grep -cE 'Kết luận:?\**:? *Đạt')
+  [ "$ds" -gt 1 ] && dat=$(( dat - ds + 1 ))
+  [ "$need" -eq 2 ] && [ $(( dat - (ds > 0 ? 1 : 0) )) -lt 1 ] && dat=1
   if [ "$last" = "Cần PM xem" ]; then out+=("PMXEM #$p"); continue; fi
   echo "$ci" | grep -qE 'failure|cancelled|chay' && continue
   [ "$last" = "Đạt" ] && [ "$dat" -ge "$need" ] && { [ "$draft" = "true" ] && out+=("NHAP #$p $sha") || out+=("GOP #$p $sha"); continue; }
@@ -98,10 +102,11 @@ done
 # 4b. Canh đội thi công (sếp 01/11): trong 7–23 giờ VN, đội im (không push nhánh, không comment) ≥ 2 giờ → DUNG.
 #     1 lượt gọi /activity + 1 lượt đọc comment mỗi hộp thư; nhãn giữ nguyên "tu=" nên chống lặp 12 giờ vẫn chặn báo trùng.
 h_vn=$(TZ=Asia/Ho_Chi_Minh date +%-H)
-if [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; then
+TANG_CUONG_DEN="2026-11-02T00:00:00Z"   # đêm tăng cường (sếp 01/11): canh cả 0–7 giờ VN tới mốc này
+if { [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; } || [ "$(date -u +%s)" -lt "$(date -u -d "$TANG_CUONG_DEN" +%s)" ]; then
   act=$(gh api "repos/$R/activity?per_page=100" --jq '.[]|"\(.ref) \(.timestamp)"' 2>/dev/null)
   since=$(date -u -d '-24 hours' +%FT%TZ)
-  for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Sol 2|sol2/|119|\\[Sol 2" "Kiểm thử|kiemthu/|337|\\[(Trưởng nhóm )?Kiểm thử"; do
+  for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Sol 2|sol2/|119|\\[Sol 2" "Kiểm thử|kiemthu/|337|\\[(Trưởng nhóm )?Kiểm thử" "Duyệt DeepSeek|duyet/|337|\\[(Trưởng nhóm )?Duyệt DeepSeek"; do
     IFS='|' read -r ten nhanh hop tien <<<"$doi"
     t1=$(echo "$act" | grep -E "^refs/heads/$nhanh" | awk '{print $2}' | sort | tail -1)
     t2=$(gh api "repos/$R/issues/$hop/comments?since=$since&per_page=100" --jq ".[]|select(.body|test(\"^$tien\"))|.updated_at" 2>/dev/null | sort | tail -1)

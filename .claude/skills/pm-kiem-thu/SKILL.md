@@ -63,3 +63,8 @@ PM tự phát hành cả bản thử (prerelease) lẫn bản ổn định, khô
 - **Bản ổn định (A20, sếp chốt 09/10):** chỉ từ SHA đã ra bản thử **≥ 2 giờ**, không có lỗi chặn mới. Lỗi chặn = app văng khi mở; không tải/giải nén được game; một hệ máy được hỗ trợ không mở được game nào; mất save; phím ảo không ăn. Bản ổn định phát hành kèm danh sách thử thực tế `docs/TEST-THUC-TE.md` cho tester cộng đồng.
 - **Cách chạy:** khi `release.yml` có `workflow_dispatch` tự tạo tag (PR sonnet/release-tag) → kích hoạt với SHA + `prerelease`. Trước đó: nhờ Sonnet chạy skill `phat-hanh-apk`. Sau khi chạy: Sonnet kiểm bằng `kiem-phat-hanh`.
 - **Vẫn cấm:** đụng khóa ký, mật khẩu, token, Secrets; ghi đè/xóa tag; phát hành từ nhánh khác main.
+
+## Đội Duyệt DeepSeek (PM chốt 01/11, [A73])
+- Comment PR dòng đầu `[Duyệt DeepSeek…]` + sha7 + `Kết luận: …`. Máy đọc tính tối đa 1 Đạt của đội này; PR mã vẫn cần ≥ 1 Đạt Luna. PR chỉ docs: 1 Đạt của đội là đủ.
+- Nhịp :25, nhịp tim `[Trưởng nhóm Duyệt DeepSeek → PM] nhịp:` ở #337; DUNG canh đội này. Prompt: docs/opus/hop-thu/PROMPT-DOI-DUYET-DEEPSEEK-0111.md.
+- Đêm tăng cường: hằng số `TANG_CUONG_DEN` trong luot-pm.sh (DUNG canh cả 0–7 giờ VN tới mốc); PM bù lượt đêm bằng hẹn giờ một lần.
