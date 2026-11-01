@@ -10,7 +10,7 @@ tier=$1; effort=$2; sys=$3; out=$4; prompt=$5; shift 5; [ "${1:-}" = "--" ] && s
 SKILL=$(cd "$(dirname "$0")" && pwd); REPO=$(git rev-parse --show-toplevel)
 WORK=${DS_WORK:?đặt DS_WORK=<thư mục scratchpad của phiên>}; mkdir -p "$WORK/ds/tools/ds"; DS=$WORK/ds/tools/ds/ds.py
 if [ ! -f "$DS" ]; then
-  for ref in ${DS_REF:-origin/main origin/ccr-37c8378a-bgfkia}; do
+  for ref in ${DS_REF:-origin/main}; do
     if git -C "$REPO" cat-file -e "$ref:tools/ds/ds.py" 2>/dev/null; then
       for f in ds.py ds-config.json; do git -C "$REPO" show "$ref:tools/ds/$f" > "$WORK/ds/tools/ds/$f"; done; break
     fi
