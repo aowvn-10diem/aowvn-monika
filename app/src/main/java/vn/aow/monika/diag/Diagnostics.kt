@@ -436,9 +436,9 @@ object Diagnostics {
     /** Ghi một lỗi thao tác đã tự bắt (nơi không bọc được bằng [op]). Trả null nếu trùng trong cửa sổ chống spam. */
     fun opFail(c: Context, name: String, step: String, e: Throwable, target: String? = null): Report? = runCatching {
         val code = errorCode(e)
-        // Hủy (Activity rời màn, Worker bị dừng) và mất mạng là chuyện thường: chỉ ghi vệt, không lập báo cáo.
+        // Hủy (Activity rời màn, Worker bị dừng) và lỗi mạng là chuyện thường: chỉ ghi vệt, không lập báo cáo.
         if (isCancellation(e) || isOffline(e)) {
-            Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code (hủy/mất mạng, không báo)")
+            Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code (hủy/lỗi mạng, không báo)")
             return@runCatching null
         }
         val key = "$name|$step|$code|${e.message.orEmpty().take(60).replace(Regex("""\d+"""), "")}"
@@ -488,11 +488,24 @@ object Diagnostics {
         it is kotlinx.coroutines.CancellationException || (it is java.io.IOException && it.message == "Canceled")
     }
 
-    /** Mất mạng/quá hạn là chuyện thường của người chơi, không phải lỗi app → không lập báo cáo `op-fail` (chỉ ghi vệt). */
+    /**
+     * V166: lỗi mạng là chuyện thường của người chơi, không phải lỗi app → không lập báo cáo `op-fail` (chỉ ghi vệt).
+     * Ngoài "mất mạng/quá hạn" còn phải kể cả kiểu mạng nhà/ISP chặn hoặc bóp Blogger (hay lặp lại mỗi lần mở app):
+     * TLS bị chặn/hijack (`SSLException`), máy chủ cắt kết nối (`SocketException`: reset/abort/broken pipe),
+     * luồng đứt giữa chừng (`EOFException`, OkHttp "unexpected end of stream"/"Connection closed").
+     * Máy chủ trả mã lỗi HTTP vẫn là báo cáo thật (có thể lỗi phía mình) — chỉ lỗi tầng vận chuyển mới bỏ qua.
+     */
     fun isOffline(e: Throwable): Boolean = generateSequence(e) { it.cause?.takeIf { c -> c !== it } }.any {
         it is java.net.UnknownHostException || it is java.net.ConnectException || it is java.net.NoRouteToHostException ||
-            it is java.net.SocketTimeoutException || it is java.io.InterruptedIOException
+            it is java.net.SocketTimeoutException || it is java.io.InterruptedIOException ||
+            it is java.net.SocketException || it is javax.net.ssl.SSLException || it is java.net.ProtocolException ||
+            it is java.io.EOFException || NETWORK_BROKEN.containsMatchIn(it.message.orEmpty())
     }
+
+    /** Câu báo của OkHttp/tầng vận chuyển khi kết nối bị cắt giữa chừng (không kèm loại ngoại lệ riêng). */
+    private val NETWORK_BROKEN = Regex(
+        """(?i)unexpected end of stream|connection reset|connection closed|stream was reset|broken pipe|connection abort|software caused connection abort|read timed out"""
+    )
 
     private val LINK = Regex("""(?i)\b(?:https?|ftp)://[^\s"'<>)]+""")
     /** Không bao giờ gửi link tải (có thể là link game/ROM). */

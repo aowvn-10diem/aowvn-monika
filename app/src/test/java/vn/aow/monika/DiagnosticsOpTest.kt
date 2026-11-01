@@ -172,6 +172,26 @@ class DiagnosticsOpTest {
         assertEquals(1, opFails().size)
     }
 
+    @Test fun networkFailuresFromAutomaticFetchesAreNotFiledAsAppDefects() {
+        // V166: mạng nhà/user chặn hoặc bóp Blogger → TLS lỗi, kết nối bị cắt, luồng đứt. Đây là chuyện mạng
+        // (lặp lại mỗi lần mở app), không phải lỗi app → chỉ ghi vệt, không lập báo cáo op-fail.
+        val network = listOf(
+            javax.net.ssl.SSLHandshakeException("Trust anchor for certification path not found"),
+            java.net.SocketException("Connection reset"),
+            java.io.EOFException("unexpected end of stream"),
+            java.net.ProtocolException("unexpected end of stream"),
+            IOException("bọc", javax.net.ssl.SSLException("Connection closed by peer")),
+        )
+        network.forEach { Diagnostics.opFail(app, Op.FETCH_FEED, "tai-bai", it) }
+        assertTrue("lỗi mạng không được thành báo cáo lỗi app", opFails().isEmpty())
+        assertTrue(sent.isEmpty())
+        assertTrue(vn.aow.monika.diag.Breadcrumbs.read(app, android.os.Process.myPid()).any { it.contains("không báo") })
+        // Lỗi thật vẫn phải báo: file hỏng, máy chủ trả mã lỗi.
+        Diagnostics.opFail(app, Op.EXTRACT, "giai-nen", java.io.FileNotFoundException("hỏng file nén"))
+        Diagnostics.opFail(app, Op.FETCH_FEED, "tai-bai", IOException("Không tải được bài viết (HTTP 503)"))
+        assertEquals(2, opFails().size)
+    }
+
     @Test fun concurrentSameFailureWinsTheThrottleExactlyOnce() {
         val threads = 12
         val gate = java.util.concurrent.CyclicBarrier(threads)
