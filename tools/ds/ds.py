@@ -41,6 +41,9 @@ def check_readable(path):
     """Chặn file nhạy cảm và đường dẫn ngoài thư mục cho phép trước khi gửi nội dung cho bên thứ ba."""
     real = os.path.realpath(path)
     roots = [os.path.realpath(os.path.join(REPO, r)) for r in CFG["allowedRoots"]]
+    # cấu hình (kể cả DS_CONFIG) không được mở quyền ra ngoài repo: gốc tuyệt đối hay "../.." đều bị loại
+    if any(not (r == REPO or r.startswith(REPO + os.sep)) for r in roots):
+        raise AccessError("allowedRoots trỏ ra ngoài repo: cấu hình không hợp lệ")
     if not any(real == r or real.startswith(r + os.sep) for r in roots):
         raise AccessError(f"{path}: nằm ngoài thư mục cho phép (chỉ trong repo)")
     # kiểm cả tên gốc lẫn tên sau khi theo liên kết, để symlink không lách được
