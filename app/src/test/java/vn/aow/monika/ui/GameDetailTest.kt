@@ -119,6 +119,10 @@ class GameDetailTest {
         rule.onNodeWithText("Xóa").performClick()
         settle("Xóa game?")
         rule.onNodeWithText("Xóa game?").assertExists()
+        // Hộp thoại phải nói rõ xoá gì và giữ gì (Luna 4: trước đây hứa giữ save nhưng lại xoá đệ quy).
+        rule.onNodeWithText("Sẽ xóa: thư mục game", substring = true).assertExists()
+        rule.onNodeWithText("Được giữ lại", substring = true).assertExists()
+        rule.onNodeWithText("save-backups", substring = true).assertExists()
         assertNull("Chưa xác nhận thì không được xóa", deleted)
         rule.onNodeWithText("Hủy").performClick()
         settle("Chơi")

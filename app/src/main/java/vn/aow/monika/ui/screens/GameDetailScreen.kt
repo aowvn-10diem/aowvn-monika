@@ -134,11 +134,24 @@ internal fun GameDetailScreen(game: Game, onPlay: (Game) -> Unit, onBack: () -> 
         onDismissRequest = { confirmDelete = false },
         title = { Text(if (game.external) "Ẩn khỏi Thư viện?" else "Xóa game?", style = Monika.type.cardTitle, color = c.text) },
         text = {
-            Text(
-                if (game.external) "Ẩn \"${game.name}\" khỏi Thư viện. File game trong máy KHÔNG bị xóa:\n${game.entry?.path.orEmpty()}"
-                else "Xóa \"${game.name}\" khỏi máy. Dữ liệu lưu game vẫn giữ.",
-                style = Monika.type.body, color = c.textSecondary,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (game.external) {
+                    Text(
+                        "Chỉ ẩn \"${game.name}\" khỏi Thư viện. Tệp game trong máy và save không bị xóa:\n${game.entry?.path.orEmpty()}",
+                        style = Monika.type.body, color = c.textSecondary,
+                    )
+                } else {
+                    Text(
+                        "Sẽ xóa: thư mục game \"${game.name}\" ($sizeText) trong kho Monika.",
+                        style = Monika.type.body, color = c.text,
+                    )
+                    Text(
+                        "Được giữ lại: save của giả lập và mọi thư mục khác trong kho. " +
+                            "Save nằm trong thư mục game được sao lưu vào ${vn.aow.monika.library.GameSaveBackup.DIR} trước khi xóa.",
+                        style = Monika.type.caption, color = c.textSecondary,
+                    )
+                }
+            }
         },
         confirmButton = {
             GradientButton(if (game.external) "Ẩn" else "Xóa game", { confirmDelete = false; onDelete(game) }, height = 44.dp)
@@ -295,6 +308,8 @@ fun GameDetailRoute(gameKey: String, onBack: () -> Unit) {
     var game by remember(gameKey) { mutableStateOf(AppGraph.library.cached?.firstOrNull { it.key == gameKey }) }
     var loading by remember(gameKey) { mutableStateOf(game == null) }
     var message by remember { mutableStateOf<String?>(null) }
+    // Thông báo kèm đường dẫn bản sao lưu: đóng hộp thoại thì rời màn (game đã xoá).
+    var leaveAfterMessage by remember { mutableStateOf(false) }
     var needApp by remember { mutableStateOf<ExternalApp?>(null) }
     LaunchedEffect(gameKey) {
         if (game == null) {
@@ -316,12 +331,17 @@ fun GameDetailRoute(gameKey: String, onBack: () -> Unit) {
     when {
         shown != null -> GameDetailScreen(shown, play, onBack, onDelete = { target ->
             scope.launch {
-                val ok = withContext(Dispatchers.IO) { AppGraph.library.delete(target) }
-                if (ok) {
-                    Toast.makeText(context, if (target.external) "Đã ẩn khỏi Thư viện" else "Đã xóa game", Toast.LENGTH_SHORT).show()
-                    onBack()
-                } else message = "Chưa xóa hết \"${target.name}\": một số file do lần cài app trước tạo ra nên Android không cho xóa.\n\n" +
-                    "Cấp quyền \"Truy cập mọi tệp\" rồi xóa lại, hoặc xóa thư mục bằng trình quản lý file:\n${target.dir.absolutePath}"
+                val outcome = withContext(Dispatchers.IO) { AppGraph.library.deleteWithBackup(target) }
+                if (outcome.deleted) {
+                    if (outcome.backup != null) {
+                        // Có save trong thư mục game: báo rõ vị trí bản sao lưu rồi mới rời màn.
+                        message = outcome.message
+                        leaveAfterMessage = true
+                    } else {
+                        Toast.makeText(context, "Đã xóa game", Toast.LENGTH_SHORT).show()
+                        onBack()
+                    }
+                } else message = outcome.message
             }
         })
         loading -> Screen { Box(Modifier.fillMaxSize(), Alignment.Center) { Spinner() } }
@@ -342,9 +362,13 @@ fun GameDetailRoute(gameKey: String, onBack: () -> Unit) {
         )
     }
     message?.let {
+        val close = {
+            message = null
+            if (leaveAfterMessage) { leaveAfterMessage = false; onBack() }
+        }
         AlertDialog(
-            onDismissRequest = { message = null },
-            confirmButton = { GradientButton("OK", { message = null }, height = 44.dp) },
+            onDismissRequest = close,
+            confirmButton = { GradientButton("OK", close, height = 44.dp) },
             text = { Text(it, style = Monika.type.body, color = Monika.colors.text) },
             containerColor = Monika.colors.surface, shape = Radius.large,
         )

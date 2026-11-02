@@ -108,13 +108,58 @@ class GameLibrary(
     fun lastPlayed(prefs: vn.aow.monika.Prefs, from: List<Game>? = cached): Game? =
         from.orEmpty().filter { it.system != null && prefs.lastPlayed(it.key) > 0 }.maxByOrNull { prefs.lastPlayed(it.key) }
 
-    /** Xóa game. Trả về false nếu còn file không xóa được (thường là file của lần cài trước, Android khóa). */
-    fun delete(game: Game): Boolean {
-        if (game.external) { scanner.hide(game.key); cached = cached?.filterNot { it.key == game.key }; return true }
+    /**
+     * Xoá game **an toàn**: sao lưu save nằm trong thư mục game trước (A54), chỉ xoá thư mục game
+     * do app quản lý (con cấp 1 của kho), và dừng nếu không sao lưu được.
+     * Game quét trong máy (ngoài kho) chỉ ẩn, không xoá tệp nào.
+     * [backup] có tham số để test tiêm lỗi sao lưu; chạy thật thì dùng [GameSaveBackup.of].
+     */
+    fun deleteWithBackup(
+        game: Game,
+        backup: (Game) -> File? = { GameSaveBackup.of(context, it) },
+    ): GameDeleteOutcome {
+        if (game.external) {
+            scanner.hide(game.key)
+            cached = cached?.filterNot { it.key == game.key }
+            return GameDeleteOutcome(
+                deleted = true, backup = null,
+                message = "Đã ẩn \"${game.name}\" khỏi Thư viện. Tệp game trong máy và save không bị xoá.",
+            )
+        }
+        // Chỉ xoá thư mục game ngay dưới kho Monika; thư mục lạ/ngoài kho thì app không đụng.
+        val managed = runCatching {
+            val kho = GameStorage.games(context).canonicalFile
+            game.dir.canonicalFile.parentFile == kho
+        }.getOrDefault(false)
+        if (!managed) {
+            return GameDeleteOutcome(
+                deleted = false, backup = null,
+                message = "App không xoá thư mục này vì nó không nằm trong kho game của Monika. " +
+                    "Muốn dọn, hãy dùng trình quản lý tệp của máy.",
+            )
+        }
+        val saved = try {
+            backup(game)
+        } catch (t: Throwable) {
+            return GameDeleteOutcome(
+                deleted = false, backup = null,
+                message = "Chưa sao lưu được save nên chưa xoá gì: ${t.message ?: "lỗi không rõ"}. " +
+                    "Thử lại hoặc dọn bằng trình quản lý tệp.",
+            )
+        }
         val ok = game.dir.deleteRecursively() || !game.dir.exists()
         cached = cached?.filterNot { it.key == game.key && ok }
-        return ok
+        val kept = saved?.let { "Bản sao lưu save: ${it.absolutePath}" }
+            ?: "Game không có tệp save trong thư mục; save của giả lập trong kho Monika vẫn giữ nguyên."
+        return GameDeleteOutcome(
+            deleted = ok, backup = saved,
+            message = if (ok) "Đã xoá \"${game.name}\" khỏi kho.\n$kept"
+            else "Chưa xoá hết \"${game.name}\": Android không cho xoá một số tệp.\n$kept",
+        )
     }
+
+    /** Xoá game. Trả về false nếu không xoá được hoặc chưa sao lưu được save. */
+    fun delete(game: Game): Boolean = deleteWithBackup(game).deleted
 }
 
 /**
