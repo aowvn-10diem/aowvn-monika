@@ -2,6 +2,19 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.9 (Đang chuẩn bị — Bản thử)
+> Bản thử đang chuẩn bị.
+
+- **Sửa lỗi:** Nút A/B trong game GBA khớp tên hiển thị, không còn bị đảo khi bấm. ([#429](https://github.com/aowvn-10diem/aowvn-monika/pull/429))
+- **Sửa lỗi:** Game NDS rộng hết bề ngang như DraStic; xoay ngang tự xếp hai màn cạnh nhau. ([#409](https://github.com/aowvn-10diem/aowvn-monika/pull/409))
+- **Sửa lỗi:** Game Java xoay ngang có hình ở giữa, phím chia sang hai mép để dễ chơi. ([#424](https://github.com/aowvn-10diem/aowvn-monika/pull/424))
+- **Mới:** Có nút ẩn/hiện phím ảo ngay khi chơi, giúp nhìn rõ màn hình game. ([#433](https://github.com/aowvn-10diem/aowvn-monika/pull/433))
+- **Mới:** Phím ảo tự ẩn khi cắm tay cầm, vẫn nhớ lựa chọn ẩn/hiện của bạn. ([#433](https://github.com/aowvn-10diem/aowvn-monika/pull/433))
+- **Mới:** Thư viện chia thành ba mục Chơi, Đọc và Tệp để dễ tìm game và tài liệu. ([#428](https://github.com/aowvn-10diem/aowvn-monika/pull/428))
+- **Sửa lỗi:** Mở Nhật ký lỗi mượt hơn, giảm tình trạng đứng ứng dụng. ([#427](https://github.com/aowvn-10diem/aowvn-monika/pull/427))
+- **Sửa lỗi:** Không còn tự gửi báo lỗi nhầm khi mạng bị ngắt lúc tải. ([#425](https://github.com/aowvn-10diem/aowvn-monika/pull/425))
+- Nội bộ: Bổ sung kiểm thử analog PSP đã có sẵn; không thay đổi cách điều khiển. ([#435](https://github.com/aowvn-10diem/aowvn-monika/pull/435))
+
 ## v0.8.8 (Bản thử)
 <!-- bien-tap: v0.8.8 -->
 > Phát hành ngày 01/11/2026 (UTC), bản thử nghiệm.
