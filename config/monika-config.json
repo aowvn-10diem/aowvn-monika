@@ -1,13 +1,13 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 55,
+  "configVersion": 56,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
-    "latestVersionCode": 53,
-    "latestVersionName": "0.8.8",
+    "latestVersionCode": 54,
+    "latestVersionName": "0.8.9",
     "minVersionCode": 1,
-    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.8/AowVN-Monika-v0.8.8.apk",
-    "changelog": "Báo ngay khi có cập nhật quan trọng. Rút tay cầm không còn kẹt nút."
+    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.9/AowVN-Monika-v0.8.9.apk",
+    "changelog": "Bản thử 0.8.9: Sửa nút A/B GBA, màn hình NDS và phím Java khi xoay ngang. Thêm ẩn/hiện phím ảo; Thư viện chia thành Chơi, Đọc và Tệp."
   },
   "feed": {
     "url": "https://www.aow.vn/feeds/posts/default",
