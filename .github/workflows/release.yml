@@ -136,12 +136,12 @@ jobs:
         run: |
           set -euo pipefail
           test -s "$MONIKA_KEYSTORE" || { echo "::error::Không có tệp ký hợp lệ"; exit 1; }
-          ./gradlew testDebugUnitTest assembleRelease --console=plain
+          ./gradlew testDebugUnitTest assembleGithubRelease --console=plain
           # Chặn lỗi sập v0.4.5: thư viện đóng kèm bản sao lớp Android bị R8 đổi tên → không cho phát hành.
-          python3 scripts/check-r8-mapping.py app/build/outputs/mapping/release/mapping.txt
+          python3 scripts/check-r8-mapping.py app/build/outputs/mapping/githubRelease/mapping.txt
           # Chỉ phát hành 1 APK chung cho mọi máy: app-universal-release.apk → AowVN-Monika-v0.4.5.apk
-          cp app/build/outputs/apk/release/app-universal-release.apk "AowVN-Monika-${TAG}.apk"
-          cp app/build/outputs/mapping/release/mapping.txt "mapping-${TAG}.txt"
+          cp app/build/outputs/apk/github/release/app-github-universal-release.apk "AowVN-Monika-${TAG}.apk"
+          cp app/build/outputs/mapping/githubRelease/mapping.txt "mapping-${TAG}.txt"
           # CHỈ phát hành bản chung (quyết định của sếp 02/10/2026): người dùng không phải chọn bản. Đừng thêm APK arm64/armv7 vào Release.
           ls -l AowVN-Monika-*.apk
       - name: Chặn APK ký debug và ghi SHA-256 (V30)
@@ -231,9 +231,9 @@ jobs:
           trap 'rm -f "$MONIKA_KEYSTORE"' EXIT
           printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$MONIKA_KEYSTORE"
           test -s "$MONIKA_KEYSTORE"
-          ./gradlew testDebugUnitTest assembleRelease --console=plain
-          python3 scripts/check-r8-mapping.py app/build/outputs/mapping/release/mapping.txt
-          APK=app/build/outputs/apk/release/app-universal-release.apk
+          ./gradlew testDebugUnitTest assembleGithubRelease --console=plain
+          python3 scripts/check-r8-mapping.py app/build/outputs/mapping/githubRelease/mapping.txt
+          APK=app/build/outputs/apk/github/release/app-github-universal-release.apk
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)
           test -n "$APKSIGNER"
           "$APKSIGNER" verify --print-certs "$APK" > "$RUNNER_TEMP/dry-run-cert.txt"

@@ -4,8 +4,8 @@ import android.content.Context
 import android.util.Base64
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import vn.aow.monika.apkinstall.repack.AndroidKeystoreWrap
-import vn.aow.monika.apkinstall.repack.KeyWrap
+import vn.aow.monika.security.AndroidKeystoreWrap
+import vn.aow.monika.security.KeyWrap
 
 /** Tài khoản RetroAchievements trên máy: tên + ULID + khóa web API (khóa được mã hóa bằng Android Keystore). */
 class RaAccount(context: Context, private val api: RaApi, private val wrap: KeyWrap = AndroidKeystoreWrap) {

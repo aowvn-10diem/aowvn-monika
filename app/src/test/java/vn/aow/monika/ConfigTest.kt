@@ -105,7 +105,7 @@ class ConfigTest {
 
     @Test
     fun `runner config nam trong nhanh cua GameLauncher`() {
-        val launcher = File("src/main/java/vn/aow/monika/runner/GameLauncher.kt").readText()
+        val launcher = File("src/github/java/vn/aow/monika/runner/GameLauncher.kt").readText()
         val known = Regex("(?m)^\\s*\"([^\"]+)\"\\s*->").findAll(launcher).map { it.groupValues[1] }.toSet()
         assertTrue("Không tìm thấy runner nào trong GameLauncher", known.isNotEmpty())
         val invalid = cfg.systems.filterNot { it.runner in known }.map { "${it.id}: ${it.runner}" }
