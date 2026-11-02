@@ -61,6 +61,7 @@ object AppGraph {
     val pendingImports = kotlinx.coroutines.flow.MutableStateFlow<List<android.net.Uri>>(emptyList())
     val account by lazy { vn.aow.monika.account.Account(app, http, config) }
     val clock: Clock by lazy { Clock.systemDefaultZone() }
+    val donationBanks by lazy { vn.aow.monika.donate.DonationBanks(http, java.io.File(app.cacheDir, "donation-banks.json"), clock) }
     val aow by lazy { vn.aow.monika.account.AowApi(http, config, account, clock) }
     val ra by lazy { vn.aow.monika.achievements.RaAccount(app, raApi) }
     val raApi by lazy { vn.aow.monika.achievements.RaApi(http) }

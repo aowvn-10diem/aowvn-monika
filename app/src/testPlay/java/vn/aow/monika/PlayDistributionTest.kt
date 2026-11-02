@@ -44,6 +44,13 @@ class PlayDistributionTest {
         } finally { cache.delete() }
     }
 
+    @Test fun nativeDonationScreenAndQrAreExcludedFromPlay() {
+        for (name in listOf("vn.aow.monika.donate.DonationSheetKt", "vn.aow.monika.donate.DonationBanks", "vn.aow.monika.config.DonateConfig", "vn.aow.monika.config.DonateBankConfig")) {
+            assertThrows(ClassNotFoundException::class.java) { Class.forName(name) }
+        }
+        assertEquals(0, app.resources.getIdentifier("donate_qr", "drawable", BuildConfig.APPLICATION_ID))
+    }
+
     @Test fun importsStayInsidePrivateStorage() {
         val root = GameStorage.root(app).canonicalPath
         assertTrue(root.startsWith(app.filesDir.canonicalPath + File.separator))
