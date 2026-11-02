@@ -38,6 +38,7 @@ import vn.aow.monika.ui.screens.GameTile
 import vn.aow.monika.ui.screens.formatGameSize
 import vn.aow.monika.ui.screens.gameSizeBytes
 import vn.aow.monika.ui.screens.rememberGameLaunch
+import vn.aow.monika.ui.screens.sizeLabel
 import vn.aow.monika.ui.theme.MonikaTheme
 import java.io.File
 
@@ -154,5 +155,38 @@ class GameDetailTest {
         assertEquals("1,5 KB", formatGameSize(1536))
         assertEquals("300 MB", formatGameSize(300L * 1024 * 1024))
         assertEquals("1,2 GB", formatGameSize(1288490188L))
+    }
+
+    /** Luna 3 (PR #430): tệp sâu hơn 6 tầng vẫn phải được cộng vào dung lượng, không chỉ đếm tầng nông. */
+    @Test fun deepFilesBelowSevenLevelsAreCountedInTheGameSize() {
+        val dir = File(rule.activity.cacheDir, "v139-deep").apply { deleteRecursively(); mkdirs() }
+        File(dir, "shallow.bin").writeBytes(ByteArray(1024))
+        // Tệp nằm ở tầng 8 — bản cũ (maxDepth(6)) bỏ sót đúng tệp này.
+        val deep = File(dir, "a/b/c/d/e/f/g").apply { mkdirs() }
+        File(deep, "deep.bin").writeBytes(ByteArray(4096))
+        File(deep, "deeper.bin").writeBytes(ByteArray(2048))
+        val game = Game(dir, "V139 deep", SystemDef("v139", "Máy thử", "test"), null)
+        assertEquals(1024L + 4096L + 2048L, gameSizeBytes(game))
+
+        // Chỉ còn tệp sâu: tổng phải khác 0, chứng tỏ không giới hạn độ sâu.
+        File(dir, "shallow.bin").delete()
+        assertEquals(4096L + 2048L, gameSizeBytes(game))
+        assertEquals("6,0 KB", sizeLabel(gameSizeBytes(game)))
+    }
+
+    /** Thư mục rỗng hoặc không đọc được không được làm crash và phải hiện nhãn hợp lý. */
+    @Test fun emptyOrUnreadableFolderGivesASensibleSizeLabel() {
+        val empty = File(rule.activity.cacheDir, "v139-empty").apply { deleteRecursively(); mkdirs() }
+        assertEquals(0L, gameSizeBytes(Game(empty, "V139 empty", SystemDef("v139", "Máy thử", "test"), null)))
+        assertEquals("0 B", sizeLabel(0L))
+
+        val missing = File(rule.activity.cacheDir, "v139-missing")
+        assertNull(gameSizeBytes(Game(missing, "V139 missing", SystemDef("v139", "Máy thử", "test"), null)))
+        assertEquals("Chưa rõ", sizeLabel(null))
+
+        // Trỏ vào một tệp thay vì thư mục: không phải thư mục game → chưa rõ, không ném lỗi.
+        val file = File(rule.activity.cacheDir, "v139-file.bin").apply { writeBytes(ByteArray(16)) }
+        assertNull(gameSizeBytes(Game(file, "V139 file", SystemDef("v139", "Máy thử", "test"), null)))
+        assertEquals("1,5 KB", sizeLabel(1536L))
     }
 }

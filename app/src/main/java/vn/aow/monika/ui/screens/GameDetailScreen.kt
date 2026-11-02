@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -68,6 +69,7 @@ import vn.aow.monika.ui.theme.Tag
 import vn.aow.monika.ui.theme.artworkScrim
 import vn.aow.monika.ui.theme.pressable
 import vn.aow.monika.ui.theme.primaryGradient
+import java.io.File
 import java.util.Locale
 
 /**
@@ -87,8 +89,10 @@ internal fun openGamePage(context: Context, game: Game) {
 internal fun GameDetailScreen(game: Game, onPlay: (Game) -> Unit, onBack: () -> Unit, onDelete: (Game) -> Unit = {}) {
     val c = Monika.colors
     var confirmDelete by remember(game.key) { mutableStateOf(false) }
-    var size by remember(game.key) { mutableStateOf<Long?>(null) }
-    LaunchedEffect(game.key) { size = withContext(Dispatchers.IO) { gameSizeBytes(game) } }
+    // Dung lượng tính 1 lần cho mỗi game, trên IO (cây thư mục game có thể rất lớn); không tính lại khi vẽ lại.
+    val sizeText by produceState("Đang tính…", game.key) {
+        value = withContext(Dispatchers.IO) { sizeLabel(gameSizeBytes(game)) }
+    }
     Screen {
         Column(Modifier.fillMaxSize()) {
             MonikaHeader(
@@ -111,7 +115,7 @@ internal fun GameDetailScreen(game: Game, onPlay: (Game) -> Unit, onBack: () -> 
                 }
                 MonikaCard(Modifier.fillMaxWidth(), shape = Radius.large, padding = PaddingValues(16.dp)) {
                     DetailRow("Hệ máy", game.system?.name ?: if (game.needsExtract) "Chưa giải nén" else "Chưa nhận diện")
-                    DetailRow("Dung lượng", size?.let { formatGameSize(it) } ?: "Đang tính…")
+                    DetailRow("Dung lượng", sizeText)
                     DetailRow("Đường dẫn", (game.entry ?: game.dir).path)
                 }
                 GameTaskBar(
@@ -234,12 +238,43 @@ private fun RowScope.TaskAction(
     }
 }
 
-/** Dung lượng game: file lẻ của game quét được, hoặc cả thư mục game của Monika. Lỗi đọc → 0. */
-internal fun gameSizeBytes(game: Game): Long = runCatching {
+/**
+ * Dung lượng game: file lẻ của game quét được, hoặc **toàn bộ** cây thư mục game của Monika (không giới hạn độ sâu).
+ * Trả về null khi không đọc được thư mục (không có / không phải thư mục / lỗi đọc); 0 khi thư mục rỗng.
+ */
+internal fun gameSizeBytes(game: Game): Long? {
     val entry = game.entry
-    if (game.external && entry != null && entry.isFile) entry.length()
-    else game.dir.walkTopDown().maxDepth(6).filter { it.isFile }.sumOf { it.length() }
-}.getOrDefault(0L)
+    if (game.external && entry != null && entry.isFile) return runCatching { entry.length() }.getOrNull()
+    val root = game.dir
+    if (!root.isDirectory) return null
+    return folderSizeBytes(root)
+}
+
+/**
+ * Tổng dung lượng cả cây thư mục, tính bằng vòng lặp (không đệ quy sâu, không giới hạn tầng).
+ * Thư mục con không đọc được thì bỏ qua chứ không làm hỏng tổng; bỏ qua liên kết tượng trưng để không lặp vô hạn.
+ */
+internal fun folderSizeBytes(root: File): Long {
+    var total = 0L
+    val pending = ArrayDeque<File>().apply { add(root) }
+    while (pending.isNotEmpty()) {
+        val dir = pending.removeFirst()
+        val children = runCatching { dir.listFiles() }.getOrNull() ?: continue
+        for (child in children) {
+            if (runCatching { java.nio.file.Files.isSymbolicLink(child.toPath()) }.getOrDefault(false)) continue
+            if (child.isDirectory) pending.add(child)
+            else total += runCatching { child.length() }.getOrDefault(0L)
+        }
+    }
+    return total
+}
+
+/** Nhãn hiển thị của dung lượng: null = không đọc được, 0 = thư mục rỗng. */
+internal fun sizeLabel(bytes: Long?): String = when {
+    bytes == null -> "Chưa rõ"
+    bytes == 0L -> "0 B"
+    else -> formatGameSize(bytes)
+}
 
 /** "1,2 GB" / "640 MB" / "512 B"; chưa đọc được thì "Chưa rõ". */
 internal fun formatGameSize(bytes: Long): String {
