@@ -103,6 +103,12 @@ val unpackSevenZipNatives by tasks.registering(Copy::class) {
 }
 tasks.withType<Test>().configureEach {
     dependsOn(unpackSevenZipNatives)
+    // V152: sandbox Robolectric API 36 (Android 16) chỉ dựng được khi JVM >= 21 — Robolectric 4.16.1
+    // ném UnsupportedOperationException "Android SDK 36 requires Java 21" trên JDK 17. Gradle vẫn
+    // chạy được trên JDK 17; chỉ JVM chạy test cần 21 (toolchain, xem gradle.properties).
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    })
     systemProperty("java.library.path", layout.buildDirectory.dir("sevenzip-natives").get().asFile.absolutePath)
     // Giống Android: tên file luôn UTF-8 (máy CI có thể để locale POSIX → tên tiếng Việt thành "??").
     environment("LC_ALL", "C.UTF-8")
