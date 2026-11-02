@@ -83,7 +83,6 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	private static final int TYPE_ARROWS = 6;
 	/** Aow Monika: bàn phím kiểu điện thoại chia 2 nửa — trái bàn số 3×4, phải L ↑ R / ← OK → / ↓ (mặc định). */
 	public static final int TYPE_MONIKA = 7;
-	private static final float MONIKA_ROWS = 4;
 	private static final float MONIKA_KEY_SCALE_Y = 0.78f;
 
 	private static final float PHONE_KEY_ROWS = 5;
@@ -655,9 +654,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	public float getPhoneKeyboardHeight(float w, float h) {
 		if (layoutVariant == TYPE_MONIKA) {
-			// Máy ngang: phím nằm 2 bên, không chiếm chiều cao.
-			if (w > h) return 0;
-			return MONIKA_ROWS * getKeySize(w - 2 * dp(MONIKA_EDGE), h) * MONIKA_KEY_SCALE_Y + dp(MONIKA_EDGE + MONIKA_PANEL_PAD + MONIKA_HANDLE + MONIKA_GAP);
+			// Chiều cao bàn phím Monika (máy ngang = 0) nằm ở AowLandscapePad để Canvas và test dùng chung.
+			return AowLandscapePad.monikaKeyboardHeight(w, h, dp(1));
 		}
 		return PHONE_KEY_ROWS * getKeySize(w, h) * PHONE_KEY_SCALE_Y;
 	}

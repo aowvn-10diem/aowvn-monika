@@ -5,6 +5,9 @@
  * Chỉ là số và hàm thuần, không phụ thuộc Android lúc chạy (density truyền vào) → `AowLandscapePadTest` ở
  * `j2me/src/test` kiểm bằng JUnit thường.
  *
+ * Từ V161 lớp này giữ luôn hình học khung game máy DỌC (`portraitFrame`, `monikaKeyboardHeight`) để `Canvas`,
+ * `VirtualKeyboard` và test dùng CHUNG một phép tính, không chép số ở ba nơi.
+ *
  * Config-first: các giá trị dưới đây là MẶC ĐỊNH TRONG MÃ của đợt này; khóa trong `config/monika-config.json`
  * (tỉ lệ bề rộng mỗi cụm phím, độ trong suốt phím) sẽ thêm sau khi PR #409 gộp, rồi đọc qua `MonikaConfig`.
  */
@@ -28,6 +31,15 @@ public final class AowLandscapePad {
 	public static final float ROW_SCALE_Y = 0.78f;
 	/** Độ đục của mặt phím khi máy ngang (0xB4 ≈ 70 %): bán trong suốt để thấy game phía sau. */
 	public static final int KEY_ALPHA = 0xB4;
+
+	/** Lề hai bên khung game máy dọc (dp) — `Canvas.updateSize` dùng qua {@link #portraitFrame}. */
+	public static final float PORTRAIT_EDGE_DP = 12;
+	/** Lề trên khung game máy dọc (dp) — `Canvas.updateSize` dùng qua {@link #portraitFrame}. */
+	public static final float PORTRAIT_TOP_DP = 28;
+	/** Khoảng vạch kéo trên khay phím Monika (dp) — khớp `VirtualKeyboard.MONIKA_HANDLE`. */
+	public static final float HANDLE_DP = 14;
+	/** Số cột phím của bàn số kiểu điện thoại — khớp `VirtualKeyboard.getKeySize` (bề rộng / 6). */
+	public static final float PHONE_COLUMNS = 6;
 
 	/** Máy đang ở thế ngang? (bố cục V161 chỉ áp cho máy ngang). */
 	public static boolean isLandscape(float w, float h) {
@@ -93,6 +105,34 @@ public final class AowLandscapePad {
 	/** Trừ lề mỗi bên `padding` khỏi một cạnh khung; không trả về số âm. */
 	private static int shrink(int size, int padding) {
 		return Math.max(0, size - 2 * Math.max(0, padding));
+	}
+
+	/**
+	 * Chiều cao bàn phím Monika khi máy DỌC (pixel) — phần đáy màn mà khung game phải chừa ra.
+	 * 0 = máy ngang (phím nằm hai bên, không chiếm chiều cao).
+	 *
+	 * <p>`VirtualKeyboard.getPhoneKeyboardHeight` gọi hàm này cho `TYPE_MONIKA`, `Canvas.updateSize` và test
+	 * cũng dùng nó — nên cả ba không thể lệch số nhau.
+	 */
+	public static float monikaKeyboardHeight(float w, float h, float density) {
+		if (isLandscape(w, h) || density <= 0) return 0;
+		float key = (w - 2 * EDGE_DP * density) / PHONE_COLUMNS;
+		return KEY_ROWS * key * ROW_SCALE_Y
+				+ (EDGE_DP + PANEL_PAD_DP + HANDLE_DP + GAP_DP) * density;
+	}
+
+	/**
+	 * Khung game Monika máy DỌC: {trái, trên, rộng, cao} (pixel) — đúng phép tính `Canvas.updateSize` dùng.
+	 *
+	 * <p>`vkHeight` = chiều cao bàn phím ảo chiếm đáy màn (xem {@link #monikaKeyboardHeight}); bề rộng đã trừ
+	 * lề hai bên nên tâm ảnh trùng tâm khung sau khi `Canvas` cộng `screenPadding` vào `onX/onY`.
+	 */
+	public static int[] portraitFrame(float w, float h, float density, int padding, float vkHeight) {
+		int edge = (int) (PORTRAIT_EDGE_DP * density);
+		int top = (int) (PORTRAIT_TOP_DP * density);
+		int innerW = innerWidth(w, edge, padding);
+		int innerH = (int) (h - vkHeight - 1) - padding - top;
+		return new int[]{edge, top, innerW, innerH};
 	}
 
 	/**

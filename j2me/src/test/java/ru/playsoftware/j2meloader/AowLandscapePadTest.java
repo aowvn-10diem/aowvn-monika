@@ -190,16 +190,20 @@ public class AowLandscapePadTest {
 	/**
 	 * Cùng lỗi Luna 3 ở nhánh NGANG, nay sửa cho nhánh Monika máy DỌC: với padding DƯƠNG, tâm ảnh phải trùng
 	 * tâm khung (trước khi sửa, tâm ảnh lệch phải đúng bằng padding).
+	 *
+	 * <p>Khung dùng ở đây là `AowLandscapePad.portraitFrame` — chính hàm `Canvas.updateSize` gọi, có chừa chỗ
+	 * bàn phím Monika ở đáy (`AowLandscapePad.monikaKeyboardHeight`, cũng là hàm `VirtualKeyboard` gọi).
 	 */
 	@Test
 	public void portraitImageIsCenteredWithPositivePadding() {
 		float sw = 360, sh = 800, density = 1;
 		int padding = 12;
-		int edge = (int) (12 * density);
-		int offY = (int) (28 * density);
-		// Khung dọc: cách đều 2 mép trái/phải `edge`, phía trên chừa `offY`, dưới sát mép.
+		float vkHeight = AowLandscapePad.monikaKeyboardHeight(sw, sh, density);
+		int[] frame = AowLandscapePad.portraitFrame(sw, sh, density, padding, vkHeight);
+		int edge = frame[0];
+		// Khung dọc: cách đều 2 mép trái/phải `edge`, phía trên chừa lề trên, đáy chừa bàn phím.
 		float frameCenterX = sw / 2f;
-		float frameCenterY = (offY + sh) / 2f;
+		float frameCenterY = frame[1] + padding + frame[3] / 2f;
 
 		// screenScaleType 2 (kéo giãn): ảnh phủ đúng khung.
 		int[] stretch = portraitImageRect(sw, sh, density, 240, 320, padding, false);
@@ -217,6 +221,8 @@ public class AowLandscapePadTest {
 		assertTrue("tâm dọc ảnh fit tỉ lệ không bị padding làm lệch",
 				Math.abs(fit[1] + fit[3] / 2f - frameCenterY) <= 1);
 		assertTrue("ảnh phải nằm trong khung, không đè mép", fit[0] >= edge + padding);
+		assertTrue("ảnh không được đè lên bàn phím",
+				fit[1] + fit[3] <= frame[1] + padding + frame[3]);
 
 		// Chống tái phát: cách tính CŨ (không trừ lề khỏi bề rộng) lệch phải đúng bằng padding.
 		int innerW = AowLandscapePad.innerWidth(sw, edge, padding);
@@ -225,35 +231,58 @@ public class AowLandscapePadTest {
 				oldX + innerW / 2 - frameCenterX >= padding - 1);
 	}
 
+	/** Khung dọc phải chừa đúng chỗ bàn phím Monika (máy ngang: 0) — đây là phần mô hình test từng thiếu. */
+	@Test
+	public void portraitFrameReservesSpaceForTheMonikaKeyboard() {
+		float sw = 360, sh = 800, density = 1;
+		int padding = 12;
+		float vkHeight = AowLandscapePad.monikaKeyboardHeight(sw, sh, density);
+		assertTrue("bàn phím Monika máy dọc phải chiếm chỗ (cao > 0), được " + vkHeight, vkHeight > 0);
+		assertEquals("máy ngang: phím nằm hai bên, không chiếm chiều cao", 0f,
+				AowLandscapePad.monikaKeyboardHeight(800, 360, density), 0f);
+
+		int[] frame = AowLandscapePad.portraitFrame(sw, sh, density, padding, vkHeight);
+		assertEquals("cao khung = màn - bàn phím - 1 - lề dưới - lề trên",
+				(int) (sh - vkHeight - 1) - padding - (int) (AowLandscapePad.PORTRAIT_TOP_DP * density),
+				frame[3]);
+		assertTrue("khung phải thấp hơn màn đúng phần bàn phím + lề trên + lề dưới",
+				frame[3] < sh - 2 * padding - AowLandscapePad.PORTRAIT_TOP_DP * density);
+		assertTrue("bề rộng khung = màn - 2 lề hai bên - 2 padding",
+				frame[2] == (int) sw - 2 * frame[0] - 2 * padding);
+	}
+
 	/** Các cỡ màn dọc thường gặp × nhiều mức padding: tâm ảnh luôn trùng tâm khung. */
 	@Test
 	public void portraitImageStaysCenteredAcrossScreensAndPaddings() {
 		float[][] screens = {{360, 800, 1f}, {1080, 2400, 3f}, {720, 1600, 2f}, {1440, 3120, 3.5f}};
 		int[] paddings = {1, 4, 8, 12, 24};
 		for (float[] screen : screens) {
-			int offY = (int) (28 * screen[2]);
+			float vkHeight = AowLandscapePad.monikaKeyboardHeight(screen[0], screen[1], screen[2]);
 			for (int padding : paddings) {
+				int[] frame = AowLandscapePad.portraitFrame(screen[0], screen[1], screen[2], padding,
+						vkHeight);
 				int[] image = portraitImageRect(screen[0], screen[1], screen[2], 240, 320, padding, true);
 				assertTrue("màn dọc " + screen[0] + "x" + screen[1] + " padding " + padding
 								+ ": tâm ngang lệch quá 1 px",
 						Math.abs(image[0] + image[2] / 2 - screen[0] / 2f) <= 1);
 				assertTrue("màn dọc " + screen[0] + "x" + screen[1] + " padding " + padding
 								+ ": tâm dọc lệch quá 1 px",
-						Math.abs(image[1] + image[3] / 2 - (offY + screen[1]) / 2f) <= 1);
+						Math.abs(image[1] + image[3] / 2 - (frame[1] + padding + frame[3] / 2f)) <= 1);
 			}
 		}
 	}
 
 	/**
-	 * Dựng lại phép tính nhánh Monika máy DỌC của `Canvas.updateSize`: bề rộng trừ lề → (tuỳ chọn) fit giữ
-	 * tỉ lệ → căn giữa → cộng padding → cộng lề trên/trái. Trả về {x, y, rộng, cao} của ảnh trên màn.
+	 * Dựng lại bước CUỐI của `Canvas.updateSize` cho nhánh Monika máy DỌC: khung lấy từ
+	 * `AowLandscapePad.portraitFrame` (đã chừa chỗ bàn phím Monika ở đáy) → (tuỳ chọn) fit giữ tỉ lệ →
+	 * căn giữa → cộng padding → cộng lề trên/trái. Trả về {x, y, rộng, cao} của ảnh trên màn.
 	 */
 	private static int[] portraitImageRect(float sw, float sh, float density, int gameW, int gameH,
 			int padding, boolean keepAspect) {
-		int edge = (int) (12 * density);
-		int offY = (int) (28 * density);
-		int innerW = AowLandscapePad.innerWidth(sw, edge, padding);
-		int innerH = (int) sh - padding * 2 - offY;
+		float vkHeight = AowLandscapePad.monikaKeyboardHeight(sw, sh, density);
+		int[] frame = AowLandscapePad.portraitFrame(sw, sh, density, padding, vkHeight);
+		int innerW = frame[2];
+		int innerH = frame[3];
 		int onW = innerW;
 		int onH = innerH;
 		if (keepAspect) {
@@ -261,8 +290,8 @@ public class AowLandscapePadTest {
 			onW = fit[0];
 			onH = fit[1];
 		}
-		int onX = (innerW - onW) / 2 + padding + edge;
-		int onY = (innerH - onH) / 2 + padding + offY;
+		int onX = (innerW - onW) / 2 + padding + frame[0];
+		int onY = (innerH - onH) / 2 + padding + frame[1];
 		return new int[]{onX, onY, onW, onH};
 	}
 
@@ -334,8 +363,10 @@ public class AowLandscapePadTest {
 				canvas.contains("AowLandscapePad.fit("));
 		assertTrue("Canvas phải trừ lề trước khi fit/căn giữa bằng AowLandscapePad.innerFrame",
 				canvas.contains("AowLandscapePad.innerFrame("));
-		assertTrue("Canvas nhánh máy dọc phải trừ lề bằng AowLandscapePad.innerWidth",
-				canvas.contains("AowLandscapePad.innerWidth("));
+		assertTrue("Canvas nhánh máy dọc phải dựng khung bằng AowLandscapePad.portraitFrame",
+				canvas.contains("AowLandscapePad.portraitFrame("));
+		assertTrue("VirtualKeyboard phải lấy chiều cao bàn phím Monika từ AowLandscapePad.monikaKeyboardHeight",
+				keyboard.contains("AowLandscapePad.monikaKeyboardHeight("));
 	}
 
 	private static String read(String local, String fromRoot) throws IOException {

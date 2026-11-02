@@ -354,14 +354,15 @@ public abstract class Canvas extends Displayable {
 				scaledDisplayHeight = innerFrame[1];
 				monikaLandscape = true;
 			} else {
-				int edge = (int) (12 * density);
-				offX = edge;
-				offY = (int) (28 * density);
-				// V161: máy dọc — cùng lỗi như nhánh ngang: bề rộng phải trừ lề TRƯỚC bước fit/căn giữa, vì
-				// onX còn cộng settings.screenPadding vào sau khi căn giữa (nếu không, tâm ảnh lệch phải
-				// đúng bằng padding).
-				scaledDisplayWidth = AowLandscapePad.innerWidth(displayWidth, offX, settings.screenPadding);
-				scaledDisplayHeight = scaledDisplayHeight - offY;
+				// V161: máy dọc — bàn phím Monika chiếm đáy màn (TYPE_MONIKA luôn isPhone()), khung game chừa
+				// chỗ đó và trừ lề hai bên TRƯỚC bước fit/căn giữa, vì onX/onY còn cộng screenPadding sau khi
+				// căn giữa (nếu không, tâm ảnh lệch phải đúng bằng padding).
+				int[] frame = AowLandscapePad.portraitFrame(displayWidth, displayHeight, density,
+						settings.screenPadding, monikaVk.getPhoneKeyboardHeight(displayWidth, displayHeight));
+				offX = frame[0];
+				offY = frame[1];
+				scaledDisplayWidth = frame[2];
+				scaledDisplayHeight = frame[3];
 			}
 		}
 
