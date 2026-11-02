@@ -87,6 +87,9 @@ fun LibraryScreen(onSettings: () -> Unit) {
     var scanned by remember { mutableStateOf(AppGraph.library.cached) } // null = đang quét lần đầu
     var documents by remember { mutableStateOf(AppGraph.library.cachedDocuments) }
     var documentToDelete by remember { mutableStateOf<LibraryDocument?>(null) }
+    // V141: mục Tệp — tệp đang chờ xác nhận xoá, và các tệp đã ẩn khỏi danh sách Tệp (không xoá dữ liệu gốc).
+    var fileToDelete by remember { mutableStateOf<LibraryFileEntry?>(null) }
+    var hiddenFiles by remember { mutableStateOf(emptySet<String>()) }
     val games = scanned.orEmpty()
     var reloadKey by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
@@ -118,6 +121,12 @@ fun LibraryScreen(onSettings: () -> Unit) {
     fun selectSection(target: LibrarySection) {
         section = target
         AppGraph.prefs.librarySection = target.key
+    }
+    // V141: mục Tệp dựng danh sách từ game + tài liệu đã có và đúng thư mục kho; chỉ quét khi mở mục Tệp.
+    // null = đang dựng danh sách (không nháy "Chưa có tệp nào" rồi mới hiện tệp).
+    val fileEntries by produceState<List<LibraryFileEntry>?>(null, section, games, documents, reloadKey) {
+        if (section != LibrarySection.FILES) return@produceState
+        value = withContext(Dispatchers.IO) { libraryFileEntries(games, documents, GameStorage.games(context)) }
     }
 
     val playedTick by AppGraph.prefs.playedTick.collectAsState()
@@ -242,6 +251,23 @@ fun LibraryScreen(onSettings: () -> Unit) {
     }
     playRef[0] = play
 
+    /** Mở tài liệu bằng ứng dụng đọc có trong máy; thiếu app thì báo rõ thay vì im lặng. */
+    fun openDocument(document: LibraryDocument) {
+        try {
+            context.startActivity(documentViewIntent(context, document))
+        } catch (_: android.content.ActivityNotFoundException) {
+            info = "Chưa có ứng dụng mở loại tài liệu này. Hãy cài ứng dụng đọc tài liệu rồi thử lại."
+        } catch (_: Exception) {
+            info = "Chưa mở được tài liệu. Kiểm tra quyền đọc tệp rồi thử lại."
+        }
+    }
+
+    /** Bấm một dòng ở mục Tệp: game thì chạy, tài liệu (và tệp khác) thì mở bằng ứng dụng phù hợp. */
+    fun openFile(entry: LibraryFileEntry) {
+        entry.game?.let { play(it); return }
+        openDocument(entry.document ?: LibraryDocument(entry.file))
+    }
+
     // Bộ lọc: Tất cả · Chơi gần đây · Chơi thường xuyên · Theo hệ máy (bấm → menu chọn hệ).
     val prefs = AppGraph.prefs
     val systems = games.mapNotNull { it.system?.name }.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }
@@ -352,18 +378,20 @@ fun LibraryScreen(onSettings: () -> Unit) {
         }
         // Mục Đọc: dùng danh sách tài liệu sẵn có (LibraryDocuments), chưa có thì hiện trạng thái rỗng.
         if (section == LibrarySection.READ) LibraryReadPage(documents,
-            onOpen = { document ->
-                try {
-                    context.startActivity(documentViewIntent(context, document))
-                } catch (_: android.content.ActivityNotFoundException) {
-                    info = "Chưa có ứng dụng mở loại tài liệu này. Hãy cài ứng dụng đọc tài liệu rồi thử lại."
-                } catch (_: Exception) {
-                    info = "Chưa mở được tài liệu. Kiểm tra quyền đọc tệp rồi thử lại."
-                }
-            },
+            onOpen = ::openDocument,
             onDelete = { documentToDelete = it },
         )
-        if (section == LibrarySection.FILES) LibraryFilesPage()
+        // Mục Tệp: game + tài liệu + tệp khác trong kho, bấm để mở đúng hành động.
+        if (section == LibrarySection.FILES) {
+            val entries = fileEntries
+            if (entries == null) Box(Modifier.fillMaxWidth().height(240.dp), Alignment.Center) { Spinner() }
+            else LibraryFilesPage(
+                entries = entries.filterNot { it.key in hiddenFiles },
+                onOpen = ::openFile,
+                onDelete = { fileToDelete = it },
+                onAdd = { addSheet = true },
+            )
+        }
       }
 
         // ---- Menu popup (cùng thiết kế menu trung tâm) ----
@@ -418,6 +446,41 @@ fun LibraryScreen(onSettings: () -> Unit) {
             confirmButton = { DarkButton("Đóng", { needApp = null }) },
             title = { Text("Cần cài ${app.name}", style = Monika.type.sectionTitle) },
             text = { ExternalAppDetails(app, installed = false) },
+            containerColor = c.surface, shape = Radius.large,
+        )
+    }
+    // V141: xoá tệp trong mục Tệp — tệp đang được mục Chơi/Đọc dùng thì chỉ ẩn, không xoá dữ liệu gốc.
+    fileToDelete?.let { entry ->
+        val shared = when {
+            entry.game != null -> "mục Chơi"
+            entry.document != null -> "mục Đọc"
+            else -> null
+        }
+        AlertDialog(
+            onDismissRequest = { fileToDelete = null },
+            title = { Text(if (shared != null) "Ẩn khỏi mục Tệp?" else "Xoá tệp?", style = Monika.type.cardTitle) },
+            text = {
+                Text(
+                    if (shared != null) "\"${entry.name}\" đang dùng ở $shared. Chỉ ẩn khỏi danh sách Tệp, tệp gốc vẫn giữ nguyên."
+                    else "Xoá \"${entry.name}\" (${formatFileSize(entry.sizeBytes)}) khỏi kho Monika. Không khôi phục được.",
+                    style = Monika.type.body, color = c.textSecondary,
+                )
+            },
+            confirmButton = {
+                GradientButton(if (shared != null) "Ẩn" else "Xoá", {
+                    fileToDelete = null
+                    if (shared != null) {
+                        hiddenFiles = hiddenFiles + entry.key
+                    } else {
+                        scope.launch {
+                            val ok = withContext(Dispatchers.IO) { runCatching { entry.file.deleteRecursively() }.getOrDefault(false) || !entry.file.exists() }
+                            if (!ok) info = "Chưa xoá được \"${entry.name}\". Kiểm tra quyền đọc tệp rồi thử lại."
+                            reloadKey++
+                        }
+                    }
+                }, height = 44.dp)
+            },
+            dismissButton = { DarkButton("Hủy", { fileToDelete = null }) },
             containerColor = c.surface, shape = Radius.large,
         )
     }
