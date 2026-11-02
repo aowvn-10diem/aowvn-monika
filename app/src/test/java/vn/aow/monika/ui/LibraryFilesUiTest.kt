@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import org.junit.Assert.*
 import org.junit.After
 import org.junit.Before
@@ -27,7 +31,9 @@ import vn.aow.monika.ui.screens.LibraryFilesPage
 import vn.aow.monika.ui.screens.LibraryScreen
 import vn.aow.monika.ui.screens.formatFileDate
 import vn.aow.monika.ui.screens.formatFileSize
+import vn.aow.monika.ui.theme.DockClearance
 import vn.aow.monika.ui.theme.MonikaTheme
+import vn.aow.monika.ui.theme.dockContentClearance
 import java.io.File
 
 /** V141: mục Tệp — danh sách tệp trong kho, trạng thái rỗng, xoá có xác nhận, bấm mở đúng hành động. */
@@ -204,5 +210,69 @@ class LibraryFilesUiTest {
             set(java.util.Calendar.MILLISECOND, 0)
         }.timeInMillis
         assertEquals("02/11/2026", formatFileDate(day))
+    }
+
+    /** Tìm AndroidComposeView trong cây view (Robolectric không có cửa sổ thật để tự đẩy inset). */
+    private fun findComposeView(view: android.view.View): android.view.View? {
+        if (view.javaClass.name.endsWith("AndroidComposeView")) return view
+        if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) findComposeView(view.getChildAt(i))?.let { return it }
+        }
+        return null
+    }
+
+    /**
+     * Edge-to-edge: thanh điều hướng 48dp nằm trong cửa sổ. Đáy danh sách phải chừa
+     * DockClearance + inset (không dùng mốc 110dp cố định), nếu không hàng cuối bị che.
+     */
+    @Test fun lastRowStaysAboveTheDockWhenNavigationInsetIs48dp() {
+        val insetDp = 48
+        val density = rule.activity.resources.displayMetrics.density
+        val entries = (0 until 20).map { i ->
+            LibraryFileEntry(
+                key = "k$i", name = "Tệp mẫu $i.pdf", kind = LibraryFileKind.DOCUMENT,
+                sizeBytes = 1_024, addedAt = 0L, file = File("Tệp mẫu $i.pdf"),
+            )
+        }
+        val measured = arrayOfNulls<Dp>(1)
+        rule.setContent {
+            MonikaTheme {
+                measured[0] = dockContentClearance()
+                LibraryFilesPage(entries, onOpen = {}, onDelete = {}, onAdd = {})
+            }
+        }
+        rule.mainClock.advanceTimeBy(1_000)
+        // Máy thật bật edge-to-edge: đẩy inset thanh điều hướng 48dp vào cửa sổ.
+        // DecorView nuốt inset trước khi tới Compose nên đẩy thẳng vào AndroidComposeView.
+        val insetPx = (insetDp * density).toInt()
+        val composeView = findComposeView(rule.activity.window.decorView)
+        assertNotNull("Không tìm thấy AndroidComposeView", composeView)
+        ViewCompat.dispatchApplyWindowInsets(
+            composeView!!,
+            WindowInsetsCompat.Builder()
+                .setInsets(WindowInsetsCompat.Type.navigationBars(), Insets.of(0, 0, 0, insetPx))
+                .build(),
+        )
+        rule.mainClock.advanceTimeBy(1_000)
+
+        // Item 0 là tiêu đề "N tệp · …", 20 tệp nằm ở index 1..20.
+        rule.onNode(hasScrollToIndexAction()).performScrollToIndex(entries.size)
+        rule.awaitComposeLayout {
+            rule.onAllNodesWithText("Tệp mẫu ${entries.lastIndex}.pdf").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        assertEquals(
+            "Khoảng đệm đáy phải cộng inset hệ thống",
+            DockClearance + insetDp.dp, measured[0],
+        )
+        val rootBottom = rule.onRoot().fetchSemanticsNode().boundsInRoot.bottom
+        val lastBottom = rule.onNodeWithText("Tệp mẫu ${entries.lastIndex}.pdf")
+            .fetchSemanticsNode().boundsInRoot.bottom
+        val safe = (DockClearance.value + insetDp) * density
+        assertTrue(
+            "Hàng cuối (đáy ${lastBottom}px) bị vùng dock/thanh điều hướng che: phải cách đáy ít nhất ${safe}px",
+            rootBottom - lastBottom >= safe - 1f,
+        )
+        rule.shot("v141-tep-inset-48dp")
     }
 }
