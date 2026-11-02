@@ -44,14 +44,6 @@ internal object GamepadsManager {
             KeyEvent.KEYCODE_BUTTON_THUMBR
     )
 
-    /** The Android gamepad layout is different from RetroPad since X/Y and A/B buttons are inverted. */
-    fun getGamepadKeyEvent(keyCode: Int): Int {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_BUTTON_B -> KeyEvent.KEYCODE_BUTTON_A
-            KeyEvent.KEYCODE_BUTTON_A -> KeyEvent.KEYCODE_BUTTON_B
-            KeyEvent.KEYCODE_BUTTON_X -> KeyEvent.KEYCODE_BUTTON_Y
-            KeyEvent.KEYCODE_BUTTON_Y -> KeyEvent.KEYCODE_BUTTON_X
-            else -> keyCode
-        }
-    }
+    // V159: phép hoán nút mặt (A↔B, X↔Y) nằm DUY NHẤT ở [PadKeyMap], dùng chung cho overlay,
+    // tay cầm thật và onKeyDown. Không thêm bảng hoán thứ hai ở đây.
 }
