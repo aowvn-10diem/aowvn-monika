@@ -229,6 +229,7 @@ class RetroActivity : ComponentActivity() {
                             showToast("Đã lưu vị trí phím")
                         },
                         onOptions = { if (ready) openOptions(coreId) },
+                        screen = screenCfg,
                         onAsk = { askGroup(title, systemName) },
                         onMotion = { src, x, y ->
                             if (ready) retroView?.sendMotionEvent(if (src == STICK_RIGHT) GLRetroView.MOTION_SOURCE_ANALOG_RIGHT else GLRetroView.MOTION_SOURCE_ANALOG_LEFT, x, y, 0)
@@ -467,6 +468,7 @@ class RetroActivity : ComponentActivity() {
         val list = runCatching { view.getVariables().mapNotNull { CoreOptions.parse(it.key ?: return@mapNotNull null, it.description, it.value, AppGraph.config.current.coreOptionText) } }
             .getOrDefault(emptyList())
             .sortedBy { it.label.lowercase() }
+        ui.coreId = coreId // V188: bảng tùy chọn chia 3 nhóm cho lõi NDS
         ui.options = list
     }
 
