@@ -26,6 +26,15 @@ class Prefs(private val context: Context) {
         get() = sp.getString("library_section", "play") ?: "play"
         set(value) = sp.edit().putString("library_section", value).apply()
 
+    /**
+     * Trang đang đọc dở của một tài liệu (0-based), khoá theo đường dẫn/tên tệp.
+     * Màn đọc PDF (module :reader) ghi qua đây để lần sau mở lại đúng trang [V142].
+     */
+    fun readingPage(key: String): Int = vn.aow.monika.reader.ReadingProgress(context).page(key)
+
+    fun setReadingPage(key: String, page: Int) =
+        vn.aow.monika.reader.ReadingProgress(context).setPage(key, page)
+
     /** Mã các bài đã thấy, để biết bài nào mới. Rỗng = chưa chạy lần nào. */
     var seenPostIds: Set<String>
         get() = sp.getStringSet("seen_post_ids", emptySet())!!.toSet()
