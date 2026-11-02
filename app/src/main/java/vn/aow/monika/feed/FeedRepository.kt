@@ -112,11 +112,12 @@ class FeedRepository(
         try {
             call.execute().use { response ->
                 check(response.isSuccessful) { "Không tải được bài viết (HTTP ${response.code})" }
-                Json.parseToJsonElement(response.body!!.string())
+                // V166: đọc body qua mạng → đứt luồng ở đây là chuyện mạng (đánh dấu nguồn).
+                vn.aow.monika.diag.Diagnostics.networkRead { Json.parseToJsonElement(response.body!!.string()) }
             }
         } catch (e: Exception) {
             // V112: tải feed lỗi (HTTP/parse) để lại op-fail; mất mạng/hủy thì không.
-            if (e !is kotlinx.coroutines.CancellationException && !vn.aow.monika.diag.Diagnostics.isOffline(vn.aow.monika.diag.Diagnostics.Op.FETCH_FEED, e))
+            if (e !is kotlinx.coroutines.CancellationException && !vn.aow.monika.diag.Diagnostics.isOffline(e))
                 ctx?.let { vn.aow.monika.diag.Diagnostics.opFail(it, vn.aow.monika.diag.Diagnostics.Op.FETCH_FEED, "tai-bai", e) }
             throw e
         }

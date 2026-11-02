@@ -188,19 +188,24 @@ class CoreManager(
     }
 
     private suspend fun downloadCore(input: java.io.InputStream, archive: File, total: Long, progress: suspend (Long, Long) -> Unit) {
-        archive.outputStream().use { output ->
-            val buffer = ByteArray(64 * 1024)
-            var read = 0L; var lastBytes = 0L; var lastPct = -1
-            while (true) {
-                val n = input.read(buffer)
-                if (n < 0) break
-                output.write(buffer, 0, n); read += n
-                val pct = if (total > 0) (read * 100 / total).toInt() else -1
-                if (pct != lastPct || read - lastBytes >= 256 * 1024) {
-                    lastPct = pct; lastBytes = read; progress(read, total)
+        // V166: `input` là luồng mạng → đứt giữa chừng ở đây là chuyện mạng (đánh dấu nguồn).
+        try {
+            archive.outputStream().use { output ->
+                val buffer = ByteArray(64 * 1024)
+                var read = 0L; var lastBytes = 0L; var lastPct = -1
+                while (true) {
+                    val n = input.read(buffer)
+                    if (n < 0) break
+                    output.write(buffer, 0, n); read += n
+                    val pct = if (total > 0) (read * 100 / total).toInt() else -1
+                    if (pct != lastPct || read - lastBytes >= 256 * 1024) {
+                        lastPct = pct; lastBytes = read; progress(read, total)
+                    }
                 }
+                progress(read, total)
             }
-            progress(read, total)
+        } catch (e: Throwable) {
+            throw vn.aow.monika.diag.Diagnostics.markNetworkTruncation(e)
         }
     }
 
@@ -217,7 +222,12 @@ class CoreManager(
                 override fun read(): Int = super.read().also { if (it >= 0) tick(1) }
                 override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also { tick(it.toLong()) }
             }
-            ZipInputStream(counting.buffered()).use(consume)
+            // V166: giải nén NGAY TRÊN luồng mạng → đứt luồng ở đây là chuyện mạng (đánh dấu nguồn).
+            try {
+                ZipInputStream(counting.buffered()).use(consume)
+            } catch (e: Throwable) {
+                throw vn.aow.monika.diag.Diagnostics.markNetworkTruncation(e)
+            }
         }
     }
 

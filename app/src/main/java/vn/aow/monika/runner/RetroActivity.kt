@@ -277,7 +277,7 @@ class RetroActivity : ComponentActivity() {
         }
         lifecycleScope.launch {
             // V112: tải/chuẩn bị lõi là bước mở game → lỗi thật để lại op-fail; mất mạng chỉ ghi vệt.
-            val core = Diagnostics.opSuspend(this@RetroActivity, Diagnostics.Op.OPEN_GAME, expected = { Diagnostics.isOffline(Diagnostics.Op.OPEN_GAME, it) }) {
+            val core = Diagnostics.opSuspend(this@RetroActivity, Diagnostics.Op.OPEN_GAME, expected = Diagnostics::isOffline) {
                 step("tai-loi:$coreId")
                 AppGraph.cores.ensureCore(coreId, onProgress = { updateStartup(it.stage, it.text) })
             }.getOrElse {

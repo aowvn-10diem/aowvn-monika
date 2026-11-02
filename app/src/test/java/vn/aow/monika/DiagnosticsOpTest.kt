@@ -172,6 +172,56 @@ class DiagnosticsOpTest {
         assertEquals(1, opFails().size)
     }
 
+    @Test fun mixedDownloadAndExtractOpReportsEofFromLocalArchive() {
+        // V166 lần 2 (Luna 3): op TRỘN tải + giải nén (mo-game / cai-goi-engine). EOF xảy ra khi ĐỌC ARCHIVE CỤC BỘ
+        // là tệp cụt/hỏng → vẫn phải báo, dù cùng thao tác đó còn có bước tải qua mạng.
+        val truncated = File(tmp.root, "core.zip").apply {
+            val out = java.io.ByteArrayOutputStream()
+            java.util.zip.ZipOutputStream(out).use { z ->
+                z.putNextEntry(java.util.zip.ZipEntry("lib.so"))
+                z.write(ByteArray(64 * 1024) { (it * 37 + 11).toByte() })
+                z.closeEntry()
+            }
+            val all = out.toByteArray()
+            writeBytes(all.copyOf(all.size / 2)) // cắt giữa phần dữ liệu của entry
+        }
+        val local = Diagnostics.op(app, Op.OPEN_GAME) {
+            step("tai-loi")
+            step("giai-nen-loi")
+            java.util.zip.ZipInputStream(truncated.inputStream()).use { z ->
+                while (true) {
+                    z.nextEntry ?: break
+                    z.readBytes()
+                }
+            }
+        }
+        val error = local.exceptionOrNull()
+        assertTrue("đọc archive cụt phải ném lỗi luồng đứt, thực tế: $error",
+            generateSequence(error) { it.cause }.any { it is java.io.EOFException || "end of zlib" in it.message.orEmpty().lowercase() })
+        val report = opFails().single()
+        assertEquals("op:mo-game", report.component)
+        assertTrue("bước đọc archive cục bộ phải nằm trong báo cáo", report.detail.contains("bước: giai-nen-loi"))
+
+        // Cùng op trộn, nhưng đứt luồng ở bước GIẢI NÉN GÓI (cai-goi-engine) cũng phải báo.
+        Diagnostics.resetOpThrottle()
+        Diagnostics.op(app, Op.INSTALL_PACK) { step("giai-nen-goi"); throw java.io.EOFException("Unexpected end of ZLIB input stream") }
+        assertEquals("EOF khi giải nén gói vẫn là lỗi thật", 2, opFails().size)
+    }
+
+    @Test fun mixedDownloadAndExtractOpIgnoresEofThatCameFromTheNetworkRead() {
+        // Ngược lại: đứt luồng ở bước ĐỌC QUA MẠNG (đã đánh dấu nguồn) là chuyện mạng → chỉ ghi vệt.
+        Diagnostics.op(app, Op.OPEN_GAME) {
+            step("tai-loi")
+            Diagnostics.networkRead { throw java.io.EOFException("unexpected end of stream") }
+        }
+        Diagnostics.op(app, Op.INSTALL_PACK) {
+            step("tai-goi")
+            Diagnostics.networkRead { throw java.io.IOException("unexpected end of stream") }
+        }
+        assertTrue("đứt luồng mạng không được thành báo cáo lỗi app", opFails().isEmpty())
+        assertTrue(sent.isEmpty())
+    }
+
     @Test fun truncatedFileOrArchiveStillReportsEvenThoughItIsAnEof() {
         // V166 (Luna 3): luồng đứt khi GIẢI NÉN / ĐỌC FILE là tệp cụt-hỏng (dữ liệu), không phải mạng → vẫn phải báo.
         Diagnostics.opFail(app, Op.EXTRACT, "giai-nen", java.io.EOFException("unexpected end of ZLIB input stream"))

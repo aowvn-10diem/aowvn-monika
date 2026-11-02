@@ -62,14 +62,19 @@ internal object PackTransaction {
                          onBytes: suspend (Long) -> Unit = {}) {
         val md = MessageDigest.getInstance("SHA-256")
         var size = 0L
-        archive.outputStream().use { output ->
-            val buf = ByteArray(64 * 1024)
-            while (true) {
-                val n = input.read(buf)
-                if (n < 0) break
-                output.write(buf, 0, n); md.update(buf, 0, n); size += n
-                onBytes(size)
+        // V166: `input` là luồng mạng → đứt giữa chừng ở đây là chuyện mạng (đánh dấu nguồn).
+        try {
+            archive.outputStream().use { output ->
+                val buf = ByteArray(64 * 1024)
+                while (true) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    output.write(buf, 0, n); md.update(buf, 0, n); size += n
+                    onBytes(size)
+                }
             }
+        } catch (e: Throwable) {
+            throw vn.aow.monika.diag.Diagnostics.markNetworkTruncation(e)
         }
         if (expectedBytes >= 0 && size != expectedBytes) throw IOException("Gói tải chưa đủ byte")
         val got = md.digest().joinToString("") { "%02x".format(it) }

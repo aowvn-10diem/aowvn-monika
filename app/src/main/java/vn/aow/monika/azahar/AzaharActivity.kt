@@ -188,7 +188,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
 
         lifecycleScope.launch {
             // V112: nạp engine 3DS là bước mở game → lỗi để lại op-fail (kèm bước đang làm), mất mạng chỉ ghi vệt.
-            val ok = Diagnostics.opSuspend(this@AzaharActivity, Diagnostics.Op.OPEN_GAME, expected = { Diagnostics.isOffline(Diagnostics.Op.OPEN_GAME, it) }) {
+            val ok = Diagnostics.opSuspend(this@AzaharActivity, Diagnostics.Op.OPEN_GAME, expected = Diagnostics::isOffline) {
                 step("tai-module")
                 module.ensure { status.text = it }
                 Diagnostics.stage(this@AzaharActivity, "module-ready")

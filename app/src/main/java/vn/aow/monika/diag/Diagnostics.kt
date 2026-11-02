@@ -447,7 +447,7 @@ object Diagnostics {
     fun opFail(c: Context, name: String, step: String, e: Throwable, target: String? = null): Report? = runCatching {
         val code = errorCode(e)
         // Hủy (Activity rời màn, Worker bị dừng) và lỗi mạng là chuyện thường: chỉ ghi vệt, không lập báo cáo.
-        if (isCancellation(e) || isOffline(name, e)) {
+        if (isCancellation(e) || isOffline(step, e)) {
             Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code (hủy/lỗi mạng, không báo)")
             return@runCatching null
         }
@@ -501,28 +501,52 @@ object Diagnostics {
     /**
      * V166: lỗi mạng là chuyện thường của người chơi, không phải lỗi app → không lập báo cáo `op-fail` (chỉ ghi vệt).
      * Ngoài "mất mạng/quá hạn" còn phải kể cả kiểu mạng nhà/ISP chặn hoặc bóp Blogger (hay lặp lại mỗi lần mở app):
-     * TLS bị chặn/hijack (`SSLException`), máy chủ cắt kết nối (`SocketException`: reset/abort/broken pipe).
-     * Luồng đứt (`EOFException`/"unexpected end of stream") **không** nằm ở đây vì nó còn là dấu hiệu tệp cụt —
-     * xem [isOffline] bản có tên thao tác.
+     * TLS bị chặn/hijack (`SSLException`), máy chủ cắt kết nối (`SocketException`: reset/abort/broken pipe), và
+     * luồng mạng bị cắt giữa chừng đã được [networkRead] đánh dấu ([NetworkTruncatedException]).
+     * Luồng đứt KHÔNG tự động là lỗi mạng: nó còn là dấu hiệu tệp/archive cụt — xem [isOffline] bản có bước.
      * Máy chủ trả mã lỗi HTTP vẫn là báo cáo thật (có thể lỗi phía mình) — chỉ lỗi tầng vận chuyển mới bỏ qua.
      */
     fun isOffline(e: Throwable): Boolean = chainOf(e).any {
-        it is java.net.UnknownHostException || it is java.net.ConnectException || it is java.net.NoRouteToHostException ||
+        it is NetworkTruncatedException ||
+            it is java.net.UnknownHostException || it is java.net.ConnectException || it is java.net.NoRouteToHostException ||
             it is java.net.SocketTimeoutException || it is java.io.InterruptedIOException ||
             it is java.net.SocketException || it is javax.net.ssl.SSLException || it is java.net.ProtocolException ||
             NETWORK_BROKEN.containsMatchIn(it.message.orEmpty())
     }
 
-    /** Thao tác đi qua mạng: ở đây luồng đứt là chuyện mạng; ở thao tác tệp/archive nó là dữ liệu hỏng. */
-    private val NETWORK_OPS = setOf(Op.DOWNLOAD, Op.FETCH_FEED, Op.FETCH_CONFIG, Op.INSTALL_PACK, Op.OPEN_GAME)
+    /** Bước chỉ đọc qua mạng (không đụng tệp cục bộ): luồng đứt ở đây là chuyện mạng. */
+    private val NETWORK_STEPS = setOf("tai", "tai-ve", "tai-bai")
 
     /**
-     * V166 (Luna 3): `EOFException`/"unexpected end of stream" chỉ là chuyện mạng khi thao tác đi qua mạng
-     * ([NETWORK_OPS]). Ở thao tác tệp/archive (giải nén, nhập game, vá ROM) luồng đứt = tệp cụt/hỏng → **vẫn phải báo**.
+     * V166 (Luna 3, lần 2): phân loại theo **nguồn đọc tại chỗ ném lỗi**, không theo tên thao tác — vì có thao tác
+     * trộn cả tải và giải nén (`mo-game`, `cai-goi-engine`, `tai-xuong/luu-file`). Luồng đứt là chuyện mạng khi:
+     * (a) ngoại lệ đã được [networkRead] đánh dấu là đọc qua mạng, hoặc (b) bước hiện tại chỉ đọc qua mạng
+     * ([NETWORK_STEPS]). EOF khi đọc archive cục bộ = tệp cụt/hỏng → **vẫn lập báo cáo**.
      */
-    fun isOffline(op: String, e: Throwable): Boolean = isOffline(e) || (op in NETWORK_OPS && chainOf(e).any {
+    fun isOffline(step: String, e: Throwable): Boolean =
+        isOffline(e) || (step.substringBefore(':').trim() in NETWORK_STEPS && isTruncated(e))
+
+    /** Luồng mạng bị cắt giữa chừng — nguồn đã biết là mạng nên KHÔNG phải dữ liệu hỏng. */
+    class NetworkTruncatedException(message: String?, cause: Throwable?) : java.io.IOException(message, cause)
+
+    /**
+     * V166 (Luna 3, lần 2): bọc **đúng chỗ đọc qua mạng** (HTTP body, socket). Luồng đứt ở đó là chuyện mạng.
+     * Chỗ đọc archive cục bộ (ZipInputStream, zip4j, commons-compress) KHÔNG bọc → EOF của tệp cụt vẫn là
+     * lỗi dữ liệu và vẫn được lập báo cáo, kể cả trong thao tác trộn tải + giải nén.
+     */
+    fun <T> networkRead(block: () -> T): T = try {
+        block()
+    } catch (e: Throwable) {
+        throw markNetworkTruncation(e)
+    }
+
+    /** Bản dùng được trong hàm `suspend` (không bọc lambda): `catch (e) { throw markNetworkTruncation(e) }`. */
+    fun markNetworkTruncation(e: Throwable): Throwable = if (isTruncated(e)) NetworkTruncatedException(e.message, e) else e
+
+    /** Luồng đứt: `EOFException`, hoặc câu báo của OkHttp khi body ngắn hơn Content-Length. */
+    internal fun isTruncated(e: Throwable): Boolean = chainOf(e).any {
         it is java.io.EOFException || TRUNCATED.containsMatchIn(it.message.orEmpty())
-    })
+    }
 
     private fun chainOf(e: Throwable): Sequence<Throwable> = generateSequence(e) { it.cause?.takeIf { c -> c !== it } }
 
@@ -531,7 +555,7 @@ object Diagnostics {
         """(?i)connection reset|connection closed|stream was reset|broken pipe|connection abort|software caused connection abort|read timed out"""
     )
 
-    /** Câu báo luồng đứt: OkHttp và một số bộ đọc tệp cùng dùng, nên chỉ tính là mạng khi thao tác đi qua mạng. */
+    /** Câu báo luồng đứt: OkHttp và một số bộ đọc tệp cùng dùng, nên chỉ tính là mạng khi biết nguồn là mạng. */
     private val TRUNCATED = Regex("""(?i)unexpected end of stream""")
 
     private val LINK = Regex("""(?i)\b(?:https?|ftp)://[^\s"'<>)]+""")
