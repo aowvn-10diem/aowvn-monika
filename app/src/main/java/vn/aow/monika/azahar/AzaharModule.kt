@@ -57,10 +57,10 @@ class AzaharModule(
                         val body = response.body ?: throw IOException("Gói không có nội dung")
                         val total = body.contentLength()
                         body.byteStream().use { input ->
-                            PackTransaction.download(input, archive, (d.sha256ByAbi[abi] ?: d.sha256).trim(), total) { read ->
+                            PackTransaction.download(input, archive, (d.sha256ByAbi[abi] ?: d.sha256).trim(), total, onBytes = { read ->
                                 val pct = if (total > 0) (read * 100 / total).toInt().coerceIn(0, 100) else -1
                                 if (pct >= 0 && pct != last) { last = pct; withContext(Dispatchers.Main) { onStatus("Đang tải engine 3DS (chỉ lần đầu)… $pct%") } }
-                            }
+                            }, wrapNetwork = vn.aow.monika.diag.Diagnostics::networkStream)
                         }
                     }
                 }

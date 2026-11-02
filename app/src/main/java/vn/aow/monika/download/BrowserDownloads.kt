@@ -118,10 +118,12 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
                 var last = System.nanoTime(); var lastBytes = 0L; var got = 0L
                 job.part.parentFile?.mkdirs()
                 r.body!!.byteStream().use { ins ->
+                    // V166: `ins` là luồng mạng → bọc để đứt giữa chừng được đánh dấu là chuyện mạng.
+                    val source = vn.aow.monika.diag.Diagnostics.networkStream(ins)
                     job.part.outputStream().buffered(1 shl 16).use { out ->
                         val buf = ByteArray(1 shl 16)
                         while (true) {
-                            val n = ins.read(buf)
+                            val n = source.read(buf)
                             if (n < 0) break
                             out.write(buf, 0, n); got += n
                             val now = System.nanoTime()
