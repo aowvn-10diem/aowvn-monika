@@ -58,12 +58,16 @@ internal object PackTransaction {
         if (!dir.isDirectory && !dir.mkdirs()) throw IOException("Không tạo được thư mục cài gói")
     }
 
+    /**
+     * [wrapNetwork] để chỗ gọi (nơi có `Diagnostics`) đánh dấu luồng mạng: đứt giữa chừng là chuyện mạng.
+     * Mặc định giữ nguyên luồng — harness V37 biên dịch riêng tệp này nên không được phụ thuộc `Diagnostics`.
+     */
     suspend fun download(input: InputStream, archive: File, expectedHash: String, expectedBytes: Long = -1,
+                         wrapNetwork: (InputStream) -> InputStream = { it },
                          onBytes: suspend (Long) -> Unit = {}) {
         val md = MessageDigest.getInstance("SHA-256")
         var size = 0L
-        // V166: `input` là luồng mạng → bọc để đứt giữa chừng được đánh dấu là chuyện mạng.
-        val source = vn.aow.monika.diag.Diagnostics.networkStream(input)
+        val source = wrapNetwork(input)
         archive.outputStream().use { output ->
             val buf = ByteArray(64 * 1024)
             while (true) {

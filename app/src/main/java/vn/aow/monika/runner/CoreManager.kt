@@ -152,13 +152,13 @@ class CoreManager(
                         val body = response.body ?: throw IOException("Gói lõi không có nội dung")
                         val total = body.contentLength()
                         body.byteStream().use { input ->
-                            PackTransaction.download(input, archive, expectedHash, total) { read ->
+                            PackTransaction.download(input, archive, expectedHash, total, onBytes = { read ->
                                 val pct = if (total > 0) (read * 100 / total).toInt().coerceIn(0, 100) else -1
                                 if (pct != lastPct || read - lastBytes >= 256 * 1024 || read == total) {
                                     lastPct = pct; lastBytes = read
                                     emit(CoreProgress("core-download", read, total))
                                 }
-                            }
+                            }, wrapNetwork = vn.aow.monika.diag.Diagnostics::networkStream)
                         }
                     }
                     emit(CoreProgress("core-unzip"))
