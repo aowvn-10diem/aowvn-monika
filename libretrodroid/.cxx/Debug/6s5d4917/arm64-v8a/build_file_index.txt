@@ -1,2 +1,0 @@
-C:\Users\Admin\Documents\monika-V188\libretrodroid\src\main\cpp\CMakeLists.txt
-C:\Users\Admin\Documents\monika-V188\libretrodroid\src\main\cpp\oboe\CMakeLists.txt

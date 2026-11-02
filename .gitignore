@@ -19,3 +19,4 @@ __pycache__/
 
 # Tệp tạm khi giao việc cho DeepSeek (tools/ds)
 tools/ds/.work/
+.cxx/
