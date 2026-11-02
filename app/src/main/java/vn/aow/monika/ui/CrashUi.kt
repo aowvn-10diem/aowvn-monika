@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -102,13 +103,24 @@ fun BoxScope.CrashUi() {
     )
 
     // ---- Nhật ký lỗi ----
-    val reports = remember(tick, logOpen) { if (logOpen) Diagnostics.list(context) else emptyList() }
+    // V166: `Diagnostics.list` đọc/parse tới 30 file JSON (mỗi file tới 60 KB) rồi scrub từng trường. Làm trong
+    // composition (remember) là chặn main thread vài giây trên máy yếu → ANR tiến trình chính (nhóm `unknown/anr`).
+    // `tick` tăng mỗi lần lưu báo cáo, nên phải đọc ở luồng nền và chỉ gán lại state.
+    var reports by remember { mutableStateOf<List<Report>?>(null) }
+    LaunchedEffect(tick, logOpen) {
+        reports = if (logOpen) withContext(Dispatchers.IO) { Diagnostics.list(context) } else null
+    }
+    val log = reports.orEmpty()
     MonikaMenuSheet(
         logOpen && detail == null, { Diagnostics.logOpen.value = false },
-        title = "Nhật ký lỗi", subtitle = if (reports.isEmpty()) "Chưa có lỗi nào — tốt quá!" else "${reports.size} báo cáo · chạm để xem, sao chép, gửi",
-        header = if (reports.isEmpty()) null else ({
+        title = "Nhật ký lỗi", subtitle = when {
+            reports == null -> "Đang đọc…"
+            log.isEmpty() -> "Chưa có lỗi nào — tốt quá!"
+            else -> "${log.size} báo cáo · chạm để xem, sao chép, gửi"
+        },
+        header = if (log.isEmpty()) null else ({
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                reports.take(12).forEach { r ->
+                log.take(12).forEach { r ->
                     SheetRow(
                         r.title, maxTitleLines = 3, subtitle = java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.US).format(r.time) +
                             (if (r.component.isNotBlank()) " · ${r.component}" else "") + (if (r.count > 1) " · ×${r.count}" else "") + if (r.sent) " · đã gửi" else "",
@@ -117,7 +129,7 @@ fun BoxScope.CrashUi() {
                 }
             }
         }),
-        actions = if (reports.isEmpty()) emptyList() else listOf(
+        actions = if (log.isEmpty()) emptyList() else listOf(
             SheetAction("Xóa hết", R.drawable.ic_fluent_delete_24_regular, keepOpen = true) { Diagnostics.clear(context) },
         ),
     )
