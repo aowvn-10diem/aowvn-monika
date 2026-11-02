@@ -106,7 +106,7 @@ TANG_CUONG_DEN="2026-11-02T00:00:00Z"   # đêm tăng cường (sếp 01/11): ca
 if { [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; } || [ "$(date -u +%s)" -lt "$(date -u -d "$TANG_CUONG_DEN" +%s)" ]; then
   act=$(gh api "repos/$R/activity?per_page=100" --jq '.[]|"\(.ref) \(.timestamp)"' 2>/dev/null)
   since=$(date -u -d '-24 hours' +%FT%TZ)
-  for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Sol 2|sol2/|119|\\[Sol 2" "Kiểm thử|kiemthu/|337|\\[(Trưởng nhóm )?Kiểm thử" "Duyệt DeepSeek|duyet/|337|\\[(Trưởng nhóm )?Duyệt DeepSeek"; do
+  for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Sol 2|sol2/|119|\\[Sol 2" "Duyệt DeepSeek|duyet/|337|\\[(Trưởng nhóm )?Duyệt DeepSeek"; do
     IFS='|' read -r ten nhanh hop tien <<<"$doi"
     t1=$(echo "$act" | grep -E "^refs/heads/$nhanh" | awk '{print $2}' | sort | tail -1)
     tien=${tien//\\/\\\\}   # jq cần "\\[" (một "\[" là escape sai, lỗi bị nuốt nên trước đây chỉ đọc được lần push)
