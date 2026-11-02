@@ -118,24 +118,21 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
                 var last = System.nanoTime(); var lastBytes = 0L; var got = 0L
                 job.part.parentFile?.mkdirs()
                 r.body!!.byteStream().use { ins ->
+                    // V166: `ins` là luồng mạng → bọc để đứt giữa chừng được đánh dấu là chuyện mạng.
+                    val source = vn.aow.monika.diag.Diagnostics.networkStream(ins)
                     job.part.outputStream().buffered(1 shl 16).use { out ->
-                        // V166: `ins` là luồng mạng → đứt giữa chừng ở đây là chuyện mạng (đánh dấu nguồn).
-                        try {
-                            val buf = ByteArray(1 shl 16)
-                            while (true) {
-                                val n = ins.read(buf)
-                                if (n < 0) break
-                                out.write(buf, 0, n); got += n
-                                val now = System.nanoTime()
-                                if (now - last > 250_000_000L) {
-                                    val sp = (got - lastBytes) * 1_000_000_000L / (now - last)
-                                    val g = got
-                                    main.post { job.done = g; job.speed = sp }
-                                    last = now; lastBytes = got
-                                }
+                        val buf = ByteArray(1 shl 16)
+                        while (true) {
+                            val n = source.read(buf)
+                            if (n < 0) break
+                            out.write(buf, 0, n); got += n
+                            val now = System.nanoTime()
+                            if (now - last > 250_000_000L) {
+                                val sp = (got - lastBytes) * 1_000_000_000L / (now - last)
+                                val g = got
+                                main.post { job.done = g; job.speed = sp }
+                                last = now; lastBytes = got
                             }
-                        } catch (e: Throwable) {
-                            throw vn.aow.monika.diag.Diagnostics.markNetworkTruncation(e)
                         }
                     }
                 }

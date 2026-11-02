@@ -543,6 +543,24 @@ object Diagnostics {
     /** Bản dùng được trong hàm `suspend` (không bọc lambda): `catch (e) { throw markNetworkTruncation(e) }`. */
     fun markNetworkTruncation(e: Throwable): Throwable = if (isTruncated(e)) NetworkTruncatedException(e.message, e) else e
 
+    /**
+     * Bọc luồng **mạng** (HTTP body, socket): đọc bị đứt giữa chừng → [NetworkTruncatedException].
+     * Nhờ vậy chỗ gọi không cần `try/catch` riêng, và luồng đọc tệp cục bộ không bị đánh dấu nhầm là mạng.
+     */
+    fun networkStream(input: java.io.InputStream): java.io.InputStream = object : java.io.FilterInputStream(input) {
+        override fun read(): Int = try {
+            super.read()
+        } catch (e: java.io.IOException) {
+            throw markNetworkTruncation(e)
+        }
+
+        override fun read(b: ByteArray, off: Int, len: Int): Int = try {
+            super.read(b, off, len)
+        } catch (e: java.io.IOException) {
+            throw markNetworkTruncation(e)
+        }
+    }
+
     /** Luồng đứt: `EOFException`, hoặc câu báo của OkHttp khi body ngắn hơn Content-Length. */
     internal fun isTruncated(e: Throwable): Boolean = chainOf(e).any {
         it is java.io.EOFException || TRUNCATED.containsMatchIn(it.message.orEmpty())
