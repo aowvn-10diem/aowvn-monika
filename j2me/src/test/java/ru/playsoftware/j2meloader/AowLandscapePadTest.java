@@ -99,6 +99,107 @@ public class AowLandscapePadTest {
 		assertEquals(1.5f, (float) wide[0] / wide[1], 0.01f);
 	}
 
+	/**
+	 * Lỗi Luna 3 ở PR #424: khung trong phải là `band` trừ ĐỀU 2 lề mỗi chiều, nếu không tâm ảnh lệch.
+	 */
+	@Test
+	public void innerFrameIsBandMinusPaddingOnBothAxes() {
+		int padding = 12;
+		float[] band = AowLandscapePad.band(W, H, DENSITY);
+		int[] frame = AowLandscapePad.innerFrame(W, H, DENSITY, padding);
+
+		assertEquals("bề rộng khung trong = band - 2 * padding",
+				(int) (band[2] - band[0]) - 2 * padding, frame[0]);
+		assertEquals("chiều cao khung trong = band - 2 * padding",
+				(int) (band[3] - band[1]) - 2 * padding, frame[1]);
+		// Khung trong phải ĐỒNG TÂM với band, vì Canvas cộng padding vào onX/onY sau khi căn giữa.
+		assertEquals("tâm ngang khung trong trùng tâm band",
+				(band[0] + band[2]) / 2f, band[0] + padding + frame[0] / 2f, 0.01f);
+		assertEquals("tâm dọc khung trong trùng tâm band",
+				(band[1] + band[3]) / 2f, band[1] + padding + frame[1] / 2f, 0.01f);
+		// Padding 0 giữ nguyên như trước (không đổi hành vi mặc định của J2ME).
+		int[] noPadding = AowLandscapePad.innerFrame(W, H, DENSITY, 0);
+		assertEquals((int) (band[2] - band[0]), noPadding[0]);
+		assertEquals((int) (band[3] - band[1]), noPadding[1]);
+	}
+
+	/**
+	 * Test tích hợp (dựng lại đúng phép tính của `Canvas.updateSize` khi máy ngang): với padding DƯƠNG,
+	 * tâm ảnh game phải trùng tâm khung dành cho game — không lệch phải/xuống như lỗi Luna 3 bắt ở #424.
+	 */
+	@Test
+	public void gameImageIsCenteredInsideTheFrameWithPositivePadding() {
+		int padding = 12;
+		int gameW = 240;
+		int gameH = 320;
+		float[] band = AowLandscapePad.band(W, H, DENSITY);
+		float bandCenterX = (band[0] + band[2]) / 2f;
+		float bandCenterY = (band[1] + band[3]) / 2f;
+
+		int[] image = imageRectOnScreen(W, H, DENSITY, gameW, gameH, padding);
+		int centerX = image[0] + image[2] / 2;
+		int centerY = image[1] + image[3] / 2;
+		// Sai số 1 px là do cắt phần nguyên khi căn giữa (onWidth/onHeight lẻ).
+		assertTrue("tâm ảnh ngang " + centerX + " phải trùng tâm khung " + bandCenterX
+						+ " (padding " + padding + ")", Math.abs(centerX - bandCenterX) <= 1);
+		assertTrue("tâm ảnh dọc " + centerY + " phải trùng tâm khung " + bandCenterY,
+				Math.abs(centerY - bandCenterY) <= 1);
+		assertTrue("ảnh phải nằm trong khung trong, không đè lên khay phím",
+				image[0] >= band[0] + padding && image[0] + image[2] <= band[2] - padding);
+
+		// Chống tái phát: nếu lấy bề rộng CẢ band (cách tính cũ) thì tâm ảnh lệch phải đúng bằng padding.
+		int[] old = imageRectWithFrameWidth(W, H, DENSITY, gameW, gameH, padding,
+				(int) (band[2] - band[0]));
+		int oldCenterX = old[0] + old[2] / 2;
+		assertTrue("cách tính cũ phải lộ đúng lỗi lệch " + padding + " px (tâm " + oldCenterX + ")",
+				oldCenterX - bandCenterX >= padding - 1);
+	}
+
+	/** Các cỡ màn/padding thường gặp: tâm ảnh luôn trùng tâm khung (sai số ≤ 1 px). */
+	@Test
+	public void imageStaysCenteredAcrossScreensAndPaddings() {
+		float[][] screens = {{800, 360, 1f}, {2400, 1080, 3f}, {1280, 720, 2f}, {1920, 1080, 2.75f}};
+		int[] paddings = {1, 4, 8, 12, 24};
+		for (float[] screen : screens) {
+			float[] band = AowLandscapePad.band(screen[0], screen[1], screen[2]);
+			for (int padding : paddings) {
+				int[] image = imageRectOnScreen(screen[0], screen[1], screen[2], 240, 320, padding);
+				assertTrue("màn " + screen[0] + "x" + screen[1] + " padding " + padding
+								+ ": tâm ngang lệch quá 1 px",
+						Math.abs(image[0] + image[2] / 2 - (band[0] + band[2]) / 2f) <= 1);
+				assertTrue("màn " + screen[0] + "x" + screen[1] + " padding " + padding
+								+ ": tâm dọc lệch quá 1 px",
+						Math.abs(image[1] + image[3] / 2 - (band[1] + band[3]) / 2f) <= 1);
+			}
+		}
+	}
+
+	/**
+	 * Dựng lại phép tính của `Canvas.updateSize` cho nhánh Monika máy ngang: fit vào khung trong → căn giữa →
+	 * cộng padding → cộng gốc band. Trả về {x, y, rộng, cao} của ảnh trên màn.
+	 */
+	private static int[] imageRectOnScreen(float sw, float sh, float density, int gameW, int gameH,
+			int padding) {
+		int[] frame = AowLandscapePad.innerFrame(sw, sh, density, padding);
+		return place(sw, sh, density, gameW, gameH, padding, frame[0], frame[1]);
+	}
+
+	/** Như trên nhưng cho phép chọn bề rộng khung — dùng để chứng minh cách tính CŨ (cả band) bị lệch. */
+	private static int[] imageRectWithFrameWidth(float sw, float sh, float density, int gameW, int gameH,
+			int padding, int frameWidth) {
+		int[] frame = AowLandscapePad.innerFrame(sw, sh, density, padding);
+		return place(sw, sh, density, gameW, gameH, padding, frameWidth, frame[1]);
+	}
+
+	private static int[] place(float sw, float sh, float density, int gameW, int gameH, int padding,
+			int frameW, int frameH) {
+		float[] band = AowLandscapePad.band(sw, sh, density);
+		int[] fit = AowLandscapePad.fit(gameW, gameH, frameW, frameH);
+		int onX = (frameW - fit[0]) / 2 + padding + (int) band[0];
+		int onY = (frameH - fit[1]) / 2 + padding + (int) band[1];
+		return new int[]{onX, onY, fit[0], fit[1]};
+	}
+
 	/** Phím ngang bán trong suốt, phím dọc giữ nguyên độ đục như trước V161. */
 	@Test
 	public void landscapeKeysAreSemiTransparent() {
@@ -139,6 +240,8 @@ public class AowLandscapePadTest {
 				canvas.contains("AowLandscapePad.band("));
 		assertTrue("Canvas phải giữ tỉ lệ khung hình bằng AowLandscapePad.fit",
 				canvas.contains("AowLandscapePad.fit("));
+		assertTrue("Canvas phải trừ lề trước khi fit/căn giữa bằng AowLandscapePad.innerFrame",
+				canvas.contains("AowLandscapePad.innerFrame("));
 	}
 
 	private static String read(String local, String fromRoot) throws IOException {

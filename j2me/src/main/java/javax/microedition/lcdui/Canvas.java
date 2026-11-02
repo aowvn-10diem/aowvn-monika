@@ -345,8 +345,13 @@ public abstract class Canvas extends Displayable {
 				float[] band = AowLandscapePad.band(displayWidth, displayHeight, density);
 				offX = (int) band[0];
 				offY = (int) band[1];
-				scaledDisplayWidth = (int) (band[2] - band[0]);
-				scaledDisplayHeight = (int) (band[3] - band[1]) - settings.screenPadding * 2;
+				// V161: khung TRONG đã trừ lề hai bên — phải trừ lề TRƯỚC bước fit/căn giữa, vì bên dưới
+				// (onX/onY) còn cộng settings.screenPadding vào sau khi căn giữa; lấy bề rộng cả band thì
+				// tâm ảnh lệch phải (và lệch xuống) đúng bằng padding.
+				int[] innerFrame = AowLandscapePad.innerFrame(displayWidth, displayHeight, density,
+						settings.screenPadding);
+				scaledDisplayWidth = innerFrame[0];
+				scaledDisplayHeight = innerFrame[1];
 				monikaLandscape = true;
 			} else {
 				int edge = (int) (12 * density);

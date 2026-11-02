@@ -66,6 +66,21 @@ public final class AowLandscapePad {
 	}
 
 	/**
+	 * Khung TRONG của khung game máy ngang sau khi trừ lề hai bên: {rộng, cao} (pixel).
+	 *
+	 * <p>`Canvas` cộng `settings.screenPadding` vào `onX/onY` SAU khi căn giữa ảnh, nên ảnh phải được fit vào
+	 * khung đã trừ lề (khung này vẫn đồng tâm với `band`). Nếu lấy nguyên bề rộng `band` thì tâm ảnh lệch phải
+	 * đúng bằng padding (lỗi Luna 3 bắt ở PR #424).
+	 */
+	public static int[] innerFrame(float w, float h, float density, int padding) {
+		float[] band = band(w, h, density);
+		int p = Math.max(0, padding);
+		int width = (int) (band[2] - band[0]) - 2 * p;
+		int height = (int) (band[3] - band[1]) - 2 * p;
+		return new int[]{Math.max(0, width), Math.max(0, height)};
+	}
+
+	/**
 	 * Cỡ ảnh game (pixel) vừa khung mà GIỮ ĐÚNG tỉ lệ khung hình: {rộng, cao}. Dùng thay cho kiểu "kéo giãn"
 	 * khi máy ngang để game không bị méo.
 	 */
