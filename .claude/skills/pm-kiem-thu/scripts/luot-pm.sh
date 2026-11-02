@@ -106,11 +106,15 @@ TANG_CUONG_DEN="2026-11-02T00:00:00Z"   # đêm tăng cường (sếp 01/11): ca
 if { [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; } || [ "$(date -u +%s)" -lt "$(date -u -d "$TANG_CUONG_DEN" +%s)" ]; then
   act=$(gh api "repos/$R/activity?per_page=100" --jq '.[]|"\(.ref) \(.timestamp)"' 2>/dev/null)
   since=$(date -u -d '-24 hours' +%FT%TZ)
+  # Đọc comment toàn repo 1 lượt (mới nhất trước): đội có thể báo ở hộp thư khác hoặc trên PR (Sol 2 báo #337, DeepSeek báo trên PR).
+  cmt=$(gh api "repos/$R/issues/comments?since=$since&per_page=100&sort=updated&direction=desc" 2>/dev/null)
   for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Sol 2|sol2/|119|\\[Sol 2" "Duyệt DeepSeek|duyet/|337|\\[(Trưởng nhóm )?Duyệt DeepSeek"; do
     IFS='|' read -r ten nhanh hop tien <<<"$doi"
     t1=$(echo "$act" | grep -E "^refs/heads/$nhanh" | awk '{print $2}' | sort | tail -1)
     tien=${tien//\\/\\\\}   # jq cần "\\[" (một "\[" là escape sai, lỗi bị nuốt nên trước đây chỉ đọc được lần push)
-    t2=$(gh api "repos/$R/issues/$hop/comments?since=$since&per_page=100" --jq ".[]|select(.body|test(\"^$tien\"))|.updated_at" 2>/dev/null | sort | tail -1)
+    t2=$(echo "$cmt" | jq -r ".[]|select(.body|test(\"^$tien\"))|.updated_at" 2>/dev/null | sort | tail -1)
+    # 100 comment mới nhất không có tin của đội → đọc riêng hộp thư (tin cũ hơn vẫn phải tính để báo DUNG).
+    [ -z "$t2" ] && t2=$(gh api "repos/$R/issues/$hop/comments?since=$since&per_page=100" --jq ".[]|select(.body|test(\"^$tien\"))|.updated_at" 2>/dev/null | sort | tail -1)
     last=$(printf '%s\n%s\n' "$t1" "$t2" | sort | tail -1)
     [ -z "$last" ] && continue   # đội chưa hoạt động trong 24 giờ (chưa khởi động): không báo
     gio=$(( ( $(date -u +%s) - $(date -u -d "$last" +%s) ) / 3600 ))
