@@ -50,10 +50,10 @@ class SimpleModule(
                     val body = response.body ?: throw IOException("Gói không có nội dung")
                     val total = body.contentLength(); var last = -1
                     body.byteStream().use { input ->
-                        PackTransaction.download(input, archive, want, total) { read ->
+                        PackTransaction.download(input, archive, want, total, onBytes = { read ->
                             val pct = if (total > 0) (read * 100 / total).toInt().coerceIn(0, 100) else -1
                             if (pct >= 0 && pct != last) { last = pct; onStatus("Đang tải $id $pct%") }
-                        }
+                        }, wrapNetwork = vn.aow.monika.diag.Diagnostics::networkStream)
                     }
                 }
                 PackTransaction.unzip(archive, candidate, mainFile = mainFile)

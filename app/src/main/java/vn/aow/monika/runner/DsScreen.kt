@@ -36,6 +36,14 @@ object DsScreen {
 
     fun gapValue(screen: CoreScreen, px: Int): Pair<String, String> = screen.gapKey to px.coerceIn(0, gapMax(screen)).toString()
 
+    /**
+     * V160: bố cục ghi vào lõi khi xoay máy. Màn ngang dùng bố cục của config ([CoreScreen.landscapeLayout]);
+     * về dọc trả lại lựa chọn người chơi đã lưu ([saved] = `CoreOptions.saved`), config chỉ là mặc định khi
+     * người chơi chưa từng chọn. "" = không có gì để ghi.
+     */
+    fun rotationLayout(screen: CoreScreen, saved: Map<String, String>, landscape: Boolean): String =
+        if (landscape) screen.landscapeLayout else current(screen, saved).layout.value
+
     /** Các khóa mục này quản lý (để "Về mặc định" xóa lựa chọn tay). */
     fun keys(screen: CoreScreen): List<String> = listOf(screen.layoutKey, screen.ratioKey, screen.gapKey).filter { it.isNotBlank() }
 

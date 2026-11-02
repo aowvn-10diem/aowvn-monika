@@ -35,8 +35,8 @@ label start:
 RPY
 PKG=com.aow.monika
 adb root >/dev/null; adb wait-for-device
-APK=$(find app/build/outputs/apk/debug -name '*universal*.apk' -print -quit)
-if [ -z "$APK" ]; then APK=$(find app/build/outputs/apk/debug -name '*.apk' -print -quit); fi
+APK=$(find app/build/outputs/apk/github/debug -name '*universal*.apk' -print -quit)
+if [ -z "$APK" ]; then APK=$(find app/build/outputs/apk/github/debug -name '*.apk' -print -quit); fi
 test -n "$APK"
 adb install -r "$APK" >/dev/null
 adb shell pm grant "$PKG" android.permission.POST_NOTIFICATIONS

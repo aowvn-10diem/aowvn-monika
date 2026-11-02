@@ -29,6 +29,16 @@ public final class AowPad {
 				|| (keyCode >= KeyEvent.KEYCODE_BUTTON_A && keyCode <= KeyEvent.KEYCODE_BUTTON_MODE);
 	}
 
+	/**
+	 * V162: nguồn thiết bị là tay cầm thật (gamepad / D-pad / joystick) — dùng lại cách nhận diện của
+	 * {@link #isPadKey} để biết đang cắm tay cầm mà tự ẩn bàn phím ảo.
+	 */
+	public static boolean isPadDevice(int source) {
+		return (source & android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD
+				|| (source & android.view.InputDevice.SOURCE_DPAD) == android.view.InputDevice.SOURCE_DPAD
+				|| (source & android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK;
+	}
+
 	public static final int[][] KEYS = {
 			{KeyEvent.KEYCODE_DPAD_CENTER, Canvas.KEY_FIRE},
 			{KeyEvent.KEYCODE_BUTTON_A, Canvas.KEY_FIRE},

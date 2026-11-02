@@ -10,7 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import vn.aow.monika.apkinstall.repack.KeyWrap
+import vn.aow.monika.security.KeyWrap
 import vn.aow.monika.ui.TestApp
 
 @RunWith(RobolectricTestRunner::class)
