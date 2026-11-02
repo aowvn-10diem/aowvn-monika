@@ -3,17 +3,15 @@ package vn.aow.monika.community
 import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.Intent
 import android.graphics.Bitmap
 import android.widget.Toast
-import androidx.core.content.FileProvider
 import vn.aow.monika.AppGraph
 import vn.aow.monika.play.PlayLinks
 import java.io.File
 
 /**
- * "Hỏi nhóm": đang chơi bị kẹt → chụp màn hình game, chép sẵn lời nhắn, mở Group Facebook AowVN ngay trong app;
- * khi tạo bài và bấm thêm ảnh, trình duyệt tự đính kèm ảnh chụp. Game đã được lưu trước đó (giả lập tự lưu).
+ * "Hỏi nhóm": chép lời nhắn, chuyển ảnh qua trình chia sẻ Android để người chơi chọn ứng dụng/nhóm nhận.
+ * Không có ảnh thì mở liên kết cộng đồng. Ứng dụng nhận quyết định cách hiển thị ảnh và lời nhắn.
  */
 object AskGroup {
     fun ask(activity: Activity, shot: Bitmap?, gameName: String, system: String) {
@@ -24,13 +22,11 @@ object AskGroup {
         }
         val group = AppGraph.config.current.community.facebookGroup
         if (group.isNotBlank()) {
-            PlayLinks.open(activity, group, file)
-            Toast.makeText(activity, "Đã chép lời nhắn · game đã lưu", Toast.LENGTH_SHORT).show()
+            PlayLinks.open(activity, group, file, note)
+            Toast.makeText(activity, if (file != null) "Chọn ứng dụng và nhóm để gửi ảnh · lời nhắn đã chép" else "Đã chép lời nhắn · dán vào nhóm để hỏi", Toast.LENGTH_SHORT).show()
         } else {
             // Chưa cấu hình group → chia sẻ ảnh qua app khác.
-            val send = Intent(Intent.ACTION_SEND).setType(if (file != null) "image/png" else "text/plain").putExtra(Intent.EXTRA_TEXT, note)
-            file?.let { send.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(activity, activity.packageName + ".files", it)).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
-            activity.startActivity(Intent.createChooser(send, "Hỏi nhóm"))
+            PlayLinks.share(activity, file, note)
         }
     }
 
