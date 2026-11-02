@@ -21,6 +21,11 @@ class Prefs(private val context: Context) {
         get() = sp.getLong("support_hidden_until", 0L)
         set(value) = sp.edit().putLong("support_hidden_until", value).apply()
 
+    /** Mục đang chọn ở Thư viện: "play" (Chơi) | "read" (Đọc) | "files" (Tệp). Mở lại vẫn đúng mục cũ. */
+    var librarySection: String
+        get() = sp.getString("library_section", "play") ?: "play"
+        set(value) = sp.edit().putString("library_section", value).apply()
+
     /** Mã các bài đã thấy, để biết bài nào mới. Rỗng = chưa chạy lần nào. */
     var seenPostIds: Set<String>
         get() = sp.getStringSet("seen_post_ids", emptySet())!!.toSet()
@@ -203,6 +208,14 @@ class Prefs(private val context: Context) {
     /** Độ mờ người chơi đã tự chỉnh (null = chưa chỉnh, dùng mặc định từ config). */
     fun savedPadOpacity(): Float? =
         if (gsp.contains("pad_opacity") || sp.contains("pad_opacity")) padOpacity else null
+
+    /**
+     * V162: người chơi tự ẩn phím ảo bằng nút nhỏ trong game. Ghi từ tiến trình game; J2ME cũng ghi
+     * cùng file "monika_game" với khoá này → cắm/rút tay cầm không tự hiện lại khi người chơi đã tự ẩn.
+     */
+    var padHidden: Boolean
+        get() = gsp.getBoolean("pad_hidden", sp.getBoolean("pad_hidden", false))
+        set(value) = gsp.edit().putBoolean("pad_hidden", value).apply()
 
     // ---- Sự kiện từ tiến trình game gửi về (ghi vào file nối đuôi, tiến trình chính nhặt khi quay lại) ----
 
