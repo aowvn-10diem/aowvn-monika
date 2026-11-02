@@ -66,37 +66,38 @@ class ConfigRepositoryValidationTest {
     }
 
     @Test fun oldCacheWithoutExperimentalFlagFallsBackToBundledWarning() {
-        assertEquals(55, bundled)
+        assertEquals(56, bundled)
         cache.writeText(valid(38))
         val current = repo().current
-        assertEquals(55, current.configVersion)
+        assertEquals(56, current.configVersion)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
 
-    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled55() {
+    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled56() {
         cache.writeText("""{"configVersion":47,"saveTransfer":{"systems":{}}}""")
         val current = repo().current
-        assertEquals(55, current.configVersion)
+        assertEquals(56, current.configVersion)
         assertEquals(setOf("java", "nds", "gba", "3ds", "psp", "ps1"), current.saveTransfer.systems.keys)
     }
 
     @Test fun cache39FallsBackToBundledDocumentConfiguration() {
         cache.writeText("""{"configVersion":39,"documentExtensions":[]}""")
         val current = repo().current
-        assertEquals(55, current.configVersion)
+        assertEquals(56, current.configVersion)
         assertEquals(listOf("pdf", "doc", "docx", "txt", "epub"), current.documentExtensions)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
 
-    @Test fun cache53WithOldAppReleaseFallsBackToBundled088() {
-        cache.writeText("""{"configVersion":53,"app":{"latestVersionCode":52,"latestVersionName":"0.8.7","minVersionCode":1,"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.7/AowVN-Monika-v0.8.7.apk"}}""")
+    @Test fun cache55WithStable088FallsBackToBundledTrial089() {
+        cache.writeText("""{"configVersion":55,"app":{"latestVersionCode":53,"latestVersionName":"0.8.8","minVersionCode":1,"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.8/AowVN-Monika-v0.8.8.apk"}}""")
         val current = repo().current
-        assertEquals(55, current.configVersion)
-        assertEquals(53, current.app.latestVersionCode)
-        assertEquals("0.8.8", current.app.latestVersionName)
+        assertEquals(56, current.configVersion)
+        assertEquals(54, current.app.latestVersionCode)
+        assertEquals("0.8.9", current.app.latestVersionName)
         assertEquals(1, current.app.minVersionCode)
-        assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.8/AowVN-Monika-v0.8.8.apk", current.app.apkUrl)
-        assertEquals("Báo ngay khi có cập nhật quan trọng. Rút tay cầm không còn kẹt nút.", current.app.changelog)
+        assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.9/AowVN-Monika-v0.8.9.apk", current.app.apkUrl)
+        assertTrue(current.app.changelog.contains("Bản thử"))
+        assertEquals("Bản thử 0.8.9: Sửa nút A/B GBA, màn hình NDS và phím Java khi xoay ngang. Thêm ẩn/hiện phím ảo; Thư viện chia thành Chơi, Đọc và Tệp.", current.app.changelog)
     }
 
     @Test fun downgradeFromRunningVersionIsRejectedAndOldBytesAreKept() = runBlocking {
