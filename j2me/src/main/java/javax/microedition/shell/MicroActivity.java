@@ -80,6 +80,7 @@ import java.util.Objects;
 
 import javax.microedition.lcdui.keyboard.KeyMapper;
 import ru.playsoftware.j2meloader.AowPad;
+import ru.playsoftware.j2meloader.AowPadVisibility;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
@@ -106,6 +107,10 @@ public class MicroActivity extends AppCompatActivity {
 	private static final int ORIENTATION_PORTRAIT = 2;
 	private static final int ORIENTATION_LANDSCAPE = 3;
 
+	/** V162: ẩn/hiện bàn phím ảo — cùng file + khoá với Prefs.padHidden của app (mọi tiến trình dùng chung). */
+	private static final String PAD_PREFS = "monika_game";
+	private static final String PAD_HIDDEN_KEY = "pad_hidden";
+
 	private Displayable current;
 	private boolean statusBarEnabled;
 	private MicroLoader microLoader;
@@ -114,6 +119,9 @@ public class MicroActivity extends AppCompatActivity {
 	private int menuKey;
 	private String appPath;
 	private ActivityMicroBinding binding;
+	private final AowPadVisibility padVisibility = new AowPadVisibility();
+	private int padInsetTop;
+	private int padInsetStart;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -124,6 +132,7 @@ public class MicroActivity extends AppCompatActivity {
 		setContentView(binding.getRoot());
 		setSupportActionBar(binding.toolbar);
 		setupMonikaMenuButton();
+		setupMonikaPadButton();
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		statusBarEnabled = sp.getBoolean(PREF_STATUSBAR, false);
@@ -132,6 +141,8 @@ public class MicroActivity extends AppCompatActivity {
 		}
 		ContextHolder.setVibration(sp.getBoolean(PREF_VIBRATION, true));
 		Canvas.setScreenshotRawMode(sp.getBoolean(PREF_SCREENSHOT_SWITCH, false));
+		// V162: nhớ lựa chọn ẩn/hiện bàn phím ảo của người chơi (dùng chung khoá với app).
+		padVisibility.setManualHidden(getSharedPreferences(PAD_PREFS, MODE_PRIVATE).getBoolean(PAD_HIDDEN_KEY, false));
 		Intent intent = getIntent();
 		if (BuildConfig.FULL_EMULATOR) {
 			appName = intent.getStringExtra(KEY_MIDLET_NAME);
@@ -186,6 +197,7 @@ public class MicroActivity extends AppCompatActivity {
 		setOrientation(orientation);
 		menuKey = microLoader.getMenuKeyCode();
 		inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+		applyPadVisibility(); // V162: áp lựa chọn ẩn/hiện phím ảo đã lưu
 
 		getOnBackPressedDispatcher().addCallback(new OnBackPressedCallback(true) {
 			@Override
@@ -468,6 +480,71 @@ public class MicroActivity extends AppCompatActivity {
 		button.setLayoutParams(lp);
 	}
 
+	/** V162: nút nhỏ ẩn/hiện bàn phím ảo (góc trái trên, né thanh trạng thái / tai thỏ). */
+	private void setupMonikaPadButton() {
+		final android.widget.ImageButton button = binding.monikaPadButton;
+		button.setOnClickListener(v -> togglePadVisibility());
+		final int base = (int) (10 * getResources().getDisplayMetrics().density);
+		padInsetTop = base;
+		padInsetStart = base;
+		ViewCompat.setOnApplyWindowInsetsListener(button, (v, insets) -> {
+			androidx.core.graphics.Insets bars = insets.getInsets(
+					WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+			padInsetTop = base + bars.top;
+			padInsetStart = base + bars.left;
+			applyPadButtonPosition();
+			return insets;
+		});
+	}
+
+	private void applyPadButtonPosition() {
+		android.widget.ImageButton button = binding.monikaPadButton;
+		android.widget.FrameLayout.LayoutParams lp = (android.widget.FrameLayout.LayoutParams) button.getLayoutParams();
+		lp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+		lp.topMargin = padInsetTop;
+		lp.setMarginStart(padInsetStart);
+		button.setLayoutParams(lp);
+	}
+
+	/**
+	 * V162: áp trạng thái ẩn/hiện cho bàn phím ảo + nút nhỏ + nút menu (bàn phím ẩn thì nút menu về góc phải).
+	 * Gọi lúc mở game, khi bấm nút và khi cắm/rút tay cầm.
+	 */
+	private void applyPadVisibility() {
+		VirtualKeyboard vk = ContextHolder.getVk();
+		if (vk != null) {
+			vk.setUserHidden(!padVisibility.isVisible());
+		}
+		boolean shown = padVisibility.isVisible();
+		binding.monikaPadButton.setAlpha(shown ? 0.55f : 1f);
+		binding.monikaPadButton.setContentDescription(getString(shown ? R.string.monika_hide_pad : R.string.monika_show_pad));
+		positionMonikaMenuButton();
+	}
+
+	private void togglePadVisibility() {
+		padVisibility.toggle();
+		getSharedPreferences(PAD_PREFS, MODE_PRIVATE).edit().putBoolean(PAD_HIDDEN_KEY, padVisibility.isManualHidden()).apply();
+		applyPadVisibility();
+	}
+
+	/** V162: cắm tay cầm → tự ẩn bàn phím ảo; rút → tự hiện, trừ khi người chơi đã tự ẩn. */
+	private void syncPadDevices() {
+		InputManager im = (InputManager) getSystemService(Context.INPUT_SERVICE);
+		if (im == null) {
+			return;
+		}
+		boolean pad = false;
+		for (int id : im.getInputDeviceIds()) {
+			InputDevice device = im.getInputDevice(id);
+			if (device != null && AowPad.isPadDevice(device.getSources())) {
+				pad = true;
+				break;
+			}
+		}
+		padVisibility.setPadConnected(pad);
+		applyPadVisibility();
+	}
+
 	/** Dự phòng khi app chính chưa gắn {@link J2meRuntime#menuPresenter}: menu gốc, neo vào nút menu nổi. */
 	private void showFallbackMenu() {
 		android.widget.PopupMenu popup = new android.widget.PopupMenu(this, binding.monikaMenuButton);
@@ -519,6 +596,7 @@ public class MicroActivity extends AppCompatActivity {
 	private final InputManager.InputDeviceListener padListener = new InputManager.InputDeviceListener() {
 		@Override
 		public void onInputDeviceAdded(int deviceId) {
+			syncPadDevices(); // V162: cắm tay cầm → tự ẩn bàn phím ảo
 		}
 
 		@Override
@@ -528,6 +606,7 @@ public class MicroActivity extends AppCompatActivity {
 		@Override
 		public void onInputDeviceRemoved(int deviceId) {
 			releasePad(deviceId);
+			syncPadDevices(); // V162: rút tay cầm → tự hiện (trừ khi người chơi đã tự ẩn)
 		}
 	};
 
@@ -547,6 +626,7 @@ public class MicroActivity extends AppCompatActivity {
 		if (im != null) {
 			im.registerInputDeviceListener(padListener, null);
 		}
+		syncPadDevices(); // V162: mở game khi tay cầm đã cắm sẵn → ẩn bàn phím ảo ngay
 	}
 
 	@Override

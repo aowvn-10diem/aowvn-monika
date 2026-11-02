@@ -36,12 +36,15 @@ class J2meScreenContractTest {
         assertEquals("gone", toolbar.attr("visibility"))
 
         val buttons = root.elements("ImageButton")
-        assertEquals(1, buttons.size)
-        val menu = buttons.single()
-        assertEquals("@+id/monika_menu_button", menu.attr("id"))
+        // V162: hai nút nổi — menu (góc phải) và ẩn/hiện phím ảo (góc trái).
+        assertEquals(2, buttons.size)
+        val menu = buttons.single { it.attr("id") == "@+id/monika_menu_button" }
         assertTrue(menu.attr("contentDescription").isNotBlank())
         val gravity = menu.attr("layout_gravity")
         assertTrue(gravity.contains("top") && gravity.contains("end"))
+        val pad = buttons.single { it.attr("id") == "@+id/monika_pad_button" }
+        assertTrue(pad.attr("contentDescription").isNotBlank())
+        assertTrue(pad.attr("layout_gravity").contains("top") && pad.attr("layout_gravity").contains("start"))
         // Nút nằm sau lớp phủ của game để nhận chạm trước.
         val kids = (0 until root.childNodes.length).map { root.childNodes.item(it) }.filterIsInstance<Element>()
         assertTrue(kids.indexOf(menu) > kids.indexOfFirst { it.attr("id") == "@+id/overlay" })

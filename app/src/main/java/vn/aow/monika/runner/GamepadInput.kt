@@ -35,6 +35,9 @@ object GamepadInput {
     /** Sự kiện chuyển động từ cần/hat của tay cầm (khác chuột, cảm ứng). */
     fun isPadMotion(source: Int): Boolean = hasSource(source, InputDevice.SOURCE_JOYSTICK)
 
+    /** V162: trong các thiết bị đang cắm có tay cầm thật không (dùng lại [isPadSource], không viết bộ nhận diện mới). */
+    fun hasPadSource(sources: Iterable<Int>): Boolean = sources.any(::isPadSource)
+
     /** Giá trị trục lúc một MotionEvent đến. */
     data class Axes(
         val hatX: Float = 0f, val hatY: Float = 0f,

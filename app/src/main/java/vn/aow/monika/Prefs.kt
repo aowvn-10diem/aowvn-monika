@@ -205,6 +205,14 @@ class Prefs(private val context: Context) {
         get() = gsp.getFloat("pad_opacity", sp.getFloat("pad_opacity", 0.65f))
         set(value) = gsp.edit().putFloat("pad_opacity", value).apply()
 
+    /**
+     * V162: người chơi tự ẩn phím ảo bằng nút nhỏ trong game. Ghi từ tiến trình game; J2ME cũng ghi
+     * cùng file "monika_game" với khoá này → cắm/rút tay cầm không tự hiện lại khi người chơi đã tự ẩn.
+     */
+    var padHidden: Boolean
+        get() = gsp.getBoolean("pad_hidden", sp.getBoolean("pad_hidden", false))
+        set(value) = gsp.edit().putBoolean("pad_hidden", value).apply()
+
     // ---- Sự kiện từ tiến trình game gửi về (ghi vào file nối đuôi, tiến trình chính nhặt khi quay lại) ----
 
     private fun eventsFile() = java.io.File(context.filesDir, "game-events.log")

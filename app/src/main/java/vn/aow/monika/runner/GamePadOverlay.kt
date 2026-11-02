@@ -160,6 +160,34 @@ class InGameState {
 
     /** A31: thanh tên game + chip gợi ý tự ẩn khi đang chơi; chạm mép hoặc mở menu thì hiện lại. */
     val chrome = AutoHide()
+
+    /**
+     * V162: ẩn/hiện phím ảo. Người chơi tự ẩn thì nhớ trong Prefs; cắm tay cầm tự ẩn, rút tự hiện
+     * nhưng không tự hiện lại nếu người chơi đã tự ẩn.
+     */
+    val pad = ru.playsoftware.j2meloader.AowPadVisibility()
+    /** Trạng thái hiện phím ảo để Compose vẽ lại (nguồn thật là [pad]). */
+    var padVisible by mutableStateOf(true)
+        private set
+
+    /** Nạp lựa chọn đã lưu trong Prefs lúc mở game. */
+    fun setPadManualHidden(hidden: Boolean) {
+        pad.setManualHidden(hidden)
+        padVisible = pad.isVisible
+    }
+
+    /** Bấm nút ẩn/hiện; trả về lựa chọn tự ẩn mới để activity ghi vào Prefs. */
+    fun togglePad(): Boolean {
+        pad.toggle()
+        padVisible = pad.isVisible
+        return pad.isManualHidden
+    }
+
+    /** Cắm/rút tay cầm thật (hoặc đồng bộ lúc mở game). */
+    fun setPadConnected(connected: Boolean) {
+        pad.setPadConnected(connected)
+        padVisible = pad.isVisible
+    }
 }
 
 /** testTag của thanh tên game trong game (test giao diện). */
@@ -199,6 +227,8 @@ fun InGameOverlay(
     extraActions: List<SheetAction> = emptyList(),
     /** A31: tự ẩn thanh tên game + chip gợi ý khi đang chơi (mọi giả lập); chạm mép hoặc mở menu thì hiện lại. */
     autoHideHeader: Boolean = true,
+    /** V162: báo lựa chọn tự ẩn phím ảo để activity ghi vào Prefs. */
+    onPadHiddenChange: (Boolean) -> Unit = {},
 ) {
     // Nút Back của máy: mở menu (thay vì thoát ngay, dễ bấm nhầm khi đang chơi); đang chỉnh phím → xong.
     androidx.activity.compose.BackHandler(enabled = !state.menuOpen && state.options == null) {
@@ -215,6 +245,8 @@ fun InGameOverlay(
     val headerVisible = state.chrome.visible(autoHideHeader, pinned)
     val headerAlpha = autoHideAlpha(headerVisible)
     val edgeAlign = if (headerAtBottom) Alignment.BottomCenter else Alignment.TopCenter
+    // V162: phím ảo còn hiện không (sẵn sàng + người chơi không tự ẩn + không có tay cầm cắm).
+    val padShown = showPad && state.padVisible
     Box(Modifier.fillMaxSize()) {
         // Né camera / "con nhộng" (display cutout) + thanh trạng thái — lúc chơi game thanh trạng thái bị ẩn nên phải dùng cutout.
         if (headerAlpha > 0f) {
@@ -235,8 +267,17 @@ fun InGameOverlay(
             )
         }
 
-        if (showPad) VirtualPad(layout, state, send, onMotion, Modifier.align(Alignment.BottomCenter),
+        if (padShown) VirtualPad(layout, state, send, onMotion, Modifier.align(Alignment.BottomCenter),
             chipVisible = headerVisible, bottomReserve = if (headerAtBottom) NDS_BOTTOM_BAR_DP.dp else 0.dp)
+
+        // V162: nút nhỏ ẩn/hiện phím ảo — luôn với tới được, kể cả khi phím đang ẩn.
+        if (showPad) {
+            PadToggle(
+                hidden = !state.padVisible,
+                onClick = { onPadHiddenChange(state.togglePad()) },
+                modifier = Modifier.align(Alignment.CenterStart),
+            )
+        }
 
         // Thanh chỉnh tay cầm: chọn cỡ, về mặc định, xong (lưu lại). Giữa màn hình để vẫn thấy phím khi kéo.
         if (state.editing) {
@@ -275,7 +316,11 @@ fun InGameOverlay(
                 SheetAction(if (state.slot == 0) "Tải bản tự lưu" else "Tải ô ${state.slot}", R.drawable.ic_fluent_folder_open_24_regular, enabled = state.slot in state.filledSlots || state.filledSlots.isEmpty(), onClick = onLoad),
                 SheetAction("Tốc độ ${state.speed}x", R.drawable.ic_fluent_top_speed_24_regular, highlight = state.turbo, keepOpen = true, onClick = onTurbo),
                 SheetAction("Độ mờ phím ${(state.opacity * 100).toInt()}%", R.drawable.ic_fluent_eye_24_regular, keepOpen = true, onClick = onOpacity),
-                SheetAction("Chỉnh phím", R.drawable.ic_fluent_xbox_controller_24_regular) { state.editing = true },
+                SheetAction("Chỉnh phím", R.drawable.ic_fluent_xbox_controller_24_regular) {
+                    state.editing = true
+                    // Đang ẩn phím (tự ẩn hoặc tay cầm) mà mở chỉnh phím: hiện lại để thấy mà kéo.
+                    if (!state.padVisible) onPadHiddenChange(state.togglePad())
+                },
                 SheetAction("Tùy chọn giả lập", R.drawable.ic_fluent_settings_24_regular, onClick = onOptions),
                 SheetAction("Hỏi nhóm FB", R.drawable.ic_fluent_people_community_24_regular, onClick = onAsk),
             ) + extraActions + listOf(
@@ -562,6 +607,33 @@ private fun PillKey(label: String, key: Int, send: (Int, Int) -> Unit) {
     MonikaPill(label, { down -> send(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, key) },
         visualState = if (LocalControllerTurbo.current) ControlVisualState.TURBO else ControlVisualState.RELEASED)
 }
+
+/**
+ * V162: nút nhỏ ẩn/hiện phím ảo. Đang hiện → chấm tròn kính mờ (icon bàn phím) ở mép trái, hơi trong;
+ * đang ẩn → viên "Hiện phím" nổi bật để người chơi tìm lại được. Luôn nằm ngoài cụm phím nên với tới được.
+ */
+@Composable
+private fun PadToggle(hidden: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier.padding(6.dp).alpha(if (hidden) 1f else 0.55f).clip(Radius.pill)
+            .background(if (hidden) primaryGradient() else Brush.linearGradient(listOf(Color(0xB8181719), Color(0xB8181719))))
+            .border(1.dp, Color(0x24FFFFFF), Radius.pill)
+            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); if (awaitRelease()) onClick() } }
+            .padding(horizontal = if (hidden) 12.dp else 10.dp, vertical = 10.dp)
+            .testTag(PAD_TOGGLE_TAG),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_fluent_keyboard_24_regular),
+            if (hidden) "Hiện phím ảo" else "Ẩn phím ảo",
+            Modifier.size(20.dp), tint = Color.White,
+        )
+        if (hidden) Text("Hiện phím", Modifier.padding(start = 6.dp), style = Monika.type.caption, color = Color.White, maxLines = 1)
+    }
+}
+
+/** testTag của nút ẩn/hiện phím ảo (V162, test giao diện). */
+const val PAD_TOGGLE_TAG = "pad-toggle"
 
 /**
  * Nút mở menu dùng chung cho mọi giả lập không có thanh tiêu đề (Kirikiri, RPG Maker, Ren'Py, game web):
