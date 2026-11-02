@@ -59,6 +59,29 @@ class PadVisibilityTest {
         assertTrue("người chơi chủ động hiện: phím hiện dù đang cắm tay cầm", p.toggle())
     }
 
+    /** Luna #433: onResume gọi lại setPadConnected(true) cùng trạng thái không được ẩn lại phím vừa hiện. */
+    @Test fun hienPhimKhiDangCamTayCamGiuQuaLanDongBoOnResume() {
+        val p = AowPadVisibility()
+        p.setPadConnected(true)
+        assertFalse(p.isVisible)
+        p.toggle() // người chơi bấm "Hiện phím" khi tay cầm vẫn cắm
+        assertTrue(p.isVisible)
+        p.setPadConnected(true) // onResume: cùng trạng thái kết nối, không phải sự kiện cắm mới
+        assertTrue("đồng bộ onResume cùng trạng thái không được ẩn lại", p.isVisible)
+    }
+
+    /** Rút rồi cắm lại là sự kiện kết nối thật → auto-hide phải hoạt động lại bình thường. */
+    @Test fun rutRoiCamLaiThiTuAnHoatDongLai() {
+        val p = AowPadVisibility()
+        p.setPadConnected(true)
+        p.toggle()
+        assertTrue(p.isVisible)
+        p.setPadConnected(false) // rút
+        assertTrue(p.isVisible)
+        p.setPadConnected(true) // cắm lại
+        assertFalse("cắm lại phải tự ẩn phím", p.isVisible)
+    }
+
     @Test fun nhanDienTayCamBangNguonThietBiCoSan() {
         assertTrue(GamepadInput.hasPadSource(listOf(InputDevice.SOURCE_GAMEPAD or InputDevice.SOURCE_KEYBOARD)))
         assertTrue(GamepadInput.hasPadSource(listOf(InputDevice.SOURCE_JOYSTICK)))
