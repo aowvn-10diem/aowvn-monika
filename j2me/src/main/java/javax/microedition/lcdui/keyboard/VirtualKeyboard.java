@@ -188,6 +188,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	private View overlayView;
 	private boolean obscuresVirtualScreen;
 	private boolean visible = true;
+	/** Aow Monika (V162): người chơi/tay cầm ẩn hẳn bàn phím — không vẽ, không nhận chạm. */
+	private boolean userHidden;
 	private int layoutEditMode = LAYOUT_EOF;
 	private int editedIndex;
 	private float offsetX;
@@ -579,12 +581,25 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	}
 
 	/**
+	 * Aow Monika (V162): ẩn/hiện hẳn bàn phím ảo từ nút nhỏ hoặc khi cắm/rút tay cầm.
+	 * Ẩn = không vẽ (kể cả nền bàn phím), không nhận chạm, nhường ô nút menu; đang sửa bố cục thì vẫn hiện.
+	 */
+	public void setUserHidden(boolean hidden) {
+		userHidden = hidden;
+		if (overlayView != null) overlayView.postInvalidate();
+	}
+
+	public boolean isUserHidden() {
+		return userHidden;
+	}
+
+	/**
 	 * Aow Monika (V90): ô trống của bàn phím Monika dành cho nút menu nổi, theo toạ độ của lớp phủ (pixel).
 	 * Dọc: hàng dưới cùng phía phải (dưới phím Menu). Ngang: dưới phím ← của cụm phím bên phải.
 	 * null = không phải bàn phím Monika, chưa bố trí, hoặc ô bị phím ẩn đã bật chiếm.
 	 */
 	public RectF getMonikaMenuSlot() {
-		if (layoutVariant != TYPE_MONIKA || !monikaLaidOut) return null;
+		if (userHidden || layoutVariant != TYPE_MONIKA || !monikaLaidOut) return null;
 		VirtualKey anchor = keypad[monikaLandscape ? KEY_LEFT : KEY_MENU];
 		if (anchor == null || !anchor.visible || anchor.rect.isEmpty()) return null;
 		RectF slot = new RectF(anchor.rect);
@@ -1073,6 +1088,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	@Override
 	public void paint(CanvasWrapper g) {
+		// V162: người chơi/tay cầm đã ẩn → không vẽ cả nền bàn phím lẫn phím (trừ lúc đang sửa bố cục).
+		if (userHidden && layoutEditMode == LAYOUT_EOF) return;
 		if (layoutVariant == TYPE_MONIKA && screen != null) paintMonikaSkin(g);
 		// V85c: phím kiểu Monika luôn đục và bỏ qua vkAlpha → luôn vẽ, kể cả khi vkAlpha = 0 (AowKeyPalette.keysVisible).
 		if (visible && AowKeyPalette.keysVisible(layoutEditMode != LAYOUT_EOF, settings.vkAlpha, paintsAowKeys())) {
@@ -1086,6 +1103,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	@Override
 	public boolean pointerPressed(int pointer, float x, float y) {
+		// V162: bàn phím đang ẩn thì nhường chạm cho game (không bấm nhầm phím vô hình).
+		if (userHidden && layoutEditMode == LAYOUT_EOF) return false;
 		switch (layoutEditMode) {
 			case LAYOUT_EOF -> {
 				if (pointer > associatedKeys.length) {

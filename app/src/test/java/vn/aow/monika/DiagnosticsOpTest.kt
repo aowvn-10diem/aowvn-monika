@@ -172,6 +172,89 @@ class DiagnosticsOpTest {
         assertEquals(1, opFails().size)
     }
 
+    @Test fun mixedDownloadAndExtractOpReportsEofFromLocalArchive() {
+        // V166 lần 2 (Luna 3): op TRỘN tải + giải nén (mo-game / cai-goi-engine). EOF xảy ra khi ĐỌC ARCHIVE CỤC BỘ
+        // là tệp cụt/hỏng → vẫn phải báo, dù cùng thao tác đó còn có bước tải qua mạng.
+        val truncated = File(tmp.root, "core.zip").apply {
+            val out = java.io.ByteArrayOutputStream()
+            java.util.zip.ZipOutputStream(out).use { z ->
+                z.putNextEntry(java.util.zip.ZipEntry("lib.so"))
+                z.write(ByteArray(64 * 1024) { (it * 37 + 11).toByte() })
+                z.closeEntry()
+            }
+            val all = out.toByteArray()
+            writeBytes(all.copyOf(all.size / 2)) // cắt giữa phần dữ liệu của entry
+        }
+        val local = Diagnostics.op(app, Op.OPEN_GAME) {
+            step("tai-loi")
+            step("giai-nen-loi")
+            java.util.zip.ZipInputStream(truncated.inputStream()).use { z ->
+                while (true) {
+                    z.nextEntry ?: break
+                    z.readBytes()
+                }
+            }
+        }
+        val error = local.exceptionOrNull()
+        assertTrue("đọc archive cụt phải ném lỗi luồng đứt, thực tế: $error",
+            generateSequence(error) { it.cause }.any { it is java.io.EOFException || "end of zlib" in it.message.orEmpty().lowercase() })
+        val report = opFails().single()
+        assertEquals("op:mo-game", report.component)
+        assertTrue("bước đọc archive cục bộ phải nằm trong báo cáo", report.detail.contains("bước: giai-nen-loi"))
+
+        // Cùng op trộn, nhưng đứt luồng ở bước GIẢI NÉN GÓI (cai-goi-engine) cũng phải báo.
+        Diagnostics.resetOpThrottle()
+        Diagnostics.op(app, Op.INSTALL_PACK) { step("giai-nen-goi"); throw java.io.EOFException("Unexpected end of ZLIB input stream") }
+        assertEquals("EOF khi giải nén gói vẫn là lỗi thật", 2, opFails().size)
+    }
+
+    @Test fun mixedDownloadAndExtractOpIgnoresEofThatCameFromTheNetworkRead() {
+        // Ngược lại: đứt luồng ở bước ĐỌC QUA MẠNG (đã đánh dấu nguồn) là chuyện mạng → chỉ ghi vệt.
+        Diagnostics.op(app, Op.OPEN_GAME) {
+            step("tai-loi")
+            Diagnostics.networkRead { throw java.io.EOFException("unexpected end of stream") }
+        }
+        Diagnostics.op(app, Op.INSTALL_PACK) {
+            step("tai-goi")
+            Diagnostics.networkRead { throw java.io.IOException("unexpected end of stream") }
+        }
+        assertTrue("đứt luồng mạng không được thành báo cáo lỗi app", opFails().isEmpty())
+        assertTrue(sent.isEmpty())
+    }
+
+    @Test fun truncatedFileOrArchiveStillReportsEvenThoughItIsAnEof() {
+        // V166 (Luna 3): luồng đứt khi GIẢI NÉN / ĐỌC FILE là tệp cụt-hỏng (dữ liệu), không phải mạng → vẫn phải báo.
+        Diagnostics.opFail(app, Op.EXTRACT, "giai-nen", java.io.EOFException("unexpected end of ZLIB input stream"))
+        Diagnostics.opFail(app, Op.IMPORT, "chep-file", java.io.EOFException("unexpected end of stream"))
+        Diagnostics.opFail(app, Op.PATCH_ROM, "doc-ghi", IOException("bọc", java.io.EOFException("hết file")))
+        assertEquals("EOF ở thao tác tệp/archive vẫn là lỗi thật", 3, opFails().size)
+        assertEquals(setOf("op:giai-nen", "op:nhap-game", "op:va-rom"), opFails().map { it.component }.toSet())
+        // Cùng EOF nhưng ở thao tác đi qua mạng (tải về, tải feed) là chuyện mạng → chỉ ghi vệt.
+        Diagnostics.opFail(app, Op.DOWNLOAD, "tai-ve", java.io.EOFException("unexpected end of stream"))
+        Diagnostics.opFail(app, Op.FETCH_FEED, "tai-bai", java.io.EOFException("unexpected end of stream"))
+        assertEquals("EOF ở thao tác mạng không thêm báo cáo", 3, opFails().size)
+    }
+
+    @Test fun networkFailuresFromAutomaticFetchesAreNotFiledAsAppDefects() {
+        // V166: mạng nhà/user chặn hoặc bóp Blogger → TLS lỗi, kết nối bị cắt, luồng đứt. Đây là chuyện mạng
+        // (lặp lại mỗi lần mở app), không phải lỗi app → chỉ ghi vệt, không lập báo cáo op-fail.
+        val network = listOf(
+            javax.net.ssl.SSLHandshakeException("Trust anchor for certification path not found"),
+            java.net.SocketException("Connection reset"),
+            java.io.EOFException("unexpected end of stream"),
+            java.net.ProtocolException("unexpected end of stream"),
+            IOException("bọc", javax.net.ssl.SSLException("Connection closed by peer")),
+        )
+        network.forEach { Diagnostics.opFail(app, Op.FETCH_FEED, "tai-bai", it) }
+        assertTrue("lỗi mạng không được thành báo cáo lỗi app", opFails().isEmpty())
+        assertTrue(sent.isEmpty())
+        assertTrue(vn.aow.monika.diag.Breadcrumbs.read(app, android.os.Process.myPid()).any { it.contains("không báo") })
+        // Lỗi thật vẫn phải báo: file hỏng, máy chủ trả mã lỗi.
+        Diagnostics.opFail(app, Op.EXTRACT, "giai-nen", java.io.FileNotFoundException("hỏng file nén"))
+        Diagnostics.opFail(app, Op.FETCH_FEED, "tai-bai", IOException("Không tải được bài viết (HTTP 503)"))
+        assertEquals(2, opFails().size)
+    }
+
     @Test fun concurrentSameFailureWinsTheThrottleExactlyOnce() {
         val threads = 12
         val gate = java.util.concurrent.CyclicBarrier(threads)

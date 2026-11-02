@@ -69,8 +69,15 @@ class LibraryDocumentUiTest {
             rule.onNodeWithText("v84-game-fixture").assertExists()
             rule.onNodeWithText("v84-tai-lieu-fixture").assertDoesNotExist()
             rule.onNodeWithText("v84-unknown-fixture").assertDoesNotExist()
-            rule.onNodeWithText("Sách hướng dẫn.pdf").performScrollTo().assertIsDisplayed()
-            rule.onNodeWithText("Tài liệu").assertExists()
+            // V138: tài liệu chuyển từ cuối lưới game sang mục "Đọc".
+            rule.onNodeWithText("Đọc").performClick()
+            rule.mainClock.advanceTimeBy(1_000)
+            rule.waitUntil(timeoutMillis = 2_000) {
+                rule.mainClock.advanceTimeByFrame(); rule.waitForIdle()
+                rule.onAllNodesWithText("Sách hướng dẫn.pdf").fetchSemanticsNodes().isNotEmpty()
+            }
+            rule.onNodeWithText("Sách hướng dẫn.pdf").assertIsDisplayed()
+            rule.onNodeWithText("1 tài liệu").assertExists()
             repeat(3) { rule.mainClock.advanceTimeByFrame(); rule.waitForIdle() }
             rule.shot("v84-thu-vien-phan-nhom")
         } finally { docs.deleteRecursively(); game.deleteRecursively(); unknown.deleteRecursively(); AppGraph.library.list() }

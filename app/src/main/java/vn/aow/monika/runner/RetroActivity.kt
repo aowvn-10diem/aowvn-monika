@@ -136,6 +136,7 @@ class RetroActivity : ComponentActivity() {
         ui.scale = prefs.padScale
         ui.dpadOffset = prefs.padOffset("dpad").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
         ui.faceOffset = prefs.padOffset("face").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
+        ui.setPadManualHidden(prefs.padHidden) // V162: nhớ lựa chọn ẩn/hiện phím ảo
 
         val key = "${File(gamePath).nameWithoutExtension}-${gamePath.hashCode()}"
         // Cheat chung của Monika: nhận diện game theo tên → tự thêm mã từ kho libretro-database (mặc định tắt).
@@ -204,7 +205,7 @@ class RetroActivity : ComponentActivity() {
                     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
                     InGameOverlay(
                         state = ui, system = systemName, title = title, layout = layout, showPad = ready,
-                        send = { action, k -> if (ready) retroView?.sendKeyEvent(action, k) },
+                        send = { action, k -> if (ready) retroView?.sendPadKey(action, k) },
                         onBack = { finish() },
                         onSave = { saveState() },
                         onLoad = { loadState() },
@@ -234,6 +235,7 @@ class RetroActivity : ComponentActivity() {
                             ui.options = null
                             showToast("Đã về mặc định. Mở lại game để áp dụng hết.", 2600)
                         },
+                        onPadHiddenChange = { AppGraph.prefs.padHidden = it },
                         extraActions = listOfNotNull(
                             if (raLoaded) vn.aow.monika.ui.theme.SheetAction("Thành tựu", vn.aow.monika.R.drawable.ic_fluent_star_24_regular) {
                                 raSheet = vn.aow.monika.achievements.parseInGameAchievements(com.swordfish.libretrodroid.RetroAchievements.describeJson()); raSheetOpen = true
@@ -534,9 +536,15 @@ class RetroActivity : ComponentActivity() {
     private val heldPadKeys = HashSet<Int>()
     private val inputDevices by lazy { getSystemService(android.hardware.input.InputManager::class.java) }
     private val deviceListener = object : android.hardware.input.InputManager.InputDeviceListener {
-        override fun onInputDeviceAdded(deviceId: Int) = Unit
+        // V162: cắm tay cầm → tự ẩn phím ảo; rút → tự hiện (trừ khi người chơi đã tự ẩn).
+        override fun onInputDeviceAdded(deviceId: Int) = syncPadDevices()
         override fun onInputDeviceChanged(deviceId: Int) = Unit
-        override fun onInputDeviceRemoved(deviceId: Int) = releasePad() // rút tay cầm đang giữ nút/cần: nhả hết, khỏi kẹt phím
+        override fun onInputDeviceRemoved(deviceId: Int) { releasePad(); syncPadDevices() }
+    }
+
+    /** Đồng bộ trạng thái tay cầm theo danh sách thiết bị đang cắm (mở game, cắm, rút, quay lại). */
+    private fun syncPadDevices() {
+        ui.setPadConnected(GamepadInput.hasPadSource(inputDevices.inputDeviceIds.map { inputDevices.getInputDevice(it)?.sources ?: 0 }))
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -546,7 +554,7 @@ class RetroActivity : ComponentActivity() {
                 KeyEvent.ACTION_DOWN -> heldPadKeys += event.keyCode
                 KeyEvent.ACTION_UP -> heldPadKeys -= event.keyCode
             }
-            view.sendKeyEvent(event.action, event.keyCode)
+            view.sendPadKey(event.action, event.keyCode)
             return true
         }
         return super.dispatchKeyEvent(event)
@@ -566,7 +574,7 @@ class RetroActivity : ComponentActivity() {
         for (c in changes) when (c) {
             is GamepadInput.Change.Hat -> view.sendMotionEvent(GLRetroView.MOTION_SOURCE_DPAD, c.x.toFloat(), c.y.toFloat(), 0)
             is GamepadInput.Change.Stick -> view.sendMotionEvent(if (c.right) GLRetroView.MOTION_SOURCE_ANALOG_RIGHT else GLRetroView.MOTION_SOURCE_ANALOG_LEFT, c.x, c.y, 0)
-            is GamepadInput.Change.Trigger -> view.sendKeyEvent(
+            is GamepadInput.Change.Trigger -> view.sendPadKey(
                 if (c.down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP,
                 if (c.right) KeyEvent.KEYCODE_BUTTON_R2 else KeyEvent.KEYCODE_BUTTON_L2,
             )
@@ -576,7 +584,7 @@ class RetroActivity : ComponentActivity() {
     private fun releasePad() {
         sendPad(padAxes.reset())
         val view = retroView ?: return heldPadKeys.clear()
-        heldPadKeys.forEach { view.sendKeyEvent(KeyEvent.ACTION_UP, it) }
+        heldPadKeys.forEach { view.sendPadKey(KeyEvent.ACTION_UP, it) }
         heldPadKeys.clear()
     }
 
@@ -586,6 +594,7 @@ class RetroActivity : ComponentActivity() {
         super.onResume()
         clock?.resume()
         inputDevices.registerInputDeviceListener(deviceListener, null)
+        syncPadDevices() // V162: mở game khi tay cầm đã cắm sẵn → ẩn phím ảo ngay
     }
 
     override fun onPause() {

@@ -14,21 +14,24 @@ concurrency: {group: 'v21-d5-${{ github.ref }}', cancel-in-progress: true}
 jobs:
   report:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    permissions: {contents: write} # Chỉ job cần thấy draft; token không tới mã PR.
+    permissions: {contents: read} # Chỉ đọc asset công khai; token không tới mã PR.
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - name: Chỉ đọc gói draft RGSS trước khi checkout mã PR
+      # Release engines-rgss-7 đã công khai: tải asset bằng URL công khai, không lọc .draft,
+      # không cần token quyền ghi.
+      - name: Tải gói RGSS7 công khai trước khi checkout mã PR
         env:
-          GH_TOKEN: ${{ github.token }}
           RGSS_TAG: engines-rgss-7
         run: |
           set -euo pipefail
           [[ "$RGSS_TAG" =~ ^engines-rgss-[0-9]+$ ]]
           mkdir -p "$RUNNER_TEMP/user-report-engine"
-          asset_id=$(gh api --paginate --slurp 'repos/aowvn-10diem/aowvn-monika/releases?per_page=100' | jq -er --arg tag "$RGSS_TAG" '[.[][] | select(.draft == true and .tag_name == $tag)] | if length == 1 then .[0] else error("draft count") end | [.assets[] | select(.name == "rgss-arm64-v8a.zip")] | if length == 1 then .[0].id else error("asset count") end')
-          [[ "$asset_id" =~ ^[0-9]+$ ]]
-          gh api "repos/aowvn-10diem/aowvn-monika/releases/assets/$asset_id" -H 'Accept: application/octet-stream' > "$RUNNER_TEMP/user-report-engine/rgss.zip"
+          cd "$RUNNER_TEMP/user-report-engine"
+          curl -fsSL --retry 3 --retry-delay 5 -O \
+            "https://github.com/aowvn-10diem/aowvn-monika/releases/download/$RGSS_TAG/rgss-arm64-v8a.zip"
+          echo '83e23f835b98fdcb6921e542c538b0fd10d5589efa74ef922233431c5142f419  rgss-arm64-v8a.zip' | sha256sum --check --strict
+          mv rgss-arm64-v8a.zip rgss.zip
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
       - uses: actions/setup-java@v6
