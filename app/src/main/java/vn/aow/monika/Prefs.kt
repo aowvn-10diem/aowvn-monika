@@ -21,6 +21,11 @@ class Prefs(private val context: Context) {
         get() = sp.getLong("support_hidden_until", 0L)
         set(value) = sp.edit().putLong("support_hidden_until", value).apply()
 
+    /** Mục đang chọn ở Thư viện: "play" (Chơi) | "read" (Đọc) | "files" (Tệp). Mở lại vẫn đúng mục cũ. */
+    var librarySection: String
+        get() = sp.getString("library_section", "play") ?: "play"
+        set(value) = sp.edit().putString("library_section", value).apply()
+
     /** Mã các bài đã thấy, để biết bài nào mới. Rỗng = chưa chạy lần nào. */
     var seenPostIds: Set<String>
         get() = sp.getStringSet("seen_post_ids", emptySet())!!.toSet()

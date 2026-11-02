@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -66,6 +67,7 @@ import vn.aow.monika.ui.theme.MonikaCard
 import vn.aow.monika.ui.theme.MonikaHeader
 import vn.aow.monika.ui.theme.Radius
 import vn.aow.monika.ui.theme.Screen
+import vn.aow.monika.ui.theme.SectionTabs
 import androidx.compose.runtime.produceState
 import vn.aow.monika.library.GameTask
 import vn.aow.monika.library.GameTasks
@@ -110,6 +112,13 @@ fun LibraryScreen(onSettings: () -> Unit) {
     var toExtract by remember { mutableStateOf<Game?>(null) }
     var password by remember { mutableStateOf("") }
     var pinned by remember { mutableStateOf(AppGraph.prefs.pinnedGames) }
+    // V138: Thư viện chia 3 mục Chơi / Đọc / Tệp; mục đang chọn nhớ trong Prefs cho lần mở sau.
+    var section by remember { mutableStateOf(LibrarySection.of(AppGraph.prefs.librarySection)) }
+    var addSheet by remember { mutableStateOf(false) }
+    fun selectSection(target: LibrarySection) {
+        section = target
+        AppGraph.prefs.librarySection = target.key
+    }
 
     val playedTick by AppGraph.prefs.playedTick.collectAsState()
     val infoTick by AppGraph.gameInfo.updated.collectAsState()
@@ -260,7 +269,19 @@ fun LibraryScreen(onSettings: () -> Unit) {
             },
             right = { CircleButton(R.drawable.ic_fluent_grid_24_regular, "Menu thư viện", { libMenu = true }) },
         )
-        LazyVerticalGrid(
+        // V138: khung 3 mục Chơi / Đọc / Tệp + một cửa "+ Thêm" cho mọi cách đưa đồ vào Thư viện.
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SectionTabs(
+                LibrarySection.entries.map { it.label }, section.ordinal,
+                { index -> selectSection(LibrarySection.entries[index]) }, Modifier.weight(1f),
+            )
+            GradientButton("+ Thêm", { addSheet = true }, height = 46.dp)
+        }
+        if (section == LibrarySection.PLAY) LazyVerticalGrid(
             GridCells.Fixed(2), Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance),
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -305,13 +326,13 @@ fun LibraryScreen(onSettings: () -> Unit) {
             }
             if (scanned == null) item(span = { GridItemSpan(2) }) {
                 Box(Modifier.fillMaxWidth().height(240.dp), Alignment.Center) { Spinner() }
-            } else if (games.isEmpty() && documents.isEmpty()) item(span = { GridItemSpan(2) }) {
+            } else if (games.isEmpty()) item(span = { GridItemSpan(2) }) {
                 EmptyState(
                     R.drawable.fluent3d_video_game, "Chưa có game",
                     "Tải game ở tab Game, hoặc thêm file (.zip .rar .7z .nds .gba .iso…) có sẵn trong máy.",
                 ) {
                     LibraryFolderLabel(GameStorage.games(context).absolutePath)
-                    GradientButton("Thêm game từ máy", { picker.launch(arrayOf("*/*")) }, icon = R.drawable.ic_fluent_folder_add_24_regular)
+                    GradientButton("Thêm game từ máy", { addSheet = true }, icon = R.drawable.ic_fluent_folder_add_24_regular)
                 }
             } else if (games.isNotEmpty()) item(span = { GridItemSpan(2) }) {
                 Text("Thư viện", style = Monika.type.sectionTitle, color = c.text, modifier = Modifier.padding(top = 4.dp))
@@ -328,22 +349,21 @@ fun LibraryScreen(onSettings: () -> Unit) {
                     onRedownload = { redownload(context, g) }, onRequestAccess = ::requestScanAccess,
                 )
             }
-            val shownDocuments = documents.filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
-            if (shownDocuments.isNotEmpty()) item(span = { GridItemSpan(2) }) {
-                Text("Tài liệu", style = Monika.type.sectionTitle, color = c.text, modifier = Modifier.padding(top = 4.dp))
-            }
-            items(shownDocuments, key = { "document:${it.key}" }, span = { GridItemSpan(2) }) { document ->
-                LibraryDocumentCard(document, onOpen = {
-                    try {
-                        context.startActivity(documentViewIntent(context, document))
-                    } catch (_: android.content.ActivityNotFoundException) {
-                        info = "Chưa có ứng dụng mở loại tài liệu này. Hãy cài ứng dụng đọc tài liệu rồi thử lại."
-                    } catch (_: Exception) {
-                        info = "Chưa mở được tài liệu. Kiểm tra quyền đọc tệp rồi thử lại."
-                    }
-                }, onDelete = { documentToDelete = document })
-            }
         }
+        // Mục Đọc: dùng danh sách tài liệu sẵn có (LibraryDocuments), chưa có thì hiện trạng thái rỗng.
+        if (section == LibrarySection.READ) LibraryReadPage(documents,
+            onOpen = { document ->
+                try {
+                    context.startActivity(documentViewIntent(context, document))
+                } catch (_: android.content.ActivityNotFoundException) {
+                    info = "Chưa có ứng dụng mở loại tài liệu này. Hãy cài ứng dụng đọc tài liệu rồi thử lại."
+                } catch (_: Exception) {
+                    info = "Chưa mở được tài liệu. Kiểm tra quyền đọc tệp rồi thử lại."
+                }
+            },
+            onDelete = { documentToDelete = it },
+        )
+        if (section == LibrarySection.FILES) LibraryFilesPage()
       }
 
         // ---- Menu popup (cùng thiết kế menu trung tâm) ----
@@ -363,27 +383,20 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 }
             },
         )
-        val scanAll = scanAccess
         MonikaMenuSheet(
             libMenu, { libMenu = false },
             title = "Thư viện", subtitle = "${games.size} game · ${systems.size} hệ máy",
-            actions = buildList {
-                add(SheetAction("Thêm game từ máy", R.drawable.ic_fluent_folder_add_24_regular, highlight = true) { picker.launch(arrayOf("*/*")) })
-                add(SheetAction(if (deviceScanning) "Đang quét…" else "Quét cả máy", R.drawable.ic_fluent_search_24_regular, enabled = !deviceScanning) {
-                    if (!scanAll) requestScanAccess() else scanDevice()
-                })
-                add(SheetAction("Cài đặt giả lập", R.drawable.ic_fluent_settings_24_regular, onClick = onSettings))
-                add(SheetAction("Tải lại danh sách", R.drawable.ic_fluent_arrow_clockwise_24_regular) { reloadKey++ })
-                if (!scanAll) add(SheetAction("Cho phép đọc mọi tệp", R.drawable.ic_fluent_lock_closed_24_regular, badge = "") { requestScanAccess() })
-            },
-            header = {
-                SheetRow(
-                    if (scanAll) "Tự quét máy mỗi ngày" else "Chưa có quyền đọc mọi tệp",
-                    subtitle = if (scanAll) "Game tìm thấy chơi thẳng từ chỗ cũ, không chép thêm."
-                    else "Cấp quyền để thấy game trong Zalo, Download, ZArchiver…",
-                    icon = if (scanAll) R.drawable.ic_fluent_shield_checkmark_24_regular else R.drawable.ic_fluent_info_24_regular,
-                )
-            },
+            actions = listOf(
+                SheetAction("Cài đặt giả lập", R.drawable.ic_fluent_settings_24_regular, onClick = onSettings),
+                SheetAction("Tải lại danh sách", R.drawable.ic_fluent_arrow_clockwise_24_regular) { reloadKey++ },
+            ),
+        )
+        // Một cửa duy nhất để đưa game/tài liệu vào Thư viện (dùng lại picker + scanner sẵn có).
+        LibraryAddSheet(
+            addSheet, { addSheet = false }, scanAccess, deviceScanning,
+            onPickFiles = { picker.launch(arrayOf("*/*")) },
+            onScanDevice = ::scanDevice,
+            onRequestAccess = ::requestScanAccess,
         )
         GameMenuSheet(gameMenu, { gameMenu = null }, pinned,
             onPatched = { reloadKey++ },
