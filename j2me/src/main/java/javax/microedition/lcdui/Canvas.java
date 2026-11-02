@@ -357,7 +357,10 @@ public abstract class Canvas extends Displayable {
 				int edge = (int) (12 * density);
 				offX = edge;
 				offY = (int) (28 * density);
-				scaledDisplayWidth = displayWidth - 2 * offX;
+				// V161: máy dọc — cùng lỗi như nhánh ngang: bề rộng phải trừ lề TRƯỚC bước fit/căn giữa, vì
+				// onX còn cộng settings.screenPadding vào sau khi căn giữa (nếu không, tâm ảnh lệch phải
+				// đúng bằng padding).
+				scaledDisplayWidth = AowLandscapePad.innerWidth(displayWidth, offX, settings.screenPadding);
 				scaledDisplayHeight = scaledDisplayHeight - offY;
 			}
 		}

@@ -74,10 +74,25 @@ public final class AowLandscapePad {
 	 */
 	public static int[] innerFrame(float w, float h, float density, int padding) {
 		float[] band = band(w, h, density);
-		int p = Math.max(0, padding);
-		int width = (int) (band[2] - band[0]) - 2 * p;
-		int height = (int) (band[3] - band[1]) - 2 * p;
-		return new int[]{Math.max(0, width), Math.max(0, height)};
+		return new int[]{
+				shrink((int) (band[2] - band[0]), padding),
+				shrink((int) (band[3] - band[1]), padding)
+		};
+	}
+
+	/**
+	 * Bề rộng khung TRONG khi khung cách đều hai mép màn `margin` (pixel) — bố cục Monika máy DỌC.
+	 *
+	 * <p>Cùng lý do với {@link #innerFrame}: `Canvas` cộng `settings.screenPadding` vào `onX` SAU khi căn giữa,
+	 * nên phải trừ lề ở đây TRƯỚC bước fit/căn giữa, nếu không tâm ảnh lệch phải đúng bằng padding.
+	 */
+	public static int innerWidth(float screenWidth, int margin, int padding) {
+		return shrink((int) screenWidth - 2 * margin, padding);
+	}
+
+	/** Trừ lề mỗi bên `padding` khỏi một cạnh khung; không trả về số âm. */
+	private static int shrink(int size, int padding) {
+		return Math.max(0, size - 2 * Math.max(0, padding));
 	}
 
 	/**

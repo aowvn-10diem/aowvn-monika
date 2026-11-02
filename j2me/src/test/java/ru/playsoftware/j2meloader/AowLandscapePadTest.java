@@ -174,6 +174,98 @@ public class AowLandscapePadTest {
 		}
 	}
 
+	/** `innerWidth` (bố cục máy DỌC): trừ đều lề hai bên + lề người dùng, padding 0 giữ nguyên như trước. */
+	@Test
+	public void innerWidthSubtractsSideMarginAndPadding() {
+		int margin = 12;
+		int padding = 10;
+		assertEquals("rộng = màn - 2*margin - 2*padding", 360 - 2 * margin - 2 * padding,
+				AowLandscapePad.innerWidth(360, margin, padding));
+		assertEquals("padding 0 giữ nguyên cách tính cũ", 360 - 2 * margin,
+				AowLandscapePad.innerWidth(360, margin, 0));
+		assertEquals("lề âm coi như 0", 360 - 2 * margin, AowLandscapePad.innerWidth(360, margin, -5));
+		assertEquals("không trả về số âm", 0, AowLandscapePad.innerWidth(20, margin, padding));
+	}
+
+	/**
+	 * Cùng lỗi Luna 3 ở nhánh NGANG, nay sửa cho nhánh Monika máy DỌC: với padding DƯƠNG, tâm ảnh phải trùng
+	 * tâm khung (trước khi sửa, tâm ảnh lệch phải đúng bằng padding).
+	 */
+	@Test
+	public void portraitImageIsCenteredWithPositivePadding() {
+		float sw = 360, sh = 800, density = 1;
+		int padding = 12;
+		int edge = (int) (12 * density);
+		int offY = (int) (28 * density);
+		// Khung dọc: cách đều 2 mép trái/phải `edge`, phía trên chừa `offY`, dưới sát mép.
+		float frameCenterX = sw / 2f;
+		float frameCenterY = (offY + sh) / 2f;
+
+		// screenScaleType 2 (kéo giãn): ảnh phủ đúng khung.
+		int[] stretch = portraitImageRect(sw, sh, density, 240, 320, padding, false);
+		assertTrue("padding " + padding + ": tâm ngang ảnh stretch " + (stretch[0] + stretch[2] / 2f)
+				+ " phải trùng tâm khung " + frameCenterX,
+				Math.abs(stretch[0] + stretch[2] / 2f - frameCenterX) <= 1);
+		assertTrue("tâm dọc ảnh stretch không bị padding làm lệch",
+				Math.abs(stretch[1] + stretch[3] / 2f - frameCenterY) <= 1);
+
+		// screenScaleType 1 (fit giữ tỉ lệ): ảnh nhỏ hơn khung nhưng vẫn phải ở giữa.
+		int[] fit = portraitImageRect(sw, sh, density, 240, 320, padding, true);
+		assertTrue("padding " + padding + ": tâm ngang ảnh fit tỉ lệ " + (fit[0] + fit[2] / 2f)
+				+ " phải trùng tâm khung " + frameCenterX,
+				Math.abs(fit[0] + fit[2] / 2f - frameCenterX) <= 1);
+		assertTrue("tâm dọc ảnh fit tỉ lệ không bị padding làm lệch",
+				Math.abs(fit[1] + fit[3] / 2f - frameCenterY) <= 1);
+		assertTrue("ảnh phải nằm trong khung, không đè mép", fit[0] >= edge + padding);
+
+		// Chống tái phát: cách tính CŨ (không trừ lề khỏi bề rộng) lệch phải đúng bằng padding.
+		int innerW = AowLandscapePad.innerWidth(sw, edge, padding);
+		int oldX = padding + edge + ((int) sw - 2 * edge - innerW) / 2;
+		assertTrue("cách tính cũ phải lộ đúng lỗi lệch " + padding + " px",
+				oldX + innerW / 2 - frameCenterX >= padding - 1);
+	}
+
+	/** Các cỡ màn dọc thường gặp × nhiều mức padding: tâm ảnh luôn trùng tâm khung. */
+	@Test
+	public void portraitImageStaysCenteredAcrossScreensAndPaddings() {
+		float[][] screens = {{360, 800, 1f}, {1080, 2400, 3f}, {720, 1600, 2f}, {1440, 3120, 3.5f}};
+		int[] paddings = {1, 4, 8, 12, 24};
+		for (float[] screen : screens) {
+			int offY = (int) (28 * screen[2]);
+			for (int padding : paddings) {
+				int[] image = portraitImageRect(screen[0], screen[1], screen[2], 240, 320, padding, true);
+				assertTrue("màn dọc " + screen[0] + "x" + screen[1] + " padding " + padding
+								+ ": tâm ngang lệch quá 1 px",
+						Math.abs(image[0] + image[2] / 2 - screen[0] / 2f) <= 1);
+				assertTrue("màn dọc " + screen[0] + "x" + screen[1] + " padding " + padding
+								+ ": tâm dọc lệch quá 1 px",
+						Math.abs(image[1] + image[3] / 2 - (offY + screen[1]) / 2f) <= 1);
+			}
+		}
+	}
+
+	/**
+	 * Dựng lại phép tính nhánh Monika máy DỌC của `Canvas.updateSize`: bề rộng trừ lề → (tuỳ chọn) fit giữ
+	 * tỉ lệ → căn giữa → cộng padding → cộng lề trên/trái. Trả về {x, y, rộng, cao} của ảnh trên màn.
+	 */
+	private static int[] portraitImageRect(float sw, float sh, float density, int gameW, int gameH,
+			int padding, boolean keepAspect) {
+		int edge = (int) (12 * density);
+		int offY = (int) (28 * density);
+		int innerW = AowLandscapePad.innerWidth(sw, edge, padding);
+		int innerH = (int) sh - padding * 2 - offY;
+		int onW = innerW;
+		int onH = innerH;
+		if (keepAspect) {
+			int[] fit = AowLandscapePad.fit(gameW, gameH, innerW, innerH);
+			onW = fit[0];
+			onH = fit[1];
+		}
+		int onX = (innerW - onW) / 2 + padding + edge;
+		int onY = (innerH - onH) / 2 + padding + offY;
+		return new int[]{onX, onY, onW, onH};
+	}
+
 	/**
 	 * Dựng lại phép tính của `Canvas.updateSize` cho nhánh Monika máy ngang: fit vào khung trong → căn giữa →
 	 * cộng padding → cộng gốc band. Trả về {x, y, rộng, cao} của ảnh trên màn.
@@ -242,6 +334,8 @@ public class AowLandscapePadTest {
 				canvas.contains("AowLandscapePad.fit("));
 		assertTrue("Canvas phải trừ lề trước khi fit/căn giữa bằng AowLandscapePad.innerFrame",
 				canvas.contains("AowLandscapePad.innerFrame("));
+		assertTrue("Canvas nhánh máy dọc phải trừ lề bằng AowLandscapePad.innerWidth",
+				canvas.contains("AowLandscapePad.innerWidth("));
 	}
 
 	private static String read(String local, String fromRoot) throws IOException {
