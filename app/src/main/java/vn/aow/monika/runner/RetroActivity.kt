@@ -79,6 +79,9 @@ class RetroActivity : ComponentActivity() {
     private var aspect = 4f / 3f
     /** Bố cục tay cầm của game đang chạy (NDS → khung to hết chiều rộng + tiêu đề tự ẩn, V78). */
     private var padLayout = PadLayout.GBA
+    // V160: bố cục + độ mờ tay cầm ảo lấy từ config `cores.<id>.screen` (không hard-code).
+    private var overlayPad = false
+    private val screenLayoutSwitch = ScreenLayoutSwitch()
 
     /** Kiểu hiển thị (lõi có khai báo `display` trong config): bộ lọc + co giãn số nguyên + lưới LCD + tùy chọn lõi. */
     private var core = ""
@@ -122,6 +125,9 @@ class RetroActivity : ComponentActivity() {
         val title = intent.getStringExtra(EXTRA_TITLE) ?: File(gamePath).nameWithoutExtension
         val layout = padFor(coreId, intent.getStringExtra(EXTRA_PAD))
         padLayout = layout
+        // V160: bố cục + độ trong suốt tay cầm ảo lấy từ config (không hard-code).
+        val screenCfg = AppGraph.config.current.cores[coreId]?.screen
+        overlayPad = screenCfg?.overlayPad == true
         aspect = AppGraph.config.current.cores[coreId]?.aspectRatio ?: DEFAULT_ASPECT[coreId] ?: 4f / 3f
         val prefs = AppGraph.prefs
         val tier = EmuTier.detect(this, prefs.emuPerf)
@@ -132,10 +138,13 @@ class RetroActivity : ComponentActivity() {
             styleKey = k; style = st
             ui.styleLabel = st.label.takeIf { (display?.styles?.size ?: 0) > 1 }
         }
-        ui.opacity = prefs.padOpacity
+        ui.opacity = prefs.savedPadOpacity()
+            ?: AppGraph.config.current.cores[coreId]?.screen?.padOpacity?.takeIf { it > 0f && overlayPad }
+            ?: prefs.padOpacity
         ui.scale = prefs.padScale
         ui.dpadOffset = prefs.padOffset("dpad").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
         ui.faceOffset = prefs.padOffset("face").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
+        ui.setPadManualHidden(prefs.padHidden) // V162: nhớ lựa chọn ẩn/hiện phím ảo
 
         val key = "${File(gamePath).nameWithoutExtension}-${gamePath.hashCode()}"
         // Cheat chung của Monika: nhận diện game theo tên → tự thêm mã từ kho libretro-database (mặc định tắt).
@@ -234,6 +243,7 @@ class RetroActivity : ComponentActivity() {
                             ui.options = null
                             showToast("Đã về mặc định. Mở lại game để áp dụng hết.", 2600)
                         },
+                        onPadHiddenChange = { AppGraph.prefs.padHidden = it },
                         extraActions = listOfNotNull(
                             if (raLoaded) vn.aow.monika.ui.theme.SheetAction("Thành tựu", vn.aow.monika.R.drawable.ic_fluent_star_24_regular) {
                                 raSheet = vn.aow.monika.achievements.parseInGameAchievements(com.swordfish.libretrodroid.RetroAchievements.describeJson()); raSheetOpen = true
@@ -329,6 +339,7 @@ class RetroActivity : ComponentActivity() {
             lifecycle.addObserver(view)
             root.addView(view, 0, gameLayoutParams()) // Dưới màn chờ; màn chờ bỏ đi khi có khung hình đầu.
             retroView = view
+            applyScreenLayout(resources.configuration.orientation)
             // Lưới LCD nằm ngay trên khung game, dưới màn chờ và lớp giao diện.
             gridView = LcdGridView(this@RetroActivity).also { root.addView(it, 1, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)) }
             applyLayout()
@@ -382,7 +393,8 @@ class RetroActivity : ComponentActivity() {
         // V78a/A30: NDS dọc kiểu DraStic — 2 màn chồng dọc trên cùng, to hết chiều rộng; trên màn không còn gì (thanh tên/menu nằm sát đáy).
         val ds = padLayout == PadLayout.NDS
         val top = if (ds) (DsFrame.TOP_GAP_DP * dm.density).toInt() + cutoutTop else (76 * dm.density).toInt() + cutoutTop
-        val maxH = if (ds) DsFrame.portraitHeight(dm.widthPixels, dm.heightPixels, top, ((DsFrame.PAD_RESERVE_DP + NDS_BOTTOM_BAR_DP) * dm.density).toInt(), aspect)
+        val padReserveDp = DsFrame.padReserveDp(overlayPad)
+        val maxH = if (ds) DsFrame.portraitHeight(dm.widthPixels, dm.heightPixels, top, (padReserveDp * dm.density).toInt(), aspect)
             else (dm.heightPixels * 0.58f).toInt()
         intScale = if (wantInt) DisplayStyles.integerScale(dm.widthPixels, maxH, nat!![0], nat[1]) else 0
         if (intScale > 0) return FrameLayout.LayoutParams(intScale * nat!![0], intScale * nat[1], Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply { topMargin = top }
@@ -429,7 +441,24 @@ class RetroActivity : ComponentActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        applyScreenLayout(newConfig.orientation)
         applyLayout()
+    }
+
+    /**
+     * V160: xoay máy thì đổi bố cục hai màn theo config (`screen.landscapeLayout`, vd. "left-right").
+     * Về dọc trả lại lựa chọn bố cục người chơi đã lưu (Cài đặt → Màn hình / Tùy chọn giả lập);
+     * config chỉ là mặc định khi người chơi chưa từng chọn.
+     */
+    private fun applyScreenLayout(orientation: Int) {
+        val screen = AppGraph.config.current.cores[core]?.screen ?: return
+        if (screen.layoutKey.isBlank() || screen.landscapeLayout.isBlank()) return
+        val landscape = orientation == Configuration.ORIENTATION_LANDSCAPE
+        // View chưa tạo (xoay sớm): chưa đánh dấu chiều — lần gọi sau khi view sẵn sàng (dòng tạo view) sẽ ghi lại.
+        val view = retroView ?: return
+        screenLayoutSwitch.apply(screen, CoreOptions.saved(this, core), landscape) { (key, value) ->
+            view.updateVariables(Variable(key, value))
+        }
     }
 
     /** Đọc danh sách tùy chọn lõi đang chạy (lõi tự khai báo) rồi mở bảng chỉnh. */
@@ -534,9 +563,15 @@ class RetroActivity : ComponentActivity() {
     private val heldPadKeys = HashSet<Int>()
     private val inputDevices by lazy { getSystemService(android.hardware.input.InputManager::class.java) }
     private val deviceListener = object : android.hardware.input.InputManager.InputDeviceListener {
-        override fun onInputDeviceAdded(deviceId: Int) = Unit
+        // V162: cắm tay cầm → tự ẩn phím ảo; rút → tự hiện (trừ khi người chơi đã tự ẩn).
+        override fun onInputDeviceAdded(deviceId: Int) = syncPadDevices()
         override fun onInputDeviceChanged(deviceId: Int) = Unit
-        override fun onInputDeviceRemoved(deviceId: Int) = releasePad() // rút tay cầm đang giữ nút/cần: nhả hết, khỏi kẹt phím
+        override fun onInputDeviceRemoved(deviceId: Int) { releasePad(); syncPadDevices() }
+    }
+
+    /** Đồng bộ trạng thái tay cầm theo danh sách thiết bị đang cắm (mở game, cắm, rút, quay lại). */
+    private fun syncPadDevices() {
+        ui.setPadConnected(GamepadInput.hasPadSource(inputDevices.inputDeviceIds.map { inputDevices.getInputDevice(it)?.sources ?: 0 }))
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -586,6 +621,7 @@ class RetroActivity : ComponentActivity() {
         super.onResume()
         clock?.resume()
         inputDevices.registerInputDeviceListener(deviceListener, null)
+        syncPadDevices() // V162: mở game khi tay cầm đã cắm sẵn → ẩn phím ảo ngay
     }
 
     override fun onPause() {

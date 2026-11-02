@@ -105,7 +105,7 @@ class ConfigTest {
 
     @Test
     fun `runner config nam trong nhanh cua GameLauncher`() {
-        val launcher = File("src/main/java/vn/aow/monika/runner/GameLauncher.kt").readText()
+        val launcher = File("src/github/java/vn/aow/monika/runner/GameLauncher.kt").readText()
         val known = Regex("(?m)^\\s*\"([^\"]+)\"\\s*->").findAll(launcher).map { it.groupValues[1] }.toSet()
         assertTrue("Không tìm thấy runner nào trong GameLauncher", known.isNotEmpty())
         val invalid = cfg.systems.filterNot { it.runner in known }.map { "${it.id}: ${it.runner}" }
@@ -147,7 +147,7 @@ class ConfigTest {
 
     @Test
     fun `rgss ghim goi cong khai va van giu Joiplay du phong`() {
-        assertEquals(53, cfg.configVersion)
+        assertEquals(56, cfg.configVersion)
         val module = cfg.modules["rgss"] ?: error("modules.rgss thiếu")
         assertEquals("engines-rgss-6", module.version)
         assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/engines-rgss-6/rgss-arm64-v8a.zip", module.url)
@@ -165,7 +165,7 @@ class ConfigTest {
     fun `GBA tat color correction o mac dinh goc va moi style`() {
         val core = cfg.cores.getValue("mgba")
         val display = requireNotNull(core.display)
-        assertEquals(53, cfg.configVersion)
+        assertEquals(56, cfg.configVersion)
         assertEquals("OFF", core.options["mgba_color_correction"])
         assertEquals("lcd", display.default)
         assertTrue(display.styles.isNotEmpty())

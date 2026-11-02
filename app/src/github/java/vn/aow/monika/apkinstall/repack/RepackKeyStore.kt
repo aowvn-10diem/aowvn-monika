@@ -1,5 +1,6 @@
 package vn.aow.monika.apkinstall.repack
 
+import vn.aow.monika.security.KeyWrap
 import java.io.File
 import java.security.KeyFactory
 import java.security.KeyPair
@@ -8,16 +9,6 @@ import java.security.PrivateKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.spec.PKCS8EncodedKeySpec
-
-/** Bọc/mở khóa bytes khi lưu đĩa (trên máy thật dùng Android Keystore; test dùng bản không mã hóa). */
-interface KeyWrap {
-    fun wrap(plain: ByteArray): ByteArray
-    fun unwrap(cipher: ByteArray): ByteArray
-    object Plain : KeyWrap {
-        override fun wrap(plain: ByteArray) = plain
-        override fun unwrap(cipher: ByteArray) = cipher
-    }
-}
 
 /**
  * Khóa ký RIÊNG của máy này, dùng để ký lại các game Monika đã chỉnh (Cách 1). Tạo lần đầu, dùng lại mãi:

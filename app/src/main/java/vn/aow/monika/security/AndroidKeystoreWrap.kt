@@ -1,4 +1,4 @@
-package vn.aow.monika.apkinstall.repack
+package vn.aow.monika.security
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties

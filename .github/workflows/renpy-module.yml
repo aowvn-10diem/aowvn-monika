@@ -19,7 +19,7 @@ jobs:
       - name: Cài NDK cho J2ME Loader
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
       - name: Dựng :renpy (release) và APK app (release)
-        run: ./gradlew :renpy:assembleRelease :app:assembleRelease --console=plain
+        run: ./gradlew :renpy:assembleRelease :app:assembleGithubRelease --console=plain
       - name: Kiểm bản vá tái lập
         run: |
           set -euo pipefail
@@ -33,7 +33,7 @@ jobs:
       - name: Kiểm lớp trong APK
         run: |
           set -euo pipefail
-          APK=$(ls app/build/outputs/apk/release/*universal*.apk | head -1); echo "APK: $APK ($(stat -c%s "$APK") byte)"
+          APK=$(ls app/build/outputs/apk/github/release/*universal*.apk | head -1); echo "APK: $APK ($(stat -c%s "$APK") byte)"
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           mkdir -p dex && cd dex && unzip -q -o "../$APK" 'classes*.dex' && cd ..
           for d in dex/classes*.dex; do "$BT/dexdump" -f "$d" 2>/dev/null | grep -E "Class descriptor *: *'Lorg/libsdl/app/SDLActivity;'|Class descriptor *: *'Lvn/aow/monika/rgss/sdl/SDLActivity;'|Class descriptor *: *'Lorg/renpy/android/PythonSDLActivity;'" || true; done | sort -u | tee dexdump.txt
@@ -49,7 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           for a in universal arm64-v8a armeabi-v7a; do
-            N=$(stat -c%s app/build/outputs/apk/release/app-$a-release.apk); B=$(stat -c%s ../base/app/build/outputs/apk/release/app-$a-release.apk)
+            N=$(stat -c%s app/build/outputs/apk/github/release/app-github-$a-release.apk); B=$(find ../base/app/build/outputs/apk -name "*${a}-release.apk" -print -quit | xargs stat -c%s)
             echo "APK $a: main=$B nhánh=$N tăng=$((N-B)) byte"
           done
           ls -l renpy/build/outputs/aar/*.aar | awk '{print "AAR renpy:", $5, $9}'

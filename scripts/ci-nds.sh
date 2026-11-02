@@ -10,7 +10,7 @@ cleanup() {
 }
 trap cleanup EXIT
 adb root >/dev/null; adb wait-for-device
-adb install -r app/build/outputs/apk/debug/app-universal-debug.apk >/dev/null
+adb install -r app/build/outputs/apk/github/debug/app-github-universal-debug.apk >/dev/null
 adb reverse tcp:18444 tcp:18444
 APP_UID=$(adb shell stat -c %u "/data/data/$PKG" | tr -d '\r')
 adb push "$FIXTURE/monika.nds" /data/local/tmp/monika-v106.nds >/dev/null

@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -22,6 +23,7 @@ import vn.aow.monika.runner.AutoHide
 import vn.aow.monika.runner.HEADER_TAG
 import vn.aow.monika.runner.InGameOverlay
 import vn.aow.monika.runner.InGameState
+import vn.aow.monika.runner.PAD_TOGGLE_TAG
 import vn.aow.monika.runner.PadLayout
 import vn.aow.monika.ui.theme.MonikaTheme
 
@@ -198,5 +200,59 @@ class InGameTest {
         rule.onNodeWithText("Cần → D-pad").performClick()
         rule.waitForIdle()
         assertEquals(false, state.stickMode)
+    }
+
+    /**
+     * V162: nút nhỏ luôn hiện — bấm ẩn cả cụm phím ảo (không chỉ mờ), bấm lại hiện ra;
+     * lựa chọn tự ẩn báo về để activity ghi vào Prefs.
+     */
+    @Test fun padToggleHidesAndShowsVirtualPad() {
+        val state = InGameState()
+        var saved: Boolean? = null
+        rule.setContent {
+            MonikaTheme {
+                InGameOverlay(
+                    state = state, system = "Game Boy Advance", title = "Game thử", layout = PadLayout.GBA, showPad = true,
+                    send = { _, _ -> }, onBack = {}, onSave = {}, onLoad = {}, onTurbo = {}, onOpacity = {}, onEditDone = {},
+                    onPadHiddenChange = { saved = it },
+                )
+            }
+        }
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithTag(PAD_TOGGLE_TAG).assertIsDisplayed()
+        rule.onNodeWithText("A").assertExists()
+        rule.onNodeWithTag(PAD_TOGGLE_TAG).performClick()
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(500)
+        assertFalse("bấm nút: phím ảo ẩn", state.padVisible)
+        assertEquals("báo activity lưu Prefs", true, saved)
+        rule.onNodeWithText("A").assertDoesNotExist()
+        rule.onNodeWithText("Hiện phím").assertExists()
+        rule.shot("v162-da-an-phim")
+        rule.onNodeWithTag(PAD_TOGGLE_TAG).performClick()
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(500)
+        assertTrue("bấm lại: phím ảo hiện", state.padVisible)
+        assertEquals(false, saved)
+        rule.onNodeWithText("A").assertExists()
+    }
+
+    /** V162: cắm tay cầm tự ẩn phím; người chơi đã tự ẩn thì rút tay cầm vẫn ẩn (không tự hiện). */
+    @Test fun padFollowsGamepadButKeepsManualHide() {
+        val state = InGameState()
+        overlay(state, PadLayout.GBA)
+        rule.runOnIdle { state.setPadConnected(true) }
+        rule.waitForIdle()
+        assertFalse("cắm tay cầm: phím ảo ẩn", state.padVisible)
+        rule.runOnIdle { state.setPadConnected(false) }
+        rule.waitForIdle()
+        assertTrue("rút tay cầm: phím ảo hiện", state.padVisible)
+        // Người chơi tự ẩn bằng nút → cắm/rút tay cầm không được tự hiện lại.
+        rule.runOnIdle { state.togglePad() }
+        rule.waitForIdle()
+        assertFalse(state.padVisible)
+        rule.runOnIdle { state.setPadConnected(true); state.setPadConnected(false) }
+        rule.waitForIdle()
+        assertFalse("tôn trọng lựa chọn tự ẩn", state.padVisible)
     }
 }

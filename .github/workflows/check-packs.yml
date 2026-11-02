@@ -5,6 +5,7 @@ on:
       - 'app/src/main/java/vn/aow/monika/pack/**'
       - 'app/src/main/java/vn/aow/monika/azahar/**'
       - 'app/src/main/java/vn/aow/monika/config/**'
+      - 'app/src/github/java/vn/aow/monika/config/**'
       - 'config/**'
       - '**/engines/**'
       - '.github/workflows/build-engines.yml'

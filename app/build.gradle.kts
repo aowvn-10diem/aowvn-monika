@@ -21,8 +21,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 53
-        versionName = "0.8.8"
+        versionCode = 54
+        versionName = "0.8.9"
         // V56: runner chỉ nằm trong APK instrumentation, không thêm lối vào app phát hành.
         testInstrumentationRunner = "vn.aow.monika.testlab.KirikiriArmRunner"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
@@ -32,6 +32,17 @@ android {
         )
         // [A65] flavor `play` (V150) đặt false: màn "Cần cập nhật" chỉ ghi "Cập nhật trên Google Play", không mở link APK ngoài.
         buildConfigField("boolean", "APK_DOWNLOAD_ALLOWED", "true")
+    }
+
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("github") { dimension = "distribution" }
+        create("play") {
+            dimension = "distribution"
+            applicationId = "com.aow.monika.play"
+            buildConfigField("String", "REMOTE_CONFIG_URL", "\"\"")
+            buildConfigField("boolean", "APK_DOWNLOAD_ALLOWED", "false")
+        }
     }
 
     // Khóa ký bản phát hành lấy từ biến môi trường (GitHub Secrets), không bao giờ lưu trong repo.
@@ -88,10 +99,37 @@ android {
         resources { excludes += listOf("META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.kotlin_module", "org/bouncycastle/pqc/**") }
     }
     // Bản cấu hình dự phòng đóng gói trong APK = đúng file config/ ở gốc repo (1 nguồn duy nhất).
-    sourceSets["test"].resources.srcDir("../cloudflare/crash-worker/fixtures")
-    sourceSets["main"].assets.srcDirs("src/main/assets", "../config")
-    sourceSets["androidTest"].assets.srcDir(layout.buildDirectory.dir("generated/v56-assets"))
+    sourceSets["test"].java.setSrcDirs(emptyList<String>())
+    sourceSets["testGithub"].java.srcDir("src/test/java")
+    sourceSets["testGithub"].resources.srcDirs("src/test/resources", "../cloudflare/crash-worker/fixtures")
+    // Ghi công, cheat và script RGSS dùng chung; chỉ catalog gốc dành cho GitHub.
+    sourceSets["main"].assets.srcDir("src/main/assets")
+    sourceSets["github"].assets.srcDir("../config")
+    sourceSets["androidTest"].java.setSrcDirs(emptyList<String>())
+    sourceSets["androidTestGithub"].java.srcDir("src/androidTest/java")
+    sourceSets["androidTestGithub"].assets.srcDirs("src/androidTest/assets", layout.buildDirectory.dir("generated/v56-assets"))
 }
+
+// Giữ lệnh test hiện hành cho CI và trước push; chạy cả hai bản.
+tasks.register("testDebugUnitTest") { dependsOn("testGithubDebugUnitTest", "testPlayDebugUnitTest") }
+tasks.register("koverXmlReportDebug") { dependsOn("koverXmlReportGithubDebug", "koverXmlReportPlayDebug") }
+tasks.register("koverHtmlReportDebug") { dependsOn("koverHtmlReportGithubDebug", "koverHtmlReportPlayDebug") }
+val playConfig by tasks.registering(Exec::class) {
+    val source = rootProject.file("config/monika-config.json")
+    val script = rootProject.file("scripts/play-config.py")
+    val output = layout.buildDirectory.file("generated/play-assets/monika-config.json")
+    inputs.files(source, script)
+    outputs.file(output)
+    commandLine("python3", script.absolutePath, source.absolutePath, output.get().asFile.absolutePath)
+}
+android.sourceSets["play"].assets.srcDir(playConfig.map {
+    layout.buildDirectory.dir("generated/play-assets").get().asFile
+})
+// AGP chuyển srcDir thành File khi tạo một số task nên vẫn cần cạnh dependency tường minh.
+tasks.matching {
+    it.name.startsWith("mergePlay") && it.name.endsWith("Assets") ||
+        it.name.contains("Play") && it.name.contains("lint", ignoreCase = true)
+}.configureEach { dependsOn(playConfig) }
 
 // Test trên máy tính: lấy lib7-Zip-JBinding.so bản Linux (cùng bản 16.02) để chạy code 7-Zip của Android.
 val sevenZipTestNatives: Configuration by configurations.creating
@@ -130,10 +168,13 @@ val loaderAsset by tasks.registering(Sync::class) {
     from(layout.buildDirectory.dir("generated/loader-dex")) { include("classes.dex"); rename { "monika-loader.dex" } }
     into(layout.buildDirectory.dir("generated/loader-assets"))
 }
-android.sourceSets["main"].assets.srcDir(layout.buildDirectory.dir("generated/loader-assets"))
-// Mọi tác vụ đọc thư mục assets (gộp assets, lint...) phải đợi bộ nạp được dựng xong.
-tasks.matching { it.name.matches(Regex("merge.*Assets")) || it.name.contains("lint", ignoreCase = true) }.configureEach { dependsOn(loaderAsset) }
-tasks.withType<Test>().configureEach { dependsOn(loaderAsset, arscStripped) }
+// Provider giữ quan hệ tạo → dùng cho mọi tác vụ đọc assets, gồm cả lint model bản release.
+android.sourceSets["github"].assets.srcDir(loaderAsset.map { it.destinationDir })
+tasks.matching {
+    it.name.startsWith("mergeGithub") && it.name.endsWith("Assets") ||
+        it.name.contains("Github") && it.name.contains("lint", ignoreCase = true)
+}.configureEach { dependsOn(loaderAsset) }
+tasks.withType<Test>().matching { it.name.contains("Github") }.configureEach { dependsOn(loaderAsset, arscStripped) }
 
 // ARSCLib đóng kèm bản sao lớp CỦA ANDROID (org.xmlpull.v1.*, android.util.AttributeSet, android.content.res.XmlResourceParser).
 // R8 đổi tên các bản sao này → cả app (kể cả vẽ icon vector của Compose) gọi nhầm → IncompatibleClassChangeError ngay khi mở app.
@@ -182,9 +223,9 @@ dependencies {
     implementation(libs.commons.compress) // 7z thuần Java (dự phòng khi 7-Zip native chưa tải được)
     implementation(libs.xz) // LZMA/LZMA2 cho 7z
     implementation(libs.sevenzip.android) // 7-Zip native: RAR/RAR5 có mật khẩu, RAR nhiều phần
-    implementation(files(arscStripped)) // ARSCLib (đã lọc lớp trùng hệ thống): đọc/sửa AndroidManifest nhị phân của APK game
-    implementation(libs.libadb) // Cách 3: gỡ lỗi không dây
-    implementation(libs.apksig) // Ký lại APK game đã chỉnh
+    "githubImplementation"(files(arscStripped)) // Chỉ bản GitHub có trình cài/sửa APK game.
+    "githubImplementation"(libs.libadb)
+    "githubImplementation"(libs.apksig)
     sevenZipTestNatives(libs.sevenzip.jvm.natives)
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
     testImplementation(libs.junit)

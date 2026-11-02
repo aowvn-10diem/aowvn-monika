@@ -75,7 +75,8 @@ class ConfigRepository(
                 val request = Request.Builder().url(BuildConfig.REMOTE_CONFIG_URL).build()
                 val text = http.newCall(request).execute().use { response ->
                     check(response.isSuccessful) { "HTTP ${response.code}" }
-                    response.body!!.string()
+                    // V166: đọc body qua mạng → đứt luồng ở đây là chuyện mạng (đánh dấu nguồn).
+                    Diagnostics.networkRead { response.body!!.string() }
                 }
                 step("kiem-tra")
                 val cfg = ConfigValidation.parse(text, current.configVersion)
