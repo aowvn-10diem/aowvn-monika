@@ -155,7 +155,9 @@ export default {
       await env.REPORTS.put(rk, String(n + 1), { expirationTtl: Math.max(60, limit.windowSeconds * 2) });
 
       const id = `r:${String(Date.now()).padStart(13, "0")}:${crypto.randomUUID().slice(0, 8)}`;
-      const meta = { k: slim.kind, c: slim.core || slim.session?.core || "", y: slim.system || slim.session?.system || "", g: (slim.session?.game || "").slice(0, 60), a: slim.app.slice(0, 40), st: slim.stage || slim.session?.stage || "", t: slim.time, component: slim.component, fp: slim.fingerprint, count: slim.count };
+      // V155b: đưa băm chứng thư (16 hex đầu) vào metadata của danh sách để /reports thấy bản đang chạy
+      // (bảng crash-insight đếm theo chứng thư). App cũ không gửi trường này → để rỗng, không đổi định dạng cũ.
+      const meta = { k: slim.kind, c: slim.core || slim.session?.core || "", y: slim.system || slim.session?.system || "", g: (slim.session?.game || "").slice(0, 60), a: slim.app.slice(0, 40), st: slim.stage || slim.session?.stage || "", t: slim.time, component: slim.component, fp: slim.fingerprint, count: slim.count, cert: (slim.certSha256 || "").slice(0, 16) };
       await env.REPORTS.put(id, stored, { expirationTtl: 60 * 86400, metadata: meta });
       return json({ ok: true });
     }

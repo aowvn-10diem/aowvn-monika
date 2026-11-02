@@ -4,6 +4,7 @@
 - `POST /report` — app gửi báo lỗi (JSON, tối đa 60.000 byte UTF-8, 20 báo cáo/giờ/IP, chỉ lưu băm IP). Lưu KV `aowvn-monika-crash-reports`, giữ 60 ngày.
 - Ngưỡng chống spam (V153) đổi bằng biến môi trường của Worker: `RATE_LIMIT_MAX` (mặc định `20`, tối đa `100000`) và `RATE_LIMIT_WINDOW_SECONDS` (mặc định `3600`, tối đa `604800`). Quá ngưỡng trả `429` kèm header `Retry-After` = số giây còn lại của cửa sổ. Env sai/thiếu thì dùng mặc định; mỗi báo cáo vẫn 1 đọc + 2 ghi KV, không thêm lượt gọi Worker.
 - `GET /stats`, `GET /reports`, `GET /reports/<id>` — xem báo cáo, cần header `Authorization: Bearer <mã quản trị>`.
+- V155b: danh sách `/reports` trả thêm `cert` = 16 hex đầu SHA-256 chứng thư ký APK (rỗng với app cũ không gửi), để bảng `crash-insight` đếm theo chứng thư và phát hiện bản không chính thức; bản ghi đầy đủ vẫn giữ `certSha256` 64 hex.
 - Mã quản trị là secret `ADMIN_TOKEN` của Worker (không ghi trong repo). Mất mã thì nhờ dựng lại Worker với mã mới.
 - Xem nhanh: `CRASH_ADMIN_TOKEN=... scripts/crash-reports.sh` (tóm tắt) hoặc `... scripts/crash-reports.sh <id>` (chi tiết).
 - Đã triển khai bản `worker.js` của repo ngày 07/10/2026 (V29, xem `docs/opus/ket-qua/V29-deploy.md`); crumbs/env/component/pid/ảnh nay được lưu. [CHƯA KIỂM] ảnh JPEG thật từ máy người chơi.
