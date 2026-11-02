@@ -1,5 +1,6 @@
 package vn.aow.monika.ui.screens
 
+import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,7 +24,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import vn.aow.monika.R
+import vn.aow.monika.AppGraph
 import vn.aow.monika.library.Game
+import vn.aow.monika.library.GameLibrary
+import vn.aow.monika.library.GameStorage
 import vn.aow.monika.library.LibraryDocument
 import vn.aow.monika.ui.theme.EmptyState
 import vn.aow.monika.ui.theme.GradientButton
@@ -38,6 +42,8 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 /**
  * Mục Tệp (V141): mọi thứ người dùng đã đưa vào kho Monika, gộp game · tài liệu · tệp khác.
@@ -47,13 +53,11 @@ import java.util.Locale
 internal enum class LibraryFileKind(val label: String, @DrawableRes val icon: Int) {
     GAME("Game", R.drawable.ic_fluent_xbox_controller_24_regular),
     DOCUMENT("Tài liệu", R.drawable.ic_fluent_document_24_regular),
-    OTHER("Khác", R.drawable.ic_fluent_archive_24_regular),
 }
 
 /**
- * Một dòng trong mục Tệp.
- * [game] / [document] khác null = tệp đang được mục Chơi hoặc Đọc dùng → "xoá" chỉ ẩn khỏi mục Tệp,
- * dữ liệu gốc giữ nguyên.
+ * Một dòng trong mục Tệp: chỉ những gì app quản lý (game đã nhận diện, tài liệu trong kho).
+ * [game] hoặc [document] cho biết luồng xoá tương ứng.
  */
 internal data class LibraryFileEntry(
     val key: String,
@@ -64,24 +68,21 @@ internal data class LibraryFileEntry(
     val file: File,
     val game: Game? = null,
     val document: LibraryDocument? = null,
-) {
-    val referenced: Boolean get() = game != null || document != null
-}
+)
 
 /**
- * Gộp game, tài liệu và phần còn lại của kho thành một danh sách tệp.
+ * Danh sách tệp của kho: game + tài liệu app đã nhận diện.
+ * Thư mục lạ và tệp lẻ trong kho KHÔNG được liệt kê — app không quản lý nên không được phép xoá
+ * (một thư mục save chưa nhận diện sẽ không bao giờ thành mục xoá được).
  * Mới thêm trước; cùng ngày thì theo tên. Không ném lỗi khi một tệp không đọc được.
  */
 internal fun libraryFileEntries(
     games: List<Game>,
     documents: List<LibraryDocument>,
-    root: File,
 ): List<LibraryFileEntry> {
     val entries = mutableListOf<LibraryFileEntry>()
-    val gameDirs = HashSet<String>()
     for (game in games) {
         val dir = game.dir.absolutePath
-        gameDirs += dir
         // Game đã bị dọn bộ đệm (chỉ còn thông tin bài viết) không còn tệp nào để liệt kê.
         if (!game.dir.exists()) continue
         entries += LibraryFileEntry(
@@ -95,9 +96,7 @@ internal fun libraryFileEntries(
             game = game,
         )
     }
-    val documentDirs = HashSet<String>()
     for (document in documents) {
-        document.file.parentFile?.absolutePath?.let { documentDirs += it }
         entries += LibraryFileEntry(
             key = "doc:${document.key}",
             name = document.name,
@@ -106,21 +105,6 @@ internal fun libraryFileEntries(
             addedAt = document.file.lastModified(),
             file = document.file,
             document = document,
-        )
-    }
-    // Phần còn lại của kho: thư mục lạ, tệp lẻ chưa nhận diện được.
-    root.listFiles().orEmpty().forEach { file ->
-        val path = file.absolutePath
-        if (path in gameDirs || path in documentDirs) return@forEach
-        // Thư mục chỉ chứa tài liệu đã liệt kê từng tệp bên trong, không lặp lại cả thư mục.
-        if (documents.any { it.file.absolutePath.startsWith(path + File.separator) }) return@forEach
-        entries += LibraryFileEntry(
-            key = "file:$path",
-            name = file.name,
-            kind = LibraryFileKind.OTHER,
-            sizeBytes = fileSize(file),
-            addedAt = file.lastModified(),
-            file = file,
         )
     }
     return entries.sortedWith(
@@ -155,6 +139,149 @@ private fun oneDecimal(value: Double): String =
 internal fun formatFileDate(addedAt: Long): String =
     if (addedAt <= 0L) "—" else SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(Date(addedAt))
 
+// ---- Xoá an toàn (V141): chỉ xoá thứ app quản lý, sao lưu save trước [A54] ----
+
+/** Thư mục chứa bản sao lưu save tạo trước khi xoá (nằm trong filesDir, người dùng mở được). */
+internal const val SAVE_BACKUP_DIR = "save-backups"
+
+/** Tối đa 256 tệp / 64 MB giống giới hạn gói save của app — quá mức thì dừng, không xoá. */
+private const val MAX_BACKUP_FILES = 256
+private const val MAX_BACKUP_BYTES = 64L * 1024 * 1024
+
+/** Thư mục chứa save của engine (đặt trong thư mục game). */
+private val SAVE_DIR_NAMES = setOf("save", "saves", "savegame", "savegames", "savedata", "save_data", "save-data")
+
+/** Đuôi tệp save quen dùng của các engine/giả lập. */
+private val SAVE_EXTENSIONS = setOf("sav", "srm", "dsv", "rmm", "rxdata", "rpgsave", "rvdata2", "save")
+
+/** Kết quả xoá một mục trong Tệp: có xoá được không, bản sao lưu save (nếu có), lời báo cho người dùng. */
+internal data class FileDeleteResult(val deleted: Boolean, val backup: File?, val message: String)
+
+/**
+ * Thư mục game do app quản lý: đúng thư mục con cấp 1 của kho game Monika.
+ * Ngoài phạm vi này (game quét trong máy, thư mục lạ) app không tự xoá.
+ */
+internal fun isManagedGameDir(context: Context, dir: File): Boolean = runCatching {
+    val kho = GameStorage.games(context).canonicalFile
+    val target = dir.canonicalFile
+    target.isDirectory && target.parentFile == kho
+}.getOrDefault(false)
+
+/** Tệp save nằm trong thư mục game (save của engine); save giả lập nằm ngoài nên không bị đụng. */
+internal fun saveFilesInside(dir: File): List<File> = runCatching {
+    dir.walkTopDown().maxDepth(3)
+        .filter { it.isFile }
+        .filter { file ->
+            val relative = runCatching { file.relativeTo(dir) }.getOrNull() ?: return@filter false
+            file.extension.lowercase(Locale.ROOT) in SAVE_EXTENSIONS ||
+                relative.invariantSeparatorsPath.split('/').dropLast(1)
+                    .any { it.lowercase(Locale.ROOT) in SAVE_DIR_NAMES }
+        }
+        .take(MAX_BACKUP_FILES)
+        .toList()
+}.getOrDefault(emptyList())
+
+/**
+ * Sao lưu save trong thư mục game ra `filesDir/save-backups/xoa-<tên>-<giờ>.zip`
+ * (giữ nguyên đường dẫn tương đối dưới `game/` + một tệp mô tả). Không có save → null.
+ * Ném lỗi nếu không ghi được: nơi gọi phải dừng, không xoá.
+ */
+internal fun backupGameSaves(context: Context, game: Game): File? {
+    val saves = saveFilesInside(game.dir)
+    if (saves.isEmpty()) return null
+    val total = saves.sumOf { runCatching { it.length() }.getOrDefault(0L) }
+    require(total <= MAX_BACKUP_BYTES) { "save trong thư mục quá lớn (${formatFileSize(total)})" }
+    val dir = File(context.filesDir, SAVE_BACKUP_DIR).apply { check(mkdirs() || isDirectory) { "chưa tạo được thư mục sao lưu" } }
+    val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(Date())
+    val target = File(dir, "xoa-${safeFileName(game.name)}-$stamp.zip")
+    try {
+        ZipOutputStream(target.outputStream().buffered()).use { zip ->
+            for (file in saves) {
+                val relative = file.relativeTo(game.dir).invariantSeparatorsPath
+                zip.putNextEntry(ZipEntry("game/$relative"))
+                file.inputStream().use { it.copyTo(zip) }
+                zip.closeEntry()
+            }
+            zip.putNextEntry(ZipEntry("monika-xoa-game.txt"))
+            zip.write(
+                buildString {
+                    appendLine("Monika — bản sao lưu save trước khi xoá game")
+                    appendLine("game=${game.name}")
+                    appendLine("hệ=${game.system?.id ?: "chưa rõ"}")
+                    appendLine("thư mục=${game.dir.name}")
+                    appendLine("số tệp save=${saves.size}")
+                    appendLine("Khôi phục: nhập lại game rồi chép thư mục game/ trong tệp zip này vào thư mục game.")
+                }.toByteArray(Charsets.UTF_8),
+            )
+            zip.closeEntry()
+        }
+    } catch (t: Throwable) {
+        target.delete()
+        throw t
+    }
+    return target
+}
+
+/** Tên tệp an toàn cho mọi hệ điều hành (bỏ ký tự cấm, cắt ngắn). */
+internal fun safeFileName(name: String): String =
+    name.replace(Regex("[\\p{Cntrl}\\\\/:*?\"<>|]"), "_").trim().take(60).ifBlank { "game" }
+
+/**
+ * Xoá một game từ mục Tệp:
+ * 1. Game quét trong máy (ngoài kho) → chỉ ẩn, không xoá tệp nào.
+ * 2. Thư mục không do app quản lý → từ chối, không đụng đĩa.
+ * 3. Có save trong thư mục → sao lưu trước; sao lưu lỗi thì KHÔNG xoá gì.
+ * Chỉ sau đó mới xoá đúng thư mục game (không đụng thư mục khác trong kho).
+ */
+internal fun deleteGameWithSaveBackup(
+    context: Context,
+    game: Game,
+    library: GameLibrary = AppGraph.library,
+    backup: (Context, Game) -> File? = ::backupGameSaves,
+): FileDeleteResult {
+    if (game.external) {
+        val ok = library.delete(game)
+        return FileDeleteResult(
+            ok, null,
+            if (ok) "Đã ẩn \"${game.name}\" khỏi Thư viện. Tệp game và save trong máy vẫn giữ nguyên."
+            else "Chưa ẩn được \"${game.name}\" khỏi Thư viện.",
+        )
+    }
+    if (!isManagedGameDir(context, game.dir)) {
+        return FileDeleteResult(
+            false, null,
+            "App không xoá thư mục này vì nó không nằm trong kho game của Monika. " +
+                "Muốn dọn, hãy dùng trình quản lý tệp của máy.",
+        )
+    }
+    val saved = try {
+        backup(context, game)
+    } catch (t: Throwable) {
+        return FileDeleteResult(
+            false, null,
+            "Chưa sao lưu được save nên chưa xoá gì: ${t.message ?: "lỗi không rõ"}. Thử lại hoặc dọn bằng trình quản lý tệp.",
+        )
+    }
+    val ok = library.delete(game)
+    val kept = saved?.let { "Bản sao lưu save: ${it.absolutePath}" }
+        ?: "Game không có tệp save trong thư mục; save của giả lập trong kho Monika vẫn giữ nguyên."
+    return FileDeleteResult(
+        ok, saved,
+        if (ok) "Đã xoá \"${game.name}\" khỏi kho.\n$kept"
+        else "Chưa xoá hết \"${game.name}\": Android không cho xoá một số tệp. $kept",
+    )
+}
+
+/** Xoá một tài liệu: đúng một tệp app đã nhận diện, không đụng tệp khác trong thư mục. */
+internal fun deleteDocumentFile(document: LibraryDocument, library: GameLibrary = AppGraph.library): FileDeleteResult {
+    val ok = library.deleteDocument(document)
+    return FileDeleteResult(
+        ok, null,
+        if (ok) "Đã xoá tệp \"${document.name}\". Các tệp khác trong thư mục và save vẫn giữ nguyên."
+        else "Chưa xoá được \"${document.name}\". Kiểm tra quyền đọc tệp rồi thử lại.",
+    )
+}
+
 /**
  * Mục Tệp: danh sách tệp kèm loại, dung lượng, ngày thêm; bấm một dòng để mở đúng hành động.
  * Chưa có gì thì trạng thái rỗng + "+ Thêm" mở đúng luồng nhập sẵn có.
@@ -169,7 +296,7 @@ internal fun LibraryFilesPage(
     if (entries.isEmpty()) {
         EmptyState(
             R.drawable.fluent3d_file_folder, "Chưa có tệp nào",
-            "Game, tài liệu và tệp khác bạn thêm vào Thư viện sẽ hiện ở đây, kèm dung lượng và ngày thêm.",
+            "Game và tài liệu bạn thêm vào Thư viện sẽ hiện ở đây, kèm dung lượng và ngày thêm.",
         ) {
             GradientButton("+ Thêm", onAdd, icon = R.drawable.ic_fluent_folder_add_24_regular)
         }
@@ -229,7 +356,11 @@ internal fun LibraryFileRow(entry: LibraryFileEntry, onOpen: () -> Unit, onDelet
                 Modifier.size(40.dp).clip(Radius.pill).background(c.chip).clickable(onClick = onDelete),
                 contentAlignment = Alignment.Center,
             ) {
-                MonikaIcon(R.drawable.ic_fluent_delete_24_regular, "Xoá tệp", Modifier.size(20.dp), tint = c.chipText)
+                MonikaIcon(
+                    R.drawable.ic_fluent_delete_24_regular,
+                    if (entry.game?.external == true) "Ẩn khỏi thư viện" else "Xoá tệp",
+                    Modifier.size(20.dp), tint = c.chipText,
+                )
             }
         }
     }

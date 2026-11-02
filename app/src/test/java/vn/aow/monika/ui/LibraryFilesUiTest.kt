@@ -24,17 +24,23 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import vn.aow.monika.AppGraph
+import vn.aow.monika.library.Game
 import vn.aow.monika.library.GameStorage
 import vn.aow.monika.ui.screens.LibraryFileEntry
 import vn.aow.monika.ui.screens.LibraryFileKind
 import vn.aow.monika.ui.screens.LibraryFilesPage
 import vn.aow.monika.ui.screens.LibraryScreen
+import vn.aow.monika.ui.screens.SAVE_BACKUP_DIR
+import vn.aow.monika.ui.screens.backupGameSaves
+import vn.aow.monika.ui.screens.deleteGameWithSaveBackup
 import vn.aow.monika.ui.screens.formatFileDate
 import vn.aow.monika.ui.screens.formatFileSize
+import vn.aow.monika.ui.screens.saveFilesInside
 import vn.aow.monika.ui.theme.DockClearance
 import vn.aow.monika.ui.theme.MonikaTheme
 import vn.aow.monika.ui.theme.dockContentClearance
 import java.io.File
+import java.util.zip.ZipFile
 
 /** V141: mục Tệp — danh sách tệp trong kho, trạng thái rỗng, xoá có xác nhận, bấm mở đúng hành động. */
 @RunWith(RobolectricTestRunner::class)
@@ -66,32 +72,38 @@ class LibraryFilesUiTest {
 
     private fun fixture(name: String): File = File(GameStorage.games(rule.activity), name).apply { mkdirs() }
 
-    @Test fun filesSectionListsGamesDocumentsAndOtherFilesWithSizeAndDate() {
+    @Test fun filesSectionListsOnlyManagedGamesAndDocuments() {
         val game = fixture("v141-game-fixture")
         val docs = fixture("v141-doc-fixture")
-        val other = fixture("v141-khac-fixture")
+        // Thư mục app KHÔNG nhận diện (vd. save của người chơi) — không được thành mục trong Tệp.
+        val unknown = fixture("v141-kho-la")
         try {
             File(game, "fixture.gba").writeText("synthetic fixture")
             // Dung lượng khác nhau để mỗi dòng có chuỗi "dung lượng · ngày" riêng.
             val manual = File(docs, "Sách hướng dẫn.pdf").apply { writeText("synthetic fixture document") }
-            File(other, "ghi-chu.bin").writeText("synthetic fixture")
+            val saveInUnknown = File(unknown, "save/quan-trong.sav").apply {
+                parentFile?.mkdirs(); writeText("save nguoi choi")
+            }
 
             openFiles()
             // Danh sách dựng từ game + tài liệu; tài liệu về sau một nhịp nên chờ đúng nó.
             settle("Sách hướng dẫn.pdf")
             rule.onNodeWithText("v141-game-fixture").assertExists()
             rule.onNodeWithText("Sách hướng dẫn.pdf").assertExists()
-            rule.onNodeWithText("v141-khac-fixture").assertExists()
             rule.onNodeWithText("Game").assertExists()
             rule.onNodeWithText("Tài liệu").assertExists()
-            rule.onNodeWithText("Khác").assertExists()
-            rule.onNodeWithText("3 tệp", substring = true).assertIsDisplayed()
+            rule.onNodeWithText("2 tệp", substring = true).assertIsDisplayed()
             // Dung lượng + ngày thêm lấy từ chính tệp trong kho, không phải số bịa.
             rule.onNodeWithText("${formatFileSize(manual.length())} · ${formatFileDate(manual.lastModified())}").assertExists()
+            // Chỉ 2 mục app quản lý; thư mục lạ (và save bên trong) không xuất hiện để xoá.
+            assertEquals(2, rule.onAllNodesWithContentDescription("Xoá tệp").fetchSemanticsNodes().size)
+            rule.onNodeWithText("v141-kho-la").assertDoesNotExist()
+            rule.onNodeWithText("quan-trong.sav").assertDoesNotExist()
+            assertTrue(saveInUnknown.exists())
             repeat(3) { rule.mainClock.advanceTimeByFrame(); rule.waitForIdle() }
             rule.shot("v141-tep-danh-sach")
         } finally {
-            game.deleteRecursively(); docs.deleteRecursively(); other.deleteRecursively(); AppGraph.library.list()
+            game.deleteRecursively(); docs.deleteRecursively(); unknown.deleteRecursively(); AppGraph.library.list()
         }
     }
 
@@ -107,52 +119,152 @@ class LibraryFilesUiTest {
         rule.shot("v141-tep-rong")
     }
 
-    @Test fun deletingAnOtherFileAsksFirstAndOnlyThenRemovesItFromDisk() {
-        val other = fixture("v141-xoa-fixture")
-        val inner = File(other, "tam.bin").apply { writeText("synthetic fixture") }
+    /** Nút xoá của đúng một dòng (danh sách có thể có nhiều dòng). */
+    private fun deleteButtonFor(name: String) = rule.onNode(
+        hasContentDescription("Xoá tệp") and hasAnyAncestor(hasText(name, substring = true)),
+    )
+
+    @Test fun deletingADocumentRemovesOnlyThatFileAndKeepsTheFolder() {
+        val docs = fixture("v141-doc-xoa")
+        val manual = File(docs, "Sách hướng dẫn.pdf").apply { writeText("noi dung tai lieu") }
+        val kept = File(docs, "Ghi chú.txt").apply { writeText("giu lai") }
         try {
             openFiles()
-            settle("v141-xoa-fixture")
-            rule.onNodeWithContentDescription("Xoá tệp").performClick()
-            settle("Xoá tệp?")
-            rule.onNodeWithText("Không khôi phục được", substring = true).assertExists()
+            settle("Sách hướng dẫn.pdf")
+            deleteButtonFor("Sách hướng dẫn.pdf").performClick()
+            settle("Xoá tài liệu?")
+            rule.onNodeWithText("Sẽ xoá: tệp", substring = true).assertExists()
+            rule.onNodeWithText("Được giữ lại: các tệp khác", substring = true).assertExists()
 
             rule.onNodeWithText("Hủy").performClick()
-            settleGone("Xoá tệp?")
-            assertTrue("Huỷ thì phải giữ nguyên tệp", inner.exists())
+            settleGone("Xoá tài liệu?")
+            assertTrue("Huỷ thì phải giữ nguyên tệp", manual.exists())
 
-            rule.onNodeWithContentDescription("Xoá tệp").performClick()
-            settle("Xoá tệp?")
+            deleteButtonFor("Sách hướng dẫn.pdf").performClick()
+            settle("Xoá tài liệu?")
             rule.onNodeWithText("Xoá").performClick()
-            settle("Chưa có tệp nào")
-            assertFalse(other.exists())
-            assertFalse(inner.exists())
+            rule.awaitComposeLayout { !manual.exists() }
+            assertFalse(manual.exists())
+            assertTrue("Tệp khác trong thư mục phải còn", kept.exists())
+            assertTrue("Thư mục tài liệu phải còn", docs.exists())
         } finally {
-            other.deleteRecursively(); AppGraph.library.list()
+            docs.deleteRecursively(); AppGraph.library.list()
         }
     }
 
-    @Test fun deletingAGameOnlyHidesItFromTheFilesListAndKeepsTheData() {
-        val game = fixture("v141-an-fixture")
-        val rom = File(game, "fixture.gba").apply { writeText("synthetic fixture") }
+    @Test fun deletingAGameRemovesOnlyItsFolderAndKeepsSavesAndUnknownFolders() {
+        val game = fixture("v141-xoa-game")
+        val unknown = fixture("v141-kho-la")
+        File(game, "fixture.gba").writeText("synthetic fixture")
+        val engineSave = File(game, "save/tien-do.sav").apply { parentFile?.mkdirs(); writeText("save trong thu muc game") }
+        // Save của giả lập nằm ngoài thư mục game — không bao giờ bị xoá.
+        val outsideSave = File(rule.activity.filesDir, "saves/mgba/v141-xoa-game.srm").apply {
+            parentFile?.mkdirs(); writeText("save grap")
+        }
+        val unknownSave = File(unknown, "save/quan-trong.sav").apply { parentFile?.mkdirs(); writeText("save nguoi choi") }
+        val backups = File(rule.activity.filesDir, SAVE_BACKUP_DIR)
+        val knownBackups = backups.listFiles().orEmpty().toSet()
         try {
             openFiles()
-            settle("v141-an-fixture")
-            rule.onNodeWithContentDescription("Xoá tệp").performClick()
-            settle("Ẩn khỏi mục Tệp?")
-            rule.onNodeWithText("Chỉ ẩn khỏi danh sách Tệp", substring = true).assertExists()
-            rule.onNodeWithText("Ẩn").performClick()
-            settle("Chưa có tệp nào")
-            assertTrue("Không được xoá thư mục game", game.exists())
-            assertTrue("Không được xoá tệp game", rom.exists())
+            settle("v141-xoa-game")
+            // Thư mục lạ không thành mục xoá được.
+            rule.onNodeWithText("v141-kho-la").assertDoesNotExist()
 
-            // Game vẫn còn nguyên ở mục Chơi.
-            rule.onNodeWithText("Chơi").performClick()
-            settle("v141-an-fixture")
-            rule.onNodeWithText("v141-an-fixture").assertExists()
-            rule.shot("v141-tep-an-khoi-danh-sach")
+            rule.onNodeWithContentDescription("Xoá tệp").performClick()
+            settle("Xoá game?")
+            rule.onNodeWithText("Sẽ xoá: thư mục game", substring = true).assertExists()
+            rule.onNodeWithText("Được giữ lại", substring = true).assertExists()
+            rule.onNodeWithText("Hủy").performClick()
+            settleGone("Xoá game?")
+            assertTrue("Huỷ thì phải giữ game", game.exists())
+
+            rule.onNodeWithContentDescription("Xoá tệp").performClick()
+            settle("Xoá game?")
+            rule.onNodeWithText("Xoá").performClick()
+            rule.awaitComposeLayout { !game.exists() }
+
+            assertFalse("Chỉ thư mục game bị xoá", game.exists())
+            assertFalse("Save trong thư mục game đã được sao lưu rồi mới xoá", engineSave.exists())
+            assertTrue("Save giả lập ngoài thư mục game phải còn", outsideSave.exists())
+            assertTrue("Thư mục lạ phải còn", unknown.exists())
+            assertTrue("Save trong thư mục lạ phải còn", unknownSave.exists())
+            // Bản sao lưu save được tạo trước khi xoá và báo rõ vị trí.
+            val created = backups.listFiles().orEmpty().filter { it !in knownBackups }
+            assertEquals("Phải có đúng 1 bản sao lưu save", 1, created.size)
+            assertTrue(created.single().name.startsWith("xoa-v141-xoa-game"))
+            rule.awaitComposeLayout {
+                rule.onAllNodesWithText("Bản sao lưu save", substring = true).fetchSemanticsNodes().isNotEmpty()
+            }
+            // Danh sách tự làm mới: không còn dòng nào để xoá.
+            rule.awaitComposeLayout { rule.onAllNodesWithText("Chưa có tệp nào").fetchSemanticsNodes().isNotEmpty() }
+            rule.shot("v141-tep-xoa-game")
         } finally {
-            game.deleteRecursively(); AppGraph.library.list()
+            game.deleteRecursively(); unknown.deleteRecursively(); outsideSave.delete()
+            backups.listFiles().orEmpty().filter { it !in knownBackups }.forEach { it.delete() }
+            AppGraph.library.list()
+        }
+    }
+
+    @Test fun deletingAGameBacksUpSavesFirstAndTheBackupRestoresThem() {
+        val game = fixture("v141-save-game")
+        val rom = File(game, "fixture.gba").apply { writeText("synthetic fixture") }
+        val save = File(game, "save/tien-do.sav").apply {
+            parentFile?.mkdirs(); writeText("du lieu save quan trong")
+        }
+        val target = Game(game, "v141-save-game", AppGraph.config.current.system("gba"), rom)
+        val backups = File(rule.activity.filesDir, SAVE_BACKUP_DIR)
+        val knownBackups = backups.listFiles().orEmpty().toSet()
+        try {
+            assertEquals(listOf("tien-do.sav"), saveFilesInside(game).map { it.name })
+            val backup = backupGameSaves(rule.activity, target)
+            assertNotNull("Phải tạo được bản sao lưu save", backup)
+            assertTrue(backup!!.isFile)
+            assertTrue(backup.name.startsWith("xoa-v141-save-game"))
+
+            // Bản sao lưu giữ đúng đường dẫn + nội dung và khôi phục được vào thư mục mới.
+            val restoreDir = File(rule.activity.cacheDir, "v141-khoi-phuc").apply { deleteRecursively(); mkdirs() }
+            ZipFile(backup).use { zip ->
+                val entry = zip.getEntry("game/save/tien-do.sav")
+                assertNotNull("Bản sao lưu phải có tệp save", entry)
+                val out = File(restoreDir, "save/tien-do.sav").apply { parentFile?.mkdirs() }
+                zip.getInputStream(entry).use { input -> out.outputStream().use { input.copyTo(it) } }
+                assertNotNull("Bản sao lưu phải có tệp mô tả", zip.getEntry("monika-xoa-game.txt"))
+            }
+            assertEquals("du lieu save quan trong", File(restoreDir, "save/tien-do.sav").readText())
+            restoreDir.deleteRecursively()
+
+            // Sao lưu lỗi → KHÔNG xoá gì (sao lưu luôn đi trước).
+            val refused = deleteGameWithSaveBackup(rule.activity, target, backup = { _, _ -> error("hết chỗ") })
+            assertFalse(refused.deleted)
+            assertTrue("Chưa sao lưu được thì không được xoá", game.exists())
+            assertTrue(save.exists())
+            assertTrue(refused.message.contains("Chưa sao lưu được save"))
+        } finally {
+            game.deleteRecursively()
+            backups.listFiles().orEmpty().filter { it !in knownBackups }.forEach { it.delete() }
+            AppGraph.library.list()
+        }
+    }
+
+    @Test fun unmanagedFoldersAreNeverDeletedEvenWhenAsked() {
+        val nested = File(fixture("v141-kho-la"), "save").apply { mkdirs() }
+        val save = File(nested, "quan-trong.sav").apply { writeText("save nguoi choi") }
+        val outside = File(rule.activity.cacheDir, "v141-ngoai-kho").apply { mkdirs() }
+        val outsideFile = File(outside, "du-lieu.bin").apply { writeText("x") }
+        try {
+            // Thư mục con trong kho và thư mục ngoài kho đều không phải game app quản lý.
+            for (dir in listOf(nested, outside)) {
+                val result = deleteGameWithSaveBackup(rule.activity, Game(dir, "la", null, null))
+                assertFalse("App không được xoá thư mục ngoài phạm vi quản lý: $dir", result.deleted)
+                assertTrue("Thư mục phải còn nguyên: $dir", dir.exists())
+                assertTrue(result.message.contains("không nằm trong kho game"))
+            }
+            assertTrue(save.exists())
+            assertTrue(outsideFile.exists())
+        } finally {
+            File(GameStorage.games(rule.activity), "v141-kho-la").deleteRecursively()
+            outside.deleteRecursively()
+            AppGraph.library.list()
         }
     }
 
