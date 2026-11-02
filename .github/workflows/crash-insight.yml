@@ -1,0 +1,34 @@
+name: Bảng chẩn đoán crash (V174)
+# Chạy tay khi cần xem bảng gộp báo cáo lỗi. Không đặt lịch, không chạy theo push/PR.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  insight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Test offline trước: gộp bảng + không lộ tên game/đường dẫn. Không gọi mạng, không cần secret.
+      - name: Test gộp bảng (offline)
+        run: python3 scripts/test-crash-insight.py
+      # Đúng một request tới Worker (/reports, tối đa 100 báo cáo mới nhất). Không in token, không set -x.
+      - name: Đọc Worker một lần, xuất bảng
+        env:
+          CRASH_ADMIN_TOKEN: ${{ secrets.CRASH_ADMIN_TOKEN }}
+        run: python3 scripts/crash-insight.py --out-dir .
+      - name: Đính bảng vào artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crash-insight
+          path: |
+            crash-insight.md
+            crash-insight.csv
+          if-no-files-found: error
+          retention-days: 14
