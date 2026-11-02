@@ -5,6 +5,7 @@ import android.app.ApplicationExitInfo
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import vn.aow.monika.BuildConfig
 import java.io.File
+import java.security.MessageDigest
 import java.util.UUID
 
 /**
@@ -92,6 +94,14 @@ object Diagnostics {
         @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
         @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
         val stage: String = "",
+        /**
+         * V155: SHA-256 (hex thường) của chứng thư ký APK đang chạy, để phân biệt bản chính thức
+         * với bản tự build. Rỗng/không có = không đọc được; không chặn việc gửi báo cáo.
+         * `EncodeDefault.NEVER` giữ nguyên định dạng JSON cũ khi trường trống.
+         */
+        @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+        @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+        val certSha256: String = "",
     ) {
         fun toText(): String = scrub(null, buildString {
             appendLine("== Báo lỗi Aow Monika ==")
@@ -436,9 +446,9 @@ object Diagnostics {
     /** Ghi một lỗi thao tác đã tự bắt (nơi không bọc được bằng [op]). Trả null nếu trùng trong cửa sổ chống spam. */
     fun opFail(c: Context, name: String, step: String, e: Throwable, target: String? = null): Report? = runCatching {
         val code = errorCode(e)
-        // Hủy (Activity rời màn, Worker bị dừng) và mất mạng là chuyện thường: chỉ ghi vệt, không lập báo cáo.
-        if (isCancellation(e) || isOffline(e)) {
-            Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code (hủy/mất mạng, không báo)")
+        // Hủy (Activity rời màn, Worker bị dừng) và lỗi mạng là chuyện thường: chỉ ghi vệt, không lập báo cáo.
+        if (isCancellation(e) || isOffline(step, e)) {
+            Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code (hủy/lỗi mạng, không báo)")
             return@runCatching null
         }
         val key = "$name|$step|$code|${e.message.orEmpty().take(60).replace(Regex("""\d+"""), "")}"
@@ -488,11 +498,83 @@ object Diagnostics {
         it is kotlinx.coroutines.CancellationException || (it is java.io.IOException && it.message == "Canceled")
     }
 
-    /** Mất mạng/quá hạn là chuyện thường của người chơi, không phải lỗi app → không lập báo cáo `op-fail` (chỉ ghi vệt). */
-    fun isOffline(e: Throwable): Boolean = generateSequence(e) { it.cause?.takeIf { c -> c !== it } }.any {
-        it is java.net.UnknownHostException || it is java.net.ConnectException || it is java.net.NoRouteToHostException ||
-            it is java.net.SocketTimeoutException || it is java.io.InterruptedIOException
+    /**
+     * V166: lỗi mạng là chuyện thường của người chơi, không phải lỗi app → không lập báo cáo `op-fail` (chỉ ghi vệt).
+     * Ngoài "mất mạng/quá hạn" còn phải kể cả kiểu mạng nhà/ISP chặn hoặc bóp Blogger (hay lặp lại mỗi lần mở app):
+     * TLS bị chặn/hijack (`SSLException`), máy chủ cắt kết nối (`SocketException`: reset/abort/broken pipe), và
+     * luồng mạng bị cắt giữa chừng đã được [networkRead] đánh dấu ([NetworkTruncatedException]).
+     * Luồng đứt KHÔNG tự động là lỗi mạng: nó còn là dấu hiệu tệp/archive cụt — xem [isOffline] bản có bước.
+     * Máy chủ trả mã lỗi HTTP vẫn là báo cáo thật (có thể lỗi phía mình) — chỉ lỗi tầng vận chuyển mới bỏ qua.
+     */
+    fun isOffline(e: Throwable): Boolean = chainOf(e).any {
+        it is NetworkTruncatedException ||
+            it is java.net.UnknownHostException || it is java.net.ConnectException || it is java.net.NoRouteToHostException ||
+            it is java.net.SocketTimeoutException || it is java.io.InterruptedIOException ||
+            it is java.net.SocketException || it is javax.net.ssl.SSLException || it is java.net.ProtocolException ||
+            NETWORK_BROKEN.containsMatchIn(it.message.orEmpty())
     }
+
+    /** Bước chỉ đọc qua mạng (không đụng tệp cục bộ): luồng đứt ở đây là chuyện mạng. */
+    private val NETWORK_STEPS = setOf("tai", "tai-ve", "tai-bai")
+
+    /**
+     * V166 (Luna 3, lần 2): phân loại theo **nguồn đọc tại chỗ ném lỗi**, không theo tên thao tác — vì có thao tác
+     * trộn cả tải và giải nén (`mo-game`, `cai-goi-engine`, `tai-xuong/luu-file`). Luồng đứt là chuyện mạng khi:
+     * (a) ngoại lệ đã được [networkRead] đánh dấu là đọc qua mạng, hoặc (b) bước hiện tại chỉ đọc qua mạng
+     * ([NETWORK_STEPS]). EOF khi đọc archive cục bộ = tệp cụt/hỏng → **vẫn lập báo cáo**.
+     */
+    fun isOffline(step: String, e: Throwable): Boolean =
+        isOffline(e) || (step.substringBefore(':').trim() in NETWORK_STEPS && isTruncated(e))
+
+    /** Luồng mạng bị cắt giữa chừng — nguồn đã biết là mạng nên KHÔNG phải dữ liệu hỏng. */
+    class NetworkTruncatedException(message: String?, cause: Throwable?) : java.io.IOException(message, cause)
+
+    /**
+     * V166 (Luna 3, lần 2): bọc **đúng chỗ đọc qua mạng** (HTTP body, socket). Luồng đứt ở đó là chuyện mạng.
+     * Chỗ đọc archive cục bộ (ZipInputStream, zip4j, commons-compress) KHÔNG bọc → EOF của tệp cụt vẫn là
+     * lỗi dữ liệu và vẫn được lập báo cáo, kể cả trong thao tác trộn tải + giải nén.
+     */
+    fun <T> networkRead(block: () -> T): T = try {
+        block()
+    } catch (e: Throwable) {
+        throw markNetworkTruncation(e)
+    }
+
+    /** Bản dùng được trong hàm `suspend` (không bọc lambda): `catch (e) { throw markNetworkTruncation(e) }`. */
+    fun markNetworkTruncation(e: Throwable): Throwable = if (isTruncated(e)) NetworkTruncatedException(e.message, e) else e
+
+    /**
+     * Bọc luồng **mạng** (HTTP body, socket): đọc bị đứt giữa chừng → [NetworkTruncatedException].
+     * Nhờ vậy chỗ gọi không cần `try/catch` riêng, và luồng đọc tệp cục bộ không bị đánh dấu nhầm là mạng.
+     */
+    fun networkStream(input: java.io.InputStream): java.io.InputStream = object : java.io.FilterInputStream(input) {
+        override fun read(): Int = try {
+            super.read()
+        } catch (e: java.io.IOException) {
+            throw markNetworkTruncation(e)
+        }
+
+        override fun read(b: ByteArray, off: Int, len: Int): Int = try {
+            super.read(b, off, len)
+        } catch (e: java.io.IOException) {
+            throw markNetworkTruncation(e)
+        }
+    }
+
+    /** Luồng đứt: `EOFException`, hoặc câu báo của OkHttp khi body ngắn hơn Content-Length. */
+    internal fun isTruncated(e: Throwable): Boolean = chainOf(e).any {
+        it is java.io.EOFException || TRUNCATED.containsMatchIn(it.message.orEmpty())
+    }
+
+    private fun chainOf(e: Throwable): Sequence<Throwable> = generateSequence(e) { it.cause?.takeIf { c -> c !== it } }
+
+    /** Câu báo của OkHttp/tầng vận chuyển khi kết nối bị cắt giữa chừng (không kèm loại ngoại lệ riêng). */
+    private val NETWORK_BROKEN = Regex(
+        """(?i)connection reset|connection closed|stream was reset|broken pipe|connection abort|software caused connection abort|read timed out"""
+    )
+
+    /** Câu báo luồng đứt: OkHttp và một số bộ đọc tệp cùng dùng, nên chỉ tính là mạng khi biết nguồn là mạng. */
+    private val TRUNCATED = Regex("""(?i)unexpected end of stream""")
 
     private val LINK = Regex("""(?i)\b(?:https?|ftp)://[^\s"'<>)]+""")
     /** Không bao giờ gửi link tải (có thể là link game/ROM). */
@@ -599,9 +681,31 @@ object Diagnostics {
     }
 
     internal fun reportJson(c: Context?, r: Report): String {
-        val safe = UserGameReport.bounded(sanitized(c, r)) { json.encodeToString(Report.serializer(), it) }
+        val filled = if (c != null && r.certSha256.isEmpty()) r.copy(certSha256 = certSha256(c)) else r
+        val safe = UserGameReport.bounded(sanitized(c, filled)) { json.encodeToString(Report.serializer(), it) }
         return json.encodeToString(Report.serializer(), safe)
     }
+
+    /** SHA-256 dạng hex thường; tách riêng để kiểm được bằng véc-tơ chuẩn, không cần máy thật. */
+    internal fun sha256Hex(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 0xFF) }
+
+    /**
+     * V155: SHA-256 chứng thư ký của APK đang chạy. Trả chuỗi rỗng khi không đọc được
+     * (máy lạ, bản build không ký, ROM cook…) — **không** ném lỗi và không chặn gửi báo cáo.
+     */
+    internal fun certSha256(c: Context): String = runCatching {
+        val pm = c.packageManager
+        val signature = if (Build.VERSION.SDK_INT >= 28) {
+            pm.getPackageInfo(c.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+                .signingInfo?.apkContentsSigners?.firstOrNull()
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getPackageInfo(c.packageName, PackageManager.GET_SIGNATURES).signatures?.firstOrNull()
+        }
+        val bytes = signature?.toByteArray()
+        if (bytes == null || bytes.isEmpty()) "" else sha256Hex(bytes)
+    }.getOrDefault("")
 
     /** Người chơi chủ động báo lỗi, không gộp làm mất mô tả/ảnh của lần gửi khác. */
     fun recordUser(c: Context, type: String, description: String, image: ReportImage?,
@@ -728,9 +832,15 @@ object Diagnostics {
         tick.value++
     }
 
-    fun list(c: Context): List<Report> = reportsDir(c).listFiles().orEmpty()
-        .sortedByDescending { it.name }
-        .mapNotNull { f -> runCatching { sanitized(c, json.decodeFromString(Report.serializer(), f.readText())) }.getOrNull() }
+    /** Gắn ở test: xem [list] chạy ở luồng nào (đọc/parse 30 file JSON trên main thread là ANR). */
+    @Volatile internal var listProbe: ((Thread) -> Unit)? = null
+
+    fun list(c: Context): List<Report> {
+        listProbe?.invoke(Thread.currentThread())
+        return reportsDir(c).listFiles().orEmpty()
+            .sortedByDescending { it.name }
+            .mapNotNull { f -> runCatching { sanitized(c, json.decodeFromString(Report.serializer(), f.readText())) }.getOrNull() }
+    }
 
     fun markSeen(c: Context, r: Report) { save(c, r.copy(seen = true)); if (pending.value?.id == r.id) pending.value = null }
 
