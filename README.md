@@ -25,4 +25,6 @@ Tham gia cộng đồng và đọc bài mới tại [aow.vn](https://www.aow.vn)
 
 GPL-3.0 (do dùng [LibretroDroid](https://github.com/Swordfish90/LibretroDroid), GPL-3.0). Khi phát hành APK phải công khai mã nguồn.
 
+Tên "AowVN", "Monika", logo và danh nghĩa bản chính thức không đi kèm giấy phép GPL: xem [TRADEMARK.md](TRADEMARK.md). Gặp bản giả: [docs/BAO-BAN-GIA.md](docs/BAO-BAN-GIA.md).
+
 Mã nguồn app ở repo này; nguồn từng lõi/engine xem docs/opus/ket-qua/V52-giay-phep.md.
