@@ -172,6 +172,19 @@ class DiagnosticsOpTest {
         assertEquals(1, opFails().size)
     }
 
+    @Test fun truncatedFileOrArchiveStillReportsEvenThoughItIsAnEof() {
+        // V166 (Luna 3): luồng đứt khi GIẢI NÉN / ĐỌC FILE là tệp cụt-hỏng (dữ liệu), không phải mạng → vẫn phải báo.
+        Diagnostics.opFail(app, Op.EXTRACT, "giai-nen", java.io.EOFException("unexpected end of ZLIB input stream"))
+        Diagnostics.opFail(app, Op.IMPORT, "chep-file", java.io.EOFException("unexpected end of stream"))
+        Diagnostics.opFail(app, Op.PATCH_ROM, "doc-ghi", IOException("bọc", java.io.EOFException("hết file")))
+        assertEquals("EOF ở thao tác tệp/archive vẫn là lỗi thật", 3, opFails().size)
+        assertEquals(setOf("op:giai-nen", "op:nhap-game", "op:va-rom"), opFails().map { it.component }.toSet())
+        // Cùng EOF nhưng ở thao tác đi qua mạng (tải về, tải feed) là chuyện mạng → chỉ ghi vệt.
+        Diagnostics.opFail(app, Op.DOWNLOAD, "tai-ve", java.io.EOFException("unexpected end of stream"))
+        Diagnostics.opFail(app, Op.FETCH_FEED, "tai-bai", java.io.EOFException("unexpected end of stream"))
+        assertEquals("EOF ở thao tác mạng không thêm báo cáo", 3, opFails().size)
+    }
+
     @Test fun networkFailuresFromAutomaticFetchesAreNotFiledAsAppDefects() {
         // V166: mạng nhà/user chặn hoặc bóp Blogger → TLS lỗi, kết nối bị cắt, luồng đứt. Đây là chuyện mạng
         // (lặp lại mỗi lần mở app), không phải lỗi app → chỉ ghi vệt, không lập báo cáo op-fail.

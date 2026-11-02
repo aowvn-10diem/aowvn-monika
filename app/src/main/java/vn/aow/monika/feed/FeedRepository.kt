@@ -116,7 +116,7 @@ class FeedRepository(
             }
         } catch (e: Exception) {
             // V112: tải feed lỗi (HTTP/parse) để lại op-fail; mất mạng/hủy thì không.
-            if (e !is kotlinx.coroutines.CancellationException && !vn.aow.monika.diag.Diagnostics.isOffline(e))
+            if (e !is kotlinx.coroutines.CancellationException && !vn.aow.monika.diag.Diagnostics.isOffline(vn.aow.monika.diag.Diagnostics.Op.FETCH_FEED, e))
                 ctx?.let { vn.aow.monika.diag.Diagnostics.opFail(it, vn.aow.monika.diag.Diagnostics.Op.FETCH_FEED, "tai-bai", e) }
             throw e
         }
