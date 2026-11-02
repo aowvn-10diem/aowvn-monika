@@ -289,6 +289,15 @@ data class CoreScreen(
     /** Khoảng cách tối đa (điểm ảnh) cho thanh kéo; nhỏ hơn 1 = không có thanh kéo. */
     val gapMax: Int = 0,
     val defaultGap: Int = 0,
+    /**
+     * V160: tay cầm ảo che lên nửa dưới khung game (kiểu DraStic ở màn dọc) thay vì chiếm chỗ riêng bên dưới.
+     * true = khung game rộng hết cỡ, phím trong suốt đè lên màn dưới.
+     */
+    val overlayPad: Boolean = false,
+    /** Độ mờ mặc định của phím khi che (0,2–1). 0 = theo lựa chọn của người chơi. */
+    val padOpacity: Float = 0f,
+    /** Bố cục dùng ở màn ngang (một giá trị của [layoutKey], vd. "left-right"). Trống = giữ bố cục người chơi chọn. */
+    val landscapeLayout: String = "",
 )
 
 /** 1 lựa chọn trong mục "Màn hình": [id] ổn định để lưu/tham chiếu, [value] là giá trị gửi cho lõi. */

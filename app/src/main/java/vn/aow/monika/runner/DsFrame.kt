@@ -22,4 +22,11 @@ internal object DsFrame {
         val room = heightPx - topPx - padReservePx
         return minOf(want, maxOf(room, heightPx * 4 / 10))
     }
+
+    /**
+     * V160: chừa đáy cho tay cầm ảo (dp). Che lên khung game ([overlayPad]) thì chỉ chừa thanh tên gọn sát đáy,
+     * nhờ vậy hai màn rộng hết chiều ngang; không che thì chừa nguyên chỗ cho bàn phím.
+     */
+    fun padReserveDp(overlayPad: Boolean): Int =
+        if (overlayPad) NDS_BOTTOM_BAR_DP else PAD_RESERVE_DP + NDS_BOTTOM_BAR_DP
 }

@@ -152,13 +152,13 @@ class CoreManager(
                         val body = response.body ?: throw IOException("Gói lõi không có nội dung")
                         val total = body.contentLength()
                         body.byteStream().use { input ->
-                            PackTransaction.download(input, archive, expectedHash, total) { read ->
+                            PackTransaction.download(input, archive, expectedHash, total, onBytes = { read ->
                                 val pct = if (total > 0) (read * 100 / total).toInt().coerceIn(0, 100) else -1
                                 if (pct != lastPct || read - lastBytes >= 256 * 1024 || read == total) {
                                     lastPct = pct; lastBytes = read
                                     emit(CoreProgress("core-download", read, total))
                                 }
-                            }
+                            }, wrapNetwork = vn.aow.monika.diag.Diagnostics::networkStream)
                         }
                     }
                     emit(CoreProgress("core-unzip"))
@@ -188,11 +188,13 @@ class CoreManager(
     }
 
     private suspend fun downloadCore(input: java.io.InputStream, archive: File, total: Long, progress: suspend (Long, Long) -> Unit) {
+        // V166: `input` là luồng mạng → bọc để đứt giữa chừng được đánh dấu là chuyện mạng.
+        val source = vn.aow.monika.diag.Diagnostics.networkStream(input)
         archive.outputStream().use { output ->
             val buffer = ByteArray(64 * 1024)
             var read = 0L; var lastBytes = 0L; var lastPct = -1
             while (true) {
-                val n = input.read(buffer)
+                val n = source.read(buffer)
                 if (n < 0) break
                 output.write(buffer, 0, n); read += n
                 val pct = if (total > 0) (read * 100 / total).toInt() else -1
@@ -217,7 +219,10 @@ class CoreManager(
                 override fun read(): Int = super.read().also { if (it >= 0) tick(1) }
                 override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also { tick(it.toLong()) }
             }
-            ZipInputStream(counting.buffered()).use(consume)
+            // V166: giải nén NGAY TRÊN luồng mạng → đứt luồng ở đây là chuyện mạng (đánh dấu nguồn).
+            vn.aow.monika.diag.Diagnostics.networkRead {
+                ZipInputStream(counting.buffered()).use(consume)
+            }
         }
     }
 
