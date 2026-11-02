@@ -62,4 +62,14 @@ class PlayDistributionTest {
         assertTrue(script.readText().contains("module MonikaWin32"))
         assertTrue(app.assets.open("rgss/monika-ruby18.rb").use { it.readBytes().isNotEmpty() })
     }
+
+    /**
+     * [A78] V154: bản Play ký bằng Play App Signing — catalog Play để trống chứng thư nên bản Play
+     * bỏ qua tự kiểm, người dùng Play không bị cảnh báo "app giả mạo" sai.
+     */
+    @Test fun playCatalogSkipsCertCheckUntilPlaySigningCertIsKnown() {
+        val official = ConfigRepository(app, OkHttpClient()).current.security.officialCertSha256
+        assertTrue(official, official.isEmpty())
+        assertFalse(vn.aow.monika.security.OfficialCert.isForeignBuild("f".repeat(64), official, debugBuild = false))
+    }
 }

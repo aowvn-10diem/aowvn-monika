@@ -28,6 +28,10 @@ def for_play(source):
     cfg['systems'] = [s for s in cfg.get('systems', []) if s.get('runner') != 'apk']
     # Web players tải mã từ ngoài cũng dành cho V151 thay bằng phân phối qua Play.
     cfg['webPlayers'] = {}
+    # [A78] V154: bản Play ký bằng Play App Signing nên chứng thư KHÁC bản GitHub — không dùng chung
+    # giá trị trong catalog gốc. Để trống = bản Play bỏ qua tự kiểm cho tới khi điền SHA-256 chứng thư
+    # Play App Signing vào đây.
+    cfg['security'] = {'officialCertSha256': ''}
     return cfg
 
 

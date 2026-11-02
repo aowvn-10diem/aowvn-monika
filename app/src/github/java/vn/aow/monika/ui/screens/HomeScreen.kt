@@ -79,6 +79,8 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
     val context = LocalContext.current
     var refresh by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val bottomClearance = vn.aow.monika.ui.theme.dockContentClearance()
+    // [A78] V154: bản bị đóng gói lại bằng khóa khác → cảnh báo đỏ (chỉ cảnh báo, vẫn chạy được).
+    val cfg by AppGraph.config.config.collectAsState()
     // Hiện ngay bản đã lưu (lần trước), rồi tải bản mới ở nền → quay lại Trang chủ không phải chờ.
     val posts by produceState<Result<List<Post>>?>(AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }, refresh) {
         value = AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }
@@ -118,6 +120,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                     AvatarButton(onGo)
                 }
             }
+            item { OfficialBuildWarning(cfg.security.officialCertSha256) }
             val list = posts?.getOrNull()
             when {
                 posts == null -> item { FeedStatus(true) { refresh++ } }
