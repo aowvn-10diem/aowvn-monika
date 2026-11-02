@@ -81,7 +81,7 @@ class RetroActivity : ComponentActivity() {
     private var padLayout = PadLayout.GBA
     // V160: bố cục + độ mờ tay cầm ảo lấy từ config `cores.<id>.screen` (không hard-code).
     private var overlayPad = false
-    private var autoSwitchedLayout = false
+    private val screenLayoutSwitch = ScreenLayoutSwitch()
 
     /** Kiểu hiển thị (lõi có khai báo `display` trong config): bộ lọc + co giãn số nguyên + lưới LCD + tùy chọn lõi. */
     private var core = ""
@@ -452,12 +452,11 @@ class RetroActivity : ComponentActivity() {
         val screen = AppGraph.config.current.cores[core]?.screen ?: return
         if (screen.layoutKey.isBlank() || screen.landscapeLayout.isBlank()) return
         val landscape = orientation == Configuration.ORIENTATION_LANDSCAPE
-        // Chỉ ghi khi đổi chiều thật sự (tránh ghi lại mỗi lần cấu hình đổi vì lý do khác).
-        if (landscape == autoSwitchedLayout) return
-        // Đọc lại lựa chọn đã lưu mỗi lần xoay: người chơi có thể vừa đổi bố cục trong game.
-        val value = DsScreen.rotationLayout(screen, CoreOptions.saved(this, core), landscape)
-        if (value.isNotBlank()) retroView?.updateVariables(Variable(screen.layoutKey, value))
-        autoSwitchedLayout = landscape
+        // View chưa tạo (xoay sớm): chưa đánh dấu chiều — lần gọi sau khi view sẵn sàng (dòng tạo view) sẽ ghi lại.
+        val view = retroView ?: return
+        screenLayoutSwitch.apply(screen, CoreOptions.saved(this, core), landscape) { (key, value) ->
+            view.updateVariables(Variable(key, value))
+        }
     }
 
     /** Đọc danh sách tùy chọn lõi đang chạy (lõi tự khai báo) rồi mở bảng chỉnh. */

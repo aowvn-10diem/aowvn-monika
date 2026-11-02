@@ -3,6 +3,7 @@ package vn.aow.monika
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -12,6 +13,7 @@ import org.robolectric.annotation.Config
 import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.runner.DsFrame
 import vn.aow.monika.runner.DsScreen
+import vn.aow.monika.runner.ScreenLayoutSwitch
 import vn.aow.monika.ui.TestApp
 
 /**
@@ -77,6 +79,41 @@ class DsPadLayoutTest {
         val s = screen("melondsds", "layoutKey", "defaultLayout")
         val configDefault = s.layouts.single { it.id == s.defaultLayout }.value
         assertEquals(configDefault, DsScreen.rotationLayout(s, emptyMap(), landscape = false))
+    }
+
+    /**
+     * V160 (Luna 3): xoay ngang lúc `retroView` chưa tạo không được đánh dấu "đã đổi chiều".
+     * Nếu đánh dấu sớm, lời gọi khi view tạo xong bị điều kiện "đã đúng chiều" chặn → bố cục ngang
+     * không bao giờ được áp.
+     */
+    @Test fun earlyRotationBeforeViewReadyIsAppliedWhenViewArrives() {
+        val s = screen("melondsds", "layoutKey", "landscapeLayout")
+        val switch = ScreenLayoutSwitch()
+        val writes = mutableListOf<Pair<String, String>>()
+        // onConfigurationChanged chạy trước khi GLRetroView có: không ghi, không đánh dấu chiều.
+        assertFalse(switch.apply(s, emptyMap(), landscape = true, write = null))
+        assertFalse(switch.appliedLandscape)
+        assertTrue(writes.isEmpty())
+        // View tạo xong → lời gọi tại chỗ tạo view phải ghi bố cục ngang, không bị lần xoay sớm chặn.
+        assertTrue(switch.apply(s, emptyMap(), landscape = true) { writes += it })
+        assertEquals(listOf(s.layoutKey to "left-right"), writes)
+        assertTrue(switch.appliedLandscape)
+        // Xoay tiếp về dọc → trả lại bố cục người chơi đã lưu, ghi đúng một lần.
+        assertTrue(switch.apply(s, mapOf(s.layoutKey to "hybrid-bottom"), landscape = false) { writes += it })
+        assertEquals("hybrid-bottom", writes.last().second)
+        assertFalse(switch.appliedLandscape)
+    }
+
+    /** Xoay ngang rồi về dọc khi view còn chưa tạo: không ghi gì, lúc view xong (đang dọc) cũng không ghi thừa. */
+    @Test fun rotationBackBeforeViewReadyWritesNothing() {
+        val s = screen("melondsds", "layoutKey", "landscapeLayout")
+        val switch = ScreenLayoutSwitch()
+        assertFalse(switch.apply(s, emptyMap(), landscape = true, write = null))
+        assertFalse(switch.apply(s, emptyMap(), landscape = false, write = null))
+        val writes = mutableListOf<Pair<String, String>>()
+        // Bố cục dọc đã có sẵn từ lúc nạp game (CoreOptions.initial) → không ghi lại.
+        assertFalse(switch.apply(s, emptyMap(), landscape = false) { writes += it })
+        assertTrue(writes.isEmpty())
     }
 
     /**
