@@ -99,6 +99,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         ui.scale = prefs.padScale
         ui.dpadOffset = prefs.padOffset("dpad").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
         ui.faceOffset = prefs.padOffset("face").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
+        ui.setPadManualHidden(prefs.padHidden) // V162: nhớ lựa chọn ẩn/hiện phím ảo
 
         val status = TextView(this).apply {
             text = "Đang chuẩn bị…"; setTextColor(Color.parseColor("#C8C5CB")); gravity = Gravity.CENTER; textSize = 14f
@@ -168,6 +169,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
                                 runCatching { NativeLibrary.reloadSettings() }
                                 showToast("Đã về mặc định. Mở lại game để áp dụng hết.", 2600)
                             },
+                            onPadHiddenChange = { AppGraph.prefs.padHidden = it },
                         )
                         AzaharCheatsSheet(cheats) { cheatPicker.launch(arrayOf("text/plain", "application/octet-stream")) }
                         AzaharDialogs(AzaharBridge.dialog)
@@ -331,6 +333,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         super.onResume()
         clock?.resume()
         inputDevices.registerInputDeviceListener(deviceListener, null)
+        syncPadDevices() // V162: mở game khi tay cầm đã cắm sẵn → ẩn phím ảo ngay
         if (started && paused && surfaceOk) resumeEmu()
     }
 
@@ -392,9 +395,15 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
     private val heldButtons = HashSet<Int>()
     private val inputDevices by lazy { getSystemService(android.hardware.input.InputManager::class.java) }
     private val deviceListener = object : android.hardware.input.InputManager.InputDeviceListener {
-        override fun onInputDeviceAdded(deviceId: Int) = Unit
+        // V162: cắm tay cầm → tự ẩn phím ảo; rút → tự hiện (trừ khi người chơi đã tự ẩn).
+        override fun onInputDeviceAdded(deviceId: Int) = syncPadDevices()
         override fun onInputDeviceChanged(deviceId: Int) = Unit
-        override fun onInputDeviceRemoved(deviceId: Int) = releasePad() // rút tay cầm đang giữ nút/cần: nhả hết, khỏi kẹt phím
+        override fun onInputDeviceRemoved(deviceId: Int) { releasePad(); syncPadDevices() }
+    }
+
+    /** Đồng bộ trạng thái tay cầm theo danh sách thiết bị đang cắm (mở game, cắm, rút, quay lại). */
+    private fun syncPadDevices() {
+        ui.setPadConnected(GamepadInput.hasPadSource(inputDevices.inputDeviceIds.map { inputDevices.getInputDevice(it)?.sources ?: 0 }))
     }
 
     /** Đưa trục về giữa và nhả mọi nút đang giữ (rút tay cầm, tạm dừng). */

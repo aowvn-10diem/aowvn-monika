@@ -136,6 +136,7 @@ class RetroActivity : ComponentActivity() {
         ui.scale = prefs.padScale
         ui.dpadOffset = prefs.padOffset("dpad").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
         ui.faceOffset = prefs.padOffset("face").let { (x, y) -> androidx.compose.ui.geometry.Offset(x, y) }
+        ui.setPadManualHidden(prefs.padHidden) // V162: nhớ lựa chọn ẩn/hiện phím ảo
 
         val key = "${File(gamePath).nameWithoutExtension}-${gamePath.hashCode()}"
         // Cheat chung của Monika: nhận diện game theo tên → tự thêm mã từ kho libretro-database (mặc định tắt).
@@ -234,6 +235,7 @@ class RetroActivity : ComponentActivity() {
                             ui.options = null
                             showToast("Đã về mặc định. Mở lại game để áp dụng hết.", 2600)
                         },
+                        onPadHiddenChange = { AppGraph.prefs.padHidden = it },
                         extraActions = listOfNotNull(
                             if (raLoaded) vn.aow.monika.ui.theme.SheetAction("Thành tựu", vn.aow.monika.R.drawable.ic_fluent_star_24_regular) {
                                 raSheet = vn.aow.monika.achievements.parseInGameAchievements(com.swordfish.libretrodroid.RetroAchievements.describeJson()); raSheetOpen = true
@@ -534,9 +536,15 @@ class RetroActivity : ComponentActivity() {
     private val heldPadKeys = HashSet<Int>()
     private val inputDevices by lazy { getSystemService(android.hardware.input.InputManager::class.java) }
     private val deviceListener = object : android.hardware.input.InputManager.InputDeviceListener {
-        override fun onInputDeviceAdded(deviceId: Int) = Unit
+        // V162: cắm tay cầm → tự ẩn phím ảo; rút → tự hiện (trừ khi người chơi đã tự ẩn).
+        override fun onInputDeviceAdded(deviceId: Int) = syncPadDevices()
         override fun onInputDeviceChanged(deviceId: Int) = Unit
-        override fun onInputDeviceRemoved(deviceId: Int) = releasePad() // rút tay cầm đang giữ nút/cần: nhả hết, khỏi kẹt phím
+        override fun onInputDeviceRemoved(deviceId: Int) { releasePad(); syncPadDevices() }
+    }
+
+    /** Đồng bộ trạng thái tay cầm theo danh sách thiết bị đang cắm (mở game, cắm, rút, quay lại). */
+    private fun syncPadDevices() {
+        ui.setPadConnected(GamepadInput.hasPadSource(inputDevices.inputDeviceIds.map { inputDevices.getInputDevice(it)?.sources ?: 0 }))
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -586,6 +594,7 @@ class RetroActivity : ComponentActivity() {
         super.onResume()
         clock?.resume()
         inputDevices.registerInputDeviceListener(deviceListener, null)
+        syncPadDevices() // V162: mở game khi tay cầm đã cắm sẵn → ẩn phím ảo ngay
     }
 
     override fun onPause() {
