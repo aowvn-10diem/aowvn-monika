@@ -66,24 +66,24 @@ class ConfigRepositoryValidationTest {
     }
 
     @Test fun oldCacheWithoutExperimentalFlagFallsBackToBundledWarning() {
-        assertEquals(54, bundled)
+        assertEquals(55, bundled)
         cache.writeText(valid(38))
         val current = repo().current
-        assertEquals(54, current.configVersion)
+        assertEquals(55, current.configVersion)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
 
-    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled54() {
+    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled55() {
         cache.writeText("""{"configVersion":47,"saveTransfer":{"systems":{}}}""")
         val current = repo().current
-        assertEquals(54, current.configVersion)
+        assertEquals(55, current.configVersion)
         assertEquals(setOf("java", "nds", "gba", "3ds", "psp", "ps1"), current.saveTransfer.systems.keys)
     }
 
     @Test fun cache39FallsBackToBundledDocumentConfiguration() {
         cache.writeText("""{"configVersion":39,"documentExtensions":[]}""")
         val current = repo().current
-        assertEquals(54, current.configVersion)
+        assertEquals(55, current.configVersion)
         assertEquals(listOf("pdf", "doc", "docx", "txt", "epub"), current.documentExtensions)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
@@ -91,7 +91,7 @@ class ConfigRepositoryValidationTest {
     @Test fun cache53WithOldAppReleaseFallsBackToBundled088() {
         cache.writeText("""{"configVersion":53,"app":{"latestVersionCode":52,"latestVersionName":"0.8.7","minVersionCode":1,"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.7/AowVN-Monika-v0.8.7.apk"}}""")
         val current = repo().current
-        assertEquals(54, current.configVersion)
+        assertEquals(55, current.configVersion)
         assertEquals(53, current.app.latestVersionCode)
         assertEquals("0.8.8", current.app.latestVersionName)
         assertEquals(1, current.app.minVersionCode)
