@@ -19,26 +19,44 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import vn.aow.monika.AppGraph
 import vn.aow.monika.feed.Post
+import vn.aow.monika.ui.screens.GameDetailRoute
 import vn.aow.monika.ui.screens.LibraryScreen
 import vn.aow.monika.ui.screens.SettingsScreen
 import vn.aow.monika.ui.theme.*
 
 /** Bản Play mở vào Thư viện; tệp được người dùng đưa vào qua SAF. */
 class MainActivity : ComponentActivity() {
+    /** Khóa game (Game.key) vừa được yêu cầu mở trang chi tiết (V139). */
+    private var pendingGame by mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         acceptFiles(intent)
+        takeGameIntent(intent)
         setContent {
             MonikaTheme {
                 var page by rememberSaveable { mutableStateOf("library") }
-                BackHandler(page != "library") { page = "library" }
+                var gameKey by rememberSaveable { mutableStateOf(pendingGame) }
+                LaunchedEffect(pendingGame) {
+                    pendingGame?.let { gameKey = it; page = "game"; pendingGame = null }
+                }
+                BackHandler(page != "library") {
+                    if (page == "game") gameKey = null
+                    page = "library"
+                }
                 Column(Modifier.fillMaxSize()) {
-                    MonikaHeader("Aow Monika", right = { SoftPillButton("Bài viết", { page = "articles" }) })
+                    // Trang game có thanh tiêu đề riêng (nút Quay lại) nên không lặp tiêu đề app.
+                    if (page != "game") MonikaHeader("Aow Monika", right = { SoftPillButton("Bài viết", { page = "articles" }) })
                     Box(Modifier.weight(1f)) {
                         when (page) {
                             "settings" -> SettingsScreen(onBack = { page = "library" })
                             "articles" -> PlayArticles { page = "library" }
+                            "game" -> {
+                                val key = gameKey
+                                if (key != null) GameDetailRoute(key) { page = "library"; gameKey = null }
+                                else LibraryScreen(onSettings = { page = "settings" })
+                            }
                             else -> LibraryScreen(onSettings = { page = "settings" })
                         }
                     }
@@ -46,7 +64,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); acceptFiles(intent) }
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); acceptFiles(intent); takeGameIntent(intent) }
     override fun onResume() {
         super.onResume()
         AppGraph.prefs.mergeGameEvents()
@@ -71,9 +89,16 @@ class MainActivity : ComponentActivity() {
         }
         if (uris.isNotEmpty()) { AppGraph.pendingImports.value = uris; intent?.action = null }
     }
+    private fun takeGameIntent(intent: Intent?) {
+        val key = intent?.getStringExtra(EXTRA_GAME_KEY)?.takeIf { it.isNotBlank() } ?: return
+        intent.removeExtra(EXTRA_GAME_KEY) // xoay màn hình không mở lại lần nữa
+        pendingGame = key
+    }
     companion object {
         const val EXTRA_POST_ID = "post_id"
         const val EXTRA_OPEN_LIBRARY = "open_library"
+        /** Khóa game (Game.key) để mở trang chi tiết. */
+        const val EXTRA_GAME_KEY = "game_key"
     }
 }
 
