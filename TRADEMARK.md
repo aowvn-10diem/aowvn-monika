@@ -33,18 +33,19 @@ GPL-3.0 không cấp quyền dùng nhãn hiệu, tên và logo; phần này dự
 
 ## 4. Kênh chính thức
 
-Bản chính thức **chỉ** phát hành ở:
+Bản chính thức (APK) **chỉ** tải được ở hai nơi:
 
 - Trang Releases của repo này: <https://github.com/aowvn-10diem/aowvn-monika/releases>
 - Trang giới thiệu: <https://monika.aow.vn>
-- Cộng đồng: <https://www.aow.vn>
 
-Nơi nào khác (kênh chat, trang tải, cửa hàng ứng dụng khác) cho tải "AowVN Monika" đều **không** phải kênh chính thức, trừ khi trang giới thiệu ở trên ghi rõ.
+Nơi nào khác (kênh chat, trang tải, cửa hàng ứng dụng khác) cho tải "AowVN Monika" đều **không** phải kênh chính thức, trừ khi hai trang trên ghi rõ.
+
+**Kênh cộng đồng (không phải nơi tải APK):** <https://www.aow.vn> là nơi đọc tin, hướng dẫn và trao đổi. Đừng tải APK từ bài đăng hay đường dẫn ở đó nếu nó không dẫn về hai trang chính thức ở trên.
 
 ## 5. Cách nhận biết bản chính thức
 
 - Tải từ trang Releases. Mỗi bản có tệp `SHA256SUMS-vX.Y.Z.txt`; so SHA-256 của APK với tệp này.
-- Ai rành kỹ thuật có thể xem chứng thư ký APK: mọi bản chính thức dùng cùng một khóa, bản giả sẽ khác. Dấu vân tay chứng thư chính thức do chủ dự án công bố; **không** tin dấu vân tay do chỗ tải lạ đưa ra.
+- Ai rành kỹ thuật có thể xem chứng thư ký APK: mọi bản chính thức dùng cùng một khóa, bản giả sẽ khác. Dấu vân tay chứng thư chính thức do chủ dự án công bố (dự kiến ở trang "Bản chính thức" trên monika.aow.vn, đang làm: V183); **không** tin dấu vân tay do chỗ tải lạ đưa ra.
 - Bản chính thức không bao giờ hỏi mật khẩu tài khoản ngân hàng hay mã OTP.
 
 ## 6. Thấy bản giả thì làm gì
