@@ -94,4 +94,7 @@ dependencies {
     implementation 'com.github.woesss:filepicker:4.4.0'
     implementation 'com.github.nikita36078:pngj:2.2.3'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
+
+    // Aow Monika (V161): test JUnit thường cho bố cục bàn phím ảo máy ngang (AowLandscapePad).
+    testImplementation libs.junit
 }

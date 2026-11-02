@@ -43,6 +43,7 @@ import javax.microedition.lcdui.overlay.Overlay;
 import javax.microedition.shell.MicroActivity;
 import javax.microedition.util.ContextHolder;
 import ru.playsoftware.j2meloader.AowKeyPalette;
+import ru.playsoftware.j2meloader.AowLandscapePad;
 
 import ru.playsoftware.j2meloader.config.Config;
 import ru.playsoftware.j2meloader.config.ProfileModel;
@@ -82,7 +83,6 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	private static final int TYPE_ARROWS = 6;
 	/** Aow Monika: bàn phím kiểu điện thoại chia 2 nửa — trái bàn số 3×4, phải L ↑ R / ← OK → / ↓ (mặc định). */
 	public static final int TYPE_MONIKA = 7;
-	private static final float MONIKA_ROWS = 4;
 	private static final float MONIKA_KEY_SCALE_Y = 0.78f;
 
 	private static final float PHONE_KEY_ROWS = 5;
@@ -611,8 +611,9 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	/** Máy ngang + bàn phím Monika: bề rộng mỗi cụm phím 2 bên (game nằm giữa). 0 = không áp dụng. */
 	public float getMonikaSideWidth(float w, float h) {
-		if (layoutVariant != TYPE_MONIKA || w <= h) return 0;
-		return 3 * getKeySize(w - 2 * dp(MONIKA_EDGE), h) + dp(MONIKA_EDGE + MONIKA_PANEL_PAD + MONIKA_GAP);
+		if (layoutVariant != TYPE_MONIKA) return 0;
+		// V161: cùng một phép tính với cỡ phím thật (AowLandscapePad) để khung game không bị cụm phím đè.
+		return AowLandscapePad.sideWidth(w, h, dp(1));
 	}
 
 	private boolean isLeftGroup(int keyCode) {
@@ -668,9 +669,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	public float getPhoneKeyboardHeight(float w, float h) {
 		if (layoutVariant == TYPE_MONIKA) {
-			// Máy ngang: phím nằm 2 bên, không chiếm chiều cao.
-			if (w > h) return 0;
-			return MONIKA_ROWS * getKeySize(w - 2 * dp(MONIKA_EDGE), h) * MONIKA_KEY_SCALE_Y + dp(MONIKA_EDGE + MONIKA_PANEL_PAD + MONIKA_HANDLE + MONIKA_GAP);
+			// Chiều cao bàn phím Monika (máy ngang = 0) nằm ở AowLandscapePad để Canvas và test dùng chung.
+			return AowLandscapePad.monikaKeyboardHeight(w, h, dp(1));
 		}
 		return PHONE_KEY_ROWS * getKeySize(w, h) * PHONE_KEY_SCALE_Y;
 	}
@@ -1056,7 +1056,11 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		}
 
 		RectF keyArea = layoutVariant == TYPE_MONIKA ? snapArea : screen;
-		float keySize = getKeySize(keyArea.width(), keyArea.height());
+		// V161: máy ngang — cỡ phím lấy theo cả màn (AowLandscapePad tự trừ mép), để 2 cụm phím
+		// chỉ chiếm 2 mép và chừa khung game ở giữa.
+		float keySize = layoutVariant == TYPE_MONIKA && monikaLandscape
+				? AowLandscapePad.keySize(screen.width(), screen.height(), dp(1))
+				: getKeySize(keyArea.width(), keyArea.height());
 		snapRadius = keySize * snapRadius / 8;
 		this.keySize = keySize;
 		for (int group = 0; group < keyScaleGroups.length; group++) {
@@ -1078,6 +1082,10 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	private float getKeySize(float screenWidth, float screenHeight) {
 		if (isPhone()) {
+			// V161: máy ngang dùng cỡ phím nhỏ theo 2 cụm mép (xem AowLandscapePad).
+			if (layoutVariant == TYPE_MONIKA && AowLandscapePad.isLandscape(screenWidth, screenHeight)) {
+				return AowLandscapePad.keySize(screenWidth, screenHeight, dp(1));
+			}
 			return screenWidth / 6.0f;
 		} else if (screenWidth > screenHeight) {
 			return Math.min(screenWidth / 12.0f, screenHeight / 6.0f);
@@ -1557,7 +1565,9 @@ public class VirtualKeyboard implements Overlay, Runnable {
 			float d = ContextHolder.getAppContext().getResources().getDisplayMetrics().density;
 			boolean primary = keyCode == Canvas.KEY_FIRE;
 			// V85c: mặt phím luôn đục (AowKeyPalette.FACE_ALPHA): alpha < 255 trộn màu mặt phím với nền làm tụt tương phản dưới 4.5:1.
-			int a = AowKeyPalette.FACE_ALPHA << 24;
+			// V161: máy NGANG là ngoại lệ — phím bán trong suốt (AowLandscapePad.KEY_ALPHA) để không che khung game.
+			int faceAlpha = AowLandscapePad.keyAlpha(layoutVariant == TYPE_MONIKA && monikaLandscape);
+			int a = faceAlpha << 24;
 			float step = 3 * d;
 			float shadow = 3 * d;
 			float press = selected ? 2 * d : 0;
