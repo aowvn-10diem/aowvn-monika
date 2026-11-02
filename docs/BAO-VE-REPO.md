@@ -41,6 +41,8 @@ Ghi chú vận hành: tạo secret (GitHub + Cloudflare), đổi repo packs sang
 - **[A71]** Ép cập nhật từ thứ Hai 02/11/2026 (`minVersionCode`).
 - Mã G3 và việc ép cập nhật (V157) giao DeepSeek 1 (#337). **PR này chỉ là tài liệu thiết kế**, không chứa mã.
 - **P1a (overlay):** phần nhạy cảm đi kèm lần tải config hiện có, không thêm lượt gọi Worker. Offline dùng bản overlay lấy thành công lần cuối; chưa từng có thì tắt đúng tính năng đó. Giá trị không nằm trong APK hay repo.
+- **[A77]** (sếp chốt 02/11) Sau bản 0.8.9, ưu tiên là **bảo vệ repo**. Tài liệu này là khung để các việc thi công bám theo; thi công do DeepSeek 1/2 làm, Sonnet chỉ rà thiết kế và chỉ ra rủi ro.
+- **Hướng thi công đang mở:** V181 ([#443](https://github.com/aowvn-10diem/aowvn-monika/pull/443), nháp) — cấu hình qua GitHub Pages trước, Worker làm dự phòng. Khi V181 vào main, phần "tải" của P1a/G1 trong tài liệu này cần đối chiếu lại với thiết kế đó (Nova rà khi PM hỏi).
 - **G0 chỉ là rào thấp:** secret HMAC nằm trong APK release nên dịch ngược lấy được ([A66]). Nó chặn bản fork lười, không chặn người cố tình.
 
 ### Ước lượng lượt gọi Worker (giả định, cần số đo thật)
