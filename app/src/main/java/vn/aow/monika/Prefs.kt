@@ -205,6 +205,10 @@ class Prefs(private val context: Context) {
         get() = gsp.getFloat("pad_opacity", sp.getFloat("pad_opacity", 0.65f))
         set(value) = gsp.edit().putFloat("pad_opacity", value).apply()
 
+    /** Độ mờ người chơi đã tự chỉnh (null = chưa chỉnh, dùng mặc định từ config). */
+    fun savedPadOpacity(): Float? =
+        if (gsp.contains("pad_opacity") || sp.contains("pad_opacity")) padOpacity else null
+
     /**
      * V162: người chơi tự ẩn phím ảo bằng nút nhỏ trong game. Ghi từ tiến trình game; J2ME cũng ghi
      * cùng file "monika_game" với khoá này → cắm/rút tay cầm không tự hiện lại khi người chơi đã tự ẩn.

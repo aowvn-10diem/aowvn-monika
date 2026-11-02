@@ -1084,7 +1084,10 @@
         "defaultRatio": "2",
         "gapKey": "melonds_screen_gap",
         "gapMax": 32,
-        "defaultGap": 0
+        "defaultGap": 0,
+        "overlayPad": true,
+        "padOpacity": 0.55,
+        "landscapeLayout": "left-right"
       }
     }
   },
