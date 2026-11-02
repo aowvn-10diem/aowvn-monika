@@ -286,3 +286,41 @@ test("V153 gioi han khong lam tang so lan goi KV tren moi bao cao", async () => 
   assert.equal((await postWithIp(c, fixture)).status, 200);
   assert.deepEqual([gets, puts], [1, 2]); // 1 doc han muc + 1 ghi han muc + 1 ghi bao cao
 });
+
+// V186: /reports không còn tr? 500 tr?ng khi KV l?i t?m th?i ho?c tr? trang sai d?ng.
+test("V186 KV list loi tam thoi -> 503 kv_unavailable (khong phai 500 tr?ng)", async () => {
+  const c = setup();
+  await c.post(fixture);
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => { throw new Error("KV list failed"); } };
+  const response = await c.read("/reports");
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { ok: false, error: "kv_unavailable" });
+});
+
+test("V186 KV tra trang sai dang -> 503 bad_listing", async () => {
+  for (const broken of [{}, { list_complete: false, keys: [] }, { list_complete: true }, { list_complete: true, keys: "x" }]) {
+    const c = setup();
+    c.env.REPORTS = { ...c.env.REPORTS, list: async () => broken };
+    const response = await c.read("/reports");
+    assert.equal(response.status, 503, JSON.stringify(broken));
+    assert.equal((await response.json()).error, "bad_listing");
+  }
+});
+
+test("V186 /reports van tra dung 100 muc moi nhat va tong so khoa khi KV chia trang", async () => {
+  const c = setup();
+  const key = (i) => `r:${String(1700000000000 + i).padStart(13, "0")}:${String(i).padStart(8, "0")}`;
+  const pages = new Map();
+  for (let page = 0; page < 3; page++) {
+    pages.set(page === 0 ? undefined : `c${page}`, {
+      list_complete: page === 2, cursor: page === 2 ? undefined : `c${page + 1}`,
+      keys: Array.from({ length: 400 }, (_, i) => ({ name: key(page * 400 + i), metadata: { k: "anr", c: "unknown", a: "0.8.8 (128)" } })),
+    });
+  }
+  c.env.REPORTS = { ...c.env.REPORTS, list: async ({ cursor }) => pages.get(cursor) };
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 1200);
+  assert.equal(body.reports.length, 100);
+  assert.equal(body.reports[0].id, key(1199)); // m?i nh?t d?ng d?u
+  assert.equal(body.reports[99].id, key(1100));
+});

@@ -1,5 +1,7 @@
 // Nhận báo lỗi game/lõi từ Aow Monika (ẩn danh), lưu KV 60 ngày. Xem lại bằng /reports (cần mã quản trị).
 export const MAX_BODY = 60000; // byte UTF-8, cả request và giá trị KV.
+export const LIST_PAGE = 1000; // KV list: tối đa 1000 khoá mỗi trang
+export const LIST_MAX = 5000;  // chặn trên số khoá đọc mỗi lần (giữ nguyên mức cũ)
 const bytes = (text) => new TextEncoder().encode(text).length;
 const number = (v, fallback = 0) => Number.isSafeInteger(v) && v >= 0 ? v : fallback;
 const lines = (v, count, width) => Array.isArray(v) ? v.slice(0, count).map((l) => s(l, width)) : [];
@@ -180,13 +182,21 @@ export default {
         const v = await env.REPORTS.get(decodeURIComponent(url.pathname.slice(9)));
         return v ? new Response(v, { headers: { "content-type": "application/json; charset=utf-8" } }) : json({ ok: false, error: "not_found" }, 404);
       }
+      // V186: KV list có thể lỗi tạm thời hoặc trả trang sai dạng; trước đây lỗi đó thành 500 trắng.
+      // Nay trả 503 JSON có mã lỗi để phía đọc biết là "thử lại được", và chặn vòng lặp bằng hằng số rõ ràng.
       const all = [];
       let cursor;
-      do {
-        const page = await env.REPORTS.list({ prefix: "r:", cursor, limit: 1000 });
-        all.push(...page.keys);
-        cursor = page.list_complete ? undefined : page.cursor;
-      } while (cursor && all.length < 5000);
+      try {
+        do {
+          const page = await env.REPORTS.list({ prefix: "r:", cursor, limit: LIST_PAGE });
+          if (typeof page?.list_complete !== "boolean" || !Array.isArray(page.keys)) return json({ ok: false, error: "bad_listing" }, 503);
+          if (!page.list_complete && !page.cursor) return json({ ok: false, error: "bad_listing" }, 503);
+          all.push(...page.keys);
+          cursor = page.list_complete ? undefined : page.cursor;
+        } while (cursor && all.length < LIST_MAX);
+      } catch {
+        return json({ ok: false, error: "kv_unavailable" }, 503);
+      }
       if (url.pathname === "/stats") {
         const by = {};
         for (const k of all) { const m = k.metadata || {}; const key = `${m.c || "?"} | ${m.k || "?"} | ${m.st || "?"}`; by[key] = (by[key] || 0) + 1; }
