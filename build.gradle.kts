@@ -1,16 +1,26 @@
-// V192b: hai thư viện **chỉ dùng lúc build** (không vào APK, không khai báo trong
-// gradle/libs.versions.toml) đang nằm trên classpath plugin Gradle và dính cảnh báo mức
-// Nghiêm trọng: `io.netty` 4.1.93.Final (AGP analytics kéo qua grpc-netty) và
-// `org.freemarker:freemarker` 2.3.32 (Kover kéo qua coverage-report 1.0.25).
-// Ghim tại đây: cả họ netty phải cùng phiên bản; nâng thì sửa hai số dưới.
+import org.gradle.api.artifacts.VersionCatalogsExtension
+
+// V192: ghim các thư viện chỉ nằm trên classpath plugin Gradle (AGP kéo bouncycastle cũ,
+// grpc-netty kéo netty cũ, Kover kéo freemarker cũ). Phiên bản lấy từ
+// `gradle/libs.versions.toml` — không ghi số ở đây; nâng cấp = sửa catalog.
 buildscript {
+    val catalog = project.the<VersionCatalogsExtension>().named("libs")
+    fun pinned(name: String) = catalog.findVersion(name).get().requiredVersion
+    val bc = pinned("bouncycastle")
+    val netty = pinned("netty")
+    val freemarker = pinned("freemarker")
     configurations.configureEach {
         if (name == "classpath") {
             resolutionStrategy {
-                eachDependency {
-                    if (requested.group == "io.netty") useVersion("4.1.137.Final")
-                }
-                force("org.freemarker:freemarker:2.3.35")
+                force(
+                    "org.bouncycastle:bcpkix-jdk18on:$bc",
+                    "org.bouncycastle:bcprov-jdk18on:$bc",
+                    "org.bouncycastle:bcprov-jdk15to18:$bc",
+                    "org.bouncycastle:bcutil-jdk18on:$bc",
+                    "org.freemarker:freemarker:$freemarker",
+                )
+                // Cả họ netty phải cùng phiên bản (handler, codec, codec-http, codec-http2, ...).
+                eachDependency { if (requested.group == "io.netty") useVersion(netty) }
             }
         }
     }
