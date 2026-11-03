@@ -53,3 +53,5 @@ jobs:
           PY
       - name: Kiểm thử lại NDK bằng SDK giả (V123, offline)
         run: python3 scripts/test-ci-install-j2me-ndk.py
+      - name: Kiểm script trước push bằng lỗi giả (Bash, offline)
+        run: python3 scripts/test-truoc-khi-push.py
