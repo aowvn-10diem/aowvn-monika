@@ -253,35 +253,74 @@ private fun RowScope.TaskAction(
     }
 }
 
+/** Kết quả đo dung lượng một cây thư mục: tổng + đã đọc được **toàn bộ** cây chưa. */
+internal data class FolderSize(val bytes: Long, val complete: Boolean)
+
 /**
- * Dung lượng game: file lẻ của game quét được, hoặc **toàn bộ** cây thư mục game của Monika (không giới hạn độ sâu).
- * Trả về null khi không đọc được thư mục (không có / không phải thư mục / lỗi đọc); 0 khi thư mục rỗng.
+ * Dung lượng game: file lẻ của game quét được, hoặc **toàn bộ** cây thư mục game của Monika
+ * (không giới hạn độ sâu).
+ *
+ * Trả về **null** (= hiện "Chưa rõ") khi không đọc được thư mục, **hoặc khi chỉ đọc được một phần
+ * cây** (thư mục con bị chặn quyền, tệp lỗi, liên kết tượng trưng) — không trả tổng thiếu như số
+ * chắc chắn. 0 khi thư mục rỗng đọc được trọn.
  */
-internal fun gameSizeBytes(game: Game): Long? {
+internal fun gameSizeBytes(
+    game: Game,
+    list: (File) -> Array<File>? = { it.listFiles() },
+    length: (File) -> Long? = { runCatching { it.length() }.getOrNull() },
+): Long? = gameFolderSize(game, list, length)?.takeIf { it.complete }?.bytes
+
+/** Như [gameSizeBytes] nhưng giữ cả cờ "đọc được trọn cây" để test/ghi chú. */
+internal fun gameFolderSize(
+    game: Game,
+    list: (File) -> Array<File>? = { it.listFiles() },
+    length: (File) -> Long? = { runCatching { it.length() }.getOrNull() },
+): FolderSize? {
     val entry = game.entry
-    if (game.external && entry != null && entry.isFile) return runCatching { entry.length() }.getOrNull()
+    if (game.external && entry != null && entry.isFile) {
+        val bytes = length(entry) ?: return FolderSize(0L, complete = false)
+        return FolderSize(bytes, complete = true)
+    }
     val root = game.dir
     if (!root.isDirectory) return null
-    return folderSizeBytes(root)
+    return folderSize(root, list, length)
 }
 
 /**
  * Tổng dung lượng cả cây thư mục, tính bằng vòng lặp (không đệ quy sâu, không giới hạn tầng).
- * Thư mục con không đọc được thì bỏ qua chứ không làm hỏng tổng; bỏ qua liên kết tượng trưng để không lặp vô hạn.
+ * [FolderSize.complete] = false khi có mục không đọc được (thư mục không liệt kê được, tệp lỗi)
+ * hoặc gặp liên kết tượng trưng (không đi theo để tránh lặp) — tổng khi đó chỉ là mức tối thiểu.
  */
-internal fun folderSizeBytes(root: File): Long {
+internal fun folderSize(
+    root: File,
+    list: (File) -> Array<File>? = { it.listFiles() },
+    length: (File) -> Long? = { runCatching { it.length() }.getOrNull() },
+): FolderSize {
     var total = 0L
+    var complete = true
     val pending = ArrayDeque<File>().apply { add(root) }
     while (pending.isNotEmpty()) {
         val dir = pending.removeFirst()
-        val children = runCatching { dir.listFiles() }.getOrNull() ?: continue
+        val children = list(dir)
+        if (children == null) {
+            complete = false
+            continue
+        }
         for (child in children) {
-            if (runCatching { java.nio.file.Files.isSymbolicLink(child.toPath()) }.getOrDefault(false)) continue
-            if (child.isDirectory) pending.add(child)
-            else total += runCatching { child.length() }.getOrDefault(0L)
+            if (runCatching { java.nio.file.Files.isSymbolicLink(child.toPath()) }.getOrDefault(false)) {
+                // Bỏ qua liên kết để không lặp vô hạn, nhưng không được coi là đã đọc đủ cây.
+                complete = false
+                continue
+            }
+            if (child.isDirectory) {
+                pending.add(child)
+            } else {
+                val bytes = length(child)
+                if (bytes == null) complete = false else total += bytes
+            }
         }
     }
-    return total
+    return FolderSize(total, complete)
 }
 
 /** Nhãn hiển thị của dung lượng: null = không đọc được, 0 = thư mục rỗng. */

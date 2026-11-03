@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.click
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -36,6 +37,7 @@ import vn.aow.monika.ui.screens.GameDetailScreen
 import vn.aow.monika.ui.screens.GameMenuSheet
 import vn.aow.monika.ui.screens.GameTile
 import vn.aow.monika.ui.screens.formatGameSize
+import vn.aow.monika.ui.screens.gameFolderSize
 import vn.aow.monika.ui.screens.gameSizeBytes
 import vn.aow.monika.ui.screens.rememberGameLaunch
 import vn.aow.monika.ui.screens.sizeLabel
@@ -176,6 +178,42 @@ class GameDetailTest {
         File(dir, "shallow.bin").delete()
         assertEquals(4096L + 2048L, gameSizeBytes(game))
         assertEquals("6,0 KB", sizeLabel(gameSizeBytes(game)))
+    }
+
+    /** Luna 4 (PR #430/#476): đọc được **một phần** cây thì không được trả tổng thiếu như số chắc chắn. */
+    @Test fun partiallyUnreadableFolderReportsUnknownSizeInsteadOfAShortTotal() {
+        val dir = File(rule.activity.cacheDir, "v139-partial").apply { deleteRecursively(); mkdirs() }
+        File(dir, "readable.bin").writeBytes(ByteArray(1024))
+        val broken = File(dir, "broken").apply { mkdirs() }
+        File(broken, "hidden.bin").writeBytes(ByteArray(5000))
+        val game = Game(dir, "V139 partial", SystemDef("v139", "Máy thử", "test"), null)
+
+        // Đọc được trọn cây → tổng chính xác.
+        assertEquals(6024L, gameSizeBytes(game))
+
+        // Thư mục con bị chặn quyền/không liệt kê được → "Chưa rõ", không phải 1024 B.
+        val list = { f: File -> if (f.name == "broken") null else f.listFiles() }
+        val partial = gameFolderSize(game, list = list)
+        assertFalse("Phải đánh dấu chưa đọc đủ cây", partial!!.complete)
+        assertEquals("Tổng đo được chỉ là mức tối thiểu", 1024L, partial.bytes)
+        assertNull(gameSizeBytes(game, list = list))
+        assertEquals("Chưa rõ", sizeLabel(gameSizeBytes(game, list = list)))
+    }
+
+    /** Tệp lỗi (không đọc được dung lượng) giữa cây cũng làm tổng thành "Chưa rõ". */
+    @Test fun fileLengthErrorReportsUnknownSize() {
+        val dir = File(rule.activity.cacheDir, "v139-len-error").apply { deleteRecursively(); mkdirs() }
+        File(dir, "ok.bin").writeBytes(ByteArray(2048))
+        val bad = File(dir, "bad.bin").apply { writeBytes(ByteArray(777)) }
+        val game = Game(dir, "V139 len error", SystemDef("v139", "Máy thử", "test"), null)
+
+        val length = { f: File -> if (f.name == "bad.bin") null else f.length() }
+        val size = gameFolderSize(game, length = length)
+        assertFalse("Có tệp không đọc được thì chưa đủ", size!!.complete)
+        assertEquals(2048L, size.bytes)
+        assertNull(gameSizeBytes(game, length = length))
+        assertEquals("Chưa rõ", sizeLabel(gameSizeBytes(game, length = length)))
+        assertTrue("Tệp lỗi vẫn tồn tại trên đĩa", bad.exists())
     }
 
     /** Thư mục rỗng hoặc không đọc được không được làm crash và phải hiện nhãn hợp lý. */
