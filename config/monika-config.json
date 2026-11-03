@@ -1,13 +1,35 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 55,
+  "configVersion": 58,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
-    "latestVersionCode": 53,
-    "latestVersionName": "0.8.8",
+    "latestVersionCode": 54,
+    "latestVersionName": "0.8.9",
     "minVersionCode": 1,
-    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.8/AowVN-Monika-v0.8.8.apk",
-    "changelog": "Báo ngay khi có cập nhật quan trọng. Rút tay cầm không còn kẹt nút."
+    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.9/AowVN-Monika-v0.8.9.apk",
+    "changelog": "Bản thử 0.8.9: Sửa nút A/B GBA, màn hình NDS và phím Java khi xoay ngang. Thêm ẩn/hiện phím ảo; Thư viện chia thành Chơi, Đọc và Tệp."
+  },
+  "security": {
+    "officialCertSha256": "c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c"
+  },
+  "official": {
+    "pageUrl": "https://monika.aow.vn/chinh-thuc/",
+    "downloadSources": [
+      {
+        "title": "monika.aow.vn",
+        "url": "https://monika.aow.vn/"
+      },
+      {
+        "title": "GitHub Releases",
+        "url": "https://github.com/aowvn-10diem/aowvn-monika/releases"
+      }
+    ],
+    "reportFakeUrl": "https://github.com/aowvn-10diem/aowvn-monika/issues/new?template=bao-ban-gia.yml",
+    "verificationSteps": [
+      "Đối chiếu địa chỉ nơi tải với danh sách bên trên. Tên và biểu tượng giống nhau chưa đủ để xác nhận bản chính thức.",
+      "Trên máy tính có Android SDK Build-Tools, đổi tên tệp APK thành app.apk rồi chạy: apksigner verify --print-certs app.apk. Đối chiếu dòng Signer #1 certificate SHA-256 digest với chứng thư bên trên.",
+      "Trước khi ủng hộ, đối chiếu ngân hàng, số tài khoản và chủ tài khoản trong mục Ủng hộ. Gặp thông tin khác hoặc nguồn tải đáng ngờ, hãy bấm Báo bản giả."
+    ]
   },
   "feed": {
     "url": "https://www.aow.vn/feeds/posts/default",
@@ -694,16 +716,74 @@
     "loginUrl": "https://www.aow.vn/p/device-login.html",
     "voteUrl": "https://www.aow.vn/p/vote-game.html",
     "donate": {
-      "bankId": "970454",
-      "accountNo": "9021870093495",
+      "bankId": "icb",
+      "accountNo": "101867601261",
       "accountName": "VU DOAN BINH MINH",
       "template": "compact2",
       "memoPrefix": "AowVN",
       "amounts": [
-        10000,
-        20000,
-        50000,
-        100000
+        100000,
+        200000,
+        300000
+      ],
+      "bankName": "VietinBank",
+      "memo": "Ung ho AowVN Monika",
+      "minAmount": 1000,
+      "maxAmount": 500000000,
+      "qrBaseUrl": "https://img.vietqr.io/image/",
+      "payUrl": "https://dl.vietqr.io/pay",
+      "banksUrl": "https://api.vietqr.io/v2/android-app-deeplinks",
+      "returnUrl": "https://monika.aow.vn/",
+      "appeal": "Chúng mình cố gắng phát triển Monika hoàn toàn miễn phí, nhưng AowVN vẫn cần phải chi trả chi phí cho máy chủ, AI. Đừng ngần ngại donate ủng hộ chúng mình nha, 200k, 100k hay 10k đều rất đáng trân trọng á.",
+      "fallbackBanks": [
+        {
+          "id": "icb",
+          "name": "VietinBank"
+        },
+        {
+          "id": "vcb",
+          "name": "Vietcombank"
+        },
+        {
+          "id": "mb",
+          "name": "MB Bank"
+        },
+        {
+          "id": "tcb",
+          "name": "Techcombank"
+        },
+        {
+          "id": "bidv",
+          "name": "BIDV"
+        },
+        {
+          "id": "acb",
+          "name": "ACB"
+        },
+        {
+          "id": "vpb",
+          "name": "VPBank"
+        },
+        {
+          "id": "tpb",
+          "name": "TPBank"
+        },
+        {
+          "id": "shb",
+          "name": "SHB"
+        },
+        {
+          "id": "ocb",
+          "name": "OCB"
+        },
+        {
+          "id": "lpb",
+          "name": "LPBank"
+        },
+        {
+          "id": "seab",
+          "name": "SeABank"
+        }
       ]
     }
   },

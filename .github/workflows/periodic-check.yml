@@ -68,7 +68,7 @@ jobs:
           retention-days: 3
   issue:
     needs: [links, packs, unit, remote-config]
-    if: always() && github.event_name != 'pull_request'
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && always() && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read

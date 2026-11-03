@@ -35,6 +35,7 @@ jobs:
   gui:
     # Lọc sớm theo tiền tố để không cấp runner cho mọi comment; script vẫn lọc tác giả chính xác.
     if: >-
+      github.repository == 'aowvn-10diem/aowvn-monika' &&
       github.event_name == 'issue_comment' &&
       (startsWith(github.event.comment.body, '[Cố vấn → sếp]') ||
       startsWith(github.event.comment.body, '[PM → sếp]'))
