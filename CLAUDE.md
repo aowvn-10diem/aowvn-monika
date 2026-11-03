@@ -32,6 +32,7 @@ Hạn mức là tài nguyên hiếm nhất. Mọi agent:
 - Mỗi lượt chạy định kỳ có skill riêng (bảng dưới), làm đúng skill, không tự nghĩ lại quy trình.
 
 ## Lệnh
+- `bash scripts/truoc-khi-push.sh` (Windows: `powershell -NoProfile -File scripts/truoc-khi-push.ps1`) — kiểm trước khi đẩy: test hai flavor → `assembleDebug` → `assemblePlayDebug` → quét APK Play; dừng ở lỗi đầu, dòng cuối `ĐẠT`/`LỖI`. Cần JDK 17, Android SDK/NDK và Python 3 như khi build bình thường; script tự tìm gốc repo.
 - `./gradlew testDebugUnitTest` — chạy trước mọi push (gồm test config và test giao diện Robolectric). Ngoại lệ: commit chỉ sửa `docs/**` hoặc `**/*.md` (CI cũng bỏ qua, V11).
 - `./gradlew assembleDebug` — build APK.
 
