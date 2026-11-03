@@ -7,15 +7,15 @@ plugins {
     alias(libs.plugins.kover)
 }
 
-// V192: BouncyCastle đi vào APK qua `libadb-android` (kéo `bcprov-jdk15to18:1.81`).
-// Ghim bản vá cho MỌI cấu hình của app (mọi `*Classpath`, cả flavor github và play),
-// dùng đúng bộ phiên bản với classpath build trong `build.gradle.kts` gốc.
+// V192: BouncyCastle đi vào APK qua `libadb-android` (kéo bản cũ). Ghim bản trong
+// `gradle/libs.versions.toml` cho MỌI cấu hình của app (mọi `*Classpath`, cả 2 flavor).
+val bcVersion = libs.versions.bouncycastle.get()
 configurations.configureEach {
     resolutionStrategy.force(
-        "org.bouncycastle:bcprov-jdk15to18:1.85",
-        "org.bouncycastle:bcprov-jdk18on:1.85",
-        "org.bouncycastle:bcpkix-jdk18on:1.85",
-        "org.bouncycastle:bcutil-jdk18on:1.85",
+        "org.bouncycastle:bcprov-jdk15to18:$bcVersion",
+        "org.bouncycastle:bcprov-jdk18on:$bcVersion",
+        "org.bouncycastle:bcpkix-jdk18on:$bcVersion",
+        "org.bouncycastle:bcutil-jdk18on:$bcVersion",
     )
 }
 
