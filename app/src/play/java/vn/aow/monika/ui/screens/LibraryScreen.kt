@@ -1,10 +1,8 @@
 package vn.aow.monika.ui.screens
 
-import android.net.Uri
 import android.os.Build
 import vn.aow.monika.ui.theme.Spinner
 import androidx.compose.runtime.collectAsState
-import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -66,7 +65,7 @@ import vn.aow.monika.ui.theme.MonikaCard
 import vn.aow.monika.ui.theme.MonikaHeader
 import vn.aow.monika.ui.theme.Radius
 import vn.aow.monika.ui.theme.Screen
-import androidx.compose.runtime.produceState
+import vn.aow.monika.ui.theme.SectionTabs
 import vn.aow.monika.library.GameTask
 import vn.aow.monika.library.GameTasks
 import vn.aow.monika.ui.theme.MonikaMenuSheet
@@ -74,11 +73,15 @@ import vn.aow.monika.ui.theme.SheetAction
 import vn.aow.monika.ui.theme.SheetChip
 import vn.aow.monika.ui.theme.SheetRow
 
-/** Màn "Giả lập": thư viện game trong máy, lọc theo hệ, tiếp tục chơi. */
+/**
+ * Màn "Thư viện" bản Play: ba mục Chơi / Đọc / Tệp như bản web.
+ *
+ * Chỉ giữ phần đọc máy: game đã có sẵn trong máy, tài liệu sẵn có, tệp trong kho Monika.
+ * Không có tải game, không link tải ngoài, không tự cập nhật APK, không VietQR/ủng hộ (A65, A68).
+ */
 @Composable
 fun LibraryScreen(onSettings: () -> Unit) {
     val context = LocalContext.current
-    val activity = context as Activity
     val scope = rememberCoroutineScope()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val c = Monika.colors
@@ -94,7 +97,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
     var systemSheet by remember { mutableStateOf(false) }
     var libMenu by remember { mutableStateOf(false) }
     var gameMenu by remember { mutableStateOf<Game?>(null) }
-    // Game đang tải / giải nén: mỗi game 1 ô riêng có tiến độ (không còn thanh chung trên đầu).
+    // Game đang giải nén: mỗi game 1 ô riêng có tiến độ (bản Play không tải game).
     val extracting by GameTasks.running.collectAsState()
     val tasks = extracting.values.toList()
     var needApp by remember { mutableStateOf<ExternalApp?>(null) }
@@ -103,6 +106,13 @@ fun LibraryScreen(onSettings: () -> Unit) {
     var toExtract by remember { mutableStateOf<Game?>(null) }
     var password by remember { mutableStateOf("") }
     var pinned by remember { mutableStateOf(AppGraph.prefs.pinnedGames) }
+    // Thư viện chia 3 mục Chơi / Đọc / Tệp; mục đang chọn nhớ trong Prefs cho lần mở sau.
+    var section by remember { mutableStateOf(LibrarySection.of(AppGraph.prefs.librarySection)) }
+    var addSheet by remember { mutableStateOf(false) }
+    fun selectSection(target: LibrarySection) {
+        section = target
+        AppGraph.prefs.librarySection = target.key
+    }
 
     val playedTick by AppGraph.prefs.playedTick.collectAsState()
     val infoTick by AppGraph.gameInfo.updated.collectAsState()
@@ -181,6 +191,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
         scanAccess = AppGraph.library.scanner.canScanAll()
         if (scanAccess) scanDevice()
     }
+    // Bản Play: chỉ mở SAF chọn tệp, không xin quyền đọc toàn bộ bộ nhớ.
     fun requestScanAccess() { picker.launch(arrayOf("*/*")) }
     // Đọc lại quyền mỗi khi quay từ cài đặt Android; chỉ quét khi quyền thực sự đã được cấp.
     LaunchedEffect(lifecycle) {
@@ -240,21 +251,29 @@ fun LibraryScreen(onSettings: () -> Unit) {
             },
             right = { CircleButton(R.drawable.ic_fluent_grid_24_regular, "Menu thư viện", { libMenu = true }) },
         )
-        LazyVerticalGrid(
+        // Ba mục Chơi / Đọc / Tệp + một cửa "+ Thêm" để nhập tệp có sẵn trong máy.
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SectionTabs(
+                LibrarySection.entries.map { it.label }, section.ordinal,
+                { index -> selectSection(LibrarySection.entries[index]) }, Modifier.weight(1f),
+            )
+            GradientButton("+ Thêm", { addSheet = true }, height = 46.dp)
+        }
+        if (section == LibrarySection.PLAY) LazyVerticalGrid(
             GridCells.Fixed(2), Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance),
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item(span = { GridItemSpan(2) }) {
-                LibraryStorageAccess(scanAccess, AppGraph.prefs, ::requestScanAccess,
-                    onManual = { picker.launch(arrayOf("*/*")) })
-            }
-            // Game của lần cài trước chưa đọc được → xin quyền "Truy cập mọi tệp" (Android 11+).
+            // Game của lần cài trước chưa đọc được → nhắc cấp quyền (Android 11+).
             val lockedCount = games.count { it.locked }
             if (lockedCount > 0 && !scanAccess) item(span = { GridItemSpan(2) }) {
                 MonikaCard(Modifier.fillMaxWidth(), shape = Radius.large, padding = PaddingValues(16.dp)) {
                     Text("$lockedCount game từ lần cài trước chưa mở được", style = Monika.type.cardTitle, color = c.text)
-                    Text("Do bạn gỡ app rồi cài lại, Android chặn đọc game cũ. Cho phép \"Truy cập mọi tệp\" để chơi tiếp mà không phải tải lại.",
+                    Text("Do bạn gỡ app rồi cài lại, Android chặn đọc game cũ. Chọn lại tệp game để chơi tiếp.",
                         style = Monika.type.caption, color = c.textSecondary, modifier = Modifier.padding(top = 4.dp))
                     GradientButton("Cấp quyền", { requestScanAccess() }, Modifier.fillMaxWidth().padding(top = 12.dp), height = 44.dp)
                 }
@@ -277,7 +296,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
                     accent = true, contentPadding = PaddingValues(0.dp),
                 )
             }
-            // Game đang tải / giải nén — tiến độ ngay trên ô của game đó.
+            // Game đang giải nén — tiến độ ngay trên ô của game đó.
             if (tasks.isNotEmpty()) items(tasks, key = { it.id }) { t -> TaskTile(t) }
             lastPlayed?.takeIf { query.isBlank() }?.let { g ->
                 item(span = { GridItemSpan(2) }) { Text("Tiếp tục chơi", style = Monika.type.sectionTitle, color = c.text) }
@@ -285,10 +304,10 @@ fun LibraryScreen(onSettings: () -> Unit) {
             }
             if (scanned == null) item(span = { GridItemSpan(2) }) {
                 Box(Modifier.fillMaxWidth().height(240.dp), Alignment.Center) { Spinner() }
-            } else if (games.isEmpty() && documents.isEmpty()) item(span = { GridItemSpan(2) }) {
+            } else if (games.isEmpty()) item(span = { GridItemSpan(2) }) {
                 EmptyState(
                     R.drawable.fluent3d_video_game, "Chưa có game",
-                    "Tải game ở tab Game, hoặc thêm file (.zip .rar .7z .nds .gba .iso…) có sẵn trong máy.",
+                    "Thêm file game (.zip .rar .7z .nds .gba .iso…) có sẵn trong máy để chơi.",
                 ) {
                     LibraryFolderLabel(GameStorage.games(context).absolutePath)
                     GradientButton("Thêm game từ máy", { picker.launch(arrayOf("*/*")) }, icon = R.drawable.ic_fluent_folder_add_24_regular)
@@ -305,25 +324,25 @@ fun LibraryScreen(onSettings: () -> Unit) {
             items(shown, key = { it.key }) { g ->
                 GameTile(
                     g, onPlay = { play(g) }, onExtract = { password = ""; toExtract = g }, onMenu = { vn.aow.monika.runner.GamePreload.warm(context, g); gameMenu = g },
+                    // "Chọn lại tệp" mở SAF trên máy; bản Play không tải lại từ mạng.
                     onRedownload = { picker.launch(arrayOf("*/*")) }, onRequestAccess = ::requestScanAccess,
                 )
             }
-            val shownDocuments = documents.filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
-            if (shownDocuments.isNotEmpty()) item(span = { GridItemSpan(2) }) {
-                Text("Tài liệu", style = Monika.type.sectionTitle, color = c.text, modifier = Modifier.padding(top = 4.dp))
-            }
-            items(shownDocuments, key = { "document:${it.key}" }, span = { GridItemSpan(2) }) { document ->
-                LibraryDocumentCard(document, onOpen = {
-                    try {
-                        context.startActivity(documentViewIntent(context, document))
-                    } catch (_: android.content.ActivityNotFoundException) {
-                        info = "Chưa có ứng dụng mở loại tài liệu này. Hãy cài ứng dụng đọc tài liệu rồi thử lại."
-                    } catch (_: Exception) {
-                        info = "Chưa mở được tài liệu. Kiểm tra quyền đọc tệp rồi thử lại."
-                    }
-                }, onDelete = { documentToDelete = document })
-            }
         }
+        // Mục Đọc: danh sách tài liệu sẵn có (dùng chung với bản web).
+        if (section == LibrarySection.READ) LibraryReadPage(documents,
+            onOpen = { document ->
+                try {
+                    context.startActivity(documentViewIntent(context, document))
+                } catch (_: android.content.ActivityNotFoundException) {
+                    info = "Chưa có ứng dụng mở loại tài liệu này. Hãy cài ứng dụng đọc tài liệu rồi thử lại."
+                } catch (_: Exception) {
+                    info = "Chưa mở được tài liệu. Kiểm tra quyền đọc tệp rồi thử lại."
+                }
+            },
+            onDelete = { documentToDelete = it },
+        )
+        if (section == LibrarySection.FILES) LibraryFilesPage()
       }
 
         // ---- Menu popup (cùng thiết kế menu trung tâm) ----
@@ -354,16 +373,24 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 })
                 add(SheetAction("Cài đặt giả lập", R.drawable.ic_fluent_settings_24_regular, onClick = onSettings))
                 add(SheetAction("Tải lại danh sách", R.drawable.ic_fluent_arrow_clockwise_24_regular) { reloadKey++ })
-                if (!scanAll) add(SheetAction("Cho phép đọc mọi tệp", R.drawable.ic_fluent_lock_closed_24_regular, badge = "") { requestScanAccess() })
+                if (!scanAll) add(SheetAction("Chọn tệp trong máy", R.drawable.ic_fluent_lock_closed_24_regular) { requestScanAccess() })
             },
             header = {
                 SheetRow(
                     if (scanAll) "Tự quét máy mỗi ngày" else "Chưa có quyền đọc mọi tệp",
                     subtitle = if (scanAll) "Game tìm thấy chơi thẳng từ chỗ cũ, không chép thêm."
-                    else "Cấp quyền để thấy game trong Zalo, Download, ZArchiver…",
+                    else "Bản Play luôn hỏi bạn chọn tệp, không xin quyền đọc toàn bộ bộ nhớ.",
                     icon = if (scanAll) R.drawable.ic_fluent_shield_checkmark_24_regular else R.drawable.ic_fluent_info_24_regular,
                 )
             },
+        )
+        // Một cửa duy nhất để đưa game/tài liệu vào Thư viện; bản Play chỉ nhập tệp cục bộ.
+        LibraryAddSheet(
+            addSheet, { addSheet = false }, scanAccess, deviceScanning,
+            onPickFiles = { picker.launch(arrayOf("*/*")) },
+            onScanDevice = ::scanDevice,
+            onRequestAccess = ::requestScanAccess,
+            allowDeviceScan = false,
         )
         GameMenuSheet(gameMenu, { gameMenu = null }, pinned,
             onPatched = { reloadKey++ },

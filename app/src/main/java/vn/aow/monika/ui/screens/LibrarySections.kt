@@ -82,6 +82,9 @@ internal fun LibraryFilesPage() {
 /**
  * Nút "+ Thêm" (một cửa duy nhất): thêm file từ máy, quét cả máy, cấp quyền đọc tệp.
  * Dùng lại đúng luồng nhập sẵn có (picker → Importer, scanner) — không thêm đường nhập mới.
+ *
+ * [allowDeviceScan] = false cho bản Play: chỉ còn "Thêm file từ máy" (SAF), không quét cả máy
+ * và không xin quyền đọc toàn bộ bộ nhớ. Bản web giữ mặc định true nên hành vi không đổi.
  */
 @Composable
 internal fun BoxScope.LibraryAddSheet(
@@ -92,6 +95,7 @@ internal fun BoxScope.LibraryAddSheet(
     onPickFiles: () -> Unit,
     onScanDevice: () -> Unit,
     onRequestAccess: () -> Unit,
+    allowDeviceScan: Boolean = true,
 ) {
     MonikaMenuSheet(
         visible, onDismiss,
@@ -99,18 +103,31 @@ internal fun BoxScope.LibraryAddSheet(
         subtitle = "Game, file nén, tài liệu — app tự phân loại",
         actions = buildList {
             add(SheetAction("Thêm file từ máy", R.drawable.ic_fluent_folder_add_24_regular, highlight = true) { onPickFiles() })
-            add(SheetAction(if (scanning) "Đang quét…" else "Quét cả máy", R.drawable.ic_fluent_search_24_regular, enabled = !scanning) {
-                if (canScanAll) onScanDevice() else onRequestAccess()
-            })
-            if (!canScanAll) add(SheetAction("Cho phép đọc mọi tệp", R.drawable.ic_fluent_lock_closed_24_regular) { onRequestAccess() })
+            if (allowDeviceScan) {
+                add(SheetAction(if (scanning) "Đang quét…" else "Quét cả máy", R.drawable.ic_fluent_search_24_regular, enabled = !scanning) {
+                    if (canScanAll) onScanDevice() else onRequestAccess()
+                })
+                if (!canScanAll) add(SheetAction("Cho phép đọc mọi tệp", R.drawable.ic_fluent_lock_closed_24_regular) { onRequestAccess() })
+            }
         },
         header = {
-            SheetRow(
-                if (canScanAll) "Đã cho phép đọc mọi tệp" else "Chưa có quyền đọc mọi tệp",
-                subtitle = if (canScanAll) "Game trong Zalo, Download… chơi thẳng từ chỗ cũ, không chép thêm."
-                else "Cấp quyền để thấy game có sẵn trong máy.",
-                icon = if (canScanAll) R.drawable.ic_fluent_shield_checkmark_24_regular else R.drawable.ic_fluent_info_24_regular,
-            )
+            when {
+                !allowDeviceScan -> SheetRow(
+                    "Chọn tệp có sẵn trong máy",
+                    subtitle = "Game, file nén, tài liệu — app tự phân loại, không tải từ mạng.",
+                    icon = R.drawable.ic_fluent_folder_add_24_regular,
+                )
+                canScanAll -> SheetRow(
+                    "Đã cho phép đọc mọi tệp",
+                    subtitle = "Game trong Zalo, Download… chơi thẳng từ chỗ cũ, không chép thêm.",
+                    icon = R.drawable.ic_fluent_shield_checkmark_24_regular,
+                )
+                else -> SheetRow(
+                    "Chưa có quyền đọc mọi tệp",
+                    subtitle = "Cấp quyền để thấy game có sẵn trong máy.",
+                    icon = R.drawable.ic_fluent_info_24_regular,
+                )
+            }
         },
     )
 }
