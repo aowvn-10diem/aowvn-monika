@@ -2,11 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { webcrypto } from "node:crypto";
-import worker, { MAX_BODY } from "./worker.js";
+import worker, { MAX_BODY, resetRateState } from "./worker.js";
 globalThis.crypto ??= webcrypto;
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/app-report.json", import.meta.url)));
 
 function setup(extra = {}) {
+  resetRateState(); // V194: bộ đếm hạn mức nằm trong bộ nhớ isolate → mỗi test phải bắt đầu sạch
   const data = new Map();
   const env = { ADMIN_TOKEN: "local-fixture-only", REPORTS: {
     get: async (k) => data.get(k)?.value ?? null,
@@ -263,18 +264,7 @@ test("V153 env sai hoac <=0 thi dung mac dinh", async () => {
   }
 });
 
-test("V153 chi luu bam IP, khong luu IP trong khoa hay gia tri", async () => {
-  const c = setup();
-  assert.equal((await postWithIp(c, fixture)).status, 200);
-  const keys = [...c.data.keys()];
-  assert.equal(keys.filter((k) => k.startsWith("rl:")).length, 1);
-  for (const k of keys) assert.equal(k.includes(IP), false);
-  for (const v of c.data.values()) assert.equal(String(v.value).includes(IP), false);
-  const rlKey = keys.find((k) => k.startsWith("rl:"));
-  assert.match(rlKey, /^rl:\d+:[0-9a-f]{16}$/);
-});
-
-test("V153 gioi han khong lam tang so lan goi KV tren moi bao cao", async () => {
+test("V194 moi bao cao dung 1 lan ghi KV, 0 lan doc, khong con khoa dem rieng", async () => {
   let gets = 0, puts = 0;
   const c = setup();
   const kv = c.env.REPORTS;
@@ -284,5 +274,24 @@ test("V153 gioi han khong lam tang so lan goi KV tren moi bao cao", async () => 
     put: async (k, v, o) => { puts++; return kv.put(k, v, o); },
   };
   assert.equal((await postWithIp(c, fixture)).status, 200);
-  assert.deepEqual([gets, puts], [1, 2]); // 1 doc han muc + 1 ghi han muc + 1 ghi bao cao
+  assert.deepEqual([gets, puts], [0, 1]); // chỉ 1 ghi: bản ghi chính (bộ đếm hạn mức nằm trong bộ nhớ)
+});
+
+test("V194 ba bao cao lien tiep = 3 lan ghi (truoc day 6), va khong co khoa dem nao trong KV", async () => {
+  let puts = 0;
+  const c = setup();
+  const kv = c.env.REPORTS;
+  c.env.REPORTS = { ...kv, put: async (k, v, o) => { puts++; return kv.put(k, v, o); } };
+  for (let i = 0; i < 3; i++) assert.equal((await postWithIp(c, fixture)).status, 200);
+  assert.equal(puts, 3);
+  assert.equal([...c.data.keys()].filter((k) => k.startsWith("rl:")).length, 0);
+});
+
+test("V194 chi luu bam IP (trong bo nho), khong luu IP trong khoa hay gia tri KV", async () => {
+  const c = setup();
+  assert.equal((await postWithIp(c, fixture)).status, 200);
+  const keys = [...c.data.keys()];
+  assert.equal(keys.filter((k) => k.startsWith("rl:")).length, 0);
+  for (const k of keys) assert.equal(k.includes(IP), false);
+  for (const v of c.data.values()) assert.equal(String(v.value).includes(IP), false);
 });

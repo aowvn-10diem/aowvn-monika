@@ -89,6 +89,16 @@ export function rateLimitConfig(env) {
   };
 }
 
+// V194: bộ đếm chống spam nằm trong bộ nhớ của isolate — không tốn lượt ghi KV nào.
+// (Trước đây mỗi báo cáo ghi thêm 1 khoá `rl:` vào KV ⇒ 2 ghi/báo cáo, đốt hạn mức 1000 ghi/ngày.)
+const RATE_STATE_MAX = 5000;
+const rateState = new Map(); // băm IP -> { window, count }
+export function resetRateState() { rateState.clear(); }
+function rememberRate(ipHash, window, count) {
+  if (rateState.size >= RATE_STATE_MAX && !rateState.has(ipHash)) rateState.clear(); // chặn Map phình to
+  rateState.set(ipHash, { window, count });
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -139,24 +149,27 @@ export default {
       }
       if (bytes(stored) > MAX_BODY) return json({ ok: false, error: "too_large" }, 413);
 
-      // Chống spam (V153): tối đa `max` báo cáo / cửa sổ / IP, ngưỡng và độ dài
-      // cửa sổ lấy từ env (RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_SECONDS; mặc định
-      // 20 báo cáo/giờ). Chỉ lưu băm IP, không lưu IP. Không thêm lượt gọi KV:
-      // mỗi báo cáo vẫn 1 đọc hạn mức + 1 ghi hạn mức + 1 ghi báo cáo.
+      // Chống spam (V153; đổi cách đếm ở V194): tối đa `max` báo cáo / cửa sổ / IP, ngưỡng và độ dài
+      // cửa sổ lấy từ env (RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_SECONDS; mặc định 20 báo cáo/giờ).
+      // V194: hạn mức ghi KV miễn phí chỉ 1000/ngày → mỗi báo cáo đúng **1 lần ghi** (bản ghi chính).
+      // Bộ đếm hạn mức chuyển vào bộ nhớ của isolate (không ghi KV nữa): chặn mềm, đủ chống spam;
+      // chặn cứng là ngân sách ghi của KV. Vẫn chỉ giữ băm IP, không lưu IP.
       const limit = rateLimitConfig(env);
       const now = Date.now();
       const windowMs = limit.windowSeconds * 1000;
-      const rk = `rl:${Math.floor(now / windowMs)}:${await sha(req.headers.get("CF-Connecting-IP") || "?")}`;
-      const n = parseInt((await env.REPORTS.get(rk)) || "0", 10);
-      if (n >= limit.max) {
+      const ipHash = await sha(req.headers.get("CF-Connecting-IP") || "?");
+      const window = Math.floor(now / windowMs);
+      const seen = rateState.get(ipHash);
+      const count = seen && seen.window === window ? seen.count : 0;
+      if (count >= limit.max) {
         const retryAfter = Math.max(1, Math.ceil((windowMs - (now % windowMs)) / 1000));
         return json({ ok: false, error: "rate_limited" }, 429, { "retry-after": String(retryAfter) });
       }
-      await env.REPORTS.put(rk, String(n + 1), { expirationTtl: Math.max(60, limit.windowSeconds * 2) });
 
       const id = `r:${String(Date.now()).padStart(13, "0")}:${crypto.randomUUID().slice(0, 8)}`;
       const meta = { k: slim.kind, c: slim.core || slim.session?.core || "", y: slim.system || slim.session?.system || "", g: (slim.session?.game || "").slice(0, 60), a: slim.app.slice(0, 40), st: slim.stage || slim.session?.stage || "", t: slim.time, component: slim.component, fp: slim.fingerprint, count: slim.count };
       await env.REPORTS.put(id, stored, { expirationTtl: 60 * 86400, metadata: meta });
+      rememberRate(ipHash, window, count + 1);
       return json({ ok: true });
     }
 

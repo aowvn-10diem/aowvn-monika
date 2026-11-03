@@ -623,13 +623,62 @@ object Diagnostics {
     fun autoSend(c: Context, http: OkHttpClient, r: Report, endpoint: String, enabledByConfig: Boolean, enabledByUser: Boolean) {
         if (!enabledByConfig || !enabledByUser || endpoint.isBlank() || r.sent) return
         if (!autoSendAllowedHere()) return
+        // V194: hạn mức ghi KV của Worker chỉ 1000/ngày ↔ mỗi báo cáo là 1 lần ghi.
+        // Cùng một dấu vân tay chỉ gửi 1 lần/giờ (nhớ qua lần mở app); lowmem chặt hơn: 1 lần mỗi phiên.
+        // Bản gộp vẫn tăng `count` ở máy nhưng KHÔNG gửi lại — tránh kiểu mỗi lần mở app lại đẩy 1 lowmem y hệt.
+        val fingerprint = r.fingerprint.ifBlank { fingerprint(r) }
+        if (r.kind == "lowmem" && !sentThisSession.add(fingerprint)) {
+            save(c, r.copy(sent = true))
+            return
+        }
+        if (sentWithin(c, fingerprint, SEND_DEDUPE_MS, sendClock())) {
+            Breadcrumbs.add(c, "diag-send", "${r.kind} $fingerprint: đã gửi trong 1 giờ, chỉ cộng count ở máy")
+            save(c, r.copy(sent = true))
+            return
+        }
         Thread {
             val ok = runCatching {
                 http.newCall(Request.Builder().url(endpoint).post(reportJson(c, r).toRequestBody("application/json".toMediaType())).build())
                     .execute().use { it.isSuccessful }
             }.getOrDefault(false)
-            if (ok) save(c, r.copy(sent = true))
+            if (ok) {
+                markSent(c, fingerprint, sendClock())
+                save(c, r.copy(sent = true))
+            }
         }.start()
+    }
+
+    /** V194: cửa sổ chặn gửi trùng dấu vân tay (mọi loại trừ lowmem đã chặn chặt hơn theo phiên). */
+    internal const val SEND_DEDUPE_MS = 60 * 60_000L
+    /** Đồng hồ gửi báo cáo; test đổi được để kiểm ranh giới 1 giờ. */
+    internal var sendClock: () -> Long = { System.currentTimeMillis() }
+    private val sentRecentlyMemo = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val sentThisSession = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    internal fun resetSendDedupe() {
+        sentRecentlyMemo.clear()
+        sentThisSession.clear()
+    }
+
+    private fun sendPrefs(c: Context) = c.getSharedPreferences("diag-send", Context.MODE_PRIVATE)
+
+    /** Đã gửi thành công cùng dấu vân tay trong [windowMs] chưa? RAM trước, rồi đĩa để nhớ qua lần mở app. */
+    internal fun sentWithin(c: Context, fingerprint: String, windowMs: Long, now: Long): Boolean {
+        val last = sentRecentlyMemo[fingerprint] ?: sendPrefs(c).getLong(fingerprint, 0L)
+        if (last <= 0L) return false
+        sentRecentlyMemo[fingerprint] = last
+        return now - last in 0 until windowMs
+    }
+
+    private fun markSent(c: Context, fingerprint: String, now: Long) {
+        sentRecentlyMemo[fingerprint] = now
+        val prefs = sendPrefs(c)
+        prefs.edit().putLong(fingerprint, now).apply()
+        // Giữ tệp nhỏ: quá 200 khoá thì bỏ mục cũ hơn 7 ngày.
+        if (prefs.all.size > 200) {
+            val stale = prefs.all.filterValues { (it as? Long ?: 0L) < now - 7 * 24 * 3_600_000L }.keys
+            if (stale.isNotEmpty()) prefs.edit().also { editor -> stale.forEach { editor.remove(it) } }.apply()
+        }
     }
 
     // ---------- Gộp trùng, che thông tin riêng, chụp tình trạng máy ----------
