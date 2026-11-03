@@ -48,6 +48,7 @@ import kotlinx.coroutines.withContext
 import vn.aow.monika.AppGraph
 import vn.aow.monika.R
 import vn.aow.monika.config.ExternalApp
+import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.library.Game
 import vn.aow.monika.library.GameInfoResolver
 import vn.aow.monika.library.GameSaveBackup
@@ -89,10 +90,11 @@ internal fun openGamePage(context: Context, game: Game) {
 @Composable
 internal fun GameDetailScreen(game: Game, onPlay: (Game) -> Unit, onBack: () -> Unit, onDelete: (Game) -> Unit = {}) {
     val c = Monika.colors
+    val context = LocalContext.current
     var confirmDelete by remember(game.key) { mutableStateOf(false) }
     // Dung lượng tính 1 lần cho mỗi game, trên IO (cây thư mục game có thể rất lớn); không tính lại khi vẽ lại.
     val sizeText by produceState("Đang tính…", game.key) {
-        value = withContext(Dispatchers.IO) { sizeLabel(gameSizeBytes(game)) }
+        value = withContext(Dispatchers.IO) { sizeLabel(GameSizeMeter(context).size(game)) }
     }
     Screen {
         Column(Modifier.fillMaxSize()) {
@@ -257,70 +259,130 @@ private fun RowScope.TaskAction(
 internal data class FolderSize(val bytes: Long, val complete: Boolean)
 
 /**
- * Dung lượng game: file lẻ của game quét được, hoặc **toàn bộ** cây thư mục game của Monika
+ * Đo dung lượng game: file lẻ của game quét được, hoặc **toàn bộ** cây thư mục game của Monika
  * (không giới hạn độ sâu).
  *
  * Trả về **null** (= hiện "Chưa rõ") khi không đọc được thư mục, **hoặc khi chỉ đọc được một phần
- * cây** (thư mục con bị chặn quyền, tệp lỗi, liên kết tượng trưng) — không trả tổng thiếu như số
- * chắc chắn. 0 khi thư mục rỗng đọc được trọn.
+ * cây** (thư mục con bị chặn quyền, tệp lỗi, **không xác định được symlink**, gặp symlink) —
+ * không trả tổng thiếu như số chắc chắn. 0 khi thư mục rỗng đọc được trọn.
+ *
+ * Mọi lỗi đọc đều ghi `Diagnostics.recordHandled("thu-vien", …)` (không nuốt im lặng).
+ * Ba tham số lambda có mặt để test giả lập lỗi I/O/quyền; chạy thật để mặc định.
  */
-internal fun gameSizeBytes(
-    game: Game,
-    list: (File) -> Array<File>? = { it.listFiles() },
-    length: (File) -> Long? = { runCatching { it.length() }.getOrNull() },
-): Long? = gameFolderSize(game, list, length)?.takeIf { it.complete }?.bytes
+internal class GameSizeMeter(
+    private val context: Context,
+    private val list: ((File) -> Array<File>?)? = null,
+    private val length: ((File) -> Long?)? = null,
+    /** null = **không xác định được** (lỗi I/O/quyền) → coi như chưa đọc đủ cây. */
+    private val isSymlink: ((File) -> Boolean?)? = null,
+) {
 
-/** Như [gameSizeBytes] nhưng giữ cả cờ "đọc được trọn cây" để test/ghi chú. */
-internal fun gameFolderSize(
-    game: Game,
-    list: (File) -> Array<File>? = { it.listFiles() },
-    length: (File) -> Long? = { runCatching { it.length() }.getOrNull() },
-): FolderSize? {
-    val entry = game.entry
-    if (game.external && entry != null && entry.isFile) {
-        val bytes = length(entry) ?: return FolderSize(0L, complete = false)
-        return FolderSize(bytes, complete = true)
-    }
-    val root = game.dir
-    if (!root.isDirectory) return null
-    return folderSize(root, list, length)
-}
+    /** Tổng dung lượng; null khi chưa đọc được trọn cây (UI hiện "Chưa rõ"). */
+    fun size(game: Game): Long? = folder(game)?.takeIf { it.complete }?.bytes
 
-/**
- * Tổng dung lượng cả cây thư mục, tính bằng vòng lặp (không đệ quy sâu, không giới hạn tầng).
- * [FolderSize.complete] = false khi có mục không đọc được (thư mục không liệt kê được, tệp lỗi)
- * hoặc gặp liên kết tượng trưng (không đi theo để tránh lặp) — tổng khi đó chỉ là mức tối thiểu.
- */
-internal fun folderSize(
-    root: File,
-    list: (File) -> Array<File>? = { it.listFiles() },
-    length: (File) -> Long? = { runCatching { it.length() }.getOrNull() },
-): FolderSize {
-    var total = 0L
-    var complete = true
-    val pending = ArrayDeque<File>().apply { add(root) }
-    while (pending.isNotEmpty()) {
-        val dir = pending.removeFirst()
-        val children = list(dir)
-        if (children == null) {
-            complete = false
-            continue
+    /** Như [size] nhưng giữ cả cờ "đọc được trọn cây" để test/ghi chú. */
+    fun folder(game: Game): FolderSize? {
+        val entry = game.entry
+        if (game.external && entry != null && entry.isFile) {
+            val bytes = lengthOf(entry) ?: return FolderSize(0L, complete = false)
+            return FolderSize(bytes, complete = true)
         }
-        for (child in children) {
-            if (runCatching { java.nio.file.Files.isSymbolicLink(child.toPath()) }.getOrDefault(false)) {
-                // Bỏ qua liên kết để không lặp vô hạn, nhưng không được coi là đã đọc đủ cây.
+        val root = game.dir
+        if (!root.isDirectory) return null
+        return folderSize(root)
+    }
+
+    private fun children(dir: File): Array<File>? {
+        if (list != null) {
+            return list.invoke(dir).also {
+                if (it == null) {
+                    Diagnostics.recordHandled(context, "thu-vien", "đo dung lượng: không liệt kê được ${dir.name}", null)
+                }
+            }
+        }
+        return try {
+            dir.listFiles()
+        } catch (t: Throwable) {
+            Diagnostics.recordHandled(context, "thu-vien", "đo dung lượng: liệt kê thư mục", t)
+            null
+        }
+    }
+
+    private fun lengthOf(file: File): Long? {
+        if (length != null) {
+            return length.invoke(file).also {
+                if (it == null) {
+                    Diagnostics.recordHandled(context, "thu-vien", "đo dung lượng: không đọc được kích thước ${file.name}", null)
+                }
+            }
+        }
+        return try {
+            file.length()
+        } catch (t: Throwable) {
+            Diagnostics.recordHandled(context, "thu-vien", "đo dung lượng: đọc kích thước tệp", t)
+            null
+        }
+    }
+
+    /** true/false, hoặc null khi không kiểm được (lỗi I/O/quyền) — null làm cây "chưa đọc đủ". */
+    private fun symlinkOf(file: File): Boolean? {
+        if (isSymlink != null) {
+            return isSymlink.invoke(file).also {
+                if (it == null) {
+                    Diagnostics.recordHandled(
+                        context, "thu-vien", "đo dung lượng: không xác định được liên kết tượng trưng ${file.name}", null,
+                    )
+                }
+            }
+        }
+        return try {
+            java.nio.file.Files.isSymbolicLink(file.toPath())
+        } catch (t: Throwable) {
+            Diagnostics.recordHandled(context, "thu-vien", "đo dung lượng: kiểm tra liên kết tượng trưng", t)
+            null
+        }
+    }
+
+    /**
+     * Tổng dung lượng cả cây, tính bằng vòng lặp (không đệ quy sâu, không giới hạn tầng).
+     * [FolderSize.complete] = false khi có mục không đọc được (thư mục không liệt kê được, tệp lỗi,
+     * **không kiểm được symlink**) hoặc gặp symlink (không đi theo để tránh lặp) — tổng chỉ là mức tối thiểu.
+     */
+    fun folderSize(root: File): FolderSize {
+        var total = 0L
+        var complete = true
+        val pending = ArrayDeque<File>().apply { add(root) }
+        while (pending.isNotEmpty()) {
+            val dir = pending.removeFirst()
+            val children = children(dir)
+            if (children == null) {
                 complete = false
                 continue
             }
-            if (child.isDirectory) {
-                pending.add(child)
-            } else {
-                val bytes = length(child)
-                if (bytes == null) complete = false else total += bytes
+            for (child in children) {
+                when (symlinkOf(child)) {
+                    true -> {
+                        // Bỏ qua liên kết để không lặp vô hạn, nhưng không coi là đã đọc đủ cây.
+                        complete = false
+                        continue
+                    }
+                    null -> {
+                        // Không xác định được có phải symlink hay không → chưa chứng minh đọc đủ.
+                        complete = false
+                        continue
+                    }
+                    false -> Unit
+                }
+                if (child.isDirectory) {
+                    pending.add(child)
+                } else {
+                    val bytes = lengthOf(child)
+                    if (bytes == null) complete = false else total += bytes
+                }
             }
         }
+        return FolderSize(total, complete)
     }
-    return FolderSize(total, complete)
 }
 
 /** Nhãn hiển thị của dung lượng: null = không đọc được, 0 = thư mục rỗng. */
