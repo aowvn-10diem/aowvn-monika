@@ -194,6 +194,50 @@ public class AowMonikaKeypadTest {
 		assertEquals(-1, presses.press(-1, 4));
 	}
 
+	/**
+	 * Biên 9/10 (Luna 3): guard và sức chứa phải là MỘT nguồn số. `accepts()` là thứ `VirtualKeyboard` gọi
+	 * trước khi nhấn phím, nên id 10..27 bị loại ngay — không nhấn được phím nào để mà kẹt.
+	 */
+	@Test
+	public void pointerGuardMatchesTheRealCapacity() {
+		AowMonikaKeypad.Presses presses = new AowMonikaKeypad.Presses();
+		assertEquals("sức chứa mặc định", AowMonikaKeypad.Presses.MAX_POINTERS, presses.capacity());
+		assertEquals("guard đọc đúng sức chứa", 10, presses.capacity());
+
+		assertTrue("ngón 0 hợp lệ", presses.accepts(0));
+		assertTrue("ngón 9 sát biên vẫn hợp lệ", presses.accepts(9));
+		for (int pointer : new int[]{10, 15, 27}) {
+			assertFalse("ngón " + pointer + " phải bị loại từ đầu", presses.accepts(pointer));
+			assertEquals("ngón " + pointer + " không được nhận phím", -1, presses.press(pointer, 0));
+			assertEquals("ngón " + pointer + " không giữ phím nào", -1, presses.held(pointer));
+			assertEquals("ngón " + pointer + " không có phím để nhả", -1, presses.release(pointer));
+		}
+		assertFalse("ngón âm bị loại", presses.accepts(-1));
+	}
+
+	/**
+	 * Ngón bị loại không được để lại trạng thái kẹt: ngón hợp lệ vẫn nhấn/nhả bình thường và `cancelAll()`
+	 * không phải nhả phím "ma" nào.
+	 */
+	@Test
+	public void rejectedPointerLeavesNoStuckState() {
+		AowMonikaKeypad.Presses presses = new AowMonikaKeypad.Presses();
+		int key = 6; // phím 7
+		assertEquals(-1, presses.press(15, key));
+		assertEquals("không có phím ma", 0, presses.cancelAll().length);
+
+		// Ngón hợp lệ vẫn chạy đúng sau đó.
+		assertEquals(-1, presses.press(0, key));
+		assertEquals(key, presses.held(0));
+		assertEquals(key, presses.release(0));
+		assertEquals(-1, presses.held(0));
+		// Bàn phím dùng 10 ngón tối đa: mọi id hợp lệ đều theo dõi được.
+		for (int pointer = 0; pointer < presses.capacity(); pointer++) {
+			assertEquals(-1, presses.press(pointer, key));
+			assertEquals(key, presses.release(pointer));
+		}
+	}
+
 	/** Mã thật phải dùng đúng lớp này (tránh sửa lớp thuần mà quên nối vào bàn phím/nút menu). */
 	@Test
 	public void productionKeyboardUsesTheseHelpers() throws IOException {
@@ -207,6 +251,10 @@ public class AowMonikaKeypadTest {
 				source.contains("AowMonikaKeypad.leftOfDown("));
 		assertTrue("Phím đang giữ phải theo dõi bằng AowMonikaKeypad.Presses",
 				source.contains("AowMonikaKeypad.Presses"));
+		assertTrue("Guard ngón phải đọc từ chính bộ theo dõi (Presses.accepts), không dùng hằng khác",
+				source.contains("presses.accepts("));
+		assertFalse("Guard cũ so với hitVisible.length (28) đã bỏ — nó lệch sức chứa Presses",
+				source.contains("pointer >= hitVisible.length"));
 		assertFalse("Không còn mảng associatedKeys cũ (không nhả phím khi huỷ cử chỉ)",
 				source.contains("associatedKeys"));
 	}

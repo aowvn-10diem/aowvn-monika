@@ -177,7 +177,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	}};
 	private final VirtualKey[] keypad = new VirtualKey[KEYBOARD_SIZE];
 	// the average user usually has no more than 10 fingers...
-	private final AowMonikaKeypad.Presses presses = new AowMonikaKeypad.Presses(10);
+	private final AowMonikaKeypad.Presses presses = new AowMonikaKeypad.Presses();
 	// V185: hộp chạm làm sẵn sau mỗi lần bố trí, để tìm phím trúng không phụ thuộc thứ tự mảng.
 	private final AowMonikaKeypad.Box[] hitBoxes = new AowMonikaKeypad.Box[KEYBOARD_SIZE];
 	private final boolean[] hitVisible = new boolean[KEYBOARD_SIZE];
@@ -1144,7 +1144,9 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		if (userHidden && layoutEditMode == LAYOUT_EOF) return false;
 		switch (layoutEditMode) {
 			case LAYOUT_EOF -> {
-				if (pointer < 0 || pointer >= hitVisible.length) {
+				// V185: sức chứa ngón là nguồn số DUY NHẤT (Presses.capacity()); ngón vượt sức chứa bị bỏ
+				// qua NGAY, trước khi nhấn phím — nếu không phím sẽ nhấn mà không được theo dõi/nhả (kẹt).
+				if (!presses.accepts(pointer)) {
 					return false;
 				}
 				// V185: chọn phím có tâm gần điểm chạm nhất (không phụ thuộc thứ tự keypad) để 4 phím góc
@@ -1205,7 +1207,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	public boolean pointerDragged(int pointer, float x, float y) {
 		switch (layoutEditMode) {
 			case LAYOUT_EOF -> {
-				if (pointer < 0 || pointer >= hitVisible.length) {
+				if (!presses.accepts(pointer)) {
 					return false;
 				}
 				int held = presses.held(pointer);
@@ -1291,7 +1293,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	@Override
 	public boolean pointerReleased(int pointer, float x, float y) {
 		if (layoutEditMode == LAYOUT_EOF) {
-			if (pointer < 0 || pointer >= hitVisible.length) {
+			if (!presses.accepts(pointer)) {
 				return false;
 			}
 			int held = presses.release(pointer);

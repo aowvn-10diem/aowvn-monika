@@ -119,16 +119,36 @@ public final class AowMonikaKeypad {
 	 * trước đây `cancel()` chỉ bỏ tô sáng mà không gửi `keyReleased`, phím kẹt "đang giữ" nên bấm lại không ăn.
 	 */
 	public static final class Presses {
+		/**
+		 * Số ngón tối đa theo dõi được. Android cấp `pointer id` trong 0..số ngón-1 của cử chỉ (10 là mức phổ
+		 * biến); id vượt mức này bị bỏ qua ngay từ đầu, không nhận phím.
+		 */
+		public static final int MAX_POINTERS = 10;
+
 		private final int[] held;
+
+		public Presses() {
+			this(MAX_POINTERS);
+		}
 
 		public Presses(int maxPointers) {
 			held = new int[Math.max(1, maxPointers)];
 			for (int i = 0; i < held.length; i++) held[i] = -1;
 		}
 
+		/** Sức chứa thật của bộ theo dõi — guard ở `VirtualKeyboard` đọc ĐÚNG số này, không dùng hằng khác. */
+		public int capacity() {
+			return held.length;
+		}
+
+		/** Ngón này có được theo dõi không? `false` → nơi gọi phải BỎ QUA ngay, không nhấn phím. */
+		public boolean accepts(int pointer) {
+			return pointer >= 0 && pointer < held.length;
+		}
+
 		/** Gán phím cho ngón; trả về chỉ số phím CŨ của ngón đó (cần `onUp()`) hoặc -1. */
 		public int press(int pointer, int key) {
-			if (pointer < 0 || pointer >= held.length) return -1;
+			if (!accepts(pointer)) return -1;
 			int previous = held[pointer];
 			held[pointer] = key;
 			return previous == key ? -1 : previous;
@@ -136,13 +156,13 @@ public final class AowMonikaKeypad {
 
 		/** Phím ngón đang giữ; -1 = không giữ phím nào. */
 		public int held(int pointer) {
-			if (pointer < 0 || pointer >= held.length) return -1;
+			if (!accepts(pointer)) return -1;
 			return held[pointer];
 		}
 
 		/** Nhả ngón; trả về phím cần `onUp()` hoặc -1. */
 		public int release(int pointer) {
-			if (pointer < 0 || pointer >= held.length) return -1;
+			if (!accepts(pointer)) return -1;
 			int key = held[pointer];
 			held[pointer] = -1;
 			return key;
