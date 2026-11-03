@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bản chính thức — AowVN Monika</title>
+<meta name="description" content="Nơi tải Monika chính thức, chứng thư ký APK, tài khoản ủng hộ và cách báo bản giả.">
+<meta name="theme-color" content="#161412">
+<link rel="canonical" id="canonical">
+<link rel="icon" href="../assets/favicon.png">
+<link rel="stylesheet" href="./official.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<script type="module" src="./official.mjs"></script>
+</head>
+<body>
+<header><a class="brand" href="../"><img src="../assets/icon-192.png" width="38" height="38" alt="">AowVN Monika</a><a class="back" href="../">Trang chủ <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a></header>
+<main>
+  <div class="eyebrow">AN TÂM CHƠI, YÊN TÂM ỦNG HỘ</div>
+  <h1>Bản <span>chính thức.</span></h1>
+  <p class="intro">Kiểm tra nơi tải và thông tin ủng hộ trước khi dùng Monika. Tên và biểu tượng giống nhau chưa đủ để xác nhận bản chính thức.</p>
+  <div id="status" class="status" role="status" aria-live="polite">Đang tải thông tin chính thức…</div>
+  <button id="retry" class="button" type="button" hidden>Thử lại</button>
+  <div id="content" hidden>
+    <div class="grid">
+      <section class="card"><div class="card-label">01 · NƠI TẢI</div><h2>Nguồn chính thức duy nhất</h2><div id="sources" class="sources"></div></section>
+      <section class="card"><div class="card-label">02 · CHỨNG THƯ</div><h2>SHA-256 chứng thư ký APK</h2><p class="muted">Dấu vân tay của chứng thư ký, khác với SHA-256 của tệp APK.</p><code id="certificate"></code><button class="copy" type="button" data-copy="certificate">Sao chép chứng thư</button></section>
+      <section class="card"><div class="card-label">03 · ỦNG HỘ</div><h2>Tài khoản duy nhất</h2><dl><dt>Ngân hàng</dt><dd id="bank"></dd><dt>Số tài khoản</dt><dd id="account" class="account"></dd><dt>Chủ tài khoản</dt><dd id="owner"></dd></dl><button class="copy" type="button" data-copy="account">Sao chép số tài khoản</button></section>
+      <section class="card"><div class="card-label">04 · TỰ ĐỐI CHIẾU</div><h2>Cách tự kiểm</h2><ol id="steps"></ol></section>
+    </div>
+    <section class="report"><div><h2>Gặp nguồn tải đáng ngờ?</h2><p>Gửi đường dẫn để AowVN kiểm tra. Đừng gửi mật khẩu hoặc mã xác thực.</p></div><a id="report" class="button">Báo bản giả <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a></section>
+  </div>
+  <p id="copy-status" role="status" aria-live="polite"></p>
+</main>
+<footer>AowVN Monika · Miễn phí cho người chơi</footer>
+</body>
+</html>

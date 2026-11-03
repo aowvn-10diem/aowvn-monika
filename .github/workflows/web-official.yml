@@ -1,0 +1,17 @@
+name: Kiểm trang Bản chính thức
+on:
+  pull_request:
+    branches: [trang-web]
+    paths: ['chinh-thuc/**', 'tests/**', 'index.html', '.github/workflows/web-official.yml']
+  push:
+    branches: [trang-web, sol2/V183-web]
+    paths: ['chinh-thuc/**', 'tests/**', 'index.html', '.github/workflows/web-official.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --test tests/official.test.mjs
