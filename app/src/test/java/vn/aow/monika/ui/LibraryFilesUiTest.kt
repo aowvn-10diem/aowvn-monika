@@ -34,6 +34,7 @@ import vn.aow.monika.ui.screens.SAVE_BACKUP_DIR
 import vn.aow.monika.ui.screens.GameBackup
 import vn.aow.monika.ui.screens.backupGameFolder
 import vn.aow.monika.ui.screens.backupShareIntent
+import vn.aow.monika.ui.screens.createUniqueBackupFile
 import vn.aow.monika.ui.screens.deleteGameWithSaveBackup
 import vn.aow.monika.ui.screens.formatFileDate
 import vn.aow.monika.ui.screens.formatFileSize
@@ -249,6 +250,56 @@ class LibraryFilesUiTest {
         } finally {
             game.deleteRecursively()
             backups.listFiles().orEmpty().filter { it !in knownBackups }.forEach { it.delete() }
+            AppGraph.library.list()
+        }
+    }
+
+    @Test fun backupNamesAreReservedAtomically() {
+        val dir = File(rule.activity.filesDir, SAVE_BACKUP_DIR).apply { mkdirs() }
+        val known = dir.listFiles().orEmpty().toSet()
+        try {
+            // Giữ tên xong là tệp tồn tại ngay; kiểu `if (!exists())` sẽ trả cùng một tên 2 lần.
+            val first = createUniqueBackupFile(rule.activity, dir, "xoa-atomic")
+            val second = createUniqueBackupFile(rule.activity, dir, "xoa-atomic")
+            assertNotEquals("Hai lần giữ tên phải khác nhau", first, second)
+            assertTrue("Tệp giữ tên phải tồn tại ngay", first.isFile)
+            assertTrue("Tệp giữ tên phải tồn tại ngay", second.isFile)
+        } finally {
+            dir.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+        }
+    }
+
+    @Test fun concurrentBackupsDoNotOverwriteEachOther() {
+        // Dùng application context (không đụng Activity/Compose rule) để chạy được trên luồng nền.
+        val ctx = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val game = File(GameStorage.games(ctx), "v141-song-song").apply { mkdirs() }
+        val rom = File(game, "fixture.gba").apply { writeText("rom") }
+        File(game, "save/a.sav").apply { parentFile?.mkdirs(); writeText("save") }
+        val target = Game(game, "v141-song-song", AppGraph.config.current.system("gba"), rom)
+        val dir = File(ctx.filesDir, SAVE_BACKUP_DIR)
+        val known = dir.listFiles().orEmpty().toSet()
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(2)
+        try {
+            val barrier = java.util.concurrent.CyclicBarrier(2)
+            val futures = (1..2).map {
+                pool.submit<java.io.File?> {
+                    barrier.await(30, java.util.concurrent.TimeUnit.SECONDS) // cả hai vào cùng lúc
+                    backupGameFolder(ctx, target).file
+                }
+            }
+            val files = futures.map { it.get(120, java.util.concurrent.TimeUnit.SECONDS) }
+            assertNotNull("Luồng 1 phải có zip", files[0])
+            assertNotNull("Luồng 2 phải có zip", files[1])
+            assertNotEquals("Hai luồng không được dùng chung một zip", files[0], files[1])
+            for (file in files) {
+                assertTrue("Zip phải còn trên đĩa", file!!.isFile)
+                assertTrue("Zip phải có nội dung (không bị ghi đè/truncate)", file.length() > 0)
+                ZipFile(file).use { zip -> assertNotNull("Zip đọc được", zip.getEntry("game/fixture.gba")) }
+            }
+        } finally {
+            pool.shutdownNow()
+            game.deleteRecursively()
+            dir.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
             AppGraph.library.list()
         }
     }
