@@ -9,9 +9,9 @@ import subprocess
 import zipfile
 
 FORBIDDEN_CLASSES = (
-    b'Lvn/aow/monika/download/', b'Lvn/aow/monika/apkinstall/',
+    b'Lvn/aow/monika/donate/', b'Lvn/aow/monika/download/', b'Lvn/aow/monika/apkinstall/',
     b'Lvn/aow/monika/browser/InAppBrowserActivity', b'Lvn/aow/monika/ui/screens/SupportStrip',
-    b'Lvn/aow/monika/config/DonateConfig',
+    b'Lvn/aow/monika/config/Donate',
     b'Lvn/aow/monika/ui/ForceUpdateScreenKt',
 )
 FORBIDDEN_TEXT = ('img.vietqr.io', 'vote-game.html', 'Tải bản mới', 'monika-loader.dex')
@@ -35,6 +35,8 @@ def decoded_manifest(apk, raw):
 
 def check(apk):
     with zipfile.ZipFile(apk) as archive:
+        if any(name.endswith('/donate_qr.webp') for name in archive.namelist()):
+            raise ValueError('Play còn ảnh QR ủng hộ')
         for name in REQUIRED_ASSETS:
             if name not in archive.namelist() or not archive.read(name).strip():
                 raise ValueError('Play thiếu ghi công hoặc script tương thích: ' + name)
