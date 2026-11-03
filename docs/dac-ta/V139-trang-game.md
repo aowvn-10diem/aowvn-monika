@@ -15,8 +15,12 @@ Nội dung Save (V140) và Bản vá Việt hóa (V143); đổi thiết kế Th�
 - [ ] Bấm **ô game** hoặc mục **"Trang game"** trong menu ⋯ → mở đúng trang đó (chỉ game chơi được:
       có hệ máy, chưa bị dọn/khóa); giữ lâu ô vẫn ra menu như cũ.
 - [ ] Trang hiện đúng ảnh bìa/icon/minh họa, tên, nhãn hệ máy (+ "Có sẵn trong máy", "Thử nghiệm"),
-      3 dòng **Hệ máy / Dung lượng / Đường dẫn**; dung lượng tính cả cây (kể cả > 7 tầng), hiện
-      "Chưa rõ"/"0 B" khi không đọc được, số dùng dấu phẩy (1,5 MB).
+      3 dòng **Hệ máy / Dung lượng / Đường dẫn**; dung lượng tính cả cây (kể cả > 7 tầng), số dùng
+      dấu phẩy (1,5 MB); thư mục rỗng đọc được trọn → "0 B".
+- [ ] Dung lượng **hiện "Chưa rõ" khi chưa đọc được toàn bộ cây** (thư mục con bị chặn quyền,
+      tệp lỗi độ dài, liên kết tượng trưng) — **không** hiện tổng thiếu như con số chắc chắn.
+      Test: `GameDetailTest.partiallyUnreadableFolderReportsUnknownSizeInsteadOfAShortTotal`
+      và `fileLengthErrorReportsUnknownSize` (mã ở #430).
 - [ ] **Chơi** đi đúng luồng Thư viện: hệ thử nghiệm hỏi xác nhận, thiếu app ngoài hiện "Cần cài …",
       chạy được thì ghi nhận lượt chơi.
 - [ ] **Save** và **Bản vá** là nút mờ + nhãn **"Sắp có"**, bấm không có tác dụng.
@@ -54,14 +58,16 @@ thành phần `AppGraph`, không đổi ProGuard, không thêm Worker.
   mỗi lần xóa tạo một zip đầy đủ (chưa có cơ chế tự dọn zip cũ).
 - **Khác:** game ngoài kho chỉ ẩn, thư mục lạ trong kho không bị xóa; không thêm lượt gọi Worker/mạng.
 
-### 8. Đối chiếu mã đã có (#430, head `e4f168f7`)
+### 8. Đối chiếu mã đã có (#430, head `066e55c6`)
 | Hạng mục | Trạng thái |
 |---|---|
 | Trang chi tiết + thanh Tác vụ (`GameDetailScreen.kt`) | **Xong** |
+| Dung lượng: đọc trọn cây mới hiện số, thiếu thì **"Chưa rõ"** | **Xong** (mới, #430 `066e55c6`) |
 | Route `game/{key}`, `EXTRA_GAME_KEY`, mở từ ô/menu (cả 2 flavor) | **Xong** |
 | Xóa: xác nhận, sao lưu toàn thư mục, chặn thư mục lạ, chia sẻ zip | **Xong** |
-| Test | `GameDetailTest` 8/8, `GameDeleteBackupTest` 13/13 (github) |
+| Test | `GameDetailTest` 10/10, `GameDeleteBackupTest` 13/13 (github) |
 | Save / Bản vá | **Chưa** — chỉ nút mờ "Sắp có" (V140/V143) |
 
 **[CHƯA KIỂM]** Chưa chạy máy thật/máy ảo (chỉ Robolectric + `assembleDebug` hai flavor); ảnh giao
 diện lấy từ test, chưa có ảnh máy thật; Play dùng chung mã nhưng chưa có test UI riêng cho route.
+Lỗi đọc cây được kiểm bằng seam `list`/`length` (Robolectric/Windows không chặn quyền thật).
