@@ -120,10 +120,13 @@ public final class AowMonikaKeypad {
 	 */
 	public static final class Presses {
 		/**
-		 * Số ngón tối đa theo dõi được. Android cấp `pointer id` trong 0..số ngón-1 của cử chỉ (10 là mức phổ
-		 * biến); id vượt mức này bị bỏ qua ngay từ đầu, không nhận phím.
+		 * Sức chứa = **miền pointer ID của Android**: `MotionEvent.getPointerId()` trả id trong 0..31
+		 * (`MAX_POINTER_ID`), và id có thể THƯA (ví dụ ngón 3 và 17 cùng lúc), nên phải giữ đủ 32 ô.
+		 *
+		 * <p>Đừng hạ số này theo "số ngón thường dùng": id ≥ 10 vẫn là chạm hợp lệ, hạ xuống thì người chơi
+		 * bấm mà máy không nhận. Id ngoài miền (< 0 hoặc ≥ 32) bị bỏ qua ngay từ đầu, không nhận phím.
 		 */
-		public static final int MAX_POINTERS = 10;
+		public static final int MAX_POINTERS = 32;
 
 		private final int[] held;
 

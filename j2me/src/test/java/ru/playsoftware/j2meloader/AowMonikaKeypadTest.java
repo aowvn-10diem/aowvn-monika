@@ -184,35 +184,59 @@ public class AowMonikaKeypadTest {
 		assertEquals("nhả lần hai không còn gì", -1, presses.release(3));
 	}
 
-	/** Ngón ngoài bảng (id >= số ngón) không làm tràn mảng, cũng không giữ phím. */
+	/** Ngón ngoài miền ID của Android (>= 32) không làm tràn mảng, cũng không giữ phím. */
 	@Test
-	public void pointerOutsideTableIsIgnoredInsteadOfCrashing() {
-		AowMonikaKeypad.Presses presses = new AowMonikaKeypad.Presses(10);
-		assertEquals(-1, presses.press(10, 4));
-		assertEquals(-1, presses.held(10));
-		assertEquals(-1, presses.release(10));
+	public void pointerOutsideAndroidIdRangeIsIgnoredInsteadOfCrashing() {
+		AowMonikaKeypad.Presses presses = new AowMonikaKeypad.Presses();
+		for (int pointer : new int[]{32, 33, 99}) {
+			assertFalse("id " + pointer + " ngoài miền phải bị loại", presses.accepts(pointer));
+			assertEquals(-1, presses.press(pointer, 4));
+			assertEquals(-1, presses.held(pointer));
+			assertEquals(-1, presses.release(pointer));
+		}
 		assertEquals(-1, presses.press(-1, 4));
 	}
 
 	/**
-	 * Biên 9/10 (Luna 3): guard và sức chứa phải là MỘT nguồn số. `accepts()` là thứ `VirtualKeyboard` gọi
-	 * trước khi nhấn phím, nên id 10..27 bị loại ngay — không nhấn được phím nào để mà kẹt.
+	 * Luna 3 (#449): `Canvas` truyền **Android pointer ID** (0..31, có thể thưa), nên sức chứa phải đủ 32 ô.
+	 * Guard và sức chứa là MỘT nguồn số; id hợp lệ >=10 phải bấm được (trước đây bị bỏ → "bấm không nhận").
 	 */
 	@Test
-	public void pointerGuardMatchesTheRealCapacity() {
+	public void everyAndroidPointerIdIsAcceptedAndTracked() {
 		AowMonikaKeypad.Presses presses = new AowMonikaKeypad.Presses();
 		assertEquals("sức chứa mặc định", AowMonikaKeypad.Presses.MAX_POINTERS, presses.capacity());
-		assertEquals("guard đọc đúng sức chứa", 10, presses.capacity());
+		assertEquals("miền ID của Android là 0..31", 32, presses.capacity());
 
-		assertTrue("ngón 0 hợp lệ", presses.accepts(0));
-		assertTrue("ngón 9 sát biên vẫn hợp lệ", presses.accepts(9));
-		for (int pointer : new int[]{10, 15, 27}) {
-			assertFalse("ngón " + pointer + " phải bị loại từ đầu", presses.accepts(pointer));
-			assertEquals("ngón " + pointer + " không được nhận phím", -1, presses.press(pointer, 0));
-			assertEquals("ngón " + pointer + " không giữ phím nào", -1, presses.held(pointer));
-			assertEquals("ngón " + pointer + " không có phím để nhả", -1, presses.release(pointer));
+		for (int pointer : new int[]{0, 9, 10, 15, 27, 31}) {
+			assertTrue("id " + pointer + " là ID hợp lệ, phải nhận", presses.accepts(pointer));
+			assertEquals("id " + pointer + " nhận phím", -1, presses.press(pointer, 4));
+			assertEquals("id " + pointer + " đang giữ phím 4", 4, presses.held(pointer));
+			assertEquals("id " + pointer + " nhả phím 4", 4, presses.release(pointer));
+			assertEquals("id " + pointer + " đã nhả sạch", -1, presses.held(pointer));
 		}
-		assertFalse("ngón âm bị loại", presses.accepts(-1));
+		for (int pointer : new int[]{-1, 32}) {
+			assertFalse("id " + pointer + " ngoài miền phải bị loại", presses.accepts(pointer));
+		}
+	}
+
+	/** Nhiều ngón ID thưa (3 và 17) cùng lúc: mỗi ngón giữ/nhả phím riêng, không giẫm lên nhau. */
+	@Test
+	public void sparseSimultaneousPointersStayIndependent() {
+		AowMonikaKeypad.Presses presses = new AowMonikaKeypad.Presses();
+		assertEquals(-1, presses.press(3, 7));    // ngón id 3 giữ phím 8
+		assertEquals(-1, presses.press(17, 2));   // ngón id 17 giữ phím 3
+		assertEquals(7, presses.held(3));
+		assertEquals(2, presses.held(17));
+
+		assertEquals("nhả ngón 3", 7, presses.release(3));
+		assertEquals("ngón 17 vẫn giữ nguyên", 2, presses.held(17));
+		assertEquals("nhả ngón 17", 2, presses.release(17));
+
+		// Bấm lại bằng id lớn không nhả nhầm phím của id nhỏ.
+		assertEquals(-1, presses.press(31, 5));
+		assertEquals(-1, presses.press(3, 6));
+		assertEquals(5, presses.release(31));
+		assertEquals(6, presses.release(3));
 	}
 
 	/**
@@ -223,7 +247,7 @@ public class AowMonikaKeypadTest {
 	public void rejectedPointerLeavesNoStuckState() {
 		AowMonikaKeypad.Presses presses = new AowMonikaKeypad.Presses();
 		int key = 6; // phím 7
-		assertEquals(-1, presses.press(15, key));
+		assertEquals(-1, presses.press(32, key));
 		assertEquals("không có phím ma", 0, presses.cancelAll().length);
 
 		// Ngón hợp lệ vẫn chạy đúng sau đó.
@@ -231,7 +255,7 @@ public class AowMonikaKeypadTest {
 		assertEquals(key, presses.held(0));
 		assertEquals(key, presses.release(0));
 		assertEquals(-1, presses.held(0));
-		// Bàn phím dùng 10 ngón tối đa: mọi id hợp lệ đều theo dõi được.
+		// Cả miền ID hợp lệ đều theo dõi được.
 		for (int pointer = 0; pointer < presses.capacity(); pointer++) {
 			assertEquals(-1, presses.press(pointer, key));
 			assertEquals(key, presses.release(pointer));
