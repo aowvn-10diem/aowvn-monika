@@ -1,5 +1,6 @@
 # Mọi phiên bản thư viện nằm ở đây. Nâng cấp = sửa 1 dòng.
 [versions]
+playwrightCi = "1.62.0" # công cụ kiểm Chromium trong CI, không đóng gói vào APK
 kover = "0.9.11"
 agp = "8.7.3"
 kotlin = "2.0.21"
