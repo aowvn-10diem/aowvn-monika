@@ -139,8 +139,8 @@ object GameSaveBackup {
                 complete = false,
             )
         }
-        val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(Date())
-        val target = File(dir, "xoa-${safeFileName(game.name)}-$stamp.zip")
+        val stamp = SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.ROOT).format(Date())
+        val target = uniqueBackupFile(dir, "xoa-${safeFileName(game.name)}-$stamp")
         try {
             ZipOutputStream(target.outputStream().buffered()).use { zip ->
                 for (file in scan.files) {
@@ -208,4 +208,26 @@ object GameSaveBackup {
     /** Tên tệp an toàn cho mọi hệ điều hành (bỏ ký tự cấm, cắt ngắn). */
     fun safeFileName(name: String): String =
         name.replace(Regex("[\\p{Cntrl}\\\\/:*?\"<>|]"), "_").trim().take(60).ifBlank { "game" }
+
+    /**
+     * Tên zip **duy nhất** trong [dir]: `<base>-<4 hex>.zip`. Nếu tệp đã tồn tại thì đổi hậu tố
+     * (thử tiếp), cuối cùng mới thêm số đếm — **không bao giờ ghi đè** bản sao lưu trước.
+     * Cần vì hai lần sao lưu trong cùng một giây, hoặc hai game cùng tên hiển thị, có thể trùng tên.
+     */
+    internal fun uniqueBackupFile(dir: File, base: String): File {
+        repeat(200) {
+            val candidate = File(dir, "$base-${randomSuffix()}.zip")
+            if (!candidate.exists()) return candidate
+        }
+        var counter = 1
+        while (true) {
+            val candidate = File(dir, "$base-extra$counter.zip")
+            if (!candidate.exists()) return candidate
+            counter++
+        }
+    }
+
+    /** 4 ký tự hex ngẫu nhiên cho hậu tố tên zip. */
+    private fun randomSuffix(): String =
+        java.lang.Long.toHexString(java.util.Random().nextLong() and 0xffff).padStart(4, '0')
 }

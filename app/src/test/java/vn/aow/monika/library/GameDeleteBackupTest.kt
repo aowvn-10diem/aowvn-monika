@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -143,6 +144,55 @@ class GameDeleteBackupTest {
             }
         } finally {
             dir.deleteRecursively()
+            backups().listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+        }
+    }
+
+    @Test fun backupsInTheSameSecondDoNotOverwriteEachOther() {
+        val (game, _) = gameWithSave("v139-ghi-de")
+        val known = backups().listFiles().orEmpty().toSet()
+        try {
+            // Gọi liên tiếp (cùng giây) — tên cũ chỉ có độ phân giải giây nên sẽ đè nhau.
+            val first = GameSaveBackup.backupFolder(context(), game).file
+            val second = GameSaveBackup.backupFolder(context(), game).file
+
+            assertNotNull("Lần 1 phải có zip", first)
+            assertNotNull("Lần 2 phải có zip", second)
+            assertNotEquals("Hai lần sao lưu phải ra hai tệp khác nhau", first, second)
+            assertTrue("Zip lần 1 phải còn", first!!.isFile)
+            assertTrue("Zip lần 2 phải còn", second!!.isFile)
+            assertTrue(
+                "Tên phải có mili-giây và hậu tố 4 hex",
+                first.name.matches(Regex("""xoa-v139-ghi-de-\d{8}-\d{6}-\d{3}-[0-9a-f]{4}\.zip""")),
+            )
+            ZipFile(first).use { zip -> assertNotNull("Zip lần 1 đọc được", zip.getEntry("game/fixture.gba")) }
+            ZipFile(second).use { zip -> assertNotNull("Zip lần 2 đọc được", zip.getEntry("game/fixture.gba")) }
+        } finally {
+            game.dir.deleteRecursively()
+            backups().listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+        }
+    }
+
+    @Test fun backupsForGamesWithTheSameNameInDifferentFoldersDoNotOverwrite() {
+        val dirA = gameFolder("v139-ten-a")
+        val dirB = gameFolder("v139-ten-b")
+        val romA = File(dirA, "a.gba").apply { writeText("a") }
+        val romB = File(dirB, "b.gba").apply { writeText("b") }
+        val system = AppGraph.config.current.system("gba")
+        val gameA = Game(dirA, "Cùng tên", system, romA)
+        val gameB = Game(dirB, "Cùng tên", system, romB)
+        val known = backups().listFiles().orEmpty().toSet()
+        try {
+            val first = GameSaveBackup.backupFolder(context(), gameA).file
+            val second = GameSaveBackup.backupFolder(context(), gameB).file
+
+            assertNotNull(first)
+            assertNotNull(second)
+            assertNotEquals("Hai game cùng tên không được ghi đè bản sao lưu của nhau", first, second)
+            ZipFile(first!!).use { zip -> assertNotNull("Zip game A đọc được", zip.getEntry("game/a.gba")) }
+            ZipFile(second!!).use { zip -> assertNotNull("Zip game B đọc được", zip.getEntry("game/b.gba")) }
+        } finally {
+            dirA.deleteRecursively(); dirB.deleteRecursively()
             backups().listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
         }
     }
