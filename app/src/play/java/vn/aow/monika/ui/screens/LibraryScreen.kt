@@ -268,14 +268,14 @@ fun LibraryScreen(onSettings: () -> Unit) {
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance),
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // Game của lần cài trước chưa đọc được → nhắc cấp quyền (Android 11+).
+            // Game của lần cài trước chưa đọc được → mời chọn lại tệp (bản Play không xin quyền bộ nhớ).
             val lockedCount = games.count { it.locked }
             if (lockedCount > 0 && !scanAccess) item(span = { GridItemSpan(2) }) {
                 MonikaCard(Modifier.fillMaxWidth(), shape = Radius.large, padding = PaddingValues(16.dp)) {
                     Text("$lockedCount game từ lần cài trước chưa mở được", style = Monika.type.cardTitle, color = c.text)
                     Text("Do bạn gỡ app rồi cài lại, Android chặn đọc game cũ. Chọn lại tệp game để chơi tiếp.",
                         style = Monika.type.caption, color = c.textSecondary, modifier = Modifier.padding(top = 4.dp))
-                    GradientButton("Cấp quyền", { requestScanAccess() }, Modifier.fillMaxWidth().padding(top = 12.dp), height = 44.dp)
+                    GradientButton("Chọn lại tệp", { requestScanAccess() }, Modifier.fillMaxWidth().padding(top = 12.dp), height = 44.dp)
                 }
             }
             if (games.isNotEmpty()) item(span = { GridItemSpan(2) }) {
@@ -368,16 +368,14 @@ fun LibraryScreen(onSettings: () -> Unit) {
             title = "Thư viện", subtitle = "${games.size} game · ${systems.size} hệ máy",
             actions = buildList {
                 add(SheetAction("Thêm game từ máy", R.drawable.ic_fluent_folder_add_24_regular, highlight = true) { picker.launch(arrayOf("*/*")) })
-                add(SheetAction(if (deviceScanning) "Đang quét…" else "Quét cả máy", R.drawable.ic_fluent_search_24_regular, enabled = !deviceScanning) {
-                    if (!scanAll) requestScanAccess() else scanDevice()
-                })
+                // Bản Play chỉ mở SAF chọn tệp; không có "Quét cả máy" vì Play không được cấp quyền đọc toàn bộ bộ nhớ.
+                add(SheetAction("Chọn tệp từ máy", R.drawable.ic_fluent_folder_open_24_regular) { requestScanAccess() })
                 add(SheetAction("Cài đặt giả lập", R.drawable.ic_fluent_settings_24_regular, onClick = onSettings))
                 add(SheetAction("Tải lại danh sách", R.drawable.ic_fluent_arrow_clockwise_24_regular) { reloadKey++ })
-                if (!scanAll) add(SheetAction("Chọn tệp trong máy", R.drawable.ic_fluent_lock_closed_24_regular) { requestScanAccess() })
             },
             header = {
                 SheetRow(
-                    if (scanAll) "Tự quét máy mỗi ngày" else "Chưa có quyền đọc mọi tệp",
+                    if (scanAll) "Tự quét máy mỗi ngày" else "Bạn tự chọn tệp từ máy",
                     subtitle = if (scanAll) "Game tìm thấy chơi thẳng từ chỗ cũ, không chép thêm."
                     else "Bản Play luôn hỏi bạn chọn tệp, không xin quyền đọc toàn bộ bộ nhớ.",
                     icon = if (scanAll) R.drawable.ic_fluent_shield_checkmark_24_regular else R.drawable.ic_fluent_info_24_regular,
@@ -490,7 +488,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
                     scope.launch {
                         val ok = withContext(Dispatchers.IO) { AppGraph.library.delete(game) }
                         if (!ok) info = "Chưa xóa hết \"${game.name}\": một số file do lần cài app trước tạo ra nên Android không cho xóa.\n\n" +
-                            "Cấp quyền \"Truy cập mọi tệp\" (thẻ đầu Thư viện) rồi xóa lại, hoặc xóa thư mục bằng trình quản lý file:\n${game.dir.absolutePath}"
+                            "Chọn lại tệp (thẻ đầu Thư viện) rồi xóa lại, hoặc xóa thư mục bằng trình quản lý file:\n${game.dir.absolutePath}"
                         reloadKey++
                     }
                 }, height = 44.dp)

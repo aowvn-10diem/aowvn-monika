@@ -111,7 +111,7 @@ internal fun GameTile(g: Game, onPlay: () -> Unit, onExtract: () -> Unit, onMenu
             Box(Modifier.align(Alignment.BottomCenter).padding(10.dp).fillMaxWidth()) {
                 when {
                     g.evicted -> DarkButton("Chọn lại tệp", onRedownload, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_arrow_download_24_regular)
-                    g.locked -> DarkButton("Cấp quyền để mở", onRequestAccess, Modifier.fillMaxWidth())
+                    g.locked -> DarkButton("Chọn lại tệp", onRequestAccess, Modifier.fillMaxWidth())
                     waiting -> DarkButton("Giải nén", onExtract, Modifier.fillMaxWidth())
                     else -> GradientButton("Chơi", onPlay, Modifier.fillMaxWidth(), icon = R.drawable.ic_fluent_play_24_filled, height = 44.dp)
                 }
@@ -123,7 +123,7 @@ internal fun GameTile(g: Game, onPlay: () -> Unit, onExtract: () -> Unit, onMenu
         Text(
             when {
                 g.evicted -> "Đã dọn để tiết kiệm bộ nhớ · save vẫn giữ"
-                g.locked -> "Của lần cài trước · cấp quyền để mở"
+                g.locked -> "Của lần cài trước · chọn lại tệp để mở"
                 else -> (g.system?.name ?: if (g.needsExtract) "Chưa giải nén" else "Chưa nhận diện") +
                     (if (playTime > 0) " · ⏱ ${formatPlayTime(playTime)}" else "")
             },
