@@ -23,7 +23,8 @@ Bản app do người khác tự build từ repo công khai **không** tự lấ
 **G2 — Pixeldrain**
 - [ ] Bản tự build không gọi `pixeldrain.com` khi mở app, nhập game hay prefetch; request chỉ phát sinh sau khi người dùng **chủ động dán link** và bấm xác nhận.
 - [ ] Hộp thoại cảnh báo: "Tệp do bên thứ ba (Pixeldrain), AowVN không kiểm soát"; huỷ thì không request.
-- [ ] Bản chính thức dùng `/pd/<id>` của Worker (302 sang Pixeldrain, khoá API ở secret Worker); không stream tệp qua Worker.
+- [ ] Bản chính thức dùng `/pd/<id>` của Worker (302 sang Pixeldrain, khoá API nằm ở secret của
+      Worker — **không nhúng vào APK**); không stream tệp qua Worker.
 - [ ] Test: trước xác nhận, số request tới Pixeldrain = 0; sau xác nhận mới có đúng 1.
 
 **G3 — lõi/engine/module**
@@ -62,7 +63,17 @@ Bản app do người khác tự build từ repo công khai **không** tự lấ
 ### 8. Rủi ro
 - Không thêm lượt gọi Worker mỗi lần mở app: feed/forum dùng cache như hiện tại; G2 chỉ gọi khi dán link; G3 chỉ gọi khi người dùng cài lõi/module.
 - Save/phím/bố cục không đụng; lỗi mạng vẫn dùng bản đóng gói/cache như hiện tại.
-- Fork "lười" bị chặn; người cố tình dịch ngược APK chính thức vẫn trích được secret (G0 chỉ là rào thấp).
+- Fork "lười" bị chặn. **Không có secret trong APK hay trong mã**: mọi giá trị nằm trong app
+  (footer, endpoint, tham số) đều coi là **công khai**; quyền truy cập do **phía máy chủ** kiểm
+  soát (Worker secret/HMAC, chữ ký TTL ngắn, giới hạn theo bundle id + versionCode). APK chỉ mang
+  **hash công khai** (sha256) để kiểm toàn vẹn tệp tải về — không mang khoá bí mật nào.
 - Đổi đường tải lõi có thể làm người dùng cũ hỏng nếu bỏ link cũ quá sớm → giữ song song tới khi bản mới phủ đủ.
+
+### 9. Cổng CI
+PR **docs-only** (`docs/**`, `**/*.md`) được **N/A theo V11**: `.github/workflows/build.yml` bỏ qua
+`build`/`coverage`/`CodeQL` theo `paths-ignore`, nên các cổng đó **không chạy** và không phải điều
+kiện gộp — không cần chạy Gradle thủ công. Cổng bắt buộc duy nhất là **guard V113**
+(`scripts/kiem-nuot-loi.sh --pull-request`), chạy được cả khi diff rỗng phần mã.
+PR **mã** của G1–G3 vẫn phải xanh đủ build + coverage + CodeQL như các PR mã khác.
 
 [CHƯA KIỂM] Hạn mức/chi phí Cloudflare và R2, số người dùng thật, TTL/chữ ký Worker chưa có mã; đặc tả docs-only nên chưa chạy gradle (V11) và chưa thử tải thật.
