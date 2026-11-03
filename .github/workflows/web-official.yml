@@ -16,13 +16,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: Test Node offline
         run: node --test tests/official.test.mjs
-      - name: Cài công cụ điều khiển Chromium cho CI
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: app-catalog
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            config
+            gradle/libs.versions.toml
+          persist-credentials: false
+      - name: Cài công cụ Chromium đúng phiên bản catalog
         run: |
           python3 -m venv "$RUNNER_TEMP/web-browser"
-          "$RUNNER_TEMP/web-browser/bin/python" -m pip install --quiet --disable-pip-version-check playwright
-      - name: Lấy config nguồn cùng PR app V183
-        run: curl --fail --silent --show-error --location --retry 2 https://raw.githubusercontent.com/aowvn-10diem/aowvn-monika/48deaf4bb0d3b3a58750a7dd2783d20c4b0d1bc2/config/monika-config.json --output "$RUNNER_TEMP/official-catalog.json"
-      - name: Chromium mobile, desktop và lỗi/thử lại
+          MONIKA_WEB_PLAYWRIGHT_VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("app-catalog/gradle/libs.versions.toml", "rb"))["versions"]["playwrightCi"])')
+          "$RUNNER_TEMP/web-browser/bin/python" -m pip install --quiet --disable-pip-version-check "playwright==$MONIKA_WEB_PLAYWRIGHT_VERSION"
+      - name: Chromium mobile, desktop và lỗi/thử lại với config main
         env:
-          CATALOG_CONFIG: ${{ runner.temp }}/official-catalog.json
+          CATALOG_CONFIG: ${{ github.workspace }}/app-catalog/config/monika-config.json
         run: '"$RUNNER_TEMP/web-browser/bin/python" tests/official.browser.py'
