@@ -61,7 +61,7 @@ jobs:
   create_tag:
     needs: preflight
     permissions: {contents: write}
-    if: github.event_name != 'workflow_dispatch' || inputs.dry_run != true
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && (github.event_name != 'workflow_dispatch' || inputs.dry_run != true)
     runs-on: ubuntu-latest
     env:
       TAG: ${{ needs.preflight.outputs.tag }}
@@ -180,7 +180,7 @@ jobs:
           for f in AowVN-Monika-*.apk; do echo "== $f ($(stat -c%s "$f") byte)"; scripts/pixeldrain-upload.sh "$f"; done
 
   signing_dry_run:
-    if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.event_name == 'workflow_dispatch' && inputs.dry_run == true
     permissions: {contents: read}
     runs-on: ubuntu-latest
     steps:

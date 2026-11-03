@@ -270,12 +270,12 @@ fun InGameOverlay(
         if (padShown) VirtualPad(layout, state, send, onMotion, Modifier.align(Alignment.BottomCenter),
             chipVisible = headerVisible, bottomReserve = if (headerAtBottom) NDS_BOTTOM_BAR_DP.dp else 0.dp)
 
-        // V162: nút nhỏ ẩn/hiện phím ảo — luôn với tới được, kể cả khi phím đang ẩn.
+        // V162/V184: nút nhỏ ẩn/hiện phím ảo — luôn hiện, đục, góc trái trên (né nút vai phải khi xoay ngang).
         if (showPad) {
             PadToggle(
                 hidden = !state.padVisible,
                 onClick = { onPadHiddenChange(state.togglePad()) },
-                modifier = Modifier.align(Alignment.CenterStart),
+                modifier = Modifier.align(Alignment.TopStart).windowInsetsPadding(SafeTop).padding(top = 76.dp, start = 8.dp),
             )
         }
 
@@ -609,28 +609,31 @@ private fun PillKey(label: String, key: Int, send: (Int, Int) -> Unit) {
 }
 
 /**
- * V162: nút nhỏ ẩn/hiện phím ảo. Đang hiện → chấm tròn kính mờ (icon bàn phím) ở mép trái, hơi trong;
- * đang ẩn → viên "Hiện phím" nổi bật để người chơi tìm lại được. Luôn nằm ngoài cụm phím nên với tới được.
+ * V162/V184: nút tròn nhỏ ẩn/hiện phím ảo. Luôn đục và không tự ẩn (sếp 0.8.9: nút cũ quá to, lại mờ dần);
+ * đang ẩn phím thì nền gradient cam để người chơi tìm lại được.
  */
 @Composable
 private fun PadToggle(hidden: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier.padding(6.dp).alpha(if (hidden) 1f else 0.55f).clip(Radius.pill)
-            .background(if (hidden) primaryGradient() else Brush.linearGradient(listOf(Color(0xB8181719), Color(0xB8181719))))
-            .border(1.dp, Color(0x24FFFFFF), Radius.pill)
+    Box(
+        modifier.size(PAD_TOGGLE_DP).clip(Radius.pill)
+            .background(if (hidden) primaryGradient() else Brush.linearGradient(listOf(PAD_TOGGLE_BG, PAD_TOGGLE_BG)))
+            .border(1.dp, Color(0x33FFFFFF), Radius.pill)
             .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); if (awaitRelease()) onClick() } }
-            .padding(horizontal = if (hidden) 12.dp else 10.dp, vertical = 10.dp)
             .testTag(PAD_TOGGLE_TAG),
-        verticalAlignment = Alignment.CenterVertically,
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             painterResource(R.drawable.ic_fluent_keyboard_24_regular),
             if (hidden) "Hiện phím ảo" else "Ẩn phím ảo",
-            Modifier.size(20.dp), tint = Color.White,
+            Modifier.size(18.dp), tint = Color.White,
         )
-        if (hidden) Text("Hiện phím", Modifier.padding(start = 6.dp), style = Monika.type.caption, color = Color.White, maxLines = 1)
     }
 }
+
+/** Cạnh nút ẩn/hiện phím ảo (dp) — nhỏ, không che game. */
+private val PAD_TOGGLE_DP = 36.dp
+/** Nền nút khi phím đang hiện: than kính đục vừa, không dùng alpha để nút không bị "mờ dần". */
+private val PAD_TOGGLE_BG = Color(0xCC181719)
 
 /** testTag của nút ẩn/hiện phím ảo (V162, test giao diện). */
 const val PAD_TOGGLE_TAG = "pad-toggle"

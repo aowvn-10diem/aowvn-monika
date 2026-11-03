@@ -1,0 +1,29 @@
+name: Kiểm script trước push trên Windows
+
+on:
+  pull_request:
+    paths:
+      - scripts/truoc-khi-push.ps1
+      - scripts/test-truoc-khi-push.py
+      - .github/workflows/pre-push-windows.yml
+  push:
+    branches: [main]
+    paths:
+      - scripts/truoc-khi-push.ps1
+      - scripts/test-truoc-khi-push.py
+      - .github/workflows/pre-push-windows.yml
+
+permissions:
+  contents: read
+
+jobs:
+  pre-push-windows:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Kiểm lỗi giả trên Windows PowerShell 5 và PowerShell 7
+        run: python -X utf8 scripts/test-truoc-khi-push.py
