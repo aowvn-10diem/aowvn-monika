@@ -1,6 +1,7 @@
 package vn.aow.monika.library
 
 import android.content.Context
+import vn.aow.monika.diag.Diagnostics
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -27,6 +28,9 @@ object GameSaveBackup {
     /** Thư mục chứa bản sao lưu, tạo trước khi xoá. */
     const val DIR = "save-backups"
 
+    /** Tên thành phần trong báo cáo Diagnostics. */
+    private const val COMPONENT = "thu-vien"
+
     /** Trần an toàn: quá 256 tệp / 64 MB thì dừng (nơi gọi phải bỏ xoá, không đoán bừa). */
     private const val MAX_FILES = 256
     private const val MAX_BYTES = 64L * 1024 * 1024
@@ -37,19 +41,22 @@ object GameSaveBackup {
     /** Đuôi tệp save quen dùng. */
     private val SAVE_EXTENSIONS = setOf("sav", "srm", "dsv", "rmm", "rxdata", "rpgsave", "rvdata2", "save")
 
-    /** Tệp save nằm trong [dir] (tối đa [MAX_FILES]); lỗi đọc → danh sách rỗng, không ném. */
-    fun saveFilesInside(dir: File): List<File> = runCatching {
+    /** Tệp save nằm trong [dir] (tối đa [MAX_FILES]); lỗi đọc → danh sách rỗng, không ném (ghi Diagnostics). */
+    fun saveFilesInside(dir: File, context: Context): List<File> = runCatching {
         dir.walkTopDown().maxDepth(3)
             .filter { it.isFile }
             .filter { file ->
-                val relative = runCatching { file.relativeTo(dir) }.getOrNull() ?: return@filter false
+                val relative = runCatching { file.relativeTo(dir) }
+                    .onFailure { Diagnostics.recordHandled(context, COMPONENT, "quét save: đường dẫn tệp", it) }
+                    .getOrNull() ?: return@filter false
                 file.extension.lowercase(Locale.ROOT) in SAVE_EXTENSIONS ||
                     relative.invariantSeparatorsPath.split('/').dropLast(1)
                         .any { it.lowercase(Locale.ROOT) in SAVE_DIR_NAMES }
             }
             .take(MAX_FILES)
             .toList()
-    }.getOrDefault(emptyList())
+    }.onFailure { Diagnostics.recordHandled(context, COMPONENT, "quét save trong thư mục game", it) }
+        .getOrDefault(emptyList())
 
     /**
      * Ghi bản sao lưu save của [game] vào `filesDir/save-backups/xoa-<tên>-<giờ>.zip`.
@@ -57,9 +64,13 @@ object GameSaveBackup {
      * Ném lỗi khi không ghi được — nơi gọi **phải dừng, không xoá**.
      */
     fun of(context: Context, game: Game): File? {
-        val saves = saveFilesInside(game.dir)
+        val saves = saveFilesInside(game.dir, context)
         if (saves.isEmpty()) return null
-        val total = saves.sumOf { runCatching { it.length() }.getOrDefault(0L) }
+        val total = saves.sumOf { file ->
+            runCatching { file.length() }
+                .onFailure { Diagnostics.recordHandled(context, COMPONENT, "sao lưu save: đọc dung lượng tệp", it) }
+                .getOrDefault(0L)
+        }
         require(total <= MAX_BYTES) { "save trong thư mục quá lớn (${total / (1024 * 1024)} MB)" }
         val dir = File(context.filesDir, DIR).apply { check(mkdirs() || isDirectory) { "chưa tạo được thư mục sao lưu" } }
         val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(Date())
@@ -85,7 +96,9 @@ object GameSaveBackup {
                 zip.closeEntry()
             }
         } catch (t: Throwable) {
+            // Xoá tệp zip dở; nếu xoá không được thì thôi (không ảnh hưởng dữ liệu người chơi).
             target.delete()
+            Diagnostics.recordHandled(context, COMPONENT, "sao lưu save: ghi tệp zip", t)
             throw t
         }
         return target

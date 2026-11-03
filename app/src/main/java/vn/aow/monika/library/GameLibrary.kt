@@ -4,6 +4,7 @@ import android.content.Context
 import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.config.MonikaConfig
 import vn.aow.monika.config.SystemDef
+import vn.aow.monika.diag.Diagnostics
 import java.io.File
 
 data class Game(
@@ -130,7 +131,8 @@ class GameLibrary(
         val managed = runCatching {
             val kho = GameStorage.games(context).canonicalFile
             game.dir.canonicalFile.parentFile == kho
-        }.getOrDefault(false)
+        }.onFailure { Diagnostics.recordHandled(context, "thu-vien", "xoá game: kiểm tra thư mục trong kho", it) }
+            .getOrDefault(false)
         if (!managed) {
             return GameDeleteOutcome(
                 deleted = false, backup = null,
@@ -141,6 +143,7 @@ class GameLibrary(
         val saved = try {
             backup(game)
         } catch (t: Throwable) {
+            Diagnostics.recordHandled(context, "thu-vien", "xoá game: sao lưu save trước khi xoá", t)
             return GameDeleteOutcome(
                 deleted = false, backup = null,
                 message = "Chưa sao lưu được save nên chưa xoá gì: ${t.message ?: "lỗi không rõ"}. " +
