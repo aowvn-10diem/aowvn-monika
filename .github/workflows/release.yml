@@ -172,6 +172,7 @@ jobs:
           generate_release_notes: true
           # Luật V31: bản chưa có kết quả thử trên máy thật luôn là prerelease.
           prerelease: ${{ needs.preflight.outputs.prerelease == 'true' }}
+          make_latest: ${{ needs.preflight.outputs.prerelease == 'true' && 'false' || 'true' }}
       - name: Up APK lên Pixeldrain (nếu có secret PIXELDRAIN_API_KEY)
         env:
           PIXELDRAIN_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
