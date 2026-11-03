@@ -19,6 +19,7 @@ class NdsSettingsTest {
         val options = listOf(
             option("melonds_jit_enable", "JIT Enable (Restart)"),
             option("melonds_internal_resolution", "Internal Resolution"),
+            option("melonds_render_mode", "Render Mode", "software"),
             option("melonds_screen_layout1", "Screen Layout"),
             option("melonds_pointer_type", "Pointer Type"),
             option("melonds_screen_gap", "Screen Gap"),
@@ -29,11 +30,31 @@ class NdsSettingsTest {
             sections.map { it.first?.title ?: "Khác" },
         )
         // Trong nhóm giữ nguyên thứ tự đầu vào.
-        assertEquals(listOf("melonds_internal_resolution"), sections[0].second.map { it.key })
+        assertEquals(listOf("melonds_internal_resolution", "melonds_render_mode"), sections[0].second.map { it.key })
         assertEquals(listOf("melonds_screen_layout1", "melonds_screen_gap"), sections[1].second.map { it.key })
         assertEquals(listOf("melonds_jit_enable"), sections[2].second.map { it.key })
         // Tùy chọn chưa xếp nhóm vẫn được giữ, không ẩn.
         assertEquals(listOf("melonds_pointer_type"), sections[3].second.map { it.key })
+    }
+
+    /** Luna Ultra (#456): "Cách vẽ 3D (phần mềm / OpenGL)" thuộc nhóm hình ảnh "Màn hình", không phải "Hiệu năng". */
+    @Test fun renderModeBelongsToScreenGroup() {
+        val mode = option("melonds_render_mode", "Render Mode", "software")
+        assertEquals(NdsSettings.Group.SCREEN, NdsSettings.groupOf(mode))
+        val sections = NdsSettings.sections(listOf(mode, option("melonds_jit_enable", "JIT Enable (Restart)")))
+        assertEquals(listOf("Màn hình", "Hiệu năng"), sections.map { it.first?.title })
+        assertEquals(listOf("melonds_render_mode"), sections[0].second.map { it.key })
+        assertEquals(listOf("melonds_jit_enable"), sections[1].second.map { it.key })
+    }
+
+    /** Đặc tả: mọi mục "Hybrid …" / "Swap Screen Mode" là bố cục (kể cả khi khoá lõi đổi tên). */
+    @Test fun hybridAndSwapOptionsAreLayoutGroup() {
+        listOf(
+            "Hybrid Small Screen Mode", "Hybrid Ratio (OpenGL Only)", "Hybrid Layout: Show Both Screens",
+            "Hybrid Layout: Cursor Always on Small Screen", "Swap Screen Mode",
+        ).forEach { original ->
+            assertEquals(original, NdsSettings.Group.LAYOUT, NdsSettings.groupOf(option("melonds_khac_$original", original)))
+        }
     }
 
     @Test fun emptyGroupIsDropped() {

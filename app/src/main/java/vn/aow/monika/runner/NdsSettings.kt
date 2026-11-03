@@ -64,7 +64,9 @@ object NdsSettings {
     private val layoutKeys = setOf(
         "melonds_screen_layout1", "melonds_number_of_screen_layouts", "melonds_screen_gap", "melonds_hybrid_ratio",
     )
-    private val performanceKeys = setOf("melonds_jit_enable", "melonds_render_mode", "melonds_threaded_renderer")
+    /** Cách vẽ 3D (phần mềm / OpenGL) là lựa chọn hình ảnh → nhóm "Màn hình", không phải "Hiệu năng". */
+    private val screenKeys = setOf("melonds_render_mode")
+    private val performanceKeys = setOf("melonds_jit_enable", "melonds_threaded_renderer")
 
     /**
      * Nhóm của một tùy chọn; null = chưa xếp nhóm (vẫn hiện ở cuối bảng).
@@ -72,10 +74,13 @@ object NdsSettings {
      */
     fun groupOf(option: CoreOption): Group? {
         if (option.key in layoutKeys) return Group.LAYOUT
+        if (option.key in screenKeys) return Group.SCREEN
         if (option.key in performanceKeys) return Group.PERFORMANCE
         val name = option.original.ifBlank { option.label }.lowercase()
         return when {
-            name.contains("layout") || name.contains("screen gap") || name.contains("swap screen") -> Group.LAYOUT
+            // "Hybrid …" (tỉ lệ / màn nhỏ hiện gì / đổi màn) đều là bố cục theo đặc tả.
+            name.contains("layout") || name.contains("screen gap") || name.contains("swap screen") ||
+                name.contains("hybrid") -> Group.LAYOUT
             name.contains("jit") || name.contains("cpu cores") || name.contains("threaded") ||
                 name.contains("frameskip") || name.contains("bus-level") || name.contains("fast memory") ||
                 name.contains("optimisation") -> Group.PERFORMANCE

@@ -45,6 +45,7 @@ class NdsOptionsPanelTest {
         // Khoá lạ nhưng tên gốc đã biết → vẫn dịch; nhóm theo từ khoá "layout".
         parse("melonds_screen_layout_count", "Number of Screen Layouts; 1|2|3", "1"),
         parse("melonds_internal_resolution", "Internal Resolution; 1|2|3", "1"),
+        parse("melonds_render_mode", "Render Mode; software|opengl", "software"),
         parse("melonds_jit_enable", "JIT Enable (Restart); enabled|disabled", "enabled"),
         parse("melonds_threaded_renderer", "Threaded software renderer; disabled|enabled", "enabled"),
         parse("melonds_mystery_switch", "Mystery Switch; a|b", "a"),
@@ -77,6 +78,10 @@ class NdsOptionsPanelTest {
         rule.onNodeWithText("Bố cục 2 màn hình").assertExists()
         rule.onNodeWithText("Số bố cục màn hình đang dùng").assertExists()
         rule.onNodeWithText("Bật JIT – tăng tốc (mở lại game)").assertExists()
+        // "Cách vẽ 3D" (render mode) nằm trong nhóm Màn hình, trên tiêu đề "Bố cục".
+        rule.onNodeWithText("Cách vẽ 3D (phần mềm / OpenGL)").assertExists()
+        assertTrue("Render Mode phải ở nhóm Màn hình",
+            top("Cách vẽ 3D (phần mềm / OpenGL)") < top("Bố cục"))
         rule.onNodeWithText("Mystery Switch").assertExists()
         rule.shot("v188-tuy-chon-nds-nhom")
     }
