@@ -39,13 +39,9 @@ internal class PdfRendererBook private constructor(
         val page = renderer.openPage(safeIndex)
         return page.use {
             // PdfRenderer phóng/thu nội dung theo kích thước bitmap (transform = null).
-            // Dựng tối đa 2x để chữ nét, và LUÔN chặn bề rộng ở MAX_RENDER_WIDTH
-            // (trang rộng hơn 1600px thì hạ xuống < 1x để đúng cap).
-            val scale = (MAX_RENDER_WIDTH / it.width.coerceAtLeast(1).toFloat())
-                .coerceAtMost(MAX_SCALE)
-                .coerceAtLeast(MIN_SCALE)
-            val width = (it.width * scale).toInt().coerceAtLeast(1)
-            val height = (it.height * scale).toInt().coerceAtLeast(1)
+            // Kích thước tính từ tỉ lệ trang: tối đa 2x cho chữ nét, và **luôn** chặn bề rộng
+            // ở MAX_RENDER_WIDTH — kể cả trang nguồn rất rộng (> 16.000 px).
+            val (width, height) = renderSize(it.width, it.height)
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             bitmap.eraseColor(Color.WHITE)
             it.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
@@ -68,9 +64,19 @@ internal class PdfRendererBook private constructor(
 
     companion object {
         /** Bề rộng bitmap tối đa khi dựng 1 trang (cap thật sự, kể cả trang lớn). */
-        private const val MAX_RENDER_WIDTH = 1600f
-        private const val MAX_SCALE = 2f
-        private const val MIN_SCALE = 0.1f
+        internal const val MAX_RENDER_WIDTH = 1600
+
+        /**
+         * Kích thước bitmap khi dựng 1 trang: rộng = min(nguồn × 2, [MAX_RENDER_WIDTH]) — **luôn**
+         * ≤ cap, kể cả trang nguồn rất rộng; cao tính theo đúng tỉ lệ trang (không méo).
+         */
+        internal fun renderSize(srcWidth: Int, srcHeight: Int): Pair<Int, Int> {
+            val w = srcWidth.coerceAtLeast(1)
+            val h = srcHeight.coerceAtLeast(1)
+            val width = minOf(w.toLong() * 2, MAX_RENDER_WIDTH.toLong()).toInt().coerceAtLeast(1)
+            val height = ((width.toDouble() * h) / w).toInt().coerceAtLeast(1)
+            return width to height
+        }
 
         /**
          * Mở tệp PDF. Không ném lỗi ra ngoài: trả [Result] với [ReaderException] đã phân loại

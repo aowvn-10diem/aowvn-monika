@@ -67,7 +67,17 @@ class PdfReaderActivity : ComponentActivity() {
                             } else {
                                 opened.fold(
                                     onSuccess = { book ->
-                                        openedBook?.let { runCatching { it.close() } }
+                                        // Mở lại (Thử lại): đóng bản cũ, lỗi đóng thì ghi nhận chứ không nuốt.
+                                        openedBook?.let { old ->
+                                            try {
+                                                old.close()
+                                            } catch (t: Throwable) {
+                                                Diagnostics.recordHandled(
+                                                    this@PdfReaderActivity, ReaderDiag.COMPONENT,
+                                                    "đóng tài liệu cũ khi mở lại", t,
+                                                )
+                                            }
+                                        }
                                         openedBook = book
                                         ReaderOpenState.Ready(book)
                                     },
