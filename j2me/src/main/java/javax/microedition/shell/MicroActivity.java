@@ -120,6 +120,8 @@ public class MicroActivity extends AppCompatActivity {
 	private String appPath;
 	private ActivityMicroBinding binding;
 	private final AowPadVisibility padVisibility = new AowPadVisibility();
+	/** Trạng thái ẩn từng phím trước khi bấm ẩn (null = đang không giấu phím). */
+	private boolean[] keysHiddenBefore;
 	private int padInsetTop;
 	private int padInsetStart;
 
@@ -187,8 +189,8 @@ public class MicroActivity extends AppCompatActivity {
 		if (vk != null) {
 			vk.setView(binding.overlay);
 			binding.overlay.addLayer(vk);
-			// V90: bàn phím bố trí lại (xoay máy, đổi cỡ) → nút menu đổi chỗ theo.
-			vk.setOnLayoutListener(() -> runOnUiThread(this::positionMonikaMenuButton));
+			// V90/V184: bàn phím bố trí lại (xoay máy, đổi cỡ) → nút menu đổi chỗ, và giữ phím đang ẩn.
+			vk.setOnLayoutListener(() -> runOnUiThread(this::applyPadVisibility));
 			// Aow Monika: bàn phím Monika xoay ngang được (phím tách 2 bên), kiểu điện thoại khác vẫn khóa dọc.
 			if (vk.isPhone() && !vk.isMonika()) {
 				orientation = ORIENTATION_PORTRAIT;
@@ -224,6 +226,7 @@ public class MicroActivity extends AppCompatActivity {
 			im.unregisterInputDeviceListener(padListener);
 		}
 		releasePad(0);
+		restorePadKeys(); // không để trạng thái ẩn phím bị lưu vào bố cục bàn phím khi rời màn
 		hideSoftInput();
 		super.onPause();
 	}
@@ -507,18 +510,39 @@ public class MicroActivity extends AppCompatActivity {
 	}
 
 	/**
-	 * V162: áp trạng thái ẩn/hiện cho bàn phím ảo + nút nhỏ + nút menu (bàn phím ẩn thì nút menu về góc phải).
-	 * Gọi lúc mở game, khi bấm nút và khi cắm/rút tay cầm.
+	 * V162/V184: áp trạng thái ẩn/hiện. Ẩn = chỉ giấu TỪNG PHÍM (setKeysVisibility) để nền/skin Monika và
+	 * khung game vẫn được vẽ; KHÔNG dùng setUserHidden (bản cũ bỏ vẽ cả lớp phủ → mất giao diện gốc).
+	 * Gọi lúc mở game, khi bấm nút, khi cắm/rút tay cầm và khi bàn phím bố trí lại.
 	 */
 	private void applyPadVisibility() {
 		VirtualKeyboard vk = ContextHolder.getVk();
-		if (vk != null) {
-			vk.setUserHidden(!padVisibility.isVisible());
-		}
 		boolean shown = padVisibility.isVisible();
-		binding.monikaPadButton.setAlpha(shown ? 0.55f : 1f);
+		if (vk != null) {
+			if (shown) {
+				if (keysHiddenBefore != null) {
+					vk.setKeysVisibility(keysHiddenBefore);
+					keysHiddenBefore = null;
+				}
+			} else {
+				if (keysHiddenBefore == null) {
+					keysHiddenBefore = vk.getKeysVisibility();
+				}
+				boolean[] hideAll = new boolean[keysHiddenBefore.length];
+				java.util.Arrays.fill(hideAll, true);
+				vk.setKeysVisibility(hideAll);
+			}
+		}
 		binding.monikaPadButton.setContentDescription(getString(shown ? R.string.monika_hide_pad : R.string.monika_show_pad));
 		positionMonikaMenuButton();
+	}
+
+	/** Trả các phím về đúng trạng thái trước khi ẩn (rời màn) — tránh lưu bố cục toàn phím ẩn. */
+	private void restorePadKeys() {
+		VirtualKeyboard vk = ContextHolder.getVk();
+		if (vk != null && keysHiddenBefore != null) {
+			vk.setKeysVisibility(keysHiddenBefore);
+			keysHiddenBefore = null;
+		}
 	}
 
 	private void togglePadVisibility() {

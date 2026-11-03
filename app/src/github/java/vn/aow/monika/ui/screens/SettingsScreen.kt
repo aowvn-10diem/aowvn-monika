@@ -80,6 +80,7 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
     val c = Monika.colors
     var open by remember { mutableStateOf<String?>(null) }
     var refreshTick by remember { mutableIntStateOf(0) }
+    var officialOpen by remember { mutableStateOf(false) }
     var subscribed by remember { mutableStateOf(AppGraph.prefs.subscribedLabels) }
 
     Screen {
@@ -88,6 +89,8 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
             else MonikaHeader("Cài đặt", subtitle = "Aow Monika", left = onBack?.let { back -> { CircleButton(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại", back) } })
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 SupportStrip()
+                GradientButton("Bản chính thức", { officialOpen = true }, Modifier.fillMaxWidth(),
+                    icon = R.drawable.ic_fluent_shield_checkmark_24_regular, height = 48.dp)
                 if (cfg.account.enabled) AccountCard()
                 // Thẻ tối: app + phiên bản + cập nhật.
                 MonikaCard(Modifier.fillMaxWidth(), dark = true, shape = Radius.hero, padding = PaddingValues(18.dp)) {
@@ -330,6 +333,7 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
             }
         }
     }
+    if (officialOpen) vn.aow.monika.official.OfficialDistributionSheet(cfg.official, cfg.security, cfg.account.donate, { officialOpen = false })
 }
 
 /** Mục cài đặt dạng thẻ, bấm để mở rộng (hiệu ứng mở/đóng theo cấu hình máy). */

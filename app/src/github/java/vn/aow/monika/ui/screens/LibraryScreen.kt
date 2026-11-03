@@ -267,6 +267,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 deviceScanning -> "Đang quét máy… ($scanDirs thư mục)"
                 else -> "${games.size} game trong máy" + if (documents.isNotEmpty()) " · ${documents.size} tài liệu" else ""
             },
+            left = { vn.aow.monika.donate.DonationButton() },
             right = { CircleButton(R.drawable.ic_fluent_grid_24_regular, "Menu thư viện", { libMenu = true }) },
         )
         // V138: khung 3 mục Chơi / Đọc / Tệp + một cửa "+ Thêm" cho mọi cách đưa đồ vào Thư viện.
