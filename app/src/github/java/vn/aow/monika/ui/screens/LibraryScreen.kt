@@ -89,6 +89,8 @@ fun LibraryScreen(onSettings: () -> Unit) {
     var documentToDelete by remember { mutableStateOf<LibraryDocument?>(null) }
     // V141: mục Tệp — tệp đang chờ xác nhận xoá (game/tài liệu app quản lý).
     var fileToDelete by remember { mutableStateOf<LibraryFileEntry?>(null) }
+    // Bản sao lưu save vừa tạo (nếu có) để người dùng chia sẻ/lưu ra ngoài.
+    var backupToShare by remember { mutableStateOf<java.io.File?>(null) }
     val games = scanned.orEmpty()
     var reloadKey by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
@@ -501,14 +503,15 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 GradientButton(if (external) "Ẩn" else "Xoá", {
                     fileToDelete = null
                     scope.launch {
-                        val message = withContext(Dispatchers.IO) {
+                        val result = withContext(Dispatchers.IO) {
                             when {
-                                game != null -> deleteGameWithSaveBackup(context, game).message
-                                document != null -> deleteDocumentFile(document).message
-                                else -> "Không xác định được tệp để xoá."
+                                game != null -> deleteGameWithSaveBackup(context, game)
+                                document != null -> deleteDocumentFile(document)
+                                else -> FileDeleteResult(false, null, "Không xác định được tệp để xoá.")
                             }
                         }
-                        info = message
+                        info = result.message
+                        backupToShare = result.backup
                         reloadKey++
                     }
                 }, height = 44.dp)
@@ -534,11 +537,17 @@ fun LibraryScreen(onSettings: () -> Unit) {
             containerColor = c.surface, shape = Radius.large,
         )
     }
-    info?.let {
+    info?.let { text ->
         AlertDialog(
-            onDismissRequest = { info = null },
-            confirmButton = { GradientButton("OK", { info = null }, height = 44.dp) },
-            text = { Text(it, style = Monika.type.body, color = c.text) },
+            onDismissRequest = { info = null; backupToShare = null },
+            confirmButton = {
+                GradientButton("OK", { info = null; backupToShare = null }, height = 44.dp)
+            },
+            // Bản sao lưu nằm trong filesDir: cho người dùng gửi/lưu ra ngoài (Drive, Zalo, Files…).
+            dismissButton = backupToShare?.let { file ->
+                { DarkButton("Chia sẻ bản sao lưu", { shareBackup(context, file)?.let { info = it } }) }
+            },
+            text = { Text(text, style = Monika.type.body, color = c.text) },
             containerColor = c.surface, shape = Radius.large,
         )
     }

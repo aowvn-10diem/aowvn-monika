@@ -31,11 +31,13 @@ import vn.aow.monika.ui.screens.LibraryFileKind
 import vn.aow.monika.ui.screens.LibraryFilesPage
 import vn.aow.monika.ui.screens.LibraryScreen
 import vn.aow.monika.ui.screens.SAVE_BACKUP_DIR
+import vn.aow.monika.ui.screens.SaveBackup
 import vn.aow.monika.ui.screens.backupGameSaves
+import vn.aow.monika.ui.screens.backupShareIntent
 import vn.aow.monika.ui.screens.deleteGameWithSaveBackup
 import vn.aow.monika.ui.screens.formatFileDate
 import vn.aow.monika.ui.screens.formatFileSize
-import vn.aow.monika.ui.screens.saveFilesInside
+import vn.aow.monika.ui.screens.scanSaveFiles
 import vn.aow.monika.ui.theme.DockClearance
 import vn.aow.monika.ui.theme.MonikaTheme
 import vn.aow.monika.ui.theme.dockContentClearance
@@ -195,6 +197,8 @@ class LibraryFilesUiTest {
             rule.awaitComposeLayout {
                 rule.onAllNodesWithText("Bản sao lưu save", substring = true).fetchSemanticsNodes().isNotEmpty()
             }
+            // Bản sao lưu nằm trong vùng riêng của app → phải có đường chia sẻ ra ngoài.
+            rule.onNodeWithText("Chia sẻ bản sao lưu").assertExists()
             // Danh sách tự làm mới: không còn dòng nào để xoá.
             rule.awaitComposeLayout { rule.onAllNodesWithText("Chưa có tệp nào").fetchSemanticsNodes().isNotEmpty() }
             rule.shot("v141-tep-xoa-game")
@@ -215,15 +219,18 @@ class LibraryFilesUiTest {
         val backups = File(rule.activity.filesDir, SAVE_BACKUP_DIR)
         val knownBackups = backups.listFiles().orEmpty().toSet()
         try {
-            assertEquals(listOf("tien-do.sav"), saveFilesInside(game).map { it.name })
+            val scan = scanSaveFiles(rule.activity, game)
+            assertTrue("Quét phải trọn vẹn", scan.complete)
+            assertEquals(listOf("tien-do.sav"), scan.files.map { it.name })
             val backup = backupGameSaves(rule.activity, target)
-            assertNotNull("Phải tạo được bản sao lưu save", backup)
-            assertTrue(backup!!.isFile)
-            assertTrue(backup.name.startsWith("xoa-v141-save-game"))
+            val zipFile = backup.file
+            assertNotNull("Phải tạo được bản sao lưu save", zipFile)
+            assertTrue(zipFile!!.isFile)
+            assertTrue(zipFile.name.startsWith("xoa-v141-save-game"))
 
             // Bản sao lưu giữ đúng đường dẫn + nội dung và khôi phục được vào thư mục mới.
             val restoreDir = File(rule.activity.cacheDir, "v141-khoi-phuc").apply { deleteRecursively(); mkdirs() }
-            ZipFile(backup).use { zip ->
+            ZipFile(zipFile).use { zip ->
                 val entry = zip.getEntry("game/save/tien-do.sav")
                 assertNotNull("Bản sao lưu phải có tệp save", entry)
                 val out = File(restoreDir, "save/tien-do.sav").apply { parentFile?.mkdirs() }
@@ -243,6 +250,82 @@ class LibraryFilesUiTest {
             game.deleteRecursively()
             backups.listFiles().orEmpty().filter { it !in knownBackups }.forEach { it.delete() }
             AppGraph.library.list()
+        }
+    }
+
+    @Test fun deeplyNestedAndManySavesAreAllInTheBackup() {
+        val game = fixture("v141-save-sau")
+        val rom = File(game, "fixture.gba").apply { writeText("rom") }
+        val deep = File(game, "a/b/c/d/e/f/sau-tang.sav").apply {
+            parentFile?.mkdirs(); writeText("save sau tang")
+        }
+        // 300 tệp: trước đây bị cắt âm thầm ở 256.
+        val many = (1..300).map { i ->
+            File(game, "save/s$i.srm").apply { parentFile?.mkdirs(); writeText("s$i") }
+        }
+        val target = Game(game, "v141-save-sau", AppGraph.config.current.system("gba"), rom)
+        val backups = File(rule.activity.filesDir, SAVE_BACKUP_DIR)
+        val knownBackups = backups.listFiles().orEmpty().toSet()
+        try {
+            val scan = scanSaveFiles(rule.activity, game)
+            assertTrue("Quét phải trọn vẹn", scan.complete)
+            assertTrue("Phải thấy save nằm sâu 7 tầng", scan.files.any { it == deep })
+            assertEquals("Không được cắt bớt số tệp save", 301, scan.files.size)
+
+            val backup = backupGameSaves(rule.activity, target)
+            val zipFile = backup.file
+            assertNotNull("Phải tạo được bản sao lưu save", zipFile)
+            ZipFile(zipFile!!).use { zip ->
+                assertNotNull("Save sâu phải có trong zip", zip.getEntry("game/a/b/c/d/e/f/sau-tang.sav"))
+                assertNotNull("Save thứ 300 phải có trong zip", zip.getEntry("game/save/s300.srm"))
+                assertEquals("301 save + 1 tệp mô tả", 302, zip.size())
+            }
+            assertTrue(many.last().exists())
+        } finally {
+            game.deleteRecursively()
+            backups.listFiles().orEmpty().filter { it !in knownBackups }.forEach { it.delete() }
+            AppGraph.library.list()
+        }
+    }
+
+    @Test fun deleteIsRefusedWhenTheSaveScanIsNotComplete() {
+        val game = fixture("v141-quet-thieu")
+        val rom = File(game, "fixture.gba").apply { writeText("rom") }
+        val save = File(game, "save/a.sav").apply { parentFile?.mkdirs(); writeText("x") }
+        val target = Game(game, "v141-quet-thieu", AppGraph.config.current.system("gba"), rom)
+        try {
+            val warning = "Bỏ qua 1 liên kết tượng trưng (không đi theo để tránh lặp vô hạn)."
+            val result = deleteGameWithSaveBackup(rule.activity, target) { _, _ ->
+                SaveBackup(null, listOf(warning), complete = false)
+            }
+            assertFalse("Chưa chứng minh sao lưu đủ thì không được xoá", result.deleted)
+            assertTrue("Thư mục game phải còn", game.exists())
+            assertTrue("Save phải còn", save.exists())
+            assertTrue(result.message.contains("Chưa chứng minh sao lưu đủ"))
+            assertTrue("Phải nói rõ lý do (cảnh báo quét)", result.message.contains("liên kết tượng trưng"))
+        } finally {
+            game.deleteRecursively()
+        }
+    }
+
+    @Test fun backupShareIntentHandsTheZipToOtherApps() {
+        val backup = File(File(rule.activity.filesDir, SAVE_BACKUP_DIR), "xoa-demo.zip").apply {
+            parentFile?.mkdirs(); writeText("zip")
+        }
+        val shared = android.net.Uri.parse("content://vn.aow.monika.files/app_internal/save-backups/xoa-demo.zip")
+        try {
+            val intent = backupShareIntent(rule.activity, backup) { shared }
+            assertEquals(Intent.ACTION_SEND, intent.action)
+            assertEquals("application/zip", intent.type)
+            assertEquals(shared, intent.getParcelableExtra<android.net.Uri>(Intent.EXTRA_STREAM))
+            assertTrue(
+                "Phải cấp quyền đọc URI cho ứng dụng nhận",
+                intent.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0,
+            )
+            assertEquals(shared, intent.clipData?.getItemAt(0)?.uri)
+            assertTrue(intent.getStringExtra(Intent.EXTRA_SUBJECT).orEmpty().contains("xoa-demo.zip"))
+        } finally {
+            backup.delete()
         }
     }
 
