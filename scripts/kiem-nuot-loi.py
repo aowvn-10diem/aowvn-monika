@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 PREFIX = "app/src/main/java/vn/aow/monika/"
+PREFIXES = tuple(f"app/src/{source}/java/vn/aow/monika/" for source in ("main", "github", "play"))
 SCOPES = ("download", "library", "pack", "runner", "azahar")
 LOG_CALLS = {"recordHandled", "recordCoreFailure", "recordJavaCrash",
              "recordEngineSignal", "op", "opSuspend", "opFail"}
@@ -237,13 +238,17 @@ def main(argv=None):
             base = git("merge-base", base, args.head).decode().strip()
         git("merge-base", "--is-ancestor", base, args.head)
         paths = git("diff", "--name-only", "-z", "--diff-filter=ACMR", base, args.head,
-                    "--", *[PREFIX + scope + "/" for scope in SCOPES]).decode("utf-8").split("\0")
+                    "--", *[prefix + scope + "/" for prefix in PREFIXES for scope in SCOPES]).decode("utf-8").split("\0")
         errors = []
         for path in filter(lambda p: p.endswith(".kt"), paths):
-            # Renames into a guarded directory are new files; never skip a missing baseline.
-            exists = subprocess.run(["git", "cat-file", "-e", base + ":" + path],
-                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
-            before = git("show", base + ":" + path).decode("utf-8") if exists else ""
+            # Khi tách source set, cùng đường dẫn lớp giữ baseline chung. Đổi package/tên vẫn là mã mới.
+            prefix = next(p for p in PREFIXES if path.startswith(p))
+            suffix = path[len(prefix):]
+            candidates = [path] + [p + suffix for p in PREFIXES if p != prefix]
+            baseline = next((p for p in candidates if subprocess.run(
+                ["git", "cat-file", "-e", base + ":" + p], stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL).returncode == 0), None)
+            before = git("show", base + ":" + baseline).decode("utf-8") if baseline else ""
             after = git("show", args.head + ":" + path).decode("utf-8")
             errors.extend((path, line, kind) for line, kind in new_violations(before, after))
         for path, line, kind in errors[:100]:

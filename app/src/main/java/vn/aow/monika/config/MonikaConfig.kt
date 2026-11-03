@@ -95,32 +95,6 @@ data class CoreOptionText(
 )
 
 @Serializable
-data class AccountConfig(
-    val enabled: Boolean = true,
-    /** Firebase Web API key (công khai, giống trên web). */
-    val apiKey: String = "",
-    val databaseUrl: String = "",
-    /** Trang đăng nhập trên web (docs/web/device-login.html). */
-    val loginUrl: String = "https://www.aow.vn/p/device-login.html",
-    /** Trang vote/donate trên web (mở khi cần tính năng app chưa có). */
-    val voteUrl: String = "https://www.aow.vn/p/vote-game.html",
-    /** Nút "Ủng hộ AowVN" ở Trang chủ mở trang này. Trống = dùng [voteUrl]. */
-    val donateUrl: String = "",
-    val donate: DonateConfig = DonateConfig(),
-)
-
-@Serializable
-data class DonateConfig(
-    /** Mã BIN ngân hàng (VietQR), số tài khoản, tên, mẫu QR, tiền tố nội dung — giống CONFIG của trang vote. */
-    val bankId: String = "",
-    val accountNo: String = "",
-    val accountName: String = "",
-    val template: String = "compact2",
-    val memoPrefix: String = "AowVN",
-    val amounts: List<Long> = listOf(10_000, 20_000, 50_000, 100_000),
-)
-
-@Serializable
 data class AdBlockConfig(
     val enabled: Boolean = true,
     /** Bộ lọc: tên miền / hosts / ||domain^ và luật Adblock Plus (đường dẫn, tùy chọn, ẩn phần tử). */
@@ -289,6 +263,15 @@ data class CoreScreen(
     /** Khoảng cách tối đa (điểm ảnh) cho thanh kéo; nhỏ hơn 1 = không có thanh kéo. */
     val gapMax: Int = 0,
     val defaultGap: Int = 0,
+    /**
+     * V160: tay cầm ảo che lên nửa dưới khung game (kiểu DraStic ở màn dọc) thay vì chiếm chỗ riêng bên dưới.
+     * true = khung game rộng hết cỡ, phím trong suốt đè lên màn dưới.
+     */
+    val overlayPad: Boolean = false,
+    /** Độ mờ mặc định của phím khi che (0,2–1). 0 = theo lựa chọn của người chơi. */
+    val padOpacity: Float = 0f,
+    /** Bố cục dùng ở màn ngang (một giá trị của [layoutKey], vd. "left-right"). Trống = giữ bố cục người chơi chọn. */
+    val landscapeLayout: String = "",
 )
 
 /** 1 lựa chọn trong mục "Màn hình": [id] ổn định để lưu/tham chiếu, [value] là giá trị gửi cho lõi. */

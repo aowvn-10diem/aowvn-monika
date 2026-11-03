@@ -1,13 +1,13 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 53,
+  "configVersion": 57,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
-    "latestVersionCode": 52,
-    "latestVersionName": "0.8.7",
+    "latestVersionCode": 54,
+    "latestVersionName": "0.8.9",
     "minVersionCode": 1,
-    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.7/AowVN-Monika-v0.8.7.apk",
-    "changelog": "Game Java mới mở tự chọn kích thước màn hình, Thư viện tự làm mới khi có cập nhật."
+    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.9/AowVN-Monika-v0.8.9.apk",
+    "changelog": "Bản thử 0.8.9: Sửa nút A/B GBA, màn hình NDS và phím Java khi xoay ngang. Thêm ẩn/hiện phím ảo; Thư viện chia thành Chơi, Đọc và Tệp."
   },
   "feed": {
     "url": "https://www.aow.vn/feeds/posts/default",
@@ -694,16 +694,74 @@
     "loginUrl": "https://www.aow.vn/p/device-login.html",
     "voteUrl": "https://www.aow.vn/p/vote-game.html",
     "donate": {
-      "bankId": "970454",
-      "accountNo": "9021870093495",
+      "bankId": "icb",
+      "accountNo": "101867601261",
       "accountName": "VU DOAN BINH MINH",
       "template": "compact2",
       "memoPrefix": "AowVN",
       "amounts": [
-        10000,
-        20000,
-        50000,
-        100000
+        100000,
+        200000,
+        300000
+      ],
+      "bankName": "VietinBank",
+      "memo": "Ung ho AowVN Monika",
+      "minAmount": 1000,
+      "maxAmount": 500000000,
+      "qrBaseUrl": "https://img.vietqr.io/image/",
+      "payUrl": "https://dl.vietqr.io/pay",
+      "banksUrl": "https://api.vietqr.io/v2/android-app-deeplinks",
+      "returnUrl": "https://monika.aow.vn/",
+      "appeal": "Chúng mình cố gắng phát triển Monika hoàn toàn miễn phí, nhưng AowVN vẫn cần phải chi trả chi phí cho máy chủ, AI. Đừng ngần ngại donate ủng hộ chúng mình nha, 200k, 100k hay 10k đều rất đáng trân trọng á.",
+      "fallbackBanks": [
+        {
+          "id": "icb",
+          "name": "VietinBank"
+        },
+        {
+          "id": "vcb",
+          "name": "Vietcombank"
+        },
+        {
+          "id": "mb",
+          "name": "MB Bank"
+        },
+        {
+          "id": "tcb",
+          "name": "Techcombank"
+        },
+        {
+          "id": "bidv",
+          "name": "BIDV"
+        },
+        {
+          "id": "acb",
+          "name": "ACB"
+        },
+        {
+          "id": "vpb",
+          "name": "VPBank"
+        },
+        {
+          "id": "tpb",
+          "name": "TPBank"
+        },
+        {
+          "id": "shb",
+          "name": "SHB"
+        },
+        {
+          "id": "ocb",
+          "name": "OCB"
+        },
+        {
+          "id": "lpb",
+          "name": "LPBank"
+        },
+        {
+          "id": "seab",
+          "name": "SeABank"
+        }
       ]
     }
   },
@@ -1084,7 +1142,10 @@
         "defaultRatio": "2",
         "gapKey": "melonds_screen_gap",
         "gapMax": 32,
-        "defaultGap": 0
+        "defaultGap": 0,
+        "overlayPad": true,
+        "padOpacity": 0.55,
+        "landscapeLayout": "left-right"
       }
     }
   },

@@ -6,9 +6,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.lazy.rememberLazyListState
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -223,8 +225,47 @@ fun <T> ChipBar(
     }
 }
 
-/** Nhãn nhỏ trên thẻ (vd. "GBA", "Việt hóa"). onDark = nằm trên ảnh/nền tối. */
+/**
+ * Thanh tab dạng viên thuốc (vd. Chơi · Đọc · Tệp ở Thư viện).
+ * Mục đang chọn trượt gradient; thời lượng lấy từ [Monika.motion] nên máy yếu / tắt hiệu ứng là đứng yên.
+ */
 @Composable
+fun SectionTabs(items: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val c = Monika.colors
+    val motion = Monika.motion
+    Row(
+        modifier.clip(Radius.pill).background(c.chip).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        items.forEachIndexed { index, label ->
+            val on = index == selected
+            val fade by animateFloatAsState(
+                if (on) 1f else 0f,
+                animationSpec = tween(motion.normal, easing = motion.easing),
+                label = "tab-fade-$index",
+            )
+            val ink by animateColorAsState(
+                if (on) Color.White else c.chipText,
+                animationSpec = tween(motion.normal, easing = motion.easing),
+                label = "tab-ink-$index",
+            )
+            Box(
+                Modifier.weight(1f).height(38.dp).clip(Radius.pill)
+                    .background(primaryGradient(), alpha = fade)
+                    .selectable(selected = on, role = Role.Tab, onClick = { onSelect(index) })
+                    .padding(horizontal = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    label, style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight),
+                    color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/** Nhãn nhỏ trên thẻ (vd. "GBA", "Việt hóa"). onDark = nằm trên ảnh/nền tối. */@Composable
 fun Tag(text: String, onDark: Boolean = false, accent: Boolean = false) {
     val c = Monika.colors
     val bg: Brush = when {

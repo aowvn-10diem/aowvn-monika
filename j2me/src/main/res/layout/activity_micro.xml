@@ -52,4 +52,19 @@
         android:scaleType="fitCenter"
         android:src="@drawable/ic_monika_menu" />
 
+    <!-- Aow Monika (V162): nút nhỏ ẩn/hiện bàn phím ảo — luôn với tới được khi đang chơi Java. -->
+    <ImageButton
+        android:id="@+id/monika_pad_button"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="top|start"
+        android:layout_marginTop="10dp"
+        android:layout_marginStart="10dp"
+        android:alpha="0.55"
+        android:background="@drawable/bg_monika_menu_button"
+        android:contentDescription="@string/monika_hide_pad"
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_monika_keyboard" />
+
 </FrameLayout>
