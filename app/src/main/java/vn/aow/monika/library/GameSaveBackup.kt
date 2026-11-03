@@ -9,6 +9,7 @@ import androidx.core.content.FileProvider
 import vn.aow.monika.diag.Diagnostics
 import java.io.File
 import java.io.IOException
+import java.nio.file.FileAlreadyExistsException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.Path
@@ -140,9 +141,10 @@ object GameSaveBackup {
             )
         }
         val stamp = SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.ROOT).format(Date())
-        val target = uniqueBackupFile(dir, "xoa-${safeFileName(game.name)}-$stamp")
+        // Giữ tên NGUYÊN TỬ: tạo tệp bằng CREATE_NEW rồi ghi vào đúng tệp vừa giữ (xem reserveName).
+        val target = createUniqueBackupFile(context, dir, "xoa-${safeFileName(game.name)}-$stamp")
         try {
-            ZipOutputStream(target.outputStream().buffered()).use { zip ->
+            ZipOutputStream(Files.newOutputStream(target.toPath()).buffered()).use { zip ->
                 for (file in scan.files) {
                     zip.putNextEntry(ZipEntry("game/" + file.relativeTo(game.dir).invariantSeparatorsPath))
                     file.inputStream().use { it.copyTo(zip) }
@@ -210,21 +212,35 @@ object GameSaveBackup {
         name.replace(Regex("[\\p{Cntrl}\\\\/:*?\"<>|]"), "_").trim().take(60).ifBlank { "game" }
 
     /**
-     * Tên zip **duy nhất** trong [dir]: `<base>-<4 hex>.zip`. Nếu tệp đã tồn tại thì đổi hậu tố
-     * (thử tiếp), cuối cùng mới thêm số đếm — **không bao giờ ghi đè** bản sao lưu trước.
-     * Cần vì hai lần sao lưu trong cùng một giây, hoặc hai game cùng tên hiển thị, có thể trùng tên.
+     * Giữ tên zip **nguyên tử** trong [dir]: `<base>-<4 hex>.zip`, tạo tệp bằng
+     * [Files.createFile] (`CREATE_NEW`) nên hai lời gọi đồng thời không thể cùng giữ một tên —
+     * bên thua nhận [FileAlreadyExistsException] và thử hậu tố khác (tối đa 200 lần, sau đó
+     * `-extra<N>`). Không dùng kiểu `if (!exists())` vì vẫn ghi đè khi sao lưu song song.
+     * Lỗi khác (hết chỗ/quyền) → ghi Diagnostics và ném để nơi gọi dừng, không xoá.
      */
-    internal fun uniqueBackupFile(dir: File, base: String): File {
+    internal fun createUniqueBackupFile(context: Context, dir: File, base: String): File {
         repeat(200) {
-            val candidate = File(dir, "$base-${randomSuffix()}.zip")
-            if (!candidate.exists()) return candidate
+            val candidate = dir.toPath().resolve("$base-${randomSuffix()}.zip")
+            if (reserveName(context, candidate)) return candidate.toFile()
         }
         var counter = 1
-        while (true) {
-            val candidate = File(dir, "$base-extra$counter.zip")
-            if (!candidate.exists()) return candidate
+        while (counter <= 10_000) {
+            val candidate = dir.toPath().resolve("$base-extra$counter.zip")
+            if (reserveName(context, candidate)) return candidate.toFile()
             counter++
         }
+        throw IllegalStateException("chưa tạo được tên tệp sao lưu duy nhất trong ${dir.absolutePath}")
+    }
+
+    /** Giữ [path] bằng CREATE_NEW: true = giữ được, false = đã có tên khác giữ. */
+    private fun reserveName(context: Context, path: Path): Boolean = try {
+        Files.createFile(path)
+        true
+    } catch (_: FileAlreadyExistsException) { // diag: bỏ qua tên đã có, thử hậu tố khác
+        false
+    } catch (t: IOException) {
+        Diagnostics.recordHandled(context, COMPONENT, "sao lưu thư mục game: giữ tên tệp", t)
+        throw IllegalStateException("chưa tạo được tệp sao lưu: ${t.message ?: "lỗi không rõ"}", t)
     }
 
     /** 4 ký tự hex ngẫu nhiên cho hậu tố tên zip. */

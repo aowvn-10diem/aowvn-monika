@@ -197,6 +197,49 @@ class GameDeleteBackupTest {
         }
     }
 
+    @Test fun backupNamesAreReservedAtomically() {
+        val dir = backups().apply { mkdirs() }
+        val known = dir.listFiles().orEmpty().toSet()
+        try {
+            // Giữ tên xong là tệp tồn tại ngay; kiểu `if (!exists())` sẽ trả cùng một tên 2 lần.
+            val first = GameSaveBackup.createUniqueBackupFile(context(), dir, "xoa-atomic")
+            val second = GameSaveBackup.createUniqueBackupFile(context(), dir, "xoa-atomic")
+            assertNotEquals("Hai lần giữ tên phải khác nhau", first, second)
+            assertTrue("Tệp giữ tên phải tồn tại ngay", first.isFile)
+            assertTrue("Tệp giữ tên phải tồn tại ngay", second.isFile)
+        } finally {
+            dir.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+        }
+    }
+
+    @Test fun concurrentBackupsDoNotOverwriteEachOther() {
+        val (game, _) = gameWithSave("v139-song-song")
+        val known = backups().listFiles().orEmpty().toSet()
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(2)
+        try {
+            val barrier = java.util.concurrent.CyclicBarrier(2)
+            val futures = (1..2).map {
+                pool.submit<java.io.File?> {
+                    barrier.await(30, java.util.concurrent.TimeUnit.SECONDS) // cả hai vào cùng lúc
+                    GameSaveBackup.backupFolder(context(), game).file
+                }
+            }
+            val files = futures.map { it.get(120, java.util.concurrent.TimeUnit.SECONDS) }
+            assertNotNull("Luồng 1 phải có zip", files[0])
+            assertNotNull("Luồng 2 phải có zip", files[1])
+            assertNotEquals("Hai luồng không được dùng chung một zip", files[0], files[1])
+            for (file in files) {
+                assertTrue("Zip phải còn trên đĩa", file!!.isFile)
+                assertTrue("Zip phải có nội dung (không bị ghi đè/truncate)", file.length() > 0)
+                ZipFile(file).use { zip -> assertNotNull("Zip đọc được", zip.getEntry("game/fixture.gba")) }
+            }
+        } finally {
+            pool.shutdownNow()
+            game.dir.deleteRecursively()
+            backups().listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+        }
+    }
+
     @Test fun deleteIsRefusedWhenTheScanIsNotComplete() {
         val (game, save) = gameWithSave("v139-quet-thieu")
         try {
