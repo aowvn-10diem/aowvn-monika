@@ -21,7 +21,7 @@ test('dữ liệu chứng thư/ngân hàng/nơi tải đến từ catalog, khôn
   assert.equal(data.sources[0].url, raw.official.downloadSources[0].url);
   assert.equal(data.reportUrl, raw.official.reportFakeUrl);
 });
-test('nguồn Pages còn catalog cũ thì thử cùng catalog trên GitHub, không gọi Worker', async () => {
+test('nguồn có catalog cũ thì thử nguồn kế tiếp, không gọi Worker', async () => {
   const calls = [];
   const data = await loadOfficial(async url => {
     calls.push(url);
@@ -31,7 +31,7 @@ test('nguồn Pages còn catalog cũ thì thử cùng catalog trên GitHub, khô
   assert.equal(CONFIG_URLS.length, 2);
   assert.ok(CONFIG_URLS.every(url => !url.includes('workers.dev')));
 });
-test('Pages hợp lệ thì chỉ hỏi một nguồn', async () => {
+test('nguồn chính hợp lệ thì chỉ hỏi một nguồn', async () => {
   let calls = 0;
   await loadOfficial(async () => { calls++; return { ok: true, json: async () => fixture() }; }, ['https://pages.test/config.json', 'https://raw.test/config.json']);
   assert.equal(calls, 1);

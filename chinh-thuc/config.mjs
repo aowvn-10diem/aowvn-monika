@@ -1,7 +1,7 @@
-// Cùng catalog với app; ưu tiên bản tĩnh Pages, không hỏi Worker.
+// Catalog chính là cùng file trên main của app; Pages là nguồn tĩnh dự phòng, không hỏi Worker.
 export const CONFIG_URLS = [
-  new URL('../config.json', import.meta.url).href,
   'https://raw.githubusercontent.com/aowvn-10diem/aowvn-monika/main/config/monika-config.json',
+  new URL('../config.json', import.meta.url).href,
 ];
 
 export function safeLink(value, allowEmail = false) {

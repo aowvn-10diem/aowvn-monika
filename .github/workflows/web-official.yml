@@ -14,4 +14,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - run: node --test tests/official.test.mjs
+      - name: Test Node offline
+        run: node --test tests/official.test.mjs
+      - name: Cài công cụ điều khiển Chromium cho CI
+        run: |
+          python3 -m venv "$RUNNER_TEMP/web-browser"
+          "$RUNNER_TEMP/web-browser/bin/python" -m pip install --quiet --disable-pip-version-check playwright
+      - name: Lấy config nguồn cùng PR app V183
+        run: curl --fail --silent --show-error --location --retry 2 https://raw.githubusercontent.com/aowvn-10diem/aowvn-monika/48deaf4bb0d3b3a58750a7dd2783d20c4b0d1bc2/config/monika-config.json --output "$RUNNER_TEMP/official-catalog.json"
+      - name: Chromium mobile, desktop và lỗi/thử lại
+        env:
+          CATALOG_CONFIG: ${{ runner.temp }}/official-catalog.json
+        run: '"$RUNNER_TEMP/web-browser/bin/python" tests/official.browser.py'
