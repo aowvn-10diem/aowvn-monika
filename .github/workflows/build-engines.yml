@@ -31,7 +31,7 @@ permissions:
 
 jobs:
   onsyuri-web:
-    if: ${{ inputs.only == 'all' || inputs.only == 'onsyuri' }}
+    if: ${{ github.repository == 'aowvn-10diem/aowvn-monika' && (inputs.only == 'all' || inputs.only == 'onsyuri') }}
     runs-on: ubuntu-24.04
     env:
       EMSDK_HOME: /opt/emsdk
@@ -110,7 +110,7 @@ jobs:
   # ---- 3DS: dựng bản Android của Azahar/AzaharPlus bằng Gradle của họ, trích lõi native libcitra-android.so ----
   # Monika nhúng NHÚNG tầng JNI của Azahar (giao diện là của Monika) và tải thư viện native này khi người chơi có game 3DS.
   azahar-android:
-    if: ${{ inputs.only == 'all' || inputs.only == 'azahar' }}
+    if: ${{ github.repository == 'aowvn-10diem/aowvn-monika' && (inputs.only == 'all' || inputs.only == 'azahar') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 300
     steps:

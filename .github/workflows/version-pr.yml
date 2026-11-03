@@ -54,7 +54,7 @@ jobs:
           path: version-pr-plan.json
           retention-days: 3
   create:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.create_pr
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.create_pr
     needs: plan
     # Chính sách Environment nằm ngoài ref dispatch; secret CHỈ đặt ở Environment này.
     environment: version-pr-main

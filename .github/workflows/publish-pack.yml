@@ -18,6 +18,7 @@ permissions:
 
 jobs:
   publish:
+    if: github.repository == 'aowvn-10diem/aowvn-monika'
     runs-on: ubuntu-24.04
     env:
       PACKS_REPO: aowvn-10diem/aowvn-monika-packs
