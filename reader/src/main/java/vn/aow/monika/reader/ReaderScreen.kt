@@ -37,10 +37,13 @@ import kotlinx.coroutines.withContext
 
 /**
  * Màn đọc PDF độc lập: tên tài liệu, khung trang, thanh điều hướng Trước/Sau,
- * và trạng thái lỗi (PDF hỏng / có mật khẩu / thiếu tệp) — không bao giờ văng app.
+ * và trạng thái lỗi (PDF hỏng / có mật khẩu / thiếu tệp / trang lỗi) — không bao giờ văng app
+ * và **không bao giờ quay spinner mãi**: lỗi nào cũng thoát loading và hiện thông báo có nút
+ * "Thử lại"/"Đóng".
  *
  * [book] null + [error] null = đang mở. [initialPage] là trang đã lưu lần đọc trước.
  * Mỗi lần đổi trang gọi [onPageChanged] để nơi gọi ghi vào `Prefs` (nhớ trang đang đọc dở).
+ * [onRetry] mở lại tài liệu (dùng ở khối lỗi mở tệp); trang lỗi có nút thử lại riêng.
  */
 @Composable
 fun ReaderScreen(
@@ -51,15 +54,16 @@ fun ReaderScreen(
     style: ReaderStyle,
     onPageChanged: (Int) -> Unit,
     onClose: () -> Unit,
+    onRetry: () -> Unit = onClose,
 ) {
     Column(Modifier.fillMaxSize().background(style.background)) {
         ReaderHeader(title, style, onClose)
         Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
             when {
-                error != null -> ReaderErrorPanel(error, style, onClose)
+                error != null -> ReaderErrorPanel(error, style, onRetry, onClose)
                 book == null -> ReaderLoading(style)
-                book.pageCount <= 0 -> ReaderErrorPanel(ReaderError.CORRUPT, style, onClose)
-                else -> ReaderPager(book, initialPage, style, onPageChanged)
+                book.pageCount <= 0 -> ReaderErrorPanel(ReaderError.CORRUPT, style, onRetry, onClose)
+                else -> ReaderPager(book, initialPage, style, onPageChanged, onClose)
             }
         }
     }
@@ -92,9 +96,17 @@ private fun ReaderHeader(title: String, style: ReaderStyle, onClose: () -> Unit)
     }
 }
 
+/** Trạng thái dựng 1 trang: đang dựng · xong · lỗi (kèm loại để báo người dùng). */
+private sealed interface PageState {
+    data object Loading : PageState
+    class Ready(val page: ReaderPage) : PageState
+    class Failed(val error: ReaderError) : PageState
+}
+
 /**
  * Khung trang + thanh điều hướng. Trang dựng trên luồng IO; đổi trang liên tục vẫn an toàn
- * vì [produceState] huỷ lần dựng cũ khi [page] đổi.
+ * vì [produceState] huỷ lần dựng cũ khi [page]/[retry] đổi. Lỗi dựng trang → hiện thông báo
+ * có nút "Thử lại" (không quay spinner mãi) và vẫn giữ thanh điều hướng để đi tiếp.
  */
 @Composable
 private fun ReaderPager(
@@ -102,24 +114,44 @@ private fun ReaderPager(
     initialPage: Int,
     style: ReaderStyle,
     onPageChanged: (Int) -> Unit,
+    onClose: () -> Unit,
 ) {
     val last = book.pageCount - 1
     var page by remember(book) { mutableIntStateOf(initialPage.coerceIn(0, last)) }
-    val rendered by produceState<ReaderPage?>(null, book, page) {
-        value = withContext(Dispatchers.IO) { runCatching { book.openPage(page) }.getOrNull() }
+    var retry by remember(book) { mutableIntStateOf(0) }
+    val state by produceState<PageState>(PageState.Loading, book, page, retry) {
+        value = PageState.Loading
+        value = withContext(Dispatchers.IO) {
+            try {
+                PageState.Ready(book.openPage(page))
+            } catch (t: Throwable) {
+                ReaderDiag.report("dựng trang ${page + 1}", t)
+                PageState.Failed(PdfRendererBook.errorFor(t))
+            }
+        }
     }
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-            val current = rendered
-            if (current == null) {
-                ReaderLoading(style)
-            } else {
-                Image(
-                    bitmap = current.bitmap.asImageBitmap(),
+            when (val current = state) {
+                is PageState.Loading -> ReaderLoading(style)
+                is PageState.Ready -> Image(
+                    bitmap = current.page.bitmap.asImageBitmap(),
                     contentDescription = "Trang ${page + 1}",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
                 )
+                is PageState.Failed -> Column(
+                    Modifier.padding(24.dp).clip(style.card).background(style.surface).padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text("Không dựng được trang ${page + 1}", style = style.title, color = style.text)
+                    Text(current.error.message, style = style.body, color = style.textSecondary)
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ReaderAction("Thử lại", style) { retry++ }
+                        ReaderAction("Đóng", style, primary = false, onClick = onClose)
+                    }
+                }
             }
         }
         Row(
@@ -173,9 +205,27 @@ private fun ReaderButton(
     }
 }
 
-/** Khối báo lỗi: nói rõ vì sao không mở được, chỉ có một nút Đóng. */
+/** Nút nhỏ trong khối lỗi trang. */
 @Composable
-private fun ReaderErrorPanel(error: ReaderError, style: ReaderStyle, onClose: () -> Unit) {
+private fun ReaderAction(text: String, style: ReaderStyle, primary: Boolean = true, onClick: () -> Unit) {
+    Box(
+        Modifier.height(40.dp).clip(style.pill)
+            .background(if (primary) style.accentGradient else SolidColor(style.chip))
+            .clickable(onClick = onClick).padding(horizontal = 18.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, style = style.button, color = if (primary) style.onAccent else style.textSecondary, maxLines = 1)
+    }
+}
+
+/** Khối báo lỗi (mở tệp / PDF hỏng / mã hoá): nói rõ lý do, có "Thử lại" + "Đóng". */
+@Composable
+private fun ReaderErrorPanel(
+    error: ReaderError,
+    style: ReaderStyle,
+    onRetry: () -> Unit,
+    onClose: () -> Unit,
+) {
     Column(
         Modifier.fillMaxWidth().padding(24.dp).clip(style.card).background(style.surface).padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -184,12 +234,9 @@ private fun ReaderErrorPanel(error: ReaderError, style: ReaderStyle, onClose: ()
         Text("Chưa đọc được tài liệu", style = style.title, color = style.text)
         Text(error.message, style = style.body, color = style.textSecondary)
         Spacer(Modifier.height(2.dp))
-        Box(
-            Modifier.height(44.dp).clip(style.pill).background(style.accentGradient)
-                .clickable(onClick = onClose).padding(horizontal = 22.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("Đóng", style = style.button, color = style.onAccent)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ReaderAction("Thử lại", style, onClick = onRetry)
+            ReaderAction("Đóng", style, primary = false, onClick = onClose)
         }
     }
 }

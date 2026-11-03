@@ -11,6 +11,7 @@ enum class ReaderError(val message: String) {
     ENCRYPTED("PDF có mật khẩu nên chưa mở được. Hãy bỏ mật khẩu rồi thêm lại vào Thư viện."),
     CORRUPT("PDF này hỏng hoặc không có trang nào đọc được."),
     UNSUPPORTED("Máy này chưa dựng được PDF bằng bộ đọc có sẵn của Android."),
+    TIMEOUT("Mở tệp PDF quá lâu. Tệp có thể quá lớn hoặc hỏng — thử lại hoặc chọn tệp khác."),
 }
 
 /** Lỗi đọc PDF kèm loại lỗi để màn đọc chọn thông báo. */

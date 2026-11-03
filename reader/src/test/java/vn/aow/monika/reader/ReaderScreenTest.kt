@@ -62,6 +62,7 @@ class ReaderScreenTest {
         initialPage: Int = 0,
         onPageChanged: (Int) -> Unit = {},
         onClose: () -> Unit = {},
+        onRetry: () -> Unit = {},
     ) {
         rule.setContent {
             ReaderScreen(
@@ -72,7 +73,52 @@ class ReaderScreenTest {
                 style = style(),
                 onPageChanged = onPageChanged,
                 onClose = onClose,
+                onRetry = onRetry,
             )
+        }
+    }
+
+    @Test fun zeroPageBookShowsAnErrorInsteadOfAnEndlessSpinner() {
+        var retried = 0
+        composeScreen(FakeBook(pageCount = 0), onRetry = { retried++ })
+
+        // Không còn spinner: hiện khối lỗi có loại + nút thử lại/đóng.
+        rule.onNodeWithText("Chưa đọc được tài liệu").assertExists()
+        rule.onNodeWithText(ReaderError.CORRUPT.message).assertExists()
+        rule.onNodeWithText("Thử lại").assertExists()
+        rule.onNodeWithText("Đóng").assertExists()
+        rule.onNodeWithText("Thử lại").performClick()
+        assertEquals(1, retried)
+    }
+
+    @Test fun pageRenderFailureShowsThePageErrorAndCanBeRetried() {
+        // Trang 2 dựng lỗi: màn phải báo lỗi trang đó (không quay spinner mãi), vẫn đi tiếp được.
+        val book = FakeBook(pageCount = 3, failOnPage = 1)
+        composeScreen(book)
+        rule.onNodeWithText("Trang 1/3").assertExists()
+
+        rule.onNodeWithText("Sau").performClick()
+        rule.onNodeWithText("Không dựng được trang 2").assertExists()
+        rule.onNodeWithText(ReaderError.CORRUPT.message).assertExists()
+        rule.onNodeWithText("Thử lại").performClick() // thử lại vẫn lỗi nhưng không treo
+        rule.onNodeWithText("Không dựng được trang 2").assertExists()
+
+        rule.onNodeWithText("Sau").performClick()
+        rule.onNodeWithText("Trang 3/3").assertExists()
+    }
+
+    @Test fun pageRenderFailureIsReportedForDiagnostics() {
+        val reports = mutableListOf<String>()
+        ReaderDiag.onError = { what, _ -> reports += what }
+        try {
+            composeScreen(FakeBook(pageCount = 2, failOnPage = 0))
+            rule.waitForIdle()
+            assertTrue(
+                "Lỗi dựng trang phải được ghi nhận (Diagnostics), có: $reports",
+                reports.any { it.contains("dựng trang 1") },
+            )
+        } finally {
+            ReaderDiag.onError = null
         }
     }
 

@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -16,7 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import vn.aow.monika.AppGraph
+import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.ui.theme.Monika
 import vn.aow.monika.ui.theme.MonikaTheme
 import vn.aow.monika.ui.theme.Radius
@@ -38,21 +41,39 @@ class PdfReaderActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Lỗi trong module :reader (dựng trang, mở tệp, đóng tài nguyên) ghi vào Diagnostics của app.
+        ReaderDiag.onError = { what, t -> Diagnostics.recordHandled(this, ReaderDiag.COMPONENT, what, t) }
         val path = intent?.getStringExtra(EXTRA_PATH).orEmpty()
         val name = intent?.getStringExtra(EXTRA_NAME)?.takeIf { it.isNotBlank() } ?: File(path).name
         setContent {
             MonikaTheme {
                 val context = LocalContext.current
                 var state by remember(path) { mutableStateOf<ReaderOpenState>(ReaderOpenState.Opening) }
-                LaunchedEffect(path) {
+                var attempt by remember(path) { mutableIntStateOf(0) }
+                LaunchedEffect(path, attempt) {
+                    state = ReaderOpenState.Opening
                     state = if (path.isBlank()) {
                         ReaderOpenState.Failed(ReaderError.MISSING)
                     } else {
                         withContext(Dispatchers.IO) {
-                            PdfBookOpener.open(File(path)).fold(
-                                onSuccess = { book -> openedBook = book; ReaderOpenState.Ready(book) },
-                                onFailure = { ReaderOpenState.Failed((it as? ReaderException)?.error ?: ReaderError.CORRUPT) },
-                            )
+                            // Không để spinner chạy mãi: mở quá lâu thì báo lỗi có loại.
+                            val opened = withTimeoutOrNull(OPEN_TIMEOUT_MS) { PdfBookOpener.open(File(path)) }
+                            if (opened == null) {
+                                Diagnostics.recordHandled(
+                                    this@PdfReaderActivity, ReaderDiag.COMPONENT,
+                                    "mở PDF quá lâu: ${File(path).name}",
+                                )
+                                ReaderOpenState.Failed(ReaderError.TIMEOUT)
+                            } else {
+                                opened.fold(
+                                    onSuccess = { book ->
+                                        openedBook?.let { runCatching { it.close() } }
+                                        openedBook = book
+                                        ReaderOpenState.Ready(book)
+                                    },
+                                    onFailure = { ReaderOpenState.Failed((it as? ReaderException)?.error ?: ReaderError.CORRUPT) },
+                                )
+                            }
                         }
                     }
                 }
@@ -65,6 +86,7 @@ class PdfReaderActivity : ComponentActivity() {
                     style = monikaReaderStyle(),
                     onPageChanged = { page -> AppGraph.prefs.setReadingPage(path, page) },
                     onClose = { finish() },
+                    onRetry = { attempt++ },
                 )
             }
         }
@@ -73,13 +95,23 @@ class PdfReaderActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         // Đóng sách: không giữ handle của tệp sau khi rời màn đọc.
-        openedBook?.let { runCatching { it.close() } }
+        openedBook?.let {
+            try {
+                it.close()
+            } catch (t: Throwable) {
+                Diagnostics.recordHandled(this, ReaderDiag.COMPONENT, "đóng tài liệu khi rời màn", t)
+            }
+        }
         openedBook = null
+        ReaderDiag.onError = null
     }
 
     companion object {
         const val EXTRA_PATH = "reader_path"
         const val EXTRA_NAME = "reader_name"
+
+        /** Chờ tối đa 20 giây khi mở tệp; quá hạn → báo lỗi thay vì quay spinner mãi. */
+        private const val OPEN_TIMEOUT_MS = 20_000L
 
         /** Route riêng của màn đọc, để sau này nối vào điều hướng của app. */
         const val ROUTE = "reader/{path}"
