@@ -39,6 +39,7 @@ import vn.aow.monika.ui.screens.GameMenuSheet
 import vn.aow.monika.ui.screens.GameSizeMeter
 import vn.aow.monika.ui.screens.GameTile
 import vn.aow.monika.ui.screens.formatGameSize
+import vn.aow.monika.ui.screens.fileSizeBytes
 import vn.aow.monika.ui.screens.rememberGameLaunch
 import vn.aow.monika.ui.screens.sizeLabel
 import vn.aow.monika.ui.theme.MonikaTheme
@@ -214,6 +215,46 @@ class GameDetailTest {
         assertNull(meter(length = length).size(game))
         assertEquals("Chưa rõ", sizeLabel(meter(length = length).size(game)))
         assertTrue("Tệp lỗi vẫn tồn tại trên đĩa", bad.exists())
+    }
+
+    /**
+     * Luna 5 (#430): `File.length()` trả 0 khi không đọc được metadata nên tổng bị thiếu mà không
+     * biết. Đường chạy thật: tệp biến mất sau khi liệt kê → `Files.size` ném lỗi → "Chưa rõ".
+     */
+    @Test fun deletedFileDuringScanReportsUnknownSizeInsteadOfCountingZero() {
+        val dir = File(rule.activity.cacheDir, "v139-race").apply { deleteRecursively(); mkdirs() }
+        File(dir, "a.bin").writeBytes(ByteArray(1024))
+        val gone = File(dir, "b.bin").apply { writeBytes(ByteArray(2048)) }
+        val game = Game(dir, "V139 race", SystemDef("v139", "Máy thử", "test"), null)
+
+        assertEquals(3072L, meter().size(game))
+
+        // Liệt kê xong rồi tệp b.bin biến mất (race thật trên đĩa); danh sách vẫn còn tên tệp đó.
+        val listing = dir.listFiles()!!.also { gone.delete() }
+        val size = meter(list = { listing }).folder(game)!!
+        assertFalse("Tệp mất khi đọc kích thước thì chưa đủ cây", size.complete)
+        assertEquals("Chỉ cộng tệp còn đọc được", 1024L, size.bytes)
+        assertNull(meter(list = { listing }).size(game))
+        assertEquals("Chưa rõ", sizeLabel(meter(list = { listing }).size(game)))
+        assertTrue(
+            "Phải ghi Diagnostics khi không đọc được kích thước",
+            Diagnostics.list(rule.activity).any { it.component == "thu-vien" },
+        )
+    }
+
+    /** `fileSizeBytes` (đường thật): tệp không tồn tại phải trả null + Diagnostics, không phải 0. */
+    @Test fun fileSizeOfMissingFileIsUnknownNotZero() {
+        val missing = File(rule.activity.cacheDir, "v139-missing-size.bin")
+        assertNull("File.length() sẽ trả 0; API có báo lỗi phải trả null", fileSizeBytes(rule.activity, missing))
+        assertEquals("Chưa rõ", sizeLabel(fileSizeBytes(rule.activity, missing)))
+        assertTrue(
+            "Phải ghi Diagnostics khi tệp không đọc được",
+            Diagnostics.list(rule.activity).any { it.component == "thu-vien" },
+        )
+
+        // Tệp rỗng thật vẫn là 0 (không phải lỗi).
+        val empty = File(rule.activity.cacheDir, "v139-empty-size.bin").apply { writeBytes(ByteArray(0)) }
+        assertEquals(0L, fileSizeBytes(rule.activity, empty))
     }
 
     /**

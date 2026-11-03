@@ -259,6 +259,19 @@ private fun RowScope.TaskAction(
 internal data class FolderSize(val bytes: Long, val complete: Boolean)
 
 /**
+ * Kích thước tệp **có báo lỗi**: `File.length()` trả **0** khi không đọc được metadata (tệp mất,
+ * mất quyền, lỗi I/O) nên không dùng — 0 sẽ bị cộng như tệp rỗng và tổng bị thiếu mà không biết.
+ * Dùng `Files.size` (ném `IOException`) → null + `Diagnostics.recordHandled("thu-vien", …)`.
+ * Tệp rỗng thật vẫn trả 0 (không lỗi).
+ */
+internal fun fileSizeBytes(context: Context, file: File): Long? = try {
+    java.nio.file.Files.size(file.toPath())
+} catch (t: Throwable) {
+    Diagnostics.recordHandled(context, "thu-vien", "đo dung lượng: đọc kích thước ${file.name}", t)
+    null
+}
+
+/**
  * Đo dung lượng game: file lẻ của game quét được, hoặc **toàn bộ** cây thư mục game của Monika
  * (không giới hạn độ sâu).
  *
@@ -316,12 +329,7 @@ internal class GameSizeMeter(
                 }
             }
         }
-        return try {
-            file.length()
-        } catch (t: Throwable) {
-            Diagnostics.recordHandled(context, "thu-vien", "đo dung lượng: đọc kích thước tệp", t)
-            null
-        }
+        return fileSizeBytes(context, file)
     }
 
     /** true/false, hoặc null khi không kiểm được (lỗi I/O/quyền) — null làm cây "chưa đọc đủ". */
