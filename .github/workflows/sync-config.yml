@@ -6,6 +6,8 @@ name: Sync config lên Cloudflare và trang web
 # App đọc Pages trước, lỗi mạng/HTTP/JSON mới rơi về Worker.
 # Cần secret CLOUDFLARE_API_TOKEN (Workers KV Storage — Edit). Phần Pages dùng github.token,
 # không cần secret mới; workflow cần quyền contents: write để đẩy lên nhánh trang-web.
+# workflow_dispatch luôn checkout refs/heads/main (không lấy config của nhánh được chọn) — dispatch
+# từ nhánh nào cũng chỉ đồng bộ cấu hình main.
 on:
   push:
     branches: [main]
@@ -21,6 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Luôn lấy config từ main, kể cả khi workflow_dispatch chọn nhánh khác.
+          ref: main
+          fetch-depth: 1
           # Không lưu token của checkout; phần Pages tự dùng ${{ github.token }} bên dưới.
           persist-credentials: false
       - name: Kiểm tra JSON
@@ -65,7 +70,8 @@ jobs:
               exit 0
             fi
             # [skip ci]: commit này chỉ là dữ liệu cho Pages, không chạy lại Build trên nhánh trang-web.
-            git -C "$pages" commit -m "config: đồng bộ từ main ${GITHUB_SHA::8} [skip ci]"
+            # Mã commit là bản main đã checkout (không phải nhánh bấm workflow_dispatch).
+            git -C "$pages" commit -m "config: đồng bộ từ main $(git rev-parse --short=8 HEAD) [skip ci]"
             if pages_git -C "$pages" push origin "HEAD:$PAGES_BRANCH"; then
               echo "Đã đẩy config.json lên $PAGES_BRANCH."
               exit 0
