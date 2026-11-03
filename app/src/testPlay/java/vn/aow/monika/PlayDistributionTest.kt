@@ -51,6 +51,15 @@ class PlayDistributionTest {
         assertEquals(0, app.resources.getIdentifier("donate_qr", "drawable", BuildConfig.APPLICATION_ID))
     }
 
+    @Test fun officialApkSourcesAndDonationIdentityAreNotBundledInPlay() {
+        assertThrows(ClassNotFoundException::class.java) { Class.forName("vn.aow.monika.official.OfficialDistributionSheetKt") }
+        assertThrows(ClassNotFoundException::class.java) { Class.forName("vn.aow.monika.config.OfficialSource") }
+        val raw = app.assets.open(ConfigRepository.ASSET_NAME).bufferedReader().use { it.readText() }
+        val root = kotlinx.serialization.json.Json.parseToJsonElement(raw).let { it as kotlinx.serialization.json.JsonObject }
+        assertFalse(root.containsKey("official"))
+        assertTrue(ConfigRepository(app, OkHttpClient()).current.security.officialCertSha256.isBlank())
+    }
+
     @Test fun importsStayInsidePrivateStorage() {
         val root = GameStorage.root(app).canonicalPath
         assertTrue(root.startsWith(app.filesDir.canonicalPath + File.separator))

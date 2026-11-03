@@ -66,24 +66,24 @@ class ConfigRepositoryValidationTest {
     }
 
     @Test fun oldCacheWithoutExperimentalFlagFallsBackToBundledWarning() {
-        assertEquals(57, bundled)
+        assertEquals(58, bundled)
         cache.writeText(valid(38))
         val current = repo().current
-        assertEquals(57, current.configVersion)
+        assertEquals(58, current.configVersion)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
 
-    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled57() {
+    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled58() {
         cache.writeText("""{"configVersion":47,"saveTransfer":{"systems":{}}}""")
         val current = repo().current
-        assertEquals(57, current.configVersion)
+        assertEquals(58, current.configVersion)
         assertEquals(setOf("java", "nds", "gba", "3ds", "psp", "ps1"), current.saveTransfer.systems.keys)
     }
 
     @Test fun cache39FallsBackToBundledDocumentConfiguration() {
         cache.writeText("""{"configVersion":39,"documentExtensions":[]}""")
         val current = repo().current
-        assertEquals(57, current.configVersion)
+        assertEquals(58, current.configVersion)
         assertEquals(listOf("pdf", "doc", "docx", "txt", "epub"), current.documentExtensions)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
@@ -91,7 +91,7 @@ class ConfigRepositoryValidationTest {
     @Test fun cache55WithStable088FallsBackToBundledTrial089() {
         cache.writeText("""{"configVersion":55,"app":{"latestVersionCode":53,"latestVersionName":"0.8.8","minVersionCode":1,"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.8/AowVN-Monika-v0.8.8.apk"}}""")
         val current = repo().current
-        assertEquals(57, current.configVersion)
+        assertEquals(58, current.configVersion)
         assertEquals(54, current.app.latestVersionCode)
         assertEquals("0.8.9", current.app.latestVersionName)
         assertEquals(1, current.app.minVersionCode)
