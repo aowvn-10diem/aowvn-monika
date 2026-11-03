@@ -135,6 +135,27 @@ class ConfigTest {
     }
 
     @Test
+    fun `donate config-first hop le va config cu co mac dinh`() {
+        val donate = cfg.account.donate
+        assertTrue(donate.bankId.matches(Regex("[A-Za-z0-9]+")))
+        assertTrue(donate.accountNo.matches(Regex("[0-9]{4,32}")))
+        assertTrue(donate.accountName.isNotBlank() && donate.memo.isNotBlank())
+        assertTrue(donate.minAmount > 0 && donate.maxAmount >= donate.minAmount)
+        assertTrue(donate.amounts.isNotEmpty() && donate.amounts.all { it in donate.minAmount..donate.maxAmount })
+        assertTrue(donate.fallbackBanks.isNotEmpty() && donate.fallbackBanks.all { it.id.isNotBlank() && it.name.isNotBlank() })
+        assertTrue(donate.qrBaseUrl.startsWith("https://img.vietqr.io/"))
+        assertTrue(donate.payUrl.startsWith("https://dl.vietqr.io/"))
+        assertTrue(donate.banksUrl.startsWith("https://api.vietqr.io/"))
+        assertTrue(donate.returnUrl.startsWith("https://"))
+        val old = ConfigRepository.parse("""{"account":{"donate":{"bankId":"old","accountNo":"123456"}}}""").account.donate
+        assertEquals("old", old.bankId)
+        assertEquals("123456", old.accountNo)
+        assertEquals(1_000L, old.minAmount)
+        assertEquals(500_000_000L, old.maxAmount)
+        assertEquals(12, old.fallbackBanks.size)
+    }
+
+    @Test
     fun `goi kirikiri nam dung trong modules co url sha va chi arm64`() {
         val m = cfg.modules["kirikiri"] ?: error("modules.kirikiri thiếu (có thể bị chèn nhầm sang mục khác)")
         assertTrue(m.url.startsWith("https://") && m.url.endsWith("kirikiri-arm64.zip"))
@@ -147,7 +168,7 @@ class ConfigTest {
 
     @Test
     fun `rgss ghim goi cong khai va van giu Joiplay du phong`() {
-        assertEquals(56, cfg.configVersion)
+        assertEquals(57, cfg.configVersion)
         val module = cfg.modules["rgss"] ?: error("modules.rgss thiếu")
         assertEquals("engines-rgss-6", module.version)
         assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/engines-rgss-6/rgss-arm64-v8a.zip", module.url)
@@ -165,7 +186,7 @@ class ConfigTest {
     fun `GBA tat color correction o mac dinh goc va moi style`() {
         val core = cfg.cores.getValue("mgba")
         val display = requireNotNull(core.display)
-        assertEquals(56, cfg.configVersion)
+        assertEquals(57, cfg.configVersion)
         assertEquals("OFF", core.options["mgba_color_correction"])
         assertEquals("lcd", display.default)
         assertTrue(display.styles.isNotEmpty())
