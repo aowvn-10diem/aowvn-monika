@@ -1,0 +1,36 @@
+name: Kiểm trang Bản chính thức
+on:
+  pull_request:
+    branches: [trang-web]
+    paths: ['chinh-thuc/**', 'tests/**', 'index.html', '.github/workflows/web-official.yml']
+  push:
+    branches: [trang-web, sol2/V183-web]
+    paths: ['chinh-thuc/**', 'tests/**', 'index.html', '.github/workflows/web-official.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test Node offline
+        run: node --test tests/official.test.mjs
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: app-catalog
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            config
+            gradle/libs.versions.toml
+          persist-credentials: false
+      - name: Cài công cụ Chromium đúng phiên bản catalog
+        run: |
+          python3 -m venv "$RUNNER_TEMP/web-browser"
+          MONIKA_WEB_PLAYWRIGHT_VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("app-catalog/gradle/libs.versions.toml", "rb"))["versions"]["playwrightCi"])')
+          "$RUNNER_TEMP/web-browser/bin/python" -m pip install --quiet --disable-pip-version-check "playwright==$MONIKA_WEB_PLAYWRIGHT_VERSION"
+      - name: Chromium mobile, desktop và lỗi/thử lại với config main
+        env:
+          CATALOG_CONFIG: ${{ github.workspace }}/app-catalog/config/monika-config.json
+        run: '"$RUNNER_TEMP/web-browser/bin/python" tests/official.browser.py'
