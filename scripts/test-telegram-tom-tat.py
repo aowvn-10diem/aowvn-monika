@@ -1,6 +1,9 @@
 """V177: dữ liệu giả, thời gian cố định, không gọi GitHub/Telegram."""
 from datetime import datetime, timedelta, timezone
+from contextlib import redirect_stdout, redirect_stderr
 import importlib.util
+import io
+import json
 from pathlib import Path
 import unittest
 
@@ -37,11 +40,25 @@ class API:
             {'tag_name': 'old', 'published_at': '2026-11-01T23:00:00Z', 'draft': False},
         ]
         self.calls = []
+        self.now = NOW
+        self.pushes = []
+        self.global_comments = []
+        self.inline_comments = []
+        self.fork = False
 
     def list_all(self, route):
         self.calls.append(route)
+        if route.startswith('/issues/comments?'):
+            return self.global_comments
+        if route.startswith('/pulls/comments?'):
+            return self.inline_comments
         return {
-            '/pulls?state=open&per_page=100': [{'number': 7, 'head': {'sha': HEAD, 'ref': 'sol2/V177'}}],
+            '/pulls?state=open&per_page=100': [{
+                'number': 7,
+                'head': {'sha': HEAD, 'ref': 'sol2/V177',
+                         'repo': {'full_name': 'fork/repo' if self.fork else 'owner/repo'}},
+                'base': {'repo': {'full_name': 'owner/repo'}},
+            }],
             '/issues/7/comments?per_page=100': self.comments,
             '/pulls/7/reviews?per_page=100': [],
             '/releases?per_page=100': self.releases,
@@ -49,9 +66,25 @@ class API:
 
     def list_recent(self, route, cutoff, field):
         self.calls.append(route)
-        assert cutoff == NOW - timedelta(hours=24)
+        assert cutoff == self.now - timedelta(hours=24)
+        if route.startswith('/activity?'):
+            assert field == 'timestamp'
+            return self.pushes
         assert field == 'updated_at'
         return self.closed
+
+
+def push(at, branch='sol2/V177', kind='push'):
+    return {'ref': 'refs/heads/' + branch, 'timestamp': at.isoformat(), 'activity_type': kind}
+
+
+def report(body, at, association='OWNER'):
+    return {'body': body, 'updated_at': at.isoformat(), 'author_association': association}
+
+
+def send_env():
+    return {'GITHUB_REPOSITORY': 'aowvn-10diem/aowvn-monika',
+            'TELEGRAM_BOT_TOKEN': 'fixture-only', 'TELEGRAM_CHAT_ID': 'fixture-chat'}
 
 
 class Summary(unittest.TestCase):
@@ -106,6 +139,130 @@ class Summary(unittest.TestCase):
         self.assertIn('Phát hành 24h (40)', text)
         self.assertIn('ở link', text)
         self.assertNotIn('\nFAKE', text)
+
+
+class Activity(unittest.TestCase):
+    opened = [{'branch': 'sol2/V177'}]
+
+    def test_two_hours_is_inclusive_and_actual_push_time_resets_the_clock(self):
+        api = API()
+        api.pushes = [push(NOW - timedelta(hours=2))]
+        self.assertEqual(1, daily.idle_team_count(api, self.opened, NOW))
+        api.pushes.append(push(NOW - timedelta(seconds=1)))
+        self.assertEqual(0, daily.idle_team_count(api, self.opened, NOW))
+        api.pushes = [push(NOW - timedelta(hours=3), kind='branch_deletion')]
+        self.assertEqual(0, daily.idle_team_count(api, self.opened, NOW))
+
+    def test_comments_on_any_issue_or_pr_and_inline_comments_count(self):
+        api = API()
+        api.pushes = [push(NOW - timedelta(hours=3))]
+        api.global_comments = [report('[Sol 2 → PM] Báo ở PR bất kỳ.', NOW - timedelta(minutes=1))]
+        self.assertEqual(0, daily.idle_team_count(api, self.opened, NOW))
+        api.global_comments = []
+        api.inline_comments = [report('[Sol 2 → PM] Rà dòng mã.', NOW - timedelta(minutes=1))]
+        self.assertEqual(0, daily.idle_team_count(api, self.opened, NOW))
+        api.inline_comments[0]['author_association'] = 'CONTRIBUTOR'
+        self.assertEqual(1, daily.idle_team_count(api, self.opened, NOW))
+
+    def test_not_started_stopped_and_pausing_only_a_task_are_distinct(self):
+        api = API()
+        self.assertEqual(0, daily.idle_team_count(api, self.opened, NOW))
+        api.pushes = [push(NOW - timedelta(hours=25))]
+        self.assertEqual(0, daily.idle_team_count(api, self.opened, NOW))
+        api.pushes = [push(NOW - timedelta(hours=4))]
+        api.global_comments = [report('[Sol 2 → PM] Đã dừng phiên, chờ sếp.', NOW - timedelta(hours=3))]
+        self.assertEqual(0, daily.idle_team_count(api, self.opened, NOW))
+        api.global_comments = [report('[Sol 2 → PM] Tạm dừng V180, làm V175.', NOW - timedelta(hours=3))]
+        self.assertEqual(1, daily.idle_team_count(api, self.opened, NOW))
+
+    def test_group_count_requires_a_local_open_pr_and_does_not_count_each_member(self):
+        api = API()
+        api.pushes = [push(NOW - timedelta(hours=3), 'deepseek1/V1')]
+        self.assertEqual(0, daily.idle_team_count(api, self.opened, NOW))
+        opened = [{'branch': 'deepseek1/V1'}, {'branch': 'deepseek2/V2'}]
+        self.assertEqual(1, daily.idle_team_count(api, opened, NOW))
+        api.fork = True
+        snapshot = daily.collect_snapshot(api, NOW)
+        self.assertEqual(0, daily.idle_team_count(api, snapshot['open'], NOW))
+
+    def test_daytime_window_matches_dung_and_does_not_fetch_activity_at_night(self):
+        for hour, minute, expected in [(6, 59, None), (7, 0, 1), (23, 59, 1), (0, 0, None)]:
+            with self.subTest(hour=hour, minute=minute):
+                now = datetime(2026, 11, 3, hour, minute,
+                               tzinfo=timezone(timedelta(hours=7))).astimezone(timezone.utc)
+                api = API()
+                api.now = now
+                api.pushes = [push(now - timedelta(hours=3))]
+                self.assertEqual(expected, daily.idle_team_count(api, self.opened, now))
+                if expected is None:
+                    self.assertEqual([], api.calls)
+
+
+class Delivery(unittest.TestCase):
+    def test_preview_never_sends_and_send_reuses_existing_json_sender_once(self):
+        sent = []
+
+        class Response:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *_): return False
+
+        def opener(request, timeout):
+            sent.append(request)
+            return Response()
+
+        sender = lambda env: daily.telegram.run(env, opener)
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(0, daily.run(send_env(), api=API(), now=NOW, sender=sender))
+        self.assertEqual([], sent)
+
+        self.assertNotIn('fixture-only', output.getvalue())
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(0, daily.run(send_env(), api=API(), now=NOW, send=True, sender=sender))
+        self.assertEqual(1, len(sent))
+        payload = json.loads(sent[0].data)
+        self.assertLessEqual(len(payload['text'].splitlines()), 15)
+        self.assertIn('Đội im ≥2h: 0', payload['text'])
+        self.assertIn('Phát hành 24h', payload['text'])
+        self.assertTrue(payload['disable_web_page_preview'])
+
+    def test_api_error_missing_channel_and_disallowed_author_send_nothing(self):
+        cases = [(API(), dict(send_env(), TELEGRAM_BOT_TOKEN='')),
+                 (API(), dict(send_env(), ALLOWED_LOGINS='someone-else'))]
+        broken = API()
+        broken.list_all = lambda _: (_ for _ in ()).throw(daily.digest.GitHubAPIError(429))
+        cases.append((broken, send_env()))
+        sent = []
+        for api, env in cases:
+            with self.subTest(env_keys=list(env)):
+                with redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
+                    result = daily.run(env, api=api, now=NOW, send=True,
+                                       sender=lambda value: sent.append(value))
+                self.assertEqual(1, result)
+        self.assertEqual([], sent)
+
+
+class Pagination(unittest.TestCase):
+    def test_numeric_alias_keeps_page_two_and_is_bound_to_current_repository(self):
+        class Pages(daily.DailyAPI):
+            seen = []
+            def _request_json(self, route):
+                self.seen.append(self._url(route))
+                if len(self.seen) == 1:
+                    return [{'body': 'khác'}] * 100, {
+                        'Link': '<https://api.github.com/repositories/42/issues/comments?page=2>; rel="next"'}
+                return [report('[Sol 2 → PM] Tin ở trang hai.', NOW)], {}
+        api = Pages('owner/repo', 'fixture-only', '42')
+        rows = api.list_all('/issues/comments?per_page=100')
+        self.assertEqual(101, len(rows))
+        self.assertEqual('[Sol 2 → PM] Tin ở trang hai.', rows[-1]['body'])
+        self.assertEqual('https://api.github.com/repos/owner/repo/issues/comments?page=2', api.seen[-1])
+        for url in ('https://api.github.com/repositories/43/issues/comments?page=2',
+                    'https://elsewhere.test/repositories/42/issues/comments?page=2',
+                    'https://api.github.com/repos/other/repo/issues/comments?page=2'):
+            with self.subTest(url=url), self.assertRaises(RuntimeError):
+                api._url(url)
 
 
 if __name__ == '__main__':

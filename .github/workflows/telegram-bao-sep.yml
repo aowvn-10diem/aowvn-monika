@@ -2,15 +2,21 @@ name: Báo sếp qua Telegram (V146)
 
 # Comment GitHub có tiền tố [Cố vấn → sếp] / [PM → sếp] → nhắn Telegram cho sếp.
 # Thân comment là dữ liệu không tin cậy: chỉ vào qua env, đóng JSON trong Python,
-# không ghép vào lệnh shell. Không cần quyền repo nên permissions rỗng.
+# không ghép vào lệnh shell. Job chuyển comment không cần quyền repo;
+# job tin sáng chỉ có quyền đọc GitHub.
 
 on:
+  schedule:
+    - cron: '0 1 * * *'  # 08:00 giờ Việt Nam
   issue_comment:
     types: [created]
   pull_request:
     paths:
       - scripts/telegram-bao-sep.py
       - scripts/test-telegram-bao-sep.py
+      - scripts/telegram-tom-tat.py
+      - scripts/test-telegram-tom-tat.py
+      - scripts/pm-digest.py
       - .github/workflows/telegram-bao-sep.yml
 
 permissions: {}
@@ -30,7 +36,35 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
       - name: Chạy test offline (N04)
-        run: python3 scripts/test-telegram-bao-sep.py
+        run: |
+          python3 scripts/test-telegram-bao-sep.py
+          python3 scripts/test-telegram-tom-tat.py
+
+  tin-sang:
+    if: >-
+      github.repository == 'aowvn-10diem/aowvn-monika' &&
+      github.event_name == 'schedule' &&
+      github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Gom GitHub và gửi một tin sáng qua kênh hiện có
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REPOSITORY_ID: ${{ github.repository_id }}
+          GITHUB_TOKEN: ${{ github.token }}
+          ALLOWED_LOGINS: ${{ vars.TELEGRAM_ALLOWED_LOGINS }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 scripts/telegram-tom-tat.py --send
 
   gui:
     # Lọc sớm theo tiền tố để không cấp runner cho mọi comment; script vẫn lọc tác giả chính xác.
