@@ -4,7 +4,7 @@
 
 ## 1. Báo lỗ hổng bảo mật như thế nào
 
-- Vào tab **Security** của repo này và bấm **Report a vulnerability** (GitHub sẽ mở một báo cáo **riêng tư**, chỉ chủ dự án thấy). Đường dẫn trực tiếp: <https://github.com/aowvn-10diem/aowvn-monika/security/advisories/new>.
+- Vào tab **Security** của repo này và bấm **Report a vulnerability** (GitHub sẽ mở một báo cáo **riêng tư**, không công khai: chỉ người quản lý repo (maintainer và những ai có quyền quản lý báo cáo bảo mật) xem được). Đường dẫn trực tiếp: <https://github.com/aowvn-10diem/aowvn-monika/security/advisories/new>.
   - [CHƯA KIỂM] Nút này chỉ hiện khi chủ repo đã bật *Private vulnerability reporting* ở Settings → Code security. Nếu bạn không thấy nút, hãy nhắn qua cộng đồng tại <https://www.aow.vn> rằng bạn có báo cáo bảo mật (**không** đăng chi tiết lỗi) để chủ dự án bật hoặc cho kênh khác.
 - **Không mở issue công khai** và không đăng chi tiết lỗ hổng lên diễn đàn, nhóm chat hay mạng xã hội trước khi lỗi được sửa.
 - Hiện dự án **chưa công bố email** nhận báo cáo bảo mật.
