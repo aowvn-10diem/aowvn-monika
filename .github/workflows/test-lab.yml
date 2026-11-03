@@ -24,6 +24,7 @@ concurrency:
 
 jobs:
   robo:
+    if: github.repository == 'aowvn-10diem/aowvn-monika'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
