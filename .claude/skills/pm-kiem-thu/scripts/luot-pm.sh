@@ -31,10 +31,11 @@ for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user
   last=$(echo "$verdicts" | tail -1)
   files=$(gh api "repos/$R/pulls/$p/files?per_page=100" --jq '.[].filename')
   need=1; echo "$files" | grep -qvE '^(docs/|.*\.md$)' && need=2   # app/CI cần Luna 3 + Luna Ultra
-  dat=$(echo "$verdicts" | grep -c '^Đạt$')
+  # Đếm Đạt theo NGƯỜI duyệt (Luna 3/4/5/Ultra, Duyệt DeepSeek…): một người đăng 2 lần trên cùng head chỉ tính 1.
+  dat=$(echo "$raw" | grep -E 'Kết luận:?\**:? *Đạt' | cut -f2- | grep -oE '^ *(\[Duyệt DeepSeek|Luna [0-9A-Za-z]+|\[[^]]+\]|.{0,24})' | sed -E 's/ +$//' | sort -u | grep -c .)
   # Đội Duyệt DeepSeek (PM chốt 01/11): tính tối đa 1 Đạt, PR mã vẫn cần ≥ 1 Đạt của Luna.
   ds=$(echo "$raw" | grep -E '\[Duyệt DeepSeek' | grep -cE 'Kết luận:?\**:? *Đạt')
-  [ "$ds" -gt 1 ] && dat=$(( dat - ds + 1 ))
+  [ "$ds" -gt 1 ] && ds=1   # dat đã đếm theo người, Duyệt DeepSeek chỉ là 1 người
   [ "$need" -eq 2 ] && [ $(( dat - (ds > 0 ? 1 : 0) )) -lt 1 ] && dat=1
   if [ "$last" = "Cần PM xem" ]; then out+=("PMXEM #$p"); continue; fi
   echo "$ci" | grep -qE 'failure|cancelled|chay' && continue
