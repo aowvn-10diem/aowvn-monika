@@ -6,6 +6,7 @@ permissions:
   contents: read
 jobs:
   insight:
+    if: github.repository == 'aowvn-10diem/aowvn-monika'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
