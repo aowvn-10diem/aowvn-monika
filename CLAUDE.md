@@ -9,6 +9,7 @@ App Android (Kotlin, Jetpack Compose) của aow.vn: đọc bài (Blogger feed), 
 - Giao diện chỉ dùng token `Monika.*`, `Radius`, `primaryGradient()` và `ui/theme/Components.kt`; animation lấy thời lượng từ `Monika.motion`.
 - Mỗi phiên bản chỉ phát hành **1 APK: universal**.
 - Thêm thư viện có JNI/reflection → thêm luật `-keep` vào `app/proguard-rules.pro`.
+- Việc lớn (dự kiến ≥ 3 PR) → viết đặc tả ngắn theo `docs/dac-ta/MAU.md` và mở PR đặc tả trước PR mã đầu tiên.
 
 ## Luật an toàn
 - Không bao giờ commit hay in ra log/chat: keystore, mật khẩu ký, token, secret, API key. Không tạo khóa ký mới; mất khóa thì hỏi chủ repo.
