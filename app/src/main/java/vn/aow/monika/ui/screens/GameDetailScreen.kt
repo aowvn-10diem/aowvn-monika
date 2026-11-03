@@ -50,6 +50,7 @@ import vn.aow.monika.R
 import vn.aow.monika.config.ExternalApp
 import vn.aow.monika.library.Game
 import vn.aow.monika.library.GameInfoResolver
+import vn.aow.monika.library.GameSaveBackup
 import vn.aow.monika.runner.LaunchResult
 import vn.aow.monika.ui.MainActivity
 import vn.aow.monika.ui.theme.CircleButton
@@ -147,7 +148,8 @@ internal fun GameDetailScreen(game: Game, onPlay: (Game) -> Unit, onBack: () -> 
                     )
                     Text(
                         "Được giữ lại: save của giả lập và mọi thư mục khác trong kho. " +
-                            "Save nằm trong thư mục game được sao lưu vào ${vn.aow.monika.library.GameSaveBackup.DIR} trước khi xóa.",
+                            "Toàn bộ thư mục game (mọi tệp, kể cả save đuôi lạ) được sao lưu vào " +
+                            "${vn.aow.monika.library.GameSaveBackup.DIR} trước khi xóa.",
                         style = Monika.type.caption, color = c.textSecondary,
                     )
                 }
@@ -310,6 +312,8 @@ fun GameDetailRoute(gameKey: String, onBack: () -> Unit) {
     var message by remember { mutableStateOf<String?>(null) }
     // Thông báo kèm đường dẫn bản sao lưu: đóng hộp thoại thì rời màn (game đã xoá).
     var leaveAfterMessage by remember { mutableStateOf(false) }
+    // Bản sao lưu vừa tạo để người dùng chia sẻ/lưu ra ngoài (filesDir là vùng riêng của app).
+    var backupToShare by remember { mutableStateOf<File?>(null) }
     var needApp by remember { mutableStateOf<ExternalApp?>(null) }
     LaunchedEffect(gameKey) {
         if (game == null) {
@@ -334,8 +338,9 @@ fun GameDetailRoute(gameKey: String, onBack: () -> Unit) {
                 val outcome = withContext(Dispatchers.IO) { AppGraph.library.deleteWithBackup(target) }
                 if (outcome.deleted) {
                     if (outcome.backup != null) {
-                        // Có save trong thư mục game: báo rõ vị trí bản sao lưu rồi mới rời màn.
+                        // Có bản sao lưu thư mục game: báo rõ vị trí + cho chia sẻ ra ngoài rồi mới rời màn.
                         message = outcome.message
+                        backupToShare = outcome.backup
                         leaveAfterMessage = true
                     } else {
                         Toast.makeText(context, "Đã xóa game", Toast.LENGTH_SHORT).show()
@@ -361,15 +366,20 @@ fun GameDetailRoute(gameKey: String, onBack: () -> Unit) {
             containerColor = Monika.colors.surface, shape = Radius.large,
         )
     }
-    message?.let {
+    message?.let { text ->
         val close = {
             message = null
+            backupToShare = null
             if (leaveAfterMessage) { leaveAfterMessage = false; onBack() }
         }
         AlertDialog(
             onDismissRequest = close,
             confirmButton = { GradientButton("OK", close, height = 44.dp) },
-            text = { Text(it, style = Monika.type.body, color = Monika.colors.text) },
+            // Bản sao lưu nằm trong filesDir (vùng riêng của app): cho gửi/lưu ra Drive, Zalo, Files…
+            dismissButton = backupToShare?.let { file ->
+                { DarkButton("Chia sẻ bản sao lưu", { GameSaveBackup.share(context, file)?.let { message = it } }) }
+            },
+            text = { Text(text, style = Monika.type.body, color = Monika.colors.text) },
             containerColor = Monika.colors.surface, shape = Radius.large,
         )
     }

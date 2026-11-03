@@ -54,7 +54,7 @@ class GameDeleteBackupTest {
             assertNotNull("Phải có bản sao lưu save", backup)
             assertTrue(backup!!.isFile)
             assertTrue(backup.name.startsWith("xoa-v139-save-game"))
-            assertTrue("Câu báo phải ghi vị trí bản sao lưu", outcome.message.contains("Bản sao lưu save"))
+            assertTrue("Câu báo phải ghi vị trí bản sao lưu", outcome.message.contains("Bản sao lưu thư mục game"))
 
             // Bản sao lưu giữ đúng nội dung và khôi phục được vào thư mục mới.
             val restore = File(context().cacheDir, "v139-khoi-phuc").apply { deleteRecursively(); mkdirs() }
@@ -82,10 +82,103 @@ class GameDeleteBackupTest {
             assertFalse("Chưa sao lưu được thì không được xoá", outcome.deleted)
             assertTrue("Thư mục game phải còn", game.dir.exists())
             assertTrue("Save phải còn", save.exists())
-            assertTrue(outcome.message.contains("Chưa sao lưu được save"))
+            assertTrue(outcome.message.contains("Chưa sao lưu được thư mục game"))
             assertEquals("Không được tạo bản sao lưu dở dang", 0, backups().listFiles().orEmpty().count { it !in known })
         } finally {
             game.dir.deleteRecursively()
+        }
+    }
+
+    @Test fun savesWithUnknownExtensionsAreBackedUpBeforeDeleting() {
+        val dir = gameFolder("v139-save-la")
+        val rom = File(dir, "fixture.gba").apply { writeText("rom") }
+        // Đuôi/tên lạ và tệp không đuôi: whitelist cũ bỏ qua hết nhưng xoá thư mục là mất luôn.
+        val bin = File(dir, "save.bin").apply { writeText("save dang bin") }
+        val dat = File(dir, "profile/slot1.dat").apply { parentFile?.mkdirs(); writeText("save dang dat") }
+        val bare = File(dir, "progress").apply { writeText("save khong duoi") }
+        val game = Game(dir, "v139-save-la", AppGraph.config.current.system("gba"), rom)
+        val known = backups().listFiles().orEmpty().toSet()
+        try {
+            val outcome = library().deleteWithBackup(game)
+
+            assertTrue("Phải xoá được game", outcome.deleted)
+            assertFalse(dir.exists())
+            val zipFile = outcome.backup
+            assertNotNull("Phải có bản sao lưu", zipFile)
+            ZipFile(zipFile!!).use { zip ->
+                assertNotNull("save.bin phải có trong zip", zip.getEntry("game/save.bin"))
+                assertNotNull("profile/slot1.dat phải có trong zip", zip.getEntry("game/profile/slot1.dat"))
+                assertNotNull("progress (không đuôi) phải có trong zip", zip.getEntry("game/progress"))
+                assertNotNull("ROM cũng phải có (backup toàn thư mục)", zip.getEntry("game/fixture.gba"))
+            }
+            assertFalse(bin.exists()); assertFalse(dat.exists()); assertFalse(bare.exists())
+        } finally {
+            dir.deleteRecursively()
+            backups().listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+        }
+    }
+
+    @Test fun deepAndManyFilesAreAllInTheBackup() {
+        val dir = gameFolder("v139-save-sau")
+        val rom = File(dir, "fixture.gba").apply { writeText("rom") }
+        val deep = File(dir, "a/b/c/d/e/f/sau-tang.sav").apply { parentFile?.mkdirs(); writeText("save sau") }
+        // 300 tệp: bản cũ cắt âm thầm ở 256.
+        (1..300).forEach { i -> File(dir, "save/s$i.srm").apply { parentFile?.mkdirs(); writeText("s$i") } }
+        val game = Game(dir, "v139-save-sau", AppGraph.config.current.system("gba"), rom)
+        val known = backups().listFiles().orEmpty().toSet()
+        try {
+            val scan = GameSaveBackup.scan(context(), dir)
+            assertTrue("Quét phải trọn vẹn", scan.complete)
+            assertTrue("Phải thấy save sâu 7 tầng", scan.files.any { it == deep })
+            assertEquals("Không được cắt bớt tệp nào", 302, scan.files.size) // 301 save + ROM
+
+            val outcome = library().deleteWithBackup(game)
+            assertTrue(outcome.deleted)
+            val zipFile = outcome.backup
+            assertNotNull("Phải có bản sao lưu", zipFile)
+            ZipFile(zipFile!!).use { zip ->
+                assertNotNull("Save sâu phải có trong zip", zip.getEntry("game/a/b/c/d/e/f/sau-tang.sav"))
+                assertNotNull("Save thứ 300 phải có trong zip", zip.getEntry("game/save/s300.srm"))
+                assertEquals("301 save + ROM + tệp mô tả", 303, zip.size())
+            }
+        } finally {
+            dir.deleteRecursively()
+            backups().listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+        }
+    }
+
+    @Test fun deleteIsRefusedWhenTheScanIsNotComplete() {
+        val (game, save) = gameWithSave("v139-quet-thieu")
+        try {
+            val warning = "Bỏ qua 1 liên kết tượng trưng (không đi theo để tránh lặp vô hạn)."
+            val outcome = library().deleteWithBackup(game) {
+                GameFolderBackup(null, listOf(warning), complete = false)
+            }
+            assertFalse("Chưa chứng minh sao lưu đủ thì không được xoá", outcome.deleted)
+            assertTrue("Thư mục game phải còn", game.dir.exists())
+            assertTrue("Save phải còn", save.exists())
+            assertTrue(outcome.message.contains("Chưa chứng minh sao lưu đủ"))
+            assertTrue("Phải nêu lý do", outcome.message.contains("liên kết tượng trưng"))
+        } finally {
+            game.dir.deleteRecursively()
+        }
+    }
+
+    @Test fun backupShareIntentHandsTheZipToOtherApps() {
+        val backup = File(backups(), "xoa-demo.zip").apply { parentFile?.mkdirs(); writeText("zip") }
+        val shared = android.net.Uri.parse("content://vn.aow.monika.files/app_internal/save-backups/xoa-demo.zip")
+        try {
+            val intent = GameSaveBackup.shareIntent(context(), backup) { shared }
+            assertEquals(android.content.Intent.ACTION_SEND, intent.action)
+            assertEquals("application/zip", intent.type)
+            assertEquals(shared, intent.getParcelableExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM))
+            assertTrue(
+                "Phải cấp quyền đọc URI cho ứng dụng nhận",
+                intent.flags and android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION != 0,
+            )
+            assertEquals(shared, intent.clipData?.getItemAt(0)?.uri)
+        } finally {
+            backup.delete()
         }
     }
 

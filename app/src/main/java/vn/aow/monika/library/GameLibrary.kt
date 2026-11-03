@@ -110,14 +110,14 @@ class GameLibrary(
         from.orEmpty().filter { it.system != null && prefs.lastPlayed(it.key) > 0 }.maxByOrNull { prefs.lastPlayed(it.key) }
 
     /**
-     * Xoá game **an toàn**: sao lưu save nằm trong thư mục game trước (A54), chỉ xoá thư mục game
-     * do app quản lý (con cấp 1 của kho), và dừng nếu không sao lưu được.
+     * Xoá game **an toàn**: sao lưu **toàn bộ thư mục game** trước (A54), chỉ xoá thư mục game
+     * do app quản lý (con cấp 1 của kho), và dừng nếu sao lưu lỗi hoặc chưa quét/sao lưu trọn vẹn.
      * Game quét trong máy (ngoài kho) chỉ ẩn, không xoá tệp nào.
-     * [backup] có tham số để test tiêm lỗi sao lưu; chạy thật thì dùng [GameSaveBackup.of].
+     * [backup] có tham số để test tiêm lỗi/cảnh báo; chạy thật thì dùng [GameSaveBackup.backupFolder].
      */
     fun deleteWithBackup(
         game: Game,
-        backup: (Game) -> File? = { GameSaveBackup.of(context, it) },
+        backup: (Game) -> GameFolderBackup = { GameSaveBackup.backupFolder(context, it) },
     ): GameDeleteOutcome {
         if (game.external) {
             scanner.hide(game.key)
@@ -143,25 +143,35 @@ class GameLibrary(
         val saved = try {
             backup(game)
         } catch (t: Throwable) {
-            Diagnostics.recordHandled(context, "thu-vien", "xoá game: sao lưu save trước khi xoá", t)
+            Diagnostics.recordHandled(context, "thu-vien", "xoá game: sao lưu thư mục game trước khi xoá", t)
             return GameDeleteOutcome(
                 deleted = false, backup = null,
-                message = "Chưa sao lưu được save nên chưa xoá gì: ${t.message ?: "lỗi không rõ"}. " +
+                message = "Chưa sao lưu được thư mục game nên chưa xoá gì: ${t.message ?: "lỗi không rõ"}. " +
                     "Thử lại hoặc dọn bằng trình quản lý tệp.",
+            )
+        }
+        // Quét/sao lưu chưa trọn (liên kết tượng trưng, mục không đọc được, quá lớn, thiếu chỗ) → không xoá.
+        if (!saved.complete) {
+            return GameDeleteOutcome(
+                deleted = false, backup = saved.file,
+                message = "Chưa chứng minh sao lưu đủ nên chưa xoá gì:\n" + saved.notes.joinToString("\n") +
+                    "\nHãy dọn bằng trình quản lý tệp nếu chắc chắn muốn xoá.",
             )
         }
         val ok = game.dir.deleteRecursively() || !game.dir.exists()
         cached = cached?.filterNot { it.key == game.key && ok }
-        val kept = saved?.let { "Bản sao lưu save: ${it.absolutePath}" }
-            ?: "Game không có tệp save trong thư mục; save của giả lập trong kho Monika vẫn giữ nguyên."
+        val kept = saved.file?.let {
+            "Bản sao lưu thư mục game: ${it.absolutePath}" +
+                (if (saved.notes.isEmpty()) "" else "\nGhi chú: " + saved.notes.joinToString(" "))
+        } ?: "Thư mục game rỗng nên không cần sao lưu; save của giả lập trong kho Monika vẫn giữ nguyên."
         return GameDeleteOutcome(
-            deleted = ok, backup = saved,
+            deleted = ok, backup = saved.file,
             message = if (ok) "Đã xoá \"${game.name}\" khỏi kho.\n$kept"
             else "Chưa xoá hết \"${game.name}\": Android không cho xoá một số tệp.\n$kept",
         )
     }
 
-    /** Xoá game. Trả về false nếu không xoá được hoặc chưa sao lưu được save. */
+    /** Xoá game. Trả về false nếu không xoá được hoặc chưa chứng minh sao lưu đủ. */
     fun delete(game: Game): Boolean = deleteWithBackup(game).deleted
 }
 
