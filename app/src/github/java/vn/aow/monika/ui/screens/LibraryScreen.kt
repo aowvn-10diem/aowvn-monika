@@ -482,7 +482,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
                             )
                             Text(
                                 "Được giữ lại: save của giả lập và mọi thư mục khác trong kho. " +
-                                    "Save nằm trong thư mục game được sao lưu vào $SAVE_BACKUP_DIR trước khi xoá.",
+                                    "Toàn bộ thư mục game (mọi tệp, kể cả save đuôi lạ) được sao lưu vào $SAVE_BACKUP_DIR trước khi xoá.",
                                 style = Monika.type.caption, color = c.textSecondary,
                             )
                         }

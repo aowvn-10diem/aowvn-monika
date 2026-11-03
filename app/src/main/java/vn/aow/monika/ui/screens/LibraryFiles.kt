@@ -151,35 +151,35 @@ private fun oneDecimal(value: Double): String =
 internal fun formatFileDate(addedAt: Long): String =
     if (addedAt <= 0L) "—" else SimpleDateFormat("dd/MM/yyyy", Locale.ROOT).format(Date(addedAt))
 
-// ---- Xoá an toàn (V141): chỉ xoá thứ app quản lý, sao lưu save trước [A54] ----
+// ---- Xoá an toàn (V141): chỉ xoá thứ app quản lý, sao lưu trước [A54] ----
 
-/** Thư mục chứa bản sao lưu save tạo trước khi xoá (nằm trong filesDir, người dùng mở được). */
+/** Thư mục chứa bản sao lưu tạo trước khi xoá (nằm trong filesDir, chia sẻ ra ngoài bằng FileProvider). */
 internal const val SAVE_BACKUP_DIR = "save-backups"
 
-/** Tối đa 256 MB: quá mức thì **báo rõ** và từ chối xoá, không âm thầm bỏ save. */
-private const val MAX_BACKUP_BYTES = 256L * 1024 * 1024
+/**
+ * Trần dung lượng bản sao lưu. Vì sao lưu **toàn bộ** thư mục game (không lọc save) nên mức này
+ * rộng hơn nhiều so với gói save; vượt mức thì **báo rõ** và từ chối xoá, không bỏ tệp nào.
+ */
+private const val MAX_BACKUP_BYTES = 4L * 1024 * 1024 * 1024
 
-/** Thư mục chứa save của engine (đặt trong thư mục game). */
-private val SAVE_DIR_NAMES = setOf("save", "saves", "savegame", "savegames", "savedata", "save_data", "save-data")
+/** Dung lượng trống tối thiểu phải còn lại sau khi ghi bản sao lưu. */
+private const val MIN_FREE_AFTER_BACKUP = 32L * 1024 * 1024
 
-/** Đuôi tệp save quen dùng của các engine/giả lập. */
-private val SAVE_EXTENSIONS = setOf("sav", "srm", "dsv", "rmm", "rxdata", "rpgsave", "rvdata2", "save")
-
-/** Kết quả quét save. [complete] = đã quét trọn vẹn; false thì **không được xoá** (chưa chứng minh đủ). */
-internal data class SaveScan(
+/** Kết quả quét thư mục game. [complete] = đã quét trọn vẹn; false thì **không được xoá**. */
+internal data class GameScan(
     val files: List<File>,
     val notes: List<String> = emptyList(),
     val complete: Boolean = true,
 )
 
-/** Bản sao lưu save: tệp zip (null = không có save), ghi chú và đã đủ chưa. */
-internal data class SaveBackup(
+/** Bản sao lưu: tệp zip (null = thư mục game rỗng), ghi chú và đã đủ chưa. */
+internal data class GameBackup(
     val file: File?,
     val notes: List<String> = emptyList(),
     val complete: Boolean = true,
 )
 
-/** Kết quả xoá một mục trong Tệp: có xoá được không, bản sao lưu save (nếu có), lời báo cho người dùng. */
+/** Kết quả xoá một mục trong Tệp: có xoá được không, bản sao lưu (nếu có), lời báo cho người dùng. */
 internal data class FileDeleteResult(val deleted: Boolean, val backup: File?, val message: String)
 
 /**
@@ -193,20 +193,13 @@ internal fun isManagedGameDir(context: Context, dir: File): Boolean = runCatchin
 }.onFailure { Diagnostics.recordHandled(context, "thu-vien", "kiểm tra thư mục game trong kho", it) }
     .getOrDefault(false)
 
-/** Tệp này có phải save không (theo tên thư mục hoặc đuôi tệp). */
-private fun isSaveFile(context: Context, root: File, file: File): Boolean = runCatching {
-    file.extension.lowercase(Locale.ROOT) in SAVE_EXTENSIONS ||
-        file.relativeTo(root).invariantSeparatorsPath.split('/').dropLast(1)
-            .any { it.lowercase(Locale.ROOT) in SAVE_DIR_NAMES }
-}.onFailure { Diagnostics.recordHandled(context, "thu-vien", "phân loại tệp save", it) }
-    .getOrDefault(false)
-
 /**
- * Quét **toàn bộ** thư mục game: không giới hạn độ sâu, không cắt số tệp.
- * Chỉ dừng ở chỗ không thể đọc hoặc gặp liên kết tượng trưng — khi đó ghi chú + Diagnostics
- * và [SaveScan.complete] = false để nơi gọi **từ chối xoá** thay vì mất save âm thầm.
+ * Quét **toàn bộ** thư mục game: mọi tệp thường, **không lọc theo đuôi/tên** — vì cái gì sắp bị xoá
+ * thì phải được sao lưu hết (save có đuôi lạ như `.bin`, `.dat`, tệp không đuôi vẫn phải giữ).
+ * Không giới hạn độ sâu/số tệp. Chỉ dừng ở chỗ không thể đọc hoặc gặp liên kết tượng trưng — khi đó
+ * ghi chú + Diagnostics và [GameScan.complete] = false để nơi gọi **từ chối xoá**.
  */
-internal fun scanSaveFiles(context: Context, dir: File): SaveScan {
+internal fun scanGameFiles(context: Context, dir: File): GameScan {
     val files = mutableListOf<File>()
     val notes = mutableListOf<String>()
     var skippedLinks = 0
@@ -220,56 +213,63 @@ internal fun scanSaveFiles(context: Context, dir: File): SaveScan {
                         skippedLinks++
                         return FileVisitResult.CONTINUE
                     }
-                    if (attrs.isRegularFile) {
-                        val file = path.toFile()
-                        if (isSaveFile(context, dir, file)) files += file
-                    }
+                    if (attrs.isRegularFile) files += path.toFile()
                     return FileVisitResult.CONTINUE
                 }
 
                 override fun visitFileFailed(path: Path, e: IOException): FileVisitResult {
                     unreadable++
-                    Diagnostics.recordHandled(context, "thu-vien", "quét save: không đọc được $path", e)
+                    Diagnostics.recordHandled(context, "thu-vien", "quét thư mục game: không đọc được $path", e)
                     return FileVisitResult.CONTINUE
                 }
             },
         )
     } catch (t: Throwable) {
         unreadable++
-        Diagnostics.recordHandled(context, "thu-vien", "quét save trong thư mục game", t)
+        Diagnostics.recordHandled(context, "thu-vien", "quét thư mục game", t)
     }
     if (skippedLinks > 0) notes += "Bỏ qua $skippedLinks liên kết tượng trưng (không đi theo để tránh lặp vô hạn)."
     if (unreadable > 0) notes += "$unreadable mục trong thư mục không đọc được."
-    return SaveScan(
+    return GameScan(
         files = files.sortedBy { it.absolutePath },
         notes = notes,
         complete = skippedLinks == 0 && unreadable == 0,
     )
 }
 
-/** Dung lượng tệp save; lỗi đọc thì tính 0 và ghi Diagnostics. */
-private fun saveFileBytes(context: Context, file: File): Long = runCatching { file.length() }
-    .onFailure { Diagnostics.recordHandled(context, "thu-vien", "đọc dung lượng tệp save", it) }
+/** Dung lượng tệp; lỗi đọc thì tính 0 và ghi Diagnostics. */
+private fun scanFileBytes(context: Context, file: File): Long = runCatching { file.length() }
+    .onFailure { Diagnostics.recordHandled(context, "thu-vien", "đọc dung lượng tệp để sao lưu", it) }
     .getOrDefault(0L)
 
 /**
- * Sao lưu save trong thư mục game ra `filesDir/save-backups/xoa-<tên>-<giờ>.zip`
- * (giữ nguyên đường dẫn tương đối dưới `game/` + tệp mô tả, kèm ghi chú nếu quét chưa trọn).
- * Không có save → [SaveBackup.file] null (và `complete` cho biết có quét được trọn không).
+ * Sao lưu **toàn bộ** thư mục game ra `filesDir/save-backups/xoa-<tên>-<giờ>.zip`
+ * (giữ nguyên cây dưới `game/` + tệp mô tả, kèm ghi chú nếu quét chưa trọn).
+ * Không có tệp nào → [GameBackup.file] null (`complete` cho biết có quét được trọn không).
  * Ghi lỗi → ném để nơi gọi dừng, không xoá.
  */
-internal fun backupGameSaves(context: Context, game: Game): SaveBackup {
-    val scan = scanSaveFiles(context, game.dir)
-    if (scan.files.isEmpty()) return SaveBackup(null, scan.notes, scan.complete)
-    val total = scan.files.sumOf { saveFileBytes(context, it) }
+internal fun backupGameFolder(context: Context, game: Game): GameBackup {
+    val scan = scanGameFiles(context, game.dir)
+    if (scan.files.isEmpty()) return GameBackup(null, scan.notes, scan.complete)
+    val total = scan.files.sumOf { scanFileBytes(context, it) }
     if (total > MAX_BACKUP_BYTES) {
-        return SaveBackup(
+        return GameBackup(
             null,
-            scan.notes + "Save trong thư mục lớn (${formatFileSize(total)}), vượt mức ${formatFileSize(MAX_BACKUP_BYTES)}.",
+            scan.notes + "Thư mục game lớn (${formatFileSize(total)}), vượt mức ${formatFileSize(MAX_BACKUP_BYTES)}.",
             complete = false,
         )
     }
     val dir = File(context.filesDir, SAVE_BACKUP_DIR).apply { check(mkdirs() || isDirectory) { "chưa tạo được thư mục sao lưu" } }
+    val free = runCatching { dir.usableSpace }
+        .onFailure { Diagnostics.recordHandled(context, "thu-vien", "đọc dung lượng trống để sao lưu", it) }
+        .getOrDefault(0L)
+    if (free > 0 && free < total + MIN_FREE_AFTER_BACKUP) {
+        return GameBackup(
+            null,
+            scan.notes + "Không đủ dung lượng trống để sao lưu ${formatFileSize(total)} (còn ${formatFileSize(free)}).",
+            complete = false,
+        )
+    }
     val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(Date())
     val target = File(dir, "xoa-${safeFileName(game.name)}-$stamp.zip")
     try {
@@ -283,11 +283,12 @@ internal fun backupGameSaves(context: Context, game: Game): SaveBackup {
             zip.putNextEntry(ZipEntry("monika-xoa-game.txt"))
             zip.write(
                 buildString {
-                    appendLine("Monika — bản sao lưu save trước khi xoá game")
+                    appendLine("Monika — bản sao lưu TOÀN BỘ thư mục game trước khi xoá")
                     appendLine("game=${game.name}")
                     appendLine("hệ=${game.system?.id ?: "chưa rõ"}")
                     appendLine("thư mục=${game.dir.name}")
-                    appendLine("số tệp save=${scan.files.size}")
+                    appendLine("số tệp=${scan.files.size} (mọi tệp, không lọc save)")
+                    appendLine("dung lượng=${formatFileSize(total)}")
                     scan.notes.forEach { appendLine("ghi chú=$it") }
                     appendLine("Khôi phục: nhập lại game rồi chép thư mục game/ trong tệp zip này vào thư mục game.")
                     appendLine("Hoặc dùng nút \"Chia sẻ bản sao lưu\" trong Thư viện để gửi tệp này ra ngoài.")
@@ -298,10 +299,10 @@ internal fun backupGameSaves(context: Context, game: Game): SaveBackup {
     } catch (t: Throwable) {
         // Xoá tệp zip dở; nếu xoá không được thì thôi (không ảnh hưởng dữ liệu người chơi).
         target.delete()
-        Diagnostics.recordHandled(context, "thu-vien", "sao lưu save: ghi tệp zip", t)
+        Diagnostics.recordHandled(context, "thu-vien", "sao lưu thư mục game: ghi tệp zip", t)
         throw t
     }
-    return SaveBackup(target, scan.notes, scan.complete)
+    return GameBackup(target, scan.notes, scan.complete)
 }
 
 /**
@@ -345,14 +346,15 @@ internal fun safeFileName(name: String): String =
  * Xoá một game từ mục Tệp:
  * 1. Game quét trong máy (ngoài kho) → chỉ ẩn, không xoá tệp nào.
  * 2. Thư mục không do app quản lý → từ chối, không đụng đĩa.
- * 3. Có save trong thư mục → sao lưu trước; sao lưu lỗi thì KHÔNG xoá gì.
+ * 3. **Sao lưu toàn bộ thư mục game** trước (mọi tệp, không lọc save); sao lưu lỗi hoặc chưa trọn
+ *    (liên kết tượng trưng, mục không đọc được, quá lớn, thiếu chỗ) thì KHÔNG xoá gì.
  * Chỉ sau đó mới xoá đúng thư mục game (không đụng thư mục khác trong kho).
  */
 internal fun deleteGameWithSaveBackup(
     context: Context,
     game: Game,
     library: GameLibrary = AppGraph.library,
-    backup: (Context, Game) -> SaveBackup = ::backupGameSaves,
+    backup: (Context, Game) -> GameBackup = ::backupGameFolder,
 ): FileDeleteResult {
     if (game.external) {
         val ok = library.delete(game)
@@ -372,25 +374,26 @@ internal fun deleteGameWithSaveBackup(
     val saved = try {
         backup(context, game)
     } catch (t: Throwable) {
-        Diagnostics.recordHandled(context, "thu-vien", "xoá game: sao lưu save trước khi xoá", t)
+        Diagnostics.recordHandled(context, "thu-vien", "xoá game: sao lưu thư mục game trước khi xoá", t)
         return FileDeleteResult(
             false, null,
-            "Chưa sao lưu được save nên chưa xoá gì: ${t.message ?: "lỗi không rõ"}. Thử lại hoặc dọn bằng trình quản lý tệp.",
+            "Chưa sao lưu được thư mục game nên chưa xoá gì: ${t.message ?: "lỗi không rõ"}. " +
+                "Thử lại hoặc dọn bằng trình quản lý tệp.",
         )
     }
-    // Chưa quét/sao lưu trọn vẹn (liên kết tượng trưng, mục không đọc được, quá lớn) → không xoá.
+    // Chưa quét/sao lưu trọn vẹn (liên kết tượng trưng, mục không đọc được, quá lớn, thiếu chỗ) → không xoá.
     if (!saved.complete) {
         return FileDeleteResult(
             false, saved.file,
-            "Chưa chứng minh sao lưu đủ save nên chưa xoá gì:\n" + saved.notes.joinToString("\n") +
+            "Chưa chứng minh sao lưu đủ nên chưa xoá gì:\n" + saved.notes.joinToString("\n") +
                 "\nHãy dọn bằng trình quản lý tệp nếu chắc chắn muốn xoá.",
         )
     }
     val ok = library.delete(game)
     val kept = saved.file?.let {
-        "Bản sao lưu save: ${it.absolutePath}" +
+        "Bản sao lưu thư mục game: ${it.absolutePath}" +
             (if (saved.notes.isEmpty()) "" else "\nGhi chú: " + saved.notes.joinToString(" "))
-    } ?: "Game không có tệp save trong thư mục; save của giả lập trong kho Monika vẫn giữ nguyên."
+    } ?: "Thư mục game rỗng nên không cần sao lưu; save của giả lập trong kho Monika vẫn giữ nguyên."
     return FileDeleteResult(
         ok, saved.file,
         if (ok) "Đã xoá \"${game.name}\" khỏi kho.\n$kept"

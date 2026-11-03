@@ -31,13 +31,13 @@ import vn.aow.monika.ui.screens.LibraryFileKind
 import vn.aow.monika.ui.screens.LibraryFilesPage
 import vn.aow.monika.ui.screens.LibraryScreen
 import vn.aow.monika.ui.screens.SAVE_BACKUP_DIR
-import vn.aow.monika.ui.screens.SaveBackup
-import vn.aow.monika.ui.screens.backupGameSaves
+import vn.aow.monika.ui.screens.GameBackup
+import vn.aow.monika.ui.screens.backupGameFolder
 import vn.aow.monika.ui.screens.backupShareIntent
 import vn.aow.monika.ui.screens.deleteGameWithSaveBackup
 import vn.aow.monika.ui.screens.formatFileDate
 import vn.aow.monika.ui.screens.formatFileSize
-import vn.aow.monika.ui.screens.scanSaveFiles
+import vn.aow.monika.ui.screens.scanGameFiles
 import vn.aow.monika.ui.theme.DockClearance
 import vn.aow.monika.ui.theme.MonikaTheme
 import vn.aow.monika.ui.theme.dockContentClearance
@@ -195,7 +195,7 @@ class LibraryFilesUiTest {
             assertEquals("Phải có đúng 1 bản sao lưu save", 1, created.size)
             assertTrue(created.single().name.startsWith("xoa-v141-xoa-game"))
             rule.awaitComposeLayout {
-                rule.onAllNodesWithText("Bản sao lưu save", substring = true).fetchSemanticsNodes().isNotEmpty()
+                rule.onAllNodesWithText("Bản sao lưu thư mục game", substring = true).fetchSemanticsNodes().isNotEmpty()
             }
             // Bản sao lưu nằm trong vùng riêng của app → phải có đường chia sẻ ra ngoài.
             rule.onNodeWithText("Chia sẻ bản sao lưu").assertExists()
@@ -219,10 +219,10 @@ class LibraryFilesUiTest {
         val backups = File(rule.activity.filesDir, SAVE_BACKUP_DIR)
         val knownBackups = backups.listFiles().orEmpty().toSet()
         try {
-            val scan = scanSaveFiles(rule.activity, game)
+            val scan = scanGameFiles(rule.activity, game)
             assertTrue("Quét phải trọn vẹn", scan.complete)
-            assertEquals(listOf("tien-do.sav"), scan.files.map { it.name })
-            val backup = backupGameSaves(rule.activity, target)
+            assertEquals(setOf("fixture.gba", "tien-do.sav"), scan.files.map { it.name }.toSet())
+            val backup = backupGameFolder(rule.activity, target)
             val zipFile = backup.file
             assertNotNull("Phải tạo được bản sao lưu save", zipFile)
             assertTrue(zipFile!!.isFile)
@@ -245,7 +245,7 @@ class LibraryFilesUiTest {
             assertFalse(refused.deleted)
             assertTrue("Chưa sao lưu được thì không được xoá", game.exists())
             assertTrue(save.exists())
-            assertTrue(refused.message.contains("Chưa sao lưu được save"))
+            assertTrue(refused.message.contains("Chưa sao lưu được thư mục game"))
         } finally {
             game.deleteRecursively()
             backups.listFiles().orEmpty().filter { it !in knownBackups }.forEach { it.delete() }
@@ -267,18 +267,18 @@ class LibraryFilesUiTest {
         val backups = File(rule.activity.filesDir, SAVE_BACKUP_DIR)
         val knownBackups = backups.listFiles().orEmpty().toSet()
         try {
-            val scan = scanSaveFiles(rule.activity, game)
+            val scan = scanGameFiles(rule.activity, game)
             assertTrue("Quét phải trọn vẹn", scan.complete)
             assertTrue("Phải thấy save nằm sâu 7 tầng", scan.files.any { it == deep })
-            assertEquals("Không được cắt bớt số tệp save", 301, scan.files.size)
+            assertEquals("Không được cắt bớt tệp nào", 302, scan.files.size) // 301 save + ROM
 
-            val backup = backupGameSaves(rule.activity, target)
+            val backup = backupGameFolder(rule.activity, target)
             val zipFile = backup.file
             assertNotNull("Phải tạo được bản sao lưu save", zipFile)
             ZipFile(zipFile!!).use { zip ->
                 assertNotNull("Save sâu phải có trong zip", zip.getEntry("game/a/b/c/d/e/f/sau-tang.sav"))
                 assertNotNull("Save thứ 300 phải có trong zip", zip.getEntry("game/save/s300.srm"))
-                assertEquals("301 save + 1 tệp mô tả", 302, zip.size())
+                assertEquals("301 save + ROM + tệp mô tả", 303, zip.size())
             }
             assertTrue(many.last().exists())
         } finally {
@@ -296,7 +296,7 @@ class LibraryFilesUiTest {
         try {
             val warning = "Bỏ qua 1 liên kết tượng trưng (không đi theo để tránh lặp vô hạn)."
             val result = deleteGameWithSaveBackup(rule.activity, target) { _, _ ->
-                SaveBackup(null, listOf(warning), complete = false)
+                GameBackup(null, listOf(warning), complete = false)
             }
             assertFalse("Chưa chứng minh sao lưu đủ thì không được xoá", result.deleted)
             assertTrue("Thư mục game phải còn", game.exists())
@@ -326,6 +326,38 @@ class LibraryFilesUiTest {
             assertTrue(intent.getStringExtra(Intent.EXTRA_SUBJECT).orEmpty().contains("xoa-demo.zip"))
         } finally {
             backup.delete()
+        }
+    }
+
+    @Test fun savesWithUnknownExtensionsAreBackedUpBeforeDeleting() {
+        val game = fixture("v141-save-la")
+        val rom = File(game, "fixture.gba").apply { writeText("rom") }
+        // Tên/đuôi lạ và tệp không đuôi: whitelist cũ bỏ qua hết, nhưng xoá thư mục là mất luôn.
+        val bin = File(game, "save.bin").apply { writeText("save dang bin") }
+        val dat = File(game, "profile/slot1.dat").apply { parentFile?.mkdirs(); writeText("save dang dat") }
+        val bare = File(game, "progress").apply { writeText("save khong duoi") }
+        val target = Game(game, "v141-save-la", AppGraph.config.current.system("gba"), rom)
+        val backups = File(rule.activity.filesDir, SAVE_BACKUP_DIR)
+        val knownBackups = backups.listFiles().orEmpty().toSet()
+        try {
+            val result = deleteGameWithSaveBackup(rule.activity, target)
+            assertTrue("Phải xoá được game", result.deleted)
+            assertFalse(game.exists())
+            val zipFile = result.backup
+            assertNotNull("Phải có bản sao lưu", zipFile)
+            ZipFile(zipFile!!).use { zip ->
+                assertNotNull("save.bin phải có trong zip", zip.getEntry("game/save.bin"))
+                assertNotNull("profile/slot1.dat phải có trong zip", zip.getEntry("game/profile/slot1.dat"))
+                assertNotNull("progress (không đuôi) phải có trong zip", zip.getEntry("game/progress"))
+                assertNotNull("ROM cũng phải có (backup toàn thư mục)", zip.getEntry("game/fixture.gba"))
+            }
+            assertFalse(bin.exists())
+            assertFalse(dat.exists())
+            assertFalse(bare.exists())
+        } finally {
+            game.deleteRecursively()
+            backups.listFiles().orEmpty().filter { it !in knownBackups }.forEach { it.delete() }
+            AppGraph.library.list()
         }
     }
 
