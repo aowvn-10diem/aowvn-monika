@@ -22,7 +22,7 @@ import vn.aow.monika.achievements.RaApi
 import vn.aow.monika.achievements.RaAuthException
 import vn.aow.monika.achievements.RaHasher
 import vn.aow.monika.achievements.raDateVn
-import vn.aow.monika.apkinstall.repack.KeyWrap
+import vn.aow.monika.security.KeyWrap
 import vn.aow.monika.ui.TestApp
 import java.io.File
 import java.security.MessageDigest

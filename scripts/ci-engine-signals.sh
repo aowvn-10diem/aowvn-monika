@@ -4,7 +4,7 @@ SCRATCH="${1:?fixture}";OUT="${2:?evidence}";PKG=com.aow.monika
 mkdir -p "$OUT"
 trap 'adb logcat -d -v threadtime > "$OUT/final-logcat.txt"; adb exec-out screencap -p > "$OUT/final.png"' EXIT
 adb root >/dev/null;adb wait-for-device
-adb install -r app/build/outputs/apk/debug/app-universal-debug.apk >/dev/null
+adb install -r app/build/outputs/apk/github/debug/app-github-universal-debug.apk >/dev/null
 UID_APP=$(adb shell stat -c %u "/data/data/$PKG" | tr -d '\r')
 BASE="/data/data/$PKG/files"
 for item in 'rgss-pack packs/rgss' 'game games/v22-xp' 'control games/v22-control'; do

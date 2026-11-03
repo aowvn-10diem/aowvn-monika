@@ -36,6 +36,12 @@ class PhysicalGate(unittest.TestCase):
             self.check(changed=['app/src/main/java/vn/aow/monika/ui/HomeScreen.kt', '.github/workflows/test-lab.yml'])
         self.assertEqual(2, self.check(changed=['app/src/main/java/vn/aow/monika/pack/PackTransaction.kt']))
 
+    def test_github_flavor_is_checked_but_play_only_cannot_spend_github_quota(self):
+        self.assertEqual(2, self.check(changed=['app/src/github/java/vn/aow/monika/runner/GameLauncher.kt']))
+        self.assertEqual(2, self.check(changed=['app/src/github/java/vn/aow/monika/library/GameStorage.kt']))
+        with self.assertRaisesRegex(ValueError, 'No engine'):
+            self.check(changed=['app/src/play/java/vn/aow/monika/runner/GameLauncher.kt'])
+
     def test_midnight_resets_budget_but_not_exact_head_gate(self):
         self.assertEqual(0, self.check(day='2026-10-09', history_ids=[]))
 

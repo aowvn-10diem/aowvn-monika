@@ -7,6 +7,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.*
 import org.junit.Assert.*
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,6 +26,7 @@ class ConfigRepositoryValidationTest {
     private val cache get() = File(app.filesDir, ConfigRepository.ASSET_NAME)
     private val bundled get() = ConfigRepository.parse(app.assets.open(ConfigRepository.ASSET_NAME).bufferedReader().use { it.readText() }).configVersion
     private var reply = ""
+    private var previousSender: ((android.content.Context, Diagnostics.Report) -> Unit)? = null
     private fun repo() = ConfigRepository(app, OkHttpClient.Builder().addInterceptor { chain ->
         Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
             .body(ResponseBody.create(null, reply)).build()
@@ -32,6 +34,18 @@ class ConfigRepositoryValidationTest {
     private fun valid(version: Int) = """{"configVersion":$version,"feed":{"url":"https://example.test/feed"}}"""
 
     @Before fun clean() {
+        clearFiles()
+        // Chỉ kiểm repository: không để báo lỗi tự gửi khởi tạo AppGraph từ cache giả thiếu dữ liệu.
+        previousSender = Diagnostics.opSender
+        Diagnostics.opSender = null
+    }
+
+    @After fun restore() {
+        clearFiles()
+        Diagnostics.opSender = previousSender
+    }
+
+    private fun clearFiles() {
         listOf(cache, File(cache.path + ".new"), File(cache.path + ".bak"), File(app.filesDir, "config.checked"), File(app.filesDir, "diag"))
             .forEach { it.deleteRecursively() }
     }
@@ -52,37 +66,38 @@ class ConfigRepositoryValidationTest {
     }
 
     @Test fun oldCacheWithoutExperimentalFlagFallsBackToBundledWarning() {
-        assertEquals(54, bundled)
+        assertEquals(57, bundled)
         cache.writeText(valid(38))
         val current = repo().current
-        assertEquals(54, current.configVersion)
+        assertEquals(57, current.configVersion)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
 
-    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled53() {
+    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled57() {
         cache.writeText("""{"configVersion":47,"saveTransfer":{"systems":{}}}""")
         val current = repo().current
-        assertEquals(54, current.configVersion)
+        assertEquals(57, current.configVersion)
         assertEquals(setOf("java", "nds", "gba", "3ds", "psp", "ps1"), current.saveTransfer.systems.keys)
     }
 
     @Test fun cache39FallsBackToBundledDocumentConfiguration() {
         cache.writeText("""{"configVersion":39,"documentExtensions":[]}""")
         val current = repo().current
-        assertEquals(54, current.configVersion)
+        assertEquals(57, current.configVersion)
         assertEquals(listOf("pdf", "doc", "docx", "txt", "epub"), current.documentExtensions)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
 
-    @Test fun cache48WithOldAppReleaseFallsBackToBundled086() {
-        cache.writeText("""{"configVersion":48,"app":{"latestVersionCode":41,"latestVersionName":"0.7.6","minVersionCode":1,"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.7.6/AowVN-Monika-v0.7.6.apk"}}""")
+    @Test fun cache55WithStable088FallsBackToBundledTrial089() {
+        cache.writeText("""{"configVersion":55,"app":{"latestVersionCode":53,"latestVersionName":"0.8.8","minVersionCode":1,"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.8/AowVN-Monika-v0.8.8.apk"}}""")
         val current = repo().current
-        assertEquals(54, current.configVersion)
-        assertEquals(52, current.app.latestVersionCode)
-        assertEquals("0.8.7", current.app.latestVersionName)
+        assertEquals(57, current.configVersion)
+        assertEquals(54, current.app.latestVersionCode)
+        assertEquals("0.8.9", current.app.latestVersionName)
         assertEquals(1, current.app.minVersionCode)
-        assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.7/AowVN-Monika-v0.8.7.apk", current.app.apkUrl)
-        assertEquals("Game Java mới mở tự chọn kích thước màn hình, Thư viện tự làm mới khi có cập nhật.", current.app.changelog)
+        assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.9/AowVN-Monika-v0.8.9.apk", current.app.apkUrl)
+        assertTrue(current.app.changelog.contains("Bản thử"))
+        assertEquals("Bản thử 0.8.9: Sửa nút A/B GBA, màn hình NDS và phím Java khi xoay ngang. Thêm ẩn/hiện phím ảo; Thư viện chia thành Chơi, Đọc và Tệp.", current.app.changelog)
     }
 
     @Test fun downgradeFromRunningVersionIsRejectedAndOldBytesAreKept() = runBlocking {
