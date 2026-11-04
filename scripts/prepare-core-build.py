@@ -13,8 +13,22 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SHA = re.compile(r"[0-9a-f]{40}")
 ABIS = {"arm64-v8a": (2, 183), "armeabi-v7a": (1, 40)}
-RECIPE = "fceumm-ndk-v1"
-REPO = "https://github.com/libretro/libretro-fceumm.git"
+RECIPES = {
+    "fceumm": {
+        "recipe": "fceumm-ndk-v1",
+        "repository": "https://github.com/libretro/libretro-fceumm.git",
+        "androidMk": "jni/Android.mk",
+        "license": "GPL-2.0-or-later",
+        "licenseFiles": ["Copying", "src/ntsc/license.txt"],
+    },
+    "gambatte": {
+        "recipe": "gambatte-ndk-v1",
+        "repository": "https://github.com/libretro/gambatte-libretro.git",
+        "androidMk": "libgambatte/libretro/jni/Android.mk",
+        "license": "GPL-2.0-only",
+        "licenseFiles": ["COPYING"],
+    },
+}
 NEEDED = {"libc.so", "libm.so", "libdl.so", "liblog.so", "libandroid.so"}
 EXPORTS = {
     "retro_api_version", "retro_init", "retro_deinit", "retro_get_system_info",
@@ -58,16 +72,18 @@ def load_lock(path, config_path):
     if not lock["cores"] or set(lock["cores"]) - set(inventory["cores"]):
         raise ValueError("Không có recipe hoặc recipe ngoài kiểm kê")
     for name, core in lock["cores"].items():
-        if name != "fceumm" or core["recipe"] != RECIPE or core["repository"] != REPO:
+        recipe = RECIPES.get(name)
+        if recipe is None:
             raise ValueError("Recipe mới cần triển khai và tiền duyệt")
+        if any(core.get(key) != recipe[key] for key in
+               ("recipe", "repository", "license", "licenseFiles")):
+            raise ValueError("Nguồn/giấy phép chưa khớp recipe")
         if not SHA.fullmatch(core["commit"]):
             raise ValueError("Nguồn phải ghim SHA đầy đủ")
         if not core["abis"] or len(set(core["abis"])) != len(core["abis"]) or set(core["abis"]) - ABIS.keys():
             raise ValueError("ABI chưa kiểm hoặc trùng")
         if core["submodules"] != [] or core["patches"] != [] or core["dependencies"] != []:
             raise ValueError("Recipe đầu chưa hỗ trợ phụ thuộc/bản vá ngoài cây nguồn")
-        if core["license"] != "GPL-2.0-or-later" or core["licenseFiles"] != ["Copying", "src/ntsc/license.txt"]:
-            raise ValueError("Giấy phép chưa khớp recipe")
     return lock
 
 
@@ -145,7 +161,7 @@ def prepare(lock, core_id, abi, ndk, output, lock_path):
         checkout(core, source)
         # Chỉ recipe cố định trong mã, không chạy chuỗi lệnh do JSON/input cung cấp.
         run([ndk / "ndk-build", "-j2", "NDK_PROJECT_PATH=" + str(source),
-             "APP_BUILD_SCRIPT=" + str(source / "jni/Android.mk"), "APP_ABI=" + abi,
+             "APP_BUILD_SCRIPT=" + str(source / RECIPES[core_id]["androidMk"]), "APP_ABI=" + abi,
              "APP_PLATFORM=android-26", "APP_STL=c++_static", "NDK_DEBUG=0"], source)
         tools = ndk / "toolchains/llvm/prebuilt/linux-x86_64/bin"
         library = source / "libs" / abi / "libretro.so"
