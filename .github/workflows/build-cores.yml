@@ -1,0 +1,83 @@
+name: Dựng lõi từ nguồn ghim (V198, chưa đăng)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - engines/sources.lock.json
+      - scripts/prepare-core-build.py
+      - scripts/test-prepare-core-build.py
+      - scripts/package-native-symbols.py
+      - .github/workflows/build-cores.yml
+      - config/monika-config.json
+
+permissions: {contents: read}
+env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+concurrency:
+  group: v198-core-build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    if: github.repository == 'aowvn-10diem/aowvn-monika'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      ndk: ${{ steps.plan.outputs.ndk }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - run: python3 scripts/test-prepare-core-build.py
+      - id: plan
+        run: |
+          python3 - <<'PY'
+          import importlib.util, json, os
+          from pathlib import Path
+          spec = importlib.util.spec_from_file_location("corebuild", "scripts/prepare-core-build.py")
+          module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+          lock = module.load_lock(Path("engines/sources.lock.json"), Path("config/monika-config.json"))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              print("matrix=" + json.dumps(module.plan(lock), separators=(",", ":")), file=output)
+              print("ndk=" + lock["toolchain"]["ndk"], file=output)
+          PY
+  build:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_HOME }}/ndk/${{ needs.plan.outputs.ndk }}
+          key: v198-ndk-${{ runner.os }}-${{ needs.plan.outputs.ndk }}-${{ matrix.abi }}-${{ hashFiles('engines/sources.lock.json') }}
+      - name: Cài NDK ghim (không tải binary core)
+        env:
+          CORE_NDK: ${{ needs.plan.outputs.ndk }}
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$CORE_NDK"
+      - name: Dựng, kiểm ELF/libretro/hash, giữ nguồn và ký hiệu
+        env:
+          CORE_ID: ${{ matrix.core }}
+          CORE_ABI: ${{ matrix.abi }}
+          CORE_NDK: ${{ needs.plan.outputs.ndk }}
+        run: |
+          python3 scripts/prepare-core-build.py --core "$CORE_ID" --abi "$CORE_ABI" \
+            --ndk "$ANDROID_HOME/ndk/$CORE_NDK" --out out/core
+      - uses: actions/upload-artifact@v7
+        with:
+          name: source-build-${{ matrix.core }}-${{ matrix.abi }}
+          path: out/core/
+          retention-days: 3
+          if-no-files-found: error
