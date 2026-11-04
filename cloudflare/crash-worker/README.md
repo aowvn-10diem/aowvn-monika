@@ -16,6 +16,16 @@ Bộ đếm hạn mức (`RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_SECONDS`) nằm t
 
 Cơ chế **đếm dùng chung** giữa các isolate/colo (KV hoặc Durable Object) **được để dành cho V153/V195**, không làm trong V194: mọi cách đếm dùng chung đều tốn thêm lượt ghi/đọc KV, đúng thứ V194 phải giảm.
 
+## Chặn cứng khi bị spam: WAF rate limiting cho `POST /reports` (V194, Luna 5)
+Bộ đếm trong Worker chỉ là chặn mềm (mục trên). Khi bị spam thật, bật thêm **một luật Cloudflare WAF Rate Limiting** — lớp chặn cứng ở biên, **không cần secret mới** và không tốn lượt KV nào (request bị chặn không vào Worker):
+1. Dashboard Cloudflare → chọn zone `aow.vn` → **Security → WAF → Rate limiting rules → Create rule**.
+2. **If incoming requests match:** `Field = URI Path`, `Operator = equals`, `Value = /report`; thêm `AND Method = POST`. (Đường nhận báo cáo là `POST /report`; `GET /reports` của quản trị **không** khớp luật này.)
+3. **Rate:** ví dụ **30 request / 1 phút / theo IP** (đặt trên `RATE_LIMIT_MAX` của Worker để Worker còn kịp trả 429 kèm `Retry-After` trước).
+4. **Action:** *Block* trong **10 phút** (hoặc *Managed Challenge* nếu muốn nhẹ hơn).
+5. Bật rule, rồi kiểm bằng `curl -X POST .../report` lặp nhanh từ một IP: các request vượt ngưỡng phải bị chặn ở biên (không thấy trong log Worker).
+
+Ghi chú: luật WAF tính theo IP ở biên nên **không phụ thuộc isolate/colo** — đây là lớp bù cho giới hạn của bộ đếm trong Worker. Ngưỡng WAF là cấu hình dashboard, không nằm trong repo.
+
 ## Hợp đồng JSON (V29)
 
 `Diagnostics.Report` được gửi tới `POST /report`; Worker chỉ bổ sung trường, vẫn nhận app cũ. `kind`, `title`, `app` bắt buộc là chuỗi; JSON sai trả 400. Báo cáo và giá trị KV đều tối đa 60.000 **byte UTF-8**; quá giới hạn trả 413, không ghi báo cáo. Body được đọc theo stream có chặn dung lượng, không dựa riêng Content-Length.
