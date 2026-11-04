@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -38,6 +39,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -96,6 +99,13 @@ internal fun GameDetailScreen(game: Game, onPlay: (Game) -> Unit, onBack: () -> 
     val sizeText by produceState("Đang tính…", game.key) {
         value = withContext(Dispatchers.IO) { sizeLabel(GameSizeMeter(context).size(game)) }
     }
+    // Mục Save: danh sách save hiện có + nhập/chia sẻ. Nhập xong thì đọc lại danh sách.
+    var saveReload by remember(game.key) { mutableIntStateOf(0) }
+    val saveList by rememberSaveList(game, saveReload)
+    val saveActions = rememberGameSaveActions(game) { saveReload++ }
+    val scroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    var saveTop by remember(game.key) { mutableIntStateOf(0) }
     Screen {
         Column(Modifier.fillMaxSize()) {
             MonikaHeader(
@@ -103,7 +113,7 @@ internal fun GameDetailScreen(game: Game, onPlay: (Game) -> Unit, onBack: () -> 
                 left = { CircleButton(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại", onBack) },
             )
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                Modifier.fillMaxSize().verticalScroll(scroll)
                     .padding(start = 16.dp, end = 16.dp, bottom = DockClearance),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
@@ -124,10 +134,20 @@ internal fun GameDetailScreen(game: Game, onPlay: (Game) -> Unit, onBack: () -> 
                 GameTaskBar(
                     onPlay = { onPlay(game) },
                     onDelete = { confirmDelete = true },
+                    onSave = { scope.launch { scroll.animateScrollTo(saveTop) } },
                     modifier = Modifier.fillMaxWidth(),
                 )
+                // Mốc cuộn tới mục Save: vị trí trong nội dung = vị trí trên màn hình + đã cuộn.
+                Box(Modifier.onGloballyPositioned { saveTop = (it.positionInRoot().y + scroll.value).toInt() }) {
+                    GameSaveSection(
+                        state = saveList,
+                        busy = saveActions.busy,
+                        onImport = saveActions.onImport,
+                        onExport = saveActions.onExport,
+                    )
+                }
                 Text(
-                    "Save và Bản vá sẽ có ở bản cập nhật sau. Xóa game không xóa dữ liệu lưu trong máy.",
+                    "Bản vá sẽ có ở bản cập nhật sau. Xóa game không xóa dữ liệu lưu trong máy.",
                     style = Monika.type.caption, color = c.textSecondary,
                 )
             }
@@ -203,14 +223,14 @@ private fun DetailRow(label: String, value: String) {
 
 /**
  * Thanh Tác vụ của trang game: Chơi · Save · Bản vá · Xóa.
- * V139 chỉ mở Chơi và Xóa; Save/Bản vá để nút + nhãn "Sắp có" (V140/V143 làm nội dung).
+ * Save mở mục Save ngay dưới thanh; Bản vá còn là nút + nhãn "Sắp có" (V143 làm nội dung).
  */
 @Composable
-internal fun GameTaskBar(onPlay: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+internal fun GameTaskBar(onPlay: () -> Unit, onDelete: () -> Unit, onSave: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     MonikaCard(modifier, shape = Radius.large, padding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             TaskAction("Chơi", R.drawable.ic_fluent_play_24_filled, onPlay, primary = true)
-            TaskAction("Save", R.drawable.ic_fluent_save_24_regular, onClick = null, soon = true)
+            TaskAction("Save", R.drawable.ic_fluent_save_24_regular, onClick = onSave, soon = onSave == null)
             TaskAction("Bản vá", R.drawable.ic_fluent_archive_24_regular, onClick = null, soon = true)
             TaskAction("Xóa", R.drawable.ic_fluent_delete_24_regular, onDelete, danger = true)
         }
