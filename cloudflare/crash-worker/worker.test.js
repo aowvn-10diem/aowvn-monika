@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { webcrypto } from "node:crypto";
-import worker, { MAX_BODY, resetRateState } from "./worker.js";
+import worker, { MAX_BODY, resetRateState, rateReservedCount } from "./worker.js";
 globalThis.crypto ??= webcrypto;
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/app-report.json", import.meta.url)));
 
@@ -312,4 +312,42 @@ test("V194 ghi KV loi thi nha lai cho han muc cho lan sau", async () => {
   };
   await assert.rejects(postWithIp(c, fixture)); // ghi lỗi: request lỗi, KHÔNG được coi là đã dùng hạn mức
   assert.equal((await postWithIp(c, fixture)).status, 200);
+});
+
+// V194 (Luna 4): hoàn tác phải theo TOKEN của chính mình — không xoá lượt giữ chỗ của request đồng thời.
+test("V194 ba request dong thoi cung IP, mot cai ghi loi: hai luot giu cho con lai van dung", async () => {
+  const c = setup({ RATE_LIMIT_MAX: "3", RATE_LIMIT_WINDOW_SECONDS: "3600" });
+  const kv = c.env.REPORTS;
+  let openGate;
+  const gate = new Promise((resolve) => { openGate = resolve; });
+  let puts = 0;
+  c.env.REPORTS = {
+    ...kv,
+    put: async (k, v, o) => {
+      puts += 1;
+      if (puts === 1) { await gate; throw new Error("KV down"); } // A: giữ chỗ #1, chờ test cho phép lỗi
+      return kv.put(k, v, o);
+    },
+  };
+  const waitFor = async (label, want) => {
+    for (let i = 0; i < 200; i++) {
+      if (rateReservedCount() === want) return;
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    }
+    assert.fail(`chờ ${label}: đang giữ ${rateReservedCount()}, mong ${want}`);
+  };
+
+  const track = (promise) => promise.then((response) => ({ status: response.status }), () => ({ status: "ghi-loi" }));
+  const first = track(postWithIp(c, fixture));              // A
+  await waitFor("A giữ chỗ", 1);
+  const rest = [track(postWithIp(c, fixture)), track(postWithIp(c, fixture))]; // B, C
+  await waitFor("B và C giữ chỗ", 3);
+  openGate();
+  const all = await Promise.all([first, ...rest]);
+  assert.equal(all.filter((r) => r.status === "ghi-loi").length, 1, "đúng 1 request ghi KV lỗi");
+  assert.equal(all.filter((r) => r.status === 200).length, 2, "B và C đều lọt");
+  // A nhả ĐÚNG lượt của nó: 3 → 2, không xoá lượt của B/C.
+  await waitFor("A nhả đúng 1 chỗ", 2);
+  assert.equal((await postWithIp(c, fixture)).status, 200, "còn 1 lượt trống nên request sau vẫn lọt");
+  assert.equal((await postWithIp(c, fixture)).status, 429, "đã đủ 3 lượt thì chặn");
 });
