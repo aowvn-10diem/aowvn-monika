@@ -34,9 +34,20 @@ class CoreBuildTest(unittest.TestCase):
         lock = self.load()
         self.assertEqual(corebuild.plan(lock), {"include": [
             {"core": "fceumm", "abi": "arm64-v8a"},
-            {"core": "fceumm", "abi": "armeabi-v7a"}]})
+            {"core": "fceumm", "abi": "armeabi-v7a"},
+            {"core": "gambatte", "abi": "arm64-v8a"},
+            {"core": "gambatte", "abi": "armeabi-v7a"}]})
         self.assertEqual(len(lock["inventory"]["cores"]), 22)
-        self.assertEqual(len(set(lock["inventory"]["cores"]) - set(lock["cores"])), 21)
+        self.assertEqual(len(set(lock["inventory"]["cores"]) - set(lock["cores"])), 20)
+
+    def test_repository_recipe_and_license_are_bound_to_each_core(self):
+        for name, wrong in [('fceumm', 'gambatte'), ('gambatte', 'fceumm')]:
+            for key in ['repository', 'recipe', 'license', 'licenseFiles']:
+                data = copy.deepcopy(self.raw)
+                data['cores'][name][key] = data['cores'][wrong][key]
+                self.write(data)
+                with self.subTest(core=name, key=key), self.assertRaisesRegex(ValueError, 'recipe'):
+                    self.load()
 
     def test_reject_mutable_or_short_commits(self):
         for sha in ["HEAD", "master", "7a542dab", "a" * 39, "a" * 40 + "\n"]:

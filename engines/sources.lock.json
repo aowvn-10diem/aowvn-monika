@@ -59,6 +59,22 @@
       "submodules": [],
       "patches": [],
       "dependencies": []
+    },
+    "gambatte": {
+      "recipe": "gambatte-ndk-v1",
+      "repository": "https://github.com/libretro/gambatte-libretro.git",
+      "commit": "d9d6cd06382d1ced30de34d56d3609452323dab1",
+      "license": "GPL-2.0-only",
+      "licenseFiles": [
+        "COPYING"
+      ],
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a"
+      ],
+      "submodules": [],
+      "patches": [],
+      "dependencies": []
     }
   }
 }
