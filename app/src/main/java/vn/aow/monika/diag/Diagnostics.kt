@@ -626,8 +626,9 @@ object Diagnostics {
         // V194: hạn mức ghi KV của Worker chỉ 1000/ngày ↔ mỗi báo cáo là 1 lần ghi.
         // Cùng một dấu vân tay chỉ gửi 1 lần/giờ (nhớ qua lần mở app); lowmem chặt hơn: 1 lần mỗi phiên.
         // Bản gộp vẫn tăng `count` ở máy nhưng KHÔNG gửi lại — tránh kiểu mỗi lần mở app lại đẩy 1 lowmem y hệt.
+        // Chỉ ghi nhận "đã gửi" khi request THÀNH CÔNG: gửi lỗi (mất mạng) thì lần sau vẫn gửi lại được.
         val fingerprint = r.fingerprint.ifBlank { fingerprint(r) }
-        if (r.kind == "lowmem" && !sentThisSession.add(fingerprint)) {
+        if (r.kind == "lowmem" && sentThisSession.contains(fingerprint)) {
             save(c, r.copy(sent = true))
             return
         }
@@ -636,14 +637,21 @@ object Diagnostics {
             save(c, r.copy(sent = true))
             return
         }
+        // Cùng lúc chỉ 1 request cho mỗi dấu vân tay (onResume có thể gọi chồng) — nhả ở finally.
+        if (!sendingInFlight.add(fingerprint)) return
         Thread {
-            val ok = runCatching {
-                http.newCall(Request.Builder().url(endpoint).post(reportJson(c, r).toRequestBody("application/json".toMediaType())).build())
-                    .execute().use { it.isSuccessful }
-            }.getOrDefault(false)
-            if (ok) {
-                markSent(c, fingerprint, sendClock())
-                save(c, r.copy(sent = true))
+            try {
+                val ok = runCatching {
+                    http.newCall(Request.Builder().url(endpoint).post(reportJson(c, r).toRequestBody("application/json".toMediaType())).build())
+                        .execute().use { it.isSuccessful }
+                }.getOrDefault(false)
+                if (ok) {
+                    markSent(c, fingerprint, sendClock())
+                    sentThisSession.add(fingerprint)
+                    save(c, r.copy(sent = true))
+                }
+            } finally {
+                sendingInFlight.remove(fingerprint)
             }
         }.start()
     }
@@ -654,10 +662,13 @@ object Diagnostics {
     internal var sendClock: () -> Long = { System.currentTimeMillis() }
     private val sentRecentlyMemo = java.util.concurrent.ConcurrentHashMap<String, Long>()
     private val sentThisSession = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+    /** Dấu vân tay đang có request gửi dở (chống gửi chồng khi onResume gọi liên tiếp). */
+    private val sendingInFlight = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
     internal fun resetSendDedupe() {
         sentRecentlyMemo.clear()
         sentThisSession.clear()
+        sendingInFlight.clear()
     }
 
     private fun sendPrefs(c: Context) = c.getSharedPreferences("diag-send", Context.MODE_PRIVATE)

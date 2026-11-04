@@ -168,8 +168,15 @@ export default {
 
       const id = `r:${String(Date.now()).padStart(13, "0")}:${crypto.randomUUID().slice(0, 8)}`;
       const meta = { k: slim.kind, c: slim.core || slim.session?.core || "", y: slim.system || slim.session?.system || "", g: (slim.session?.game || "").slice(0, 60), a: slim.app.slice(0, 40), st: slim.stage || slim.session?.stage || "", t: slim.time, component: slim.component, fp: slim.fingerprint, count: slim.count };
-      await env.REPORTS.put(id, stored, { expirationTtl: 60 * 86400, metadata: meta });
+      // V194 (Luna 4): GIỮ CHỖ ngay (không `await` xen giữa đọc và tăng) để hai request cùng IP đồng thời
+      // không cùng lọt hạn mức; ghi KV lỗi thì nhả lại chỗ đã giữ.
       rememberRate(ipHash, window, count + 1);
+      try {
+        await env.REPORTS.put(id, stored, { expirationTtl: 60 * 86400, metadata: meta });
+      } catch (error) {
+        rememberRate(ipHash, window, count);
+        throw error;
+      }
       return json({ ok: true });
     }
 

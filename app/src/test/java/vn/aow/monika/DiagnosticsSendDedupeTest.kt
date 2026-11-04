@@ -8,6 +8,7 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -50,12 +51,28 @@ class DiagnosticsSendDedupeTest {
 
     /** OkHttp giả: đếm request, trả 200; mỗi request nhả 1 permit để test chờ được. */
     private val latch = CountDownLatch(16)
-    private fun http(): OkHttpClient = OkHttpClient.Builder().addInterceptor { chain ->
-        requests.incrementAndGet()
-        latch.countDown()
-        Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
-            .body("{}".toResponseBody(null)).build()
-    }.build()
+    private fun http(): OkHttpClient = httpReturning(200)
+
+    /** OkHttp giả trả lần lượt các mã trong [codes] (hết thì lặp mã cuối) — để kiểm ca gửi lỗi. */
+    private fun httpReturning(vararg codes: Int): OkHttpClient {
+        val index = AtomicInteger()
+        return OkHttpClient.Builder().addInterceptor { chain ->
+            requests.incrementAndGet()
+            latch.countDown()
+            val code = codes[minOf(index.getAndIncrement(), codes.size - 1)]
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(code).message("x")
+                .body("{}".toResponseBody(null)).build()
+        }.build()
+    }
+
+    private fun waitUntil(what: String, ms: Long = 3_000, condition: () -> Boolean) {
+        val deadline = System.currentTimeMillis() + ms
+        while (System.currentTimeMillis() < deadline) {
+            if (condition()) return
+            Thread.sleep(25)
+        }
+        throw AssertionError("quá hạn chờ: $what")
+    }
 
     private fun report(kind: String, fingerprint: String) = Diagnostics.Report(
         id = now, time = now, kind = kind, title = "thử $kind", app = "0.8.7 (120)", device = "máy thử",
@@ -118,5 +135,22 @@ class DiagnosticsSendDedupeTest {
             Diagnostics.sentWithin(app, "363ea01f", Diagnostics.SEND_DEDUPE_MS, now),
         )
         assertTrue("báo cáo đã gửi được đánh dấu sent", Diagnostics.list(app).single().sent)
+    }
+
+    @Test fun failedSendIsNotTreatedAsSentAndIsRetriedNextTime() {
+        // Luna 4: trước đây lowmem bị đánh dấu "đã gửi" ngay khi bắt đầu gửi ⇒ gửi lỗi là mất báo cáo.
+        val report = report("lowmem", "363ea01f")
+        Diagnostics.save(app, report) // như record() đã lưu trước khi gửi
+        val http = httpReturning(503, 200) // lần đầu lỗi, lần sau thành công
+
+        Diagnostics.autoSend(app, http, report, "https://crash.invalid/report", true, true)
+        waitUntil("lần gửi đầu chạy") { requests.get() == 1 }
+        waitUntil("báo cáo còn chưa gửi") { Diagnostics.list(app).single().sent.not() }
+        assertFalse("gửi lỗi thì không được nhớ là đã gửi", Diagnostics.sentWithin(app, "363ea01f", Diagnostics.SEND_DEDUPE_MS, now))
+
+        Diagnostics.autoSend(app, http, report, "https://crash.invalid/report", true, true)
+        waitUntil("lần gửi lại chạy") { requests.get() == 2 }
+        waitUntil("gửi thành công được đánh dấu") { Diagnostics.list(app).single().sent }
+        assertTrue(Diagnostics.sentWithin(app, "363ea01f", Diagnostics.SEND_DEDUPE_MS, now))
     }
 }

@@ -287,11 +287,29 @@ test("V194 ba bao cao lien tiep = 3 lan ghi (truoc day 6), va khong co khoa dem 
   assert.equal([...c.data.keys()].filter((k) => k.startsWith("rl:")).length, 0);
 });
 
-test("V194 chi luu bam IP (trong bo nho), khong luu IP trong khoa hay gia tri KV", async () => {
-  const c = setup();
+test("V194 chi luu bam IP (trong bo nho), khong luu IP trong khoa hay gia tri KV", async () => {  const c = setup();
   assert.equal((await postWithIp(c, fixture)).status, 200);
   const keys = [...c.data.keys()];
   assert.equal(keys.filter((k) => k.startsWith("rl:")).length, 0);
   for (const k of keys) assert.equal(k.includes(IP), false);
   for (const v of c.data.values()) assert.equal(String(v.value).includes(IP), false);
+});
+
+// V194 (Luna 4): chỗ hạn mức phải được giữ TRƯỚC lần `await` ghi KV.
+test("V194 hai request cung IP dong thoi chi mot lot khi han muc = 1", async () => {
+  const c = setup({ RATE_LIMIT_MAX: "1", RATE_LIMIT_WINDOW_SECONDS: "3600" });
+  const both = await Promise.all([postWithIp(c, fixture), postWithIp(c, fixture)]);
+  assert.deepEqual(both.map((r) => r.status).sort(), [200, 429]);
+});
+
+test("V194 ghi KV loi thi nha lai cho han muc cho lan sau", async () => {
+  const c = setup({ RATE_LIMIT_MAX: "1", RATE_LIMIT_WINDOW_SECONDS: "3600" });
+  const kv = c.env.REPORTS;
+  let down = true;
+  c.env.REPORTS = {
+    ...kv,
+    put: async (k, v, o) => { if (down) { down = false; throw new Error("KV down"); } return kv.put(k, v, o); },
+  };
+  await assert.rejects(postWithIp(c, fixture)); // ghi lỗi: request lỗi, KHÔNG được coi là đã dùng hạn mức
+  assert.equal((await postWithIp(c, fixture)).status, 200);
 });
