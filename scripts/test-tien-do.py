@@ -85,7 +85,7 @@ class TienDo(unittest.TestCase):
               {"name": "preview", "status": "completed", "conclusion": "failure"}]
         self.assertEqual(td.ci_trang_thai(ok), "xanh")
         # Thiếu cổng bắt buộc (coverage, n04-tests) thì chưa xanh dù check có mặt đều xanh.
-        can = td.cong_bat_buoc(["scripts/tien-do.py", "docs/a.md"])
+        can = td.cong_bat_buoc(["scripts/check-x.py", "docs/a.md"])
         self.assertEqual(can, {"build", "coverage", "n04-tests"})
         self.assertEqual(td.ci_trang_thai(ok, can), "cho")
         self.assertEqual(td.trang_thai(pr(), cm, td.ci_trang_thai(ok, can))[0], "⏳ Chờ CI (2/2 Đạt)")
@@ -105,6 +105,16 @@ class TienDo(unittest.TestCase):
         for k in ("skipped", "neutral"):
             th = [g(n) for n in app if n != "analyze (java-kotlin)"] + [g("analyze (java-kotlin)", k)]
             self.assertEqual(td.ci_trang_thai(th, app), "cho", k)
+        # Check thông tin đang chạy không làm chậm khi cổng bắt buộc đã xanh.
+        for n in ("preview", "links", "digest"):
+            self.assertEqual(td.ci_trang_thai(du_app + [{"name": n, "status": "in_progress", "conclusion": None}], app), "xanh", n)
+        # PR sửa script V197: job offline là cổng bắt buộc; thiếu hoặc skipped thì chờ.
+        v197 = td.cong_bat_buoc(["scripts/tien-do.py", ".github/workflows/tien-do.yml"])
+        self.assertEqual(v197, {"build", "coverage", "n04-tests", "offline"})
+        co = [g(n) for n in ("build", "coverage", "n04-tests")]
+        self.assertEqual(td.ci_trang_thai(co, v197), "cho")
+        self.assertEqual(td.ci_trang_thai(co + [g("offline", "skipped")], v197), "cho")
+        self.assertEqual(td.ci_trang_thai(co + [g("offline")], v197), "xanh")
         # Check không bắt buộc skipped (vd cap-nhat) không chặn.
         self.assertEqual(td.ci_trang_thai(du_app + [g("cap-nhat", "skipped")], app), "xanh")
         self.assertEqual(td.trang_thai(pr(), cm, td.ci_trang_thai(ok))[0], "✅ Chờ gộp")

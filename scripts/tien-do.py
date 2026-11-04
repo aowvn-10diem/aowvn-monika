@@ -38,6 +38,8 @@ def gon(title):
     return title
 
 
+OFFLINE_PATHS = {"scripts/tien-do.py", "scripts/test-tien-do.py", ".github/workflows/tien-do.yml",
+                 "scripts/crash-issue-bot.py", "scripts/test-crash-issue-bot.py", ".github/workflows/crash-issue-bot.yml"}
 CODEQL_PATHS = ("app/", "cloudflare/", ".github/codeql-config.yml", ".github/workflows/codeql.yml")
 
 
@@ -54,6 +56,8 @@ def cong_bat_buoc(files):
         can.add("n04-tests")
     if any(f.startswith(CODEQL_PATHS) for f in files):
         can |= {"analyze (java-kotlin)", "analyze (javascript-typescript)"}
+    if any(f in OFFLINE_PATHS for f in files):
+        can.add("offline")  # job test offline của tien-do.yml và crash-issue-bot.yml (cùng tên job)
     return can
 
 
@@ -63,7 +67,8 @@ def ci_trang_thai(check_runs, bat_buoc=()):
     - "do": có check thất bại hoặc quá giờ.
     - "cho": chưa có check nào, còn check đang chạy/xếp hàng/bị hủy, hoặc một cổng bắt buộc
       chưa có hay chưa success (skipped, neutral cũng là chưa).
-    - "xanh": mọi check đã xong, không check nào đỏ/hủy, mọi cổng bắt buộc success.
+    - "xanh": mọi check chặn đã xong, không check nào đỏ/hủy, mọi cổng bắt buộc success.
+    Check thông tin (preview, links, digest) đang chạy hay đỏ đều không làm chậm.
     Tính theo danh sách loại trừ để job test mới (vd `offline`) tự được tính.
     """
     if not check_runs and not bat_buoc:
@@ -73,8 +78,6 @@ def ci_trang_thai(check_runs, bat_buoc=()):
         return "do"
     if any(c.get("status") != "completed" or c.get("conclusion") in (None, "cancelled", "action_required")
            for c in chan):
-        return "cho"
-    if any(c.get("status") != "completed" for c in check_runs):
         return "cho"
     xanh = {c.get("name") for c in chan if c.get("conclusion") == "success"}
     if set(bat_buoc) - xanh:
