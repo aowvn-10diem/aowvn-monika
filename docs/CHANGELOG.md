@@ -2,6 +2,25 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.10 (Bản thử — đang chuẩn bị)
+> Đang chuẩn bị bản thử nghiệm.
+
+- **Mới:** Thư viện có trang chi tiết game với dung lượng, nơi lưu tệp và các nút Chơi, Xóa. ([#430](https://github.com/aowvn-10diem/aowvn-monika/pull/430))
+- **Mới:** Trước khi xóa dữ liệu game, app sao lưu thư mục để bạn có thể giữ lại bản dự phòng. ([#430](https://github.com/aowvn-10diem/aowvn-monika/pull/430))
+- **Sửa lỗi:** Phím ảo không còn tự ẩn khi máy chưa kết nối tay cầm thật. ([#450](https://github.com/aowvn-10diem/aowvn-monika/pull/450))
+- **Sửa lỗi:** Khi ẩn phím ảo, nút bật lại phím luôn hiện rõ và ít che màn hình game. ([#450](https://github.com/aowvn-10diem/aowvn-monika/pull/450))
+- **Sửa lỗi:** Game Java nhận đúng các phím số 1, 3, 7, 9 khi bấm. ([#449](https://github.com/aowvn-10diem/aowvn-monika/pull/449))
+- **Sửa lỗi:** Nút menu game Java tránh chồng lên phím điều khiển, ưu tiên ô trống bên trái phím Xuống. ([#449](https://github.com/aowvn-10diem/aowvn-monika/pull/449))
+- **Mới:** Cài đặt NDS chia rõ Màn hình, Bố cục, Hiệu năng; chọn cách xếp hai màn hình dễ hơn. ([#456](https://github.com/aowvn-10diem/aowvn-monika/pull/456))
+- **Mới:** Mục Bản chính thức trong Cài đặt giúp kiểm tra nơi tải Monika và báo bản giả. ([#461](https://github.com/aowvn-10diem/aowvn-monika/pull/461))
+- **Mới:** App cảnh báo rõ khi bản Monika đang cài không phải bản chính thức. ([#454](https://github.com/aowvn-10diem/aowvn-monika/pull/454))
+- **Mới:** Nút ủng hộ mở ngay bảng mã QR và chọn ngân hàng trong Monika. ([#446](https://github.com/aowvn-10diem/aowvn-monika/pull/446))
+- **Sửa lỗi:** Nhập game từ tệp nén an toàn hơn, chặn tệp cố ghi dữ liệu ra ngoài thư mục game. ([#466](https://github.com/aowvn-10diem/aowvn-monika/pull/466))
+- Nội bộ: Cập nhật BouncyCastle 1.85 và bổ sung kiểm tra an toàn khi dựng ứng dụng. ([#470](https://github.com/aowvn-10diem/aowvn-monika/pull/470), [#472](https://github.com/aowvn-10diem/aowvn-monika/pull/472), [#467](https://github.com/aowvn-10diem/aowvn-monika/pull/467))
+- Nội bộ: Gộp báo lỗi trùng trong app; triển khai thay đổi phía dịch vụ V194 [CHƯA KIỂM]. ([#479](https://github.com/aowvn-10diem/aowvn-monika/pull/479))
+- Nội bộ: Dựng thử FCEUmm từ nguồn và thêm tin tổng hợp hằng ngày; chưa đổi lõi người chơi đang dùng. ([#488](https://github.com/aowvn-10diem/aowvn-monika/pull/488), [#477](https://github.com/aowvn-10diem/aowvn-monika/pull/477))
+- Nội bộ: Thay thứ tự nguồn thông tin cập nhật, giữ bản đang dùng nếu nhận dữ liệu không hợp lệ. ([#443](https://github.com/aowvn-10diem/aowvn-monika/pull/443))
+
 ## v0.8.9 (Bản thử)
 <!-- bien-tap: v0.8.9 -->
 > Phát hành ngày 02/11/2026 (UTC), bản thử nghiệm.
