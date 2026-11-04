@@ -22,7 +22,7 @@ jobs:
     if: github.repository == 'aowvn-10diem/aowvn-monika'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Luôn lấy config từ main, kể cả khi workflow_dispatch chọn nhánh khác.
           ref: main
