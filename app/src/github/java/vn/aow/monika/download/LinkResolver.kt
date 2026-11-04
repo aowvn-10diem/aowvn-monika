@@ -27,7 +27,7 @@ object LinkResolver {
             .distinctBy { it.pageUrl }
             .toList()
 
-    fun resolve(url: String, hosts: List<DownloadHost>): DownloadLink? {
+    fun resolve(url: String, hosts: List<DownloadHost>, manual: Boolean = false): DownloadLink? {
         val host = runCatching { URI(url).host }.getOrNull()?.lowercase()?.removePrefix("www.") ?: return null
         for (h in hosts) {
             if (host != h.host && !host.endsWith("." + h.host)) continue
@@ -35,6 +35,9 @@ object LinkResolver {
                 "direct" -> {
                     val match = h.pattern?.let { Regex(it).find(url) } ?: continue
                     val direct = h.directUrl ?: continue
+                    // V193 G2: mặc định không tự tải host chưa duyệt (Pixeldrain) — chỉ trả link
+                    // để UI mở trình duyệt; đường dán link thủ công truyền manual = true sau cảnh báo.
+                    if (!manual && !h.autoDirect) return DownloadLink(h.name, url, null)
                     return DownloadLink(h.name, url, direct.replace("$1", match.groupValues.getOrElse(1) { "" }))
                 }
                 "browser" -> return DownloadLink(h.name, url, null)

@@ -89,10 +89,17 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
     private fun staging(): File = runCatching { File(GameStorage.downloads(context), ".tmp").apply { mkdirs() } }
         .getOrNull()?.takeIf { it.isDirectory && it.canWrite() } ?: File(context.cacheDir, "dl").apply { mkdirs() }
 
-    /** Bắt đầu tải ngay. Gọi từ luồng bất kỳ. */
-    fun start(url: String, userAgent: String?, contentDisposition: String?, mime: String?, referer: String?, meta: GameMeta? = null): DlJob {
+    /** Bắt đầu tải ngay. Gọi từ luồng bất kỳ. [confirmed] = người dùng đã xác nhận cảnh báo ở hộp thoại dán link. */
+    fun start(url: String, userAgent: String?, contentDisposition: String?, mime: String?, referer: String?, meta: GameMeta? = null, confirmed: Boolean = false): DlJob {
         val job = DlJob(ids.getAndIncrement(), url, userAgent, referer, mime, meta)
         job.name = suggestName(url, contentDisposition, mime)
+        // V193 G2: chốt chặn cuối — không có xác nhận thủ công thì Pixeldrain không phát request nào.
+        if (PixeldrainHost.matches(url) && !confirmed) {
+            job.error = "Pixeldrain chỉ tải khi bạn dán link và xác nhận cảnh báo."
+            job.state = DlState.FAILED
+            main.post { jobs.add(job) }
+            return job
+        }
         job.part = File(staging(), "${System.currentTimeMillis()}-${job.id}.part")
         main.post { jobs.add(job); sheetFor = job; ensureService() }
         scope.launch { vn.aow.monika.library.Prefetch.onDownloadStart(context, meta?.labels.orEmpty(), job.name) }

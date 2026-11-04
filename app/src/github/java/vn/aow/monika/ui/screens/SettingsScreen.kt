@@ -443,7 +443,9 @@ fun ExternalAppDetails(app: ExternalApp, installed: Boolean) {
 /** Tải app/plugin: host tải thẳng hoặc link .apk → tải trong app, xong bấm thông báo để cài; còn lại mở trình duyệt. */
 private fun startToolDownload(context: Context, scope: CoroutineScope, url: String) {
     val direct = LinkResolver.resolve(url, AppGraph.config.current.downloadHosts)?.directUrl
-        ?: url.takeIf { it.substringBefore('?').endsWith(".apk", ignoreCase = true) }
+        ?: url.takeIf {
+            !vn.aow.monika.download.PixeldrainHost.matches(it) && it.substringBefore('?').endsWith(".apk", ignoreCase = true)
+        }
     if (direct == null) {
         openInApp(context, url)
         return

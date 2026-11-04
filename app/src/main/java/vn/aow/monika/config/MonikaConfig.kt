@@ -360,6 +360,11 @@ data class DownloadHost(
     val mode: String,
     val pattern: String? = null,
     val directUrl: String? = null,
+    /**
+     * V193 G2: chỉ tự tải thẳng khi host đã được duyệt. Mặc định false — Pixeldrain chỉ tải khi
+     * người dùng chủ động dán link + xác nhận cảnh báo.
+     */
+    val autoDirect: Boolean = false,
 )
 
 /**
