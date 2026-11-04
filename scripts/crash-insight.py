@@ -202,7 +202,7 @@ def render_markdown(groups, scanned):
         "# Bảng chẩn đoán crash (V174)",
         "",
         "Đọc **một lần** `GET /reports` của Worker (tối đa 100 báo cáo mới nhất); không gọi chi tiết từng báo cáo.",
-        "Số dòng nhận được: %d · số nhóm (lõi + loại + chữ ký): %d." % (scanned, len(groups)),
+        "Số dòng nhận được: %d · số nhóm (lõi + loại + chữ ký + thành phần + chứng thư): %d." % (scanned, len(groups)),
         "",
         "| " + " | ".join(COLUMNS) + " |",
         "|" + "|".join(["---"] * len(COLUMNS)) + "|",
@@ -229,7 +229,7 @@ def render_markdown(groups, scanned):
         "- `giả thuyết` suy từ `loại` + `component`, **không phải kết luận** — cần mở báo cáo chi tiết mới xác nhận.",
         "- `màn` lấy từ trường `component` (Worker không có trường màn hình riêng).",
         "- `số lượt` là tổng `count` của các báo cáo cùng nhóm trong cửa sổ đã đọc.",
-        "- `chứng thư` là băm SHA-256 chứng thư ký APK (chỉ hex, không kèm thông tin máy); `—` = app cũ không gửi trường này.",
+        "- `chứng thư` là băm SHA-256 chứng thư ký APK (chỉ hex, không kèm thông tin máy); `—` = app cũ không gửi trường này. Đây là **trường do client gửi lên** — chỉ dùng làm tín hiệu chẩn đoán, **không** phải bằng chứng xác thực (bản fork sửa app có thể gửi giá trị bất kỳ).",
         "- Bảng không chứa tên game, đường dẫn, log hay mã máy.",
     ]
     missing = missing_fields(rows)

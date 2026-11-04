@@ -117,6 +117,18 @@ class Certificate(unittest.TestCase):
     CERT_A = "a1b2c3d4e5f60718" + "a" * 48
     CERT_B = "0011223344556677" + "b" * 48
 
+    def test_group_criteria_line_matches_group_rows(self):
+        # Luna 5: mô tả "số nhóm" phải khớp tiêu chí gộp thật (5 phần, có thành phần và chứng thư).
+        markdown = insight.render_markdown(insight.group_rows([row()]), 1)
+        line = next(l for l in markdown.splitlines() if l.startswith("Số dòng nhận được"))
+        for part in ("lõi", "loại", "chữ ký", "thành phần", "chứng thư"):
+            self.assertIn(part, line)
+        self.assertIn("client gửi lên", markdown)
+
+    def test_different_component_is_a_separate_group(self):
+        groups = insight.group_rows([row(component="op:giai-nen"), row(component="app:chính")])
+        self.assertEqual(2, len(groups))
+
     def cell(self, group, column):
         return dict(zip(insight.COLUMNS, insight.table_rows([group])[0]))[column]
 
