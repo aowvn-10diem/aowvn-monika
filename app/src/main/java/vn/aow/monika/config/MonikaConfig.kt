@@ -10,6 +10,8 @@ import kotlinx.serialization.Serializable
 data class MonikaConfig(
     val configVersion: Int = 0,
     val app: AppInfo = AppInfo(),
+    /** Nơi tải, hướng dẫn kiểm và kênh báo bản giả; bản Play lọc dữ liệu phân phối ngoài. */
+    val official: OfficialConfig = OfficialConfig(),
     val feed: FeedConfig = FeedConfig(),
     val systems: List<SystemDef> = emptyList(),
     val engines: List<EngineRule> = emptyList(),

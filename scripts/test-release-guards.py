@@ -10,7 +10,28 @@ import textwrap
 import unittest
 
 WORKFLOW = Path(__file__).resolve().parents[1] / '.github/workflows/release.yml'
-TEXT = WORKFLOW.read_text()
+TEXT = WORKFLOW.read_text(encoding='utf-8')
+
+def job_block(name):
+    """Thân một job trong release.yml (từ `  <tên>:` tới job kế tiếp)."""
+    marker = f'\n  {name}:\n'
+    start = TEXT.index(marker) + len(marker)
+    following = re.search(r'\n  [A-Za-z0-9_-]+:\n', TEXT[start:])
+    return TEXT[start:start + following.start()] if following else TEXT[start:]
+
+def job_if(name):
+    """Giá trị `if:` của job, đã gộp khối `>-` nhiều dòng và chuẩn hoá khoảng trắng."""
+    lines = job_block(name).splitlines()
+    index = next(i for i, line in enumerate(lines) if re.match(r'^    if:', line))
+    indent = len(lines[index]) - len(lines[index].lstrip())
+    parts = [lines[index].split('if:', 1)[1]]
+    for line in lines[index + 1:]:
+        if not line.strip():
+            continue
+        if len(line) - len(line.lstrip()) <= indent:
+            break
+        parts.append(line)
+    return ' '.join(' '.join(parts).replace('>-', ' ').split())
 
 def block(step_id):
     pattern = rf'^        id: {step_id}\n.*?^        run: \|\n(.*?)(?=^      - |\Z)'
@@ -31,10 +52,11 @@ class Guards(unittest.TestCase):
 
     def run_guard(self, step):
         return subprocess.run(['bash', '-c', block(step)], cwd=self.cwd, env=self.env,
-                              text=True, capture_output=True)
+                              text=True, encoding='utf-8', capture_output=True)
 
     def git(self, *args):
-        return subprocess.run(['git', *args], cwd=self.cwd, text=True, check=True, capture_output=True)
+        return subprocess.run(['git', *args], cwd=self.cwd, text=True, encoding='utf-8',
+                              check=True, capture_output=True)
 
     def repo(self):
         self.git('init'); self.git('config', 'user.name', 'Fixture'); self.git('config', 'user.email', 'fixture@example.test')
@@ -104,10 +126,16 @@ class Guards(unittest.TestCase):
     def test_notes_contain_both_real_file_hashes(self):
         self.signer('Signer #1 certificate DN: CN=Fixture\nSigner #1 certificate SHA-256 digest: fake')
         self.assertEqual(self.run_guard('apk_guard').returncode, 0)
-        notes = (self.cwd / 'release-notes-v1.2.3.md').read_text()
+        notes = (self.cwd / 'release-notes-v1.2.3.md').read_text(encoding='utf-8')
+        # `sha256sum` của Git for Windows in dấu `*` (chế độ nhị phân) ở vị trí dấu cách thứ nhất;
+        # chuẩn hoá đúng ký tự đó rồi vẫn so khớp nguyên cặp "<sha256>  <tên tệp>".
+        normalized = '\n'.join(
+            line[:65] + ' ' + line[66:]
+            if len(line) > 66 and line[64] == ' ' and line[65] == '*' else line
+            for line in notes.splitlines())
         for name in ('AowVN-Monika-v1.2.3.apk', 'mapping-v1.2.3.txt'):
             digest = hashlib.sha256((self.cwd / name).read_bytes()).hexdigest()
-            self.assertIn(f'{digest}  {name}', notes)
+            self.assertIn(f'{digest}  {name}', normalized)
 
     def test_workflow_checks_tag_and_guards_before_publish(self):
         self.assertIn('ref: refs/tags/${{ needs.preflight.outputs.tag }}', TEXT)
@@ -138,8 +166,17 @@ class Guards(unittest.TestCase):
         self.assertIn('permissions: {contents: read}',dry)
         for token in ['softprops/action-gh-release','actions/upload-artifact','pixeldrain','gh release','git push']:
             self.assertNotIn(token,dry)
-        self.assertIn("if: github.event_name != 'workflow_dispatch' || inputs.dry_run != true",TEXT)
-        self.assertIn("if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true",dry)
+        # Kiểm từng mảnh của `if:` (đã chuẩn hoá), không so khớp cả dòng:
+        # job phát hành phải giữ điều kiện gốc VÀ có guard repo.
+        create_if = job_if('create_tag')
+        self.assertIn("github.event_name != 'workflow_dispatch' || inputs.dry_run != true", create_if)
+        self.assertIn("github.repository == 'aowvn-10diem/aowvn-monika'", create_if)
+        dry_if = job_if('signing_dry_run')
+        self.assertIn("github.repository == 'aowvn-10diem/aowvn-monika'", dry_if)
+        self.assertIn("github.event_name == 'workflow_dispatch'", dry_if)
+        self.assertIn("inputs.dry_run == true", dry_if)
+        # Vẫn phải là VÀ: guard không được nối bằng OR làm job chạy ngoài điều kiện gốc.
+        self.assertNotIn('||', dry_if)
         self.assertIn('python3 scripts/verify-apk-cert.py',dry)
         self.assertLess(dry.index('id: dry_guard'),dry.index('secrets.MONIKA_KEYSTORE_BASE64'))
 

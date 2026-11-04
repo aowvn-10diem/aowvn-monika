@@ -12,6 +12,7 @@ def for_play(source):
         if key.startswith('_'):
             cfg.pop(key)
     cfg['app'] = {}
+    cfg.pop('official', None)
     account = cfg.get('account', {})
     cfg['account'] = {k: v for k, v in account.items() if k in ('enabled', 'apiKey', 'databaseUrl', 'loginUrl')}
     cfg['downloadHosts'] = []
