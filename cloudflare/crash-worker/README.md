@@ -16,7 +16,7 @@ Bộ đếm hạn mức (`RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_SECONDS`) nằm t
 
 Cơ chế **đếm dùng chung** giữa các isolate/colo (KV hoặc Durable Object) **được để dành cho V153/V195**, không làm trong V194: mọi cách đếm dùng chung đều tốn thêm lượt ghi/đọc KV, đúng thứ V194 phải giảm.
 
-## Chặn cứng khi bị spam: WAF rate limiting cho `POST /reports` (V194, Luna 5)
+## Chặn cứng khi bị spam: WAF rate limiting cho `POST /report` (V194, Luna 5)
 Bộ đếm trong Worker chỉ là chặn mềm (mục trên). Khi bị spam thật, bật thêm **một luật Cloudflare WAF Rate Limiting** — lớp chặn cứng ở biên, **không cần secret mới** và không tốn lượt KV nào (request bị chặn không vào Worker):
 1. Dashboard Cloudflare → chọn zone `aow.vn` → **Security → WAF → Rate limiting rules → Create rule**.
 2. **If incoming requests match:** `Field = URI Path`, `Operator = equals`, `Value = /report`; thêm `AND Method = POST`. (Đường nhận báo cáo là `POST /report`; `GET /reports` của quản trị **không** khớp luật này.)
