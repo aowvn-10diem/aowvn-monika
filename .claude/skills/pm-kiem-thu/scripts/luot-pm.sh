@@ -30,6 +30,9 @@ for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user
            gh api "repos/$R/issues/$p/comments?per_page=100" --jq ".[]|select(.body|test(\"${sha:0:7}\"))|[.created_at,(.body|gsub(\"\\n\";\" \"))]|@tsv"; } | sort)
   verdicts=$(echo "$raw" | grep -oE 'Kết luận:?\**:? *(Đạt|Cần sửa|Cần PM xem)' | sed -E 's/.*(Đạt|Cần sửa|Cần PM xem)/\1/')
   last=$(echo "$verdicts" | tail -1)
+  # Kết luận mới nhất của TỪNG người duyệt (04/11): còn ai Cần sửa trên đúng head thì không gộp dù người sau Đạt.
+  conlai=$(echo "$raw" | grep -E 'Kết luận:?\**:? *(Đạt|Cần sửa|Cần PM xem)' | cut -f2- | sed -E 's/^ *(\[Duyệt DeepSeek|Luna [0-9A-Za-z]+|\[[^]]+\]|.{0,24}).*Kết luận:?\**:? *(Đạt|Cần sửa|Cần PM xem).*/\1\t\2/' | awk -F'\t' '{v[$1]=$2} END{for(k in v) if(v[k]!="Đạt") print k"="v[k]}' | paste -sd, -)
+  [ -n "$conlai" ] && [ "$last" = "Đạt" ] && last="Cần sửa"
   files=$(gh api "repos/$R/pulls/$p/files?per_page=100" --jq '.[].filename')
   need=1; echo "$files" | grep -qvE '^(docs/|.*\.md$)' && need=2   # app/CI cần Luna 3 + Luna Ultra
   # Đếm Đạt theo NGƯỜI duyệt (Luna 3/4/5/Ultra, Duyệt DeepSeek…): một người đăng 2 lần trên cùng head chỉ tính 1.
