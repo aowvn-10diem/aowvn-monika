@@ -38,16 +38,32 @@ def gon(title):
     return title
 
 
-def ci_do(check_runs):
-    """Đỏ khi bất kỳ check nào thất bại/quá giờ, trừ vài check chỉ để xem (preview, links, digest).
+def ci_trang_thai(check_runs):
+    """Trả "do", "cho" hoặc "xanh" cho các check trên head (bỏ qua preview, links, digest).
 
-    Tính theo danh sách loại trừ để job test mới (vd `offline`) tự được tính, không phải nhớ thêm tên.
+    - "do": có check thất bại hoặc quá giờ.
+    - "cho": chưa có check nào, còn check đang chạy/xếp hàng, hoặc bị hủy (chưa chứng minh xanh).
+    - "xanh": mọi check đã xong, không check nào đỏ/hủy.
+    Tính theo danh sách loại trừ để job test mới (vd `offline`) tự được tính.
     """
-    return any(c.get("conclusion") in ("failure", "timed_out") and c.get("name") not in KHONG_CHAN
-               for c in check_runs)
+    if not check_runs:
+        return "cho"
+    chan = [c for c in check_runs if c.get("name") not in KHONG_CHAN]
+    if any(c.get("conclusion") in ("failure", "timed_out") for c in chan):
+        return "do"
+    if any(c.get("status") != "completed" or c.get("conclusion") in (None, "cancelled", "action_required")
+           for c in chan):
+        return "cho"
+    if any(c.get("status") != "completed" for c in check_runs):
+        return "cho"
+    return "xanh"
 
 
-def trang_thai(pr, comments, checks_red, allowed=("aowvn-10diem",)):
+def ci_do(check_runs):
+    return ci_trang_thai(check_runs) == "do"
+
+
+def trang_thai(pr, comments, ci, allowed=("aowvn-10diem",)):
     """Trả (nhãn, số Đạt) theo kết luận mới nhất của từng người duyệt trên đúng head.
 
     Chỉ tính comment do tài khoản được phép viết (các agent duyệt đăng bằng tài khoản chủ repo).
@@ -69,8 +85,10 @@ def trang_thai(pr, comments, checks_red, allowed=("aowvn-10diem",)):
     dat = sum(1 for x in moi.values() if x == "Đạt")
     if any(x != "Đạt" for x in moi.values()):
         return "🔧 Cần sửa", dat
-    if checks_red:
+    if ci == "do":
         return "🔴 CI đỏ", dat
+    if ci != "xanh":
+        return f"⏳ Chờ CI ({dat}/2 Đạt)", dat
     luna = any(k.startswith("Luna") and x == "Đạt" for k, x in moi.items())
     if dat >= 2 and luna:
         return "✅ Chờ gộp", dat
@@ -132,7 +150,7 @@ def thu(api, now, allowed):
     for p in sorted(prs, key=lambda p: p["number"]):
         comments = api.call(f"/issues/{p['number']}/comments?per_page=100")
         runs = api.call(f"/commits/{p['head']['sha']}/check-runs?per_page=100").get("check_runs", [])
-        tt, _ = trang_thai(p, comments, ci_do(runs), allowed)
+        tt, _ = trang_thai(p, comments, ci_trang_thai(runs), allowed)
         rows.append({"n": p["number"], "t": gon(p["title"]).replace("|", "/"), "doi": doi(p["head"]["ref"]), "tt": tt})
     since = now - dt.timedelta(days=7)
     closed = api.call("/pulls?state=closed&sort=updated&direction=desc&per_page=100")

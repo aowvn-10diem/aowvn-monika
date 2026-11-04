@@ -38,32 +38,32 @@ class TienDo(unittest.TestCase):
     def test_hai_dat_dung_head(self):
         cm = [c("Luna 3 tiền duyệt (commit abcdef1)\n\nKết luận: Đạt"),
               c("[Duyệt DeepSeek → PR] head abcdef1\nKết luận: Đạt")]
-        self.assertEqual(td.trang_thai(pr(), cm, False), ("✅ Chờ gộp", 2))
+        self.assertEqual(td.trang_thai(pr(), cm, "xanh"), ("✅ Chờ gộp", 2))
 
     def test_hai_dat_khong_luna(self):
         cm = [c("[Duyệt DeepSeek → PR] head abcdef1\nKết luận: Đạt"),
               c("[Sol 2 → PR] (commit abcdef1)\nKết luận: Đạt")]
-        self.assertEqual(td.trang_thai(pr(), cm, False)[0], "👀 Chờ Luna duyệt")
+        self.assertEqual(td.trang_thai(pr(), cm, "xanh")[0], "👀 Chờ Luna duyệt")
 
     def test_head_cu_khong_tinh(self):
         cm = [c("Luna 3 tiền duyệt (commit 1111111)\nKết luận: Đạt"),
               c("Luna 4 tiền duyệt (commit abcdef1)\nKết luận: Đạt")]
-        self.assertEqual(td.trang_thai(pr(), cm, False), ("👀 Chờ duyệt (1/2 Đạt)", 1))
+        self.assertEqual(td.trang_thai(pr(), cm, "xanh"), ("👀 Chờ duyệt (1/2 Đạt)", 1))
 
     def test_ket_luan_moi_nhat_cua_moi_nguoi(self):
         cm = [c("Luna 5 tiền duyệt (commit abcdef1)\nKết luận: Cần sửa: x"),
               c("Luna 5 tiền duyệt (commit abcdef1)\nKết luận: Đạt")]
-        self.assertEqual(td.trang_thai(pr(), cm, False)[0], "👀 Chờ duyệt (1/2 Đạt)")
+        self.assertEqual(td.trang_thai(pr(), cm, "xanh")[0], "👀 Chờ duyệt (1/2 Đạt)")
 
     def test_can_sua_chan(self):
         cm = [c("Luna 3 tiền duyệt (commit abcdef1)\nKết luận: Đạt"),
               c("Luna 4 tiền duyệt (commit abcdef1)\nKết luận: Cần sửa: a.kt:1")]
-        self.assertEqual(td.trang_thai(pr(), cm, False)[0], "🔧 Cần sửa")
+        self.assertEqual(td.trang_thai(pr(), cm, "xanh")[0], "🔧 Cần sửa")
 
     def test_nguoi_ngoai_khong_tinh(self):
         cm = [c("Luna 3 tiền duyệt (commit abcdef1)\nKết luận: Đạt", "ke-gia"),
               c("Luna 4 tiền duyệt (commit abcdef1)\nKết luận: Đạt", "ke-gia")]
-        self.assertEqual(td.trang_thai(pr(), cm, False), ("👀 Chờ duyệt (0/2 Đạt)", 0))
+        self.assertEqual(td.trang_thai(pr(), cm, "xanh"), ("👀 Chờ duyệt (0/2 Đạt)", 0))
 
     def test_ci_do_tinh_du_check_bat_buoc(self):
         for name in ("build", "coverage", "n04-tests", "CodeQL", "analyze (javascript-typescript)", "offline"):
@@ -73,9 +73,22 @@ class TienDo(unittest.TestCase):
             self.assertFalse(td.ci_do([{"name": name, "conclusion": "failure"}]), name)
         self.assertFalse(td.ci_do([{"name": "build", "conclusion": "success"}]))
 
+    def test_ci_chua_xanh_khong_cho_gop(self):
+        cm = [c("Luna 3 tiền duyệt (commit abcdef1)\nKết luận: Đạt"),
+              c("Luna 4 tiền duyệt (commit abcdef1)\nKết luận: Đạt")]
+        for ci in ([], [{"name": "build", "status": "in_progress", "conclusion": None}],
+                   [{"name": "build", "status": "queued", "conclusion": None}],
+                   [{"name": "build", "status": "completed", "conclusion": "cancelled"}]):
+            self.assertEqual(td.ci_trang_thai(ci), "cho", ci)
+            self.assertEqual(td.trang_thai(pr(), cm, td.ci_trang_thai(ci))[0], "⏳ Chờ CI (2/2 Đạt)", ci)
+        ok = [{"name": "build", "status": "completed", "conclusion": "success"},
+              {"name": "preview", "status": "completed", "conclusion": "failure"}]
+        self.assertEqual(td.ci_trang_thai(ok), "xanh")
+        self.assertEqual(td.trang_thai(pr(), cm, td.ci_trang_thai(ok))[0], "✅ Chờ gộp")
+
     def test_nhap_va_ci_do(self):
-        self.assertEqual(td.trang_thai(pr(True), [], False)[0], "📝 Nháp")
-        self.assertEqual(td.trang_thai(pr(), [], True)[0], "🔴 CI đỏ")
+        self.assertEqual(td.trang_thai(pr(True), [], "xanh")[0], "📝 Nháp")
+        self.assertEqual(td.trang_thai(pr(), [], "do")[0], "🔴 CI đỏ")
 
     def test_dung_than(self):
         now = dt.datetime(2026, 11, 4, 3, 0, tzinfo=dt.timezone.utc)
