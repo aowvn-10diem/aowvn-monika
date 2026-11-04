@@ -43,7 +43,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import vn.aow.monika.R
 import vn.aow.monika.ui.screens.DownloadsScreen
+import vn.aow.monika.ui.screens.GameDetailRoute
 import vn.aow.monika.ui.screens.GamesScreen
+import vn.aow.monika.ui.screens.gameRoute
 import vn.aow.monika.ui.screens.HomeScreen
 import vn.aow.monika.ui.screens.HubScreen
 import vn.aow.monika.ui.screens.LibraryScreen
@@ -94,6 +96,11 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIntent(intent: Intent?) {
         intent?.getStringExtra(EXTRA_POST_ID)?.let { deepLink.value = "post/$it" }
+        // Trang chi tiết game (V139): mở từ ô game hoặc menu ⋯ trong Thư viện.
+        intent?.getStringExtra(EXTRA_GAME_KEY)?.takeIf { it.isNotBlank() }?.let {
+            deepLink.value = gameRoute(it)
+            intent.removeExtra(EXTRA_GAME_KEY) // xoay màn hình không mở lại lần nữa
+        }
         if (intent?.getBooleanExtra(EXTRA_OPEN_LIBRARY, false) == true) deepLink.value = Routes.EMULATOR
         // "Mở bằng Aow Monika": đưa file vào Thư viện (nhận diện hệ máy), không chạy thẳng.
         val uris = when (intent?.action) {
@@ -124,6 +131,8 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_POST_ID = "post_id"
         const val EXTRA_OPEN_LIBRARY = "open_library"
+        /** Khóa game (Game.key) để mở trang chi tiết. */
+        const val EXTRA_GAME_KEY = "game_key"
     }
 }
 
@@ -136,6 +145,8 @@ object Routes {
     const val SETTINGS = "settings"
     const val ACHIEVEMENTS = "achievements"
     const val POST = "post/{id}"
+    /** Trang chi tiết 1 game (V139). */
+    const val GAME = "game/{key}"
     val tabs = listOf(HOME, GAMES, SEARCH, EMULATOR, DOWNLOADS)
 }
 
@@ -220,6 +231,9 @@ private fun MonikaNav(deepLink: String?, onDeepLinkHandled: () -> Unit) {
             composable(Routes.SETTINGS) { SettingsScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.ACHIEVEMENTS) { vn.aow.monika.achievements.AchievementsScreen(onBack = { nav.popBackStack() }) }
             composable(Routes.POST) { entry -> PostScreen(entry.arguments?.getString("id").orEmpty(), onGo = go) { nav.popBackStack() } }
+            composable(Routes.GAME) { entry ->
+                GameDetailRoute(entry.arguments?.getString("key").orEmpty()) { nav.popBackStack() }
+            }
         }
         // Menu nổi: chỉ hiện ở 5 tab chính; đọc bài / cài đặt thì trượt xuống ẩn đi.
         FloatingDock(
