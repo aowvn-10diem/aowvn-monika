@@ -168,7 +168,12 @@ public class AppInstaller {
 			byte lenJadFileName = dis.readByte();
 			byte[] jadFileName = new byte[lenJadFileName];
 			dis.readFully(jadFileName, 0, lenJadFileName);
-			String strJadFileName = new String(jadFileName);
+			// Tên trong .kjx có thể chứa "/" hoặc "..": chỉ giữ tên cuối, không ghi ra ngoài cacheDir.
+			String rawName = new String(jadFileName).replace('\\', '/');
+			String strJadFileName = rawName.substring(rawName.lastIndexOf('/') + 1).replace("\u0000", "");
+			if (strJadFileName.length() <= 4) {
+				throw new ConverterException("Invalid jad file name in kjx");
+			}
 
 			int bufSize = 2048;
 			byte[] buf = new byte[bufSize];

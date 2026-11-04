@@ -1,6 +1,7 @@
 package vn.aow.monika.apkinstall
 
 import com.reandroid.arsc.chunk.xml.AndroidManifestBlock
+import vn.aow.monika.library.SafeZipPath
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -87,7 +88,7 @@ class ApkInspector(
         return arr.mapNotNull { (it as? JsonObject)?.get("file")?.jsonPrimitive?.content }.toSet().ifEmpty { null }
     }
 
-    /** Giải nén các *.apk trong zip ra [work] (chống zip-slip: chỉ dùng tên file cuối). */
+    /** Giải nén các *.apk trong zip ra [work] (chống zip-slip: bỏ mục có đường dẫn thoát ra ngoài). */
     private fun extractApks(zip: ZipFile, work: File, only: Set<String>? = null): List<ApkPart> {
         var entries = zip.entries().asSequence().filter { !it.isDirectory && it.name.endsWith(".apk", true) }.toList()
         if (only != null) entries = entries.filter { it.name in only || it.name.substringAfterLast('/') in only.map { n -> n.substringAfterLast('/') } }
@@ -100,10 +101,13 @@ class ApkInspector(
             else -> entries
         }
         val used = HashSet<String>()
-        return chosen.map { e ->
-            var name = e.name.substringAfterLast('/')
+        return chosen.mapNotNull { e ->
+            // Tên mục có "..", đường dẫn tuyệt đối hoặc NUL → bỏ hẳn mục này, không ghi ra đĩa.
+            if (!SafeZipPath.isSafeName(e.name)) return@mapNotNull null
+            var name = e.name.replace('\\', '/').substringAfterLast('/')
+            if (name.isEmpty() || name == "." || name == "..") return@mapNotNull null
             if (!used.add(name)) name = "${used.size}_$name"
-            val out = File(work, name)
+            val out = SafeZipPath.resolve(work, name) ?: return@mapNotNull null
             zip.getInputStream(e).use { i -> out.outputStream().use { o -> i.copyTo(o) } }
             ApkPart(out, splitNameOf(out))
         }

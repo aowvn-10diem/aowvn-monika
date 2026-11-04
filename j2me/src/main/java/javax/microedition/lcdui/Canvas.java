@@ -462,8 +462,8 @@ public abstract class Canvas extends Displayable {
 		}
 
 		if (skinLayer != null && skinLayer.hasDisplayFrame()) {
-			onX += virtualScreen.left;
-			onY += virtualScreen.top;
+			onX += (int) virtualScreen.left;
+			onY += (int) virtualScreen.top;
 		} else {
 			onX += settings.screenPadding;
 			onY += settings.screenPadding;

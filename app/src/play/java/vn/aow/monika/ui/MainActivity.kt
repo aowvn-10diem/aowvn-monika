@@ -21,6 +21,8 @@ import vn.aow.monika.AppGraph
 import vn.aow.monika.feed.Post
 import vn.aow.monika.ui.screens.GameDetailRoute
 import vn.aow.monika.ui.screens.LibraryScreen
+import vn.aow.monika.ui.screens.OFFICIAL_BUILD_WARNING
+import vn.aow.monika.ui.screens.OfficialBuildWarning
 import vn.aow.monika.ui.screens.SettingsScreen
 import vn.aow.monika.ui.theme.*
 
@@ -41,6 +43,8 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(pendingGame) {
                     pendingGame?.let { gameKey = it; page = "game"; pendingGame = null }
                 }
+                // [A78] V154: chứng thư Play App Signing khác bản GitHub; catalog Play để trống = bỏ kiểm.
+                val config by AppGraph.config.config.collectAsState()
                 BackHandler(page != "library") {
                     if (page == "game") gameKey = null
                     page = "library"
@@ -48,6 +52,8 @@ class MainActivity : ComponentActivity() {
                 Column(Modifier.fillMaxSize()) {
                     // Trang game có thanh tiêu đề riêng (nút Quay lại) nên không lặp tiêu đề app.
                     if (page != "game") MonikaHeader("Aow Monika", right = { SoftPillButton("Bài viết", { page = "articles" }) })
+                    // Bản Play mở vào Thư viện (trang chủ của flavor này): cảnh báo đỏ, không tắt được.
+                    if (page == "library") OfficialBuildWarning(config.security.officialCertSha256, OFFICIAL_BUILD_WARNING)
                     Box(Modifier.weight(1f)) {
                         when (page) {
                             "settings" -> SettingsScreen(onBack = { page = "library" })
