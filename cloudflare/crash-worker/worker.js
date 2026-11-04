@@ -189,8 +189,11 @@ export default {
       // V186: KV list có thể lỗi tạm thời → 503 JSON có mã lỗi (thử lại được), không còn 500 trắng.
       // V190 (Luna Ultra): từng khoá trong `keys` cũng phải hợp lệ — `keys:[null]` trước đây lọt qua
       // `Array.isArray` rồi nổ ở bước ghép key. Nay lọc khoá hỏng; danh sách toàn khoá hỏng → 400 có mã lỗi.
+      // V190b: KHÔNG lọc âm thầm — trang có cả khoá hỏng lẫn hợp lệ thì vẫn trả dữ liệu hợp lệ kèm
+      // `meta.skippedInvalid` + 1 dòng log cho cả lượt (không log từng khoá, không lộ tên khoá).
       const all = [];
       let cursor;
+      let skippedInvalid = 0;
       try {
         do {
           const page = await env.REPORTS.list({ prefix: "r:", cursor, limit: LIST_PAGE });
@@ -198,20 +201,23 @@ export default {
           if (!page.list_complete && !page.cursor) return json({ ok: false, error: "bad_listing" }, 400);
           const keys = page.keys.filter((k) => k && typeof k === "object" && typeof k.name === "string" && k.name.length > 0);
           if (page.keys.length > 0 && keys.length === 0) return json({ ok: false, error: "malformed_keys" }, 400);
+          skippedInvalid += page.keys.length - keys.length;
           all.push(...keys);
           cursor = page.list_complete ? undefined : page.cursor;
         } while (cursor && all.length < LIST_MAX);
       } catch {
         return json({ ok: false, error: "kv_unavailable" }, 503);
       }
+      const meta = { skippedInvalid };
+      if (skippedInvalid > 0) console.warn(`[V190] /reports bỏ qua ${skippedInvalid} khoá KV hỏng (không đúng dạng {name: string})`);
       // metadata sai kiểu (chuỗi/số/mảng) không được làm sập /stats hay /reports.
       const metaOf = (k) => (k.metadata && typeof k.metadata === "object" && !Array.isArray(k.metadata) ? k.metadata : {});
       if (url.pathname === "/stats") {
         const by = {};
         for (const k of all) { const m = metaOf(k); const key = `${m.c || "?"} | ${m.k || "?"} | ${m.st || "?"}`; by[key] = (by[key] || 0) + 1; }
-        return json({ total: all.length, byCoreKindStage: Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ k, n })) });
+        return json({ total: all.length, byCoreKindStage: Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ k, n })), meta });
       }
-      return json({ total: all.length, reports: all.reverse().slice(0, 100).map((k) => ({ id: k.name, ...metaOf(k) })) });
+      return json({ total: all.length, reports: all.reverse().slice(0, 100).map((k) => ({ id: k.name, ...metaOf(k) })), meta });
     }
     return json({ name: "aowvn-monika-crash", ok: true });
   },

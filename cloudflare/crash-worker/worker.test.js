@@ -320,8 +320,48 @@ test("V190 keys co phan tu hong (null/rong/so/khong co name) -> 400, khong 500",
   }
 });
 
-test("V190 khoa hop le van 200, metadata sai kieu khong lam sap /reports hay /stats", async () => {
+test("V190b trang co ca khoa hop le lan khoa hong: van 200, bao so khoa bi bo va log mot lan", async () => {
   const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys: [
+    { name: "r:1700000000000:aaaaaaaa", metadata: { k: "anr", c: "unknown" } },
+    null,
+    { name: "" },
+    123,
+    { name: "r:1700000001000:bbbbbbbb", metadata: { k: "lowmem", c: "unknown" } },
+  ] }) };
+  const warnings = [];
+  const realWarn = console.warn;
+  console.warn = (line) => warnings.push(String(line));
+  try {
+    for (const path of ["/reports", "/stats"]) {
+      const body = await (await c.read(path)).json();
+      assert.equal(body.total, 2, path);                 // vẫn trả dữ liệu hợp lệ
+      assert.deepEqual(body.meta, { skippedInvalid: 3 }, path); // báo rõ số khoá bị bỏ
+    }
+  } finally { console.warn = realWarn; }
+  assert.equal(warnings.length, 2, "mỗi lượt đọc log đúng 1 lần");
+  for (const line of warnings) {
+    assert.match(line, /3 khoá KV hỏng/);
+    assert.equal(line.includes("r:1700000000000"), false, "không log tên khoá");
+  }
+});
+
+test("V190b khong co khoa hong thi meta.skippedInvalid = 0 va khong log", async () => {
+  const c = setup();
+  await c.post(fixture);
+  const warnings = [];
+  const realWarn = console.warn;
+  console.warn = (line) => warnings.push(String(line));
+  try {
+    const body = await (await c.read("/reports")).json();
+    assert.equal(body.total, 1);
+    assert.deepEqual(body.meta, { skippedInvalid: 0 });
+    assert.equal((await (await c.read("/stats")).json()).meta.skippedInvalid, 0);
+  } finally { console.warn = realWarn; }
+  assert.equal(warnings.length, 0);
+});
+
+test("V190 khoa hop le van 200, metadata sai kieu khong lam sap /reports hay /stats", async () => {  const c = setup();
   c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys: [
     { name: "r:1700000000000:aaaaaaaa", metadata: { k: "anr", c: "unknown", a: "0.8.8 (128)" } },
     { name: "r:1700000001000:bbbbbbbb", metadata: "hong" },
