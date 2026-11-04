@@ -38,7 +38,17 @@ def gon(title):
     return title
 
 
-def ci_trang_thai(check_runs):
+def cong_bat_buoc(files):
+    """Các check bắt buộc phải có trên head, theo tệp PR đổi (khớp paths của build/coverage/script-tests)."""
+    can = set()
+    if any(not (f.startswith("docs/") or f.endswith(".md")) for f in files):
+        can |= {"build", "coverage"}
+    if any(f.startswith("scripts/") or f == ".github/workflows/script-tests.yml" for f in files):
+        can.add("n04-tests")
+    return can
+
+
+def ci_trang_thai(check_runs, bat_buoc=()):
     """Trả "do", "cho" hoặc "xanh" cho các check trên head (bỏ qua preview, links, digest).
 
     - "do": có check thất bại hoặc quá giờ.
@@ -46,7 +56,7 @@ def ci_trang_thai(check_runs):
     - "xanh": mọi check đã xong, không check nào đỏ/hủy.
     Tính theo danh sách loại trừ để job test mới (vd `offline`) tự được tính.
     """
-    if not check_runs:
+    if not check_runs and not bat_buoc:
         return "cho"
     chan = [c for c in check_runs if c.get("name") not in KHONG_CHAN]
     if any(c.get("conclusion") in ("failure", "timed_out") for c in chan):
@@ -56,6 +66,8 @@ def ci_trang_thai(check_runs):
         return "cho"
     if any(c.get("status") != "completed" for c in check_runs):
         return "cho"
+    if set(bat_buoc) - {c.get("name") for c in chan}:
+        return "cho"  # thiếu cổng bắt buộc theo phạm vi PR
     return "xanh"
 
 
@@ -70,6 +82,8 @@ def trang_thai(pr, comments, ci, allowed=("aowvn-10diem",)):
     """
     if pr.get("draft"):
         return "📝 Nháp", 0
+    if pr.get("mergeable_state") == "dirty":
+        return "⚠️ Xung đột với main", 0
     head = pr["head"]["sha"]
     moi = {}
     for c in comments:
@@ -150,7 +164,9 @@ def thu(api, now, allowed):
     for p in sorted(prs, key=lambda p: p["number"]):
         comments = api.call(f"/issues/{p['number']}/comments?per_page=100")
         runs = api.call(f"/commits/{p['head']['sha']}/check-runs?per_page=100").get("check_runs", [])
-        tt, _ = trang_thai(p, comments, ci_trang_thai(runs), allowed)
+        p = api.call(f"/pulls/{p['number']}")  # danh sách không có mergeable_state
+        files = [f["filename"] for f in api.call(f"/pulls/{p['number']}/files?per_page=100")]
+        tt, _ = trang_thai(p, comments, ci_trang_thai(runs, cong_bat_buoc(files)), allowed)
         rows.append({"n": p["number"], "t": gon(p["title"]).replace("|", "/"), "doi": doi(p["head"]["ref"]), "tt": tt})
     since = now - dt.timedelta(days=7)
     closed = api.call("/pulls?state=closed&sort=updated&direction=desc&per_page=100")

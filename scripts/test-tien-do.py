@@ -84,7 +84,22 @@ class TienDo(unittest.TestCase):
         ok = [{"name": "build", "status": "completed", "conclusion": "success"},
               {"name": "preview", "status": "completed", "conclusion": "failure"}]
         self.assertEqual(td.ci_trang_thai(ok), "xanh")
+        # Thiếu cổng bắt buộc (coverage, n04-tests) thì chưa xanh dù check có mặt đều xanh.
+        can = td.cong_bat_buoc(["scripts/tien-do.py", "docs/a.md"])
+        self.assertEqual(can, {"build", "coverage", "n04-tests"})
+        self.assertEqual(td.ci_trang_thai(ok, can), "cho")
+        self.assertEqual(td.trang_thai(pr(), cm, td.ci_trang_thai(ok, can))[0], "⏳ Chờ CI (2/2 Đạt)")
+        du = ok + [{"name": n, "status": "completed", "conclusion": "success"} for n in ("coverage", "n04-tests")]
+        self.assertEqual(td.ci_trang_thai(du, can), "xanh")
+        # PR chỉ tài liệu: không cổng bắt buộc (V11); chưa có check nào thì vẫn chờ.
+        self.assertEqual(td.cong_bat_buoc(["docs/x.md", "README.md"]), set())
+        self.assertEqual(td.ci_trang_thai([], set()), "cho")
+        self.assertEqual(td.cong_bat_buoc(["app/src/main/A.kt"]), {"build", "coverage"})
         self.assertEqual(td.trang_thai(pr(), cm, td.ci_trang_thai(ok))[0], "✅ Chờ gộp")
+
+    def test_xung_dot(self):
+        p = pr(); p["mergeable_state"] = "dirty"
+        self.assertEqual(td.trang_thai(p, [], "xanh")[0], "⚠️ Xung đột với main")
 
     def test_nhap_va_ci_do(self):
         self.assertEqual(td.trang_thai(pr(True), [], "xanh")[0], "📝 Nháp")
