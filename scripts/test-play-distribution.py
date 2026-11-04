@@ -80,6 +80,18 @@ class PlayDistributionTest(unittest.TestCase):
                 self.fixture(dex=b'dex fixture' + marker)
                 with self.assertRaises(ValueError): scanner.check(self.apk)
 
+    def test_official_apk_sources_are_removed_and_cannot_be_restored(self):
+        self.assertNotIn('official', self.cfg)
+        self.assertEqual('', self.cfg['security']['officialCertSha256'])
+        injected = copy.deepcopy(self.cfg)
+        injected['official'] = self.source['official']
+        self.fixture(cfg=injected)
+        with self.assertRaises(ValueError): scanner.check(self.apk)
+
+    def test_bundled_donation_qr_is_rejected_even_without_donation_classes(self):
+        self.fixture(extra={'res/drawable-nodpi-v4/donate_qr.webp': b'QR fixture'})
+        with self.assertRaises(ValueError): scanner.check(self.apk)
+
     def test_forbidden_strings_are_rejected_in_both_resource_encodings(self):
         for text in scanner.FORBIDDEN_TEXT:
             for encoding in ('utf-8', 'utf-16le'):

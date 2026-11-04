@@ -29,8 +29,11 @@ import vn.aow.monika.ui.theme.SheetRow
 internal fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
     game: Game?, onDismiss: () -> Unit, pinned: Set<String>, onPatched: () -> Unit,
     onPlay: (Game) -> Unit, onExtract: (Game) -> Unit, onDelete: (Game) -> Unit, onTogglePin: (Game) -> Unit, onRequestAccess: () -> Unit,
+    /** Mở trang chi tiết game; mặc định chuyển sang màn Trang game (V139). */
+    onOpenPage: ((Game) -> Unit)? = null,
 ) {
     val context = LocalContext.current
+    val openPage: (Game) -> Unit = onOpenPage ?: { openGamePage(context, it) }
     // Giữ game cuối cùng để menu vẫn có nội dung khi đang trượt xuống.
     var last by remember { mutableStateOf<Game?>(null) }
     if (game != null) last = game
@@ -65,6 +68,7 @@ internal fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
         },
         actions = if (g == null) emptyList() else buildList {
             if (g.system != null && !g.locked && !g.evicted) add(SheetAction("Chơi", R.drawable.ic_fluent_play_24_filled, highlight = true) { onPlay(g) })
+            if (g.system != null && !g.locked && !g.evicted) add(SheetAction("Trang game", R.drawable.ic_fluent_open_24_regular) { openPage(g) })
             if (g.needsExtract) add(SheetAction("Giải nén", R.drawable.ic_fluent_archive_24_regular) { onExtract(g) })
             if (g.entry?.isFile == true && !g.needsExtract && g.system?.runner == "libretro")
                 add(SheetAction("Vá Việt hóa (IPS/BPS/UPS)", R.drawable.ic_fluent_archive_24_regular) { patchTarget = g; patchPicker.launch(arrayOf("*/*")) })

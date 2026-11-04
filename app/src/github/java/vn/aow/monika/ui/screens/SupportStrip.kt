@@ -16,24 +16,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import vn.aow.monika.AppGraph
 import vn.aow.monika.Prefs
 import vn.aow.monika.R
-import vn.aow.monika.browser.InAppBrowserActivity
 import vn.aow.monika.ui.theme.Monika
 import vn.aow.monika.ui.theme.Radius
 
 /**
- * Thanh kêu gọi ủng hộ/vote AowVN, đặt ngay dưới tiêu đề ở Trang chủ và Cài đặt (một dòng gọn, bấm là mở trang ủng hộ).
- * Cùng địa chỉ với thẻ lớn ở Trang chủ: `donateUrl`, trống thì dùng `voteUrl` trong config.
+ * Thanh kêu gọi ủng hộ AowVN ở Trang chủ và Cài đặt, bấm để mở bảng native.
+ * Mở bảng chuyển khoản native dùng account.donate; không mở trình duyệt.
  */
 @Composable
 fun SupportStrip(modifier: Modifier = Modifier, prefs: Prefs = AppGraph.prefs) {
-    val context = LocalContext.current
     var hiddenUntil by androidx.compose.runtime.remember { androidx.compose.runtime.mutableLongStateOf(prefs.supportHiddenUntil) }
     androidx.compose.runtime.LaunchedEffect(hiddenUntil) {
         val deadline = hiddenUntil
@@ -43,17 +40,17 @@ fun SupportStrip(modifier: Modifier = Modifier, prefs: Prefs = AppGraph.prefs) {
     }
     if (hiddenUntil > System.currentTimeMillis()) return
     val cfg by AppGraph.config.config.collectAsState()
-    val url = cfg.account.donateUrl.ifBlank { cfg.account.voteUrl }
+    var donationOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val c = Monika.colors
     Row(
         modifier.fillMaxWidth().heightIn(min = 48.dp).clip(Radius.pill).background(c.surface)
-            .clickable(onClickLabel = "Ủng hộ AowVN") { InAppBrowserActivity.start(context, url) }
+            .clickable(onClickLabel = "Ủng hộ AowVN") { donationOpen = true }
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(painterResource(R.drawable.ic_fluent_heart_24_filled), null, Modifier.size(20.dp), tint = c.accentCoral)
         androidx.compose.material3.Text(
-            "Ủng hộ / vote cho AowVN để Monika miễn phí mãi", style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight),
+            "Ủng hộ AowVN để Monika luôn miễn phí", style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight),
             color = c.text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
         )
         androidx.compose.material3.Text("Ẩn 7 ngày", style = Monika.type.caption, color = c.textSecondary,
@@ -63,6 +60,7 @@ fun SupportStrip(modifier: Modifier = Modifier, prefs: Prefs = AppGraph.prefs) {
             }.padding(horizontal = 8.dp, vertical = 12.dp))
         androidx.compose.material3.Text("Ủng hộ", style = Monika.type.caption.copy(fontWeight = Monika.type.bodyStrong.fontWeight), color = c.accentCoral)
     }
+    if (donationOpen) vn.aow.monika.donate.DonationSheet(cfg.account.donate, { donationOpen = false })
 }
 
 internal const val SUPPORT_HIDE_MILLIS = 7L * 24 * 60 * 60 * 1000

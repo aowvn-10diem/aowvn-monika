@@ -53,6 +53,24 @@ class J2meScreenContractTest {
         assertTrue(strings.any { it.getAttribute("name") == "monika_menu_button" && it.textContent.isNotBlank() })
     }
 
+    /**
+     * V184: ẩn phím J2ME không được bỏ vẽ cả lớp phủ (mất nền/skin Monika quanh game — lỗi 0.8.9).
+     * MicroActivity chỉ giấu TỪNG PHÍM bằng setKeysVisibility, không dùng setUserHidden.
+     */
+    @Test fun hidingPadKeepsJ2meGameSkinOnScreen() {
+        val src = File("../j2me/src/main/java/javax/microedition/shell/MicroActivity.java").readText()
+        assertTrue("phải giấu từng phím để giữ skin/khung game", src.contains("vk.setKeysVisibility("))
+        assertFalse("setUserHidden bỏ vẽ cả nền bàn phím (lỗi 0.8.9)", src.contains("vk.setUserHidden("))
+    }
+
+    /** V184: nút ẩn/hiện nhỏ (<= 40dp) và không đặt alpha mờ. */
+    @Test fun padButtonIsSmallAndNeverFaded() {
+        val root = parse("layout/activity_micro.xml")
+        val pad = root.elements("ImageButton").single { it.attr("id") == "@+id/monika_pad_button" }
+        assertEquals("36dp", pad.attr("layout_width"))
+        assertTrue("không đặt alpha mờ", pad.attr("alpha").isBlank())
+    }
+
     @Test fun everyJ2meMenuItemHasMonikaIcon() {
         val leaves = parse("menu/midlet_displayable.xml").elements("item")
             .filter { it.elements("menu").isEmpty() }
