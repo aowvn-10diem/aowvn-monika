@@ -38,13 +38,22 @@ def gon(title):
     return title
 
 
+CODEQL_PATHS = ("app/", "cloudflare/", ".github/codeql-config.yml", ".github/workflows/codeql.yml")
+
+
 def cong_bat_buoc(files):
-    """Các check bắt buộc phải có trên head, theo tệp PR đổi (khớp paths của build/coverage/script-tests)."""
+    """Các cổng bắt buộc phải có trên head và kết luận success, theo tệp PR đổi.
+
+    Khớp paths của build/coverage (ngoài docs/**, *.md), script-tests (scripts/**) và
+    CodeQL analyze (app/**, cloudflare/**, cấu hình CodeQL).
+    """
     can = set()
     if any(not (f.startswith("docs/") or f.endswith(".md")) for f in files):
         can |= {"build", "coverage"}
     if any(f.startswith("scripts/") or f == ".github/workflows/script-tests.yml" for f in files):
         can.add("n04-tests")
+    if any(f.startswith(CODEQL_PATHS) for f in files):
+        can |= {"analyze (java-kotlin)", "analyze (javascript-typescript)"}
     return can
 
 
@@ -52,8 +61,9 @@ def ci_trang_thai(check_runs, bat_buoc=()):
     """Trả "do", "cho" hoặc "xanh" cho các check trên head (bỏ qua preview, links, digest).
 
     - "do": có check thất bại hoặc quá giờ.
-    - "cho": chưa có check nào, còn check đang chạy/xếp hàng, hoặc bị hủy (chưa chứng minh xanh).
-    - "xanh": mọi check đã xong, không check nào đỏ/hủy.
+    - "cho": chưa có check nào, còn check đang chạy/xếp hàng/bị hủy, hoặc một cổng bắt buộc
+      chưa có hay chưa success (skipped, neutral cũng là chưa).
+    - "xanh": mọi check đã xong, không check nào đỏ/hủy, mọi cổng bắt buộc success.
     Tính theo danh sách loại trừ để job test mới (vd `offline`) tự được tính.
     """
     if not check_runs and not bat_buoc:
@@ -66,8 +76,9 @@ def ci_trang_thai(check_runs, bat_buoc=()):
         return "cho"
     if any(c.get("status") != "completed" for c in check_runs):
         return "cho"
-    if set(bat_buoc) - {c.get("name") for c in chan}:
-        return "cho"  # thiếu cổng bắt buộc theo phạm vi PR
+    xanh = {c.get("name") for c in chan if c.get("conclusion") == "success"}
+    if set(bat_buoc) - xanh:
+        return "cho"  # cổng bắt buộc theo phạm vi PR chưa có hoặc chưa success
     return "xanh"
 
 

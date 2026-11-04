@@ -94,7 +94,19 @@ class TienDo(unittest.TestCase):
         # PR chỉ tài liệu: không cổng bắt buộc (V11); chưa có check nào thì vẫn chờ.
         self.assertEqual(td.cong_bat_buoc(["docs/x.md", "README.md"]), set())
         self.assertEqual(td.ci_trang_thai([], set()), "cho")
-        self.assertEqual(td.cong_bat_buoc(["app/src/main/A.kt"]), {"build", "coverage"})
+        app = td.cong_bat_buoc(["app/src/main/A.kt"])
+        self.assertEqual(app, {"build", "coverage", "analyze (java-kotlin)", "analyze (javascript-typescript)"})
+        self.assertIn("analyze (java-kotlin)", td.cong_bat_buoc(["cloudflare/w.js"]))
+        self.assertNotIn("analyze (java-kotlin)", can)  # chỉ scripts/** thì CodeQL không bắt buộc
+        g = lambda n, k="success": {"name": n, "status": "completed", "conclusion": k}
+        du_app = [g(n) for n in app]
+        self.assertEqual(td.ci_trang_thai(du_app, app), "xanh")
+        # Cổng bắt buộc skipped hoặc neutral thì chưa xanh.
+        for k in ("skipped", "neutral"):
+            th = [g(n) for n in app if n != "analyze (java-kotlin)"] + [g("analyze (java-kotlin)", k)]
+            self.assertEqual(td.ci_trang_thai(th, app), "cho", k)
+        # Check không bắt buộc skipped (vd cap-nhat) không chặn.
+        self.assertEqual(td.ci_trang_thai(du_app + [g("cap-nhat", "skipped")], app), "xanh")
         self.assertEqual(td.trang_thai(pr(), cm, td.ci_trang_thai(ok))[0], "✅ Chờ gộp")
 
     def test_xung_dot(self):
