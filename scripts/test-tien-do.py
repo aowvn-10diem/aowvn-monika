@@ -18,8 +18,8 @@ def pr(draft=False):
     return {"draft": draft, "head": {"sha": HEAD}}
 
 
-def c(body):
-    return {"body": body}
+def c(body, login="aowvn-10diem"):
+    return {"body": body, "user": {"login": login}}
 
 
 class TienDo(unittest.TestCase):
@@ -59,6 +59,17 @@ class TienDo(unittest.TestCase):
         cm = [c("Luna 3 tiền duyệt (commit abcdef1)\nKết luận: Đạt"),
               c("Luna 4 tiền duyệt (commit abcdef1)\nKết luận: Cần sửa: a.kt:1")]
         self.assertEqual(td.trang_thai(pr(), cm, False)[0], "🔧 Cần sửa")
+
+    def test_nguoi_ngoai_khong_tinh(self):
+        cm = [c("Luna 3 tiền duyệt (commit abcdef1)\nKết luận: Đạt", "ke-gia"),
+              c("Luna 4 tiền duyệt (commit abcdef1)\nKết luận: Đạt", "ke-gia")]
+        self.assertEqual(td.trang_thai(pr(), cm, False), ("👀 Chờ duyệt (0/2 Đạt)", 0))
+
+    def test_ci_do_tinh_du_check_bat_buoc(self):
+        for name in ("build", "coverage", "n04-tests", "CodeQL", "analyze (javascript-typescript)"):
+            self.assertTrue(td.ci_do([{"name": name, "conclusion": "failure"}]), name)
+        self.assertFalse(td.ci_do([{"name": "preview", "conclusion": "failure"}]))
+        self.assertFalse(td.ci_do([{"name": "build", "conclusion": "success"}]))
 
     def test_nhap_va_ci_do(self):
         self.assertEqual(td.trang_thai(pr(True), [], False)[0], "📝 Nháp")

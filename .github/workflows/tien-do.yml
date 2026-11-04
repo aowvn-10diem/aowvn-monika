@@ -33,7 +33,7 @@ jobs:
         run: python3 scripts/test-tien-do.py
 
   cap-nhat:
-    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.event_name != 'pull_request'
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

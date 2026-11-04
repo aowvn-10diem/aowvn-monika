@@ -18,6 +18,7 @@ DOI = (("deepseek", "DeepSeek"), ("sol2/", "Sol 2"), ("sol/", "Sol"), ("nova/", 
        ("luna", "Luna"), ("haiku", "Haiku"), ("claude/", "PM"), ("docs/opus", "PM"), ("dependabot", "Dependabot"))
 VERDICT = re.compile(r"Kết luận:?\**:?\s*(Đạt|Cần sửa|Cần PM xem)")
 HEAD = re.compile(r"(?:commit|head)\s+([0-9a-f]{7,40})", re.I)
+REQUIRED = ("build", "coverage", "n04-tests", "CodeQL")
 NGUOI = re.compile(r"^\s*(\[Duyệt DeepSeek|Luna [0-9A-Za-z]+|\[[^\]]+\])")
 
 
@@ -37,13 +38,25 @@ def gon(title):
     return title
 
 
-def trang_thai(pr, comments, checks_red):
-    """Trả (nhãn, số Đạt) theo kết luận mới nhất của từng người duyệt trên đúng head."""
+def ci_do(check_runs):
+    """Đỏ khi một check bắt buộc (build, coverage, n04-tests, CodeQL, mọi analyze) thất bại."""
+    return any(c.get("conclusion") in ("failure", "timed_out")
+               and (c.get("name") in REQUIRED or (c.get("name") or "").startswith("analyze"))
+               for c in check_runs)
+
+
+def trang_thai(pr, comments, checks_red, allowed=("aowvn-10diem",)):
+    """Trả (nhãn, số Đạt) theo kết luận mới nhất của từng người duyệt trên đúng head.
+
+    Chỉ tính comment do tài khoản được phép viết (các agent duyệt đăng bằng tài khoản chủ repo).
+    """
     if pr.get("draft"):
         return "📝 Nháp", 0
     head = pr["head"]["sha"]
     moi = {}
     for c in comments:
+        if (c.get("user") or {}).get("login") not in allowed:
+            continue
         body = c.get("body") or ""
         v = VERDICT.search(body)
         h = HEAD.search(body.split("\n", 1)[0])
@@ -110,15 +123,14 @@ class Api:
             return json.loads(r.read() or b"null")
 
 
-def thu(api, now):
+def thu(api, now, allowed):
     releases = api.call("/releases?per_page=10")
     prs = [p for p in api.call("/pulls?state=open&per_page=50") if not p["user"]["login"].startswith("dependabot") and p["head"]["ref"] != "docs/opus-tra-loi"]
     rows = []
     for p in sorted(prs, key=lambda p: p["number"]):
         comments = api.call(f"/issues/{p['number']}/comments?per_page=100")
         runs = api.call(f"/commits/{p['head']['sha']}/check-runs?per_page=100").get("check_runs", [])
-        red = any(c.get("conclusion") == "failure" and c.get("name") in ("build", "coverage", "analyze (java-kotlin)") for c in runs)
-        tt, _ = trang_thai(p, comments, red)
+        tt, _ = trang_thai(p, comments, ci_do(runs), allowed)
         rows.append({"n": p["number"], "t": gon(p["title"]).replace("|", "/"), "doi": doi(p["head"]["ref"]), "tt": tt})
     since = now - dt.timedelta(days=7)
     closed = api.call("/pulls?state=closed&sort=updated&direction=desc&per_page=100")
@@ -136,7 +148,8 @@ def main():
     repo, token = os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_TOKEN"]
     api = Api(repo, token)
     now = dt.datetime.now(dt.timezone.utc)
-    body = dung_than(now, *thu(api, now))
+    allowed = tuple(x.strip() for x in os.environ.get("TIEN_DO_REVIEWERS", repo.split("/")[0]).split(",") if x.strip())
+    body = dung_than(now, *thu(api, now, allowed))
     if a.dry:
         print(body)
         return 0
