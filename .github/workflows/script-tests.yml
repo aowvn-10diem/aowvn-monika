@@ -23,7 +23,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - name: Chạy đủ 9 test N04, báo lỗi sau khi chạy hết
+      - name: Chạy đủ 10 test N04, báo lỗi sau khi chạy hết
         run: |
           python3 - <<'PY'
           import subprocess
@@ -40,6 +40,7 @@ jobs:
               'test-fetch-3ds-game.py',
               'test-r3ds-evidence.py',
               'test-real-games.py',
+              'test-crash-insight.py',
           )
           failed = []
           for case in cases:

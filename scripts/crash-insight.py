@@ -3,8 +3,8 @@
 
 - Đọc Worker **đúng một request**: `GET {CRASH_URL}/reports` (Worker tự chặn 100 báo cáo mới nhất;
   đường này không có tham số phân trang nên không thể lặp vô hạn). Không gọi `/reports/<id>`.
-- Gộp theo (lõi, loại, chữ ký) rồi cộng `count`; chỉ dùng các trường Worker trả ở danh sách:
-  `k` loại · `c` lõi · `a` bản app · `component` · `fp` chữ ký · `count` · `t` thời điểm.
+- Gộp theo (lõi, loại, chữ ký, thành phần, chứng thư) rồi cộng `count`; chỉ dùng các trường Worker trả ở danh sách:
+  `k` loại · `c` lõi · `a` bản app · `component` · `fp` chữ ký · `cert` chứng thư · `count` · `t` thời điểm.
 - KHÔNG đưa vào bảng: tên game (`g`), tiêu đề, chi tiết, log, vệt sự kiện, `device`, IP. Chỉ số liệu gộp.
 - Không in token, không ghi token ra tệp.
 
