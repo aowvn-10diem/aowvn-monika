@@ -103,15 +103,9 @@ class PdfReaderActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Đóng sách: không giữ handle của tệp sau khi rời màn đọc.
-        openedBook?.let {
-            try {
-                it.close()
-            } catch (t: Throwable) {
-                // Chỉ mã lỗi — không ghi tên tệp/đường dẫn của người dùng.
-                Diagnostics.recordHandled(this, ReaderDiag.COMPONENT, "dong-tai-lieu-loi")
-            }
-        }
+        // Đóng sách: không giữ handle của tệp sau khi rời màn đọc. Dùng closeLater để close xếp
+        // sau lần dựng trang đang chạy (nếu có) thay vì chặn luồng UI.
+        openedBook?.closeLater()
         openedBook = null
         ReaderDiag.onError = null
     }

@@ -33,4 +33,12 @@ interface PdfBook : AutoCloseable {
 
     /** Dựng trang [index] (đã kẹp trong 0..pageCount-1). */
     fun openPage(index: Int): ReaderPage
+
+    /**
+     * Đóng mà **không chờ** việc PDF đang chạy — dùng khi rời màn, để `close` xếp sau lần dựng
+     * trang đang dở thay vì làm treo luồng UI. Mặc định gọi [close].
+     */
+    fun closeLater() {
+        close()
+    }
 }

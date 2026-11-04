@@ -6,6 +6,7 @@ import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import java.io.File
 import java.io.FileNotFoundException
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Điểm vào công khai của module :reader cho app: mở tệp PDF, không ném lỗi ra ngoài.
@@ -32,37 +33,52 @@ internal class PdfRendererBook private constructor(
     private val renderer: PdfRenderer,
 ) : PdfBook {
 
-    /** Khoá dựng trang: PdfRenderer không thread-safe, không mở 2 trang cùng lúc. */
-    private val renderLock = Any()
+    /**
+     * Số trang đọc **một lần** lúc mở, trên luồng PDF và trong khoá (xem [PdfRenderThread]).
+     * Getter chỉ trả số đã nhớ nên `pageCount` không bao giờ chạm `PdfRenderer` từ luồng khác.
+     */
+    private val pages: Int = try {
+        PdfRenderThread.call { renderer.pageCount }
+    } catch (t: Throwable) {
+        // Đọc số trang lỗi → coi như 0 trang (màn đọc sẽ báo "hỏng") và ghi nhận lại.
+        ReaderDiag.report("doc-so-trang-loi")
+        0
+    }
 
-    override val pageCount: Int
-        get() = try {
-            renderer.pageCount
-        } catch (t: Throwable) {
-            // Đọc số trang lỗi → coi như 0 trang (màn đọc sẽ báo "hỏng") và ghi nhận lại.
-            ReaderDiag.report("doc-so-trang-loi")
-            0
-        }
+    /** Đóng đúng một lần, dù gọi từ UI hay từ luồng PDF. */
+    private val closed = AtomicBoolean(false)
 
-    override fun openPage(index: Int): ReaderPage {
-        // PdfRenderer không thread-safe: mọi lần mở/dựng trang trên cùng sách đi qua một khoá.
-        synchronized(renderLock) {
-            val safeIndex = index.coerceIn(0, (pageCount - 1).coerceAtLeast(0))
-            val page = renderer.openPage(safeIndex)
-            return page.use {
-                // PdfRenderer phóng/thu nội dung theo kích thước bitmap (transform = null).
-                // Kích thước tính từ tỉ lệ trang: tối đa 2x cho chữ nét, và **luôn** chặn bề rộng
-                // ở MAX_RENDER_WIDTH — kể cả trang nguồn rất rộng (> 16.000 px).
-                val (width, height) = renderSize(it.width, it.height)
-                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                bitmap.eraseColor(Color.WHITE)
-                it.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                ReaderPage(bitmap)
-            }
+    override val pageCount: Int get() = pages
+
+    override fun openPage(index: Int): ReaderPage = PdfRenderThread.call {
+        // PdfRenderer không thread-safe: mọi lời gọi renderer đi qua một luồng và một khoá.
+        val safeIndex = index.coerceIn(0, (pages - 1).coerceAtLeast(0))
+        val page = renderer.openPage(safeIndex)
+        page.use {
+            // PdfRenderer phóng/thu nội dung theo kích thước bitmap (transform = null).
+            // Kích thước tính từ tỉ lệ trang: tối đa 2x cho chữ nét, và **luôn** chặn bề rộng
+            // ở MAX_RENDER_WIDTH — kể cả trang nguồn rất rộng (> 16.000 px).
+            val (width, height) = renderSize(it.width, it.height)
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            bitmap.eraseColor(Color.WHITE)
+            it.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+            ReaderPage(bitmap)
         }
     }
 
     override fun close() {
+        if (!closed.compareAndSet(false, true)) return
+        PdfRenderThread.call { closeRendererAndFile() }
+    }
+
+    override fun closeLater() {
+        if (!closed.compareAndSet(false, true)) return
+        // Không chờ: nếu còn trang đang dựng thì close xếp sau nó, luồng UI không bị treo.
+        PdfRenderThread.submit { closeRendererAndFile() }
+    }
+
+    /** Chỉ được gọi trên luồng PDF, trong khoá. */
+    private fun closeRendererAndFile() {
         try {
             renderer.close()
         } catch (t: Throwable) {
@@ -113,9 +129,11 @@ internal class PdfRendererBook private constructor(
             }
             var opened: ParcelFileDescriptor? = null
             return try {
-                opened = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-                val renderer = PdfRenderer(opened)
-                val book = PdfRendererBook(opened, renderer)
+                val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+                opened = descriptor
+                // Tạo renderer cũng là lời gọi PdfRenderer: đi qua luồng PDF như mọi lời gọi khác.
+                val renderer = PdfRenderThread.call { PdfRenderer(descriptor) }
+                val book = PdfRendererBook(descriptor, renderer)
                 val pages = book.pageCount
                 if (pages <= 0) {
                     // Tệp 0 trang = hỏng/giả PDF; không giữ handle.
