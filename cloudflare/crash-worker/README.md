@@ -8,6 +8,14 @@
 - Xem nhanh: `CRASH_ADMIN_TOKEN=... scripts/crash-reports.sh` (tóm tắt) hoặc `... scripts/crash-reports.sh <id>` (chi tiết).
 - Đã triển khai bản `worker.js` của repo ngày 07/10/2026 (V29, xem `docs/opus/ket-qua/V29-deploy.md`); crumbs/env/component/pid/ảnh nay được lưu. [CHƯA KIỂM] ảnh JPEG thật từ máy người chơi.
 
+## Giới hạn của bộ đếm chống spam (V194, PM chốt chấp nhận)
+Bộ đếm hạn mức (`RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_SECONDS`) nằm trong **bộ nhớ của isolate** nên:
+- **Mất khi isolate tắt** (hết hạn, deploy bản mới, Cloudflare thu hồi) — bộ đếm về 0, không nhớ lượt trước đó.
+- **Không chia sẻ giữa các colo**: mỗi colo đếm riêng, nên một IP có thể gửi tới ~`RATE_LIMIT_MAX` báo cáo/colo/cửa sổ.
+- Vì vậy đây là **chặn mềm** (đủ chống spam vô tình và lỗi vòng lặp), **không phải hạn mức cứng**. Chặn cứng vẫn là **ngân sách ghi KV: 1000 ghi/ngày** của gói miễn phí — mỗi báo cáo đúng 1 ghi (V194).
+
+Cơ chế **đếm dùng chung** giữa các isolate/colo (KV hoặc Durable Object) **được để dành cho V153/V195**, không làm trong V194: mọi cách đếm dùng chung đều tốn thêm lượt ghi/đọc KV, đúng thứ V194 phải giảm.
+
 ## Hợp đồng JSON (V29)
 
 `Diagnostics.Report` được gửi tới `POST /report`; Worker chỉ bổ sung trường, vẫn nhận app cũ. `kind`, `title`, `app` bắt buộc là chuỗi; JSON sai trả 400. Báo cáo và giá trị KV đều tối đa 60.000 **byte UTF-8**; quá giới hạn trả 413, không ghi báo cáo. Body được đọc theo stream có chặn dung lượng, không dựa riêng Content-Length.
