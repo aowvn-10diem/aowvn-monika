@@ -66,15 +66,27 @@ internal class PdfRendererBook private constructor(
         /** Bề rộng bitmap tối đa khi dựng 1 trang (cap thật sự, kể cả trang lớn). */
         internal const val MAX_RENDER_WIDTH = 1600
 
+        /** Chiều cao bitmap tối đa — chặn trang cực cao (vd. 1000×500000) khỏi cấp phát bitmap khổng lồ. */
+        internal const val MAX_RENDER_HEIGHT = 2400
+
+        /** Trần tổng điểm ảnh (≈ 15 MB ARGB_8888) — luôn suy ra từ 2 cap trên, kiểm cho chắc. */
+        internal const val MAX_RENDER_PIXELS = MAX_RENDER_WIDTH * MAX_RENDER_HEIGHT
+
         /**
-         * Kích thước bitmap khi dựng 1 trang: rộng = min(nguồn × 2, [MAX_RENDER_WIDTH]) — **luôn**
-         * ≤ cap, kể cả trang nguồn rất rộng; cao tính theo đúng tỉ lệ trang (không méo).
+         * Kích thước bitmap khi dựng 1 trang: rộng ≤ [MAX_RENDER_WIDTH] **và** cao ≤ [MAX_RENDER_HEIGHT],
+         * tổng điểm ảnh ≤ [MAX_RENDER_PIXELS]; tỉ lệ trang luôn giữ (không méo).
+         * Trang rất rộng bị hạ theo bề rộng; trang rất cao bị hạ theo chiều cao (rộng thu nhỏ tương ứng).
          */
         internal fun renderSize(srcWidth: Int, srcHeight: Int): Pair<Int, Int> {
             val w = srcWidth.coerceAtLeast(1)
             val h = srcHeight.coerceAtLeast(1)
-            val width = minOf(w.toLong() * 2, MAX_RENDER_WIDTH.toLong()).toInt().coerceAtLeast(1)
-            val height = ((width.toDouble() * h) / w).toInt().coerceAtLeast(1)
+            var width = minOf(w.toLong() * 2, MAX_RENDER_WIDTH.toLong()).toInt().coerceAtLeast(1)
+            var height = ((width.toDouble() * h) / w).toInt().coerceAtLeast(1)
+            if (height > MAX_RENDER_HEIGHT) {
+                // Hạ theo chiều cao rồi tính lại bề rộng để giữ đúng tỉ lệ.
+                height = MAX_RENDER_HEIGHT
+                width = ((height.toDouble() * w) / h).toInt().coerceIn(1, MAX_RENDER_WIDTH)
+            }
             return width to height
         }
 
