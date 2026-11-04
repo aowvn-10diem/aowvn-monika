@@ -28,6 +28,7 @@ Bản release bật R8, build tách APK theo chip (arm64-v8a, armeabi-v7a, unive
 7. Token GitHub của phiên **không tạo được Secrets** (API trả 403). Secret phải do chủ repo tự thêm ở Settings → Secrets and variables → Actions.
 
 ## Trước/sau khi build
+- Trước khi đẩy mã/config, chạy `bash scripts/truoc-khi-push.sh`; Windows dùng `powershell -NoProfile -File scripts/truoc-khi-push.ps1`. Script chạy test cả GitHub/Play, build debug/Play và quét APK Play, dừng nếu có lỗi và in một dòng `ĐẠT`/`LỖI` cuối. Đây là kiểm debug trước push; phát hành vẫn theo các cửa riêng bên dưới.
 - Tăng `versionCode`, `versionName` trong `app/build.gradle.kts`; tăng `configVersion` nếu sửa `config/monika-config.json`. Muốn user thấy thẻ "Có bản mới": sửa khối `app` trong config (`latestVersionCode`, `latestVersionName`, `apkUrl`, `changelog`) — xem `docs/CAP-NHAT.md` mục A.7, B.
 - `./gradlew testDebugUnitTest` phải xanh trước khi build; đừng nối `test; commit && push` mà không kiểm mã thoát test.
 - Workflow `release.yml` có hai cửa chặn (V30): chặn khi thiếu cấu hình ký/tag sai, và chặn APK ký bằng chứng chỉ "Android Debug" rồi ghi SHA-256. Thử cửa chặn bằng dữ liệu giả: `python3 scripts/test-release-guards.py`.
