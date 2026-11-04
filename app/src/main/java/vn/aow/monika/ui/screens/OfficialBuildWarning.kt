@@ -19,24 +19,25 @@ import vn.aow.monika.security.OfficialCert
 import vn.aow.monika.ui.theme.Monika
 import vn.aow.monika.ui.theme.Radius
 
-internal const val FOREIGN_BUILD_WARNING =
-    "Đây không phải bản Monika chính thức. Có thể bị đổi tài khoản nhận ủng hộ. Tải bản chính thức tại monika.aow.vn"
-
 /**
  * [A78] V154: đọc chứng thư của APK đang chạy rồi hiện cảnh báo đỏ nếu không khớp bản chính thức.
  *
  * Chỉ cảnh báo, không chặn chạy (GPLv3 cho phép bản tự build); bản debug bỏ qua hoàn toàn.
+ *
+ * [message] do từng flavor cung cấp (`OFFICIAL_BUILD_WARNING` trong source set github/play):
+ * bản GitHub được mời tải tại monika.aow.vn, còn bản Play **không được** dẫn link tải ngoài Play
+ * (chính sách Google Play, A65/A68) nên phải dùng câu khác.
  */
 @Composable
-fun OfficialBuildWarning(officialSha256: String) {
+fun OfficialBuildWarning(officialSha256: String, message: String) {
     val context = LocalContext.current
     val actual = remember { Diagnostics.certSha256(context) }
-    OfficialBuildWarning(actual, officialSha256, BuildConfig.DEBUG)
+    OfficialBuildWarning(actual, officialSha256, BuildConfig.DEBUG, message)
 }
 
 /** Phần vẽ tách riêng để test được đủ 4 ca trên JVM, không cần chứng thư thật. */
 @Composable
-internal fun OfficialBuildWarning(actualSha256: String, officialSha256: String, debugBuild: Boolean) {
+internal fun OfficialBuildWarning(actualSha256: String, officialSha256: String, debugBuild: Boolean, message: String) {
     if (!OfficialCert.isForeignBuild(actualSha256, officialSha256, debugBuild)) return
     val c = Monika.colors
     Column(
@@ -48,6 +49,6 @@ internal fun OfficialBuildWarning(actualSha256: String, officialSha256: String, 
             .padding(PaddingValues(horizontal = 14.dp, vertical = 12.dp)),
     ) {
         // Không có nút tắt: thẻ chỉ biến mất khi app đúng chứng thư chính thức.
-        Text(FOREIGN_BUILD_WARNING, style = Monika.type.body, color = c.danger)
+        Text(message, style = Monika.type.body, color = c.danger)
     }
 }

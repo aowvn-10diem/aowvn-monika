@@ -19,7 +19,7 @@ import org.robolectric.annotation.GraphicsMode
 import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.config.SecurityConfig
 import vn.aow.monika.security.OfficialCert
-import vn.aow.monika.ui.screens.FOREIGN_BUILD_WARNING
+import vn.aow.monika.ui.screens.OFFICIAL_BUILD_WARNING
 import vn.aow.monika.ui.screens.OfficialBuildWarning
 import vn.aow.monika.ui.theme.MonikaTheme
 
@@ -41,14 +41,14 @@ class OfficialBuildWarningTest {
     /** Dựng như Trang chủ thật: thẻ cảnh báo (nếu có) nằm cùng nội dung, không phải hộp thoại chặn. */
     private fun show(actual: String, expected: String, debug: Boolean) {
         rule.setContent { MonikaTheme { Column {
-            OfficialBuildWarning(actual, expected, debug)
+            OfficialBuildWarning(actual, expected, debug, OFFICIAL_BUILD_WARNING)
             Text("Nội dung Trang chủ")
         } } }
         rule.mainClock.advanceTimeBy(1_000)
     }
 
     private fun assertNoWarning() {
-        rule.onNodeWithText(FOREIGN_BUILD_WARNING).assertDoesNotExist()
+        rule.onNodeWithText(OFFICIAL_BUILD_WARNING).assertDoesNotExist()
         rule.onNodeWithText("Nội dung Trang chủ").assertIsDisplayed()
     }
 
@@ -60,8 +60,10 @@ class OfficialBuildWarningTest {
 
     @Test fun differentCertWarnsWithoutBlockingTheScreen() {
         assertTrue(OfficialCert.isForeignBuild(foreign, official, debugBuild = false))
+        // [A78] flavor github: câu cảnh báo có địa chỉ tải bản chính thức.
+        assertTrue(OFFICIAL_BUILD_WARNING, OFFICIAL_BUILD_WARNING.contains("monika.aow.vn"))
         show(foreign, official, debug = false)
-        rule.onNodeWithText(FOREIGN_BUILD_WARNING).assertIsDisplayed()
+        rule.onNodeWithText(OFFICIAL_BUILD_WARNING).assertIsDisplayed()
         // Vẫn dùng được app: GPLv3 cho phép bản tự build, cảnh báo không phải màn chặn.
         rule.onNodeWithText("Nội dung Trang chủ").assertIsDisplayed()
         rule.shot("v154-canh-bao-app-gia-mao")

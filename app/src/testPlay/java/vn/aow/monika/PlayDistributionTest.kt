@@ -88,4 +88,18 @@ class PlayDistributionTest {
         assertTrue(official, official.isEmpty())
         assertFalse(vn.aow.monika.security.OfficialCert.isForeignBuild("f".repeat(64), official, debugBuild = false))
     }
+
+    /**
+     * [A78] V154 + [A65] Play: khi chứng thư lệch, bản Play hiện cảnh báo riêng — **không** nêu tên miền,
+     * không link, không lời mời tải từ website ngoài Google Play (chính sách Play).
+     */
+    @Test fun playWarningTextNeverInvitesOutsideDownload() {
+        val text = vn.aow.monika.ui.screens.OFFICIAL_BUILD_WARNING
+        // Ca hash lệch: bản Play vẫn cảnh báo, chỉ đổi nội dung.
+        assertTrue(vn.aow.monika.security.OfficialCert.isForeignBuild("f".repeat(64), "c".repeat(64), debugBuild = false))
+        assertTrue(text, text.contains("Google Play"))
+        listOf("http", "www", "aow.vn", "monika.aow.vn", "://", "tải", "Tải").forEach {
+            assertFalse("Không được có \"$it\" trong cảnh báo Play: $text", text.contains(it))
+        }
+    }
 }

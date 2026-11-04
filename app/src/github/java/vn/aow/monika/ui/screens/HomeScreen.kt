@@ -121,7 +121,7 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                     AvatarButton(onGo)
                 }
             }
-            item { OfficialBuildWarning(cfg.security.officialCertSha256) }
+            item { OfficialBuildWarning(cfg.security.officialCertSha256, OFFICIAL_BUILD_WARNING) }
             val list = posts?.getOrNull()
             when {
                 posts == null -> item { FeedStatus(true) { refresh++ } }
