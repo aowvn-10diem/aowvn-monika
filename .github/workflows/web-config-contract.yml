@@ -1,0 +1,45 @@
+name: Kiểm web khi đổi config app
+on:
+  push:
+    branches: [main]
+    paths: ['config/monika-config.json', 'gradle/libs.versions.toml', '.github/workflows/web-config-contract.yml']
+  pull_request:
+    branches: [main]
+    paths: ['config/monika-config.json', 'gradle/libs.versions.toml', '.github/workflows/web-config-contract.yml']
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: catalog
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: trang-web
+          path: web
+          persist-credentials: false
+      - name: Lấy bộ kiểm web trong lúc trang mới chưa gộp
+        run: |
+          if [[ ! -f web/tests/official.browser.py ]]; then
+            git -C web fetch --depth=1 origin sol2/V183-web
+            git -C web checkout --detach FETCH_HEAD
+          fi
+          test -f web/tests/official.test.mjs
+          test -f web/tests/official.browser.py
+      - name: Cài công cụ Chromium đúng phiên bản catalog
+        run: |
+          python3 -m venv "$RUNNER_TEMP/web-browser"
+          MONIKA_WEB_PLAYWRIGHT_VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("catalog/gradle/libs.versions.toml", "rb"))["versions"]["playwrightCi"])')
+          "$RUNNER_TEMP/web-browser/bin/python" -m pip install --quiet --disable-pip-version-check "playwright==$MONIKA_WEB_PLAYWRIGHT_VERSION"
+      - name: Test Node
+        working-directory: web
+        run: node --test tests/official.test.mjs
+      - name: Chromium với config đang đổi trên main hoặc PR
+        working-directory: web
+        env:
+          CATALOG_CONFIG: ${{ github.workspace }}/catalog/config/monika-config.json
+        run: '"$RUNNER_TEMP/web-browser/bin/python" tests/official.browser.py'

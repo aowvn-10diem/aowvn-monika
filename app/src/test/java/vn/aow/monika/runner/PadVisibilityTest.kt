@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import ru.playsoftware.j2meloader.AowPad
 import ru.playsoftware.j2meloader.AowPadVisibility
 import vn.aow.monika.Prefs
 import vn.aow.monika.ui.TestApp
@@ -85,8 +86,22 @@ class PadVisibilityTest {
     @Test fun nhanDienTayCamBangNguonThietBiCoSan() {
         assertTrue(GamepadInput.hasPadSource(listOf(InputDevice.SOURCE_GAMEPAD or InputDevice.SOURCE_KEYBOARD)))
         assertTrue(GamepadInput.hasPadSource(listOf(InputDevice.SOURCE_JOYSTICK)))
-        assertTrue(GamepadInput.hasPadSource(listOf(InputDevice.SOURCE_KEYBOARD, InputDevice.SOURCE_DPAD)))
+        // 0.8.9: DPAD một mình từng bị coi là tay cầm → máy không cắm gì vẫn tự ẩn phím.
+        assertFalse("DPAD một mình không phải tay cầm", GamepadInput.hasPadSource(listOf(InputDevice.SOURCE_KEYBOARD, InputDevice.SOURCE_DPAD)))
         assertFalse(GamepadInput.hasPadSource(listOf(InputDevice.SOURCE_KEYBOARD, InputDevice.SOURCE_TOUCHSCREEN)))
+    }
+
+    /** V184: danh sách thiết bị của điện thoại thường (cảm ứng + phím cứng + DPAD) không được coi là tay cầm. */
+    @Test fun dienThoaiKhongCoTayCamKhongBiCoiLaCoTayCam() {
+        val phone = listOf(
+            InputDevice.SOURCE_TOUCHSCREEN,
+            InputDevice.SOURCE_KEYBOARD or InputDevice.SOURCE_DPAD,
+            InputDevice.SOURCE_MOUSE,
+        )
+        assertFalse(GamepadInput.hasPadSource(phone))
+        assertFalse(AowPad.isPadDevice(InputDevice.SOURCE_KEYBOARD or InputDevice.SOURCE_DPAD))
+        assertTrue(AowPad.isPadDevice(InputDevice.SOURCE_GAMEPAD))
+        assertTrue(AowPad.isPadDevice(InputDevice.SOURCE_JOYSTICK))
     }
 
     @Test fun trangThaiTuAnNhoTrongPrefs() {

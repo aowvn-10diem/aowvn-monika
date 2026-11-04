@@ -89,6 +89,46 @@ export function rateLimitConfig(env) {
   };
 }
 
+// V194: bộ đếm chống spam nằm trong bộ nhớ của isolate — không tốn lượt ghi KV nào.
+// (Trước đây mỗi báo cáo ghi thêm 1 khoá `rl:` vào KV ⇒ 2 ghi/báo cáo, đốt hạn mức 1000 ghi/ngày.)
+// V194 (Luna 4): mỗi lượt giữ chỗ có **token riêng**; hoàn tác chỉ xoá đúng token của mình nên
+// không thể xoá lượt giữ chỗ của request đồng thời. JS đơn luồng + reserve đồng bộ (không `await`
+// xen giữa kiểm và thêm token) nên không cần CAS của KV.
+const RATE_STATE_MAX = 5000;
+const rateState = new Map(); // băm IP -> { window, tokens: Set<token> }
+export function resetRateState() { rateState.clear(); }
+
+function rateEntry(ipHash, window) {
+  let entry = rateState.get(ipHash);
+  if (!entry || entry.window !== window) {
+    if (rateState.size >= RATE_STATE_MAX && !rateState.has(ipHash)) rateState.clear(); // chặn Map phình to
+    entry = { window, tokens: new Set() };
+    rateState.set(ipHash, entry);
+  }
+  return entry;
+}
+
+/** Giữ chỗ 1 lượt; trả token của reservation, hoặc null nếu đã vượt hạn mức. Chạy đồng bộ. */
+function reserveRate(ipHash, window, max) {
+  const entry = rateEntry(ipHash, window);
+  if (entry.tokens.size >= max) return null;
+  const token = crypto.randomUUID();
+  entry.tokens.add(token);
+  return token;
+}
+
+/** Hoàn tác ĐÚNG reservation của mình (khi ghi KV lỗi); reservation của request khác không bị đụng. */
+function releaseRate(ipHash, window, token) {
+  const entry = rateState.get(ipHash);
+  if (!entry || entry.window !== window) return;
+  entry.tokens.delete(token);
+}
+
+/** Chỉ để test đọc trạng thái: tổng số lượt đang giữ chỗ trong isolate. */
+export function rateReservedCount() {
+  return [...rateState.values()].reduce((total, entry) => total + entry.tokens.size, 0);
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -139,24 +179,32 @@ export default {
       }
       if (bytes(stored) > MAX_BODY) return json({ ok: false, error: "too_large" }, 413);
 
-      // Chống spam (V153): tối đa `max` báo cáo / cửa sổ / IP, ngưỡng và độ dài
-      // cửa sổ lấy từ env (RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_SECONDS; mặc định
-      // 20 báo cáo/giờ). Chỉ lưu băm IP, không lưu IP. Không thêm lượt gọi KV:
-      // mỗi báo cáo vẫn 1 đọc hạn mức + 1 ghi hạn mức + 1 ghi báo cáo.
+      // Chống spam (V153; đổi cách đếm ở V194): tối đa `max` báo cáo / cửa sổ / IP, ngưỡng và độ dài
+      // cửa sổ lấy từ env (RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_SECONDS; mặc định 20 báo cáo/giờ).
+      // V194: hạn mức ghi KV miễn phí chỉ 1000/ngày → mỗi báo cáo đúng **1 lần ghi** (bản ghi chính).
+      // Bộ đếm hạn mức chuyển vào bộ nhớ của isolate (không ghi KV nữa): chặn mềm, đủ chống spam;
+      // chặn cứng là ngân sách ghi của KV. Vẫn chỉ giữ băm IP, không lưu IP.
       const limit = rateLimitConfig(env);
       const now = Date.now();
       const windowMs = limit.windowSeconds * 1000;
-      const rk = `rl:${Math.floor(now / windowMs)}:${await sha(req.headers.get("CF-Connecting-IP") || "?")}`;
-      const n = parseInt((await env.REPORTS.get(rk)) || "0", 10);
-      if (n >= limit.max) {
+      const ipHash = await sha(req.headers.get("CF-Connecting-IP") || "?");
+      const window = Math.floor(now / windowMs);
+      // Giữ chỗ ngay (đồng bộ, không `await`) — token định danh riêng cho lượt này.
+      const token = reserveRate(ipHash, window, limit.max);
+      if (token === null) {
         const retryAfter = Math.max(1, Math.ceil((windowMs - (now % windowMs)) / 1000));
         return json({ ok: false, error: "rate_limited" }, 429, { "retry-after": String(retryAfter) });
       }
-      await env.REPORTS.put(rk, String(n + 1), { expirationTtl: Math.max(60, limit.windowSeconds * 2) });
 
       const id = `r:${String(Date.now()).padStart(13, "0")}:${crypto.randomUUID().slice(0, 8)}`;
       const meta = { k: slim.kind, c: slim.core || slim.session?.core || "", y: slim.system || slim.session?.system || "", g: (slim.session?.game || "").slice(0, 60), a: slim.app.slice(0, 40), st: slim.stage || slim.session?.stage || "", t: slim.time, component: slim.component, fp: slim.fingerprint, count: slim.count };
-      await env.REPORTS.put(id, stored, { expirationTtl: 60 * 86400, metadata: meta });
+      try {
+        await env.REPORTS.put(id, stored, { expirationTtl: 60 * 86400, metadata: meta });
+      } catch (error) {
+        // Chỉ nhả đúng reservation của mình; lượt giữ chỗ của request đồng thời vẫn còn.
+        releaseRate(ipHash, window, token);
+        throw error;
+      }
       return json({ ok: true });
     }
 

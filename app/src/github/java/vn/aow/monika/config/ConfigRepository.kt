@@ -13,13 +13,15 @@ import vn.aow.monika.diag.Diagnostics
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import vn.aow.monika.BuildConfig
 import java.io.File
 
 /**
  * Nguồn cấu hình theo thứ tự ưu tiên:
  * 1. Bản tải từ xa gần nhất (lưu cache) — nếu hợp lệ và configVersion >= bản đóng gói.
  * 2. Bản đóng gói trong APK (assets/monika-config.json).
+ *
+ * V181: khi tải mới, hỏi GitHub Pages trước (`ConfigEndpoints.PAGES_CONFIG_URL`); Pages lỗi
+ * (mạng/HTTP/JSON/phiên bản) mới rơi về Worker (`BuildConfig.REMOTE_CONFIG_URL`).
  *
  * Bản từ xa lỗi cú pháp, URL/hash/runner hoặc lùi phiên bản sẽ bị bỏ qua, không bao giờ ghi đè bản đang chạy tốt.
  */
@@ -71,15 +73,21 @@ class ConfigRepository(
             // V112: tải cấu hình từ xa là thao tác → lỗi thật thành op-fail (mất mạng/hủy chỉ ghi vệt); hủy coroutine được ném lại.
             Diagnostics.opSuspend(context, Diagnostics.Op.FETCH_CONFIG) {
                 if (!force && System.currentTimeMillis() - checkedFile.lastModified() < MIN_REFRESH_MS) return@opSuspend current
-                step("tai")
-                val request = Request.Builder().url(BuildConfig.REMOTE_CONFIG_URL).build()
-                val text = http.newCall(request).execute().use { response ->
-                    check(response.isSuccessful) { "HTTP ${response.code}" }
-                    // V166: đọc body qua mạng → đứt luồng ở đây là chuyện mạng (đánh dấu nguồn).
-                    Diagnostics.networkRead { response.body!!.string() }
+                step("tai-pages")
+                // V181: Pages trước (giảm lượt gọi Worker); lỗi mạng/HTTP/JSON/phiên bản mới thử Worker.
+                val loaded = try {
+                    val text = fetchText(ConfigEndpoints.PAGES_CONFIG_URL)
+                    step("kiem-tra")
+                    text to ConfigValidation.parse(text, current.configVersion)
+                } catch (error: Exception) {
+                    if (error is kotlinx.coroutines.CancellationException) throw error
+                    Log.w(TAG, "Cấu hình Pages không dùng được, chuyển sang Worker", error)
+                    step("tai-worker")
+                    val text = fetchText(ConfigEndpoints.WORKER_CONFIG_URL)
+                    step("kiem-tra")
+                    text to ConfigValidation.parse(text, current.configVersion)
                 }
-                step("kiem-tra")
-                val cfg = ConfigValidation.parse(text, current.configVersion)
+                val (text, cfg) = loaded
                 step("ghi-cache")
                 writeCache(text) // Đổi nguyên khối trước khi thay StateFlow; ghi lỗi giữ bản cũ.
                 _config.value = cfg
@@ -89,6 +97,16 @@ class ConfigRepository(
             }.onFailure {
                 Log.w(TAG, "Không tải được cấu hình từ xa, dùng bản hiện có", it)
             }
+        }
+    }
+
+    /** Đọc body từ một URL cấu hình; ném lỗi mạng/HTTP để tầng gọi quyết định nguồn kế tiếp. */
+    private fun fetchText(url: String): String {
+        val request = Request.Builder().url(url).build()
+        return http.newCall(request).execute().use { response ->
+            check(response.isSuccessful) { "HTTP ${response.code}" }
+            // V166: đọc body qua mạng → đứt luồng ở đây là chuyện mạng (đánh dấu nguồn).
+            Diagnostics.networkRead { response.body!!.string() }
         }
     }
 

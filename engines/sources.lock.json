@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "toolchain": {
+    "ndk": "22.1.7171670",
+    "api": 26
+  },
+  "inventory": {
+    "cores": [
+      "citra",
+      "desmume",
+      "easyrpg",
+      "fceumm",
+      "flycast",
+      "gambatte",
+      "genesis_plus_gx",
+      "handy",
+      "mednafen_ngp",
+      "mednafen_pce_fast",
+      "mednafen_wswan",
+      "melonds",
+      "melondsds",
+      "mgba",
+      "mupen64plus_next_gles3",
+      "nestopia",
+      "parallel_n64",
+      "pcsx_rearmed",
+      "ppsspp",
+      "prosystem",
+      "snes9x",
+      "stella2014"
+    ],
+    "modules": [
+      "azahar",
+      "kirikiri",
+      "onsyuri",
+      "rgss",
+      "sevenzip"
+    ],
+    "additional": [
+      "renpy8",
+      "ruffle",
+      "ppsspp-system"
+    ]
+  },
+  "cores": {
+    "fceumm": {
+      "recipe": "fceumm-ndk-v1",
+      "repository": "https://github.com/libretro/libretro-fceumm.git",
+      "commit": "7a542dab1e87679921962a9f056186eca425c0c2",
+      "license": "GPL-2.0-or-later",
+      "licenseFiles": [
+        "Copying",
+        "src/ntsc/license.txt"
+      ],
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a"
+      ],
+      "submodules": [],
+      "patches": [],
+      "dependencies": []
+    },
+    "gambatte": {
+      "recipe": "gambatte-ndk-v1",
+      "repository": "https://github.com/libretro/gambatte-libretro.git",
+      "commit": "d9d6cd06382d1ced30de34d56d3609452323dab1",
+      "license": "GPL-2.0-only",
+      "licenseFiles": [
+        "COPYING"
+      ],
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a"
+      ],
+      "submodules": [],
+      "patches": [],
+      "dependencies": []
+    }
+  }
+}

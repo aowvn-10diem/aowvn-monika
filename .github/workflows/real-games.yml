@@ -22,6 +22,7 @@ concurrency:
 
 jobs:
   prepare:
+    if: github.repository == 'aowvn-10diem/aowvn-monika'
     name: Dựng ma trận từ secret
     runs-on: ubuntu-latest
     timeout-minutes: 10
