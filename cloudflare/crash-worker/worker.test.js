@@ -287,7 +287,7 @@ test("V153 gioi han khong lam tang so lan goi KV tren moi bao cao", async () => 
   assert.deepEqual([gets, puts], [1, 2]); // 1 doc han muc + 1 ghi han muc + 1 ghi bao cao
 });
 
-// V186: /reports kh�ng c�n tr? 500 tr?ng khi KV l?i t?m th?i ho?c tr? trang sai d?ng.
+// V186: /reports kh�ng c�n tr? 500 tr?ng khi KV l?i t?m th?i ho?c tr? trang sai d?ng.
 test("V186 KV list loi tam thoi -> 503 kv_unavailable (khong phai 500 tr?ng)", async () => {
   const c = setup();
   await c.post(fixture);
@@ -297,13 +297,50 @@ test("V186 KV list loi tam thoi -> 503 kv_unavailable (khong phai 500 tr?ng)", a
   assert.deepEqual(await response.json(), { ok: false, error: "kv_unavailable" });
 });
 
-test("V186 KV tra trang sai dang -> 503 bad_listing", async () => {
+test("V190 KV tra trang sai dang -> 400 co ma loi (khong con 500)", async () => {
+  // V190: trang listing sai cấu trúc là lỗi dữ liệu đầu vào của lần đọc → 400, không để nổ 500.
   for (const broken of [{}, { list_complete: false, keys: [] }, { list_complete: true }, { list_complete: true, keys: "x" }]) {
     const c = setup();
     c.env.REPORTS = { ...c.env.REPORTS, list: async () => broken };
     const response = await c.read("/reports");
-    assert.equal(response.status, 503, JSON.stringify(broken));
+    assert.equal(response.status, 400, JSON.stringify(broken));
     assert.equal((await response.json()).error, "bad_listing");
+  }
+});
+
+test("V190 keys co phan tu hong (null/rong/so/khong co name) -> 400, khong 500", async () => {
+  for (const keys of [[null], [""], [123], [{}], [{ name: 5 }], [{ name: "" }]]) {
+    const c = setup();
+    c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys }) };
+    for (const path of ["/reports", "/stats"]) {
+      const response = await c.read(path);
+      assert.equal(response.status, 400, `${path} ${JSON.stringify(keys)}`);
+      assert.equal((await response.json()).error, "malformed_keys");
+    }
+  }
+});
+
+test("V190 khoa hop le van 200, metadata sai kieu khong lam sap /reports hay /stats", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys: [
+    { name: "r:1700000000000:aaaaaaaa", metadata: { k: "anr", c: "unknown", a: "0.8.8 (128)" } },
+    { name: "r:1700000001000:bbbbbbbb", metadata: "hong" },
+    { name: "r:1700000002000:cccccccc", metadata: [1, 2] },
+  ] }) };
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 3);
+  assert.equal(body.reports[0].id, "r:1700000002000:cccccccc");
+  assert.deepEqual(body.reports[0], { id: "r:1700000002000:cccccccc" });
+  assert.equal(body.reports[1].id, "r:1700000001000:bbbbbbbb");
+  assert.equal((await c.read("/stats")).status, 200);
+});
+
+test("V190 id bao cao hong (percent-encoding sai/rong) -> 400", async () => {
+  const c = setup();
+  for (const path of ["/reports/%E0%A4%A", "/reports/%20"]) {
+    const response = await c.read(path);
+    assert.equal(response.status, 400, path);
+    assert.equal((await response.json()).error, "bad_id");
   }
 });
 

@@ -179,30 +179,39 @@ export default {
     if (url.pathname.startsWith("/reports") || url.pathname === "/stats") {
       if ((req.headers.get("authorization") || "") !== `Bearer ${env.ADMIN_TOKEN}`) return json({ ok: false, error: "unauthorized" }, 401);
       if (url.pathname.startsWith("/reports/")) {
-        const v = await env.REPORTS.get(decodeURIComponent(url.pathname.slice(9)));
+        // V190: id hỏng (percent-encoding sai, rỗng) là lỗi dữ liệu đầu vào → 400, không để decodeURIComponent ném 500.
+        let id;
+        try { id = decodeURIComponent(url.pathname.slice(9)).trim(); } catch { return json({ ok: false, error: "bad_id" }, 400); }
+        if (!id) return json({ ok: false, error: "bad_id" }, 400);
+        const v = await env.REPORTS.get(id);
         return v ? new Response(v, { headers: { "content-type": "application/json; charset=utf-8" } }) : json({ ok: false, error: "not_found" }, 404);
       }
-      // V186: KV list có thể lỗi tạm thời hoặc trả trang sai dạng; trước đây lỗi đó thành 500 trắng.
-      // Nay trả 503 JSON có mã lỗi để phía đọc biết là "thử lại được", và chặn vòng lặp bằng hằng số rõ ràng.
+      // V186: KV list có thể lỗi tạm thời → 503 JSON có mã lỗi (thử lại được), không còn 500 trắng.
+      // V190 (Luna Ultra): từng khoá trong `keys` cũng phải hợp lệ — `keys:[null]` trước đây lọt qua
+      // `Array.isArray` rồi nổ ở bước ghép key. Nay lọc khoá hỏng; danh sách toàn khoá hỏng → 400 có mã lỗi.
       const all = [];
       let cursor;
       try {
         do {
           const page = await env.REPORTS.list({ prefix: "r:", cursor, limit: LIST_PAGE });
-          if (typeof page?.list_complete !== "boolean" || !Array.isArray(page.keys)) return json({ ok: false, error: "bad_listing" }, 503);
-          if (!page.list_complete && !page.cursor) return json({ ok: false, error: "bad_listing" }, 503);
-          all.push(...page.keys);
+          if (typeof page?.list_complete !== "boolean" || !Array.isArray(page.keys)) return json({ ok: false, error: "bad_listing" }, 400);
+          if (!page.list_complete && !page.cursor) return json({ ok: false, error: "bad_listing" }, 400);
+          const keys = page.keys.filter((k) => k && typeof k === "object" && typeof k.name === "string" && k.name.length > 0);
+          if (page.keys.length > 0 && keys.length === 0) return json({ ok: false, error: "malformed_keys" }, 400);
+          all.push(...keys);
           cursor = page.list_complete ? undefined : page.cursor;
         } while (cursor && all.length < LIST_MAX);
       } catch {
         return json({ ok: false, error: "kv_unavailable" }, 503);
       }
+      // metadata sai kiểu (chuỗi/số/mảng) không được làm sập /stats hay /reports.
+      const metaOf = (k) => (k.metadata && typeof k.metadata === "object" && !Array.isArray(k.metadata) ? k.metadata : {});
       if (url.pathname === "/stats") {
         const by = {};
-        for (const k of all) { const m = k.metadata || {}; const key = `${m.c || "?"} | ${m.k || "?"} | ${m.st || "?"}`; by[key] = (by[key] || 0) + 1; }
+        for (const k of all) { const m = metaOf(k); const key = `${m.c || "?"} | ${m.k || "?"} | ${m.st || "?"}`; by[key] = (by[key] || 0) + 1; }
         return json({ total: all.length, byCoreKindStage: Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ k, n })) });
       }
-      return json({ total: all.length, reports: all.reverse().slice(0, 100).map((k) => ({ id: k.name, ...(k.metadata || {}) })) });
+      return json({ total: all.length, reports: all.reverse().slice(0, 100).map((k) => ({ id: k.name, ...metaOf(k) })) });
     }
     return json({ name: "aowvn-monika-crash", ok: true });
   },
