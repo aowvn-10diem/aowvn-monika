@@ -2,11 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { webcrypto } from "node:crypto";
-import worker, { MAX_BODY } from "./worker.js";
+import worker, { MAX_BODY, resetRateState, rateReservedCount } from "./worker.js";
 globalThis.crypto ??= webcrypto;
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/app-report.json", import.meta.url)));
 
 function setup(extra = {}) {
+  resetRateState(); // V194: bộ đếm hạn mức nằm trong bộ nhớ isolate → mỗi test phải bắt đầu sạch
   const data = new Map();
   const env = { ADMIN_TOKEN: "local-fixture-only", REPORTS: {
     get: async (k) => data.get(k)?.value ?? null,
@@ -263,18 +264,7 @@ test("V153 env sai hoac <=0 thi dung mac dinh", async () => {
   }
 });
 
-test("V153 chi luu bam IP, khong luu IP trong khoa hay gia tri", async () => {
-  const c = setup();
-  assert.equal((await postWithIp(c, fixture)).status, 200);
-  const keys = [...c.data.keys()];
-  assert.equal(keys.filter((k) => k.startsWith("rl:")).length, 1);
-  for (const k of keys) assert.equal(k.includes(IP), false);
-  for (const v of c.data.values()) assert.equal(String(v.value).includes(IP), false);
-  const rlKey = keys.find((k) => k.startsWith("rl:"));
-  assert.match(rlKey, /^rl:\d+:[0-9a-f]{16}$/);
-});
-
-test("V153 gioi han khong lam tang so lan goi KV tren moi bao cao", async () => {
+test("V194 moi bao cao dung 1 lan ghi KV, 0 lan doc, khong con khoa dem rieng", async () => {
   let gets = 0, puts = 0;
   const c = setup();
   const kv = c.env.REPORTS;
@@ -284,5 +274,80 @@ test("V153 gioi han khong lam tang so lan goi KV tren moi bao cao", async () => 
     put: async (k, v, o) => { puts++; return kv.put(k, v, o); },
   };
   assert.equal((await postWithIp(c, fixture)).status, 200);
-  assert.deepEqual([gets, puts], [1, 2]); // 1 doc han muc + 1 ghi han muc + 1 ghi bao cao
+  assert.deepEqual([gets, puts], [0, 1]); // chỉ 1 ghi: bản ghi chính (bộ đếm hạn mức nằm trong bộ nhớ)
+});
+
+test("V194 ba bao cao lien tiep = 3 lan ghi (truoc day 6), va khong co khoa dem nao trong KV", async () => {
+  let puts = 0;
+  const c = setup();
+  const kv = c.env.REPORTS;
+  c.env.REPORTS = { ...kv, put: async (k, v, o) => { puts++; return kv.put(k, v, o); } };
+  for (let i = 0; i < 3; i++) assert.equal((await postWithIp(c, fixture)).status, 200);
+  assert.equal(puts, 3);
+  assert.equal([...c.data.keys()].filter((k) => k.startsWith("rl:")).length, 0);
+});
+
+test("V194 chi luu bam IP (trong bo nho), khong luu IP trong khoa hay gia tri KV", async () => {  const c = setup();
+  assert.equal((await postWithIp(c, fixture)).status, 200);
+  const keys = [...c.data.keys()];
+  assert.equal(keys.filter((k) => k.startsWith("rl:")).length, 0);
+  for (const k of keys) assert.equal(k.includes(IP), false);
+  for (const v of c.data.values()) assert.equal(String(v.value).includes(IP), false);
+});
+
+// V194 (Luna 4): chỗ hạn mức phải được giữ TRƯỚC lần `await` ghi KV.
+test("V194 hai request cung IP dong thoi chi mot lot khi han muc = 1", async () => {
+  const c = setup({ RATE_LIMIT_MAX: "1", RATE_LIMIT_WINDOW_SECONDS: "3600" });
+  const both = await Promise.all([postWithIp(c, fixture), postWithIp(c, fixture)]);
+  assert.deepEqual(both.map((r) => r.status).sort(), [200, 429]);
+});
+
+test("V194 ghi KV loi thi nha lai cho han muc cho lan sau", async () => {
+  const c = setup({ RATE_LIMIT_MAX: "1", RATE_LIMIT_WINDOW_SECONDS: "3600" });
+  const kv = c.env.REPORTS;
+  let down = true;
+  c.env.REPORTS = {
+    ...kv,
+    put: async (k, v, o) => { if (down) { down = false; throw new Error("KV down"); } return kv.put(k, v, o); },
+  };
+  await assert.rejects(postWithIp(c, fixture)); // ghi lỗi: request lỗi, KHÔNG được coi là đã dùng hạn mức
+  assert.equal((await postWithIp(c, fixture)).status, 200);
+});
+
+// V194 (Luna 4): hoàn tác phải theo TOKEN của chính mình — không xoá lượt giữ chỗ của request đồng thời.
+test("V194 ba request dong thoi cung IP, mot cai ghi loi: hai luot giu cho con lai van dung", async () => {
+  const c = setup({ RATE_LIMIT_MAX: "3", RATE_LIMIT_WINDOW_SECONDS: "3600" });
+  const kv = c.env.REPORTS;
+  let openGate;
+  const gate = new Promise((resolve) => { openGate = resolve; });
+  let puts = 0;
+  c.env.REPORTS = {
+    ...kv,
+    put: async (k, v, o) => {
+      puts += 1;
+      if (puts === 1) { await gate; throw new Error("KV down"); } // A: giữ chỗ #1, chờ test cho phép lỗi
+      return kv.put(k, v, o);
+    },
+  };
+  const waitFor = async (label, want) => {
+    for (let i = 0; i < 200; i++) {
+      if (rateReservedCount() === want) return;
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    }
+    assert.fail(`chờ ${label}: đang giữ ${rateReservedCount()}, mong ${want}`);
+  };
+
+  const track = (promise) => promise.then((response) => ({ status: response.status }), () => ({ status: "ghi-loi" }));
+  const first = track(postWithIp(c, fixture));              // A
+  await waitFor("A giữ chỗ", 1);
+  const rest = [track(postWithIp(c, fixture)), track(postWithIp(c, fixture))]; // B, C
+  await waitFor("B và C giữ chỗ", 3);
+  openGate();
+  const all = await Promise.all([first, ...rest]);
+  assert.equal(all.filter((r) => r.status === "ghi-loi").length, 1, "đúng 1 request ghi KV lỗi");
+  assert.equal(all.filter((r) => r.status === 200).length, 2, "B và C đều lọt");
+  // A nhả ĐÚNG lượt của nó: 3 → 2, không xoá lượt của B/C.
+  await waitFor("A nhả đúng 1 chỗ", 2);
+  assert.equal((await postWithIp(c, fixture)).status, 200, "còn 1 lượt trống nên request sau vẫn lọt");
+  assert.equal((await postWithIp(c, fixture)).status, 429, "đã đủ 3 lượt thì chặn");
 });
