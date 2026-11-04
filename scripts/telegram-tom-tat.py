@@ -177,6 +177,9 @@ def idle_team_count(api, opened, now):
                 continue
             observed.append(at)
             reporter = ' '.join(body.split('→', 1)[0].lstrip('[').split()).lower()
+            # Hậu tố DeepSeek N là số thành viên; số 2 của tên Sol 2 phải giữ.
+            if name in ('DeepSeek', 'Duyệt DeepSeek'):
+                reporter = re.sub(r'\s*[0-9]+$', '', reporter)
             tail = re.sub(r'^\[[^\]]+\]\s*', '', body)
             if reporter in (name.lower(), 'trưởng nhóm ' + name.lower()) and STOPPED.match(tail):
                 stopped.append(at)

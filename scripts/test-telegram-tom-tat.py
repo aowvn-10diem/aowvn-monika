@@ -185,6 +185,40 @@ class Activity(unittest.TestCase):
         snapshot = daily.collect_snapshot(api, NOW)
         self.assertEqual(0, daily.idle_team_count(api, snapshot['open'], NOW))
 
+    def test_numbered_deepseek_stop_reports_and_later_activity_resume_group(self):
+        for branch, name in [('deepseek1/V1', 'DeepSeek'), ('duyet/V1', 'Duyệt DeepSeek')]:
+            reporters = [name, name + ' 1', name + '12', 'Trưởng nhóm ' + name,
+                         'Trưởng nhóm ' + name + ' 1', 'trưởng nhóm ' + name.lower() + '12',
+                         'Trưởng nhóm ' + name + '   2']
+            for reporter in reporters:
+                with self.subTest(branch=branch, reporter=reporter):
+                    api = API()
+                    opened = [{'branch': branch}]
+                    api.pushes = [push(NOW - timedelta(hours=4), branch)]
+                    api.global_comments = [report(
+                        f'[{reporter} → PM] Đã dừng phiên, chờ sếp.',
+                        NOW - timedelta(hours=3))]
+                    self.assertEqual(0, daily.idle_team_count(api, opened, NOW))
+                    # Báo dừng không che hoạt động mới hơn của đội.
+                    api.pushes.append(push(NOW - timedelta(hours=2), branch))
+                    self.assertEqual(1, daily.idle_team_count(api, opened, NOW))
+                    api.pushes.pop()
+                    api.global_comments.append(report(
+                        f'[{reporter} → PM] Làm lại việc.', NOW - timedelta(hours=2)))
+                    self.assertEqual(1, daily.idle_team_count(api, opened, NOW))
+
+    def test_numbered_reporter_task_pause_outsider_and_other_prefix_do_not_stop_group(self):
+        opened = [{'branch': 'deepseek1/V1'}]
+        for body, association in [
+                ('[Trưởng nhóm DeepSeek 1 → PM] Tạm dừng V180, làm V175.', 'OWNER'),
+                ('[DeepSeek 1 → PM] Đã dừng phiên.', 'CONTRIBUTOR'),
+                ('[Trưởng nhóm DeepSeekish 1 → PM] Đã dừng phiên.', 'OWNER')]:
+            with self.subTest(body=body, association=association):
+                api = API()
+                api.pushes = [push(NOW - timedelta(hours=4), 'deepseek1/V1')]
+                api.global_comments = [report(body, NOW - timedelta(hours=3), association)]
+                self.assertEqual(1, daily.idle_team_count(api, opened, NOW))
+
     def test_daytime_window_matches_dung_and_does_not_fetch_activity_at_night(self):
         for hour, minute, expected in [(6, 59, None), (7, 0, 1), (23, 59, 1), (0, 0, None)]:
             with self.subTest(hour=hour, minute=minute):
