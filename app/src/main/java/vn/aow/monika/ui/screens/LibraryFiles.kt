@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import vn.aow.monika.R
@@ -103,7 +102,7 @@ internal fun libraryFileEntries(
             key = "doc:${document.key}",
             name = document.name,
             kind = LibraryFileKind.DOCUMENT,
-            sizeBytes = runCatching { document.file.length() }.getOrDefault(0L),
+            sizeBytes = fileSize(document.file),
             addedAt = document.file.lastModified(),
             file = document.file,
             document = document,
@@ -118,6 +117,7 @@ internal fun libraryFileEntries(
 internal fun fileSize(file: File): Long = runCatching {
     if (file.isDirectory) file.walkTopDown().maxDepth(6).filter { it.isFile }.sumOf { it.length() }
     else file.length()
+// diag: bỏ qua lỗi đọc dung lượng vì đây chỉ là con số hiển thị (0 B); không ảnh hưởng xoá, sao lưu hay dữ liệu người chơi.
 }.getOrDefault(0L)
 
 /** "512 B" · "48 KB" · "1,4 MB" · "2,3 GB". */
@@ -239,7 +239,7 @@ internal fun LibraryFileRow(entry: LibraryFileEntry, onOpen: () -> Unit, onDelet
                 Modifier.size(44.dp).clip(Radius.thumb).background(primaryGradient()),
                 contentAlignment = Alignment.Center,
             ) {
-                MonikaIcon(entry.kind.icon, null, Modifier.size(22.dp), tint = Color.White)
+                MonikaIcon(entry.kind.icon, null, Modifier.size(22.dp), tint = c.textOnDark)
             }
             Column(
                 Modifier.weight(1f).padding(start = 12.dp, end = 8.dp),
