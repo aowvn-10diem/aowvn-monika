@@ -36,12 +36,14 @@ class CoreBuildTest(unittest.TestCase):
             {"core": "fceumm", "abi": "arm64-v8a"},
             {"core": "fceumm", "abi": "armeabi-v7a"},
             {"core": "gambatte", "abi": "arm64-v8a"},
-            {"core": "gambatte", "abi": "armeabi-v7a"}]})
+            {"core": "gambatte", "abi": "armeabi-v7a"},
+            {"core": "mgba", "abi": "arm64-v8a"},
+            {"core": "mgba", "abi": "armeabi-v7a"}]})
         self.assertEqual(len(lock["inventory"]["cores"]), 22)
-        self.assertEqual(len(set(lock["inventory"]["cores"]) - set(lock["cores"])), 20)
+        self.assertEqual(len(set(lock["inventory"]["cores"]) - set(lock["cores"])), 19)
 
     def test_repository_recipe_and_license_are_bound_to_each_core(self):
-        for name, wrong in [('fceumm', 'gambatte'), ('gambatte', 'fceumm')]:
+        for name, wrong in [('fceumm', 'gambatte'), ('gambatte', 'fceumm'), ('mgba', 'fceumm')]:
             for key in ['repository', 'recipe', 'license', 'licenseFiles']:
                 data = copy.deepcopy(self.raw)
                 data['cores'][name][key] = data['cores'][wrong][key]
@@ -108,6 +110,31 @@ class CoreBuildTest(unittest.TestCase):
                                       self.root / "out", self.lock_path)
             fetch.assert_not_called()
         self.assertFalse((self.root / "out").exists())
+
+    def test_mgba_missing_or_wrong_cmake_ninja_fails_before_network(self):
+        ndk = self.root / "ndk"; ndk.mkdir()
+        (ndk / "source.properties").write_text("Pkg.Revision = 22.1.7171670\n")
+        for cmake, versions, message in [
+                (None, [], "CMake"),
+                (self.root / "cmake", ["cmake version 3.31.6"], "CMake"),
+                (self.root / "cmake", ["cmake version 3.22.1-g37088a8", "1.11.1"], "Ninja")]:
+            with self.subTest(message=message, versions=versions), \
+                    patch.object(corebuild, "checkout") as fetch, \
+                    patch.object(corebuild, "run", side_effect=versions):
+                with self.assertRaisesRegex(ValueError, message):
+                    corebuild.prepare(self.load(), "mgba", "arm64-v8a", ndk,
+                                      self.root / "out", self.lock_path, cmake)
+                fetch.assert_not_called()
+        self.assertFalse((self.root / "out").exists())
+
+    def test_reject_unpinned_cmake_and_ninja_in_lock(self):
+        for tool in ("cmake", "cmakeBuild", "ninja"):
+            for version in ("latest", "3.22.1\n", None):
+                data = copy.deepcopy(self.raw)
+                data["toolchain"][tool] = version
+                self.write(data)
+                with self.subTest(tool=tool, version=version), self.assertRaisesRegex(ValueError, "CMake/Ninja"):
+                    self.load()
 
     def test_checkout_must_match_commit_and_no_submodules(self):
         core = self.raw["cores"]["fceumm"]
