@@ -114,8 +114,8 @@ class ReaderScreenTest {
             composeScreen(FakeBook(pageCount = 2, failOnPage = 0))
             rule.waitForIdle()
             assertTrue(
-                "Lỗi dựng trang phải được ghi nhận (Diagnostics), có: $reports",
-                reports.any { it.contains("dựng trang 1") },
+                "Lỗi dựng trang phải được ghi nhận bằng mã (không kèm tên tệp), có: $reports",
+                reports.any { it == "dung-trang-loi" },
             )
         } finally {
             ReaderDiag.onError = null

@@ -13,6 +13,13 @@ import java.io.FileNotFoundException
  */
 object PdfBookOpener {
     fun open(file: File): Result<PdfBook> = PdfRendererBook.open(file)
+
+    /**
+     * Mở tệp có thời hạn [timeoutMs]; quá hạn thì trả `null`. Nếu tệp mở xong **muộn** thì sách
+     * vừa mở bị **đóng ngay** — không giữ, không rò file descriptor.
+     */
+    suspend fun openWithin(timeoutMs: Long, file: File): Result<PdfBook>? =
+        withDeadlineAndCloseOnLate(timeoutMs, close = { it.getOrNull()?.close() }) { open(file) }
 }
 
 /**
@@ -25,27 +32,33 @@ internal class PdfRendererBook private constructor(
     private val renderer: PdfRenderer,
 ) : PdfBook {
 
+    /** Khoá dựng trang: PdfRenderer không thread-safe, không mở 2 trang cùng lúc. */
+    private val renderLock = Any()
+
     override val pageCount: Int
         get() = try {
             renderer.pageCount
         } catch (t: Throwable) {
             // Đọc số trang lỗi → coi như 0 trang (màn đọc sẽ báo "hỏng") và ghi nhận lại.
-            ReaderDiag.report("đọc số trang PDF", t)
+            ReaderDiag.report("doc-so-trang-loi")
             0
         }
 
     override fun openPage(index: Int): ReaderPage {
-        val safeIndex = index.coerceIn(0, (pageCount - 1).coerceAtLeast(0))
-        val page = renderer.openPage(safeIndex)
-        return page.use {
-            // PdfRenderer phóng/thu nội dung theo kích thước bitmap (transform = null).
-            // Kích thước tính từ tỉ lệ trang: tối đa 2x cho chữ nét, và **luôn** chặn bề rộng
-            // ở MAX_RENDER_WIDTH — kể cả trang nguồn rất rộng (> 16.000 px).
-            val (width, height) = renderSize(it.width, it.height)
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            bitmap.eraseColor(Color.WHITE)
-            it.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            ReaderPage(bitmap)
+        // PdfRenderer không thread-safe: mọi lần mở/dựng trang trên cùng sách đi qua một khoá.
+        synchronized(renderLock) {
+            val safeIndex = index.coerceIn(0, (pageCount - 1).coerceAtLeast(0))
+            val page = renderer.openPage(safeIndex)
+            return page.use {
+                // PdfRenderer phóng/thu nội dung theo kích thước bitmap (transform = null).
+                // Kích thước tính từ tỉ lệ trang: tối đa 2x cho chữ nét, và **luôn** chặn bề rộng
+                // ở MAX_RENDER_WIDTH — kể cả trang nguồn rất rộng (> 16.000 px).
+                val (width, height) = renderSize(it.width, it.height)
+                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                bitmap.eraseColor(Color.WHITE)
+                it.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                ReaderPage(bitmap)
+            }
         }
     }
 
@@ -53,12 +66,12 @@ internal class PdfRendererBook private constructor(
         try {
             renderer.close()
         } catch (t: Throwable) {
-            ReaderDiag.report("đóng PdfRenderer", t)
+            ReaderDiag.report("dong-renderer-loi")
         }
         try {
             fd.close()
         } catch (t: Throwable) {
-            ReaderDiag.report("đóng tệp PDF", t)
+            ReaderDiag.report("dong-tep-loi")
         }
     }
 
@@ -106,18 +119,18 @@ internal class PdfRendererBook private constructor(
                 val pages = book.pageCount
                 if (pages <= 0) {
                     // Tệp 0 trang = hỏng/giả PDF; không giữ handle.
-                    ReaderDiag.report("PDF không có trang nào: ${file.name}")
+                    ReaderDiag.report("pdf-khong-trang")
                     book.close()
                     Result.failure(ReaderException(ReaderError.CORRUPT))
                 } else {
                     Result.success(book)
                 }
             } catch (t: Throwable) {
-                ReaderDiag.report("mở PDF: ${file.name}", t)
+                ReaderDiag.report("mo-pdf-loi")
                 try {
                     opened?.close()
                 } catch (c: Throwable) {
-                    ReaderDiag.report("đóng tệp PDF sau lỗi mở", c)
+                    ReaderDiag.report("dong-tep-sau-loi-mo")
                 }
                 Result.failure(ReaderException(errorFor(t), t))
             }

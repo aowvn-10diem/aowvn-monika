@@ -12,6 +12,7 @@ enum class ReaderError(val message: String) {
     CORRUPT("PDF này hỏng hoặc không có trang nào đọc được."),
     UNSUPPORTED("Máy này chưa dựng được PDF bằng bộ đọc có sẵn của Android."),
     TIMEOUT("Mở tệp PDF quá lâu. Tệp có thể quá lớn hoặc hỏng — thử lại hoặc chọn tệp khác."),
+    PAGE_TIMEOUT("Trang này dựng quá lâu nên chưa hiện được. Thử lại hoặc sang trang khác."),
 }
 
 /** Lỗi đọc PDF kèm loại lỗi để màn đọc chọn thông báo. */

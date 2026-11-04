@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import vn.aow.monika.AppGraph
 import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.ui.theme.Monika
@@ -57,11 +56,12 @@ class PdfReaderActivity : ComponentActivity() {
                     } else {
                         withContext(Dispatchers.IO) {
                             // Không để spinner chạy mãi: mở quá lâu thì báo lỗi có loại.
-                            val opened = withTimeoutOrNull(OPEN_TIMEOUT_MS) { PdfBookOpener.open(File(path)) }
+                            // Xong muộn sau hạn thì đóng sách vừa mở để không rò descriptor.
+                            val opened = PdfBookOpener.openWithin(OPEN_TIMEOUT_MS, File(path))
                             if (opened == null) {
+                                // Chỉ mã lỗi — không ghi tên tệp/đường dẫn của người dùng vào log.
                                 Diagnostics.recordHandled(
-                                    this@PdfReaderActivity, ReaderDiag.COMPONENT,
-                                    "mở PDF quá lâu: ${File(path).name}",
+                                    this@PdfReaderActivity, ReaderDiag.COMPONENT, "mo-pdf-qua-han",
                                 )
                                 ReaderOpenState.Failed(ReaderError.TIMEOUT)
                             } else {
@@ -73,8 +73,7 @@ class PdfReaderActivity : ComponentActivity() {
                                                 old.close()
                                             } catch (t: Throwable) {
                                                 Diagnostics.recordHandled(
-                                                    this@PdfReaderActivity, ReaderDiag.COMPONENT,
-                                                    "đóng tài liệu cũ khi mở lại", t,
+                                                    this@PdfReaderActivity, ReaderDiag.COMPONENT, "dong-tai-lieu-cu-loi",
                                                 )
                                             }
                                         }
@@ -109,7 +108,8 @@ class PdfReaderActivity : ComponentActivity() {
             try {
                 it.close()
             } catch (t: Throwable) {
-                Diagnostics.recordHandled(this, ReaderDiag.COMPONENT, "đóng tài liệu khi rời màn", t)
+                // Chỉ mã lỗi — không ghi tên tệp/đường dẫn của người dùng.
+                Diagnostics.recordHandled(this, ReaderDiag.COMPONENT, "dong-tai-lieu-loi")
             }
         }
         openedBook = null

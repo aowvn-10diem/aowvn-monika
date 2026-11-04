@@ -32,8 +32,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 /**
  * Màn đọc PDF độc lập: tên tài liệu, khung trang, thanh điều hướng Trước/Sau,
@@ -103,6 +101,9 @@ private sealed interface PageState {
     class Failed(val error: ReaderError) : PageState
 }
 
+/** Cổng dựng trang dùng chung (tuần tự + có hạn) cho mọi màn đọc. */
+private val renderGate = PageRenderGate()
+
 /**
  * Khung trang + thanh điều hướng. Trang dựng trên luồng IO; đổi trang liên tục vẫn an toàn
  * vì [produceState] huỷ lần dựng cũ khi [page]/[retry] đổi. Lỗi dựng trang → hiện thông báo
@@ -121,13 +122,19 @@ private fun ReaderPager(
     var retry by remember(book) { mutableIntStateOf(0) }
     val state by produceState<PageState>(PageState.Loading, book, page, retry) {
         value = PageState.Loading
-        value = withContext(Dispatchers.IO) {
-            try {
-                PageState.Ready(book.openPage(page))
-            } catch (t: Throwable) {
-                ReaderDiag.report("dựng trang ${page + 1}", t)
-                PageState.Failed(PdfRendererBook.errorFor(t))
+        value = try {
+            // Một cổng duy nhất: tuần tự trên renderer + có hạn; xong muộn thì đóng bitmap ngay.
+            val rendered = renderGate.render(close = { it.bitmap.recycle() }) { book.openPage(page) }
+            if (rendered == null) {
+                ReaderDiag.report("dung-trang-qua-han")
+                PageState.Failed(ReaderError.PAGE_TIMEOUT)
+            } else {
+                PageState.Ready(rendered)
             }
+        } catch (t: Throwable) {
+            // Chỉ ghi mã lỗi — không ghi tên tệp/đường dẫn/kích thước của người dùng.
+            ReaderDiag.report("dung-trang-loi")
+            PageState.Failed(PdfRendererBook.errorFor(t))
         }
     }
     Column(Modifier.fillMaxSize()) {
