@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # [A40] Một lượt PM tự động, đọc rẻ: in tối đa ~15 dòng, mỗi dòng bắt đầu bằng nhãn việc cần làm.
 #   GOP     #N <sha>        PR đủ luật gộp (Đạt đúng head + CI bắt buộc xanh, không còn "Cần sửa")
+#   XUNGDOT #N <sha>        như GOP nhưng xung đột với main: không gộp, nhắc người làm gộp main (merge, không rebase) nếu chưa nhắc
 #   NHAP    #N <sha>        như GOP nhưng PR còn draft (agent mặc định mở draft): đọc mô tả, không còn câu chờ sếp thì ready_for_review rồi gộp đúng sha
 #   PMXEM   #N               review cuối ghi "Cần PM xem"
 #   CHO     #N <sha7> thieu-Dat <ai>   CI xanh, có Đạt nhưng thiếu người duyệt, head > 24 giờ: nhắc người đó ở #119
@@ -21,7 +22,7 @@ out=()
 
 # 1. PR: kết luận mới nhất trên đúng head + CI bắt buộc.
 for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user.login|test("dependabot")|not)|.number'); do
-  read -r sha draft < <(gh api "repos/$R/pulls/$p" --jq '"\(.head.sha) \(.draft)"')
+  read -r sha draft mst < <(gh api "repos/$R/pulls/$p" --jq '"\(.head.sha) \(.draft) \(.mergeable_state)"')
   [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || continue   # API lỗi/hạn mức: bỏ qua, không bao giờ in GOP thiếu sha
   ci=$(gh api "repos/$R/commits/$sha/check-runs?per_page=60" --jq '[.check_runs[]|select(.name|test("^(build|coverage|n04-tests|analyze)"))|.conclusion//"chay"]|unique|join(",")')
   # Kết luận Luna 3 / Luna Ultra trên đúng head (review hoặc comment có "Kết luận").
@@ -39,6 +40,7 @@ for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user
   [ "$need" -eq 2 ] && [ $(( dat - (ds > 0 ? 1 : 0) )) -lt 1 ] && dat=1
   if [ "$last" = "Cần PM xem" ]; then out+=("PMXEM #$p"); continue; fi
   echo "$ci" | grep -qE 'failure|cancelled|chay' && continue
+  [ "$last" = "Đạt" ] && [ "$dat" -ge "$need" ] && [ "$mst" = "dirty" ] && { out+=("XUNGDOT #$p $sha"); continue; }
   [ "$last" = "Đạt" ] && [ "$dat" -ge "$need" ] && { [ "$draft" = "true" ] && out+=("NHAP #$p $sha") || out+=("GOP #$p $sha"); continue; }
   # Kẹt im lặng: CI xanh, có Đạt nhưng chưa đủ người duyệt, head đã quá 24 giờ → nhắc đúng người còn thiếu.
   if [ "$last" = "Đạt" ] && [ "$dat" -lt "$need" ]; then
