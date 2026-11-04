@@ -117,8 +117,14 @@ object GameSaveBackup {
      * Thư mục rỗng → [GameFolderBackup.file] null (`complete` cho biết có quét được trọn không).
      * Vượt dung lượng / thiếu chỗ → `complete=false` (nơi gọi phải **từ chối xoá**).
      * Ghi zip lỗi → ném để nơi gọi dừng, không xoá.
+     *
+     * [freeSpace] chỉ để test tiêm dung lượng trống; chạy thật dùng `File.usableSpace`.
      */
-    fun backupFolder(context: Context, game: Game): GameFolderBackup {
+    fun backupFolder(
+        context: Context,
+        game: Game,
+        freeSpace: (File) -> Long = { it.usableSpace },
+    ): GameFolderBackup {
         val scan = scan(context, game.dir)
         if (scan.files.isEmpty()) return GameFolderBackup(null, scan.notes, scan.complete)
         val total = scan.files.sumOf { bytesOf(context, it) }
@@ -130,7 +136,7 @@ object GameSaveBackup {
             )
         }
         val dir = File(context.filesDir, DIR).apply { check(mkdirs() || isDirectory) { "chưa tạo được thư mục sao lưu" } }
-        val free = runCatching { dir.usableSpace }
+        val free = runCatching { freeSpace(dir) }
             .onFailure { Diagnostics.recordHandled(context, COMPONENT, "đọc dung lượng trống để sao lưu", it) }
             .getOrDefault(0L)
         if (free > 0 && free < total + MIN_FREE_AFTER_BACKUP) {

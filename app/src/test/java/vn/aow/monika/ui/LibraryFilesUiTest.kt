@@ -30,15 +30,12 @@ import vn.aow.monika.ui.screens.LibraryFileEntry
 import vn.aow.monika.ui.screens.LibraryFileKind
 import vn.aow.monika.ui.screens.LibraryFilesPage
 import vn.aow.monika.ui.screens.LibraryScreen
-import vn.aow.monika.ui.screens.SAVE_BACKUP_DIR
-import vn.aow.monika.ui.screens.GameBackup
-import vn.aow.monika.ui.screens.backupGameFolder
 import vn.aow.monika.ui.screens.backupShareIntent
-import vn.aow.monika.ui.screens.createUniqueBackupFile
+import vn.aow.monika.library.GameFolderBackup
+import vn.aow.monika.library.GameSaveBackup
 import vn.aow.monika.ui.screens.deleteGameWithSaveBackup
 import vn.aow.monika.ui.screens.formatFileDate
 import vn.aow.monika.ui.screens.formatFileSize
-import vn.aow.monika.ui.screens.scanGameFiles
 import vn.aow.monika.ui.theme.DockClearance
 import vn.aow.monika.ui.theme.MonikaTheme
 import vn.aow.monika.ui.theme.dockContentClearance
@@ -165,7 +162,7 @@ class LibraryFilesUiTest {
             parentFile?.mkdirs(); writeText("save grap")
         }
         val unknownSave = File(unknown, "save/quan-trong.sav").apply { parentFile?.mkdirs(); writeText("save nguoi choi") }
-        val backups = File(rule.activity.filesDir, SAVE_BACKUP_DIR)
+        val backups = File(rule.activity.filesDir, GameSaveBackup.DIR)
         val knownBackups = backups.listFiles().orEmpty().toSet()
         try {
             openFiles()
@@ -217,13 +214,13 @@ class LibraryFilesUiTest {
             parentFile?.mkdirs(); writeText("du lieu save quan trong")
         }
         val target = Game(game, "v141-save-game", AppGraph.config.current.system("gba"), rom)
-        val backups = File(rule.activity.filesDir, SAVE_BACKUP_DIR)
+        val backups = File(rule.activity.filesDir, GameSaveBackup.DIR)
         val knownBackups = backups.listFiles().orEmpty().toSet()
         try {
-            val scan = scanGameFiles(rule.activity, game)
+            val scan = GameSaveBackup.scan(rule.activity, game)
             assertTrue("Quét phải trọn vẹn", scan.complete)
             assertEquals(setOf("fixture.gba", "tien-do.sav"), scan.files.map { it.name }.toSet())
-            val backup = backupGameFolder(rule.activity, target)
+            val backup = GameSaveBackup.backupFolder(rule.activity, target)
             val zipFile = backup.file
             assertNotNull("Phải tạo được bản sao lưu save", zipFile)
             assertTrue(zipFile!!.isFile)
@@ -254,13 +251,65 @@ class LibraryFilesUiTest {
         }
     }
 
+    /**
+     * Luna 4 (#434): **một lần xoá chỉ được tạo đúng MỘT zip**. Trước đây mục Tệp sao lưu trước rồi
+     * gọi `GameLibrary.delete`, mà `delete` lại sao lưu lần nữa → 2 zip, tốn gấp đôi dung lượng và
+     * có thể làm lần xoá thất bại vì hết chỗ.
+     */
+    @Test fun oneDeleteCreatesExactlyOneBackupArchive() {
+        val game = fixture("v141-mot-zip")
+        val rom = File(game, "fixture.gba").apply { writeText("rom") }
+        File(game, "save/a.sav").apply { parentFile?.mkdirs(); writeText("save") }
+        val target = Game(game, "v141-mot-zip", AppGraph.config.current.system("gba"), rom)
+        val backups = File(rule.activity.filesDir, GameSaveBackup.DIR)
+        val known = backups.listFiles().orEmpty().toSet()
+        try {
+            val result = deleteGameWithSaveBackup(rule.activity, target)
+            assertTrue("Phải xoá được game", result.deleted)
+            assertFalse(game.exists())
+            val created = backups.listFiles().orEmpty().filter { it !in known }
+            assertEquals("Một lần xoá chỉ được tạo 1 bản sao lưu: ${created.map { it.name }}", 1, created.size)
+            assertEquals(created.single(), result.backup)
+            ZipFile(result.backup!!).use { zip -> assertNotNull(zip.getEntry("game/fixture.gba")) }
+        } finally {
+            game.deleteRecursively()
+            backups.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+            AppGraph.library.list()
+        }
+    }
+
+    /** Không đủ dung lượng trống → **không xoá** và không để lại zip dở. */
+    @Test fun deleteIsRefusedWhenThereIsNotEnoughFreeSpaceAndNoPartialZipIsLeft() {
+        val game = fixture("v141-het-cho")
+        val rom = File(game, "fixture.gba").apply { writeText("rom") }
+        val save = File(game, "save/a.sav").apply { parentFile?.mkdirs(); writeText("save quan trong") }
+        val target = Game(game, "v141-het-cho", AppGraph.config.current.system("gba"), rom)
+        val backups = File(rule.activity.filesDir, GameSaveBackup.DIR)
+        val known = backups.listFiles().orEmpty().toSet()
+        try {
+            val result = deleteGameWithSaveBackup(rule.activity, target) { ctx, g ->
+                GameSaveBackup.backupFolder(ctx, g, freeSpace = { 1L }) // gần như hết chỗ
+            }
+            assertFalse("Thiếu chỗ thì không được xoá", result.deleted)
+            assertTrue("Thư mục game phải còn nguyên", game.exists())
+            assertTrue("Save phải còn nguyên", save.exists())
+            assertTrue("Phải nói rõ lý do thiếu chỗ: ${result.message}", result.message.contains("dung lượng trống", true))
+            val created = backups.listFiles().orEmpty().filter { it !in known }
+            assertTrue("Không được để lại zip dở: ${created.map { it.name }}", created.isEmpty())
+        } finally {
+            game.deleteRecursively()
+            backups.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+            AppGraph.library.list()
+        }
+    }
+
     @Test fun backupNamesAreReservedAtomically() {
-        val dir = File(rule.activity.filesDir, SAVE_BACKUP_DIR).apply { mkdirs() }
+        val dir = File(rule.activity.filesDir, GameSaveBackup.DIR).apply { mkdirs() }
         val known = dir.listFiles().orEmpty().toSet()
         try {
             // Giữ tên xong là tệp tồn tại ngay; kiểu `if (!exists())` sẽ trả cùng một tên 2 lần.
-            val first = createUniqueBackupFile(rule.activity, dir, "xoa-atomic")
-            val second = createUniqueBackupFile(rule.activity, dir, "xoa-atomic")
+            val first = GameSaveBackup.createUniqueBackupFile(rule.activity, dir, "xoa-atomic")
+            val second = GameSaveBackup.createUniqueBackupFile(rule.activity, dir, "xoa-atomic")
             assertNotEquals("Hai lần giữ tên phải khác nhau", first, second)
             assertTrue("Tệp giữ tên phải tồn tại ngay", first.isFile)
             assertTrue("Tệp giữ tên phải tồn tại ngay", second.isFile)
@@ -276,7 +325,7 @@ class LibraryFilesUiTest {
         val rom = File(game, "fixture.gba").apply { writeText("rom") }
         File(game, "save/a.sav").apply { parentFile?.mkdirs(); writeText("save") }
         val target = Game(game, "v141-song-song", AppGraph.config.current.system("gba"), rom)
-        val dir = File(ctx.filesDir, SAVE_BACKUP_DIR)
+        val dir = File(ctx.filesDir, GameSaveBackup.DIR)
         val known = dir.listFiles().orEmpty().toSet()
         val pool = java.util.concurrent.Executors.newFixedThreadPool(2)
         try {
@@ -284,7 +333,7 @@ class LibraryFilesUiTest {
             val futures = (1..2).map {
                 pool.submit<java.io.File?> {
                     barrier.await(30, java.util.concurrent.TimeUnit.SECONDS) // cả hai vào cùng lúc
-                    backupGameFolder(ctx, target).file
+                    GameSaveBackup.backupFolder(ctx, target).file
                 }
             }
             val files = futures.map { it.get(120, java.util.concurrent.TimeUnit.SECONDS) }
@@ -315,15 +364,15 @@ class LibraryFilesUiTest {
             File(game, "save/s$i.srm").apply { parentFile?.mkdirs(); writeText("s$i") }
         }
         val target = Game(game, "v141-save-sau", AppGraph.config.current.system("gba"), rom)
-        val backups = File(rule.activity.filesDir, SAVE_BACKUP_DIR)
+        val backups = File(rule.activity.filesDir, GameSaveBackup.DIR)
         val knownBackups = backups.listFiles().orEmpty().toSet()
         try {
-            val scan = scanGameFiles(rule.activity, game)
+            val scan = GameSaveBackup.scan(rule.activity, game)
             assertTrue("Quét phải trọn vẹn", scan.complete)
             assertTrue("Phải thấy save nằm sâu 7 tầng", scan.files.any { it == deep })
             assertEquals("Không được cắt bớt tệp nào", 302, scan.files.size) // 301 save + ROM
 
-            val backup = backupGameFolder(rule.activity, target)
+            val backup = GameSaveBackup.backupFolder(rule.activity, target)
             val zipFile = backup.file
             assertNotNull("Phải tạo được bản sao lưu save", zipFile)
             ZipFile(zipFile!!).use { zip ->
@@ -347,7 +396,7 @@ class LibraryFilesUiTest {
         try {
             val warning = "Bỏ qua 1 liên kết tượng trưng (không đi theo để tránh lặp vô hạn)."
             val result = deleteGameWithSaveBackup(rule.activity, target) { _, _ ->
-                GameBackup(null, listOf(warning), complete = false)
+                GameFolderBackup(null, listOf(warning), complete = false)
             }
             assertFalse("Chưa chứng minh sao lưu đủ thì không được xoá", result.deleted)
             assertTrue("Thư mục game phải còn", game.exists())
@@ -360,7 +409,7 @@ class LibraryFilesUiTest {
     }
 
     @Test fun backupShareIntentHandsTheZipToOtherApps() {
-        val backup = File(File(rule.activity.filesDir, SAVE_BACKUP_DIR), "xoa-demo.zip").apply {
+        val backup = File(File(rule.activity.filesDir, GameSaveBackup.DIR), "xoa-demo.zip").apply {
             parentFile?.mkdirs(); writeText("zip")
         }
         val shared = android.net.Uri.parse("content://vn.aow.monika.files/app_internal/save-backups/xoa-demo.zip")
@@ -388,7 +437,7 @@ class LibraryFilesUiTest {
         val dat = File(game, "profile/slot1.dat").apply { parentFile?.mkdirs(); writeText("save dang dat") }
         val bare = File(game, "progress").apply { writeText("save khong duoi") }
         val target = Game(game, "v141-save-la", AppGraph.config.current.system("gba"), rom)
-        val backups = File(rule.activity.filesDir, SAVE_BACKUP_DIR)
+        val backups = File(rule.activity.filesDir, GameSaveBackup.DIR)
         val knownBackups = backups.listFiles().orEmpty().toSet()
         try {
             val result = deleteGameWithSaveBackup(rule.activity, target)
