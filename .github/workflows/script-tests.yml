@@ -57,3 +57,5 @@ jobs:
         run: python3 scripts/test-truoc-khi-push.py
       - name: Kiểm lock và recipe dựng lõi từ nguồn (V198, offline)
         run: python3 scripts/test-prepare-core-build.py
+      - name: Kiểm tin sáng Telegram bằng dữ liệu giả (V177, offline)
+        run: python3 scripts/test-telegram-tom-tat.py
