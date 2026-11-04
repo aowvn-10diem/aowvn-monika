@@ -18,7 +18,7 @@ DOI = (("deepseek", "DeepSeek"), ("sol2/", "Sol 2"), ("sol/", "Sol"), ("nova/", 
        ("luna", "Luna"), ("haiku", "Haiku"), ("claude/", "PM"), ("docs/opus", "PM"), ("dependabot", "Dependabot"))
 VERDICT = re.compile(r"Kết luận:?\**:?\s*(Đạt|Cần sửa|Cần PM xem)")
 HEAD = re.compile(r"(?:commit|head)\s+([0-9a-f]{7,40})", re.I)
-REQUIRED = ("build", "coverage", "n04-tests", "CodeQL")
+KHONG_CHAN = ("preview", "links", "digest")  # check thông tin, đỏ không chặn gộp
 NGUOI = re.compile(r"^\s*(\[Duyệt DeepSeek|Luna [0-9A-Za-z]+|\[[^\]]+\])")
 
 
@@ -39,9 +39,11 @@ def gon(title):
 
 
 def ci_do(check_runs):
-    """Đỏ khi một check bắt buộc (build, coverage, n04-tests, CodeQL, mọi analyze) thất bại."""
-    return any(c.get("conclusion") in ("failure", "timed_out")
-               and (c.get("name") in REQUIRED or (c.get("name") or "").startswith("analyze"))
+    """Đỏ khi bất kỳ check nào thất bại/quá giờ, trừ vài check chỉ để xem (preview, links, digest).
+
+    Tính theo danh sách loại trừ để job test mới (vd `offline`) tự được tính, không phải nhớ thêm tên.
+    """
+    return any(c.get("conclusion") in ("failure", "timed_out") and c.get("name") not in KHONG_CHAN
                for c in check_runs)
 
 

@@ -66,9 +66,11 @@ class TienDo(unittest.TestCase):
         self.assertEqual(td.trang_thai(pr(), cm, False), ("👀 Chờ duyệt (0/2 Đạt)", 0))
 
     def test_ci_do_tinh_du_check_bat_buoc(self):
-        for name in ("build", "coverage", "n04-tests", "CodeQL", "analyze (javascript-typescript)"):
+        for name in ("build", "coverage", "n04-tests", "CodeQL", "analyze (javascript-typescript)", "offline"):
             self.assertTrue(td.ci_do([{"name": name, "conclusion": "failure"}]), name)
-        self.assertFalse(td.ci_do([{"name": "preview", "conclusion": "failure"}]))
+            self.assertTrue(td.ci_do([{"name": name, "conclusion": "timed_out"}]), name)
+        for name in ("preview", "links", "digest"):
+            self.assertFalse(td.ci_do([{"name": name, "conclusion": "failure"}]), name)
         self.assertFalse(td.ci_do([{"name": "build", "conclusion": "success"}]))
 
     def test_nhap_va_ci_do(self):
