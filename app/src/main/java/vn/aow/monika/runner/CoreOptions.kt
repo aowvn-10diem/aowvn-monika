@@ -10,6 +10,8 @@ data class CoreOption(
     val value: String,
     /** Bản dịch giá trị để HIỂN THỊ (giá trị gửi cho lõi vẫn là bản gốc). */
     val valueText: Map<String, String> = emptyMap(),
+    /** Tên gốc lõi đưa ra (trước khi dịch) — dùng để xếp nhóm, không hiển thị. */
+    val original: String = "",
 ) {
     fun display(v: String = value): String = valueText[v] ?: valueText[v.lowercase()] ?: v
 
@@ -35,8 +37,11 @@ object CoreOptions {
         val values = d.substring(sep + 1).trim().split('|').map { it.trim() }.filter { it.isNotEmpty() }
         if (values.size < 2) return null
         val value = current?.takeIf { it in values } ?: values.first()
-        val label = d.substring(0, sep).trim()
-        return CoreOption(key, text.labels[label] ?: label, values, value, text.values)
+        val original = d.substring(0, sep).trim()
+        // V188: NDS hiện nhãn tiếng Việt (config thắng, rồi bảng theo khoá); lõi khác giữ nguyên như trước.
+        val label = if (key.startsWith("melonds_")) NdsSettings.label(key, original, text) else text.labels[original] ?: original
+        val valueText = if (key.startsWith("melonds_")) NdsSettings.valueText(text) else text.values
+        return CoreOption(key, label, values, value, valueText, original)
     }
 
     /** Giá trị áp khi mở game = mặc định trong config, đè bằng giá trị user đã chọn. */
