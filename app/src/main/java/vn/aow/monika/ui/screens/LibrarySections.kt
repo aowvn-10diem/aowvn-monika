@@ -69,16 +69,6 @@ internal fun LibraryReadPage(
     }
 }
 
-/** Mục Tệp: khung rỗng, quản lý tệp + giải nén làm ở V141. */
-@Composable
-internal fun LibraryFilesPage() {
-    EmptyState(
-        R.drawable.fluent3d_package, "Chưa có tệp",
-        "Mục Tệp đang được hoàn thiện: xem dung lượng, giải nén và dọn tệp trong kho Monika. " +
-            "Hiện bạn thêm và quản lý game ở mục Chơi.",
-    )
-}
-
 /**
  * Nút "+ Thêm" (một cửa duy nhất): thêm file từ máy, quét cả máy, cấp quyền đọc tệp.
  * Dùng lại đúng luồng nhập sẵn có (picker → Importer, scanner) — không thêm đường nhập mới.

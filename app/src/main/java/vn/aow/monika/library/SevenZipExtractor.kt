@@ -35,7 +35,6 @@ object SevenZipExtractor {
 
     private fun extractOnce(parts: List<File>, target: File, password: String?, progress: ExtractProgress?) {
         target.mkdirs()
-        val root = target.canonicalPath + File.separator
         val channel = if (parts.size == 1) FileChannel.open(parts[0].toPath(), StandardOpenOption.READ)
         else MultiReadOnlySeekableByteChannel.forFiles(*parts.toTypedArray())
         val builder = SevenZFile.builder().setSeekableByteChannel(channel)
@@ -47,8 +46,8 @@ object SevenZipExtractor {
             val buf = ByteArray(256 * 1024)
             while (true) {
                 val entry = zip.nextEntry ?: break
-                val out = File(target, entry.name).canonicalFile
-                if (!out.path.startsWith(root)) throw IOException("File nén không hợp lệ: ${entry.name}")
+                val out = SafeZipPath.resolve(target, entry.name)
+                    ?: throw IOException("File nén không hợp lệ: ${entry.name}")
                 if (entry.isDirectory) { out.mkdirs(); continue }
                 out.parentFile?.mkdirs()
                 out.outputStream().use { os ->

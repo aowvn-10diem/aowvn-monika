@@ -82,6 +82,8 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
     var refreshTick by remember { mutableIntStateOf(0) }
     var officialOpen by remember { mutableStateOf(false) }
     var subscribed by remember { mutableStateOf(AppGraph.prefs.subscribedLabels) }
+    // V193 G1: mặc định tắt; công tắc này là nơi duy nhất bật lại.
+    var feedOn by remember { mutableStateOf(AppGraph.feedEnabled) }
 
     Screen {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = if (onBack == null) DockClearance else 24.dp)) {
@@ -221,6 +223,17 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                         MonikaCard(Modifier.fillMaxWidth(), shape = Radius.medium) { ExternalAppDetails(app, installed) }
                     }
                     SoftPillButton("Kiểm tra lại trạng thái cài đặt", { refreshTick++ }, R.drawable.ic_fluent_arrow_sync_24_regular)
+                }
+
+                SettingGroup("feed", open, { open = it }, R.drawable.ic_fluent_news_24_regular, primaryGradient(), "Bài viết & tin tức", if (feedOn) "Đang bật" else "Đang tắt") {
+                    ChipBar(listOf(true, false), feedOn, { if (it) "Bật" else "Tắt" }, { on ->
+                        feedOn = on
+                        AppGraph.setFeedEnabled(on)
+                    }, accent = true, contentPadding = PaddingValues(0.dp))
+                    Text(
+                        "Khi bật, app tải bài viết từ aow.vn và có thể gửi thông báo bài mới. Mặc định tắt để bản tự build không gọi dịch vụ AowVN.",
+                        style = Monika.type.caption, color = c.textSecondary,
+                    )
                 }
 
                 SettingGroup("notify", open, { open = it }, R.drawable.ic_fluent_alert_24_regular, Brush.linearGradient(listOf(Color(0xFFFF806E), Color(0xFFFFC95C))), "Thông báo bài mới", if (subscribed.isEmpty()) "Nhận tất cả" else "${subscribed.size} nhãn") {

@@ -41,6 +41,9 @@ import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 /** Thẻ "Tiếp tục chơi": charcoal + minh họa 3D + nút play gradient. */
 @Composable
@@ -76,17 +79,21 @@ private val tileGradients = listOf(
     Brush.linearGradient(listOf(Color(0xFFFF806E), Color(0xFFFFC95C))),
 )
 
-/** Ô game: ảnh bìa gradient + minh họa 3D (chưa có ảnh bìa thật), tên, hệ máy. */
+/** Ô game: ảnh bìa gradient + minh họa 3D (chưa có ảnh bìa thật), tên, hệ máy. Bấm ô = mở trang chi tiết (V139). */
 @Composable
 internal fun GameTile(g: Game, onPlay: () -> Unit, onExtract: () -> Unit, onMenu: () -> Unit, onRedownload: () -> Unit, onRequestAccess: () -> Unit) {
     val c = Monika.colors
+    val context = LocalContext.current
     val waiting = g.needsExtract && g.system == null
+    // Chỉ game chơi được mới có trang chi tiết; game đã dọn / chưa cấp quyền giữ nguyên nút riêng trên ô.
+    val opensPage = g.system != null && !g.locked && !g.evicted
     val playTime = AppGraph.prefs.playTime(g.key)
     Column {
         Box(
             Modifier.fillMaxWidth().aspectRatio(0.8f).clip(Radius.medium)
-                // Giữ lâu ô game = mở menu của game.
-                .pointerInput(g.key) { detectTapGestures(onLongPress = { onMenu() }) }
+                // Bấm ô = trang chi tiết; giữ lâu = menu của game.
+                .pointerInput(g.key) { detectTapGestures(onTap = { if (opensPage) openGamePage(context, g) }, onLongPress = { onMenu() }) }
+                .semantics { contentDescription = "Mở trang game ${g.name}" }
                 .background(if (waiting) Brush.linearGradient(listOf(c.surfaceSoft, c.track)) else tileGradients[(g.name.hashCode() and 0x7fffffff) % tileGradients.size]),
             contentAlignment = Alignment.Center,
         ) {
