@@ -32,8 +32,15 @@ class FeedRepository(
     private val configRepo: ConfigRepository,
     private val cacheDir: java.io.File? = null,
     private val ctx: android.content.Context? = null,
+    /** V193 G1: false = không gọi mạng (bài viết đang tắt). */
+    private val enabled: () -> Boolean = { true },
 ) {
     private val cache = mutableMapOf<String, Post>()
+
+    /** Chốt duy nhất trước mọi request feed; tắt là không có request nào rời máy. */
+    private fun requireEnabled() {
+        check(enabled()) { "Bài viết đang tắt" }
+    }
 
     /** Trang đầu của từng danh sách (Trang chủ, tab Game…) lưu RAM + đĩa: mở lại app hiện ngay, không tải lại từ đầu. */
     private val lists = java.util.concurrent.ConcurrentHashMap<String, List<Post>>()
@@ -59,6 +66,7 @@ class FeedRepository(
 
     /** @param query tìm kiếm toàn văn (tham số q của Blogger). */
     suspend fun fetch(label: String? = null, startIndex: Int = 1, max: Int? = null, query: String? = null): List<Post> {
+        requireEnabled()
         val feed = configRepo.current.feed
         val base = feed.url.trimEnd('/') + (label?.let { "/-/" + Uri.encode(it) } ?: "")
         val q = query?.takeIf { it.isNotBlank() }?.let { "&q=" + Uri.encode(it) } ?: ""
@@ -73,6 +81,7 @@ class FeedRepository(
      * aow.vn ~300 bài → 2-3 lần gọi, vài trăm KB.
      */
     suspend fun fetchIndex(maxPages: Int = 10): List<Post> {
+        requireEnabled()
         val base = configRepo.current.feed.url.trimEnd('/').replace("/posts/default", "/posts/summary")
         val out = mutableListOf<Post>()
         for (page in 0 until maxPages) {
@@ -86,6 +95,7 @@ class FeedRepository(
 
     suspend fun fetchPost(id: String): Post {
         cache[id]?.let { return it }
+        requireEnabled()
         val url = configRepo.current.feed.url.trimEnd('/') + "/$id?alt=json"
         return parseEntry(getJson(url).jsonObject["entry"]!!.jsonObject).also { cache[it.id] = it }
     }
@@ -97,6 +107,7 @@ class FeedRepository(
      * Dùng cho trang tải giả lập: sếp sửa trang trên Blogger là app nhận link mới.
      */
     suspend fun fetchPage(pageUrl: String, forceRefresh: Boolean = false): Post? {
+        requireEnabled()
         val path = pageUrl.substringAfter("://").substringAfter('/').substringBefore('?')
         val pages = pagesCache.takeUnless { forceRefresh } ?: run {
             val url = configRepo.current.feed.url.replace("/posts/", "/pages/").trimEnd('/') + "?alt=json&max-results=500"

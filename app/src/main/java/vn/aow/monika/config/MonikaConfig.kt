@@ -179,6 +179,8 @@ data class AppInfo(
 
 @Serializable
 data class FeedConfig(
+    /** V193 G1: mặc định tắt — bản tự build không tự gọi aow.vn; người dùng bật trong Cài đặt. */
+    val enabled: Boolean = false,
     val url: String = "https://www.aow.vn/feeds/posts/default",
     val pageSize: Int = 20,
     val pollMinutes: Long = 60,
