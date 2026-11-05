@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -84,7 +85,14 @@ private data class StorageInfo(val total: Long, val free: Long, val games: Long)
 
 /** Màn "Tải xuống": dung lượng máy + các lượt tải của app (đọc từ DownloadManager, cập nhật mỗi giây). */
 @Composable
-fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> Unit)? = null) {
+fun DownloadsScreen(
+    onOpenLibrary: () -> Unit = {},
+    header: (@Composable () -> Unit)? = null,
+    /** V193 seam test: production gọi BrowserDownloads; test tiêm bản giả để đếm request. */
+    startDownload: (url: String, pixeldrainConfirmed: Boolean) -> Unit = { url, pixeldrainConfirmed ->
+        AppGraph.browserDownloads.start(url, null, null, null, null, confirmed = true, pixeldrainConfirmed = pixeldrainConfirmed)
+    },
+) {
     val context = LocalContext.current
     val c = Monika.colors
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -97,7 +105,6 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> U
     var tick by remember { mutableStateOf(0) }
     // V193 G2: chỉ tải Pixeldrain khi người dùng dán link + xác nhận cảnh báo.
     var linkOpen by remember { mutableStateOf(false) }
-    var linkText by remember { mutableStateOf("") }
 
     LaunchedEffect(tick) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -147,38 +154,65 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> U
             }
         }
 
-        if (linkOpen) MonikaDialog(
-            onDismissRequest = { linkOpen = false },
+        if (linkOpen) LinkDownloadDialog(startDownload = startDownload, onDismiss = { linkOpen = false })
+    }
+}
+
+/**
+ * V193: hộp "Tải từ link" — một chỗ duy nhất chứa điều kiện + cờ cảnh báo Pixeldrain.
+ * [useDialog] = false chỉ dùng cho test Robolectric một semantics root; production luôn true.
+ */
+@Composable
+internal fun LinkDownloadDialog(
+    startDownload: (url: String, pixeldrainConfirmed: Boolean) -> Unit,
+    onDismiss: () -> Unit,
+    useDialog: Boolean = true,
+) {
+    val context = LocalContext.current
+    val c = Monika.colors
+    var linkText by remember { mutableStateOf("") }
+    val onConfirm = {
+        val url = linkText.trim()
+        val direct = vn.aow.monika.download.PixeldrainHost.manualDirect(url, AppGraph.config.current.downloadHosts)
+            ?: url.takeIf { it.isNotBlank() && !vn.aow.monika.download.PixeldrainHost.matches(it) }
+        if (direct == null) {
+            Toast.makeText(context, "Link Pixeldrain này chưa hỗ trợ tải trong app. Mở bằng trình duyệt.", Toast.LENGTH_LONG).show()
+        } else {
+            // Chỉ đồng ý cảnh báo Pixeldrain khi chính link dán là Pixeldrain (đã thấy cảnh báo ở trên).
+            startDownload(direct, vn.aow.monika.download.PixeldrainHost.matches(url))
+            Toast.makeText(context, "Đang tải…", Toast.LENGTH_SHORT).show()
+        }
+        onDismiss()
+    }
+    val body: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = {
+        SoftPillButton("Dán từ bộ nhớ tạm", {
+            val text = vn.aow.monika.download.ClipboardLink.read(context)
+            if (text == null) Toast.makeText(context, "Bộ nhớ tạm không có văn bản để dán.", Toast.LENGTH_SHORT).show()
+            else linkText = text
+        }, R.drawable.ic_fluent_copy_24_regular)
+        MonikaTextField(linkText, { linkText = it }, "Dán link tải", Modifier.fillMaxWidth().testTag("link-field"), onEnter = onDismiss)
+        if (vn.aow.monika.download.PixeldrainHost.matches(linkText)) {
+            Text(vn.aow.monika.download.PixeldrainHost.WARNING, style = Monika.type.caption, color = c.textSecondary)
+            Text("Chỉ tải nếu bạn tin nguồn.", style = Monika.type.caption, color = c.textSecondary)
+        } else {
+            Text("Chỉ tải tệp từ nguồn bạn tin cậy.", style = Monika.type.caption, color = c.textSecondary)
+        }
+    }
+    if (useDialog) {
+        MonikaDialog(
+            onDismissRequest = onDismiss,
             title = "Tải từ link",
-            confirm = {
-                GradientButton("Tiếp tục tải", {
-                    val url = linkText.trim()
-                    val direct = vn.aow.monika.download.PixeldrainHost.manualDirect(url, AppGraph.config.current.downloadHosts)
-                        ?: url.takeIf { it.isNotBlank() && !vn.aow.monika.download.PixeldrainHost.matches(it) }
-                    if (direct == null) {
-                        Toast.makeText(context, "Link Pixeldrain này chưa hỗ trợ tải trong app. Mở bằng trình duyệt.", Toast.LENGTH_LONG).show()
-                    } else {
-                        // Chỉ đồng ý cảnh báo Pixeldrain khi chính link dán là Pixeldrain (đã thấy cảnh báo ở trên).
-                        val pixeldrainConfirmed = vn.aow.monika.download.PixeldrainHost.matches(url)
-                        AppGraph.browserDownloads.start(direct, null, null, null, null, confirmed = true, pixeldrainConfirmed = pixeldrainConfirmed)
-                        Toast.makeText(context, "Đang tải…", Toast.LENGTH_SHORT).show()
-                    }
-                    linkOpen = false; linkText = ""
-                }, height = 46.dp)
-            },
-            dismiss = { DarkButton("Hủy", { linkOpen = false }) },
-        ) {
-            SoftPillButton("Dán từ bộ nhớ tạm", {
-                val text = vn.aow.monika.download.ClipboardLink.read(context)
-                if (text == null) Toast.makeText(context, "Bộ nhớ tạm không có văn bản để dán.", Toast.LENGTH_SHORT).show()
-                else linkText = text
-            }, R.drawable.ic_fluent_copy_24_regular)
-            MonikaTextField(linkText, { linkText = it }, "Dán link tải", Modifier.fillMaxWidth(), onEnter = { linkOpen = false })
-            if (vn.aow.monika.download.PixeldrainHost.matches(linkText)) {
-                Text(vn.aow.monika.download.PixeldrainHost.WARNING, style = Monika.type.caption, color = c.textSecondary)
-                Text("Chỉ tải nếu bạn tin nguồn.", style = Monika.type.caption, color = c.textSecondary)
-            } else {
-                Text("Chỉ tải tệp từ nguồn bạn tin cậy.", style = Monika.type.caption, color = c.textSecondary)
+            confirm = { GradientButton("Tiếp tục tải", onConfirm, height = 46.dp) },
+            dismiss = { DarkButton("Hủy", onDismiss) },
+            content = body,
+        )
+    } else {
+        // Test seam: cùng body/nút production, không dựng cửa sổ dialog (Robolectric 2 semantics root).
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            body()
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DarkButton("Hủy", onDismiss)
+                GradientButton("Tiếp tục tải", onConfirm, height = 46.dp)
             }
         }
     }
