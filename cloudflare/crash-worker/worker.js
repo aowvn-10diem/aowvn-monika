@@ -25,6 +25,29 @@ const json = (o, status = 200, extra = {}) => new Response(JSON.stringify(o), { 
 const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
 const s = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
 
+// V195: quyền quản trị — so sánh trên SHA-256 (độ dài cố định) thay vì so chuỗi thô,
+// để thời gian so sánh không phụ thuộc nội dung/ký tự đầu tiên khác nhau.
+const authEncoder = new TextEncoder();
+async function authDigest(text) {
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", authEncoder.encode(text)));
+}
+export async function authEquals(provided, expected) {
+  if (typeof provided !== "string" || typeof expected !== "string" || expected.length === 0) return false;
+  const [a, b] = await Promise.all([authDigest(provided), authDigest(expected)]);
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+// Chưa cấu hình mã quản trị thì đóng cửa (503): không so sánh, không lộ tên/giá trị cấu hình.
+// Trả Response khi bị chặn, null khi được phép.
+async function requireAdmin(req, env) {
+  const token = env && env.ADMIN_TOKEN;
+  if (typeof token !== "string" || token.trim().length === 0) return json({ ok: false, error: "unavailable" }, 503);
+  const header = req.headers.get("authorization") || "";
+  if (!(await authEquals(header, `Bearer ${token}`))) return json({ ok: false, error: "unauthorized" }, 401);
+  return null;
+}
+
 // Chỉ chấp nhận JPEG có cấu trúc/chiều ảnh khớp; giới hạn trước giải mã base64.
 export function reportImage(image, kind) {
   if (image == null) return null;
@@ -212,7 +235,8 @@ export default {
 
     // V103: đọc index từng trang, không trả tên game hay ghi/chỉnh báo cáo.
     if (url.pathname === "/report-index") {
-      if (!env.ADMIN_TOKEN || (req.headers.get("authorization") || "") !== `Bearer ${env.ADMIN_TOKEN}`) return json({ ok: false, error: "unauthorized" }, 401);
+      const denied = await requireAdmin(req, env);
+      if (denied) return denied;
       if (req.method !== "GET") return json({ ok: false, error: "method_not_allowed" }, 405);
       const cursor = url.searchParams.get("cursor") || undefined;
       if (cursor && (cursor.length > 2048 || /[\u0000-\u001f]/.test(cursor))) return json({ ok: false, error: "bad_cursor" }, 400);
@@ -225,7 +249,8 @@ export default {
 
     // ---- Quản trị ----
     if (url.pathname.startsWith("/reports") || url.pathname === "/stats") {
-      if ((req.headers.get("authorization") || "") !== `Bearer ${env.ADMIN_TOKEN}`) return json({ ok: false, error: "unauthorized" }, 401);
+      const denied = await requireAdmin(req, env);
+      if (denied) return denied;
       if (url.pathname.startsWith("/reports/")) {
         const v = await env.REPORTS.get(decodeURIComponent(url.pathname.slice(9)));
         return v ? new Response(v, { headers: { "content-type": "application/json; charset=utf-8" } }) : json({ ok: false, error: "not_found" }, 404);

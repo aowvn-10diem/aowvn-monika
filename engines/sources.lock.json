@@ -2,7 +2,10 @@
   "schemaVersion": 1,
   "toolchain": {
     "ndk": "22.1.7171670",
-    "api": 26
+    "api": 26,
+    "cmake": "3.22.1",
+    "ninja": "1.10.2",
+    "cmakeBuild": "3.22.1-g37088a8"
   },
   "inventory": {
     "cores": [
@@ -51,6 +54,39 @@
       "licenseFiles": [
         "Copying",
         "src/ntsc/license.txt"
+      ],
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a"
+      ],
+      "submodules": [],
+      "patches": [],
+      "dependencies": []
+    },
+    "gambatte": {
+      "recipe": "gambatte-ndk-v1",
+      "repository": "https://github.com/libretro/gambatte-libretro.git",
+      "commit": "d9d6cd06382d1ced30de34d56d3609452323dab1",
+      "license": "GPL-2.0-only",
+      "licenseFiles": [
+        "COPYING"
+      ],
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a"
+      ],
+      "submodules": [],
+      "patches": [],
+      "dependencies": []
+    },
+    "mgba": {
+      "recipe": "mgba-cmake-v1",
+      "repository": "https://github.com/libretro/mgba.git",
+      "commit": "7a12d6d4b9acb14c0ae62c9166b6a2f3d08007f6",
+      "license": "MPL-2.0",
+      "licenseFiles": [
+        "LICENSE",
+        "src/third-party/inih/LICENSE.txt"
       ],
       "abis": [
         "arm64-v8a",

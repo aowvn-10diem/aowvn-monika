@@ -5,7 +5,7 @@
 - Ngưỡng chống spam (V153) đổi bằng biến môi trường của Worker: `RATE_LIMIT_MAX` (mặc định `20`, tối đa `100000`) và `RATE_LIMIT_WINDOW_SECONDS` (mặc định `3600`, tối đa `604800`). Quá ngưỡng trả `429` kèm header `Retry-After` = số giây còn lại của cửa sổ. Env sai/thiếu thì dùng mặc định. **V194:** bộ đếm hạn mức nằm trong bộ nhớ của isolate (không ghi KV) và mỗi báo cáo chỉ **1 lần ghi KV** (bản ghi chính) — trước đây là 2 ghi/báo cáo (khoá `rl:` + bản ghi), đốt hạn mức 1000 ghi/ngày của gói miễn phí.
 - `GET /stats`, `GET /reports`, `GET /reports/<id>` — xem báo cáo, cần header `Authorization: Bearer <mã quản trị>`.
 - V155b: danh sách `/reports` trả thêm `cert` = 16 hex đầu SHA-256 chứng thư ký APK (rỗng với app cũ không gửi), để bảng `crash-insight` đếm theo chứng thư và phát hiện bản không chính thức; bản ghi đầy đủ vẫn giữ `certSha256` 64 hex.
-- Mã quản trị là secret `ADMIN_TOKEN` của Worker (không ghi trong repo). Mất mã thì nhờ dựng lại Worker với mã mới.
+- Mã quản trị là secret `ADMIN_TOKEN` của Worker (không ghi trong repo). Mất mã thì nhờ dựng lại Worker với mã mới. **V195:** thiếu/để trống `ADMIN_TOKEN` → mọi endpoint quản trị trả `503` (đóng cửa, không so sánh gì); so sánh mã dựa trên SHA-256 hai vế thay vì so chuỗi thô.
 - Xem nhanh: `CRASH_ADMIN_TOKEN=... scripts/crash-reports.sh` (tóm tắt) hoặc `... scripts/crash-reports.sh <id>` (chi tiết).
 - Đã triển khai bản `worker.js` của repo ngày 07/10/2026 (V29, xem `docs/opus/ket-qua/V29-deploy.md`); crumbs/env/component/pid/ảnh nay được lưu. [CHƯA KIỂM] ảnh JPEG thật từ máy người chơi.
 

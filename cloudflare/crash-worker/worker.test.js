@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { webcrypto } from "node:crypto";
-import worker, { MAX_BODY, resetRateState, rateReservedCount } from "./worker.js";
+import worker, { MAX_BODY, resetRateState, rateReservedCount, authEquals } from "./worker.js";
 globalThis.crypto ??= webcrypto;
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/app-report.json", import.meta.url)));
 
@@ -376,4 +376,61 @@ test("V155b hai chung thu khac nhau hien rieng trong danh sach", async () => {
   await atTime(1700000001000, () => c.post({ ...fixture, certSha256: "0".repeat(64) }));
   const rows = (await (await c.read("/reports")).json()).reports;
   assert.deepEqual(rows.map((r) => r.cert).sort(), [CERT.slice(0, 16), "0".repeat(16)].sort());
+});
+
+// ---- V195: quyền quản trị đóng cửa khi thiếu cấu hình + so sánh trên SHA-256 ----
+
+const adminKv = () => ({ get: async () => null, list: async () => ({ list_complete: true, keys: [] }), put: async () => {} });
+const adminGet = (env, path, auth) => worker.fetch(
+  new Request("https://example.test" + path, { headers: auth === undefined ? {} : { authorization: auth } }), env);
+
+test("V195 thieu ADMIN_TOKEN thi 503, khong so sanh va khong dung KV", async () => {
+  let touched = 0;
+  const kv = {
+    get: async () => { touched++; return null; },
+    list: async () => { touched++; return { list_complete: true, keys: [] }; },
+    put: async () => { touched++; },
+  };
+  for (const env of [{ REPORTS: kv }, { ADMIN_TOKEN: "", REPORTS: kv }, { ADMIN_TOKEN: "   ", REPORTS: kv }, { ADMIN_TOKEN: null, REPORTS: kv }]) {
+    for (const path of ["/reports", "/reports/r:1:aaaaaaaa", "/stats", "/report-index"]) {
+      const r = await adminGet(env, path, "Bearer undefined");
+      assert.equal(r.status, 503, path);
+      const body = await r.json();
+      assert.deepEqual(body, { ok: false, error: "unavailable" }, path);
+      // Không lộ tên biến cấu hình trong thông điệp lỗi.
+      assert.equal(JSON.stringify(body).toLowerCase().includes("admin"), false, path);
+    }
+  }
+  assert.equal(touched, 0, "khong duoc doc KV khi thieu cau hinh");
+});
+
+test("V195 token sai, Bearer undefined, thieu header deu 401 va cung mot body", async () => {
+  const env = { ADMIN_TOKEN: "fixture-only", REPORTS: adminKv() };
+  for (const auth of [undefined, "", "Bearer", "Bearer ", "Bearer undefined", "Bearer fixture-onl", "Bearer fixture-onlyy", "bearer fixture-only"]) {
+    for (const path of ["/reports", "/stats", "/report-index"]) {
+      const r = await adminGet(env, path, auth);
+      assert.equal(r.status, 401, path + " " + String(auth));
+      assert.deepEqual(await r.json(), { ok: false, error: "unauthorized" }, path);
+    }
+  }
+  assert.equal((await adminGet(env, "/reports", "Bearer fixture-only")).status, 200);
+});
+
+test("V195 authEquals so sanh tren SHA-256 ca hai ve, khong so chuoi tho", async () => {
+  assert.equal(await authEquals("Bearer abc", "Bearer abc"), true);
+  assert.equal(await authEquals("Bearer abc", "Bearer abd"), false);
+  assert.equal(await authEquals("Bearer abc", "Bearer abc "), false);
+  assert.equal(await authEquals("Bearer", "Bearer abc"), false);
+  assert.equal(await authEquals(undefined, "Bearer abc"), false);
+  assert.equal(await authEquals("Bearer abc", ""), false);
+
+  const real = crypto.subtle.digest.bind(crypto.subtle);
+  const seen = [];
+  crypto.subtle.digest = async (alg, data) => { seen.push(new TextDecoder().decode(data)); return real(alg, data); };
+  try {
+    assert.equal(await authEquals("Bearer a", "Bearer b"), false);
+  } finally {
+    crypto.subtle.digest = real;
+  }
+  assert.deepEqual(seen.sort(), ["Bearer a", "Bearer b"]);
 });

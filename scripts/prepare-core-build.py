@@ -13,8 +13,28 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SHA = re.compile(r"[0-9a-f]{40}")
 ABIS = {"arm64-v8a": (2, 183), "armeabi-v7a": (1, 40)}
-RECIPE = "fceumm-ndk-v1"
-REPO = "https://github.com/libretro/libretro-fceumm.git"
+RECIPES = {
+    "fceumm": {
+        "recipe": "fceumm-ndk-v1",
+        "repository": "https://github.com/libretro/libretro-fceumm.git",
+        "androidMk": "jni/Android.mk",
+        "license": "GPL-2.0-or-later",
+        "licenseFiles": ["Copying", "src/ntsc/license.txt"],
+    },
+    "gambatte": {
+        "recipe": "gambatte-ndk-v1",
+        "repository": "https://github.com/libretro/gambatte-libretro.git",
+        "androidMk": "libgambatte/libretro/jni/Android.mk",
+        "license": "GPL-2.0-only",
+        "licenseFiles": ["COPYING"],
+    },
+    "mgba": {
+        "recipe": "mgba-cmake-v1",
+        "repository": "https://github.com/libretro/mgba.git",
+        "license": "MPL-2.0",
+        "licenseFiles": ["LICENSE", "src/third-party/inih/LICENSE.txt"],
+    },
+}
 NEEDED = {"libc.so", "libm.so", "libdl.so", "liblog.so", "libandroid.so"}
 EXPORTS = {
     "retro_api_version", "retro_init", "retro_deinit", "retro_get_system_info",
@@ -55,19 +75,24 @@ def load_lock(path, config_path):
         raise ValueError("NDK phải là phiên bản cố định")
     if tools["api"] != 26:
         raise ValueError("Chưa kiểm API này")
+    if (tools.get("cmake") != "3.22.1" or tools.get("cmakeBuild") != "3.22.1-g37088a8"
+            or tools.get("ninja") != "1.10.2"):
+        raise ValueError("CMake/Ninja phải khớp phiên bản recipe đã kiểm")
     if not lock["cores"] or set(lock["cores"]) - set(inventory["cores"]):
         raise ValueError("Không có recipe hoặc recipe ngoài kiểm kê")
     for name, core in lock["cores"].items():
-        if name != "fceumm" or core["recipe"] != RECIPE or core["repository"] != REPO:
+        recipe = RECIPES.get(name)
+        if recipe is None:
             raise ValueError("Recipe mới cần triển khai và tiền duyệt")
+        if any(core.get(key) != recipe[key] for key in
+               ("recipe", "repository", "license", "licenseFiles")):
+            raise ValueError("Nguồn/giấy phép chưa khớp recipe")
         if not SHA.fullmatch(core["commit"]):
             raise ValueError("Nguồn phải ghim SHA đầy đủ")
         if not core["abis"] or len(set(core["abis"])) != len(core["abis"]) or set(core["abis"]) - ABIS.keys():
             raise ValueError("ABI chưa kiểm hoặc trùng")
         if core["submodules"] != [] or core["patches"] != [] or core["dependencies"] != []:
             raise ValueError("Recipe đầu chưa hỗ trợ phụ thuộc/bản vá ngoài cây nguồn")
-        if core["license"] != "GPL-2.0-or-later" or core["licenseFiles"] != ["Copying", "src/ntsc/license.txt"]:
-            raise ValueError("Giấy phép chưa khớp recipe")
     return lock
 
 
@@ -127,7 +152,42 @@ def write_zip(directory, target):
             archive.writestr(info, path.read_bytes())
 
 
-def prepare(lock, core_id, abi, ndk, output, lock_path):
+def cmake_tools(lock, cmake):
+    if cmake is None:
+        raise ValueError("Recipe mGBA cần CMake ghim qua --cmake; không tự tìm/tải công cụ")
+    cmake = cmake.resolve()
+    if run([cmake, "--version"]).splitlines()[0] != "cmake version " + lock["toolchain"]["cmakeBuild"]:
+        raise ValueError("CMake không khớp lock")
+    ninja = cmake.with_name("ninja")
+    if run([ninja, "--version"]) != lock["toolchain"]["ninja"]:
+        raise ValueError("Ninja không khớp lock")
+    return cmake, ninja
+
+
+def build(core_id, source, abi, ndk, cmake=None, ninja=None):
+    """Trả ELF cài và ELF giữ ký hiệu; đường/lệnh cố định trong recipe."""
+    if core_id != "mgba":
+        run([ndk / "ndk-build", "-j2", "NDK_PROJECT_PATH=" + str(source),
+             "APP_BUILD_SCRIPT=" + str(source / RECIPES[core_id]["androidMk"]), "APP_ABI=" + abi,
+             "APP_PLATFORM=android-26", "APP_STL=c++_static", "NDK_DEBUG=0"], source)
+        return source / "libs" / abi / "libretro.so", source / "obj/local" / abi / "libretro.so"
+    directory = source.parent / "cmake-build"
+    run([cmake, "-S", source, "-B", directory, "-G", "Ninja",
+         "-DCMAKE_MAKE_PROGRAM=" + str(ninja),
+         "-DCMAKE_TOOLCHAIN_FILE=" + str(ndk / "build/cmake/android.toolchain.cmake"),
+         "-DANDROID_ABI=" + abi, "-DANDROID_PLATFORM=android-26", "-DANDROID_STL=c++_static",
+         "-DCMAKE_BUILD_TYPE=RelWithDebInfo", "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--build-id=sha1",
+         "-DBUILD_LIBRETRO=ON", "-DSKIP_LIBRARY=ON", "-DDISABLE_FRONTENDS=ON",
+         "-DDISABLE_DEPS=ON", "-DENABLE_DEBUGGERS=OFF", "-DENABLE_SCRIPTING=OFF",
+         "-DUSE_EDITLINE=OFF", "-DUSE_FFMPEG=OFF", "-DUSE_MINIZIP=OFF",
+         "-DUSE_LIBZIP=OFF", "-DUSE_ELF=OFF", "-DUSE_LUA=OFF", "-DUSE_LZMA=OFF",
+         "-DUSE_EPOXY=OFF", "-DBUILD_GL=OFF", "-DBUILD_GLES2=OFF", "-DBUILD_GLES3=OFF"], source)
+    run([cmake, "--build", directory, "--target", "mgba_libretro", "--parallel", "2"], source)
+    library = directory / "mgba_libretro.so"
+    return library, library
+
+
+def prepare(lock, core_id, abi, ndk, output, lock_path, cmake=None):
     core = lock["cores"].get(core_id)
     if core is None or abi not in core["abis"]:
         raise ValueError("Core/ABI chưa có recipe đã kiểm; không tải binary thay thế")
@@ -136,6 +196,9 @@ def prepare(lock, core_id, abi, ndk, output, lock_path):
     revision = re.search(r"^Pkg.Revision\s*=\s*(\S+)", properties, re.M)
     if not revision or revision.group(1) != lock["toolchain"]["ndk"]:
         raise ValueError("NDK không khớp lock")
+    ninja = None
+    if core_id == "mgba":
+        cmake, ninja = cmake_tools(lock, cmake)
     if output.exists():
         raise ValueError("Thư mục kết quả đã có; không ghi đè")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -144,11 +207,8 @@ def prepare(lock, core_id, abi, ndk, output, lock_path):
         source = temp / "source"
         checkout(core, source)
         # Chỉ recipe cố định trong mã, không chạy chuỗi lệnh do JSON/input cung cấp.
-        run([ndk / "ndk-build", "-j2", "NDK_PROJECT_PATH=" + str(source),
-             "APP_BUILD_SCRIPT=" + str(source / "jni/Android.mk"), "APP_ABI=" + abi,
-             "APP_PLATFORM=android-26", "APP_STL=c++_static", "NDK_DEBUG=0"], source)
+        library, symbol_library = build(core_id, source, abi, ndk, cmake, ninja)
         tools = ndk / "toolchains/llvm/prebuilt/linux-x86_64/bin"
-        library = source / "libs" / abi / "libretro.so"
         metadata = elf_metadata(library, abi, tools / "llvm-readelf", tools / "llvm-nm")
         if run(["git", "status", "--porcelain", "--untracked-files=no"], source):
             raise ValueError("Build đã đổi nguồn tracked; chưa ghi nhận bản vá")
@@ -158,6 +218,8 @@ def prepare(lock, core_id, abi, ndk, output, lock_path):
         pack.mkdir()
         target = pack / (core_id + "_libretro_android.so")
         shutil.copyfile(library, target)
+        if core_id == "mgba":
+            run([tools / "llvm-strip", "--strip-unneeded", target])
         for name in core["licenseFiles"]:
             dest = pack / "LICENSES" / name
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -174,7 +236,8 @@ def prepare(lock, core_id, abi, ndk, output, lock_path):
         (pack / "SOURCE.txt").write_text(
             f"{core['repository']}\nCommit: {core['commit']}\nLicense: {core['license']}\n"
             f"Builder: https://github.com/aowvn-10diem/aowvn-monika/commit/{recipe_sha}\n"
-            "Dựng từ nguồn bằng ndk-build; không lấy .so từ buildbot/AAR.\n")
+            f"Dựng từ nguồn bằng {'CMake/Ninja' if core_id == 'mgba' else 'ndk-build'}; "
+            "không lấy .so từ buildbot/AAR.\n")
         (pack / "needed.txt").write_text("\n".join(metadata["needed"]) + "\n")
         manifest = {**provenance, "loadOrder": [target.name],
                     "files": {target.name: {"size": target.stat().st_size, "sha256": digest(target)}}}
@@ -189,7 +252,7 @@ def prepare(lock, core_id, abi, ndk, output, lock_path):
         symbols = stage / f"symbols-{core_id}-{abi}.zip"
         symbol_source = temp / "symbols"
         symbol_source.mkdir()
-        shutil.copyfile(source / "obj/local" / abi / "libretro.so", symbol_source / target.name)
+        shutil.copyfile(symbol_library, symbol_source / target.name)
         run(["python3", ROOT / "scripts/package-native-symbols.py", "--pack", pack,
              "--source-root", symbol_source, "--readelf", tools / "llvm-readelf",
              "--abi", abi, "--output", symbols])
@@ -211,6 +274,7 @@ def main():
     parser.add_argument("--core")
     parser.add_argument("--abi")
     parser.add_argument("--ndk", type=Path)
+    parser.add_argument("--cmake", type=Path, help="CMake SDK ghim; Ninja cùng thư mục (mGBA)")
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
     lock = load_lock(args.lock, args.config)
@@ -219,7 +283,7 @@ def main():
         return
     if not all((args.core, args.abi, args.ndk, args.out)):
         parser.error("Cần --plan hoặc đủ --core/--abi/--ndk/--out")
-    prepare(lock, args.core, args.abi, args.ndk, args.out.resolve(), args.lock)
+    prepare(lock, args.core, args.abi, args.ndk, args.out.resolve(), args.lock, args.cmake)
 
 
 if __name__ == "__main__":
