@@ -112,7 +112,7 @@ class Rendering(unittest.TestCase):
 
 
 class Certificate(unittest.TestCase):
-    """V155b: cột + bảng đếm theo chứng thư để thấy bản không chính thức đang chạy."""
+    """V155b: cột + bảng đếm theo chứng thư để nhóm và đối chiếu thủ công với chứng thư bản phát hành."""
 
     CERT_A = "a1b2c3d4e5f60718" + "a" * 48
     CERT_B = "0011223344556677" + "b" * 48
