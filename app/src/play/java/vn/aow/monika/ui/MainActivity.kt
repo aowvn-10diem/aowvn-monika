@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import vn.aow.monika.AppGraph
 import vn.aow.monika.feed.Post
 import vn.aow.monika.ui.screens.GameDetailRoute
+import vn.aow.monika.ui.screens.FeedOff
 import vn.aow.monika.ui.screens.LibraryScreen
 import vn.aow.monika.ui.screens.OFFICIAL_BUILD_WARNING
 import vn.aow.monika.ui.screens.OfficialBuildWarning
@@ -114,7 +115,10 @@ private fun PlayArticles(onBack: () -> Unit) {
     var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
     var selected by remember { mutableStateOf<Post?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) {
+    // V193 G1: mặc định tắt; bật ngay trên màn để xem bài.
+    var feedOn by remember { mutableStateOf(AppGraph.feedEnabled) }
+    LaunchedEffect(feedOn) {
+        if (!feedOn) { posts = emptyList(); error = null; return@LaunchedEffect }
         vn.aow.monika.diag.Diagnostics.opSuspend(AppGraph.app, vn.aow.monika.diag.Diagnostics.Op.FETCH_FEED) {
             AppGraph.feed.fetchList("play-articles")
         }.onSuccess { posts = it }.onFailure { error = "Không tải được bài viết. Hãy thử lại sau." }
@@ -123,19 +127,28 @@ private fun PlayArticles(onBack: () -> Unit) {
     Screen {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { DarkButton(if (selected == null) "Về Thư viện" else "Danh sách bài", { if (selected != null) selected = null else onBack() }) }
-            error?.let { item { Text(it, style = Monika.type.body, color = Monika.colors.textSecondary) } }
-            val post = selected
-            if (post != null) {
-                item { Text(post.title, style = Monika.type.sectionTitle, color = Monika.colors.text) }
+            if (!feedOn) {
                 item {
-                    val text = remember(post) {
-                        android.text.Html.fromHtml(post.contentHtml, android.text.Html.FROM_HTML_MODE_LEGACY).toString()
-                            .replace(Regex("https?://\\S+"), "")
+                    FeedOff {
+                        AppGraph.setFeedEnabled(true)
+                        feedOn = true
                     }
-                    Text(text, style = Monika.type.body, color = Monika.colors.text)
                 }
-            } else items(posts, key = { it.id }) { p ->
-                DarkButton(p.title, { selected = p }, modifier = Modifier.fillMaxWidth())
+            } else {
+                error?.let { item { Text(it, style = Monika.type.body, color = Monika.colors.textSecondary) } }
+                val post = selected
+                if (post != null) {
+                    item { Text(post.title, style = Monika.type.sectionTitle, color = Monika.colors.text) }
+                    item {
+                        val text = remember(post) {
+                            android.text.Html.fromHtml(post.contentHtml, android.text.Html.FROM_HTML_MODE_LEGACY).toString()
+                                .replace(Regex("https?://\\S+"), "")
+                        }
+                        Text(text, style = Monika.type.body, color = Monika.colors.text)
+                    }
+                } else items(posts, key = { it.id }) { p ->
+                    DarkButton(p.title, { selected = p }, modifier = Modifier.fillMaxWidth())
+                }
             }
         }
     }
