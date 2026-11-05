@@ -17,6 +17,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import vn.aow.monika.ui.screens.DownloadsScreen
+import vn.aow.monika.ui.screens.FeedViewModel
 import vn.aow.monika.ui.screens.GamesScreen
 import vn.aow.monika.ui.screens.SettingsScreen
 import vn.aow.monika.ui.theme.DockClearance
@@ -87,7 +88,9 @@ class TargetSdk36ScreensTest {
     @Test
     @Config(qualifiers = "w1024dp-h768dp-xxhdpi")
     fun gamesLargeScreen() {
-        show { GamesScreen(onOpen = {}) }
+        // Feed tĩnh: màn Game không gọi `AppGraph.feed` (HTTP) khi test.
+        val vm = FeedViewModel(FixtureFeed())
+        show { GamesScreen(onOpen = {}, vm = vm) }
         rule.onNodeWithText("Game & bài viết").assertIsDisplayed()
     }
 
