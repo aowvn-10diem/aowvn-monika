@@ -1,0 +1,1528 @@
+{
+  "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
+  "configVersion": 59,
+  "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
+  "app": {
+    "latestVersionCode": 54,
+    "latestVersionName": "0.8.9",
+    "minVersionCode": 1,
+    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.9/AowVN-Monika-v0.8.9.apk",
+    "changelog": "Bản thử 0.8.9: Sửa nút A/B GBA, màn hình NDS và phím Java khi xoay ngang. Thêm ẩn/hiện phím ảo; Thư viện chia thành Chơi, Đọc và Tệp."
+  },
+  "security": {
+    "officialCertSha256": "c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c"
+  },
+  "official": {
+    "pageUrl": "https://monika.aow.vn/chinh-thuc/",
+    "downloadSources": [
+      {
+        "title": "monika.aow.vn",
+        "url": "https://monika.aow.vn/"
+      },
+      {
+        "title": "GitHub Releases",
+        "url": "https://github.com/aowvn-10diem/aowvn-monika/releases"
+      }
+    ],
+    "reportFakeUrl": "https://github.com/aowvn-10diem/aowvn-monika/issues/new?template=bao-ban-gia.yml",
+    "verificationSteps": [
+      "Đối chiếu địa chỉ nơi tải với danh sách bên trên. Tên và biểu tượng giống nhau chưa đủ để xác nhận bản chính thức.",
+      "Trên máy tính có Android SDK Build-Tools, đổi tên tệp APK thành app.apk rồi chạy: apksigner verify --print-certs app.apk. Đối chiếu dòng Signer #1 certificate SHA-256 digest với chứng thư bên trên.",
+      "Trước khi ủng hộ, đối chiếu ngân hàng, số tài khoản và chủ tài khoản trong mục Ủng hộ. Gặp thông tin khác hoặc nguồn tải đáng ngờ, hãy bấm Báo bản giả."
+    ]
+  },
+  "feed": {
+    "enabled": false,
+    "url": "https://www.aow.vn/feeds/posts/default",
+    "pageSize": 20,
+    "pollMinutes": 60
+  },
+  "systems": [
+    {
+      "id": "nds",
+      "name": "Nintendo DS",
+      "runner": "libretro",
+      "core": "melondsds",
+      "extensions": [
+        "nds"
+      ],
+      "labels": [
+        "Game NDS Việt Hóa"
+      ],
+      "altCores": [
+        "melondsds",
+        "desmume",
+        "melonds"
+      ]
+    },
+    {
+      "id": "gba",
+      "name": "Game Boy Advance",
+      "runner": "libretro",
+      "core": "mgba",
+      "extensions": [
+        "gba"
+      ],
+      "labels": [
+        "Game GBA Việt Hóa"
+      ]
+    },
+    {
+      "id": "gbc",
+      "name": "Game Boy / Color",
+      "runner": "libretro",
+      "core": "gambatte",
+      "extensions": [
+        "gb",
+        "gbc"
+      ],
+      "labels": []
+    },
+    {
+      "id": "snes",
+      "name": "Super Nintendo",
+      "runner": "libretro",
+      "core": "snes9x",
+      "extensions": [
+        "sfc",
+        "smc",
+        "swc",
+        "fig"
+      ],
+      "labels": [],
+      "pad": "snes",
+      "thumbnails": [
+        "Nintendo - Super Nintendo Entertainment System"
+      ]
+    },
+    {
+      "id": "nes",
+      "name": "NES / Famicom",
+      "runner": "libretro",
+      "core": "fceumm",
+      "extensions": [
+        "nes",
+        "fds",
+        "unf",
+        "unif"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Nintendo - Nintendo Entertainment System",
+        "Nintendo - Family Computer Disk System"
+      ],
+      "altCores": [
+        "fceumm",
+        "nestopia"
+      ]
+    },
+    {
+      "id": "genesis",
+      "name": "Sega Mega Drive",
+      "runner": "libretro",
+      "core": "genesis_plus_gx",
+      "extensions": [
+        "md",
+        "gen",
+        "smd"
+      ],
+      "labels": [],
+      "pad": "gen",
+      "thumbnails": [
+        "Sega - Mega Drive - Genesis"
+      ]
+    },
+    {
+      "id": "sms",
+      "name": "Sega Master System",
+      "runner": "libretro",
+      "core": "genesis_plus_gx",
+      "extensions": [
+        "sms"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Sega - Master System - Mark III"
+      ]
+    },
+    {
+      "id": "gg",
+      "name": "Sega Game Gear",
+      "runner": "libretro",
+      "core": "genesis_plus_gx",
+      "extensions": [
+        "gg"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Sega - Game Gear"
+      ]
+    },
+    {
+      "id": "pce",
+      "name": "PC Engine",
+      "runner": "libretro",
+      "core": "mednafen_pce_fast",
+      "extensions": [
+        "pce",
+        "sgx"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "NEC - PC Engine - TurboGrafx 16"
+      ]
+    },
+    {
+      "id": "n64",
+      "name": "Nintendo 64",
+      "runner": "libretro",
+      "core": "mupen64plus_next_gles3",
+      "extensions": [
+        "z64",
+        "n64",
+        "v64"
+      ],
+      "labels": [],
+      "pad": "n64",
+      "thumbnails": [
+        "Nintendo - Nintendo 64"
+      ],
+      "altCores": [
+        "mupen64plus_next_gles3",
+        "parallel_n64"
+      ]
+    },
+    {
+      "id": "3ds",
+      "name": "Nintendo 3DS",
+      "runner": "libretro",
+      "core": "citra",
+      "extensions": [
+        "3ds",
+        "cci",
+        "cxi",
+        "3dsx",
+        "cia"
+      ],
+      "labels": [],
+      "pad": "n3ds",
+      "thumbnails": [
+        "Nintendo - Nintendo 3DS"
+      ]
+    },
+    {
+      "id": "dc",
+      "name": "Sega Dreamcast",
+      "runner": "libretro",
+      "core": "flycast",
+      "extensions": [
+        "gdi",
+        "cdi"
+      ],
+      "labels": [],
+      "pad": "dc",
+      "thumbnails": [
+        "Sega - Dreamcast"
+      ]
+    },
+    {
+      "id": "lynx",
+      "name": "Atari Lynx",
+      "runner": "libretro",
+      "core": "handy",
+      "extensions": [
+        "lnx"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Atari - Lynx"
+      ]
+    },
+    {
+      "id": "a2600",
+      "name": "Atari 2600",
+      "runner": "libretro",
+      "core": "stella2014",
+      "extensions": [
+        "a26"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Atari - 2600"
+      ]
+    },
+    {
+      "id": "a7800",
+      "name": "Atari 7800",
+      "runner": "libretro",
+      "core": "prosystem",
+      "extensions": [
+        "a78"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Atari - 7800"
+      ]
+    },
+    {
+      "id": "ws",
+      "name": "WonderSwan",
+      "runner": "libretro",
+      "core": "mednafen_wswan",
+      "extensions": [
+        "ws",
+        "wsc"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "Bandai - WonderSwan",
+        "Bandai - WonderSwan Color"
+      ]
+    },
+    {
+      "id": "ngp",
+      "name": "Neo Geo Pocket",
+      "runner": "libretro",
+      "core": "mednafen_ngp",
+      "extensions": [
+        "ngp",
+        "ngc"
+      ],
+      "labels": [],
+      "pad": "gb",
+      "thumbnails": [
+        "SNK - Neo Geo Pocket",
+        "SNK - Neo Geo Pocket Color"
+      ]
+    },
+    {
+      "id": "ps1",
+      "name": "PlayStation 1",
+      "runner": "libretro",
+      "core": "pcsx_rearmed",
+      "extensions": [
+        "cue",
+        "pbp",
+        "chd",
+        "m3u"
+      ],
+      "labels": [
+        "Game PS1"
+      ]
+    },
+    {
+      "id": "psp",
+      "name": "PSP",
+      "runner": "libretro",
+      "core": "ppsspp",
+      "extensions": [
+        "iso",
+        "cso"
+      ],
+      "labels": [
+        "Game PS & PSP Việt Hóa"
+      ],
+      "pad": "psp"
+    },
+    {
+      "id": "rpg2k",
+      "name": "RPG Maker 2000/2003",
+      "runner": "libretro",
+      "core": "easyrpg",
+      "extensions": [
+        "ldb"
+      ],
+      "labels": [
+        "RPGmaker Việt Hoá"
+      ]
+    },
+    {
+      "id": "flash",
+      "name": "Flash",
+      "runner": "web",
+      "webPlayer": "ruffle",
+      "extensions": [
+        "swf"
+      ],
+      "labels": []
+    },
+    {
+      "id": "apk",
+      "name": "Android (APK)",
+      "runner": "apk",
+      "extensions": [
+        "apk",
+        "apks",
+        "xapk",
+        "apkm"
+      ],
+      "labels": [
+        "Game Android Việt Hóa"
+      ]
+    },
+    {
+      "id": "java",
+      "name": "Java (J2ME)",
+      "runner": "j2me",
+      "extensions": [
+        "jar",
+        "jad"
+      ],
+      "labels": [
+        "Game Java Việt Hóa"
+      ]
+    },
+    {
+      "id": "rpgmv",
+      "name": "RPG Maker MV/MZ",
+      "runner": "web",
+      "webPlayer": "html5",
+      "extensions": [],
+      "labels": [
+        "RPGmaker Việt Hoá"
+      ]
+    },
+    {
+      "id": "tyrano",
+      "name": "TyranoScript",
+      "runner": "web",
+      "webPlayer": "html5",
+      "extensions": [],
+      "labels": [
+        "Visual Novel Việt Hóa"
+      ]
+    },
+    {
+      "id": "kirikiri",
+      "experimental": true,
+      "name": "Kirikiri (KAG)",
+      "runner": "external",
+      "externalApp": "kirikiroid2",
+      "engine": "kirikiri",
+      "extensions": [
+        "xp3"
+      ],
+      "extensionsSniffed": [
+        "exe"
+      ],
+      "entryExclude": [
+        "^patch\\d*\\.xp3$"
+      ],
+      "entryPick": "paired",
+      "entryPairExt": [
+        "exe"
+      ],
+      "labels": []
+    },
+    {
+      "id": "renpy",
+      "name": "Ren'Py",
+      "runner": "external",
+      "externalApp": "joiplay",
+      "extensions": [],
+      "labels": [
+        "Visual Novel Việt Hóa"
+      ]
+    },
+    {
+      "id": "rgss",
+      "name": "RPG Maker XP/VX/Ace",
+      "runner": "external",
+      "externalApp": "joiplay",
+      "extensions": [],
+      "labels": [
+        "RPGmaker Việt Hoá"
+      ],
+      "engine": "rgss",
+      "pad": "rpg",
+      "allowExternalApp": true
+    },
+    {
+      "id": "onscripter",
+      "name": "ONScripter",
+      "runner": "web",
+      "extensions": [],
+      "labels": [
+        "Visual Novel Việt Hóa"
+      ],
+      "webPlayer": "onsyuri",
+      "engine": "onsyuri"
+    },
+    {
+      "id": "symbian",
+      "name": "Symbian / N-Gage",
+      "runner": "external",
+      "externalApp": "eka2l1",
+      "extensions": [
+        "sis",
+        "sisx",
+        "ngage"
+      ],
+      "labels": []
+    }
+  ],
+  "_engines_ghi_chu": "Nhận diện game dạng thư mục (sau khi giải nén). Quy tắc nào khớp trước thắng. 'entry' = file sẽ mở để chạy.",
+  "engines": [
+    {
+      "system": "rpgmv",
+      "markers": [
+        "www/js/rpg_core.js",
+        "js/rpg_core.js",
+        "js/rmmz_core.js",
+        "www/js/rmmz_core.js"
+      ],
+      "entry": [
+        "www/index.html",
+        "index.html"
+      ]
+    },
+    {
+      "system": "tyrano",
+      "markers": [
+        "tyrano/tyrano.js",
+        "tyrano/libs.js"
+      ],
+      "entry": [
+        "index.html"
+      ]
+    },
+    {
+      "system": "rpg2k",
+      "markers": [
+        "RPG_RT.ldb"
+      ],
+      "entry": [
+        "RPG_RT.ldb"
+      ]
+    },
+    {
+      "system": "kirikiri",
+      "markers": [
+        "data.xp3"
+      ],
+      "entry": [
+        "data.xp3"
+      ]
+    },
+    {
+      "system": "renpy",
+      "markers": [
+        "renpy/__init__.py",
+        "renpy/__init__.pyo",
+        "game/script.rpyc",
+        "game/archive.rpa"
+      ],
+      "entry": []
+    },
+    {
+      "system": "rgss",
+      "markers": [
+        "Game.rgssad",
+        "Game.rgss2a",
+        "Game.rgss3a",
+        "Data/Scripts.rxdata",
+        "Data/Scripts.rvdata2",
+        "Data/Scripts.rvdata"
+      ],
+      "entry": []
+    },
+    {
+      "system": "onscripter",
+      "markers": [
+        "0.txt",
+        "00.txt",
+        "nscript.dat",
+        "arc.nsa"
+      ],
+      "entry": [
+        "0.txt",
+        "00.txt",
+        "nscript.dat"
+      ]
+    }
+  ],
+  "_cores_ghi_chu": "Lõi libretro tải khi cần. {abi} tự thay bằng kiến trúc máy. Đổi 'version' để ép app tải lại lõi mới.",
+  "_community_ghi_chu": "Link cộng đồng AowVN hiện ở Trang chủ. Để trống = ẩn nút.",
+  "community": {
+    "facebookGroup": "https://www.facebook.com/groups/aowvn",
+    "discord": "https://discord.gg/ynZAnpnXPk",
+    "channels": [
+      {
+        "id": "facebook",
+        "name": "Group Facebook",
+        "subtitle": "Hỏi đáp, xin game",
+        "url": "https://www.facebook.com/groups/aowvn",
+        "emoji": "fluent3d_busts_in_silhouette"
+      },
+      {
+        "id": "discord",
+        "name": "Diễn đàn Discord",
+        "subtitle": "Chat, nhóm dịch",
+        "url": "https://discord.gg/ynZAnpnXPk",
+        "emoji": "fluent3d_speech_balloon"
+      },
+      {
+        "id": "forum",
+        "name": "Forum AowVN",
+        "subtitle": "Bài viết, thảo luận",
+        "url": "https://forum.aowvn.org",
+        "emoji": "fluent3d_classical_building"
+      }
+    ]
+  },
+  "_coreOptionText_ghi_chu": "Dịch tên + giá trị tùy chọn lõi giả lập (lõi chỉ có tiếng Anh). Khóa = chữ tiếng Anh đúng như lõi hiện. Thiếu thì app hiện nguyên tiếng Anh.",
+  "coreOptionText": {
+    "labels": {
+      "Firmware Language": "Ngôn ngữ máy NDS",
+      "Use External BIOS/Firmware (restart)": "Dùng BIOS/Firmware ngoài (mở lại game)",
+      "Boot Into BIOS (interpreter and external bios only)": "Khởi động vào BIOS (chỉ chế độ thông dịch + BIOS ngoài)",
+      "Load Game Into Memory (restart)": "Nạp cả game vào RAM (mở lại game)",
+      "CPU Cores": "Số nhân CPU dùng",
+      "JIT Block Size": "Cỡ khối JIT",
+      "Enable Advanced Bus-Level Timing": "Căn thời gian chính xác (nặng hơn)",
+      "Frameskip": "Bỏ khung hình (tăng tốc máy yếu)",
+      "Internal Resolution": "Độ phân giải nội bộ (nét hơn, nặng hơn)",
+      "OpenGL Rasterizer (restart)": "Vẽ 3D bằng OpenGL (mở lại game)",
+      "OpenGL: Color Depth (restart)": "OpenGL: Độ sâu màu (mở lại game)",
+      "OpenGL: Multisampling AA": "OpenGL: Khử răng cưa",
+      "OpenGL: Texture Smoothing": "OpenGL: Làm mịn vân bề mặt",
+      "OpenGL: Shadow Polygons": "OpenGL: Vẽ bóng",
+      "OpenGL: Special 0 Alpha": "OpenGL: Xử lý độ trong suốt 0",
+      "OpenGL: NDS Depth Calculation": "OpenGL: Tính độ sâu kiểu NDS",
+      "OpenGL: Depth-LEqual Polygon Facing": "OpenGL: Sửa lỗi mặt đa giác chồng nhau",
+      "Soft3D: High-res Color Interpolation": "3D phần mềm: Nội suy màu độ phân giải cao",
+      "Soft3D: Line Hack": "3D phần mềm: Sửa lỗi đường kẻ",
+      "Soft3D: Texture Hack": "3D phần mềm: Sửa lỗi vân bề mặt",
+      "Edge Marking": "Viền cạnh vật thể 3D",
+      "Texture Scaling (xBrz)": "Phóng to vân bề mặt (xBrz)",
+      "Texture Deposterization": "Làm mượt dải màu vân bề mặt",
+      "Screen Layout": "Bố cục 2 màn hình",
+      "Screen Gap": "Khoảng cách giữa 2 màn hình",
+      "Hybrid Layout: Ratio": "Bố cục lai: Tỉ lệ màn lớn/nhỏ",
+      "Hybrid Layout: Scale So Small Screen is 1:1px": "Bố cục lai: Màn nhỏ giữ đúng cỡ gốc",
+      "Hybrid Layout: Show Both Screens": "Bố cục lai: Hiện cả 2 màn",
+      "Hybrid Layout: Cursor Always on Small Screen": "Bố cục lai: Con trỏ luôn ở màn nhỏ",
+      "Mouse/Pointer": "Chuột / con trỏ cảm ứng",
+      "Pointer Type": "Kiểu con trỏ",
+      "Mouse Speed": "Tốc độ chuột",
+      "Pointer Rotation": "Xoay hướng chạm",
+      "Pointer Mode for Left Analog": "Cần analog trái điều khiển con trỏ",
+      "Pointer Mode for Right Analog": "Cần analog phải điều khiển con trỏ",
+      "Emulated Pointer Deadzone Percent": "Vùng chết của con trỏ (%)",
+      "Emulated Pointer Acceleration Modifier Percent": "Gia tốc con trỏ (%)",
+      "Emulated Stylus Pressure Modifier Percent": "Lực nhấn bút cảm ứng (%)",
+      "Pointer Colour": "Màu con trỏ",
+      "Microphone Button Noise Type": "Âm thanh giả lập khi bấm nút micro",
+      "Console Mode": "Loại máy (DS / DSi)",
+      "Boot Game Directly": "Vào thẳng game (bỏ màn hình khởi động)",
+      "Use Firmware Settings": "Dùng cài đặt trong firmware",
+      "Language": "Ngôn ngữ máy NDS",
+      "Randomize MAC Address": "Đổi ngẫu nhiên địa chỉ MAC",
+      "Enable DSi SD Card": "Bật thẻ nhớ DSi",
+      "Threaded software renderer": "Vẽ 3D đa luồng (mượt hơn)",
+      "Threaded Software Renderer": "Vẽ 3D đa luồng (mượt hơn)",
+      "OpenGL Renderer (Restart)": "Vẽ 3D bằng OpenGL (mở lại game)",
+      "OpenGL Internal Resolution": "OpenGL: Độ phân giải nội bộ",
+      "OpenGL Improved Polygon Splitting": "OpenGL: Chia đa giác chính xác hơn",
+      "OpenGL Filtering": "OpenGL: Lọc làm mịn",
+      "Microphone Input": "Nguồn micro",
+      "Audio Bitrate": "Chất lượng âm thanh",
+      "Audio Interpolation": "Nội suy âm thanh",
+      "Touch Mode": "Kiểu chạm màn hình",
+      "Swap Screen Mode": "Cách đổi màn trên/dưới",
+      "Hybrid Small Screen Mode": "Bố cục lai: Màn nhỏ hiện gì",
+      "Hybrid Ratio (OpenGL Only)": "Bố cục lai: Tỉ lệ (chỉ OpenGL)",
+      "JIT Enable (Restart)": "Bật JIT – tăng tốc (mở lại game)",
+      "JIT Branch Optimisations": "JIT: Tối ưu rẽ nhánh",
+      "JIT Literal Optimisations": "JIT: Tối ưu hằng số",
+      "JIT Fast Memory": "JIT: Truy cập bộ nhớ nhanh"
+    },
+    "values": {
+      "enabled": "Bật",
+      "disabled": "Tắt",
+      "Enabled": "Bật",
+      "Disabled": "Tắt",
+      "Auto": "Tự động",
+      "auto": "Tự động",
+      "none": "Không",
+      "top/bottom": "Trên / Dưới",
+      "bottom/top": "Dưới / Trên",
+      "left/right": "Trái / Phải",
+      "right/left": "Phải / Trái",
+      "top only": "Chỉ màn trên",
+      "bottom only": "Chỉ màn dưới",
+      "hybrid/top": "Lai (màn lớn ở trên)",
+      "hybrid/bottom": "Lai (màn lớn ở dưới)",
+      "Top/Bottom": "Trên / Dưới",
+      "Bottom/Top": "Dưới / Trên",
+      "Left/Right": "Trái / Phải",
+      "Right/Left": "Phải / Trái",
+      "Top Only": "Chỉ màn trên",
+      "Bottom Only": "Chỉ màn dưới",
+      "Hybrid Top": "Lai (màn lớn ở trên)",
+      "Hybrid Bottom": "Lai (màn lớn ở dưới)",
+      "interpreter": "Thông dịch (chính xác, chậm)",
+      "jit": "JIT (nhanh)",
+      "English": "Tiếng Anh",
+      "French": "Tiếng Pháp",
+      "German": "Tiếng Đức",
+      "Italian": "Tiếng Ý",
+      "Japanese": "Tiếng Nhật",
+      "Spanish": "Tiếng Tây Ban Nha",
+      "touch": "Chạm",
+      "mouse": "Chuột",
+      "absolute": "Tuyệt đối",
+      "pressed": "Khi nhấn",
+      "emulated": "Giả lập",
+      "white": "Trắng",
+      "black": "Đen",
+      "red": "Đỏ",
+      "blue": "Xanh dương",
+      "yellow": "Vàng",
+      "pattern": "Mẫu âm",
+      "random": "Ngẫu nhiên",
+      "16-bit": "16 bit",
+      "32-bit": "32 bit",
+      "DS": "DS",
+      "DSi": "DSi",
+      "Blow Noise": "Tiếng thổi",
+      "White Noise": "Tiếng ồn trắng",
+      "Microphone": "Micro thật",
+      "Mouse": "Chuột",
+      "Touch": "Chạm",
+      "Joystick": "Cần analog",
+      "Toggle": "Bấm để đổi",
+      "Hold": "Giữ để đổi",
+      "Linear": "Tuyến tính",
+      "Cosine": "Cosin",
+      "Cubic": "Bậc ba",
+      "Nearest": "Gần nhất",
+      "nearest": "Gần nhất",
+      "linear": "Tuyến tính"
+    }
+  },
+  "_account_ghi_chu": "Tài khoản AowVN = Firebase của web (lấy đúng như trang /p/vote-game.html). donate = thông tin VietQR, nội dung CK: '<memoPrefix> DONATE <8 ký tự đầu uid> <mã game>'.",
+  "account": {
+    "enabled": true,
+    "apiKey": "AIzaSyDGJO0F4bJD7THxQ68Dz8blg94EylzCqSw",
+    "databaseUrl": "https://aowvn-xemtrang.firebaseio.com",
+    "loginUrl": "https://www.aow.vn/p/device-login.html",
+    "voteUrl": "https://www.aow.vn/p/vote-game.html",
+    "donate": {
+      "bankId": "icb",
+      "accountNo": "101867601261",
+      "accountName": "VU DOAN BINH MINH",
+      "template": "compact2",
+      "memoPrefix": "AowVN",
+      "amounts": [
+        100000,
+        200000,
+        300000
+      ],
+      "bankName": "VietinBank",
+      "memo": "Ung ho AowVN Monika",
+      "minAmount": 1000,
+      "maxAmount": 500000000,
+      "qrBaseUrl": "https://img.vietqr.io/image/",
+      "payUrl": "https://dl.vietqr.io/pay",
+      "banksUrl": "https://api.vietqr.io/v2/android-app-deeplinks",
+      "returnUrl": "https://monika.aow.vn/",
+      "appeal": "Chúng mình cố gắng phát triển Monika hoàn toàn miễn phí, nhưng AowVN vẫn cần phải chi trả chi phí cho máy chủ, AI. Đừng ngần ngại donate ủng hộ chúng mình nha, 200k, 100k hay 10k đều rất đáng trân trọng á.",
+      "fallbackBanks": [
+        {
+          "id": "icb",
+          "name": "VietinBank"
+        },
+        {
+          "id": "vcb",
+          "name": "Vietcombank"
+        },
+        {
+          "id": "mb",
+          "name": "MB Bank"
+        },
+        {
+          "id": "tcb",
+          "name": "Techcombank"
+        },
+        {
+          "id": "bidv",
+          "name": "BIDV"
+        },
+        {
+          "id": "acb",
+          "name": "ACB"
+        },
+        {
+          "id": "vpb",
+          "name": "VPBank"
+        },
+        {
+          "id": "tpb",
+          "name": "TPBank"
+        },
+        {
+          "id": "shb",
+          "name": "SHB"
+        },
+        {
+          "id": "ocb",
+          "name": "OCB"
+        },
+        {
+          "id": "lpb",
+          "name": "LPBank"
+        },
+        {
+          "id": "seab",
+          "name": "SeABank"
+        }
+      ]
+    }
+  },
+  "_adblock_ghi_chu": "Chặn quảng cáo trong trình duyệt nhúng (Discord/Facebook...). Bộ lọc tải về lần đầu mở, cập nhật mỗi updateHours giờ. allow = tên miền không bao giờ chặn.",
+  "adblock": {
+    "enabled": true,
+    "lists": [
+      "https://cdn.jsdelivr.net/gh/abpvn/abpvn@master/filter/abpvn_ublock.txt",
+      "https://easylist.to/easylist/easylist.txt",
+      "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/wildcard/pro-onlydomains.txt",
+      "https://abpvn.com/android/abpvn.txt"
+    ],
+    "allow": [
+      "aow.vn",
+      "discord.com",
+      "discord.gg",
+      "discordapp.com",
+      "discordapp.net",
+      "discord.media",
+      "facebook.com",
+      "fbcdn.net",
+      "messenger.com",
+      "hcaptcha.com",
+      "recaptcha.net",
+      "gstatic.com",
+      "googleapis.com",
+      "pixeldrain.com"
+    ],
+    "updateHours": 72,
+    "cosmetic": true,
+    "popups": true
+  },
+  "cores": {
+    "desmume": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip",
+      "options": {
+        "desmume_internal_resolution": "512x384",
+        "desmume_num_cores": "2"
+      },
+      "perf": {
+        "lite": {
+          "desmume_internal_resolution": "256x192",
+          "desmume_num_cores": "1"
+        },
+        "full": {
+          "desmume_num_cores": "4"
+        }
+      }
+    },
+    "melonds": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/melonds_libretro_android.so.zip",
+      "options": {
+        "melonds_threaded_renderer": "enabled"
+      },
+      "perf": {
+        "lite": {
+          "melonds_threaded_renderer": "disabled"
+        }
+      }
+    },
+    "mgba": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mgba_libretro_android.so.zip",
+      "options": {
+        "mgba_color_correction": "OFF",
+        "mgba_interframe_blending": "mix_smart",
+        "mgba_frameskip": "disabled"
+      },
+      "shader": "sharp",
+      "display": {
+        "native": [
+          240,
+          160
+        ],
+        "default": "lcd",
+        "styles": {
+          "lcd": {
+            "label": "LCD cổ điển",
+            "shader": "sharp",
+            "integer": true,
+            "grid": 0.3,
+            "options": {
+              "mgba_color_correction": "OFF",
+              "mgba_interframe_blending": "lcd_ghosting_fast"
+            }
+          },
+          "sharp": {
+            "label": "Sắc nét",
+            "shader": "sharp",
+            "integer": true,
+            "options": {
+              "mgba_color_correction": "OFF",
+              "mgba_interframe_blending": "mix_smart"
+            }
+          },
+          "smooth": {
+            "label": "Mượt, lấp đầy",
+            "options": {
+              "mgba_color_correction": "OFF",
+              "mgba_interframe_blending": "mix_smart"
+            }
+          }
+        }
+      },
+      "artifacts": {
+        "arm64-v8a": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/mgba-arm64-v8a.zip",
+          "sha256": "359b4bc58a6b2667e195ff74981539c57464679f01fefb57142be414449e7a36",
+          "version": "cores-gb-gba-nes-1-359b4bc58a6b2667"
+        },
+        "armeabi-v7a": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/mgba-armeabi-v7a.zip",
+          "sha256": "25c5d2da7f166b5040f83127341089a8c284fb3db0de3ca42a6c9217994644b0",
+          "version": "cores-gb-gba-nes-1-25c5d2da7f166b50"
+        },
+        "x86_64": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/mgba-x86_64.zip",
+          "sha256": "93f6810dbfab77d675c921877e5aac6d9bab11c9882f6ff7bfecf57f7a10b180",
+          "version": "cores-gb-gba-nes-1-93f6810dbfab77d6"
+        },
+        "x86": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/mgba-x86.zip",
+          "sha256": "72549728865dd9297b73fdc92ae18c2553d88043a40e9fda46a0a8119d49526a",
+          "version": "cores-gb-gba-nes-1-72549728865dd929"
+        }
+      }
+    },
+    "gambatte": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/gambatte_libretro_android.so.zip",
+      "options": {
+        "gambatte_mix_frames": "mix",
+        "gambatte_audio_resampler": "sinc"
+      },
+      "shader": "sharp",
+      "artifacts": {
+        "arm64-v8a": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/gambatte-arm64-v8a.zip",
+          "sha256": "e6e1c00c8e7920b79663caf804118c1aca79f432e4ace71b6e0c4d0a9bd3f8a7",
+          "version": "cores-gb-gba-nes-1-e6e1c00c8e7920b7"
+        },
+        "armeabi-v7a": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/gambatte-armeabi-v7a.zip",
+          "sha256": "a84b6f6756f1d28884e85be26e70303f9bffc87e1ac9f063e85404ae64d61e06",
+          "version": "cores-gb-gba-nes-1-a84b6f6756f1d288"
+        },
+        "x86_64": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/gambatte-x86_64.zip",
+          "sha256": "0bfe8d3dd6a07eaaf188e770b4bfb9c604281be08f904d3ab967747ec12e1a35",
+          "version": "cores-gb-gba-nes-1-0bfe8d3dd6a07eaa"
+        },
+        "x86": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/gambatte-x86.zip",
+          "sha256": "50fedcb6305e4241f9ff625bb8b6ef5fb4287a8ab3b8cf2ad728ad50369e0e5f",
+          "version": "cores-gb-gba-nes-1-50fedcb6305e4241"
+        }
+      }
+    },
+    "pcsx_rearmed": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/pcsx_rearmed_libretro_android.so.zip",
+      "perf": {
+        "lite": {
+          "pcsx_rearmed_frameskip_type": "auto"
+        }
+      }
+    },
+    "ppsspp": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/ppsspp_libretro_android.so.zip",
+      "systemFiles": "https://buildbot.libretro.com/assets/system/PPSSPP.zip",
+      "lowLatencyAudio": false,
+      "perf": {
+        "lite": {
+          "ppsspp_auto_frameskip": "enabled"
+        },
+        "full": {
+          "ppsspp_internal_resolution": "960x544"
+        }
+      }
+    },
+    "easyrpg": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/easyrpg_libretro_android.so.zip"
+    },
+    "snes9x": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/snes9x_libretro_android.so.zip",
+      "aspectRatio": 1.3333,
+      "options": {
+        "snes9x_reduce_sprite_flicker": "enabled"
+      },
+      "shader": "sharp"
+    },
+    "fceumm": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/fceumm_libretro_android.so.zip",
+      "aspectRatio": 1.3333,
+      "options": {
+        "fceumm_nospritelimit": "enabled",
+        "fceumm_sndquality": "Very High"
+      },
+      "shader": "sharp",
+      "artifacts": {
+        "arm64-v8a": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/fceumm-arm64-v8a.zip",
+          "sha256": "b1fb1f953f32a89422736c5728ec2cf3177ecd7eab45c26cd5ba9a002756b48e",
+          "version": "cores-gb-gba-nes-1-b1fb1f953f32a894"
+        },
+        "armeabi-v7a": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/fceumm-armeabi-v7a.zip",
+          "sha256": "bde3b58b4a8dd0ad6c95adf294f08a57cf948f93c9de285c24d7ae393756edd2",
+          "version": "cores-gb-gba-nes-1-bde3b58b4a8dd0ad"
+        },
+        "x86_64": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/fceumm-x86_64.zip",
+          "sha256": "f2a1d67a23a156446508e437b69b0406128af5e1bbc0ff45a14d2778c9357b70",
+          "version": "cores-gb-gba-nes-1-f2a1d67a23a15644"
+        },
+        "x86": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-gb-gba-nes-1/fceumm-x86.zip",
+          "sha256": "296dbfe3bdfcf7da824a10563cc26d63fcbf451b1424f2b65b2bf1623806f8c4",
+          "version": "cores-gb-gba-nes-1-296dbfe3bdfcf7da"
+        }
+      }
+    },
+    "nestopia": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/nestopia_libretro_android.so.zip",
+      "aspectRatio": 1.3333,
+      "shader": "sharp"
+    },
+    "genesis_plus_gx": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/genesis_plus_gx_libretro_android.so.zip",
+      "aspectRatio": 1.3333,
+      "options": {
+        "genesis_plus_gx_no_sprite_limit": "enabled",
+        "genesis_plus_gx_enhanced_vscroll": "enabled"
+      },
+      "shader": "sharp"
+    },
+    "mednafen_pce_fast": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mednafen_pce_fast_libretro_android.so.zip",
+      "aspectRatio": 1.3333,
+      "shader": "sharp"
+    },
+    "mupen64plus_next_gles3": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mupen64plus_next_gles3_libretro_android.so.zip",
+      "aspectRatio": 1.3333,
+      "lowLatencyAudio": false,
+      "perf": {
+        "full": {
+          "mupen64plus-43screensize": "640x480"
+        }
+      }
+    },
+    "parallel_n64": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/parallel_n64_libretro_android.so.zip",
+      "aspectRatio": 1.3333,
+      "lowLatencyAudio": false
+    },
+    "flycast": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/flycast_libretro_android.so.zip",
+      "aspectRatio": 1.3333,
+      "lowLatencyAudio": false,
+      "perf": {
+        "lite": {
+          "reicast_threaded_rendering": "enabled"
+        },
+        "full": {
+          "reicast_internal_resolution": "1280x960"
+        }
+      }
+    },
+    "handy": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/handy_libretro_android.so.zip",
+      "aspectRatio": 1.5686,
+      "shader": "sharp"
+    },
+    "stella2014": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/stella2014_libretro_android.so.zip",
+      "aspectRatio": 1.3333,
+      "shader": "sharp"
+    },
+    "prosystem": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/prosystem_libretro_android.so.zip",
+      "aspectRatio": 1.3333,
+      "shader": "sharp"
+    },
+    "mednafen_wswan": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mednafen_wswan_libretro_android.so.zip",
+      "aspectRatio": 1.5556,
+      "shader": "sharp"
+    },
+    "mednafen_ngp": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/mednafen_ngp_libretro_android.so.zip",
+      "aspectRatio": 1.0526,
+      "shader": "sharp"
+    },
+    "citra": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/citra_libretro_android.so.zip",
+      "aspectRatio": 0.8333,
+      "abis": [
+        "arm64-v8a"
+      ],
+      "lowLatencyAudio": false
+    },
+    "melondsds": {
+      "version": "1",
+      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/melondsds_libretro_android.so.zip",
+      "abis": [
+        "arm64-v8a"
+      ],
+      "options": {
+        "melonds_jit_enable": "enabled",
+        "melonds_sysfile_mode": "builtin",
+        "melonds_render_mode": "software",
+        "melonds_threaded_renderer": "enabled",
+        "melonds_number_of_screen_layouts": "1",
+        "melonds_screen_layout1": "top-bottom",
+        "melonds_hybrid_ratio": "2",
+        "melonds_screen_gap": "0"
+      },
+      "perf": {
+        "lite": {
+          "melonds_threaded_renderer": "disabled"
+        }
+      },
+      "lowLatencyAudio": false,
+      "screen": {
+        "title": "Nintendo DS (lõi melonDS DS)",
+        "layoutKey": "melonds_screen_layout1",
+        "layouts": [
+          {
+            "id": "stacked",
+            "label": "Trên – dưới",
+            "value": "top-bottom"
+          },
+          {
+            "id": "side",
+            "label": "Cạnh nhau",
+            "value": "left-right"
+          },
+          {
+            "id": "focus",
+            "label": "Một màn lớn",
+            "value": "hybrid-bottom",
+            "usesRatio": true
+          }
+        ],
+        "defaultLayout": "stacked",
+        "ratioKey": "melonds_hybrid_ratio",
+        "ratios": [
+          {
+            "id": "2",
+            "label": "2 : 1",
+            "value": "2"
+          },
+          {
+            "id": "3",
+            "label": "3 : 1",
+            "value": "3"
+          }
+        ],
+        "defaultRatio": "2",
+        "gapKey": "melonds_screen_gap",
+        "gapMax": 32,
+        "defaultGap": 0,
+        "overlayPad": true,
+        "padOpacity": 0.55,
+        "landscapeLayout": "left-right"
+      }
+    }
+  },
+  "webPlayers": {
+    "ruffle": {
+      "script": "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle/ruffle.js"
+    },
+    "onsyuri": {
+      "script": "",
+      "module": "onsyuri"
+    }
+  },
+  "_externalApps_ghi_chu": "App ngoài. packageNames: tên gói để nhận biết đã cài (CẦN XÁC NHẬN). downloadUrl: link APK/host tải thẳng, HOẶC link trang aow.vn/p/... (app tự đọc trang, lấy link tải thẳng đầu tiên, tải + cài trong app). Để trống = 'đang cập nhật link'.",
+  "externalApps": [
+    {
+      "id": "kirikiroid2",
+      "name": "Kirikiroid2",
+      "description": "Chạy visual novel engine Kirikiri (file .xp3).",
+      "packageNames": [
+        "vn.aow.monika.kirikiri",
+        "org.tvp.kirikiri2_yuri_debloated_10309",
+        "org.tvp.kirikiri2"
+      ],
+      "downloadUrl": "https://www.aow.vn/p/tai-gia-lap-kirikiroid.html",
+      "guide": [
+        "Bấm nút Tải để tải file cài đặt Kirikiroid2.",
+        "Khi Android hỏi, cho phép 'Cài ứng dụng không rõ nguồn gốc' cho AowVN Monika.",
+        "Mở file vừa tải và bấm Cài đặt.",
+        "Quay lại AowVN Monika, bấm Chơi lại game."
+      ]
+    },
+    {
+      "id": "joiplay",
+      "name": "JoiPlay",
+      "description": "Chạy Ren'Py và RPG Maker XP/VX/VX Ace. Cần cài thêm plugin tương ứng.",
+      "packageNames": [
+        "cyou.joiplay.joiplay"
+      ],
+      "downloadUrl": "https://www.aow.vn/p/tai-gia-lap-joiplay.html",
+      "plugins": [
+        {
+          "name": "RPG Maker Plugin",
+          "downloadUrl": ""
+        },
+        {
+          "name": "Ren'Py Plugin",
+          "downloadUrl": ""
+        }
+      ],
+      "guide": [
+        "Tải và cài JoiPlay.",
+        "Tải và cài plugin đúng loại game: RPG Maker Plugin hoặc Ren'Py Plugin.",
+        "Mở JoiPlay một lần để cấp quyền bộ nhớ.",
+        "Quay lại AowVN Monika, bấm Chơi lại game."
+      ]
+    },
+    {
+      "id": "onscripter",
+      "name": "ONScripter",
+      "description": "Chạy visual novel NScripter/ONScripter.",
+      "packageNames": [],
+      "downloadUrl": "",
+      "guide": [
+        "Link đang được cập nhật."
+      ]
+    },
+    {
+      "id": "eka2l1",
+      "name": "EKA2L1",
+      "description": "Giả lập Symbian (Nokia N-Gage, S60) — mã nguồn mở. Cần firmware Symbian do bạn tự chép từ máy Nokia của mình.",
+      "packageNames": [
+        "com.github.eka2l1"
+      ],
+      "downloadUrl": "",
+      "plugins": [],
+      "guide": [
+        "Tải EKA2L1 bản Android tại https://github.com/EKA2L1/EKA2L1/releases (file .apk) rồi cài.",
+        "Mở EKA2L1 một lần: cài firmware Symbian (REX/RPKG do bạn tự có) theo hướng dẫn trong app.",
+        "Trong EKA2L1 chọn Cài đặt game và chọn file .sis/.sisx của game.",
+        "Quay lại AowVN Monika để quản lý thư viện game."
+      ]
+    }
+  ],
+  "_archivePasswords_ghi_chu": "Mật khẩu file nén app tự thử lần lượt khi giải nén. Sai hết thì app hỏi user.",
+  "archivePasswords": [
+    "aowvn.org",
+    "1"
+  ],
+  "_downloadHosts_ghi_chu": "mode 'direct' = tải thẳng trong app theo 'directUrl' ($1 = nhóm bắt được của 'pattern'). mode 'browser' = mở trình duyệt.",
+  "downloadHosts": [
+    {
+      "name": "Pixeldrain",
+      "host": "pixeldrain.com",
+      "mode": "direct",
+      "pattern": "/u/([A-Za-z0-9]+)",
+      "directUrl": "https://pixeldrain.com/api/file/$1?download"
+    },
+    {
+      "name": "Pixeldrain",
+      "host": "pixeldrain.com",
+      "mode": "direct",
+      "pattern": "/d/([A-Za-z0-9]+)",
+      "directUrl": "https://pixeldrain.com/api/filesystem/$1?attach"
+    },
+    {
+      "name": "Pixeldrain",
+      "host": "pixeldrain.com",
+      "mode": "browser"
+    },
+    {
+      "name": "Box",
+      "host": "box.com",
+      "mode": "browser"
+    },
+    {
+      "name": "Viettel MyBox",
+      "host": "mybox.vietteltelecom.vn",
+      "mode": "browser"
+    },
+    {
+      "name": "TeraBox",
+      "host": "terabox.com",
+      "mode": "browser"
+    },
+    {
+      "name": "Google Drive",
+      "host": "drive.google.com",
+      "mode": "browser"
+    },
+    {
+      "name": "MediaFire",
+      "host": "mediafire.com",
+      "mode": "browser"
+    },
+    {
+      "name": "MEGA",
+      "host": "mega.nz",
+      "mode": "browser"
+    },
+    {
+      "name": "AowVN US",
+      "host": "aowvn.us",
+      "mode": "browser"
+    }
+  ],
+  "crash": {
+    "endpoint": "https://aowvn-monika-crash.aowvn-system.workers.dev/report",
+    "autoSend": true
+  },
+  "modules": {
+    "azahar": {
+      "version": "662d412",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/engine-azahar-1/azahar-android-arm64.zip",
+      "sha256": "efbd71b1e5b85b1bfd922dc57a624a75bb45a4d3ba19aa429ac8b3bff94aa525",
+      "size": 13116908,
+      "abis": [
+        "arm64-v8a"
+      ],
+      "customGpuDriver": false
+    },
+    "sevenzip": {
+      "version": "16.02-2.02",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/pack-sevenzip-1/sevenzip-{abi}.zip",
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a"
+      ],
+      "sha256ByAbi": {
+        "arm64-v8a": "0e1059f1b5d3426a17158e989ae51e140d65be10b1de6431856118d5fe03df3f",
+        "armeabi-v7a": "a9f651ea5db6b4cd4b81c78296080a2e70c2fc096314fbbbdf99e196d1f46082"
+      },
+      "sizeByAbi": {
+        "arm64-v8a": 966227,
+        "armeabi-v7a": 879046
+      }
+    },
+    "kirikiri": {
+      "version": "6e61ce3-aow3",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/engines-kirikiri-16/kirikiri-arm64.zip",
+      "sha256": "a6f2026c43607db84748cdcb8e1ef27866d1317a4eeb78cbc9cc2d5eebc76aed",
+      "size": 17166937,
+      "abis": [
+        "arm64-v8a"
+      ]
+    },
+    "onsyuri": {
+      "version": "08f744b",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/engines-onsyuri-2/onsyuri-web.zip",
+      "sha256": "e46e7b5341859e94d9bb002fa15a42b3e19fe5113c7d314cd950ff51a70f4cff",
+      "size": 1789894
+    },
+    "rgss": {
+      "version": "engines-rgss-6",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/engines-rgss-6/rgss-arm64-v8a.zip",
+      "sha256": "3135ef8ae95281051178cb343f44bac79a0462323083bd17798faed65f00864b",
+      "size": 7922296,
+      "abis": [
+        "arm64-v8a"
+      ]
+    }
+  },
+  "prefetchCores": [
+    "mgba",
+    "fceumm",
+    "gambatte",
+    "snes9x",
+    "genesis_plus_gx"
+  ],
+  "prefetchByExtension": {
+    "xp3": [
+      "kirikiri"
+    ],
+    "rar": [
+      "sevenzip"
+    ],
+    "7z": [
+      "sevenzip"
+    ],
+    "001": [
+      "sevenzip"
+    ]
+  },
+  "forum": {
+    "enabled": true,
+    "baseUrl": "https://forum.aowvn.org",
+    "limit": 6,
+    "hiddenTags": [
+      "Nhà Tù AowVN"
+    ]
+  },
+  "j2meScreen": {
+    "attributes": [
+      "Nokia-MIDlet-Original-Display-Size",
+      "Nokia-MIDlet-Target-Display-Size"
+    ],
+    "presets": [
+      [96, 65],
+      [128, 128],
+      [128, 160],
+      [160, 128],
+      [176, 208],
+      [176, 220],
+      [208, 208],
+      [240, 260],
+      [240, 320],
+      [320, 240],
+      [352, 416],
+      [360, 640],
+      [480, 800]
+    ],
+    "maxImages": 200,
+    "maxImageBytes": 131072,
+    "defaultWidth": 240,
+    "defaultHeight": 320
+  },
+  "saveTransfer": {
+    "systems": {
+      "java": {
+        "kind": "rms",
+        "saveDirectory": "data",
+        "stateDirectory": "",
+        "extension": "",
+        "imports": {
+          "rsh": "rms",
+          "rsr": "rms"
+        },
+        "sizes": [],
+        "targetBytes": 0
+      },
+      "nds": {
+        "kind": "raw",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "sav": "raw",
+          "srm": "raw",
+          "dsv": "desmume"
+        },
+        "sizes": [
+          512,
+          8192,
+          32768,
+          65536,
+          131072,
+          262144,
+          524288,
+          1048576,
+          2097152,
+          4194304,
+          8388608
+        ],
+        "targetBytes": 0
+      },
+      "gba": {
+        "kind": "raw",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "sav": "raw",
+          "srm": "raw"
+        },
+        "sizes": [
+          512,
+          8192,
+          32768,
+          65536,
+          131072
+        ],
+        "targetBytes": 0
+      },
+      "3ds": {
+        "kind": "3ds",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "zip": "3ds-tree"
+        },
+        "sizes": [],
+        "targetBytes": 0,
+        "treeDirectory": "Citra",
+        "nativeDirectory": "azahar"
+      },
+      "psp": {
+        "kind": "psp",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "zip": "psp-tree"
+        },
+        "sizes": [],
+        "targetBytes": 0,
+        "treeDirectory": "PSP/SAVEDATA",
+        "nativeDirectory": "azahar"
+      },
+      "ps1": {
+        "kind": "raw",
+        "saveDirectory": "saves",
+        "stateDirectory": "states",
+        "extension": "srm",
+        "imports": {
+          "mcr": "ps1",
+          "mcd": "ps1",
+          "srm": "ps1",
+          "gme": "ps1"
+        },
+        "sizes": [
+          131072
+        ],
+        "targetBytes": 0
+      }
+    }
+  }
+}
