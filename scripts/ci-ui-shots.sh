@@ -118,6 +118,17 @@ if [ "$root_ok" != 1 ]; then
   exit 0
 fi
 
+# J2ME Loader mặc định ghi dữ liệu game vào GỐC bộ nhớ công khai (/storage/emulated/0/AowVN Monika,
+# xem Config.java), nên trên Android 11+ phải có "Truy cập mọi tệp"; thiếu thì MonikaLaunchActivity
+# dừng ngay ở bước tạo thư mục và không bao giờ tới MicroActivity. CI cấp bằng appops (như
+# scripts/ci-emulator-games.sh) thay cho thao tác tay của người dùng.
+if adb shell appops set "$PKG" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1; then
+  note "J2ME: đã cấp MANAGE_EXTERNAL_STORAGE (appops allow)"
+else
+  printf '::warning::%s\n' "Không cấp được MANAGE_EXTERNAL_STORAGE (appops) — game Java có thể dừng ở màn chuẩn bị"
+  note "CẢNH BÁO: không cấp được MANAGE_EXTERNAL_STORAGE (appops)"
+fi
+
 # Tạo MIDlet tối thiểu: biên dịch với lớp khung (stub) rồi CHỈ đóng gói CiMidlet.class,
 # để lúc chạy lớp javax.microedition.* là bản thật của J2ME Loader nhúng trong app.
 build_midlet_jar() {
@@ -247,13 +258,23 @@ adb shell am start -a android.intent.action.VIEW \
   -n "$PKG/ru.woesss.j2me.installer.MonikaLaunchActivity" >/dev/null 2>&1 \
   || note "CẢNH BÁO: không mở được MonikaLaunchActivity"
 
-if wait_activity MicroActivity 20; then
+if wait_activity MicroActivity 30; then
   note "J2ME: MicroActivity đang hiển thị (topResumedActivity) — sẽ chụp bàn phím ảo"
 else
   # Không có bằng chứng MicroActivity hiển thị thì KHÔNG chụp và KHÔNG đặt tên ảnh J2ME.
-  missing "BỎ QUA J2ME: không xác nhận được MicroActivity đang hiển thị sau ~60 giây — không tạo ảnh j2me-ban-phim-*"
+  missing "BỎ QUA J2ME: không xác nhận được MicroActivity đang hiển thị sau ~90 giây — không tạo ảnh j2me-ban-phim-*"
+  # Bằng chứng trực tiếp để khỏi phải suy đoán lần sau: ảnh màn hình đang dừng, text UI, log của app.
+  shot j2me-loi
+  adb shell uiautomator dump /sdcard/v176-ui.xml >/dev/null 2>&1 || true
+  adb exec-out cat /sdcard/v176-ui.xml > "$OUT/j2me-loi-ui.xml" 2>/dev/null || true
+  [ -s "$OUT/j2me-loi-ui.xml" ] || rm -f "$OUT/j2me-loi-ui.xml"
   adb shell dumpsys activity activities 2>/dev/null | tr -d '\r' \
     | grep -iE "ResumedActivity|MicroActivity|MonikaLaunch" | head -n 20 > "$OUT/j2me-man-hinh.txt" || true
+  # logcat lọc theo app (tail -n 400 toàn hệ thống trước đây bị log Google lấn hết).
+  adb logcat -d 2>/dev/null \
+    | grep -iE "com\.aow\.monika|monika|j2me|microedition|MonikaLaunch|MicroActivity|AndroidRuntime|System\.err|ConverterException|Dexing" \
+    | tail -n 500 > "$OUT/j2me-logcat.txt" || true
+  adb logcat -b crash -d 2>/dev/null | tail -n 200 > "$OUT/j2me-crash.txt" || true
   adb logcat -d 2>/dev/null | tail -n 400 > "$OUT/nhat-ky.txt" || true
   exit 0
 fi
