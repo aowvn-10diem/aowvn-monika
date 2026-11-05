@@ -76,7 +76,7 @@ internal fun androidx.compose.foundation.layout.BoxScope.GameMenuSheet(
                 SheetAction(if (g.key in pinned) "Bỏ giữ lại" else "Giữ lại", if (g.key in pinned) R.drawable.ic_fluent_heart_24_filled else R.drawable.ic_fluent_heart_24_regular) { onTogglePin(g) }
             )
             raGameId?.let { id -> add(SheetAction("Thành tựu RetroAchievements", R.drawable.ic_fluent_star_24_regular) { raOpen = id }) }
-            if (g.locked) add(SheetAction("Cấp quyền", R.drawable.ic_fluent_lock_closed_24_regular, onClick = onRequestAccess))
+            if (g.locked) add(SheetAction("Chọn lại tệp", R.drawable.ic_fluent_folder_open_24_regular, onClick = onRequestAccess))
             add(SheetAction(if (g.external) "Ẩn khỏi Thư viện" else "Xóa game", R.drawable.ic_fluent_delete_24_regular) { onDelete(g) })
         },
         header = if (g == null) null else ({
