@@ -1,22 +1,28 @@
 package vn.aow.monika.reader
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 /**
- * V142 — Luna 4 + Luna Ultra (#457):
+ * V142 — Luna 4 + Luna Ultra + Luna 5 (#457):
  * 1. Mọi lời gọi renderer (dựng trang, đọc số trang, đóng) chạy **tuần tự trên một luồng**.
  * 2. Hết hạn là trả về **ngay**, không chờ lệnh `PdfRenderer` đồng bộ đang chạy dở; kết quả về
  *    muộn vẫn bị đóng (không rò bitmap/page).
+ * 3. Caller **bị huỷ** (đổi trang/rời màn) vẫn dọn kết quả muộn và báo lỗi muộn qua [ReaderDiag].
  */
 class PageRenderGateTest {
 
@@ -172,5 +178,65 @@ class PageRenderGateTest {
         }.exceptionOrNull()
         assertTrue("Lỗi dựng phải ném lại cho màn đọc, nhận: $thrown", thrown is IllegalStateException)
         assertEquals("hỏng trang", thrown?.message)
+    }
+
+    /**
+     * Luna 5 (#457): caller bị huỷ khi đang chờ (đổi trang) mà worker trả **kết quả** muộn thì
+     * kết quả đó vẫn phải được đóng đúng 1 lần — không rò bitmap, không crash.
+     * Dùng latch, không `Thread.sleep`.
+     */
+    @Test fun canceledCallerStillClosesLateResult() = runBlocking {
+        val gate = PageRenderGate(timeoutMs = 10_000)
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val closed = CountDownLatch(1)
+
+        val caller = launch {
+            gate.render<String>(close = { closed.countDown() }) {
+                started.countDown()
+                release.await() // worker còn chạy khi caller bị huỷ
+                "late-page"
+            }
+        }
+
+        assertTrue("Worker phải bắt đầu dựng", started.await(5, TimeUnit.SECONDS))
+        caller.cancelAndJoin() // đổi trang → produceState bị huỷ
+        assertTrue("Caller phải đã bị huỷ", caller.isCancelled)
+
+        release.countDown() // worker xong muộn
+        assertTrue("Kết quả về muộn phải bị đóng", closed.await(5, TimeUnit.SECONDS))
+    }
+
+    /**
+     * Luna 5 (#457): caller bị huỷ rồi worker ném **lỗi** muộn → lỗi phải vào [ReaderDiag],
+     * không được im lặng. Dùng latch, không `Thread.sleep`.
+     */
+    @Test fun canceledCallerStillReportsLateFailure() = runBlocking {
+        val gate = PageRenderGate(timeoutMs = 10_000)
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val reported = CompletableDeferred<Pair<String, Throwable?>>()
+        val previous = ReaderDiag.onError
+        ReaderDiag.onError = { what, t -> reported.complete(what to t) }
+        try {
+            val caller = launch {
+                gate.render<String>(close = { }) {
+                    started.countDown()
+                    release.await() // worker còn chạy khi caller bị huỷ
+                    throw IllegalStateException("hỏng trang muộn")
+                }
+            }
+
+            assertTrue("Worker phải bắt đầu dựng", started.await(5, TimeUnit.SECONDS))
+            caller.cancelAndJoin()
+            assertTrue("Caller phải đã bị huỷ", caller.isCancelled)
+
+            release.countDown() // lỗi về muộn
+            val (what, failure) = withTimeout(5_000) { reported.await() }
+            assertEquals("Lỗi muộn phải báo bằng mã, không kèm tên tệp", "dung-trang-loi", what)
+            assertTrue("Phải kèm lỗi gốc, nhận: $failure", failure is IllegalStateException)
+        } finally {
+            ReaderDiag.onError = previous
+        }
     }
 }

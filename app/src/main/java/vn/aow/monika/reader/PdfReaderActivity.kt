@@ -13,7 +13,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -154,7 +153,7 @@ private fun monikaReaderStyle(): ReaderStyle {
         chipText = c.chipText,
         accent = c.accentCoral,
         accentGradient = primaryGradient(),
-        onAccent = Color.White,
+        onAccent = c.textOnDark,
         card = Radius.large,
         pill = Radius.pill,
         title = t.cardTitle,

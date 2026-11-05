@@ -20,7 +20,12 @@ object PdfBookOpener {
      * vừa mở bị **đóng ngay** — không giữ, không rò file descriptor.
      */
     suspend fun openWithin(timeoutMs: Long, file: File): Result<PdfBook>? =
-        withDeadlineAndCloseOnLate(timeoutMs, close = { it.getOrNull()?.close() }) { open(file) }
+        withDeadlineAndCloseOnLate(
+            timeoutMs = timeoutMs,
+            close = { it.getOrNull()?.close() },
+            // Lỗi chỉ về muộn (sau hạn / sau khi caller bị huỷ) vẫn phải vào Diagnostics.
+            onLateError = { ReaderDiag.report("mo-pdf-loi", it) },
+        ) { open(file) }
 }
 
 /**
