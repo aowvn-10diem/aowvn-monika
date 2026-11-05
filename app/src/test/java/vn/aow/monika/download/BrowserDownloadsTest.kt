@@ -1,6 +1,7 @@
 package vn.aow.monika.download
 
 import android.app.Application
+import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -13,6 +14,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import vn.aow.monika.AppGraph
 import vn.aow.monika.Prefs
@@ -62,15 +64,16 @@ class BrowserDownloadsTest {
     }
 
     @Test fun pixeldrainCoXacNhanThiGoiDungMotLan() {
-        downloads().start("https://pixeldrain.com/api/file/abc123?download", null, null, null, null, confirmed = true)
+        downloads().start("https://pixeldrain.com/api/file/abc123?download", null, null, null, null, confirmed = true, pixeldrainConfirmed = true)
         assertTrue("phải phát request sau khi xác nhận", firstCall.await(5, TimeUnit.SECONDS))
         assertEquals("đúng 1 request", 1L, calls.get().toLong())
     }
 
-    /** Link trung gian 302 sang Pixeldrain khi chưa xác nhận: chỉ gọi host trung gian, không gọi Pixeldrain. */
-    @Test fun redirectSangPixeldrainThieuXacNhanKhongGoiPixeldrain() {
+    /** Link thường đã xác nhận chung nhưng 302 sang Pixeldrain: không được gọi Pixeldrain khi chưa cảnh báo riêng. */
+    @Test fun redirectSangPixeldrainThieuDongYCanhBaoKhongGoiPixeldrain() {
         val hosts = java.util.Collections.synchronizedList(mutableListOf<String>())
         val hit = CountDownLatch(1)
+        val done = CountDownLatch(1)
         val client = OkHttpClient.Builder().addInterceptor { chain ->
             val host = chain.request().url.host
             hosts += host
@@ -83,10 +86,14 @@ class BrowserDownloadsTest {
                 throw IOException("không được gọi $host")
             }
         }.build()
-        BrowserDownloads(app, client, Prefs(app))
-            .start("https://example.test/start", null, null, null, null)
+        val manager = BrowserDownloads(app, client, Prefs(app))
+        manager.onJobFinished = { done.countDown() }
+        val job = manager.start("https://example.test/start", null, null, null, null, confirmed = true, pixeldrainConfirmed = false)
         assertTrue(hit.await(5, TimeUnit.SECONDS))
-        Thread.sleep(300) // cho hop 2 (nếu có) kịp chạy
+        assertTrue("job phải kết thúc", done.await(5, TimeUnit.SECONDS))
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(DlState.FAILED, job.state)
+        assertTrue("phải hiện cảnh báo Pixeldrain", job.error.orEmpty().contains("Pixeldrain"))
         assertEquals("không có request Pixeldrain", 0, hosts.count { it == "pixeldrain.com" })
         assertEquals(1, hosts.size)
     }

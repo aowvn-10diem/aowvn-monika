@@ -40,12 +40,13 @@ class MonikaDialogTest {
     @Test fun nutHuyDungChinhTaVaGoiOnDismiss() {
         var dismissed = false
         var confirmed = false
+        var request = 0
         rule.setContent {
             MonikaTheme {
                 MonikaDialog(
                     onDismissRequest = { dismissed = true },
                     title = "Tải từ link",
-                    confirm = { GradientButton("Tiếp tục tải", { confirmed = true }) },
+                    confirm = { GradientButton("Tiếp tục tải", { confirmed = true; request++ }) },
                     dismiss = { DarkButton("Hủy", { dismissed = true }) },
                 ) { Text("Nội dung") }
             }
@@ -55,6 +56,7 @@ class MonikaDialogTest {
         rule.waitForIdle()
         assertTrue(dismissed)
         assertTrue("không được tự xác nhận", !confirmed)
+        assertEquals("hủy không được phát request", 0, request)
     }
 
     /** Quyết định phím thuần: Enter (kể cả NumPadEnter) lúc nhấn xuống = Hủy, không bao giờ xác nhận.

@@ -57,6 +57,8 @@ class DlJob(val id: Int, val url: String, val userAgent: String?, val referer: S
     var state by mutableStateOf(DlState.RUNNING)
     var error by mutableStateOf<String?>(null)
     var confirmed by mutableStateOf(false)
+    /** V193: người dùng đã thấy cảnh báo nguồn Pixeldrain và đồng ý tải — tách khỏi [confirmed] (tên/nơi lưu). */
+    var pixeldrainConfirmed = false
     @Volatile var dest: SaveDest? = null
     @Volatile var call: Call? = null
     @Volatile var savedName: String = ""
@@ -77,6 +79,8 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
     val jobs = mutableStateListOf<DlJob>()
     /** Lượt tải cần hỏi tên / nơi lưu (hiện menu popup). */
     var sheetFor by mutableStateOf<DlJob?>(null)
+    /** Test hook: báo khi một job kết thúc (mọi nhánh tải). */
+    @Volatile internal var onJobFinished: ((DlJob) -> Unit)? = null
     /** Thông báo ngắn "đã tải xong" hiện ở góc. */
     var justSaved by mutableStateOf<String?>(null)
     /** Thư mục vừa chọn từ trình chọn thư mục hệ thống, chờ menu popup nhận. */
@@ -90,12 +94,13 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
         .getOrNull()?.takeIf { it.isDirectory && it.canWrite() } ?: File(context.cacheDir, "dl").apply { mkdirs() }
 
     /** Bắt đầu tải ngay. Gọi từ luồng bất kỳ. [confirmed] = người dùng đã xác nhận cảnh báo ở hộp thoại dán link. */
-    fun start(url: String, userAgent: String?, contentDisposition: String?, mime: String?, referer: String?, meta: GameMeta? = null, confirmed: Boolean = false): DlJob {
+    fun start(url: String, userAgent: String?, contentDisposition: String?, mime: String?, referer: String?, meta: GameMeta? = null, confirmed: Boolean = false, pixeldrainConfirmed: Boolean = false): DlJob {
         val job = DlJob(ids.getAndIncrement(), url, userAgent, referer, mime, meta)
         job.name = suggestName(url, contentDisposition, mime)
-        // V193 G2: chốt chặn cuối — không có xác nhận thủ công thì Pixeldrain không phát request nào.
-        if (PixeldrainHost.matches(url) && !confirmed) {
-            job.error = "Pixeldrain chỉ tải khi bạn dán link và xác nhận cảnh báo."
+        job.pixeldrainConfirmed = pixeldrainConfirmed
+        // V193 G2: chốt chặn cuối — không có đồng ý cảnh báo Pixeldrain thì không phát request nào.
+        if (PixeldrainHost.matches(url) && !job.pixeldrainConfirmed) {
+            job.error = "${PixeldrainHost.WARNING} Hãy dán link Pixeldrain trong mục Tải xuống để xác nhận."
             job.state = DlState.FAILED
             main.post { jobs.add(job) }
             return job
@@ -129,9 +134,9 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
                     if (r.code in 300..399) {
                         val location = r.header("Location") ?: throw IOException("Chuyển hướng thiếu Location")
                         val next = r.request.url.resolve(location) ?: throw IOException("Chuyển hướng không hợp lệ")
-                        // Chốt từng hop: không gửi request tới Pixeldrain nếu chưa xác nhận thủ công.
-                        if (PixeldrainHost.matches(next.toString()) && !job.confirmed) {
-                            throw IOException("Tệp chuyển tới Pixeldrain, cần bạn dán link và xác nhận.")
+                        // Chốt từng hop: không gửi request tới Pixeldrain nếu chưa có đồng ý cảnh báo Pixeldrain.
+                        if (PixeldrainHost.matches(next.toString()) && !job.pixeldrainConfirmed) {
+                            throw IOException("${PixeldrainHost.WARNING} Link này chuyển tới Pixeldrain; hãy dán link Pixeldrain trong mục Tải xuống để xác nhận.")
                         }
                         if (++hops > MAX_REDIRECTS) throw IOException("Quá nhiều chuyển hướng")
                         nextUrl = next.toString()
@@ -179,6 +184,8 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
             vn.aow.monika.diag.Diagnostics.opFail(context, vn.aow.monika.diag.Diagnostics.Op.DOWNLOAD, "tai-ve", e, job.name)
             main.post { job.error = e.message ?: "Lỗi mạng"; job.state = DlState.FAILED }
             Notifier.downloadDone(context, "Tải thất bại", "${job.name}: ${e.message ?: "lỗi mạng"}", Intent(context, MainActivity::class.java))
+        } finally {
+            onJobFinished?.invoke(job)
         }
     }
 

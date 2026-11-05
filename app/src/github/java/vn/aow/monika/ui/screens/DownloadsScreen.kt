@@ -158,7 +158,9 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> U
                     if (direct == null) {
                         Toast.makeText(context, "Link Pixeldrain này chưa hỗ trợ tải trong app. Mở bằng trình duyệt.", Toast.LENGTH_LONG).show()
                     } else {
-                        AppGraph.browserDownloads.start(direct, null, null, null, null, confirmed = true)
+                        // Chỉ đồng ý cảnh báo Pixeldrain khi chính link dán là Pixeldrain (đã thấy cảnh báo ở trên).
+                        val pixeldrainConfirmed = vn.aow.monika.download.PixeldrainHost.matches(url)
+                        AppGraph.browserDownloads.start(direct, null, null, null, null, confirmed = true, pixeldrainConfirmed = pixeldrainConfirmed)
                         Toast.makeText(context, "Đang tải…", Toast.LENGTH_SHORT).show()
                     }
                     linkOpen = false; linkText = ""
