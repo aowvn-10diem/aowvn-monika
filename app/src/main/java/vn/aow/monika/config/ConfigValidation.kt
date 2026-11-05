@@ -8,6 +8,15 @@ internal object ConfigValidation {
     private val runners = setOf("libretro", "web", "apk", "external", "j2me")
     private val hash = Regex("[0-9a-fA-F]{64}")
     private val urlFields = setOf("endpoint", "systemfiles", "script", "facebookgroup", "discord")
+    /** Nhánh config chứa URL tải **mã/gói** — phải thuộc [ALLOWED_DOWNLOAD_HOSTS]. */
+    private val downloadSections = listOf("config.cores.", "config.modules.", "config.packs.", "config.webPlayers.")
+
+    private fun isDownloadUrl(path: String, field: String): Boolean = when {
+        field == "apkUrl" || field == "systemFiles" -> true
+        field == "script" -> path.startsWith("config.webPlayers.")
+        field == "url" -> downloadSections.any { path.startsWith(it) }
+        else -> false
+    }
 
     fun parse(text: String, minimumVersion: Int): MonikaConfig {
         val root = ConfigRepository.json.parseToJsonElement(text)
@@ -46,6 +55,10 @@ internal object ConfigValidation {
                     if (text.isNotEmpty()) {
                         val url = text.replace("{abi}", "arm64-v8a").toHttpUrlOrNull()
                         require(url != null && url.scheme == "https" && text.startsWith("https://")) { "$path: URL phải là HTTPS hợp lệ" }
+                        if (isDownloadUrl(path, field)) {
+                            // Chỉ nhận host đã chốt trong APK; không in URL/host ra log (chỉ nêu đường dẫn trường).
+                            require(isAllowedDownloadHost(url!!.host.lowercase())) { "$path: host tải không nằm trong danh sách cho phép" }
+                        }
                     }
                 }
             }
