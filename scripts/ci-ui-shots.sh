@@ -247,10 +247,26 @@ if ! build_midlet_jar "$JAR_HOST"; then
   exit 0
 fi
 
-# Đặt file trong thư mục riêng của app để app đọc file:// không cần quyền bộ nhớ.
-JAR_DEV="/sdcard/Android/data/$PKG/files/ci-j2me.jar"
-adb shell mkdir -p "/sdcard/Android/data/$PKG/files" >/dev/null 2>&1 || true
-adb push "$JAR_HOST" "$JAR_DEV" >/dev/null 2>&1 || { missing "BỎ QUA J2ME: không đẩy được .jar vào máy ảo — không tạo ảnh j2me-ban-phim-*"; exit 0; }
+# Đặt .jar trong thư mục NỘI BỘ của app và trả quyền cho UID của app: `adb root` push vào
+# /sdcard/... sẽ để tệp thuộc root và app đọc bị EACCES ("open failed: EACCES").
+JAR_DEV="/data/data/$PKG/files/ci-j2me.jar"
+JAR_TMP="/data/local/tmp/v176-ci-j2me.jar"
+adb push "$JAR_HOST" "$JAR_TMP" >/dev/null 2>&1 \
+  || { missing "BỎ QUA J2ME: không đẩy được .jar vào máy ảo — không tạo ảnh j2me-ban-phim-*"; exit 0; }
+APP_UID=$(adb shell stat -c %u "/data/data/$PKG" 2>/dev/null | tr -d '\r')
+if ! adb shell "mkdir -p /data/data/$PKG/files && cp '$JAR_TMP' '$JAR_DEV'" >/dev/null 2>&1; then
+  missing "BỎ QUA J2ME: không chép được .jar vào thư mục nội bộ của app — không tạo ảnh j2me-ban-phim-*"
+  exit 0
+fi
+[ -n "$APP_UID" ] && adb shell "chown $APP_UID:$APP_UID '$JAR_DEV'" >/dev/null 2>&1
+adb shell "chmod 644 '$JAR_DEV'" >/dev/null 2>&1 || true
+adb shell "restorecon '$JAR_DEV'" >/dev/null 2>&1 || true
+# App phải đọc được tệp này (debug build → run-as dùng được); không đọc được thì đừng mở.
+if adb shell "run-as $PKG cat '$JAR_DEV' > /dev/null" >/dev/null 2>&1; then
+  note "J2ME: app đọc được $JAR_DEV (uid ${APP_UID:-?})"
+else
+  note "CẢNH BÁO: chưa xác nhận được app đọc $JAR_DEV (run-as không dùng được?) — vẫn thử mở"
+fi
 
 adb logcat -c >/dev/null 2>&1 || true
 adb shell am start -a android.intent.action.VIEW \
