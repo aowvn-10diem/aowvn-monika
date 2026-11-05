@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -148,8 +149,63 @@ class GameDeleteBackupTest {
         }
     }
 
-    @Test fun backupsInTheSameSecondDoNotOverwriteEachOther() {
-        val (game, _) = gameWithSave("v139-ghi-de")
+    /**
+     * Luna 4 + Luna 5 (#434): quét thư mục chưa trọn thì **không phát ZIP một phần** — không tạo tệp,
+     * không trả đường dẫn để chia sẻ, và **không xoá** game.
+     */
+    @Test fun incompleteScanEmitsNoArchiveAndRefusesToDelete() {
+        val (game, save) = gameWithSave("v141-quet-thieu")
+        val rom = game.entry!!
+        val known = backups().listFiles().orEmpty().toSet()
+        try {
+            val warning = "Bỏ qua 1 liên kết tượng trưng (không đi theo để tránh lặp vô hạn)."
+            val outcome = library().deleteWithBackup(game) { g ->
+                // Quét thật có file đọc được nhưng thiếu mục → complete = false.
+                GameSaveBackup.backupFolder(context(), g, scanFolder = { _, _ ->
+                    GameFolderScan(listOf(rom), listOf(warning), complete = false)
+                })
+            }
+
+            assertFalse("Quét thiếu thì không được xoá", outcome.deleted)
+            assertNull("Không được trả tệp zip để chia sẻ", outcome.backup)
+            assertTrue(
+                "Phải báo rõ không tạo tệp: ${outcome.message}",
+                outcome.message.contains("Bản sao lưu chưa đầy đủ nên không tạo tệp"),
+            )
+            assertTrue("Phải nêu lý do quét thiếu", outcome.message.contains("liên kết tượng trưng"))
+            assertTrue("Thư mục game phải còn", game.dir.exists())
+            assertTrue("Save phải còn", save.exists())
+            assertTrue(
+                "Không được để lại zip nào khi quét thiếu",
+                backups().listFiles().orEmpty().filter { it !in known }.isEmpty(),
+            )
+        } finally {
+            game.dir.deleteRecursively()
+            backups().listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+        }
+    }
+
+    /** Quét đủ → đúng 1 zip và zip đó chia sẻ được (ACTION_SEND trỏ đúng tệp). */
+    @Test fun completeScanEmitsOneArchiveThatCanBeShared() {
+        val (game, _) = gameWithSave("v141-du-zip")
+        val known = backups().listFiles().orEmpty().toSet()
+        try {
+            val outcome = library().deleteWithBackup(game)
+            assertTrue("Phải xoá được", outcome.deleted)
+            val created = backups().listFiles().orEmpty().filter { it !in known }
+            assertEquals("Đúng 1 bản sao lưu", 1, created.size)
+            assertEquals(created.single(), outcome.backup)
+            val uri = android.net.Uri.parse("content://vn.aow.monika.files/app_internal/save-backups/x.zip")
+            val intent = GameSaveBackup.shareIntent(context(), outcome.backup!!) { uri }
+            assertEquals(android.content.Intent.ACTION_SEND, intent.action)
+            assertEquals(uri, intent.getParcelableExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM))
+        } finally {
+            game.dir.deleteRecursively()
+            backups().listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+        }
+    }
+
+    @Test fun backupsInTheSameSecondDoNotOverwriteEachOther() {        val (game, _) = gameWithSave("v139-ghi-de")
         val known = backups().listFiles().orEmpty().toSet()
         try {
             // Gọi liên tiếp (cùng giây) — tên cũ chỉ có độ phân giải giây nên sẽ đè nhau.
@@ -242,6 +298,7 @@ class GameDeleteBackupTest {
 
     @Test fun deleteIsRefusedWhenTheScanIsNotComplete() {
         val (game, save) = gameWithSave("v139-quet-thieu")
+        val known = backups().listFiles().orEmpty().toSet()
         try {
             val warning = "Bỏ qua 1 liên kết tượng trưng (không đi theo để tránh lặp vô hạn)."
             val outcome = library().deleteWithBackup(game) {
@@ -250,10 +307,13 @@ class GameDeleteBackupTest {
             assertFalse("Chưa chứng minh sao lưu đủ thì không được xoá", outcome.deleted)
             assertTrue("Thư mục game phải còn", game.dir.exists())
             assertTrue("Save phải còn", save.exists())
-            assertTrue(outcome.message.contains("Chưa chứng minh sao lưu đủ"))
+            assertNull("Không được trả tệp để chia sẻ", outcome.backup)
+            assertTrue(outcome.message.contains("Bản sao lưu chưa đầy đủ nên không tạo tệp"))
             assertTrue("Phải nêu lý do", outcome.message.contains("liên kết tượng trưng"))
+            assertTrue("Không được có zip nào", backups().listFiles().orEmpty().filter { it !in known }.isEmpty())
         } finally {
             game.dir.deleteRecursively()
+            backups().listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
         }
     }
 
