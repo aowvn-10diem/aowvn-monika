@@ -64,7 +64,7 @@ class PlayLibrarySectionsTest {
         assertEquals("read", AppGraph.prefs.librarySection)
 
         rule.onNodeWithText("Tệp").performClick()
-        settle("Chưa có tệp")
+        settle("Chưa có tệp nào")
         rule.onNodeWithText("Tệp").assertIsSelected()
         assertEquals("files", AppGraph.prefs.librarySection)
 
@@ -77,7 +77,7 @@ class PlayLibrarySectionsTest {
     @Test fun reopensOnTheRememberedSection() {
         AppGraph.prefs.librarySection = "files"
         openLibrary()
-        settle("Chưa có tệp")
+        settle("Chưa có tệp nào")
         rule.onNodeWithText("Tệp").assertIsSelected()
         rule.onNodeWithText("Chưa có game").assertDoesNotExist()
         // Giá trị lạ vẫn quay về mục Chơi, không làm mất màn.
