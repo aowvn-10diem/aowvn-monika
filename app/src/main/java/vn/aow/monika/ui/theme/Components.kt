@@ -46,6 +46,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -64,6 +65,14 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
@@ -556,9 +565,13 @@ fun MonikaDialog(
     confirm: @Composable () -> Unit,
     dismiss: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    /** V193 UX: nút huỷ là mặc định (Enter) để tránh lỡ tay xác nhận. */
+    defaultDismiss: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Monika.colors
+    val dismissFocus = remember { FocusRequester() }
+    if (defaultDismiss) LaunchedEffect(Unit) { runCatching { dismissFocus.requestFocus() } }
     AlertDialog(
         onDismissRequest = onDismissRequest,
         modifier = modifier,
@@ -567,7 +580,19 @@ fun MonikaDialog(
         title = { Text(title, style = Monika.type.cardTitle, color = c.text) },
         text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp), content = content) },
         confirmButton = confirm,
-        dismissButton = dismiss,
+        dismissButton = {
+            Box(
+                Modifier.then(
+                    if (defaultDismiss) {
+                        Modifier.focusRequester(dismissFocus).focusable().onPreviewKeyEvent { e ->
+                            if (e.type == KeyEventType.KeyDown && (e.key == Key.Enter || e.key == Key.NumPadEnter)) {
+                                onDismissRequest(); true
+                            } else false
+                        }
+                    } else Modifier,
+                ),
+            ) { dismiss() }
+        },
     )
 }
 

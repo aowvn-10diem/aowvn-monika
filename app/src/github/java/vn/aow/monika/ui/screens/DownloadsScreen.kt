@@ -164,8 +164,13 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> U
                     linkOpen = false; linkText = ""
                 }, height = 46.dp)
             },
-            dismiss = { DarkButton("Huỷ", { linkOpen = false }) },
+            dismiss = { DarkButton("Hủy", { linkOpen = false }) },
         ) {
+            SoftPillButton("Dán từ bộ nhớ tạm", {
+                val text = vn.aow.monika.download.ClipboardLink.read(context)
+                if (text == null) Toast.makeText(context, "Bộ nhớ tạm không có văn bản để dán.", Toast.LENGTH_SHORT).show()
+                else linkText = text
+            }, R.drawable.ic_fluent_copy_24_regular)
             MonikaTextField(linkText, { linkText = it }, "Dán link tải", Modifier.fillMaxWidth())
             Text(
                 if (vn.aow.monika.download.PixeldrainHost.matches(linkText)) vn.aow.monika.download.PixeldrainHost.WARNING
