@@ -276,6 +276,9 @@ class InAppBrowserActivity : ComponentActivity() {
         setDownloadListener { url, ua, disposition, mime, _ ->
             if (url.startsWith("blob:") || url.startsWith("data:")) {
                 android.widget.Toast.makeText(this@InAppBrowserActivity, "Trang này tạo file ngay trong trình duyệt, chưa tải được bằng Monika", android.widget.Toast.LENGTH_LONG).show()
+            } else if (vn.aow.monika.download.PixeldrainHost.matches(url)) {
+                // V193 G2: không tự tải Pixeldrain; chỉ nhận khi người dùng dán link trong mục Tải xuống.
+                android.widget.Toast.makeText(this@InAppBrowserActivity, "Pixeldrain chỉ tải khi bạn dán link trong mục Tải xuống và xác nhận cảnh báo.", android.widget.Toast.LENGTH_LONG).show()
             } else AppGraph.browserDownloads.start(url, ua, disposition, mime, referer = this.url)
         }
         settings.setSupportMultipleWindows(true) // để chủ động chặn cửa sổ bật lên (pop-up / pop-under) — xem onCreateWindow
