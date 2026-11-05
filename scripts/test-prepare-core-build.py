@@ -36,12 +36,16 @@ class CoreBuildTest(unittest.TestCase):
             {"core": "fceumm", "abi": "arm64-v8a"},
             {"core": "fceumm", "abi": "armeabi-v7a"},
             {"core": "gambatte", "abi": "arm64-v8a"},
-            {"core": "gambatte", "abi": "armeabi-v7a"}]})
+            {"core": "gambatte", "abi": "armeabi-v7a"},
+            {"core": "mgba", "abi": "arm64-v8a"},
+            {"core": "mgba", "abi": "armeabi-v7a"},
+            {"core": "ppsspp", "abi": "arm64-v8a"},
+            {"core": "ppsspp", "abi": "armeabi-v7a"}]})
         self.assertEqual(len(lock["inventory"]["cores"]), 22)
-        self.assertEqual(len(set(lock["inventory"]["cores"]) - set(lock["cores"])), 20)
+        self.assertEqual(len(set(lock["inventory"]["cores"]) - set(lock["cores"])), 18)
 
     def test_repository_recipe_and_license_are_bound_to_each_core(self):
-        for name, wrong in [('fceumm', 'gambatte'), ('gambatte', 'fceumm')]:
+        for name, wrong in [('fceumm', 'gambatte'), ('gambatte', 'fceumm'), ('mgba', 'fceumm'), ('ppsspp', 'mgba')]:
             for key in ['repository', 'recipe', 'license', 'licenseFiles']:
                 data = copy.deepcopy(self.raw)
                 data['cores'][name][key] = data['cores'][wrong][key]
@@ -109,6 +113,68 @@ class CoreBuildTest(unittest.TestCase):
             fetch.assert_not_called()
         self.assertFalse((self.root / "out").exists())
 
+    def test_mgba_missing_or_wrong_cmake_ninja_fails_before_network(self):
+        ndk = self.root / "ndk"; ndk.mkdir()
+        (ndk / "source.properties").write_text("Pkg.Revision = 22.1.7171670\n")
+        for cmake, versions, message in [
+                (None, [], "CMake"),
+                (self.root / "cmake", ["cmake version 3.31.6"], "CMake"),
+                (self.root / "cmake", ["cmake version 3.22.1-g37088a8", "1.11.1"], "Ninja")]:
+            with self.subTest(message=message, versions=versions), \
+                    patch.object(corebuild, "checkout") as fetch, \
+                    patch.object(corebuild, "run", side_effect=versions):
+                with self.assertRaisesRegex(ValueError, message):
+                    corebuild.prepare(self.load(), "mgba", "arm64-v8a", ndk,
+                                      self.root / "out", self.lock_path, cmake)
+                fetch.assert_not_called()
+        self.assertFalse((self.root / "out").exists())
+
+    def test_reject_unpinned_cmake_and_ninja_in_lock(self):
+        for tool in ("cmake", "cmakeBuild", "ninja"):
+            for version in ("latest", "3.22.1\n", None):
+                data = copy.deepcopy(self.raw)
+                data["toolchain"][tool] = version
+                self.write(data)
+                with self.subTest(tool=tool, version=version), self.assertRaisesRegex(ValueError, "CMake/Ninja"):
+                    self.load()
+
+    def test_psp_submodule_source_path_commit_and_closure_fail_before_fetch(self):
+        for key, value in (("path", "../outside"), ("repository", "https://example.org/x.git"),
+                           ("commit", "master"), ("commit", "a" * 39)):
+            data = copy.deepcopy(self.raw)
+            data["cores"]["ppsspp"]["submodules"][0][key] = value
+            self.write(data)
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, "Submodule PSP"):
+                self.load()
+        data = copy.deepcopy(self.raw); data["cores"]["ppsspp"]["submodules"].pop()
+        self.write(data)
+        with self.assertRaisesRegex(ValueError, "Submodule PSP"):
+            self.load()
+
+    def test_psp_gitlink_sha_url_and_unexpected_module_are_rejected(self):
+        source = self.root / "source"; source.mkdir()
+        module = self.raw["cores"]["ppsspp"]["submodules"][0]
+        path = module["path"]
+        (source / ".gitmodules").write_text(
+            f'[submodule "fixture"]\npath = {path}\nurl = {module["repository"]}\n')
+        modules = {path: module}
+        line = f'160000 commit {module["commit"]}\t{path}'
+        with patch.object(corebuild, "run", return_value=line):
+            self.assertEqual({path}, corebuild.verify_psp_gitlinks(source, "", modules))
+        for bad in (line.replace(module["commit"], "a" * 40), line.replace(path, "ext/unknown")):
+            with patch.object(corebuild, "run", return_value=bad), self.assertRaisesRegex(ValueError, "khớp lock"):
+                corebuild.verify_psp_gitlinks(source, "", modules)
+        (source / ".gitmodules").write_text(f'[submodule "fixture"]\npath = {path}\nurl = https://example.org/changed\n')
+        with patch.object(corebuild, "run", return_value=line), self.assertRaisesRegex(ValueError, "khớp lock"):
+            corebuild.verify_psp_gitlinks(source, "", modules)
+
+    def test_psp_requires_real_debug_info_and_symbol_table(self):
+        for sections in ("", ".dynsym", ".symtab", ".debug_info"):
+            with patch.object(corebuild, "run", return_value=sections), self.assertRaisesRegex(ValueError, "dynamic-only"):
+                corebuild.require_debug_symbols(self.root / "lib.so", "readelf")
+        with patch.object(corebuild, "run", return_value=".symtab .debug_info"):
+            corebuild.require_debug_symbols(self.root / "lib.so", "readelf")
+
     def test_checkout_must_match_commit_and_no_submodules(self):
         core = self.raw["cores"]["fceumm"]
         source = self.root / "source"
@@ -144,6 +210,20 @@ class CoreBuildTest(unittest.TestCase):
             self.inspect(self.elf(), notes="")
         with self.assertRaisesRegex(ValueError, "Phụ thuộc"):
             self.inspect(self.elf(), dynamic="Shared library: [libsecret.so]")
+
+    def test_psp_system_libraries_do_not_relax_other_core_checks(self):
+        with self.assertRaisesRegex(ValueError, "Phụ thuộc"):
+            self.inspect(self.elf(), dynamic="Shared library: [libEGL.so]")
+        for needed, allowed in (("libEGL.so", True), ("libsecret.so", False)):
+            with patch.object(corebuild, "run", side_effect=[
+                    f"Shared library: [{needed}]", "\n".join("T " + s for s in corebuild.EXPORTS),
+                    "Build ID: abc123"]):
+                if allowed:
+                    self.assertEqual([needed], corebuild.elf_metadata(
+                        self.elf(), "arm64-v8a", "readelf", "nm", corebuild.PSP_NEEDED)["needed"])
+                else:
+                    with self.assertRaisesRegex(ValueError, "Phụ thuộc"):
+                        corebuild.elf_metadata(self.elf(), "arm64-v8a", "readelf", "nm", corebuild.PSP_NEEDED)
 
     def test_wrong_abi_rejected_before_tools(self):
         elf = self.elf()

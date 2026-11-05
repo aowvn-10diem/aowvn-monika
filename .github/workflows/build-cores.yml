@@ -26,6 +26,7 @@ jobs:
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
       ndk: ${{ steps.plan.outputs.ndk }}
+      cmake: ${{ steps.plan.outputs.cmake }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,6 +44,7 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               print("matrix=" + json.dumps(module.plan(lock), separators=(",", ":")), file=output)
               print("ndk=" + lock["toolchain"]["ndk"], file=output)
+              print("cmake=" + lock["toolchain"]["cmake"], file=output)
           PY
   build:
     needs: plan
@@ -59,22 +61,27 @@ jobs:
           persist-credentials: false
       - uses: actions/cache@v4
         with:
-          path: ${{ env.ANDROID_HOME }}/ndk/${{ needs.plan.outputs.ndk }}
-          key: v198-ndk-${{ runner.os }}-${{ needs.plan.outputs.ndk }}-${{ matrix.abi }}-${{ hashFiles('engines/sources.lock.json') }}
-      - name: Cài NDK ghim (không tải binary core)
+          path: |
+            ${{ env.ANDROID_HOME }}/ndk/${{ needs.plan.outputs.ndk }}
+            ${{ env.ANDROID_HOME }}/cmake/${{ needs.plan.outputs.cmake }}
+          key: v198-tools-${{ runner.os }}-${{ needs.plan.outputs.ndk }}-${{ needs.plan.outputs.cmake }}-${{ matrix.abi }}-${{ hashFiles('engines/sources.lock.json') }}
+      - name: Cài NDK và CMake ghim (không tải binary core)
         env:
           CORE_NDK: ${{ needs.plan.outputs.ndk }}
+          CORE_CMAKE: ${{ needs.plan.outputs.cmake }}
         run: |
           set -euo pipefail
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$CORE_NDK"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$CORE_NDK" "cmake;$CORE_CMAKE"
       - name: Dựng, kiểm ELF/libretro/hash, giữ nguồn và ký hiệu
         env:
           CORE_ID: ${{ matrix.core }}
           CORE_ABI: ${{ matrix.abi }}
           CORE_NDK: ${{ needs.plan.outputs.ndk }}
+          CORE_CMAKE: ${{ needs.plan.outputs.cmake }}
         run: |
           python3 scripts/prepare-core-build.py --core "$CORE_ID" --abi "$CORE_ABI" \
-            --ndk "$ANDROID_HOME/ndk/$CORE_NDK" --out out/core
+            --ndk "$ANDROID_HOME/ndk/$CORE_NDK" \
+            --cmake "$ANDROID_HOME/cmake/$CORE_CMAKE/bin/cmake" --out out/core
       - uses: actions/upload-artifact@v7
         with:
           name: source-build-${{ matrix.core }}-${{ matrix.abi }}
