@@ -187,6 +187,34 @@ export function packAllowed(env, name) {
   return list.split(",").map((v) => v.trim()).filter(Boolean).includes(name);
 }
 
+/** Host tải phải nằm trong `PACKS_HOSTS` (phẩy ngăn cách, so sau khi hạ chữ thường). */
+export function packHostAllowed(env, host) {
+  const list = env && env.PACKS_HOSTS;
+  if (typeof list !== "string") return false;
+  return list.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean).includes(String(host).toLowerCase());
+}
+
+/**
+ * Chuẩn hoá `PACKS_BASE` và chỉ nhận URL tải hợp lệ: HTTPS, không userinfo, không port lạ,
+ * không query/fragment, host nằm trong `PACKS_HOSTS`. Sai/thiếu → null (caller trả 503).
+ */
+export function packBase(env) {
+  const raw = env && env.PACKS_BASE;
+  if (typeof raw !== "string" || raw.trim() === "") return null;
+  let parsed;
+  try {
+    parsed = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "https:") return null;
+  if (parsed.username !== "" || parsed.password !== "") return null;
+  if (parsed.port !== "" && parsed.port !== "443") return null;
+  if (parsed.search !== "" || parsed.hash !== "") return null;
+  if (!packHostAllowed(env, parsed.hostname)) return null;
+  return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, "");
+}
+
 const base64url = (bytes) =>
   btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
@@ -214,8 +242,8 @@ const sameText = (a, b) => {
 async function packRoute(req, env, url) {
   if (req.method !== "GET" && req.method !== "HEAD") return json({ ok: false, error: "method_not_allowed" }, 405);
   const secret = env && env.PACKS_TOKEN;
-  const base = env && env.PACKS_BASE;
-  if (typeof secret !== "string" || secret.trim() === "" || typeof base !== "string" || base.trim() === "") {
+  const base = packBase(env);
+  if (typeof secret !== "string" || secret.trim() === "" || base === null) {
     return json({ ok: false, error: "unavailable" }, 503);
   }
   const name = url.pathname.slice("/pack/".length);
@@ -235,7 +263,7 @@ async function packRoute(req, env, url) {
   if (Number(exp) < Math.floor(clockMs() / 1000)) return json({ ok: false, error: "expired" }, 403);
   if (!sameText(sig, await packSignature(secret, name, Number(exp)))) return json({ ok: false, error: "forbidden" }, 403);
   return new Response(null, { status: 302, headers: {
-    location: `${base.trim().replace(/\/+$/, "")}/${name}`, "cache-control": "no-store",
+    location: `${base}/${name}`, "cache-control": "no-store",
   } });
 }
 

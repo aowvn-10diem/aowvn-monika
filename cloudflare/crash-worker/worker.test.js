@@ -356,6 +356,7 @@ test("V194 ba request dong thoi cung IP, mot cai ghi loi: hai luot giu cho con l
 
 const packEnv = (extra = {}) => ({
   PACKS_TOKEN: "pack-fixture-only",
+  PACKS_HOSTS: "cdn.example.test",
   PACKS_BASE: "https://cdn.example.test/packs/",
   PACKS_ALLOW: "core-gb.zip,engine-azahar.zip",
   ...extra,
@@ -534,4 +535,32 @@ test("V195 authEquals so sanh tren SHA-256 ca hai ve, khong so chuoi tho", async
     crypto.subtle.digest = real;
   }
   assert.deepEqual(seen.sort(), ["Bearer a", "Bearer b"]);
+});
+
+test("V193-G3 PACKS_BASE phai la HTTPS + host trong PACKS_HOSTS, sai thi 503", async () => {
+  const bad = [
+    { PACKS_BASE: "http://cdn.example.test/packs" },                  // http thường
+    { PACKS_BASE: "https://evil.example/packs" },                     // host lạ
+    { PACKS_HOSTS: "" },                                              // thiếu danh sách host
+    { PACKS_BASE: "" },                                               // thiếu base
+    { PACKS_BASE: "not a url" },                                      // không phải URL
+    { PACKS_BASE: "https://user:pw@cdn.example.test/packs" },         // có userinfo
+    { PACKS_BASE: "https://cdn.example.test:8443/packs" },            // port lạ
+    { PACKS_BASE: "https://cdn.example.test/packs?x=1" },             // có query
+    { PACKS_BASE: "https://cdn.example.test/packs#frag" },            // có fragment
+    { PACKS_BASE: "javascript:alert(1)" },                            // scheme khác
+  ];
+  for (const extra of bad) {
+    const r = await packGet(packEnv(extra), "/pack/core-gb.zip");
+    assert.equal(r.status, 503, JSON.stringify(extra));
+    assert.equal(r.headers.get("location"), null, JSON.stringify(extra));
+    assert.deepEqual(await r.json(), { ok: false, error: "unavailable" });
+  }
+
+  // Hợp lệ: port 443 tường minh, danh sách host có khoảng trắng/viết hoa, base không có '/' cuối.
+  const ok = packEnv({ PACKS_HOSTS: " CDN.Example.Test ,packs.aow.vn", PACKS_BASE: "https://cdn.example.test:443/packs" });
+  const minted = new URL((await packGet(ok, "/pack/core-gb.zip")).headers.get("location"));
+  const r = await packGet(ok, minted.pathname + minted.search);
+  assert.equal(r.status, 302);
+  assert.equal(r.headers.get("location"), "https://cdn.example.test/packs/core-gb.zip");
 });
