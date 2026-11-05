@@ -36,6 +36,7 @@ on:
       - "app/src/main/java/vn/aow/monika/library/**"
       - "j2me/**"
       - ".github/workflows/emulator-test.yml"
+      - "scripts/ci-ui-shots.sh"
 
 jobs:
   build:

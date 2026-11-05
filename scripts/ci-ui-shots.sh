@@ -4,7 +4,8 @@
 # Dùng: bash scripts/ci-ui-shots.sh <thư-mục-ra> [đường-dẫn-apk]
 # Bỏ trống tham số 2 thì tự tìm APK debug dưới app/build/outputs/apk/<flavor>/debug (find, ưu tiên bản universal).
 # Không tải gì từ mạng, không đụng dữ liệu người dùng. Không chụp được ảnh nào thì ghi vào
-# ghi-chu.txt rồi thoát 0 (job ảnh không phải cổng chặn); chỉ thoát 1 khi không cài được APK.
+# ghi-chu.txt/thieu-anh.txt rồi thoát 0 (job ảnh không phải cổng chặn); chỉ thoát 1 khi không cài được APK.
+# Ảnh j2me-ban-phim-* CHỈ được tạo khi xác nhận MicroActivity đang hiển thị — không đoán.
 set -uo pipefail
 
 OUT=${1:?cần thư mục ra}
@@ -19,9 +20,17 @@ APK=${APK:-}
 PKG=com.aow.monika
 mkdir -p "$OUT"
 NOTE="$OUT/ghi-chu.txt"
+THIEU="$OUT/thieu-anh.txt"
 : > "$NOTE"
+# Chỉ tạo thieu-anh.txt khi thật sự thiếu ảnh (có tệp = có ảnh bị bỏ qua).
 
 note() { printf '%s\n' "$*" | tee -a "$NOTE"; }
+
+# Ghi lý do thiếu ảnh vào log, ghi-chu.txt, thieu-anh.txt (job vẫn xanh: đây không phải cổng chặn).
+missing() {
+  printf '::warning::%s\n' "$*"
+  printf '%s\n' "$*" | tee -a "$NOTE" >> "$THIEU"
+}
 
 # Chờ cửa sổ đang focus khớp chuỗi (tối đa ~90 giây).
 wait_focus() {
@@ -35,6 +44,31 @@ wait_focus() {
   return 1
 }
 
+# Activity có thật sự đang ở trên cùng không? Ba nguồn, chỉ cần một nguồn khớp:
+#   1. `dumpsys activity activities` — topResumedActivity/mResumedActivity (nguồn ổn định nhất trên API 30+)
+#   2. `dumpsys activity top`       — dòng "ACTIVITY <pkg>/<lớp>"
+#   3. `dumpsys window`             — mCurrentFocus (chỉ là nguồn phụ, có bản Android không in ra)
+activity_visible() { # activity_visible <Tên Activity>
+  local want=$1 dump
+  dump=$(adb shell dumpsys activity activities 2>/dev/null | tr -d '\r')
+  printf '%s\n' "$dump" | grep -qE "(topResumedActivity|mResumedActivity|ResumedActivity).*$want" && return 0
+  dump=$(adb shell dumpsys activity top 2>/dev/null | tr -d '\r')
+  printf '%s\n' "$dump" | grep -qE "^ *ACTIVITY .*$want" && return 0
+  dump=$(adb shell dumpsys window 2>/dev/null | tr -d '\r')
+  printf '%s\n' "$dump" | grep -qE "mCurrentFocus.*$want" && return 0
+  return 1
+}
+
+# Chờ activity hiện ra: wait_activity <Tên Activity> <số lần thử> (mỗi lần cách 3 giây).
+wait_activity() {
+  local want=$1 tries=$2 i
+  for i in $(seq 1 "$tries"); do
+    activity_visible "$want" && return 0
+    sleep 3
+  done
+  return 1
+}
+
 shot() {
   local name=$1 file="$OUT/$1.png"
   adb exec-out screencap -p > "$file" 2>/dev/null || true
@@ -42,7 +76,7 @@ shot() {
     note "OK $name.png ($(wc -c < "$file") byte)"
   else
     rm -f "$file"
-    note "THIẾU $name.png — screencap không trả ảnh"
+    missing "THIẾU $name.png — screencap không trả ảnh"
   fi
 }
 
@@ -79,7 +113,7 @@ else
   [ "$(adb shell id -u 2>/dev/null | tr -d '\r')" = 0 ] && root_ok=1
 fi
 if [ "$root_ok" != 1 ]; then
-  note "BỎ QUA J2ME: adb root không khả dụng (MonikaLaunchActivity exported=false)"
+  missing "BỎ QUA J2ME: adb root không khả dụng (MonikaLaunchActivity exported=false) — không tạo ảnh j2me-ban-phim-*"
   adb logcat -d 2>/dev/null | tail -n 200 > "$OUT/nhat-ky.txt" || true
   exit 0
 fi
@@ -197,7 +231,7 @@ JAVA
 
 JAR_HOST=${RUNNER_TEMP:-${TMPDIR:-/tmp}}/v176-ci-j2me.jar
 if ! build_midlet_jar "$JAR_HOST"; then
-  note "BỎ QUA J2ME: không tạo được MIDlet tổng hợp (javac/jar lỗi)"
+  missing "BỎ QUA J2ME: không tạo được MIDlet tổng hợp (javac/jar lỗi) — không tạo ảnh j2me-ban-phim-*"
   adb logcat -d 2>/dev/null | tail -n 200 > "$OUT/nhat-ky.txt" || true
   exit 0
 fi
@@ -205,7 +239,7 @@ fi
 # Đặt file trong thư mục riêng của app để app đọc file:// không cần quyền bộ nhớ.
 JAR_DEV="/sdcard/Android/data/$PKG/files/ci-j2me.jar"
 adb shell mkdir -p "/sdcard/Android/data/$PKG/files" >/dev/null 2>&1 || true
-adb push "$JAR_HOST" "$JAR_DEV" >/dev/null 2>&1 || { note "BỎ QUA J2ME: không đẩy được .jar vào máy ảo"; exit 0; }
+adb push "$JAR_HOST" "$JAR_DEV" >/dev/null 2>&1 || { missing "BỎ QUA J2ME: không đẩy được .jar vào máy ảo — không tạo ảnh j2me-ban-phim-*"; exit 0; }
 
 adb logcat -c >/dev/null 2>&1 || true
 adb shell am start -a android.intent.action.VIEW \
@@ -213,12 +247,17 @@ adb shell am start -a android.intent.action.VIEW \
   -n "$PKG/ru.woesss.j2me.installer.MonikaLaunchActivity" >/dev/null 2>&1 \
   || note "CẢNH BÁO: không mở được MonikaLaunchActivity"
 
-if wait_focus MicroActivity; then
-  note "J2ME: MicroActivity đã hiện"
+if wait_activity MicroActivity 20; then
+  note "J2ME: MicroActivity đang hiển thị (topResumedActivity) — sẽ chụp bàn phím ảo"
 else
-  note "CẢNH BÁO: không thấy MicroActivity (cài .jar có thể chưa xong)"
+  # Không có bằng chứng MicroActivity hiển thị thì KHÔNG chụp và KHÔNG đặt tên ảnh J2ME.
+  missing "BỎ QUA J2ME: không xác nhận được MicroActivity đang hiển thị sau ~60 giây — không tạo ảnh j2me-ban-phim-*"
+  adb shell dumpsys activity activities 2>/dev/null | tr -d '\r' \
+    | grep -iE "ResumedActivity|MicroActivity|MonikaLaunch" | head -n 20 > "$OUT/j2me-man-hinh.txt" || true
+  adb logcat -d 2>/dev/null | tail -n 400 > "$OUT/nhat-ky.txt" || true
+  exit 0
 fi
-sleep 8
+sleep 3
 
 # Ngang rồi dọc: MicroActivity xin ORIENTATION_UNSPECIFIED nên xoay theo hệ thống.
 rotate() { # rotate <0|1>
@@ -228,11 +267,20 @@ rotate() { # rotate <0|1>
 adb shell settings put system accelerometer_rotation 0 >/dev/null 2>&1 || true
 rotate 1
 sleep 5
-shot j2me-ban-phim-ngang
+# Kiểm lại ngay trước mỗi ảnh: activity có thể bị đẩy lui (hộp thoại, thoát game) sau khi xoay.
+if activity_visible MicroActivity; then
+  shot j2me-ban-phim-ngang
+else
+  missing "BỎ QUA ảnh j2me-ban-phim-ngang: MicroActivity không còn hiển thị sau khi xoay ngang"
+fi
 
 rotate 0
 sleep 5
-shot j2me-ban-phim-doc
+if activity_visible MicroActivity; then
+  shot j2me-ban-phim-doc
+else
+  missing "BỎ QUA ảnh j2me-ban-phim-doc: MicroActivity không còn hiển thị sau khi xoay dọc"
+fi
 
 # Trả máy về tự xoay; lưu log để đọc khi ảnh thiếu.
 adb shell wm set-user-rotation free >/dev/null 2>&1 \
