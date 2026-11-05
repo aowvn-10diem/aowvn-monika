@@ -2,12 +2,17 @@ package vn.aow.monika.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.pressKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -20,6 +25,7 @@ import vn.aow.monika.ui.theme.DarkButton
 import vn.aow.monika.ui.theme.DialogKeyAction
 import vn.aow.monika.ui.theme.GradientButton
 import vn.aow.monika.ui.theme.MonikaDialog
+import vn.aow.monika.ui.theme.MonikaTextField
 import vn.aow.monika.ui.theme.MonikaTheme
 import vn.aow.monika.ui.theme.dialogKeyAction
 
@@ -59,5 +65,21 @@ class MonikaDialogTest {
         assertEquals(DialogKeyAction.DISMISS, dialogKeyAction(Key.NumPadEnter, KeyEventType.KeyDown))
         assertEquals(DialogKeyAction.IGNORE, dialogKeyAction(Key.Enter, KeyEventType.KeyUp))
         assertEquals(DialogKeyAction.IGNORE, dialogKeyAction(Key.Escape, KeyEventType.KeyDown))
+    }
+
+    /** Compose thật: focus ô nhập rồi gửi Enter → gọi onEnter (Hủy), không xác nhận/tải.
+     *  Không dựng trong cửa sổ dialog vì Robolectric treo idle (2 semantics root); test đúng ô nhập production. */
+    @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
+    @Test fun enterKhiOFocusGoiOnEnterKhongXacNhan() {
+        var entered = false
+        rule.setContent {
+            MonikaTheme {
+                MonikaTextField("", {}, "Dán link tải", Modifier.testTag("link-field"), onEnter = { entered = true })
+            }
+        }
+        rule.onNodeWithTag("link-field").performClick()
+        rule.onNodeWithTag("link-field").performKeyInput { pressKey(Key.Enter) }
+        rule.waitForIdle()
+        assertTrue("Enter khi ô nhập focus phải chọn Hủy", entered)
     }
 }

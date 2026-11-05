@@ -11,6 +11,8 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -76,6 +78,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -613,21 +616,31 @@ internal fun dialogKeyAction(key: Key, type: KeyEventType): DialogKeyAction =
     if (type == KeyEventType.KeyDown && (key == Key.Enter || key == Key.NumPadEnter)) DialogKeyAction.DISMISS
     else DialogKeyAction.IGNORE
 
-/** Ô nhập một dòng theo token giao diện (màu viền/nhãn/chữ từ `Monika.colors`). */
+/** Ô nhập một dòng theo token giao diện (màu viền/nhãn/chữ từ `Monika.colors`).
+ *  [onEnter]: chỉ dùng cho hộp cần hành động an toàn khi đang focus ô nhập (vd. Hủy tải). */
 @Composable
 fun MonikaTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    onEnter: (() -> Unit)? = null,
 ) {
     val c = Monika.colors
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier,
+        modifier = modifier.then(
+            if (onEnter != null) Modifier.onPreviewKeyEvent { e ->
+                if (dialogKeyAction(e.key, e.type) == DialogKeyAction.DISMISS) {
+                    onEnter(); true
+                } else false
+            } else Modifier,
+        ),
         singleLine = true,
         shape = Radius.small,
+        keyboardOptions = if (onEnter != null) KeyboardOptions(imeAction = ImeAction.Done) else KeyboardOptions.Default,
+        keyboardActions = if (onEnter != null) KeyboardActions(onDone = { onEnter() }) else KeyboardActions.Default,
         label = { Text(label, style = Monika.type.caption) },
         textStyle = Monika.type.body.copy(color = c.text),
         colors = OutlinedTextFieldDefaults.colors(

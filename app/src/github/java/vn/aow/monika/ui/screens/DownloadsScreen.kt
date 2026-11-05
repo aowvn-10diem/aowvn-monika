@@ -171,7 +171,7 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> U
                 if (text == null) Toast.makeText(context, "Bộ nhớ tạm không có văn bản để dán.", Toast.LENGTH_SHORT).show()
                 else linkText = text
             }, R.drawable.ic_fluent_copy_24_regular)
-            MonikaTextField(linkText, { linkText = it }, "Dán link tải", Modifier.fillMaxWidth())
+            MonikaTextField(linkText, { linkText = it }, "Dán link tải", Modifier.fillMaxWidth(), onEnter = { linkOpen = false })
             if (vn.aow.monika.download.PixeldrainHost.matches(linkText)) {
                 Text(vn.aow.monika.download.PixeldrainHost.WARNING, style = Monika.type.caption, color = c.textSecondary)
                 Text("Chỉ tải nếu bạn tin nguồn.", style = Monika.type.caption, color = c.textSecondary)
