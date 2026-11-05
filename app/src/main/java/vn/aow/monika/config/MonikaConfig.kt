@@ -9,7 +9,8 @@ import kotlinx.serialization.Serializable
  */
 val ALLOWED_DOWNLOAD_HOSTS: Set<String> = setOf(
     "github.com",                       // releases của repo packs/app
-    "objects.githubusercontent.com",    // CDN asset của GitHub Releases
+    "objects.githubusercontent.com",    // CDN asset cũ của GitHub Releases
+    "release-assets.githubusercontent.com", // đích 302 thật của asset GitHub Releases (kiểm 05/11/2026)
     "raw.githubusercontent.com",
     "codeload.github.com",
     "buildbot.libretro.com",            // lõi libretro nightly (đường tải cũ)

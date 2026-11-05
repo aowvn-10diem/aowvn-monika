@@ -241,7 +241,8 @@ class ConfigRepositoryValidationTest {
         val version = bundled + 12
         reply = """{"configVersion":$version,
             "cores":{"x":{"version":"1","url":"https://buildbot.libretro.com/nightly/android/latest/{abi}/x_libretro_android.so.zip"}},
-            "modules":{"y":{"version":"1","url":"https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/e/y.zip","sha256":"${"b".repeat(64)}"}},
+            "modules":{"y":{"version":"1","url":"https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/e/y.zip","sha256":"${"b".repeat(64)}"},
+                       "z":{"version":"1","url":"https://release-assets.githubusercontent.com/github-production-release-asset/1/z.zip","sha256":"${"c".repeat(64)}"}},
             "app":{"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0/x.apk"}}"""
         assertTrue(r.refresh(true).isSuccess)
         assertEquals(version, r.current.configVersion)

@@ -97,4 +97,20 @@ class DownloadGuardTest {
             assertNull(bad, chain.proceeded)
         }
     }
+
+    @Test fun choPhepDich302ThatCuaGithubReleases() {
+        // Chuỗi thật (kiểm 05/11/2026): github.com → 302 → release-assets.githubusercontent.com (200).
+        assertTrue(vn.aow.monika.config.isAllowedDownloadHost("release-assets.githubusercontent.com"))
+        assertTrue(vn.aow.monika.config.isAllowedDownloadHost("objects.githubusercontent.com"))
+        assertFalse(vn.aow.monika.config.isAllowedDownloadHost("evil.example"))
+
+        val guard = AppGraph.downloadHttp.networkInterceptors.filterIsInstance<DownloadGuard>().single()
+        val hop = FakeChain(url("https://release-assets.githubusercontent.com/github-production-release-asset/1/x.zip?sig=abc&se=2026-11-05"))
+        assertNotNull(guard.intercept(hop))
+        assertNotNull(hop.proceeded)
+
+        val evil = FakeChain(url("https://evil.example/x.zip"))
+        assertTrue(runCatching { guard.intercept(evil) }.exceptionOrNull() is IOException)
+        assertNull(evil.proceeded)
+    }
 }
