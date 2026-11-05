@@ -26,6 +26,21 @@ data class Post(
     val contentHtml: String,
 )
 
+/**
+ * Phần đọc danh sách bài mà màn danh sách cần. Tách khỏi [FeedRepository] để test dựng màn bằng
+ * dữ liệu tĩnh, không gọi mạng.
+ */
+interface FeedSource {
+    /** Bản đã lưu của danh sách [key], null nếu chưa từng tải. */
+    fun cachedList(key: String): List<Post>?
+
+    /** Tải danh sách [key] và cập nhật bản lưu. */
+    suspend fun fetchList(key: String, label: String? = null, max: Int? = null): List<Post>
+
+    /** Tải danh sách theo nhãn/từ khóa, bắt đầu từ [startIndex]. */
+    suspend fun fetch(label: String? = null, startIndex: Int = 1, max: Int? = null, query: String? = null): List<Post>
+}
+
 /** Đọc feed JSON của Blogger (aow.vn). */
 class FeedRepository(
     private val http: OkHttpClient,
@@ -34,7 +49,7 @@ class FeedRepository(
     private val ctx: android.content.Context? = null,
     /** V193 G1: false = không gọi mạng (bài viết đang tắt). */
     private val enabled: () -> Boolean = { true },
-) {
+) : FeedSource {
     private val cache = mutableMapOf<String, Post>()
 
     /** Chốt duy nhất trước mọi request feed; tắt là không có request nào rời máy. */
@@ -49,13 +64,13 @@ class FeedRepository(
     private fun listFile(key: String) = cacheDir?.let { java.io.File(it, "feed-" + key.hashCode().toUInt().toString(16) + ".json") }
 
     /** Bản đã lưu của danh sách [key] (RAM trước, rồi đĩa). Null nếu chưa từng tải. */
-    fun cachedList(key: String): List<Post>? = lists[key] ?: runCatching {
+    override fun cachedList(key: String): List<Post>? = lists[key] ?: runCatching {
         listFile(key)?.takeIf { it.exists() }?.readText()?.let { listJson.decodeFromString(kotlinx.serialization.builtins.ListSerializer(Post.serializer()), it) }
     }.getOrNull()?.also { lists[key] = it; it.forEach { p -> cache[p.id] = p } }
 
     /** Tải danh sách và cập nhật bản lưu. */
-    suspend fun fetchList(key: String, label: String? = null, max: Int? = null): List<Post> =
-        fetch(label = label, max = max).also { list ->
+    override suspend fun fetchList(key: String, label: String?, max: Int?): List<Post> =
+        fetch(label = label, startIndex = 1, max = max, query = null).also { list ->
             lists[key] = list
             withContext(Dispatchers.IO) {
                 runCatching { listFile(key)?.writeText(listJson.encodeToString(kotlinx.serialization.builtins.ListSerializer(Post.serializer()), list)) }
@@ -65,7 +80,7 @@ class FeedRepository(
     fun cached(id: String): Post? = cache[id]
 
     /** @param query tìm kiếm toàn văn (tham số q của Blogger). */
-    suspend fun fetch(label: String? = null, startIndex: Int = 1, max: Int? = null, query: String? = null): List<Post> {
+    override suspend fun fetch(label: String?, startIndex: Int, max: Int?, query: String?): List<Post> {
         requireEnabled()
         val feed = configRepo.current.feed
         val base = feed.url.trimEnd('/') + (label?.let { "/-/" + Uri.encode(it) } ?: "")

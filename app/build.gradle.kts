@@ -21,14 +21,15 @@ configurations.configureEach {
 
 android {
     namespace = "vn.aow.monika"
-    compileSdk = 35
+    // V152: Android 16 (API 36). targetSdk 36 → bắt buộc edge-to-edge, màn lớn bỏ khoá xoay, predictive back mặc định.
+    compileSdk = 36
     // Cùng NDK với :j2me: để AGP có llvm-strip và cắt ký hiệu debug khỏi libc++_shared/oboe/javam3g/mmapi... (≈ −14 MB APK; trước đó log báo "Unable to strip").
     ndkVersion = "22.1.7171670"
 
     defaultConfig {
         applicationId = "com.aow.monika"
         minSdk = 26 // Android 8.0+
-        targetSdk = 35
+        targetSdk = 36
         // Tăng versionCode mỗi lần phát hành; app so số này với config để nhắc cập nhật.
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
@@ -152,6 +153,12 @@ val unpackSevenZipNatives by tasks.registering(Copy::class) {
 }
 tasks.withType<Test>().configureEach {
     dependsOn(unpackSevenZipNatives)
+    // V152: sandbox Robolectric API 36 (Android 16) chỉ dựng được khi JVM >= 21 — Robolectric 4.16.1
+    // ném UnsupportedOperationException "Android SDK 36 requires Java 21" trên JDK 17. Gradle vẫn
+    // chạy được trên JDK 17; chỉ JVM chạy test cần 21 (toolchain, xem gradle.properties).
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    })
     systemProperty("java.library.path", layout.buildDirectory.dir("sevenzip-natives").get().asFile.absolutePath)
     // Giống Android: tên file luôn UTF-8 (máy CI có thể để locale POSIX → tên tiếng Việt thành "??").
     environment("LC_ALL", "C.UTF-8")
@@ -170,7 +177,7 @@ val loaderDex by tasks.registering(JavaExec::class) {
         ?: Properties().also { p -> rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(p::load) }.getProperty("sdk.dir")
     doFirst {
         out.get().asFile.deleteRecursively(); out.get().asFile.mkdirs()
-        args("--release", "--min-api", "21", "--lib", "$sdk/platforms/android-35/android.jar", "--output", out.get().asFile.absolutePath, jar.get().archiveFile.get().asFile.absolutePath)
+        args("--release", "--min-api", "21", "--lib", "$sdk/platforms/android-36/android.jar", "--output", out.get().asFile.absolutePath, jar.get().archiveFile.get().asFile.absolutePath)
     }
     inputs.files(jar.map { it.archiveFile })
     outputs.dir(out)
