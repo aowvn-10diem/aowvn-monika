@@ -230,9 +230,11 @@ jobs:
       - name: Build APK debug (không R8, đủ để chụp giao diện)
         run: ./gradlew assembleDebug --console=plain
       # Hỏng ngay tại đây nếu Gradle đổi tên tệp/flavor, thay vì lỗi mơ hồ ở bước chụp ảnh.
+      # APK debug nằm dưới thư mục flavor (app/build/outputs/apk/<flavor>/debug/), ưu tiên bản universal.
       - name: Kiểm APK debug có thật sau khi build
         run: |
-          apk=$(find app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' ! -name '*androidTest*' 2>/dev/null | head -n1)
+          apk=$(find app/build/outputs/apk -path '*/debug/*' -name '*-universal-debug.apk' ! -name '*androidTest*' 2>/dev/null | sort | head -n1)
+          [ -n "$apk" ] || apk=$(find app/build/outputs/apk -path '*/debug/*' -name '*.apk' ! -name '*androidTest*' 2>/dev/null | sort | head -n1)
           test -n "$apk" || { echo "::error::Không thấy APK debug sau assembleDebug (flavor/tên tệp đã đổi?)"; find app/build/outputs/apk -name '*.apk' || true; exit 1; }
           echo "APK dùng để chụp ảnh: $apk"
       - name: Bật KVM (máy ảo chạy nhanh)
