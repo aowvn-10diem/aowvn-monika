@@ -1,8 +1,8 @@
-import { test } from "node:test";
+import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { webcrypto } from "node:crypto";
-import worker, { MAX_BODY, resetRateState, rateReservedCount, packSignature } from "./worker.js";
+import worker, { MAX_BODY, resetRateState, rateReservedCount, packSignature, setClockForTest } from "./worker.js";
 globalThis.crypto ??= webcrypto;
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/app-report.json", import.meta.url)));
 
@@ -362,7 +362,12 @@ const packEnv = (extra = {}) => ({
 });
 const packGet = (env, path, method = "GET") =>
   worker.fetch(new Request("https://example.test" + path, { method }), env);
-const nowSec = () => Math.floor(Date.now() / 1000);
+// Đồng hồ cố định cho các ca tải gói: test không phụ thuộc giờ máy và không bị flaky ở ranh giới hạn.
+const FIXED_MS = 1_700_000_000_000;
+const FIXED_SEC = FIXED_MS / 1000;
+const nowSec = () => FIXED_SEC;
+beforeEach(() => setClockForTest(() => FIXED_MS));
+afterEach(() => setClockForTest(null));
 
 test("V193-G3 xin tai goi: 302 toi URL co chu ky + han, khong co byte tep nao", async () => {
   const r = await packGet(packEnv(), "/pack/core-gb.zip");
@@ -370,7 +375,7 @@ test("V193-G3 xin tai goi: 302 toi URL co chu ky + han, khong co byte tep nao", 
   assert.equal(r.body, null, "khong duoc stream byte tep");
   assert.equal(r.headers.get("cache-control"), "no-store");
   const exp = Number(r.headers.get("x-signature-expires"));
-  assert.ok(Number.isInteger(exp) && exp > nowSec() && exp <= nowSec() + 301, String(exp));
+  assert.equal(exp, FIXED_SEC + 300, "hạn = giờ cố định + TTL mặc định");
   const loc = new URL(r.headers.get("location"));
   assert.equal(loc.origin, "https://example.test");
   assert.equal(loc.pathname, "/pack/core-gb.zip");
@@ -446,16 +451,30 @@ test("V193-G3 thieu secret/cau hinh thi 503 fail-closed", async () => {
   }
 });
 
-test("V193-G3 TTL lay tu env, chan tren 1 gio; POST bi 405", async () => {
+test("V193-G3 TTL lay tu env; gia tri sai/qua lon dung mac dinh; POST bi 405", async () => {
   const r = await packGet(packEnv({ PACK_TTL_SECONDS: "60" }), "/pack/core-gb.zip");
-  const exp = Number(r.headers.get("x-signature-expires"));
-  assert.ok(exp >= nowSec() + 59 && exp <= nowSec() + 61, String(exp));
+  assert.equal(Number(r.headers.get("x-signature-expires")), FIXED_SEC + 60);
 
+  // Ngoài khoảng cho phép → quay về mặc định (không nới hạn), để cấu hình sai không mở rộng cửa sổ.
   const clamped = await packGet(packEnv({ PACK_TTL_SECONDS: "999999" }), "/pack/core-gb.zip");
-  assert.ok(Number(clamped.headers.get("x-signature-expires")) <= nowSec() + 3601);
+  assert.equal(Number(clamped.headers.get("x-signature-expires")), FIXED_SEC + 300);
 
   const bad = await packGet(packEnv({ PACK_TTL_SECONDS: "abc" }), "/pack/core-gb.zip");
-  assert.ok(Number(bad.headers.get("x-signature-expires")) <= nowSec() + 301);
+  assert.equal(Number(bad.headers.get("x-signature-expires")), FIXED_SEC + 300);
 
   assert.equal((await packGet(packEnv(), "/pack/core-gb.zip", "POST")).status, 405);
+});
+
+test("V193-G3 URL het han sau TTL voi dong ho co dinh", async () => {
+  const env = packEnv();
+  const minted = new URL((await packGet(env, "/pack/core-gb.zip")).headers.get("location"));
+  assert.equal(Number(minted.searchParams.get("exp")), FIXED_SEC + 300);
+
+  setClockForTest(() => FIXED_MS + 300_000); // đúng mốc hạn: còn dùng được
+  assert.equal((await packGet(env, minted.pathname + minted.search)).status, 302);
+
+  setClockForTest(() => FIXED_MS + 301_000); // quá 1 giây
+  const expired = await packGet(env, minted.pathname + minted.search);
+  assert.equal(expired.status, 403);
+  assert.deepEqual(await expired.json(), { ok: false, error: "expired" });
 });

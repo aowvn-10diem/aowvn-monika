@@ -138,6 +138,13 @@ export const PACK_TTL_MAX_SECONDS = 3600;
 const PACK_NAME = /^[a-z0-9][a-z0-9._-]{0,79}$/;
 const PACK_SIG = /^[A-Za-z0-9_-]{43}$/;
 
+// Đồng hồ dùng cho hạn dùng của URL tải gói. Tách riêng để test cố định thời gian;
+// mặc định vẫn là giờ hệ thống của Worker.
+let clockMs = () => Date.now();
+export function setClockForTest(fn) {
+  clockMs = typeof fn === "function" ? fn : () => Date.now();
+}
+
 export function packTtl(env) {
   const raw = env && env.PACK_TTL_SECONDS;
   const text = typeof raw === "number" ? String(raw) : (typeof raw === "string" ? raw.trim() : "");
@@ -195,14 +202,14 @@ async function packRoute(req, env, url) {
   const exp = url.searchParams.get("exp");
   const sig = url.searchParams.get("sig");
   if (exp === null && sig === null) {
-    const until = Math.floor(Date.now() / 1000) + packTtl(env);
+    const until = Math.floor(clockMs() / 1000) + packTtl(env);
     const signed = `${url.origin}/pack/${name}?exp=${until}&sig=${await packSignature(secret, name, until)}`;
     return new Response(null, { status: 302, headers: {
       location: signed, "cache-control": "no-store", "x-signature-expires": String(until),
     } });
   }
   if (!/^\d{1,12}$/.test(exp || "") || !PACK_SIG.test(sig || "")) return json({ ok: false, error: "forbidden" }, 403);
-  if (Number(exp) < Math.floor(Date.now() / 1000)) return json({ ok: false, error: "expired" }, 403);
+  if (Number(exp) < Math.floor(clockMs() / 1000)) return json({ ok: false, error: "expired" }, 403);
   if (!sameText(sig, await packSignature(secret, name, Number(exp)))) return json({ ok: false, error: "forbidden" }, 403);
   return new Response(null, { status: 302, headers: {
     location: `${base.trim().replace(/\/+$/, "")}/${name}`, "cache-control": "no-store",
