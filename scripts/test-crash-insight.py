@@ -117,8 +117,15 @@ class Certificate(unittest.TestCase):
     CERT_A = "a1b2c3d4e5f60718" + "a" * 48
     CERT_B = "0011223344556677" + "b" * 48
 
-    def test_group_criteria_line_matches_group_rows(self):
-        # Luna 5: mô tả "số nhóm" phải khớp tiêu chí gộp thật (5 phần, có thành phần và chứng thư).
+    def test_certificate_caveat_is_stated_in_table(self):
+        # Luna 5: cert do client gửi — chỉ để đối chiếu, KHÔNG phải bằng chứng xác thực / không kết luận "bản giả".
+        markdown = insight.render_markdown(insight.group_rows([row(cert=self.CERT_A), row(cert=self.CERT_B, fp="bbbbbbbbbbbb2222")]), 2)
+        self.assertIn("bằng chứng xác thực", markdown)
+        self.assertIn("client gửi lên", markdown)
+        self.assertIn("kết luận đây là bản giả", markdown)
+        self.assertNotIn("để phát hiện bản giả", markdown)
+
+    def test_group_criteria_line_matches_group_rows(self):        # Luna 5: mô tả "số nhóm" phải khớp tiêu chí gộp thật (5 phần, có thành phần và chứng thư).
         markdown = insight.render_markdown(insight.group_rows([row()]), 1)
         line = next(l for l in markdown.splitlines() if l.startswith("Số dòng nhận được"))
         for part in ("lõi", "loại", "chữ ký", "thành phần", "chứng thư"):

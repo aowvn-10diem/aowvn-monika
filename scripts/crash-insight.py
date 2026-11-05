@@ -172,7 +172,11 @@ def table_rows(groups):
 
 
 def cert_totals(groups):
-    """V155b: đếm theo chứng thư — thấy ngay một chứng thư lạ (bản không chính thức) đang chạy."""
+    """V155b: đếm/nhóm theo chứng thư để **đối chiếu thủ công** với chứng thư bản phát hành.
+
+    Giá trị do **client gửi lên** (app có thể bị sửa) nên không tự kết luận bản nào là chính thức:
+    chỉ là tín hiệu chẩn đoán, không phải bằng chứng xác thực chữ ký.
+    """
     totals = {}
     for group in groups:
         cert = group["cert"] or MISSING
@@ -222,7 +226,7 @@ def render_markdown(groups, scanned):
         lines.append("| %s | %d | %d |" % (cert, entry["reports"], entry["count"]))
     distinct = len({cert for cert, _ in cert_totals(groups) if cert != MISSING})
     if distinct > 1:
-        lines += ["", "⚠ Có **%d chứng thư khác nhau** trong cửa sổ này — đối chiếu với chứng thư bản phát hành chính thức để phát hiện bản giả." % distinct]
+        lines += ["", "⚠ Có **%d chứng thư khác nhau** trong cửa sổ này — đối chiếu **thủ công** với chứng thư bản phát hành chính thức. Giá trị do client gửi lên: chỉ là tín hiệu chẩn đoán, **không** kết luận đây là bản giả và **không** phải bằng chứng xác thực." % distinct]
     lines += [
         "",
         "Ghi chú:",
