@@ -1,8 +1,8 @@
-import { test } from "node:test";
+import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { webcrypto } from "node:crypto";
-import worker, { MAX_BODY, resetRateState, rateReservedCount, authEquals } from "./worker.js";
+import worker, { MAX_BODY, resetRateState, rateReservedCount, packSignature, setClockForTest, authEquals } from "./worker.js";
 globalThis.crypto ??= webcrypto;
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/app-report.json", import.meta.url)));
 
@@ -352,6 +352,134 @@ test("V194 ba request dong thoi cung IP, mot cai ghi loi: hai luot giu cho con l
   assert.equal((await postWithIp(c, fixture)).status, 429, "đã đủ 3 lượt thì chặn");
 });
 
+// ---- V193-G3: cổng tải gói có chữ ký TTL ngắn (Worker chỉ ký + 302, không stream byte) ----
+
+const packEnv = (extra = {}) => ({
+  PACKS_TOKEN: "pack-fixture-only",
+  PACKS_HOSTS: "cdn.example.test",
+  PACKS_BASE: "https://cdn.example.test/packs/",
+  PACKS_ALLOW: "core-gb.zip,engine-azahar.zip",
+  ...extra,
+});
+const packGet = (env, path, method = "GET") =>
+  worker.fetch(new Request("https://example.test" + path, { method }), env);
+// Đồng hồ cố định cho các ca tải gói: test không phụ thuộc giờ máy và không bị flaky ở ranh giới hạn.
+const FIXED_MS = 1_700_000_000_000;
+const FIXED_SEC = FIXED_MS / 1000;
+const nowSec = () => FIXED_SEC;
+beforeEach(() => setClockForTest(() => FIXED_MS));
+afterEach(() => setClockForTest(null));
+
+test("V193-G3 xin tai goi: 302 toi URL co chu ky + han, khong co byte tep nao", async () => {
+  const r = await packGet(packEnv(), "/pack/core-gb.zip");
+  assert.equal(r.status, 302);
+  assert.equal(r.body, null, "khong duoc stream byte tep");
+  assert.equal(r.headers.get("cache-control"), "no-store");
+  const exp = Number(r.headers.get("x-signature-expires"));
+  assert.equal(exp, FIXED_SEC + 300, "hạn = giờ cố định + TTL mặc định");
+  const loc = new URL(r.headers.get("location"));
+  assert.equal(loc.origin, "https://example.test");
+  assert.equal(loc.pathname, "/pack/core-gb.zip");
+  assert.equal(Number(loc.searchParams.get("exp")), exp);
+  assert.match(loc.searchParams.get("sig"), /^[A-Za-z0-9_-]{43}$/);
+});
+
+test("V193-G3 chu ky dung: 302 sang CDN, than phan hoi rong", async () => {
+  const env = packEnv();
+  const minted = new URL((await packGet(env, "/pack/core-gb.zip")).headers.get("location"));
+  const r = await packGet(env, minted.pathname + minted.search);
+  assert.equal(r.status, 302);
+  assert.equal(r.body, null);
+  assert.equal(r.headers.get("cache-control"), "no-store");
+  assert.equal(r.headers.get("location"), "https://cdn.example.test/packs/core-gb.zip");
+});
+
+test("V193-G3 sai chu ky, het han, chu ky cua goi khac deu 403", async () => {
+  const env = packEnv();
+  const exp = nowSec() + 60;
+  const good = await packSignature(env.PACKS_TOKEN, "core-gb.zip", exp);
+  assert.equal((await packGet(env, `/pack/core-gb.zip?exp=${exp}&sig=${good}`)).status, 302);
+
+  const tampered = (good.slice(0, -1) + (good.endsWith("A") ? "B" : "A"));
+  const bad = await packGet(env, `/pack/core-gb.zip?exp=${exp}&sig=${tampered}`);
+  assert.equal(bad.status, 403);
+  assert.deepEqual(await bad.json(), { ok: false, error: "forbidden" });
+
+  const past = nowSec() - 1;
+  const oldSig = await packSignature(env.PACKS_TOKEN, "core-gb.zip", past);
+  const expired = await packGet(env, `/pack/core-gb.zip?exp=${past}&sig=${oldSig}`);
+  assert.equal(expired.status, 403);
+  assert.deepEqual(await expired.json(), { ok: false, error: "expired" });
+
+  const otherSig = await packSignature(env.PACKS_TOKEN, "engine-azahar.zip", exp);
+  assert.equal((await packGet(env, `/pack/core-gb.zip?exp=${exp}&sig=${otherSig}`)).status, 403);
+
+  for (const q of ["?exp=abc&sig=x", "?exp=1", "?sig=" + good, "?exp=" + exp + "&sig="]) {
+    assert.equal((await packGet(env, "/pack/core-gb.zip" + q)).status, 403, q);
+  }
+});
+
+test("V193-G3 ten la, traversal, ngoai allow-list bi chan va khong cham CDN", async () => {
+  const env = packEnv();
+  for (const path of [
+    "/pack/..%2Fsecret.zip", "/pack/%2e%2e%2fsecret.zip", "/pack/.hidden.zip",
+    "/pack/Core-GB.zip", "/pack/core-gb.zip%00", "/pack/", "/pack/core-gb.zip/extra",
+  ]) {
+    const r = await packGet(env, path);
+    assert.equal(r.status, 400, path + " -> " + r.status);
+    assert.equal(r.headers.get("location"), null, path);
+  }
+  const notListed = await packGet(env, "/pack/other.zip");
+  assert.equal(notListed.status, 403);
+  assert.deepEqual(await notListed.json(), { ok: false, error: "not_allowed" });
+  // ".." thô bị chuẩn hoá bởi URL parser -> không lọt vào /pack/ và không trả 302
+  const raw = await packGet(env, "/pack/../../etc/passwd");
+  assert.equal(raw.status, 200);
+  assert.equal(raw.headers.get("location"), null);
+});
+
+test("V193-G3 thieu secret/cau hinh thi 503 fail-closed", async () => {
+  for (const env of [
+    {},
+    { PACKS_TOKEN: "x" },
+    { PACKS_TOKEN: "x", PACKS_BASE: "" },
+    { PACKS_TOKEN: "", PACKS_BASE: "https://cdn.example.test", PACKS_ALLOW: "core-gb.zip" },
+    { PACKS_BASE: "https://cdn.example.test", PACKS_ALLOW: "core-gb.zip" },
+  ]) {
+    const r = await packGet(env, "/pack/core-gb.zip");
+    assert.equal(r.status, 503);
+    assert.deepEqual(await r.json(), { ok: false, error: "unavailable" });
+  }
+});
+
+test("V193-G3 TTL lay tu env; gia tri sai/qua lon dung mac dinh; POST bi 405", async () => {
+  const r = await packGet(packEnv({ PACK_TTL_SECONDS: "60" }), "/pack/core-gb.zip");
+  assert.equal(Number(r.headers.get("x-signature-expires")), FIXED_SEC + 60);
+
+  // Ngoài khoảng cho phép → quay về mặc định (không nới hạn), để cấu hình sai không mở rộng cửa sổ.
+  const clamped = await packGet(packEnv({ PACK_TTL_SECONDS: "999999" }), "/pack/core-gb.zip");
+  assert.equal(Number(clamped.headers.get("x-signature-expires")), FIXED_SEC + 300);
+
+  const bad = await packGet(packEnv({ PACK_TTL_SECONDS: "abc" }), "/pack/core-gb.zip");
+  assert.equal(Number(bad.headers.get("x-signature-expires")), FIXED_SEC + 300);
+
+  assert.equal((await packGet(packEnv(), "/pack/core-gb.zip", "POST")).status, 405);
+});
+
+test("V193-G3 URL het han sau TTL voi dong ho co dinh", async () => {
+  const env = packEnv();
+  const minted = new URL((await packGet(env, "/pack/core-gb.zip")).headers.get("location"));
+  assert.equal(Number(minted.searchParams.get("exp")), FIXED_SEC + 300);
+
+  setClockForTest(() => FIXED_MS + 300_000); // đúng mốc hạn: còn dùng được
+  assert.equal((await packGet(env, minted.pathname + minted.search)).status, 302);
+
+  setClockForTest(() => FIXED_MS + 301_000); // quá 1 giây
+  const expired = await packGet(env, minted.pathname + minted.search);
+  assert.equal(expired.status, 403);
+  assert.deepEqual(await expired.json(), { ok: false, error: "expired" });
+});
+
 // ---- V195: quyền quản trị đóng cửa khi thiếu cấu hình + so sánh trên SHA-256 ----
 
 const adminKv = () => ({ get: async () => null, list: async () => ({ list_complete: true, keys: [] }), put: async () => {} });
@@ -407,4 +535,32 @@ test("V195 authEquals so sanh tren SHA-256 ca hai ve, khong so chuoi tho", async
     crypto.subtle.digest = real;
   }
   assert.deepEqual(seen.sort(), ["Bearer a", "Bearer b"]);
+});
+
+test("V193-G3 PACKS_BASE phai la HTTPS + host trong PACKS_HOSTS, sai thi 503", async () => {
+  const bad = [
+    { PACKS_BASE: "http://cdn.example.test/packs" },                  // http thường
+    { PACKS_BASE: "https://evil.example/packs" },                     // host lạ
+    { PACKS_HOSTS: "" },                                              // thiếu danh sách host
+    { PACKS_BASE: "" },                                               // thiếu base
+    { PACKS_BASE: "not a url" },                                      // không phải URL
+    { PACKS_BASE: "https://user:pw@cdn.example.test/packs" },         // có userinfo
+    { PACKS_BASE: "https://cdn.example.test:8443/packs" },            // port lạ
+    { PACKS_BASE: "https://cdn.example.test/packs?x=1" },             // có query
+    { PACKS_BASE: "https://cdn.example.test/packs#frag" },            // có fragment
+    { PACKS_BASE: "javascript:alert(1)" },                            // scheme khác
+  ];
+  for (const extra of bad) {
+    const r = await packGet(packEnv(extra), "/pack/core-gb.zip");
+    assert.equal(r.status, 503, JSON.stringify(extra));
+    assert.equal(r.headers.get("location"), null, JSON.stringify(extra));
+    assert.deepEqual(await r.json(), { ok: false, error: "unavailable" });
+  }
+
+  // Hợp lệ: port 443 tường minh, danh sách host có khoảng trắng/viết hoa, base không có '/' cuối.
+  const ok = packEnv({ PACKS_HOSTS: " CDN.Example.Test ,packs.aow.vn", PACKS_BASE: "https://cdn.example.test:443/packs" });
+  const minted = new URL((await packGet(ok, "/pack/core-gb.zip")).headers.get("location"));
+  const r = await packGet(ok, minted.pathname + minted.search);
+  assert.equal(r.status, 302);
+  assert.equal(r.headers.get("location"), "https://cdn.example.test/packs/core-gb.zip");
 });

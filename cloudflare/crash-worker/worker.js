@@ -152,6 +152,121 @@ export function rateReservedCount() {
   return [...rateState.values()].reduce((total, entry) => total + entry.tokens.size, 0);
 }
 
+// ---- V193-G3: URL tải gói có chữ ký TTL ngắn ----
+// Worker chỉ ký rồi trả 302; byte của tệp đi thẳng từ CDN/R2 tới app, không qua Worker.
+// Secret dùng để ký là `PACKS_TOKEN` (đã có trong GitHub Actions của repo packs); danh sách
+// gói cho phép nằm ở env `PACKS_ALLOW` (phẩy ngăn cách), host tải ở env `PACKS_BASE`.
+export const PACK_TTL_DEFAULT_SECONDS = 300;
+export const PACK_TTL_MAX_SECONDS = 3600;
+const PACK_NAME = /^[a-z0-9][a-z0-9._-]{0,79}$/;
+const PACK_SIG = /^[A-Za-z0-9_-]{43}$/;
+
+// Đồng hồ dùng cho hạn dùng của URL tải gói. Tách riêng để test cố định thời gian;
+// mặc định vẫn là giờ hệ thống của Worker.
+let clockMs = () => Date.now();
+export function setClockForTest(fn) {
+  clockMs = typeof fn === "function" ? fn : () => Date.now();
+}
+
+export function packTtl(env) {
+  const raw = env && env.PACK_TTL_SECONDS;
+  const text = typeof raw === "number" ? String(raw) : (typeof raw === "string" ? raw.trim() : "");
+  if (!/^\d+$/.test(text)) return PACK_TTL_DEFAULT_SECONDS;
+  const n = Number(text);
+  return Number.isSafeInteger(n) && n > 0 && n <= PACK_TTL_MAX_SECONDS ? n : PACK_TTL_DEFAULT_SECONDS;
+}
+
+/** Tên gói hợp lệ: đúng một đoạn, không bắt đầu bằng '.', không chứa '..', không có '/'. */
+export function packNameSafe(name) {
+  return typeof name === "string" && PACK_NAME.test(name) && !name.startsWith(".") && !name.includes("..");
+}
+
+export function packAllowed(env, name) {
+  const list = env && env.PACKS_ALLOW;
+  if (typeof list !== "string") return false;
+  return list.split(",").map((v) => v.trim()).filter(Boolean).includes(name);
+}
+
+/** Host tải phải nằm trong `PACKS_HOSTS` (phẩy ngăn cách, so sau khi hạ chữ thường). */
+export function packHostAllowed(env, host) {
+  const list = env && env.PACKS_HOSTS;
+  if (typeof list !== "string") return false;
+  return list.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean).includes(String(host).toLowerCase());
+}
+
+/**
+ * Chuẩn hoá `PACKS_BASE` và chỉ nhận URL tải hợp lệ: HTTPS, không userinfo, không port lạ,
+ * không query/fragment, host nằm trong `PACKS_HOSTS`. Sai/thiếu → null (caller trả 503).
+ */
+export function packBase(env) {
+  const raw = env && env.PACKS_BASE;
+  if (typeof raw !== "string" || raw.trim() === "") return null;
+  let parsed;
+  try {
+    parsed = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "https:") return null;
+  if (parsed.username !== "" || parsed.password !== "") return null;
+  if (parsed.port !== "" && parsed.port !== "443") return null;
+  if (parsed.search !== "" || parsed.hash !== "") return null;
+  if (!packHostAllowed(env, parsed.hostname)) return null;
+  return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, "");
+}
+
+const base64url = (bytes) =>
+  btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+async function hmac(secret, text) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return base64url(new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(text))));
+}
+
+/** Chữ ký cho cặp (tên gói, hạn dùng) — phía kiểm dùng đúng công thức này. */
+export async function packSignature(secret, name, exp) {
+  return hmac(secret, `pack\n${name}\n${exp}`);
+}
+
+// So sánh chuỗi cùng độ dài theo kiểu không rò thời gian (chữ ký luôn 43 ký tự base64url).
+const sameText = (a, b) => {
+  if (typeof a !== "string" || typeof b !== "string" || a.length === 0 || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+};
+
+// GET /pack/<tên>            -> 302 tới /pack/<tên>?exp=..&sig=..  (URL có hạn)
+// GET /pack/<tên>?exp&sig    -> kiểm hạn + chữ ký -> 302 tới PACKS_BASE/<tên>
+async function packRoute(req, env, url) {
+  if (req.method !== "GET" && req.method !== "HEAD") return json({ ok: false, error: "method_not_allowed" }, 405);
+  const secret = env && env.PACKS_TOKEN;
+  const base = packBase(env);
+  if (typeof secret !== "string" || secret.trim() === "" || base === null) {
+    return json({ ok: false, error: "unavailable" }, 503);
+  }
+  const name = url.pathname.slice("/pack/".length);
+  if (!packNameSafe(name)) return json({ ok: false, error: "bad_pack" }, 400);
+  if (!packAllowed(env, name)) return json({ ok: false, error: "not_allowed" }, 403);
+
+  const exp = url.searchParams.get("exp");
+  const sig = url.searchParams.get("sig");
+  if (exp === null && sig === null) {
+    const until = Math.floor(clockMs() / 1000) + packTtl(env);
+    const signed = `${url.origin}/pack/${name}?exp=${until}&sig=${await packSignature(secret, name, until)}`;
+    return new Response(null, { status: 302, headers: {
+      location: signed, "cache-control": "no-store", "x-signature-expires": String(until),
+    } });
+  }
+  if (!/^\d{1,12}$/.test(exp || "") || !PACK_SIG.test(sig || "")) return json({ ok: false, error: "forbidden" }, 403);
+  if (Number(exp) < Math.floor(clockMs() / 1000)) return json({ ok: false, error: "expired" }, 403);
+  if (!sameText(sig, await packSignature(secret, name, Number(exp)))) return json({ ok: false, error: "forbidden" }, 403);
+  return new Response(null, { status: 302, headers: {
+    location: `${base}/${name}`, "cache-control": "no-store",
+  } });
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -267,6 +382,11 @@ export default {
       }
       return json({ total: all.length, reports: all.reverse().slice(0, 100).map((k) => ({ id: k.name, ...(k.metadata || {}) })) });
     }
+
+    // ---- V193-G3: cổng tải gói (lõi/engine/module) ----
+    // Worker chỉ ký URL có hạn rồi trả 302; byte của tệp đi thẳng từ CDN/R2 tới app.
+    if (url.pathname.startsWith("/pack/")) return packRoute(req, env, url);
+
     return json({ name: "aowvn-monika-crash", ok: true });
   },
 };
