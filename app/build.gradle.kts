@@ -242,6 +242,9 @@ dependencies {
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // V196: kiểm redirect 302 thật ở mỗi hop mà không cần mạng (máy chủ HTTPS cục bộ trong test)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.okhttp.tls)
     // Test giao diện trên JVM (Robolectric): mở từng màn hình, bắt crash, chụp ảnh → app/build/screenshots/
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.compose.bom))

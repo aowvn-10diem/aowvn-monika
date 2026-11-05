@@ -2,16 +2,9 @@ package vn.aow.monika.download
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import okhttp3.Call
-import okhttp3.Connection
 import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Protocol
 import okhttp3.Request
-import okhttp3.Response
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -23,7 +16,6 @@ import org.robolectric.annotation.Config
 import vn.aow.monika.AppGraph
 import vn.aow.monika.ui.TestApp
 import java.io.IOException
-import java.util.concurrent.TimeUnit
 
 /**
  * V196: guard phải chạy ở **network interceptor** (mỗi hop) và chặn hop redirect sang host lạ
@@ -33,25 +25,6 @@ import java.util.concurrent.TimeUnit
 @Config(application = TestApp::class, sdk = [34])
 class DownloadGuardTest {
     private val app get() = ApplicationProvider.getApplicationContext<Application>()
-
-    /** Chain giả: ghi lại URL thực sự được gửi đi, không chạm mạng. */
-    private class FakeChain(private val urlText: String) : Interceptor.Chain {
-        var proceeded: HttpUrl? = null
-        override fun request(): Request = Request.Builder().url(urlText.toHttpUrl()).build()
-        override fun proceed(request: Request): Response {
-            proceeded = request.url
-            return Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(200).message("OK")
-                .body("".toResponseBody(null)).build()
-        }
-        override fun connection(): Connection? = null
-        override fun call(): Call = OkHttpClient().newCall(request())
-        override fun connectTimeoutMillis(): Int = 0
-        override fun readTimeoutMillis(): Int = 0
-        override fun writeTimeoutMillis(): Int = 0
-        override fun withConnectTimeout(timeout: Int, unit: TimeUnit): Interceptor.Chain = this
-        override fun withReadTimeout(timeout: Int, unit: TimeUnit): Interceptor.Chain = this
-        override fun withWriteTimeout(timeout: Int, unit: TimeUnit): Interceptor.Chain = this
-    }
 
     private fun guardFor(vararg hosts: String) = DownloadGuard { it in hosts.toSet() }
 
@@ -112,5 +85,29 @@ class DownloadGuardTest {
         val evil = FakeChain(url("https://evil.example/x.zip"))
         assertTrue(runCatching { guard.intercept(evil) }.exceptionOrNull() is IOException)
         assertNull(evil.proceeded)
+    }
+
+    // ---- V196: luồng config -> kiểm dữ liệu -> guard (không ra mạng) ----
+
+    @Test fun configChuaHostLaBiTuChoiTruocKhiCoRequest() {
+        val hash = "a".repeat(64)
+        val json = """{"configVersion":1,"modules":{"x":{"version":"1","url":"https://evil.example/x.zip","sha256":"$hash"}}}"""
+        val error = runCatching { vn.aow.monika.config.ConfigValidation.parse(json, 0) }.exceptionOrNull()
+        assertTrue("config phải bị từ chối: $error", error is IllegalArgumentException)
+
+        val chain = FakeChain("https://evil.example/x.zip")
+        val guard = AppGraph.downloadHttp.networkInterceptors.filterIsInstance<DownloadGuard>().single()
+        assertTrue(runCatching { guard.intercept(chain) }.exceptionOrNull() is IOException)
+        assertNull("không được gửi request", chain.proceeded)
+    }
+
+    @Test fun configHopLeThiUrlDiDungHost() {
+        val hash = "b".repeat(64)
+        val json = """{"configVersion":1,"modules":{"x":{"version":"1","url":"https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/e/x.zip","sha256":"$hash"}}}"""
+        val cfg = vn.aow.monika.config.ConfigValidation.parse(json, 0)
+        val chain = FakeChain(cfg.modules.getValue("x").url)
+        val guard = AppGraph.downloadHttp.networkInterceptors.filterIsInstance<DownloadGuard>().single()
+        guard.intercept(chain)
+        org.junit.Assert.assertEquals("github.com", chain.proceeded?.host)
     }
 }
