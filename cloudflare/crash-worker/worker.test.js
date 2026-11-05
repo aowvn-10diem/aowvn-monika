@@ -564,3 +564,30 @@ test("V193-G3 PACKS_BASE phai la HTTPS + host trong PACKS_HOSTS, sai thi 503", a
   assert.equal(r.status, 302);
   assert.equal(r.headers.get("location"), "https://cdn.example.test/packs/core-gb.zip");
 });
+
+// ---- V155b: băm chứng thư vào metadata danh sách để bảng crash-insight đếm được ----
+test("V155b /reports tra bam chung thu ngan trong danh sach (khong can doc tung bao cao)", async () => {
+  const c = setup();
+  await c.post({ ...fixture, certSha256: CERT });
+  const entry = (await (await c.read("/reports")).json()).reports[0];
+  assert.equal(entry.cert, CERT.slice(0, 16));
+  // Bản ghi đầy đủ vẫn giữ nguyên hash 64 hex như V155.
+  assert.equal((await (await c.read(`/reports/${entry.id}`)).json()).certSha256, CERT);
+});
+
+test("V155b app cu khong gui chung thu thi truong cert rong, dinh dang danh sach khong doi", async () => {
+  const c = setup();
+  assert.equal((await c.post(fixture)).status, 200);
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 1);
+  assert.equal(body.reports[0].cert, "");
+  assert.equal(body.reports[0].id.startsWith("r:"), true);
+});
+
+test("V155b hai chung thu khac nhau hien rieng trong danh sach", async () => {
+  const c = setup();
+  await atTime(1700000000000, () => c.post({ ...fixture, certSha256: CERT }));
+  await atTime(1700000001000, () => c.post({ ...fixture, certSha256: "0".repeat(64) }));
+  const rows = (await (await c.read("/reports")).json()).reports;
+  assert.deepEqual(rows.map((r) => r.cert).sort(), [CERT.slice(0, 16), "0".repeat(16)].sort());
+});
