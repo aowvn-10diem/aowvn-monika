@@ -591,3 +591,119 @@ test("V155b hai chung thu khac nhau hien rieng trong danh sach", async () => {
   const rows = (await (await c.read("/reports")).json()).reports;
   assert.deepEqual(rows.map((r) => r.cert).sort(), [CERT.slice(0, 16), "0".repeat(16)].sort());
 });
+
+// ---- V186/V190: /reports & /stats không trả 500 khi KV lỗi hoặc listing hỏng ----
+test("V186 KV list loi tam thoi -> 503 kv_unavailable (khong phai 500 trang)", async () => {
+  const c = setup();
+  await c.post(fixture);
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => { throw new Error("KV list failed"); } };
+  const response = await c.read("/reports");
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { ok: false, error: "kv_unavailable" });
+});
+
+test("V190 KV tra trang sai dang -> 400 co ma loi (khong con 500)", async () => {
+  // V190: trang listing sai cấu trúc là lỗi dữ liệu đầu vào của lần đọc → 400, không để nổ 500.
+  for (const broken of [{}, { list_complete: false, keys: [] }, { list_complete: true }, { list_complete: true, keys: "x" }]) {
+    const c = setup();
+    c.env.REPORTS = { ...c.env.REPORTS, list: async () => broken };
+    const response = await c.read("/reports");
+    assert.equal(response.status, 400, JSON.stringify(broken));
+    assert.equal((await response.json()).error, "bad_listing");
+  }
+});
+
+test("V190 keys co phan tu hong (null/rong/so/khong co name) -> 400, khong 500", async () => {
+  for (const keys of [[null], [""], [123], [{}], [{ name: 5 }], [{ name: "" }]]) {
+    const c = setup();
+    c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys }) };
+    for (const path of ["/reports", "/stats"]) {
+      const response = await c.read(path);
+      assert.equal(response.status, 400, `${path} ${JSON.stringify(keys)}`);
+      assert.equal((await response.json()).error, "malformed_keys");
+    }
+  }
+});
+
+test("V190b trang co ca khoa hop le lan khoa hong: van 200, bao so khoa bi bo va log mot lan", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys: [
+    { name: "r:1700000000000:aaaaaaaa", metadata: { k: "anr", c: "unknown" } },
+    null,
+    { name: "" },
+    123,
+    { name: "r:1700000001000:bbbbbbbb", metadata: { k: "lowmem", c: "unknown" } },
+  ] }) };
+  const warnings = [];
+  const realWarn = console.warn;
+  console.warn = (line) => warnings.push(String(line));
+  try {
+    for (const path of ["/reports", "/stats"]) {
+      const body = await (await c.read(path)).json();
+      assert.equal(body.total, 2, path);                        // vẫn trả dữ liệu hợp lệ
+      assert.deepEqual(body.meta, { skippedInvalid: 3 }, path); // báo rõ số khoá bị bỏ
+    }
+  } finally { console.warn = realWarn; }
+  assert.equal(warnings.length, 2, "mỗi lượt đọc log đúng 1 lần");
+  for (const line of warnings) {
+    assert.match(line, /3 khoá KV hỏng/);
+    assert.equal(line.includes("r:1700000000000"), false, "không log tên khoá");
+  }
+});
+
+test("V190b khong co khoa hong thi meta.skippedInvalid = 0 va khong log", async () => {
+  const c = setup();
+  await c.post(fixture);
+  const warnings = [];
+  const realWarn = console.warn;
+  console.warn = (line) => warnings.push(String(line));
+  try {
+    const body = await (await c.read("/reports")).json();
+    assert.equal(body.total, 1);
+    assert.deepEqual(body.meta, { skippedInvalid: 0 });
+    assert.equal((await (await c.read("/stats")).json()).meta.skippedInvalid, 0);
+  } finally { console.warn = realWarn; }
+  assert.equal(warnings.length, 0);
+});
+
+test("V190 khoa hop le van 200, metadata sai kieu khong lam sap /reports hay /stats", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys: [
+    { name: "r:1700000000000:aaaaaaaa", metadata: { k: "anr", c: "unknown", a: "0.8.8 (128)" } },
+    { name: "r:1700000001000:bbbbbbbb", metadata: "hong" },
+    { name: "r:1700000002000:cccccccc", metadata: [1, 2] },
+  ] }) };
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 3);
+  assert.equal(body.reports[0].id, "r:1700000002000:cccccccc");
+  assert.deepEqual(body.reports[0], { id: "r:1700000002000:cccccccc" });
+  assert.equal(body.reports[1].id, "r:1700000001000:bbbbbbbb");
+  assert.equal((await c.read("/stats")).status, 200);
+});
+
+test("V190 id bao cao hong (percent-encoding sai/rong) -> 400", async () => {
+  const c = setup();
+  for (const path of ["/reports/%E0%A4%A", "/reports/%20"]) {
+    const response = await c.read(path);
+    assert.equal(response.status, 400, path);
+    assert.equal((await response.json()).error, "bad_id");
+  }
+});
+
+test("V186 /reports van tra dung 100 muc moi nhat va tong so khoa khi KV chia trang", async () => {
+  const c = setup();
+  const key = (i) => `r:${String(1700000000000 + i).padStart(13, "0")}:${String(i).padStart(8, "0")}`;
+  const pages = new Map();
+  for (let page = 0; page < 3; page++) {
+    pages.set(page === 0 ? undefined : `c${page}`, {
+      list_complete: page === 2, cursor: page === 2 ? undefined : `c${page + 1}`,
+      keys: Array.from({ length: 400 }, (_, i) => ({ name: key(page * 400 + i), metadata: { k: "anr", c: "unknown", a: "0.8.8 (128)" } })),
+    });
+  }
+  c.env.REPORTS = { ...c.env.REPORTS, list: async ({ cursor }) => pages.get(cursor) };
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 1200);
+  assert.equal(body.reports.length, 100);
+  assert.equal(body.reports[0].id, key(1199)); // mới nhất đứng đầu
+  assert.equal(body.reports[99].id, key(1100));
+});

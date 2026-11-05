@@ -1,5 +1,7 @@
 // Nhận báo lỗi game/lõi từ Aow Monika (ẩn danh), lưu KV 60 ngày. Xem lại bằng /reports (cần mã quản trị).
 export const MAX_BODY = 60000; // byte UTF-8, cả request và giá trị KV.
+export const LIST_PAGE = 1000; // KV list: tối đa 1000 khoá mỗi trang
+export const LIST_MAX = 5000;  // chặn trên số khoá đọc mỗi lần (giữ nguyên mức cũ)
 const bytes = (text) => new TextEncoder().encode(text).length;
 const number = (v, fallback = 0) => Number.isSafeInteger(v) && v >= 0 ? v : fallback;
 const lines = (v, count, width) => Array.isArray(v) ? v.slice(0, count).map((l) => s(l, width)) : [];
@@ -367,22 +369,45 @@ export default {
       const denied = await requireAdmin(req, env);
       if (denied) return denied;
       if (url.pathname.startsWith("/reports/")) {
-        const v = await env.REPORTS.get(decodeURIComponent(url.pathname.slice(9)));
+        // V190: id hỏng (percent-encoding sai, rỗng) là lỗi dữ liệu đầu vào → 400, không để decodeURIComponent ném 500.
+        let id;
+        try { id = decodeURIComponent(url.pathname.slice(9)).trim(); } catch { return json({ ok: false, error: "bad_id" }, 400); }
+        if (!id) return json({ ok: false, error: "bad_id" }, 400);
+        const v = await env.REPORTS.get(id);
         return v ? new Response(v, { headers: { "content-type": "application/json; charset=utf-8" } }) : json({ ok: false, error: "not_found" }, 404);
       }
+      // V186: KV list có thể lỗi tạm thời → 503 JSON có mã lỗi (thử lại được), không còn 500 trắng.
+      // V190 (Luna Ultra): từng khoá trong `keys` cũng phải hợp lệ — `keys:[null]` trước đây lọt qua
+      // `Array.isArray` rồi nổ ở bước ghép key. Nay lọc khoá hỏng; danh sách toàn khoá hỏng → 400 có mã lỗi.
+      // V190b: KHÔNG lọc âm thầm — trang có cả khoá hỏng lẫn hợp lệ thì vẫn trả dữ liệu hợp lệ kèm
+      // `meta.skippedInvalid` + 1 dòng log cho cả lượt (không log từng khoá, không lộ tên khoá).
       const all = [];
       let cursor;
-      do {
-        const page = await env.REPORTS.list({ prefix: "r:", cursor, limit: 1000 });
-        all.push(...page.keys);
-        cursor = page.list_complete ? undefined : page.cursor;
-      } while (cursor && all.length < 5000);
+      let skippedInvalid = 0;
+      try {
+        do {
+          const page = await env.REPORTS.list({ prefix: "r:", cursor, limit: LIST_PAGE });
+          if (typeof page?.list_complete !== "boolean" || !Array.isArray(page.keys)) return json({ ok: false, error: "bad_listing" }, 400);
+          if (!page.list_complete && !page.cursor) return json({ ok: false, error: "bad_listing" }, 400);
+          const keys = page.keys.filter((k) => k && typeof k === "object" && typeof k.name === "string" && k.name.length > 0);
+          if (page.keys.length > 0 && keys.length === 0) return json({ ok: false, error: "malformed_keys" }, 400);
+          skippedInvalid += page.keys.length - keys.length;
+          all.push(...keys);
+          cursor = page.list_complete ? undefined : page.cursor;
+        } while (cursor && all.length < LIST_MAX);
+      } catch {
+        return json({ ok: false, error: "kv_unavailable" }, 503);
+      }
+      const meta = { skippedInvalid };
+      if (skippedInvalid > 0) console.warn(`[V190] /reports bỏ qua ${skippedInvalid} khoá KV hỏng (không đúng dạng {name: string})`);
+      // metadata sai kiểu (chuỗi/số/mảng) không được làm sập /stats hay /reports.
+      const metaOf = (k) => (k.metadata && typeof k.metadata === "object" && !Array.isArray(k.metadata) ? k.metadata : {});
       if (url.pathname === "/stats") {
         const by = {};
-        for (const k of all) { const m = k.metadata || {}; const key = `${m.c || "?"} | ${m.k || "?"} | ${m.st || "?"}`; by[key] = (by[key] || 0) + 1; }
-        return json({ total: all.length, byCoreKindStage: Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ k, n })) });
+        for (const k of all) { const m = metaOf(k); const key = `${m.c || "?"} | ${m.k || "?"} | ${m.st || "?"}`; by[key] = (by[key] || 0) + 1; }
+        return json({ total: all.length, byCoreKindStage: Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ k, n })), meta });
       }
-      return json({ total: all.length, reports: all.reverse().slice(0, 100).map((k) => ({ id: k.name, ...(k.metadata || {}) })) });
+      return json({ total: all.length, reports: all.reverse().slice(0, 100).map((k) => ({ id: k.name, ...metaOf(k) })), meta });
     }
 
     // ---- V193-G3: cổng tải gói (lõi/engine/module) ----
