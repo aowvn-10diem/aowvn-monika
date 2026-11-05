@@ -137,15 +137,17 @@ class GameDetailTest {
         assertEquals(g, deleted)
     }
 
-    @Test fun saveAndPatchArePlaceholdersOnly() {
+    /** V140: Save đã có nội dung thật (mục Save ngay dưới thanh Tác vụ); chỉ Bản vá còn "Sắp có". */
+    @Test fun saveSectionIsRealAndOnlyPatchStaysComingSoon() {
         val g = game()
         var played = 0
         var deleted: Game? = null
         rule.setContent { MonikaTheme { GameDetailScreen(g, { played++ }, {}, onDelete = { deleted = it }) } }
         settle("Sắp có")
-        rule.onAllNodesWithText("Sắp có").assertCountEquals(2)
-        rule.onNodeWithText("Save").assertExists().assertHasNoClickAction()
+        rule.onAllNodesWithText("Sắp có").assertCountEquals(1)
         rule.onNodeWithText("Bản vá").assertExists().assertHasNoClickAction()
+        // Hệ "test" chưa hỗ trợ chuyển save → mục Save nói rõ thay vì để trống.
+        rule.onNodeWithText("Hệ này chưa hỗ trợ chuyển save", substring = true).assertExists()
         assertEquals(0, played)
         assertNull(deleted)
     }
