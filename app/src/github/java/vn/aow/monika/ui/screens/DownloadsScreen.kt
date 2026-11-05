@@ -172,11 +172,12 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> U
                 else linkText = text
             }, R.drawable.ic_fluent_copy_24_regular)
             MonikaTextField(linkText, { linkText = it }, "Dán link tải", Modifier.fillMaxWidth())
-            Text(
-                if (vn.aow.monika.download.PixeldrainHost.matches(linkText)) vn.aow.monika.download.PixeldrainHost.WARNING
-                else "Chỉ tải tệp từ nguồn bạn tin cậy.",
-                style = Monika.type.caption, color = c.textSecondary,
-            )
+            if (vn.aow.monika.download.PixeldrainHost.matches(linkText)) {
+                Text(vn.aow.monika.download.PixeldrainHost.WARNING, style = Monika.type.caption, color = c.textSecondary)
+                Text("Chỉ tải nếu bạn tin nguồn.", style = Monika.type.caption, color = c.textSecondary)
+            } else {
+                Text("Chỉ tải tệp từ nguồn bạn tin cậy.", style = Monika.type.caption, color = c.textSecondary)
+            }
         }
     }
 }

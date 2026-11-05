@@ -73,11 +73,13 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import vn.aow.monika.diag.Diagnostics
 
 /* Thành phần giao diện Aow Monika. Màn hình chỉ ghép từ các thành phần này. */
 
@@ -570,8 +572,16 @@ fun MonikaDialog(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Monika.colors
+    val ctx = LocalContext.current
     val dismissFocus = remember { FocusRequester() }
-    if (defaultDismiss) LaunchedEffect(Unit) { runCatching { dismissFocus.requestFocus() } }
+    if (defaultDismiss) LaunchedEffect(Unit) {
+        try {
+            dismissFocus.requestFocus()
+        } catch (e: Exception) {
+            // Không có context/nút chưa vào cây: ghi nhận để biết, không nuốt im lặng.
+            Diagnostics.recordHandled(ctx, "app:dialog", "Không đặt được focus nút Hủy", e)
+        }
+    }
     AlertDialog(
         onDismissRequest = onDismissRequest,
         modifier = modifier,
@@ -585,7 +595,7 @@ fun MonikaDialog(
                 Modifier.then(
                     if (defaultDismiss) {
                         Modifier.focusRequester(dismissFocus).focusable().onPreviewKeyEvent { e ->
-                            if (e.type == KeyEventType.KeyDown && (e.key == Key.Enter || e.key == Key.NumPadEnter)) {
+                            if (dialogKeyAction(e.key, e.type) == DialogKeyAction.DISMISS) {
                                 onDismissRequest(); true
                             } else false
                         }
@@ -595,6 +605,13 @@ fun MonikaDialog(
         },
     )
 }
+
+/** Phím trong hộp thoại: Enter/NumPadEnter (lúc nhấn xuống) luôn chọn Hủy, không xác nhận tải. */
+internal enum class DialogKeyAction { DISMISS, IGNORE }
+
+internal fun dialogKeyAction(key: Key, type: KeyEventType): DialogKeyAction =
+    if (type == KeyEventType.KeyDown && (key == Key.Enter || key == Key.NumPadEnter)) DialogKeyAction.DISMISS
+    else DialogKeyAction.IGNORE
 
 /** Ô nhập một dòng theo token giao diện (màu viền/nhãn/chữ từ `Monika.colors`). */
 @Composable
