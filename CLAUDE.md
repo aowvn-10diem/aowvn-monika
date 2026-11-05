@@ -9,6 +9,7 @@ App Android (Kotlin, Jetpack Compose) của aow.vn: đọc bài (Blogger feed), 
 - Giao diện chỉ dùng token `Monika.*`, `Radius`, `primaryGradient()` và `ui/theme/Components.kt`; animation lấy thời lượng từ `Monika.motion`.
 - Mỗi phiên bản chỉ phát hành **1 APK: universal**.
 - Thêm thư viện có JNI/reflection → thêm luật `-keep` vào `app/proguard-rules.pro`.
+- Việc lớn (dự kiến ≥ 3 PR) → viết đặc tả ngắn theo `docs/dac-ta/MAU.md` và mở PR đặc tả trước PR mã đầu tiên.
 
 ## Luật an toàn
 - Không bao giờ commit hay in ra log/chat: keystore, mật khẩu ký, token, secret, API key. Không tạo khóa ký mới; mất khóa thì hỏi chủ repo.
@@ -32,7 +33,8 @@ Hạn mức là tài nguyên hiếm nhất. Mọi agent:
 - Mỗi lượt chạy định kỳ có skill riêng (bảng dưới), làm đúng skill, không tự nghĩ lại quy trình.
 
 ## Lệnh
-- `./gradlew testDebugUnitTest` — chạy trước mọi push (gồm test config và test giao diện Robolectric). Ngoại lệ: commit chỉ sửa `docs/**` hoặc `**/*.md` (CI cũng bỏ qua, V11).
+- `bash scripts/truoc-khi-push.sh` (Windows: `powershell -NoProfile -File scripts/truoc-khi-push.ps1`) — kiểm trước khi đẩy: test hai flavor → `assembleDebug` → `assemblePlayDebug` → quét APK Play; dừng ở lỗi đầu, dòng cuối `ĐẠT`/`LỖI`. Cần **JDK 17 để build** và **JDK 21** cho `./gradlew testDebugUnitTest` (toolchain Robolectric SDK 36, Gradle tự dò qua `JAVA_HOME_21_*`); Android SDK/NDK và Python 3 như khi build bình thường; script tự tìm gốc repo.
+- `./gradlew testDebugUnitTest` — chạy trước mọi push (gồm test config và test giao diện Robolectric). Cần **JDK 21** (toolchain của test; máy chỉ có JDK 17 sẽ báo `No matching toolchains found`). Ngoại lệ: commit chỉ sửa `docs/**` hoặc `**/*.md` (CI cũng bỏ qua, V11).
 - `./gradlew assembleDebug` — build APK.
 
 ## Chỉ đường (nạp skill khi cần)

@@ -32,6 +32,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import vn.aow.monika.ui.screens.DownloadsScreen
+import vn.aow.monika.ui.screens.FeedViewModel
 import vn.aow.monika.ui.screens.GamesScreen
 import vn.aow.monika.ui.screens.SearchScreen
 import vn.aow.monika.ui.theme.DockClearance
@@ -64,9 +65,14 @@ class TargetSdk36NavBarClearanceTest {
     @Test fun downloadsKeepsLastRowAboveNavigationBar() =
         assertScreenReservesNavigationBar("Tải xuống") { DownloadsScreen() }
 
-    /** Tab "Game & bài viết": hàng cuối của danh sách bài vẫn nằm trên thanh điều hướng. */
-    @Test fun gamesKeepsLastRowAboveNavigationBar() =
-        assertScreenReservesNavigationBar("Game & bài viết") { GamesScreen(onOpen = {}) }
+    /**
+     * Tab "Game & bài viết": hàng cuối của danh sách bài vẫn nằm trên thanh điều hướng.
+     * Dựng màn với [FixtureFeed] để không gọi feed thật — test không phụ thuộc mạng.
+     */
+    @Test fun gamesKeepsLastRowAboveNavigationBar() {
+        val vm = FeedViewModel(FixtureFeed())
+        assertScreenReservesNavigationBar("Game & bài viết") { GamesScreen(onOpen = {}, vm = vm) }
+    }
 
     /** Tab "Tìm kiếm": hàng cuối (gợi ý) vẫn nằm trên thanh điều hướng. */
     @Test fun searchKeepsLastRowAboveNavigationBar() =
@@ -88,7 +94,8 @@ class TargetSdk36NavBarClearanceTest {
         // Màn phải dựng đúng trước khi đo, nếu không phép đo bên dưới vô nghĩa.
         rule.onNodeWithText(screen).assertIsDisplayed()
 
-        // Chờ nội dung ổn định (màn Game còn nạp bài) rồi mới đo chiều dài cuộn khi chưa có thanh.
+        // Chờ nội dung ổn định (màn Game có thể nạp thêm bài — ở đây là fixture tĩnh) rồi mới đo
+        // chiều dài cuộn khi chưa có thanh.
         val maxWithoutBarPx = awaitStableScroll(outermostScrollable())
 
         applyNavigationBarInset(NAV_BAR_DP)
@@ -164,8 +171,8 @@ class TargetSdk36NavBarClearanceTest {
         list.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].maxValue()
 
     /**
-     * Chiều dài cuộn chỉ đúng sau khi LazyList đã đo nội dung, và màn Game còn nạp bài nên nội dung
-     * có thể dài thêm. Cuộn hết + dựng lại layout cho tới khi số đo đứng yên ở hai lần liên tiếp.
+     * Chiều dài cuộn chỉ đúng sau khi LazyList đã đo nội dung và việc nạp bài (nếu có) đã xong.
+     * Cuộn hết + dựng lại layout cho tới khi số đo đứng yên ở hai lần liên tiếp.
      */
     private fun awaitStableScroll(list: SemanticsNodeInteraction): Float {
         var previous = -1f

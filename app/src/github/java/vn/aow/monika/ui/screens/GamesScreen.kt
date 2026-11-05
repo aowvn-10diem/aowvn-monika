@@ -52,6 +52,7 @@ import kotlinx.coroutines.launch
 import vn.aow.monika.AppGraph
 import vn.aow.monika.R
 import vn.aow.monika.feed.Post
+import vn.aow.monika.feed.FeedSource
 import vn.aow.monika.ui.theme.ChipBar
 import vn.aow.monika.ui.theme.DarkButton
 import vn.aow.monika.ui.theme.EmptyState
@@ -65,7 +66,10 @@ import vn.aow.monika.ui.theme.Tag
 import vn.aow.monika.ui.theme.artworkScrim
 
 /** Giữ danh sách bài, bộ lọc và từ khóa khi chuyển tab. */
-class FeedViewModel : ViewModel() {
+class FeedViewModel(
+    /** Nguồn bài; mặc định feed thật của app, test truyền dữ liệu tĩnh để không chạm mạng. */
+    private val source: FeedSource = AppGraph.feed,
+) : ViewModel() {
     val posts = mutableStateListOf<Post>()
     var label by mutableStateOf<String?>(null); private set
     var query by mutableStateOf(""); private set
@@ -77,7 +81,7 @@ class FeedViewModel : ViewModel() {
     init {
         // Từ Trang chủ chạm 1 hệ máy → mở sẵn đúng bộ lọc.
         GamesFilter.take()?.let { label = it }
-        AppGraph.feed.cachedList(key())?.let { posts.addAll(it) }; load(reset = true)
+        source.cachedList(key())?.let { posts.addAll(it) }; load(reset = true)
     }
 
     private fun key() = "games:" + (label ?: "")
@@ -99,8 +103,8 @@ class FeedViewModel : ViewModel() {
         error = null
         viewModelScope.launch {
             runCatching {
-                if (reset && query.isBlank()) AppGraph.feed.fetchList(key(), label = label)
-                else AppGraph.feed.fetch(label = label, startIndex = if (reset) 1 else posts.size + 1, query = query)
+                if (reset && query.isBlank()) source.fetchList(key(), label = label)
+                else source.fetch(label = label, startIndex = if (reset) 1 else posts.size + 1, query = query)
             }
                 .onSuccess {
                     if (reset) posts.clear()
