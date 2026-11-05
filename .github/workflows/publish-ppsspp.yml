@@ -1,0 +1,100 @@
+name: Snapshot PPSSPP từ nguồn ghim (V198)
+on:
+  workflow_dispatch:
+    inputs:
+      number:
+        description: Số snapshot mới, không dùng lại; chỉ PM chạy sau duyệt
+        required: true
+        type: string
+permissions: {contents: read}
+concurrency:
+  group: v198-ppsspp-publish
+  cancel-in-progress: false
+env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+jobs:
+  plan:
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      ndk: ${{ steps.plan.outputs.ndk }}
+      cmake: ${{ steps.plan.outputs.cmake }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - name: Không dùng lại số có release hoặc tag; lỗi quyền/mạng thì dừng
+        env:
+          GH_TOKEN: ${{ secrets.PACKS_TOKEN }}
+          SNAPSHOT_NUMBER: ${{ inputs.number }}
+        run: python3 scripts/ppsspp-snapshot.py check --number "$SNAPSHOT_NUMBER"
+      - id: plan
+        run: |
+          python3 scripts/test-prepare-core-build.py
+          python3 scripts/test-ppsspp-snapshot.py
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          tools = json.loads(Path('engines/sources.lock.json').read_text())['toolchain']
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              for key in ('ndk', 'cmake'):
+                  print(key + '=' + tools[key], file=output)
+          PY
+  build:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a]
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.ANDROID_HOME }}/ndk/${{ needs.plan.outputs.ndk }}
+            ${{ env.ANDROID_HOME }}/cmake/${{ needs.plan.outputs.cmake }}
+          key: v198-tools-${{ runner.os }}-${{ needs.plan.outputs.ndk }}-${{ needs.plan.outputs.cmake }}-${{ matrix.abi }}-${{ hashFiles('engines/sources.lock.json') }}
+      - name: Dựng đúng recipe đã duyệt, giữ nguồn và ký hiệu debug
+        env:
+          CORE_NDK: ${{ needs.plan.outputs.ndk }}
+          CORE_CMAKE: ${{ needs.plan.outputs.cmake }}
+          CORE_ABI: ${{ matrix.abi }}
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$CORE_NDK" "cmake;$CORE_CMAKE"
+          python3 scripts/prepare-core-build.py --core ppsspp --abi "$CORE_ABI" \
+            --ndk "$ANDROID_HOME/ndk/$CORE_NDK" \
+            --cmake "$ANDROID_HOME/cmake/$CORE_CMAKE/bin/cmake" --out out/core
+      - uses: actions/upload-artifact@v7
+        with:
+          name: source-build-ppsspp-${{ matrix.abi }}
+          path: out/core/
+          retention-days: 3
+          if-no-files-found: error
+  publish:
+    needs: build
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: source-build-ppsspp-*
+          path: artifacts
+      - name: Kiểm đủ hai ABI, in hash và kích thước ZIP cài; giữ nguồn và symbols
+        env:
+          SNAPSHOT_NUMBER: ${{ inputs.number }}
+        run: |
+          python3 scripts/ppsspp-snapshot.py prepare --number "$SNAPSHOT_NUMBER"
+          cat snapshot/notes.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Tạo snapshot mới trong repo packs, không ghi đè, luôn là bản thử
+        env:
+          GH_TOKEN: ${{ secrets.PACKS_TOKEN }}
+          SNAPSHOT_NUMBER: ${{ inputs.number }}
+        run: python3 scripts/ppsspp-snapshot.py publish --number "$SNAPSHOT_NUMBER"
