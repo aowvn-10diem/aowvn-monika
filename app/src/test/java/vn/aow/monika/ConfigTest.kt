@@ -135,6 +135,18 @@ class ConfigTest {
     }
 
     @Test
+    fun `ban chinh thuc dung chung chung thu va tai khoan tu config`() {
+        assertEquals(vn.aow.monika.config.SecurityConfig.OFFICIAL_CERT_SHA256, cfg.security.officialCertSha256)
+        assertEquals(listOf("https://monika.aow.vn/", "https://github.com/aowvn-10diem/aowvn-monika/releases"), cfg.official.downloadSources.map { it.url })
+        assertEquals("https://monika.aow.vn/chinh-thuc/", cfg.official.pageUrl)
+        assertTrue(cfg.official.reportFakeUrl.contains("template=bao-ban-gia.yml"))
+        assertTrue(cfg.official.verificationSteps.isNotEmpty())
+        val legacy = ConfigRepository.parse("{}")
+        assertEquals(cfg.security.officialCertSha256, legacy.security.officialCertSha256)
+        assertTrue(legacy.official.downloadSources.isNotEmpty())
+    }
+
+    @Test
     fun `donate config-first hop le va config cu co mac dinh`() {
         val donate = cfg.account.donate
         assertTrue(donate.bankId.matches(Regex("[A-Za-z0-9]+")))
@@ -168,7 +180,7 @@ class ConfigTest {
 
     @Test
     fun `rgss ghim goi cong khai va van giu Joiplay du phong`() {
-        assertEquals(57, cfg.configVersion)
+        assertEquals(60, cfg.configVersion)
         val module = cfg.modules["rgss"] ?: error("modules.rgss thiếu")
         assertEquals("engines-rgss-6", module.version)
         assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/engines-rgss-6/rgss-arm64-v8a.zip", module.url)
@@ -186,7 +198,7 @@ class ConfigTest {
     fun `GBA tat color correction o mac dinh goc va moi style`() {
         val core = cfg.cores.getValue("mgba")
         val display = requireNotNull(core.display)
-        assertEquals(57, cfg.configVersion)
+        assertEquals(60, cfg.configVersion)
         assertEquals("OFF", core.options["mgba_color_correction"])
         assertEquals("lcd", display.default)
         assertTrue(display.styles.isNotEmpty())

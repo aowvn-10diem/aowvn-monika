@@ -7,6 +7,18 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+// V192: BouncyCastle đi vào APK qua `libadb-android` (kéo bản cũ). Ghim bản trong
+// `gradle/libs.versions.toml` cho MỌI cấu hình của app (mọi `*Classpath`, cả 2 flavor).
+val bcVersion = libs.versions.bouncycastle.get()
+configurations.configureEach {
+    resolutionStrategy.force(
+        "org.bouncycastle:bcprov-jdk15to18:$bcVersion",
+        "org.bouncycastle:bcprov-jdk18on:$bcVersion",
+        "org.bouncycastle:bcpkix-jdk18on:$bcVersion",
+        "org.bouncycastle:bcutil-jdk18on:$bcVersion",
+    )
+}
+
 android {
     namespace = "vn.aow.monika"
     // V152: Android 16 (API 36). targetSdk 36 → bắt buộc edge-to-edge, màn lớn bỏ khoá xoay, predictive back mặc định.
@@ -22,8 +34,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 54
-        versionName = "0.8.9"
+        versionCode = 55
+        versionName = "0.8.10"
         // V56: runner chỉ nằm trong APK instrumentation, không thêm lối vào app phát hành.
         testInstrumentationRunner = "vn.aow.monika.testlab.KirikiriArmRunner"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).

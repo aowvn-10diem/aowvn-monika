@@ -64,6 +64,17 @@ class Prefs(private val context: Context) {
         get() = sp.getStringSet("subscribed_labels", emptySet())!!.toSet()
         set(value) = sp.edit().putStringSet("subscribed_labels", value).apply()
 
+    /**
+     * V193 G1: người dùng bật/tắt bài viết & thông báo bài mới. `null` = theo `config.feed.enabled`
+     * (mặc định tắt); true/false = lựa chọn rõ của người dùng, thắng config.
+     */
+    var feedEnabled: Boolean?
+        get() = if (sp.contains("feed_enabled")) sp.getBoolean("feed_enabled", false) else null
+        set(value) {
+            if (value == null) sp.edit().remove("feed_enabled").apply()
+            else sp.edit().putBoolean("feed_enabled", value).apply()
+        }
+
     /** Nơi lưu file tải từ trình duyệt nhúng lần trước: "lib" (Thư viện game) | "dl" (Tải xuống) | "folder" (thư mục tự chọn). */
     var dlDest: String
         get() = sp.getString("dl_dest", "lib") ?: "lib"

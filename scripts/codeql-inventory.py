@@ -50,9 +50,22 @@ def collect(get_page, tracked):
     raise RuntimeError("CodeQL pagination budget exhausted; inventory incomplete")
 
 
+def summary_markdown(data):
+    """Bảng markdown cho job summary: chỉ metadata, không kèm thông điệp/snippet của cảnh báo."""
+    lines = [f"### Cảnh báo code scanning đang mở: {data['open_count']}", "",
+             "| # | Mức | Quy tắc | Tệp | Dòng |", "|---:|---|---|---|---:|"]
+    for alert in data["alerts"]:
+        cells = [f"[{alert['number']}]({alert['url']})", alert["severity"] or "?",
+                 alert["rule"], alert["path"] or "(ngoài mã nguồn)", str(alert["line"] or "")]
+        lines.append("| " + " | ".join(cell.replace("|", "\\|") for cell in cells) + " |")
+    lines.append("")
+    return "\n".join(lines)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--summary", type=Path, help="ghi bảng markdown (thường là $GITHUB_STEP_SUMMARY)")
     args = parser.parse_args()
     if os.environ.get("GITHUB_REPOSITORY") != REPOSITORY:
         parser.error("Unexpected repository")
@@ -77,6 +90,8 @@ def main():
                 "open_count": len(alerts), "alerts": alerts}
         args.out.mkdir(parents=True, exist_ok=True)
         (args.out / "inventory.json").write_text(json.dumps(data, indent=2) + "\n")
+        if args.summary:
+            args.summary.write_text(summary_markdown(data))
         print(f"Read {len(alerts)} open alerts")
     except urllib.error.HTTPError as error:
         print(f"CodeQL inventory unavailable: HTTP {error.code}")

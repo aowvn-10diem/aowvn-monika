@@ -81,7 +81,10 @@ class FeedViewModel(
     init {
         // Từ Trang chủ chạm 1 hệ máy → mở sẵn đúng bộ lọc.
         GamesFilter.take()?.let { label = it }
-        source.cachedList(key())?.let { posts.addAll(it) }; load(reset = true)
+        // V193 G1: đang tắt bài viết thì không đọc cache mạng, không gọi feed.
+        if (AppGraph.feedEnabled) {
+            source.cachedList(key())?.let { posts.addAll(it) }; load(reset = true)
+        }
     }
 
     private fun key() = "games:" + (label ?: "")
@@ -99,6 +102,8 @@ class FeedViewModel(
 
     fun load(reset: Boolean) {
         if (loading) return
+        // V193 G1: tắt bài viết → không gọi mạng.
+        if (!AppGraph.feedEnabled) { loading = false; return }
         loading = true
         error = null
         viewModelScope.launch {
@@ -123,6 +128,7 @@ fun GamesScreen(onOpen: (Post) -> Unit, focusSearch: Boolean = false, vm: FeedVi
     androidx.compose.runtime.LaunchedEffect(Unit) { GamesFilter.take()?.let(vm::selectLabel) }
     val c = Monika.colors
     val cfg by AppGraph.config.config.collectAsState()
+    var feedOn by remember { mutableStateOf(AppGraph.feedEnabled) }
     var text by remember { mutableStateOf(vm.query) }
     LaunchedEffect(Unit) { if (vm.posts.isEmpty() && !vm.loading) vm.load(reset = true) }
     val focus = remember { FocusRequester() }
@@ -165,21 +171,31 @@ fun GamesScreen(onOpen: (Post) -> Unit, focusSearch: Boolean = false, vm: FeedVi
                     }
                 }
             }
-            item {
-                ChipBar(listOf<String?>(null) + cfg.feedLabels(), vm.label, { it?.let(::shortLabel) ?: "Tất cả" }, vm::selectLabel, accent = true)
-            }
-            if (vm.query.isNotBlank()) item {
-                Text("Kết quả cho \"${vm.query}\"", style = Monika.type.body, color = c.textSecondary, modifier = Modifier.padding(horizontal = 16.dp))
-            }
-            vm.posts.firstOrNull()?.let { first -> item(key = "featured-" + first.id) { FeaturedArticle(first) { onOpen(first) } } }
-            items(vm.posts.drop(1), key = { it.id }) { p -> ArticleRow(p) { onOpen(p) } }
-            item {
-                Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                    when {
-                        vm.loading -> FeedStatus(true) { vm.load(reset = vm.posts.isEmpty()) }
-                        vm.error != null -> FeedStatus(false) { vm.load(reset = vm.posts.isEmpty()) }
-                        vm.posts.isEmpty() -> EmptyState(R.drawable.fluent3d_newspaper, "Không có kết quả", "Thử từ khóa khác.")
-                        !vm.endReached -> SoftPillButton("Xem thêm bài", { vm.load(reset = false) })
+            if (!feedOn) {
+                item {
+                    FeedOff {
+                        AppGraph.setFeedEnabled(true)
+                        feedOn = true
+                        vm.load(reset = true)
+                    }
+                }
+            } else {
+                item {
+                    ChipBar(listOf<String?>(null) + cfg.feedLabels(), vm.label, { it?.let(::shortLabel) ?: "Tất cả" }, vm::selectLabel, accent = true)
+                }
+                if (vm.query.isNotBlank()) item {
+                    Text("Kết quả cho \"${vm.query}\"", style = Monika.type.body, color = c.textSecondary, modifier = Modifier.padding(horizontal = 16.dp))
+                }
+                vm.posts.firstOrNull()?.let { first -> item(key = "featured-" + first.id) { FeaturedArticle(first) { onOpen(first) } } }
+                items(vm.posts.drop(1), key = { it.id }) { p -> ArticleRow(p) { onOpen(p) } }
+                item {
+                    Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                        when {
+                            vm.loading -> FeedStatus(true) { vm.load(reset = vm.posts.isEmpty()) }
+                            vm.error != null -> FeedStatus(false) { vm.load(reset = vm.posts.isEmpty()) }
+                            vm.posts.isEmpty() -> EmptyState(R.drawable.fluent3d_newspaper, "Không có kết quả", "Thử từ khóa khác.")
+                            !vm.endReached -> SoftPillButton("Xem thêm bài", { vm.load(reset = false) })
+                        }
                     }
                 }
             }

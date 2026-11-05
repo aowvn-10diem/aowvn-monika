@@ -1,0 +1,51 @@
+name: Bảng tiến độ (V197)
+
+# Cập nhật issue "📊 Tiến độ Monika" từ dữ liệu GitHub, không gọi AI, không dùng secret riêng.
+on:
+  schedule:
+    - cron: '40 0-16 * * *'   # 07:40–23:40 giờ VN, mỗi giờ
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - scripts/tien-do.py
+      - scripts/test-tien-do.py
+      - .github/workflows/tien-do.yml
+
+permissions: {}
+
+concurrency:
+  group: tien-do-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  offline:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Test offline
+        run: python3 scripts/test-tien-do.py
+
+  cap-nhat:
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      checks: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Cập nhật issue tiến độ
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/tien-do.py

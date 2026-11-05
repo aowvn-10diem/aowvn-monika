@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
@@ -203,7 +204,7 @@ class InGameTest {
     }
 
     /**
-     * V162: nút nhỏ luôn hiện — bấm ẩn cả cụm phím ảo (không chỉ mờ), bấm lại hiện ra;
+     * V162/V184: nút nhỏ luôn hiện — bấm ẩn cả cụm phím ảo (không chỉ mờ), bấm lại hiện ra;
      * lựa chọn tự ẩn báo về để activity ghi vào Prefs.
      */
     @Test fun padToggleHidesAndShowsVirtualPad() {
@@ -227,14 +228,48 @@ class InGameTest {
         assertFalse("bấm nút: phím ảo ẩn", state.padVisible)
         assertEquals("báo activity lưu Prefs", true, saved)
         rule.onNodeWithText("A").assertDoesNotExist()
-        rule.onNodeWithText("Hiện phím").assertExists()
-        rule.shot("v162-da-an-phim")
+        // Nút vẫn còn (đổi mô tả thành "Hiện phím ảo"), không mờ/biến mất.
+        rule.onNodeWithContentDescription("Hiện phím ảo").assertIsDisplayed()
+        rule.shot("v184-da-an-phim")
         rule.onNodeWithTag(PAD_TOGGLE_TAG).performClick()
         rule.waitForIdle()
         rule.mainClock.advanceTimeBy(500)
         assertTrue("bấm lại: phím ảo hiện", state.padVisible)
         assertEquals(false, saved)
         rule.onNodeWithText("A").assertExists()
+    }
+
+    /** V184: mặc định phím HIỆN khi không có tay cầm (0.8.9 tự ẩn ở mọi hệ là lỗi). */
+    @Test fun padVisibleByDefaultWithoutGamepad() {
+        val state = InGameState()
+        overlay(state, PadLayout.GBA)
+        assertTrue("mặc định phải hiện phím", state.padVisible)
+        rule.runOnIdle { state.setPadConnected(false) }
+        rule.waitForIdle()
+        assertTrue("không cắm tay cầm: vẫn hiện phím", state.padVisible)
+        rule.onNodeWithText("A").assertExists()
+    }
+
+    /** V184: xoay ngang vẫn còn nút ẩn/hiện, nút nhỏ và bấm được (0.8.9: nút bị cụm phím che/mất). */
+    @Test @Config(qualifiers = "w851dp-h393dp-land-xxhdpi")
+    fun padToggleStaysReachableInLandscape() {
+        val state = InGameState()
+        overlay(state, PadLayout.GBA)
+        rule.mainClock.advanceTimeBy(AutoHide.HIDE_MS + 1_000) // thanh tên đã tự ẩn, nút vẫn phải còn
+        rule.onNodeWithTag(PAD_TOGGLE_TAG).assertIsDisplayed()
+        val density = rule.activity.resources.displayMetrics.density
+        val width = rule.onNodeWithTag(PAD_TOGGLE_TAG).fetchSemanticsNode().boundsInRoot.width
+        assertTrue("nút phải nhỏ (<= 40dp), rộng ${width}px", width <= 40f * density)
+        rule.onNodeWithTag(PAD_TOGGLE_TAG).performClick()
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(300)
+        assertFalse("bấm được ở màn ngang: phím ẩn", state.padVisible)
+        rule.onNodeWithTag(PAD_TOGGLE_TAG).assertIsDisplayed()
+        rule.onNodeWithTag(PAD_TOGGLE_TAG).performClick()
+        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(300)
+        assertTrue("bấm lại được ở màn ngang: phím hiện", state.padVisible)
+        rule.shot("v184-nut-phim-ngang")
     }
 
     /** V162: cắm tay cầm tự ẩn phím; người chơi đã tự ẩn thì rút tay cầm vẫn ẩn (không tự hiện). */
