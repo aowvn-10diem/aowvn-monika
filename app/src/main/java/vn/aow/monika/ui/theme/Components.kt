@@ -40,7 +40,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -540,4 +543,59 @@ fun AowPixelButton(
             Text(">", color = label, style = Monika.type.button)
         }
     }
+}
+
+/**
+ * Hộp thoại chuẩn Aow Monika: mặt `surface`, bo `Radius.large`, tiêu đề `cardTitle`.
+ * Nút xác nhận/huỷ do màn truyền vào (GradientButton/DarkButton) để giữ đúng ngữ cảnh.
+ */
+@Composable
+fun MonikaDialog(
+    onDismissRequest: () -> Unit,
+    title: String,
+    confirm: @Composable () -> Unit,
+    dismiss: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val c = Monika.colors
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        containerColor = c.surface,
+        shape = Radius.large,
+        title = { Text(title, style = Monika.type.cardTitle, color = c.text) },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp), content = content) },
+        confirmButton = confirm,
+        dismissButton = dismiss,
+    )
+}
+
+/** Ô nhập một dòng theo token giao diện (màu viền/nhãn/chữ từ `Monika.colors`). */
+@Composable
+fun MonikaTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    val c = Monika.colors
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        singleLine = true,
+        shape = Radius.small,
+        label = { Text(label, style = Monika.type.caption) },
+        textStyle = Monika.type.body.copy(color = c.text),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = c.text,
+            unfocusedTextColor = c.text,
+            focusedBorderColor = c.accentCoral,
+            unfocusedBorderColor = c.textTertiary,
+            focusedLabelColor = c.accentCoral,
+            unfocusedLabelColor = c.textSecondary,
+            cursorColor = c.accentCoral,
+        ),
+    )
 }

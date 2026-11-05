@@ -24,8 +24,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,7 +61,9 @@ import vn.aow.monika.ui.theme.GradientProgress
 import vn.aow.monika.ui.theme.Illustration
 import vn.aow.monika.ui.theme.Monika
 import vn.aow.monika.ui.theme.MonikaCard
+import vn.aow.monika.ui.theme.MonikaDialog
 import vn.aow.monika.ui.theme.MonikaHeader
+import vn.aow.monika.ui.theme.MonikaTextField
 import vn.aow.monika.ui.theme.Radius
 import vn.aow.monika.ui.theme.Screen
 import vn.aow.monika.ui.theme.SoftPillButton
@@ -147,23 +147,10 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> U
             }
         }
 
-        if (linkOpen) AlertDialog(
+        if (linkOpen) MonikaDialog(
             onDismissRequest = { linkOpen = false },
-            title = { Text("Tải từ link", style = Monika.type.cardTitle, color = c.text) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
-                        linkText, { linkText = it }, Modifier.fillMaxWidth(), singleLine = true, shape = Radius.small,
-                        label = { Text("Dán link tải") },
-                    )
-                    Text(
-                        if (vn.aow.monika.download.PixeldrainHost.matches(linkText)) vn.aow.monika.download.PixeldrainHost.WARNING
-                        else "Chỉ tải tệp từ nguồn bạn tin cậy.",
-                        style = Monika.type.caption, color = c.textSecondary,
-                    )
-                }
-            },
-            confirmButton = {
+            title = "Tải từ link",
+            confirm = {
                 GradientButton("Tiếp tục tải", {
                     val url = linkText.trim()
                     val direct = vn.aow.monika.download.PixeldrainHost.manualDirect(url, AppGraph.config.current.downloadHosts)
@@ -177,9 +164,15 @@ fun DownloadsScreen(onOpenLibrary: () -> Unit = {}, header: (@Composable () -> U
                     linkOpen = false; linkText = ""
                 }, height = 46.dp)
             },
-            dismissButton = { DarkButton("Huỷ", { linkOpen = false }) },
-            containerColor = c.surface, shape = Radius.large,
-        )
+            dismiss = { DarkButton("Huỷ", { linkOpen = false }) },
+        ) {
+            MonikaTextField(linkText, { linkText = it }, "Dán link tải", Modifier.fillMaxWidth())
+            Text(
+                if (vn.aow.monika.download.PixeldrainHost.matches(linkText)) vn.aow.monika.download.PixeldrainHost.WARNING
+                else "Chỉ tải tệp từ nguồn bạn tin cậy.",
+                style = Monika.type.caption, color = c.textSecondary,
+            )
+        }
     }
 }
 
