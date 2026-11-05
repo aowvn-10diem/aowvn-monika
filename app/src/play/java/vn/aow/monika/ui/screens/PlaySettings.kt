@@ -76,6 +76,8 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
     val c = Monika.colors
     var open by remember { mutableStateOf<String?>(null) }
     var refreshTick by remember { mutableIntStateOf(0) }
+    // V193 G1: mặc định tắt; công tắc này là nơi duy nhất bật lại.
+    var feedOn by remember { mutableStateOf(AppGraph.feedEnabled) }
 
     Screen {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = if (onBack == null) DockClearance else 24.dp)) {
@@ -103,6 +105,17 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     ChipBar(modes, MotionSetting.mode.value, { label[it] ?: it }, { MotionSetting.set(it) }, accent = true, contentPadding = PaddingValues(0.dp))
                     Text(
                         "Tự động: máy mạnh dùng hiệu ứng đầy đủ, máy yếu (RAM < 3GB hoặc < 6 nhân) dùng bản tiết kiệm, và tắt hẳn khi bạn tắt hiệu ứng trong Cài đặt Android.",
+                        style = Monika.type.caption, color = c.textSecondary,
+                    )
+                }
+
+                SettingGroup("feed", open, { open = it }, R.drawable.ic_fluent_news_24_regular, primaryGradient(), "Bài viết & tin tức", if (feedOn) "Đang bật" else "Đang tắt") {
+                    ChipBar(listOf(true, false), feedOn, { if (it) "Bật" else "Tắt" }, { on ->
+                        feedOn = on
+                        AppGraph.setFeedEnabled(on)
+                    }, accent = true, contentPadding = PaddingValues(0.dp))
+                    Text(
+                        "Khi bật, app tải bài viết từ aow.vn. Mặc định tắt để bản tự build không gọi dịch vụ AowVN.",
                         style = Monika.type.caption, color = c.textSecondary,
                     )
                 }

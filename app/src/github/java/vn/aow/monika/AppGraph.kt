@@ -45,7 +45,17 @@ object AppGraph {
 
     val prefs by lazy { Prefs(app) }
     val config by lazy { ConfigRepository(app, http) }
-    val feed by lazy { FeedRepository(http, config, java.io.File(app.cacheDir, "feed").apply { mkdirs() }, app) }
+
+    /** V193 G1: lựa chọn người dùng thắng config; mặc định tắt (config.feed.enabled = false). */
+    val feedEnabled: Boolean get() = prefs.feedEnabled ?: config.current.feed.enabled
+
+    fun setFeedEnabled(on: Boolean) {
+        prefs.feedEnabled = on
+        if (on) vn.aow.monika.notify.NewPostWorker.schedule(app, config.current.feed.pollMinutes)
+        else vn.aow.monika.notify.NewPostWorker.cancel(app)
+    }
+
+    val feed by lazy { FeedRepository(http, config, java.io.File(app.cacheDir, "feed").apply { mkdirs() }, app) { feedEnabled } }
     val forum by lazy { vn.aow.monika.forum.ForumRepository(http, config, java.io.File(app.cacheDir, "forum").apply { mkdirs() }) }
     val cores by lazy { CoreManager(app, http, config) }
     val packs by lazy { vn.aow.monika.pack.SimpleModule(app, http, config) }
