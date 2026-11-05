@@ -109,41 +109,64 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
 
     private fun download(job: DlJob) {
         try {
-            val b = Request.Builder().url(job.url)
-            job.userAgent?.let { b.header("User-Agent", it) }
-            job.referer?.let { b.header("Referer", it) }
-            runCatching { CookieManager.getInstance().getCookie(job.url) }.getOrNull()?.takeIf { it.isNotBlank() }?.let { b.header("Cookie", it) }
-            val call = http.newBuilder().readTimeout(0, java.util.concurrent.TimeUnit.SECONDS).callTimeout(0, java.util.concurrent.TimeUnit.SECONDS)
-                .build().newCall(b.build())
-            job.call = call
-            call.execute().use { r ->
-                if (!r.isSuccessful) throw IOException("Máy chủ trả lỗi ${r.code}")
-                // Kiểm "đã xác nhận" LẠI trên luồng chính lúc áp tên: nếu người dùng đặt tên đúng lúc tiêu đề máy chủ về (race), tên người dùng đặt không được bị đè.
-                r.header("Content-Disposition")?.let { cd -> main.post { if (!job.confirmed) job.name = suggestName(job.url, cd, job.mime) } }
-                val len = r.body!!.contentLength()
-                main.post { job.total = len }
-                var last = System.nanoTime(); var lastBytes = 0L; var got = 0L
-                job.part.parentFile?.mkdirs()
-                r.body!!.byteStream().use { ins ->
-                    // V166: `ins` là luồng mạng → bọc để đứt giữa chừng được đánh dấu là chuyện mạng.
-                    val source = vn.aow.monika.diag.Diagnostics.networkStream(ins)
-                    job.part.outputStream().buffered(1 shl 16).use { out ->
-                        val buf = ByteArray(1 shl 16)
-                        while (true) {
-                            val n = source.read(buf)
-                            if (n < 0) break
-                            out.write(buf, 0, n); got += n
-                            val now = System.nanoTime()
-                            if (now - last > 250_000_000L) {
-                                val sp = (got - lastBytes) * 1_000_000_000L / (now - last)
-                                val g = got
-                                main.post { job.done = g; job.speed = sp }
-                                last = now; lastBytes = got
+            // V193: tự theo redirect bị tắt cho luồng này để kiểm từng hop; client dùng chung không đổi.
+            val client = http.newBuilder()
+                .followRedirects(false).followSslRedirects(false)
+                .readTimeout(0, java.util.concurrent.TimeUnit.SECONDS).callTimeout(0, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+            var url = job.url
+            var hops = 0
+            while (true) {
+                val b = Request.Builder().url(url)
+                job.userAgent?.let { b.header("User-Agent", it) }
+                job.referer?.let { b.header("Referer", it) }
+                // diag: bỏ qua cookie không đọc được là lỗi hệ thống, không phải lỗi app.
+                runCatching { CookieManager.getInstance().getCookie(url) }.getOrNull()?.takeIf { it.isNotBlank() }?.let { b.header("Cookie", it) }
+                val call = client.newCall(b.build())
+                job.call = call
+                var nextUrl: String? = null
+                call.execute().use { r ->
+                    if (r.code in 300..399) {
+                        val location = r.header("Location") ?: throw IOException("Chuyển hướng thiếu Location")
+                        val next = r.request.url.resolve(location) ?: throw IOException("Chuyển hướng không hợp lệ")
+                        // Chốt từng hop: không gửi request tới Pixeldrain nếu chưa xác nhận thủ công.
+                        if (PixeldrainHost.matches(next.toString()) && !job.confirmed) {
+                            throw IOException("Tệp chuyển tới Pixeldrain, cần bạn dán link và xác nhận.")
+                        }
+                        if (++hops > MAX_REDIRECTS) throw IOException("Quá nhiều chuyển hướng")
+                        nextUrl = next.toString()
+                        return@use
+                    }
+                    if (!r.isSuccessful) throw IOException("Máy chủ trả lỗi ${r.code}")
+                    // Kiểm "đã xác nhận" LẠI trên luồng chính lúc áp tên: nếu người dùng đặt tên đúng lúc tiêu đề máy chủ về (race), tên người dùng đặt không được bị đè.
+                    r.header("Content-Disposition")?.let { cd -> main.post { if (!job.confirmed) job.name = suggestName(job.url, cd, job.mime) } }
+                    val len = r.body!!.contentLength()
+                    main.post { job.total = len }
+                    var last = System.nanoTime(); var lastBytes = 0L; var got = 0L
+                    job.part.parentFile?.mkdirs()
+                    r.body!!.byteStream().use { ins ->
+                        // V166: `ins` là luồng mạng → bọc để đứt giữa chừng được đánh dấu là chuyện mạng.
+                        val source = vn.aow.monika.diag.Diagnostics.networkStream(ins)
+                        job.part.outputStream().buffered(1 shl 16).use { out ->
+                            val buf = ByteArray(1 shl 16)
+                            while (true) {
+                                val n = source.read(buf)
+                                if (n < 0) break
+                                out.write(buf, 0, n); got += n
+                                val now = System.nanoTime()
+                                if (now - last > 250_000_000L) {
+                                    val sp = (got - lastBytes) * 1_000_000_000L / (now - last)
+                                    val g = got
+                                    main.post { job.done = g; job.speed = sp }
+                                    last = now; lastBytes = got
+                                }
                             }
                         }
                     }
+                    main.post { job.done = got; if (job.total < 0) job.total = got; job.speed = 0 }
                 }
-                main.post { job.done = got; if (job.total < 0) job.total = got; job.speed = 0 }
+                val next = nextUrl ?: break
+                url = next
             }
             if (job.state == DlState.CANCELED) { runCatching { job.part.delete() }; return }
             // Hủy có thể xen vào giữa lúc kiểm tra ở trên và lúc chạy trên luồng chính → không được ghi đè trạng thái "đã hủy".
@@ -278,6 +301,7 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
     fun activeJobs(): List<DlJob> = jobs.filter { it.active }
 
     companion object {
+        private const val MAX_REDIRECTS = 5
         fun sanitize(n: String) = n.replace(Regex("""[\\/:*?"<>|]"""), "_").trim().trim('.').take(180)
 
         fun suggestName(url: String, disposition: String?, mime: String?): String {

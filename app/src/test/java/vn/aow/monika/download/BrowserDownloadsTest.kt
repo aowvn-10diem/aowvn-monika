@@ -2,7 +2,11 @@ package vn.aow.monika.download
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -61,5 +65,29 @@ class BrowserDownloadsTest {
         downloads().start("https://pixeldrain.com/api/file/abc123?download", null, null, null, null, confirmed = true)
         assertTrue("phải phát request sau khi xác nhận", firstCall.await(5, TimeUnit.SECONDS))
         assertEquals("đúng 1 request", 1L, calls.get().toLong())
+    }
+
+    /** Link trung gian 302 sang Pixeldrain khi chưa xác nhận: chỉ gọi host trung gian, không gọi Pixeldrain. */
+    @Test fun redirectSangPixeldrainThieuXacNhanKhongGoiPixeldrain() {
+        val hosts = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val hit = CountDownLatch(1)
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val host = chain.request().url.host
+            hosts += host
+            hit.countDown()
+            if (host == "example.test") {
+                Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(302).message("Found")
+                    .header("Location", "https://pixeldrain.com/api/file/abc123?download")
+                    .body("".toResponseBody("text/plain".toMediaType())).build()
+            } else {
+                throw IOException("không được gọi $host")
+            }
+        }.build()
+        BrowserDownloads(app, client, Prefs(app))
+            .start("https://example.test/start", null, null, null, null)
+        assertTrue(hit.await(5, TimeUnit.SECONDS))
+        Thread.sleep(300) // cho hop 2 (nếu có) kịp chạy
+        assertEquals("không có request Pixeldrain", 0, hosts.count { it == "pixeldrain.com" })
+        assertEquals(1, hosts.size)
     }
 }

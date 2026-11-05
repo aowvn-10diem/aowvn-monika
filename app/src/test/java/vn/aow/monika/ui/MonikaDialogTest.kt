@@ -67,19 +67,32 @@ class MonikaDialogTest {
         assertEquals(DialogKeyAction.IGNORE, dialogKeyAction(Key.Escape, KeyEventType.KeyDown))
     }
 
-    /** Compose thật: focus ô nhập rồi gửi Enter → gọi onEnter (Hủy), không xác nhận/tải.
-     *  Không dựng trong cửa sổ dialog vì Robolectric treo idle (2 semantics root); test đúng ô nhập production. */
-    @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
-    @Test fun enterKhiOFocusGoiOnEnterKhongXacNhan() {
-        var entered = false
+    /** Harness một semantics root (tránh Robolectric treo ở cửa sổ dialog): đúng ô nhập + nút Hủy/Tiếp tục
+     *  của luồng "Tải từ link"; Enter/NumPadEnter khi ô focus chỉ được gọi Hủy, không xác nhận/tải. */
+    private fun assertEnterCancels(key: Key) {
+        var cancel = 0
+        var confirm = 0
+        var request = 0
         rule.setContent {
             MonikaTheme {
-                MonikaTextField("", {}, "Dán link tải", Modifier.testTag("link-field"), onEnter = { entered = true })
+                androidx.compose.foundation.layout.Column {
+                    MonikaTextField("", {}, "Dán link tải", Modifier.testTag("link-field"), onEnter = { cancel++ })
+                    DarkButton("Hủy", { cancel++ })
+                    GradientButton("Tiếp tục tải", { confirm++; request++ })
+                }
             }
         }
         rule.onNodeWithTag("link-field").performClick()
-        rule.onNodeWithTag("link-field").performKeyInput { pressKey(Key.Enter) }
+        rule.onNodeWithTag("link-field").performKeyInput { pressKey(key) }
         rule.waitForIdle()
-        assertTrue("Enter khi ô nhập focus phải chọn Hủy", entered)
+        assertEquals("Hủy phải gọi đúng 1 lần", 1, cancel)
+        assertEquals("không được xác nhận", 0, confirm)
+        assertEquals("không được phát request", 0, request)
     }
+
+    @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
+    @Test fun enterKhiOFocusGoiHuyKhongXacNhan() = assertEnterCancels(Key.Enter)
+
+    @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
+    @Test fun numPadEnterKhiOFocusGoiHuyKhongXacNhan() = assertEnterCancels(Key.NumPadEnter)
 }
