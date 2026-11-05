@@ -1,7 +1,7 @@
 ## V144/V145 — Phụ lục khảo sát phụ thuộc trước khi tách kho
 
 - Người khảo sát: Sol 2; đầu vào cho đặc tả của DeepSeek 5, chờ PM duyệt lô chuyển.
-- Theo [PM 6651198574](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6651198574), [thiết kế gốc](../BAO-VE-REPO.md) và [thứ tự G3](V193-cong-bao-ve.md#7-thứ-tự-g3-pm-chốt-1244z--bắt-buộc).
+- Theo [PM 6652121091](https://github.com/aowvn-10diem/aowvn-monika/issues/119#issuecomment-6652121091), [thiết kế gốc](../BAO-VE-REPO.md) và [thứ tự G3](V193-cong-bao-ve.md#7-thứ-tự-g3-pm-chốt-1244z--bắt-buộc).
 - Mốc kiểm: [main@952f11ed257063da36afdf37c5be78cac5197308](https://github.com/aowvn-10diem/aowvn-monika/tree/952f11ed257063da36afdf37c5be78cac5197308). Số tệp dưới đây lấy bằng `git ls-tree -r --name-only <SHA> -- <thư-mục>`; chỉ tính tệp tracked.
 - Đích dự kiến: repo riêng tư. Nội dung kho đích, cấu hình vận hành và quyền của tài khoản khác [CHƯA KIỂM].
 
