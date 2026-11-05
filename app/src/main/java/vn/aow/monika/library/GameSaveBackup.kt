@@ -119,14 +119,25 @@ object GameSaveBackup {
      * Ghi zip lỗi → ném để nơi gọi dừng, không xoá.
      *
      * [freeSpace] chỉ để test tiêm dung lượng trống; chạy thật dùng `File.usableSpace`.
+     * [scanFolder] chỉ để test tiêm kết quả quét; chạy thật dùng [scan].
      */
     fun backupFolder(
         context: Context,
         game: Game,
         freeSpace: (File) -> Long = { it.usableSpace },
+        scanFolder: (Context, File) -> GameFolderScan = ::scan,
     ): GameFolderBackup {
-        val scan = scan(context, game.dir)
+        val scan = scanFolder(context, game.dir)
         if (scan.files.isEmpty()) return GameFolderBackup(null, scan.notes, scan.complete)
+        // Quét chưa trọn (liên kết tượng trưng, mục không đọc được…) → **không** tạo zip: một bản sao
+        // lưu thiếu tệp còn nguy hiểm hơn không có, vì người chơi sẽ tưởng đã an toàn mà xoá.
+        if (!scan.complete) {
+            return GameFolderBackup(
+                null,
+                scan.notes + "Bản sao lưu chưa đầy đủ nên không tạo tệp.",
+                complete = false,
+            )
+        }
         val total = scan.files.sumOf { bytesOf(context, it) }
         if (total > MAX_BYTES) {
             return GameFolderBackup(

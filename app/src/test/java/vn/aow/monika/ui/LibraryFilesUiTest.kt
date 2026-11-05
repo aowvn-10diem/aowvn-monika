@@ -31,7 +31,7 @@ import vn.aow.monika.ui.screens.LibraryFileKind
 import vn.aow.monika.ui.screens.LibraryFilesPage
 import vn.aow.monika.ui.screens.LibraryScreen
 import vn.aow.monika.ui.screens.backupShareIntent
-import vn.aow.monika.library.GameFolderBackup
+import vn.aow.monika.library.GameFolderScan
 import vn.aow.monika.library.GameSaveBackup
 import vn.aow.monika.ui.screens.deleteGameWithSaveBackup
 import vn.aow.monika.ui.screens.formatFileDate
@@ -388,23 +388,40 @@ class LibraryFilesUiTest {
         }
     }
 
-    @Test fun deleteIsRefusedWhenTheSaveScanIsNotComplete() {
+    /**
+     * Luna 4 + Luna 5 (#434): quét thiếu thì **không có tệp zip nào**, không có đường dẫn để chia sẻ,
+     * và không xoá. Ca này chạy qua `GameSaveBackup.backupFolder` thật (chỉ tiêm kết quả quét).
+     */
+    @Test fun deleteIsRefusedWhenTheSaveScanIsNotCompleteAndNoArchiveIsCreated() {
         val game = fixture("v141-quet-thieu")
         val rom = File(game, "fixture.gba").apply { writeText("rom") }
         val save = File(game, "save/a.sav").apply { parentFile?.mkdirs(); writeText("x") }
         val target = Game(game, "v141-quet-thieu", AppGraph.config.current.system("gba"), rom)
+        val backups = File(rule.activity.filesDir, GameSaveBackup.DIR)
+        val known = backups.listFiles().orEmpty().toSet()
         try {
             val warning = "Bỏ qua 1 liên kết tượng trưng (không đi theo để tránh lặp vô hạn)."
-            val result = deleteGameWithSaveBackup(rule.activity, target) { _, _ ->
-                GameFolderBackup(null, listOf(warning), complete = false)
+            val result = deleteGameWithSaveBackup(rule.activity, target) { ctx, g ->
+                // Có tệp đọc được nhưng quét chưa trọn → đúng trường hợp từng phát ZIP một phần.
+                GameSaveBackup.backupFolder(ctx, g, scanFolder = { _, _ ->
+                    GameFolderScan(listOf(rom), listOf(warning), complete = false)
+                })
             }
             assertFalse("Chưa chứng minh sao lưu đủ thì không được xoá", result.deleted)
             assertTrue("Thư mục game phải còn", game.exists())
             assertTrue("Save phải còn", save.exists())
-            assertTrue(result.message.contains("Chưa chứng minh sao lưu đủ"))
+            assertNull("Quét thiếu thì không được trả tệp zip để chia sẻ", result.backup)
+            assertTrue(
+                "Phải báo không tạo tệp: ${result.message}",
+                result.message.contains("Bản sao lưu chưa đầy đủ nên không tạo tệp"),
+            )
             assertTrue("Phải nói rõ lý do (cảnh báo quét)", result.message.contains("liên kết tượng trưng"))
+            val created = backups.listFiles().orEmpty().filter { it !in known }
+            assertTrue("Không được tạo zip nào khi quét thiếu: ${created.map { it.name }}", created.isEmpty())
         } finally {
             game.deleteRecursively()
+            backups.listFiles().orEmpty().filter { it !in known }.forEach { it.delete() }
+            AppGraph.library.list()
         }
     }
 
