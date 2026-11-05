@@ -1,8 +1,10 @@
 package vn.aow.monika.reader
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -191,7 +193,7 @@ class PageRenderGateTest {
         val release = CountDownLatch(1)
         val closed = CountDownLatch(1)
 
-        val caller = launch {
+        val caller = launch(Dispatchers.Default) {
             gate.render<String>(close = { closed.countDown() }) {
                 started.countDown()
                 release.await() // worker còn chạy khi caller bị huỷ
@@ -219,7 +221,7 @@ class PageRenderGateTest {
         val previous = ReaderDiag.onError
         ReaderDiag.onError = { what, t -> reported.complete(what to t) }
         try {
-            val caller = launch {
+            val caller = launch(Dispatchers.Default) {
                 gate.render<String>(close = { }) {
                     started.countDown()
                     release.await() // worker còn chạy khi caller bị huỷ
