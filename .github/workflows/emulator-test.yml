@@ -229,6 +229,12 @@ jobs:
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
       - name: Build APK debug (không R8, đủ để chụp giao diện)
         run: ./gradlew assembleDebug --console=plain
+      # Hỏng ngay tại đây nếu Gradle đổi tên tệp/flavor, thay vì lỗi mơ hồ ở bước chụp ảnh.
+      - name: Kiểm APK debug có thật sau khi build
+        run: |
+          apk=$(find app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' ! -name '*androidTest*' 2>/dev/null | head -n1)
+          test -n "$apk" || { echo "::error::Không thấy APK debug sau assembleDebug (flavor/tên tệp đã đổi?)"; find app/build/outputs/apk -name '*.apk' || true; exit 1; }
+          echo "APK dùng để chụp ảnh: $apk"
       - name: Bật KVM (máy ảo chạy nhanh)
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -243,8 +249,9 @@ jobs:
           emulator-boot-timeout: 600
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
           script: |
-            apk=$(ls app/build/outputs/apk/debug/app-universal-debug.apk app/build/outputs/apk/debug/app-debug.apk 2>/dev/null | head -n1 || true)
-            bash scripts/ci-ui-shots.sh out/anh-truoc-sau "$apk"
+            # Một lệnh duy nhất: action chạy mỗi dòng bằng `sh -c` riêng nên biến không sống qua dòng;
+            # script tự tìm APK debug (find, không phụ thuộc tên `app-universal-debug.apk`).
+            bash scripts/ci-ui-shots.sh out/anh-truoc-sau
       - uses: actions/upload-artifact@v7
         if: always()
         with:

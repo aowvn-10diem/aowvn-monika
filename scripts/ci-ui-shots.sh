@@ -2,12 +2,18 @@
 # V176: chụp ảnh "trước/sau" cho PR giao diện — màn Monika (UI) + bàn phím ảo J2ME (ngang/dọc).
 # Chạy trong bước `script:` của reactivecircus/android-emulator-runner (adb đã sẵn sàng trên host).
 # Dùng: bash scripts/ci-ui-shots.sh <thư-mục-ra> [đường-dẫn-apk]
+# Bỏ trống tham số 2 thì tự tìm APK debug dưới app/build/outputs/apk/debug (find, không phụ thuộc tên flavor).
 # Không tải gì từ mạng, không đụng dữ liệu người dùng. Không chụp được ảnh nào thì ghi vào
 # ghi-chu.txt rồi thoát 0 (job ảnh không phải cổng chặn); chỉ thoát 1 khi không cài được APK.
 set -uo pipefail
 
 OUT=${1:?cần thư mục ra}
 APK=${2:-}
+# Không truyền đường dẫn: tự tìm APK debug (find thay vì đoán tên `app-universal-debug.apk`).
+if [ -z "$APK" ]; then
+  APK=$(find app/build/outputs/apk/debug -maxdepth 1 -name '*.apk' ! -name '*androidTest*' 2>/dev/null | sort | head -n1)
+fi
+APK=${APK:-}
 PKG=com.aow.monika
 mkdir -p "$OUT"
 NOTE="$OUT/ghi-chu.txt"
@@ -39,7 +45,7 @@ shot() {
 }
 
 # ---------- Chuẩn bị ----------
-[ -n "$APK" ] && [ -f "$APK" ] || { note "LỖI: không thấy APK ($APK)"; exit 1; }
+[ -n "$APK" ] && [ -f "$APK" ] || { note "LỖI: không thấy APK (${APK:-không tìm thấy *.apk dưới app/build/outputs/apk/debug})"; exit 1; }
 note "APK: $APK"
 adb install -r "$APK" || { note "LỖI: cài APK thất bại"; exit 1; }
 # Đã cấp quyền thông báo để hộp thoại hệ thống không che màn hình chụp.
