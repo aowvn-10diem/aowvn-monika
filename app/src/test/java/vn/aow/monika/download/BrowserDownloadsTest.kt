@@ -50,6 +50,13 @@ class BrowserDownloadsTest {
         assertEquals("không được có request nào", 0L, calls.get().toLong())
     }
 
+    /** V193: host có dấu chấm cuối vẫn phải vào chốt chặn. */
+    @Test fun pixeldrainDauChamThieuXacNhanCungKhongTai() {
+        val job = downloads().start("https://pixeldrain.com./api/file/abc123?download", null, null, null, null)
+        assertEquals(DlState.FAILED, job.state)
+        assertEquals("không được có request nào", 0L, calls.get().toLong())
+    }
+
     @Test fun pixeldrainCoXacNhanThiGoiDungMotLan() {
         downloads().start("https://pixeldrain.com/api/file/abc123?download", null, null, null, null, confirmed = true)
         assertTrue("phải phát request sau khi xác nhận", firstCall.await(5, TimeUnit.SECONDS))

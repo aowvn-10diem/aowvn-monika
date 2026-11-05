@@ -1,7 +1,6 @@
 package vn.aow.monika.download
 
 import vn.aow.monika.config.DownloadHost
-import java.net.URI
 
 /**
  * V193 G2: Pixeldrain không được tự tải. Mọi đường tự động (bài viết, trang công cụ, trình duyệt nhúng)
@@ -10,11 +9,10 @@ import java.net.URI
 object PixeldrainHost {
     const val WARNING = "Tệp do bên thứ ba (Pixeldrain), AowVN không kiểm soát."
 
-    // diag: bỏ qua URL không hợp lệ vì đây là đầu vào người dùng, không phải lỗi app.
-    fun matches(url: String): Boolean = runCatching {
-        val host = URI(url).host?.lowercase()?.removePrefix("www.") ?: return false
-        host == "pixeldrain.com" || host.endsWith(".pixeldrain.com")
-    }.getOrDefault(false)
+    fun matches(url: String): Boolean {
+        val host = LinkResolver.normalizeHost(url) ?: return false
+        return host == "pixeldrain.com" || host.endsWith(".pixeldrain.com")
+    }
 
     /** Chỉ dùng sau khi người dùng dán link và bấm xác nhận trong hộp thoại cảnh báo. */
     fun manualDirect(url: String, hosts: List<DownloadHost>): String? =

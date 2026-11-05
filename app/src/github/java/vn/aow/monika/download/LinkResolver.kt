@@ -17,6 +17,11 @@ object LinkResolver {
     private val anchorRegex = Regex("""<a\b[^>]*href\s*=\s*["'](https?://[^"']+)["'][^>]*>(.*?)</a>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
     private val tagRegex = Regex("<[^>]+>")
 
+    /** Chuẩn hoá host: bỏ khoảng trắng, hạ chữ thường, bỏ "www." và dấu chấm cuối; rỗng → null. */
+    // diag: bỏ qua URL không hợp lệ vì đây là đầu vào người dùng/HTML, không phải lỗi app.
+    internal fun normalizeHost(url: String): String? = runCatching { URI(url).host }.getOrNull()
+        ?.trim()?.lowercase()?.removePrefix("www.")?.trimEnd('.')?.takeIf { it.isNotEmpty() }
+
     fun extract(html: String, hosts: List<DownloadHost>): List<DownloadLink> =
         anchorRegex.findAll(html)
             .mapNotNull { m ->
@@ -28,9 +33,11 @@ object LinkResolver {
             .toList()
 
     fun resolve(url: String, hosts: List<DownloadHost>, manual: Boolean = false): DownloadLink? {
-        val host = runCatching { URI(url).host }.getOrNull()?.lowercase()?.removePrefix("www.") ?: return null
+        val host = normalizeHost(url) ?: return null
         for (h in hosts) {
-            if (host != h.host && !host.endsWith("." + h.host)) continue
+            val wanted = h.host.trim().lowercase().removePrefix("www.").trimEnd('.')
+            if (wanted.isEmpty()) continue
+            if (host != wanted && !host.endsWith("." + wanted)) continue
             when (h.mode) {
                 "direct" -> {
                     val match = h.pattern?.let { Regex(it).find(url) } ?: continue
@@ -49,6 +56,6 @@ object LinkResolver {
     /** Link trang tĩnh của blog (aow.vn/p/...) — app đọc trang qua feed để lấy link tải. */
     fun isBlogPage(url: String): Boolean =
         runCatching { URI(url) }.getOrNull()?.let { uri ->
-            uri.host?.removePrefix("www.") == "aow.vn" && uri.path.orEmpty().startsWith("/p/")
+            normalizeHost(url) == "aow.vn" && uri.path.orEmpty().startsWith("/p/")
         } ?: false
 }

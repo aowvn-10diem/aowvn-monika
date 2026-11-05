@@ -35,6 +35,22 @@ class LinkResolverTest {
         assertEquals("https://example.test/AbC12", LinkResolver.resolve("https://pixeldrain.com/u/AbC12", optedIn)?.directUrl)
     }
 
+    /** V193: dấu chấm cuối host không được làm lọt chốt chặn Pixeldrain. */
+    @Test fun hostCoDauChamCuoiVanNhanPixeldrain() {
+        assertTrue(PixeldrainHost.matches("https://pixeldrain.com./u/AbC12"))
+        assertTrue(PixeldrainHost.matches("https://PIXELDRAIN.COM./u/AbC12"))
+        assertTrue(PixeldrainHost.matches("https://cdn.pixeldrain.com./u/AbC12"))
+        assertFalse(PixeldrainHost.matches("https://pixeldrain.com.evil.test./u/AbC12"))
+        assertFalse("host rỗng sau chuẩn hoá", PixeldrainHost.matches("https://./u/AbC12"))
+        val hostsWithDot = listOf(
+            DownloadHost("Pixeldrain", "pixeldrain.com.", "direct", pattern = "/u/(\\w+)", directUrl = "https://pixeldrain.com/api/file/$1"),
+        )
+        assertEquals(
+            "https://pixeldrain.com/api/file/AbC12",
+            LinkResolver.resolve("https://PIXELDRAIN.COM./u/AbC12", hostsWithDot, manual = true)?.directUrl,
+        )
+    }
+
     @Test fun browserHostHasNoDirectUrl() {
         assertEquals(DownloadLink("Drive", "https://drive.google.com/file/d/1x", null), LinkResolver.resolve("https://drive.google.com/file/d/1x", hosts))
     }
