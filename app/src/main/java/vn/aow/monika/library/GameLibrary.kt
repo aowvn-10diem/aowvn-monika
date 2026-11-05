@@ -150,11 +150,12 @@ class GameLibrary(
                     "Thử lại hoặc dọn bằng trình quản lý tệp.",
             )
         }
-        // Quét/sao lưu chưa trọn (liên kết tượng trưng, mục không đọc được, quá lớn, thiếu chỗ) → không xoá.
+        // Quét/sao lưu chưa trọn (liên kết tượng trưng, mục không đọc được, quá lớn, thiếu chỗ) → không xoá
+        // và **không phát tệp zip dở** để chia sẻ (backup = null): người chơi không thể tưởng đã có bản sao an toàn.
         if (!saved.complete) {
             return GameDeleteOutcome(
-                deleted = false, backup = saved.file,
-                message = "Chưa chứng minh sao lưu đủ nên chưa xoá gì:\n" + saved.notes.joinToString("\n") +
+                deleted = false, backup = null,
+                message = "Bản sao lưu chưa đầy đủ nên không tạo tệp và chưa xoá gì:\n" + saved.notes.joinToString("\n") +
                     "\nHãy dọn bằng trình quản lý tệp nếu chắc chắn muốn xoá.",
             )
         }

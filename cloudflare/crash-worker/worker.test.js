@@ -1,8 +1,8 @@
-import { test } from "node:test";
+import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { webcrypto } from "node:crypto";
-import worker, { MAX_BODY, resetRateState, rateReservedCount } from "./worker.js";
+import worker, { MAX_BODY, resetRateState, rateReservedCount, packSignature, setClockForTest, authEquals } from "./worker.js";
 globalThis.crypto ??= webcrypto;
 const fixture = JSON.parse(readFileSync(new URL("./fixtures/app-report.json", import.meta.url)));
 
@@ -350,4 +350,244 @@ test("V194 ba request dong thoi cung IP, mot cai ghi loi: hai luot giu cho con l
   await waitFor("A nhả đúng 1 chỗ", 2);
   assert.equal((await postWithIp(c, fixture)).status, 200, "còn 1 lượt trống nên request sau vẫn lọt");
   assert.equal((await postWithIp(c, fixture)).status, 429, "đã đủ 3 lượt thì chặn");
+});
+
+// ---- V193-G3: cổng tải gói có chữ ký TTL ngắn (Worker chỉ ký + 302, không stream byte) ----
+
+const packEnv = (extra = {}) => ({
+  PACKS_TOKEN: "pack-fixture-only",
+  PACKS_HOSTS: "cdn.example.test",
+  PACKS_BASE: "https://cdn.example.test/packs/",
+  PACKS_ALLOW: "core-gb.zip,engine-azahar.zip",
+  ...extra,
+});
+const packGet = (env, path, method = "GET") =>
+  worker.fetch(new Request("https://example.test" + path, { method }), env);
+// Đồng hồ cố định cho các ca tải gói: test không phụ thuộc giờ máy và không bị flaky ở ranh giới hạn.
+const FIXED_MS = 1_700_000_000_000;
+const FIXED_SEC = FIXED_MS / 1000;
+const nowSec = () => FIXED_SEC;
+beforeEach(() => setClockForTest(() => FIXED_MS));
+afterEach(() => setClockForTest(null));
+
+test("V193-G3 xin tai goi: 302 toi URL co chu ky + han, khong co byte tep nao", async () => {
+  const r = await packGet(packEnv(), "/pack/core-gb.zip");
+  assert.equal(r.status, 302);
+  assert.equal(r.body, null, "khong duoc stream byte tep");
+  assert.equal(r.headers.get("cache-control"), "no-store");
+  const exp = Number(r.headers.get("x-signature-expires"));
+  assert.equal(exp, FIXED_SEC + 300, "hạn = giờ cố định + TTL mặc định");
+  const loc = new URL(r.headers.get("location"));
+  assert.equal(loc.origin, "https://example.test");
+  assert.equal(loc.pathname, "/pack/core-gb.zip");
+  assert.equal(Number(loc.searchParams.get("exp")), exp);
+  assert.match(loc.searchParams.get("sig"), /^[A-Za-z0-9_-]{43}$/);
+});
+
+test("V193-G3 chu ky dung: 302 sang CDN, than phan hoi rong", async () => {
+  const env = packEnv();
+  const minted = new URL((await packGet(env, "/pack/core-gb.zip")).headers.get("location"));
+  const r = await packGet(env, minted.pathname + minted.search);
+  assert.equal(r.status, 302);
+  assert.equal(r.body, null);
+  assert.equal(r.headers.get("cache-control"), "no-store");
+  assert.equal(r.headers.get("location"), "https://cdn.example.test/packs/core-gb.zip");
+});
+
+test("V193-G3 sai chu ky, het han, chu ky cua goi khac deu 403", async () => {
+  const env = packEnv();
+  const exp = nowSec() + 60;
+  const good = await packSignature(env.PACKS_TOKEN, "core-gb.zip", exp);
+  assert.equal((await packGet(env, `/pack/core-gb.zip?exp=${exp}&sig=${good}`)).status, 302);
+
+  const tampered = (good.slice(0, -1) + (good.endsWith("A") ? "B" : "A"));
+  const bad = await packGet(env, `/pack/core-gb.zip?exp=${exp}&sig=${tampered}`);
+  assert.equal(bad.status, 403);
+  assert.deepEqual(await bad.json(), { ok: false, error: "forbidden" });
+
+  const past = nowSec() - 1;
+  const oldSig = await packSignature(env.PACKS_TOKEN, "core-gb.zip", past);
+  const expired = await packGet(env, `/pack/core-gb.zip?exp=${past}&sig=${oldSig}`);
+  assert.equal(expired.status, 403);
+  assert.deepEqual(await expired.json(), { ok: false, error: "expired" });
+
+  const otherSig = await packSignature(env.PACKS_TOKEN, "engine-azahar.zip", exp);
+  assert.equal((await packGet(env, `/pack/core-gb.zip?exp=${exp}&sig=${otherSig}`)).status, 403);
+
+  for (const q of ["?exp=abc&sig=x", "?exp=1", "?sig=" + good, "?exp=" + exp + "&sig="]) {
+    assert.equal((await packGet(env, "/pack/core-gb.zip" + q)).status, 403, q);
+  }
+});
+
+test("V193-G3 ten la, traversal, ngoai allow-list bi chan va khong cham CDN", async () => {
+  const env = packEnv();
+  for (const path of [
+    "/pack/..%2Fsecret.zip", "/pack/%2e%2e%2fsecret.zip", "/pack/.hidden.zip",
+    "/pack/Core-GB.zip", "/pack/core-gb.zip%00", "/pack/", "/pack/core-gb.zip/extra",
+  ]) {
+    const r = await packGet(env, path);
+    assert.equal(r.status, 400, path + " -> " + r.status);
+    assert.equal(r.headers.get("location"), null, path);
+  }
+  const notListed = await packGet(env, "/pack/other.zip");
+  assert.equal(notListed.status, 403);
+  assert.deepEqual(await notListed.json(), { ok: false, error: "not_allowed" });
+  // ".." thô bị chuẩn hoá bởi URL parser -> không lọt vào /pack/ và không trả 302
+  const raw = await packGet(env, "/pack/../../etc/passwd");
+  assert.equal(raw.status, 200);
+  assert.equal(raw.headers.get("location"), null);
+});
+
+test("V193-G3 thieu secret/cau hinh thi 503 fail-closed", async () => {
+  for (const env of [
+    {},
+    { PACKS_TOKEN: "x" },
+    { PACKS_TOKEN: "x", PACKS_BASE: "" },
+    { PACKS_TOKEN: "", PACKS_BASE: "https://cdn.example.test", PACKS_ALLOW: "core-gb.zip" },
+    { PACKS_BASE: "https://cdn.example.test", PACKS_ALLOW: "core-gb.zip" },
+  ]) {
+    const r = await packGet(env, "/pack/core-gb.zip");
+    assert.equal(r.status, 503);
+    assert.deepEqual(await r.json(), { ok: false, error: "unavailable" });
+  }
+});
+
+test("V193-G3 TTL lay tu env; gia tri sai/qua lon dung mac dinh; POST bi 405", async () => {
+  const r = await packGet(packEnv({ PACK_TTL_SECONDS: "60" }), "/pack/core-gb.zip");
+  assert.equal(Number(r.headers.get("x-signature-expires")), FIXED_SEC + 60);
+
+  // Ngoài khoảng cho phép → quay về mặc định (không nới hạn), để cấu hình sai không mở rộng cửa sổ.
+  const clamped = await packGet(packEnv({ PACK_TTL_SECONDS: "999999" }), "/pack/core-gb.zip");
+  assert.equal(Number(clamped.headers.get("x-signature-expires")), FIXED_SEC + 300);
+
+  const bad = await packGet(packEnv({ PACK_TTL_SECONDS: "abc" }), "/pack/core-gb.zip");
+  assert.equal(Number(bad.headers.get("x-signature-expires")), FIXED_SEC + 300);
+
+  assert.equal((await packGet(packEnv(), "/pack/core-gb.zip", "POST")).status, 405);
+});
+
+test("V193-G3 URL het han sau TTL voi dong ho co dinh", async () => {
+  const env = packEnv();
+  const minted = new URL((await packGet(env, "/pack/core-gb.zip")).headers.get("location"));
+  assert.equal(Number(minted.searchParams.get("exp")), FIXED_SEC + 300);
+
+  setClockForTest(() => FIXED_MS + 300_000); // đúng mốc hạn: còn dùng được
+  assert.equal((await packGet(env, minted.pathname + minted.search)).status, 302);
+
+  setClockForTest(() => FIXED_MS + 301_000); // quá 1 giây
+  const expired = await packGet(env, minted.pathname + minted.search);
+  assert.equal(expired.status, 403);
+  assert.deepEqual(await expired.json(), { ok: false, error: "expired" });
+});
+
+// ---- V195: quyền quản trị đóng cửa khi thiếu cấu hình + so sánh trên SHA-256 ----
+
+const adminKv = () => ({ get: async () => null, list: async () => ({ list_complete: true, keys: [] }), put: async () => {} });
+const adminGet = (env, path, auth) => worker.fetch(
+  new Request("https://example.test" + path, { headers: auth === undefined ? {} : { authorization: auth } }), env);
+
+test("V195 thieu ADMIN_TOKEN thi 503, khong so sanh va khong dung KV", async () => {
+  let touched = 0;
+  const kv = {
+    get: async () => { touched++; return null; },
+    list: async () => { touched++; return { list_complete: true, keys: [] }; },
+    put: async () => { touched++; },
+  };
+  for (const env of [{ REPORTS: kv }, { ADMIN_TOKEN: "", REPORTS: kv }, { ADMIN_TOKEN: "   ", REPORTS: kv }, { ADMIN_TOKEN: null, REPORTS: kv }]) {
+    for (const path of ["/reports", "/reports/r:1:aaaaaaaa", "/stats", "/report-index"]) {
+      const r = await adminGet(env, path, "Bearer undefined");
+      assert.equal(r.status, 503, path);
+      const body = await r.json();
+      assert.deepEqual(body, { ok: false, error: "unavailable" }, path);
+      // Không lộ tên biến cấu hình trong thông điệp lỗi.
+      assert.equal(JSON.stringify(body).toLowerCase().includes("admin"), false, path);
+    }
+  }
+  assert.equal(touched, 0, "khong duoc doc KV khi thieu cau hinh");
+});
+
+test("V195 token sai, Bearer undefined, thieu header deu 401 va cung mot body", async () => {
+  const env = { ADMIN_TOKEN: "fixture-only", REPORTS: adminKv() };
+  for (const auth of [undefined, "", "Bearer", "Bearer ", "Bearer undefined", "Bearer fixture-onl", "Bearer fixture-onlyy", "bearer fixture-only"]) {
+    for (const path of ["/reports", "/stats", "/report-index"]) {
+      const r = await adminGet(env, path, auth);
+      assert.equal(r.status, 401, path + " " + String(auth));
+      assert.deepEqual(await r.json(), { ok: false, error: "unauthorized" }, path);
+    }
+  }
+  assert.equal((await adminGet(env, "/reports", "Bearer fixture-only")).status, 200);
+});
+
+test("V195 authEquals so sanh tren SHA-256 ca hai ve, khong so chuoi tho", async () => {
+  assert.equal(await authEquals("Bearer abc", "Bearer abc"), true);
+  assert.equal(await authEquals("Bearer abc", "Bearer abd"), false);
+  assert.equal(await authEquals("Bearer abc", "Bearer abc "), false);
+  assert.equal(await authEquals("Bearer", "Bearer abc"), false);
+  assert.equal(await authEquals(undefined, "Bearer abc"), false);
+  assert.equal(await authEquals("Bearer abc", ""), false);
+
+  const real = crypto.subtle.digest.bind(crypto.subtle);
+  const seen = [];
+  crypto.subtle.digest = async (alg, data) => { seen.push(new TextDecoder().decode(data)); return real(alg, data); };
+  try {
+    assert.equal(await authEquals("Bearer a", "Bearer b"), false);
+  } finally {
+    crypto.subtle.digest = real;
+  }
+  assert.deepEqual(seen.sort(), ["Bearer a", "Bearer b"]);
+});
+
+test("V193-G3 PACKS_BASE phai la HTTPS + host trong PACKS_HOSTS, sai thi 503", async () => {
+  const bad = [
+    { PACKS_BASE: "http://cdn.example.test/packs" },                  // http thường
+    { PACKS_BASE: "https://evil.example/packs" },                     // host lạ
+    { PACKS_HOSTS: "" },                                              // thiếu danh sách host
+    { PACKS_BASE: "" },                                               // thiếu base
+    { PACKS_BASE: "not a url" },                                      // không phải URL
+    { PACKS_BASE: "https://user:pw@cdn.example.test/packs" },         // có userinfo
+    { PACKS_BASE: "https://cdn.example.test:8443/packs" },            // port lạ
+    { PACKS_BASE: "https://cdn.example.test/packs?x=1" },             // có query
+    { PACKS_BASE: "https://cdn.example.test/packs#frag" },            // có fragment
+    { PACKS_BASE: "javascript:alert(1)" },                            // scheme khác
+  ];
+  for (const extra of bad) {
+    const r = await packGet(packEnv(extra), "/pack/core-gb.zip");
+    assert.equal(r.status, 503, JSON.stringify(extra));
+    assert.equal(r.headers.get("location"), null, JSON.stringify(extra));
+    assert.deepEqual(await r.json(), { ok: false, error: "unavailable" });
+  }
+
+  // Hợp lệ: port 443 tường minh, danh sách host có khoảng trắng/viết hoa, base không có '/' cuối.
+  const ok = packEnv({ PACKS_HOSTS: " CDN.Example.Test ,packs.aow.vn", PACKS_BASE: "https://cdn.example.test:443/packs" });
+  const minted = new URL((await packGet(ok, "/pack/core-gb.zip")).headers.get("location"));
+  const r = await packGet(ok, minted.pathname + minted.search);
+  assert.equal(r.status, 302);
+  assert.equal(r.headers.get("location"), "https://cdn.example.test/packs/core-gb.zip");
+});
+
+// ---- V155b: băm chứng thư vào metadata danh sách để bảng crash-insight đếm được ----
+test("V155b /reports tra bam chung thu ngan trong danh sach (khong can doc tung bao cao)", async () => {
+  const c = setup();
+  await c.post({ ...fixture, certSha256: CERT });
+  const entry = (await (await c.read("/reports")).json()).reports[0];
+  assert.equal(entry.cert, CERT.slice(0, 16));
+  // Bản ghi đầy đủ vẫn giữ nguyên hash 64 hex như V155.
+  assert.equal((await (await c.read(`/reports/${entry.id}`)).json()).certSha256, CERT);
+});
+
+test("V155b app cu khong gui chung thu thi truong cert rong, dinh dang danh sach khong doi", async () => {
+  const c = setup();
+  assert.equal((await c.post(fixture)).status, 200);
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 1);
+  assert.equal(body.reports[0].cert, "");
+  assert.equal(body.reports[0].id.startsWith("r:"), true);
+});
+
+test("V155b hai chung thu khac nhau hien rieng trong danh sach", async () => {
+  const c = setup();
+  await atTime(1700000000000, () => c.post({ ...fixture, certSha256: CERT }));
+  await atTime(1700000001000, () => c.post({ ...fixture, certSha256: "0".repeat(64) }));
+  const rows = (await (await c.read("/reports")).json()).reports;
+  assert.deepEqual(rows.map((r) => r.cert).sort(), [CERT.slice(0, 16), "0".repeat(16)].sort());
 });
