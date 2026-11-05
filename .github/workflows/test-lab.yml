@@ -24,6 +24,7 @@ concurrency:
 
 jobs:
   robo:
+    if: github.repository == 'aowvn-10diem/aowvn-monika'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +40,7 @@ jobs:
       - name: Cài NDK cho J2ME Loader
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
       - name: Build APK release (R8, ký bằng khóa debug)
-        run: ./gradlew assembleRelease --console=plain
+        run: ./gradlew assembleGithubRelease --console=plain
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -78,7 +79,7 @@ jobs:
           set +e
           gcloud firebase test android run --project "$GCP_PROJECT" \
             --type robo \
-            --app app/build/outputs/apk/release/app-universal-release.apk \
+            --app app/build/outputs/apk/github/release/app-github-universal-release.apk \
             --device "$DEVICE" --timeout "$TIMEOUT" \
             --results-dir "monika-${GITHUB_RUN_ID}" \
             --format=json > "$RUNNER_TEMP/robo-result.json" 2> "$RUNNER_TEMP/robo-error.txt"

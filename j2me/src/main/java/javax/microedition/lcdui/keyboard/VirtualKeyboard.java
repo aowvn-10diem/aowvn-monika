@@ -43,6 +43,8 @@ import javax.microedition.lcdui.overlay.Overlay;
 import javax.microedition.shell.MicroActivity;
 import javax.microedition.util.ContextHolder;
 import ru.playsoftware.j2meloader.AowKeyPalette;
+import ru.playsoftware.j2meloader.AowLandscapePad;
+import ru.playsoftware.j2meloader.AowMonikaKeypad;
 
 import ru.playsoftware.j2meloader.config.Config;
 import ru.playsoftware.j2meloader.config.ProfileModel;
@@ -82,7 +84,6 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	private static final int TYPE_ARROWS = 6;
 	/** Aow Monika: bàn phím kiểu điện thoại chia 2 nửa — trái bàn số 3×4, phải L ↑ R / ← OK → / ↓ (mặc định). */
 	public static final int TYPE_MONIKA = 7;
-	private static final float MONIKA_ROWS = 4;
 	private static final float MONIKA_KEY_SCALE_Y = 0.78f;
 
 	private static final float PHONE_KEY_ROWS = 5;
@@ -176,7 +177,10 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	}};
 	private final VirtualKey[] keypad = new VirtualKey[KEYBOARD_SIZE];
 	// the average user usually has no more than 10 fingers...
-	private final VirtualKey[] associatedKeys = new VirtualKey[10];
+	private final AowMonikaKeypad.Presses presses = new AowMonikaKeypad.Presses();
+	// V185: hộp chạm làm sẵn sau mỗi lần bố trí, để tìm phím trúng không phụ thuộc thứ tự mảng.
+	private final AowMonikaKeypad.Box[] hitBoxes = new AowMonikaKeypad.Box[KEYBOARD_SIZE];
+	private final boolean[] hitVisible = new boolean[KEYBOARD_SIZE];
 	private final int[] snapStack = new int[KEYBOARD_SIZE];
 
 	private final Handler handler;
@@ -207,7 +211,7 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		this.saveFile = new File(settings.dir + Config.MIDLET_KEY_LAYOUT_FILE);
 
 		for (int i = KEY_NUM1; i < 9; i++) {
-			keypad[i] = new VirtualKey(Canvas.KEY_NUM1 + i, Integer.toString(1 + i));
+			keypad[i] = new VirtualKey(AowMonikaKeypad.digitKeyCode(i + 1), Integer.toString(1 + i));
 		}
 
 		keypad[KEY_NUM0] = new VirtualKey(Canvas.KEY_NUM0, "0");
@@ -599,20 +603,43 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	 * null = không phải bàn phím Monika, chưa bố trí, hoặc ô bị phím ẩn đã bật chiếm.
 	 */
 	public RectF getMonikaMenuSlot() {
-		if (userHidden || layoutVariant != TYPE_MONIKA || !monikaLaidOut) return null;
-		VirtualKey anchor = keypad[monikaLandscape ? KEY_LEFT : KEY_MENU];
-		if (anchor == null || !anchor.visible || anchor.rect.isEmpty()) return null;
-		RectF slot = new RectF(anchor.rect);
-		slot.offset(0, anchor.rect.height());
-		VirtualKey below = keypad[monikaLandscape ? KEY_DOWN_LEFT : KEY_DOWN_RIGHT];
-		if (below != null && below.visible) return null;
-		return slot;
+		if (userHidden || layoutVariant != TYPE_MONIKA || !monikaLaidOut || screen == null) return null;
+		// V185: nút menu luôn ở ô TRÁI phím mũi tên xuống (yêu cầu của chủ máy), cho cả máy dọc lẫn máy
+		// ngang; nếu ô đó ra ngoài màn hình hoặc đè lên phím khác (cụm phím số) thì trả null để Canvas đặt
+		// nút về góc trên phải như cũ.
+		VirtualKey down = keypad[KEY_DOWN];
+		if (down == null || !down.visible || down.rect.isEmpty()) return null;
+		AowMonikaKeypad.Box slot = AowMonikaKeypad.leftOfDown(
+				boxOf(down.rect),
+				new AowMonikaKeypad.Box(screen.left, screen.top, screen.right, screen.bottom),
+				visibleBoxes());
+		if (slot == null) return null;
+		return new RectF(slot.left, slot.top, slot.right, slot.bottom);
+	}
+
+	private static AowMonikaKeypad.Box boxOf(RectF rect) {
+		return new AowMonikaKeypad.Box(rect.left, rect.top, rect.right, rect.bottom);
+	}
+
+	/** Hộp của các phím đang hiện — để kiểm ô đặt nút menu không đè lên phím nào. */
+	private AowMonikaKeypad.Box[] visibleBoxes() {
+		int count = 0;
+		for (VirtualKey key : keypad) {
+			if (key.visible && !key.rect.isEmpty()) count++;
+		}
+		AowMonikaKeypad.Box[] boxes = new AowMonikaKeypad.Box[count];
+		int i = 0;
+		for (VirtualKey key : keypad) {
+			if (key.visible && !key.rect.isEmpty()) boxes[i++] = boxOf(key.rect);
+		}
+		return boxes;
 	}
 
 	/** Máy ngang + bàn phím Monika: bề rộng mỗi cụm phím 2 bên (game nằm giữa). 0 = không áp dụng. */
 	public float getMonikaSideWidth(float w, float h) {
-		if (layoutVariant != TYPE_MONIKA || w <= h) return 0;
-		return 3 * getKeySize(w - 2 * dp(MONIKA_EDGE), h) + dp(MONIKA_EDGE + MONIKA_PANEL_PAD + MONIKA_GAP);
+		if (layoutVariant != TYPE_MONIKA) return 0;
+		// V161: cùng một phép tính với cỡ phím thật (AowLandscapePad) để khung game không bị cụm phím đè.
+		return AowLandscapePad.sideWidth(w, h, dp(1));
 	}
 
 	private boolean isLeftGroup(int keyCode) {
@@ -668,9 +695,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	public float getPhoneKeyboardHeight(float w, float h) {
 		if (layoutVariant == TYPE_MONIKA) {
-			// Máy ngang: phím nằm 2 bên, không chiếm chiều cao.
-			if (w > h) return 0;
-			return MONIKA_ROWS * getKeySize(w - 2 * dp(MONIKA_EDGE), h) * MONIKA_KEY_SCALE_Y + dp(MONIKA_EDGE + MONIKA_PANEL_PAD + MONIKA_HANDLE + MONIKA_GAP);
+			// Chiều cao bàn phím Monika (máy ngang = 0) nằm ở AowLandscapePad để Canvas và test dùng chung.
+			return AowLandscapePad.monikaKeyboardHeight(w, h, dp(1));
 		}
 		return PHONE_KEY_ROWS * getKeySize(w, h) * PHONE_KEY_SCALE_Y;
 	}
@@ -987,6 +1013,9 @@ public class VirtualKeyboard implements Overlay, Runnable {
 			} else {
 				key.opaque = settings.vkForceOpacity;
 			}
+			// V185: làm sẵn hộp chạm cho bước tìm phím (tâm gần điểm chạm nhất).
+			hitBoxes[i] = new AowMonikaKeypad.Box(rect.left, rect.top, rect.right, rect.bottom);
+			hitVisible[i] = key.visible;
 		}
 	}
 
@@ -1056,7 +1085,11 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		}
 
 		RectF keyArea = layoutVariant == TYPE_MONIKA ? snapArea : screen;
-		float keySize = getKeySize(keyArea.width(), keyArea.height());
+		// V161: máy ngang — cỡ phím lấy theo cả màn (AowLandscapePad tự trừ mép), để 2 cụm phím
+		// chỉ chiếm 2 mép và chừa khung game ở giữa.
+		float keySize = layoutVariant == TYPE_MONIKA && monikaLandscape
+				? AowLandscapePad.keySize(screen.width(), screen.height(), dp(1))
+				: getKeySize(keyArea.width(), keyArea.height());
 		snapRadius = keySize * snapRadius / 8;
 		this.keySize = keySize;
 		for (int group = 0; group < keyScaleGroups.length; group++) {
@@ -1067,8 +1100,8 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		if (layoutListener != null) layoutListener.run();
 		int delay = settings.vkHideDelay;
 		if (delay > 0 && obscuresVirtualScreen && layoutEditMode == LAYOUT_EOF) {
-			for (VirtualKey key : associatedKeys) {
-				if (key != null) {
+			for (int i = 0; i < KEYBOARD_SIZE; i++) {
+				if (presses.held(i) >= 0) {
 					return;
 				}
 			}
@@ -1078,6 +1111,10 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	private float getKeySize(float screenWidth, float screenHeight) {
 		if (isPhone()) {
+			// V161: máy ngang dùng cỡ phím nhỏ theo 2 cụm mép (xem AowLandscapePad).
+			if (layoutVariant == TYPE_MONIKA && AowLandscapePad.isLandscape(screenWidth, screenHeight)) {
+				return AowLandscapePad.keySize(screenWidth, screenHeight, dp(1));
+			}
 			return screenWidth / 6.0f;
 		} else if (screenWidth > screenHeight) {
 			return Math.min(screenWidth / 12.0f, screenHeight / 6.0f);
@@ -1107,17 +1144,22 @@ public class VirtualKeyboard implements Overlay, Runnable {
 		if (userHidden && layoutEditMode == LAYOUT_EOF) return false;
 		switch (layoutEditMode) {
 			case LAYOUT_EOF -> {
-				if (pointer > associatedKeys.length) {
+				// V185: sức chứa ngón là nguồn số DUY NHẤT (Presses.capacity()); ngón vượt sức chứa bị bỏ
+				// qua NGAY, trước khi nhấn phím — nếu không phím sẽ nhấn mà không được theo dõi/nhả (kẹt).
+				if (!presses.accepts(pointer)) {
 					return false;
 				}
-				for (VirtualKey key : keypad) {
-					if (key.contains(x, y)) {
-						vibrate();
-						associatedKeys[pointer] = key;
-						key.onDown();
-						overlayView.postInvalidate();
-						break;
+				// V185: chọn phím có tâm gần điểm chạm nhất (không phụ thuộc thứ tự keypad) để 4 phím góc
+				// 1/3/7/9 không bị phím chồng lấn "nuốt" cú chạm.
+				int index = AowMonikaKeypad.hitTest(hitBoxes, hitVisible, x, y);
+				if (index >= 0) {
+					vibrate();
+					int previous = presses.press(pointer, index);
+					if (previous >= 0) {
+						keypad[previous].onUp();
 					}
+					keypad[index].onDown();
+					overlayView.postInvalidate();
 				}
 			}
 			case LAYOUT_KEYS -> {
@@ -1165,15 +1207,15 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	public boolean pointerDragged(int pointer, float x, float y) {
 		switch (layoutEditMode) {
 			case LAYOUT_EOF -> {
-				if (pointer > associatedKeys.length) {
+				if (!presses.accepts(pointer)) {
 					return false;
 				}
-				VirtualKey aKey = associatedKeys[pointer];
-				if (aKey == null) {
+				int held = presses.held(pointer);
+				if (held < 0) {
 					pointerPressed(pointer, x, y);
-				} else if (!aKey.contains(x, y)) {
-					associatedKeys[pointer] = null;
-					aKey.onUp();
+				} else if (!keypad[held].contains(x, y)) {
+					presses.release(pointer);
+					keypad[held].onUp();
 					overlayView.postInvalidate();
 					pointerPressed(pointer, x, y);
 				}
@@ -1251,13 +1293,12 @@ public class VirtualKeyboard implements Overlay, Runnable {
 	@Override
 	public boolean pointerReleased(int pointer, float x, float y) {
 		if (layoutEditMode == LAYOUT_EOF) {
-			if (pointer > associatedKeys.length) {
+			if (!presses.accepts(pointer)) {
 				return false;
 			}
-			VirtualKey key = associatedKeys[pointer];
-			if (key != null) {
-				associatedKeys[pointer] = null;
-				key.onUp();
+			int held = presses.release(pointer);
+			if (held >= 0) {
+				keypad[held].onUp();
 				overlayView.postInvalidate();
 			}
 		} else if (layoutEditMode == LAYOUT_KEYS) {
@@ -1310,6 +1351,16 @@ public class VirtualKeyboard implements Overlay, Runnable {
 
 	@Override
 	public void cancel() {
+		// V185: huỷ cử chỉ phải NHẢ hết phím đang giữ; trước đây chỉ bỏ tô sáng nên MIDlet nhận keyPressed
+		// mà không có keyReleased → phím kẹt "đang giữ", bấm lại không ăn.
+		for (int index : presses.cancelAll()) {
+			VirtualKey key = keypad[index];
+			key.selected = false;
+			handler.removeCallbacks(key);
+			if (target != null) {
+				key.onUp();
+			}
+		}
 		for (VirtualKey key : keypad) {
 			key.selected = false;
 			handler.removeCallbacks(key);
@@ -1557,7 +1608,9 @@ public class VirtualKeyboard implements Overlay, Runnable {
 			float d = ContextHolder.getAppContext().getResources().getDisplayMetrics().density;
 			boolean primary = keyCode == Canvas.KEY_FIRE;
 			// V85c: mặt phím luôn đục (AowKeyPalette.FACE_ALPHA): alpha < 255 trộn màu mặt phím với nền làm tụt tương phản dưới 4.5:1.
-			int a = AowKeyPalette.FACE_ALPHA << 24;
+			// V161: máy NGANG là ngoại lệ — phím bán trong suốt (AowLandscapePad.KEY_ALPHA) để không che khung game.
+			int faceAlpha = AowLandscapePad.keyAlpha(layoutVariant == TYPE_MONIKA && monikaLandscape);
+			int a = faceAlpha << 24;
 			float step = 3 * d;
 			float shadow = 3 * d;
 			float press = selected ? 2 * d : 0;

@@ -1,0 +1,29 @@
+name: Xuất cảnh báo code scanning (V187)
+# Đường duy nhất để người không có quyền API vẫn xem được danh sách cảnh báo đang mở:
+# chạy tay → ghi bảng vào job summary + để lại artifact JSON (chỉ metadata, không snippet).
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  security-events: read
+concurrency:
+  group: code-scanning-export
+  cancel-in-progress: true
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - name: Kiểm thử định dạng bảng tóm tắt
+        run: python3 scripts/test-codeql-inventory.py
+      - name: Đọc cảnh báo đang mở và ghi job summary
+        env: {GITHUB_TOKEN: '${{ github.token }}'}
+        run: python3 scripts/codeql-inventory.py --out out/code-scanning-export --summary "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: code-scanning-export
+          path: out/code-scanning-export/
+          if-no-files-found: error
+          retention-days: 7

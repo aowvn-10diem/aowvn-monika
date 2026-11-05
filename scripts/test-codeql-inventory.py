@@ -36,5 +36,15 @@ class InventoryTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             m.collect(lambda n: [self.alert(1)] * 100, set())
 
+    def test_summary_lists_metadata_only(self):
+        alerts = [m.summarize(self.alert(3), {"app/A.kt"})]
+        text = m.summary_markdown({"open_count": 1, "alerts": alerts})
+        self.assertIn("Cảnh báo code scanning đang mở: 1", text)
+        self.assertIn("java/path-injection", text)
+        self.assertIn("app/A.kt", text)
+        self.assertIn("| [3](", text)
+        self.assertNotIn("do-not-copy", text)
+        self.assertNotIn("source must not be copied", text)
+
 
 if __name__ == "__main__": unittest.main()

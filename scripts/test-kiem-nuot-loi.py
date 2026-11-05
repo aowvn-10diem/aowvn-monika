@@ -107,6 +107,34 @@ class HandlerTest(unittest.TestCase):
 
 
 class GitBoundaryTest(unittest.TestCase):
+    def test_distribution_copy_keeps_legacy_baseline_but_blocks_new_handler(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.check_output(['git', '-C', directory, *args], stderr=subprocess.DEVNULL, text=True).strip()
+            def write(prefix, source):
+                path = root / (prefix + 'library/Legacy.kt')
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(source)
+            def commit():
+                git('add', '.')
+                git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'fixture')
+                return git('rev-parse', 'HEAD')
+            def check(base, head):
+                return subprocess.run(['bash', str(HERE / 'kiem-nuot-loi.sh'), '--base', base, '--head', head], cwd=root, capture_output=True, text=True)
+            git('init', '-q')
+            write(guard.PREFIX, 'runCatching { legacy() }')
+            base = commit()
+            for prefix in guard.PREFIXES[1:]: write(prefix, 'runCatching { legacy() }')
+            head = commit()
+            self.assertEqual(check(base, head).returncode, 0)
+            for prefix in guard.PREFIXES[1:]:
+                write(prefix, 'runCatching { legacy() }; runCatching { newOperation() }')
+                bad = commit()
+                result = check(base, bad)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn(prefix + 'library/Legacy.kt', result.stdout)
+
     def test_diverged_pr_target_uses_common_baseline_and_still_blocks_new_handlers(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -30,12 +30,11 @@ public final class AowPad {
 	}
 
 	/**
-	 * V162: nguồn thiết bị là tay cầm thật (gamepad / D-pad / joystick) — dùng lại cách nhận diện của
-	 * {@link #isPadKey} để biết đang cắm tay cầm mà tự ẩn bàn phím ảo.
+	 * V162/V184: nguồn thiết bị là tay cầm thật. Chỉ GAMEPAD/JOYSTICK — DPAD một mình là nút điều hướng /
+	 * bàn phím của máy, tính là tay cầm sẽ tự ẩn phím dù không cắm gì (lỗi 0.8.9). {@link #isPadKey} vẫn giữ DPAD.
 	 */
 	public static boolean isPadDevice(int source) {
 		return (source & android.view.InputDevice.SOURCE_GAMEPAD) == android.view.InputDevice.SOURCE_GAMEPAD
-				|| (source & android.view.InputDevice.SOURCE_DPAD) == android.view.InputDevice.SOURCE_DPAD
 				|| (source & android.view.InputDevice.SOURCE_JOYSTICK) == android.view.InputDevice.SOURCE_JOYSTICK;
 	}
 

@@ -2,6 +2,36 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.10 (Bản thử)
+<!-- bien-tap: v0.8.10 -->
+> Phát hành ngày 04/11/2026 (UTC), bản thử nghiệm.
+
+- **Mới:** Thư viện có trang chi tiết game với dung lượng, nơi lưu tệp và các nút Chơi, Xóa. ([#430](https://github.com/aowvn-10diem/aowvn-monika/pull/430))
+- **Mới:** Trước khi xóa game, app tự sao lưu dữ liệu game; sao lưu không xong thì không xóa. ([#430](https://github.com/aowvn-10diem/aowvn-monika/pull/430))
+- **Sửa lỗi:** Phím ảo không còn tự ẩn khi máy chưa kết nối tay cầm thật. ([#450](https://github.com/aowvn-10diem/aowvn-monika/pull/450))
+- **Sửa lỗi:** Khi ẩn phím ảo, nút bật lại phím luôn hiện rõ và ít che màn hình game. ([#450](https://github.com/aowvn-10diem/aowvn-monika/pull/450))
+- **Sửa lỗi:** Game Java nhận đúng các phím số 1, 3, 7, 9 khi bấm. ([#449](https://github.com/aowvn-10diem/aowvn-monika/pull/449))
+- **Sửa lỗi:** Game Java: nút menu không còn nằm đè lên phím điều khiển. ([#449](https://github.com/aowvn-10diem/aowvn-monika/pull/449))
+- **Mới:** Cài đặt Nintendo DS chia rõ Màn hình, Bố cục, Hiệu năng; chọn cách xếp hai màn hình dễ hơn. ([#456](https://github.com/aowvn-10diem/aowvn-monika/pull/456))
+- **Mới:** Mục Bản chính thức trong Cài đặt giúp kiểm tra nơi tải Monika và báo bản giả. ([#461](https://github.com/aowvn-10diem/aowvn-monika/pull/461))
+- **Mới:** App cảnh báo rõ khi bản Monika đang cài không phải bản chính thức. ([#454](https://github.com/aowvn-10diem/aowvn-monika/pull/454))
+- **Mới:** Nút ủng hộ mở ngay bảng mã QR và chọn ngân hàng trong Monika. ([#446](https://github.com/aowvn-10diem/aowvn-monika/pull/446))
+- **Sửa lỗi:** Nhập game từ tệp nén an toàn hơn. ([#466](https://github.com/aowvn-10diem/aowvn-monika/pull/466))
+
+## v0.8.9 (Bản thử)
+<!-- bien-tap: v0.8.9 -->
+> Phát hành ngày 02/11/2026 (UTC), bản thử nghiệm.
+
+- **Sửa lỗi:** Game GBA không còn bị đảo nút A và B khi bấm. ([#429](https://github.com/aowvn-10diem/aowvn-monika/pull/429))
+- **Sửa lỗi:** Game NDS hiện rộng hết bề ngang màn hình; xoay ngang thì hai màn hình tự xếp cạnh nhau. ([#409](https://github.com/aowvn-10diem/aowvn-monika/pull/409))
+- **Sửa lỗi:** Game Java xoay ngang: hình nằm giữa, phím ảo chia ra hai bên để dễ bấm. ([#424](https://github.com/aowvn-10diem/aowvn-monika/pull/424))
+- **Mới:** Có nút ẩn/hiện phím ảo ngay lúc chơi, để nhìn rõ màn hình game. ([#433](https://github.com/aowvn-10diem/aowvn-monika/pull/433))
+- **Mới:** Cắm tay cầm thì phím ảo tự ẩn; app nhớ lựa chọn ẩn/hiện của bạn. ([#433](https://github.com/aowvn-10diem/aowvn-monika/pull/433))
+- **Mới:** Thư viện chia thành ba mục Chơi, Đọc và Tệp để dễ tìm game và tài liệu. ([#428](https://github.com/aowvn-10diem/aowvn-monika/pull/428))
+- **Sửa lỗi:** Mở Nhật ký lỗi mượt hơn, ít bị đứng app. ([#427](https://github.com/aowvn-10diem/aowvn-monika/pull/427))
+- **Sửa lỗi:** Mất mạng lúc đang tải không còn tự gửi báo lỗi nhầm. ([#425](https://github.com/aowvn-10diem/aowvn-monika/pull/425))
+- Nội bộ: Bổ sung kiểm thử analog PSP đã có sẵn; không thay đổi cách điều khiển. ([#435](https://github.com/aowvn-10diem/aowvn-monika/pull/435))
+
 ## v0.8.8 (Bản thử)
 <!-- bien-tap: v0.8.8 -->
 > Phát hành ngày 01/11/2026 (UTC), bản thử nghiệm.

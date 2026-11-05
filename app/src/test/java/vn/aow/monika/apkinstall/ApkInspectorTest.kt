@@ -56,17 +56,36 @@ class ApkInspectorTest {
 
     @Test fun apkEntriesCannotEscapePrivateWorkDirectory() {
         val apks = ApkFixture.zip(f("traversal.apks"), mapOf(
-            "../../escaped.apk" to ApkFixture.apkBytes("com.fixture.safe"),
+            "base.apk" to ApkFixture.apkBytes("com.fixture.safe"),
+            "../../escaped.apk" to ApkFixture.apkBytes("com.fixture.safe", split = "escaped"),
             "/absolute.apk" to ApkFixture.apkBytes("com.fixture.safe", split = "absolute"),
             "nested/../other.apk" to ApkFixture.apkBytes("com.fixture.safe", split = "other"),
             "back\\..\\windows.apk" to ApkFixture.apkBytes("com.fixture.safe", split = "windows"),
+            "C:\\drive.apk" to ApkFixture.apkBytes("com.fixture.safe", split = "drive"),
+            "nul\u0000.apk" to ApkFixture.apkBytes("com.fixture.safe", split = "nul"),
         ))
         val result = inspector().inspect(apks)
-        assertEquals(4, result.parts.size)
+        // Chỉ mục hợp lệ được giải nén; mục có ".."/tuyệt đối/NUL bị bỏ hẳn.
+        assertEquals(1, result.parts.size)
+        assertEquals("base.apk", result.parts[0].file.name)
         val work = result.workDir!!.canonicalFile
         assertTrue(result.parts.all { it.file.canonicalFile.parentFile == work })
-        assertFalse(f("escaped.apk").exists())
-        assertFalse(f("absolute.apk").exists())
+        assertEquals(1, work.listFiles().orEmpty().count { it.isFile })
+        for (name in listOf("escaped.apk", "absolute.apk", "other.apk", "windows.apk", "drive.apk", "nul.apk")) {
+            assertFalse(name, f(name).exists())
+            assertFalse(name, File(work, name).exists())
+            assertFalse(name, File(work.parentFile, name).exists())
+        }
+    }
+
+    @Test fun apksWithOnlyTraversalEntriesIsRejected() {
+        val apks = ApkFixture.zip(f("bad.apks"), mapOf(
+            "../../x.apk" to ApkFixture.apkBytes("com.fixture.safe"),
+        ))
+        val r = inspector().inspect(apks)
+        assertEquals(PackKind.APKS, r.kind)
+        assertTrue(r.fatal is Problem.NoApk)
+        assertFalse(f("x.apk").exists())
     }
 
     @Test fun xapkWithObbAndData() {

@@ -24,6 +24,7 @@ permissions:
 
 jobs:
   build:
+    if: github.repository == 'aowvn-10diem/aowvn-monika'
     runs-on: ubuntu-22.04
     timeout-minutes: 180
     steps:

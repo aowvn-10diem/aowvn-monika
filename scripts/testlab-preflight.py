@@ -7,10 +7,10 @@ from pathlib import Path
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-ENGINE_PREFIXES = ('app/src/main/java/vn/aow/monika/runner/',
-                   'app/src/main/java/vn/aow/monika/library/',
-                   'app/src/main/java/vn/aow/monika/pack/', 'kirikiri/', 'rgss/',
-                   'renpy/', 'azahar/', 'libretrodroid/')
+# Workflow máy thật hiện dựng APK GitHub; đổi riêng Play không phải bằng chứng đổi APK đó.
+ENGINE_PREFIXES = tuple(f'app/src/{source}/java/vn/aow/monika/{scope}/'
+                        for source in ('main', 'github') for scope in ('runner', 'library', 'pack')) + (
+                            'kirikiri/', 'rgss/', 'renpy/', 'azahar/', 'libretrodroid/')
 
 
 def require_first_physical_attempt(raw_attempt):

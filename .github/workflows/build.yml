@@ -43,7 +43,9 @@ jobs:
           ruby scripts/test-rgss-range-probe.rb
           python3 scripts/test-rgss-archive-script.py
       - name: Kiểm tra cấu hình + test
-        run: ./gradlew testDebugUnitTest --console=plain
+        run: |
+          python3 scripts/test-play-distribution.py
+          ./gradlew testDebugUnitTest --console=plain
       - uses: actions/upload-artifact@v7
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         if: always()
@@ -64,9 +66,11 @@ jobs:
         run: python3 scripts/test-crash-symbols.py --require-tools
       - name: Build APK debug
         run: ./gradlew assembleDebug --console=plain
+      - name: Kiểm mã và dữ liệu bản Play (V150)
+        run: python3 scripts/check-play-apk.py app/build/outputs/apk/play/debug/app-play-universal-debug.apk
       - uses: actions/upload-artifact@v7
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
         with:
           name: AowVN-Monika-debug
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/*/debug/*.apk
           retention-days: 1   # mỗi bản 83 MB; hạn mức lưu trữ Actions từng đầy

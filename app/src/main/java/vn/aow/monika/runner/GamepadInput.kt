@@ -35,8 +35,16 @@ object GamepadInput {
     /** Sự kiện chuyển động từ cần/hat của tay cầm (khác chuột, cảm ứng). */
     fun isPadMotion(source: Int): Boolean = hasSource(source, InputDevice.SOURCE_JOYSTICK)
 
-    /** V162: trong các thiết bị đang cắm có tay cầm thật không (dùng lại [isPadSource], không viết bộ nhận diện mới). */
-    fun hasPadSource(sources: Iterable<Int>): Boolean = sources.any(::isPadSource)
+    /**
+     * V184: nguồn thiết bị là tay cầm **thật** (chỉ GAMEPAD / JOYSTICK) — dùng cho việc tự ẩn phím ảo.
+     * `SOURCE_DPAD` một mình thường là nút điều hướng / bàn phím của máy (hoặc thiết bị lạ), không phải tay cầm;
+     * tính nó là tay cầm làm máy không cắm gì vẫn tự ẩn phím (lỗi 0.8.9). [isPadSource] vẫn giữ DPAD cho việc chuyển phím.
+     */
+    fun isPadDeviceSource(source: Int): Boolean =
+        hasSource(source, InputDevice.SOURCE_GAMEPAD) || hasSource(source, InputDevice.SOURCE_JOYSTICK)
+
+    /** V162/V184: trong các thiết bị đang cắm có tay cầm thật không. */
+    fun hasPadSource(sources: Iterable<Int>): Boolean = sources.any(::isPadDeviceSource)
 
     /** Giá trị trục lúc một MotionEvent đến. */
     data class Axes(

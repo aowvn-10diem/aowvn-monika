@@ -11,7 +11,7 @@ trap stop_logcat EXIT
 command -v grep >/dev/null
 adb root >/dev/null
 adb wait-for-device
-adb install -r app/build/outputs/apk/debug/app-universal-debug.apk >/dev/null
+adb install -r app/build/outputs/apk/github/debug/app-github-universal-debug.apk >/dev/null
 APP_UID=$(adb shell stat -c %u "/data/data/$PKG" | tr -d '\r')
 python3 - "$SCRATCH/web/rgss.zip" "$SCRATCH/pack" <<'PY'
 import sys,zipfile
