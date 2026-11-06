@@ -9,6 +9,33 @@ import java.io.FileNotFoundException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
+ * Vẽ nội dung trang vào [bitmap] rồi trả lại chính bitmap đó cho caller.
+ *
+ * - [render] ném lỗi → **giải phóng bitmap đúng một lần** rồi ném lại lỗi gốc: trang lỗi không
+ *   rò ~15 MB ARGB_8888 (trước đây nhánh lỗi bỏ bitmap cho GC; lặp vài trang là OOM trên máy RAM thấp).
+ * - Thành công → **không** recycle: bitmap đã thuộc về caller, recycle ở đây sẽ làm trang trắng/đen.
+ * - [recycle] là seam cho test đếm số lần giải phóng; production dùng [Bitmap.recycle].
+ *   Lỗi khi chính việc giải phóng (hiếm) báo qua [ReaderDiag] và **không che lỗi gốc**.
+ */
+internal fun renderPageInto(
+    bitmap: Bitmap,
+    recycle: (Bitmap) -> Unit = { it.recycle() },
+    render: (Bitmap) -> Unit,
+): Bitmap {
+    try {
+        render(bitmap)
+    } catch (t: Throwable) {
+        try {
+            recycle(bitmap)
+        } catch (r: Throwable) {
+            ReaderDiag.report("giai-phong-trang-loi", r)
+        }
+        throw t
+    }
+    return bitmap
+}
+
+/**
  * Điểm vào công khai của module :reader cho app: mở tệp PDF, không ném lỗi ra ngoài.
  * (Lớp [PdfRendererBook] để internal để app/test không phụ thuộc chi tiết Android.)
  */
@@ -65,9 +92,14 @@ internal class PdfRendererBook private constructor(
             // ở MAX_RENDER_WIDTH — kể cả trang nguồn rất rộng (> 16.000 px).
             val (width, height) = renderSize(it.width, it.height)
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            bitmap.eraseColor(Color.WHITE)
-            it.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            ReaderPage(bitmap)
+            // Vẽ lỗi → bitmap bị giải phóng ngay (không rò ~15 MB mỗi trang lỗi);
+            // vẽ xong → bitmap thuộc về caller, KHÔNG recycle ở nhánh thành công.
+            ReaderPage(
+                renderPageInto(bitmap) { target ->
+                    target.eraseColor(Color.WHITE)
+                    it.render(target, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                },
+            )
         }
     }
 
