@@ -1,1 +1,10 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- V142: màn đọc PDF đứng độc lập (module :reader), chưa nối vào tab Đọc của Thư viện. -->
+    <application>
+        <activity
+            android:name=".reader.PdfReaderActivity"
+            android:exported="false"
+            android:label="Đọc PDF" />
+    </application>
+</manifest>

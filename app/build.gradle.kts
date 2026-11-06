@@ -240,6 +240,8 @@ dependencies {
     "githubImplementation"(libs.apksig)
     sevenZipTestNatives(libs.sevenzip.jvm.natives)
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
+    // V142: màn đọc PDF (PdfRenderer có sẵn của Android, không thêm thư viện ngoài).
+    implementation(project(":reader"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     // Test giao diện trên JVM (Robolectric): mở từng màn hình, bắt crash, chụp ảnh → app/build/screenshots/
