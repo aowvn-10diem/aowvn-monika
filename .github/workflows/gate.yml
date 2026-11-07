@@ -46,14 +46,22 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          # Mỗi tệp một dòng JSON (an toàn với tên có xuống dòng); tệp đổi tên tính cả tên cũ.
-          files=""
+          # Lấy toàn bộ danh sách tệp (mỗi trang một mảng JSON); kiểm đủ số tệp rồi mới phân loại.
+          # Thiếu/cụt danh sách (lỗi API, PR trên 3000 tệp) thì ĐỎ, không để "danh sách rỗng" thành xanh.
+          raw=""
           for try in 1 2 3; do
-            if files=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/files?per_page=100" \
-                --jq '.[] | .filename, (.previous_filename // empty) | @json'); then break; fi
+            if raw=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/files?per_page=100") \
+                && expected=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq .changed_files); then break; fi
             [ "$try" = 3 ] && { echo "ĐỎ: không đọc được danh sách tệp của PR"; exit 1; }
             sleep 20
           done
+          got=$(printf '%s' "$raw" | jq -s 'add // [] | length')
+          if [ "$got" != "$expected" ]; then
+            echo "ĐỎ: nhận $got tệp nhưng PR có $expected tệp (danh sách bị cụt; PR trên 3000 tệp cần sếp xem tay)"
+            exit 1
+          fi
+          # Mỗi tệp một dòng JSON (an toàn với tên có xuống dòng); tệp đổi tên tính cả tên cũ.
+          files=$(printf '%s' "$raw" | jq -r -s 'add // [] | .[] | .filename, (.previous_filename // empty) | @json')
           need=$(printf '%s\n' "$files" | python3 scripts/gate-expected.py --json)
           if [ -z "$need" ]; then
             echo "PR chỉ sửa tài liệu: không cần Build/Coverage/CodeQL."

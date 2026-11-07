@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """V200: test offline cho scripts/gate-expected.py (không gọi mạng)."""
 import importlib.util
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -10,6 +11,7 @@ ge = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = ge
 spec.loader.exec_module(ge)
 
+ROOT = Path(__file__).resolve().parent.parent
 ALL = ["Build", "Coverage", "CodeQL (V41)"]
 BUILD = ["Build", "Coverage"]
 
@@ -52,6 +54,28 @@ class GateExpectedTest(unittest.TestCase):
 
     def test_order_is_stable(self):
         self.assertEqual(ge.expected(["scripts/a.py", "app/B.kt"]), ALL)
+
+
+class WorkflowDriftTest(unittest.TestCase):
+    """Phát hiện lệch giữa gate-expected.py và bộ lọc thật của workflow (đọc chữ, không cần PyYAML)."""
+
+    def read(self, name):
+        return (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
+
+    def test_build_and_coverage_filters(self):
+        for fname, wf in (("build.yml", "Build"), ("coverage.yml", "Coverage")):
+            text = self.read(fname)
+            self.assertRegex(text, r"(?m)^name: " + re.escape(wf) + r"\s*$", fname)
+            self.assertIn('pull_request:\n    paths-ignore: ["docs/**", "**/*.md"]', text, fname)
+
+    def test_codeql_filters(self):
+        text = self.read("codeql.yml")
+        self.assertRegex(text, r"(?m)^name: " + re.escape(ge.CODEQL_NAME) + r"\s*$")
+        m = re.search(r"pull_request:\n\s+paths: \[(.*?)\]", text)
+        self.assertIsNotNone(m, "codeql.yml mất bộ lọc pull_request.paths")
+        items = {x.strip().strip("'\"") for x in m.group(1).split(",")}
+        want = {p + "**" for p in ge.CODEQL_PREFIXES} | set(ge.CODEQL_FILES)
+        self.assertEqual(items, want)
 
 
 if __name__ == "__main__":
