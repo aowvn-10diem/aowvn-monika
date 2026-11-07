@@ -54,6 +54,7 @@ Settings → Rules → Rulesets → `main-bao-ve` → **Enforcement status: Disa
 
 - PR sửa `gate.yml` hoặc `scripts/gate-expected.py` có thể làm yếu gate (workflow `pull_request` dùng bản trong chính PR). Quy tắc: mọi PR đụng `.github/workflows/**` hoặc hai tệp này cần duyệt hai lượt **và** sếp (CodeQL chạy ở các PR đó, nhưng không chặn việc làm yếu gate).
 - `gate-expected.py` phản chiếu bộ lọc đường dẫn của Build/Coverage/CodeQL. Đổi bộ lọc ở workflow nào phải đổi file này cùng PR; nếu lệch, gate có thể đợi workflow không bao giờ chạy (đỏ) hoặc bỏ sót workflow (lọt).
+- `gate` chỉ nhìn kết quả một lần: chạy lại Build/Coverage/CodeQL sau khi đỏ thì phải chạy lại cả `gate` (nút **Re-run** của `gate`), và Build chạy lại ra đỏ sau khi `gate` đã xanh thì `gate` vẫn xanh (lọt nhỏ, mỗi PR vẫn có CI hiển thị riêng). PR hơn 300 tệp: GitHub chỉ xét 300 tệp đầu khi lọc đường dẫn, `gate` xét hết nên có thể đỏ oan (không lọt).
 - `gate` chỉ chứng minh CI xanh, **không** chứng minh có người duyệt (không có review bắt buộc, vì cùng một tài khoản). Phần "đủ hai lượt Đạt đúng SHA" vẫn dựa kỷ luật; V201 sẽ thêm bảng/kiểm tra bán tự động.
 - Gate không thay cho việc sếp xem PR đụng config/Cloudflare/khóa/phát hành: các PR đó vẫn cần sếp.
 
@@ -66,8 +67,8 @@ Settings → Rules → Rulesets → `main-bao-ve` → **Enforcement status: Disa
 |---|---|
 | Gộp #515, #518 (tài liệu, L3 Đạt, CI xanh) và #501 (G2, L3 + Ultra Đạt cùng head 1632a71, CI xanh, config 60→61) | đã gộp; Sync config lên Cloudflare chạy thành công; CI trên main chạy tiếp (kiểm ở lượt Nova 22:32 và 07:32) |
 | Phân việc Luna cho "DeepSeek Duyệt 2" (sếp tạo phiên) | đăng ở #337; phiên tự giới thiệu ở #119 khi lên |
-| Soạn gate (V200) | PR riêng, chưa bắt buộc |
-| Soạn đặc tả V201 (phân biệt tác giả/người duyệt) | PR riêng (đặc tả), chưa có mã |
+| Soạn gate (V200), cố vấn Opus phản biện độc lập (sửa các điểm "Nên sửa") | PR #528 (nháp, cần hai lượt duyệt + sếp, chưa bắt buộc) |
+| Soạn đặc tả V201 (phân biệt tác giả/người duyệt) | đặc tả trong PR #527, chưa có mã |
 
 **Việc còn dở, cần PM gốc nắm:**
 | Việc | Trạng thái |
