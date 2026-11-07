@@ -1,0 +1,78 @@
+name: Gate (V200)
+
+# Một check duy nhất `gate` luôn chạy trên mọi PR, để sếp bắt buộc đúng check này trong ruleset của main
+# (Settings -> Rules -> Rulesets). Lý do không bắt buộc thẳng Build/Coverage/CodeQL: các workflow đó có
+# bộ lọc đường dẫn nên PR chỉ sửa tài liệu không có check, GitHub sẽ treo "Expected" mãi.
+#
+# gate:
+#   - Lấy danh sách tệp đổi của PR (API, không chạy mã của PR).
+#   - scripts/gate-expected.py cho biết workflow nào phải xanh (Build, Coverage, CodeQL).
+#   - Đợi các workflow đó trên ĐÚNG SHA head của PR; xanh hết thì xanh, có cái nào đỏ/hủy/không xuất
+#     hiện thì đỏ. PR chỉ sửa tài liệu thì xanh ngay.
+# Không dùng secret, không bên thứ ba, quyền chỉ đọc. Không đầu vào do người ngoài đặt nào vào lệnh shell
+# (chỉ số PR và SHA của GitHub, truyền qua biến môi trường).
+# Ranh giới tin cậy: PR sửa chính tệp này hoặc scripts/gate-expected.py vẫn tự duyệt mình được, nên mọi PR
+# đụng .github/workflows/** hoặc hai tệp trên phải qua duyệt hai lượt và sếp (đã ghi ở docs/BAO-VE-MAIN.md).
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: gate
+    if: github.repository == 'aowvn-10diem/aowvn-monika'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Tự kiểm bộ phân loại
+        run: python3 scripts/test-gate-expected.py
+      - name: Đợi các workflow bắt buộc trên đúng SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          files=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/files" --jq '.[].filename')
+          need=$(printf '%s\n' "$files" | python3 scripts/gate-expected.py)
+          if [ -z "$need" ]; then
+            echo "PR chỉ sửa tài liệu: không cần Build/Coverage/CodeQL."
+            exit 0
+          fi
+          echo "Cần xanh trên $HEAD_SHA:"
+          printf '%s\n' "$need" | sed 's/^/  - /'
+          grace=$((SECONDS + 240))    # chờ workflow khác kịp xuất hiện
+          deadline=$((SECONDS + 3300))
+          while true; do
+            runs=$(gh api "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100")
+            pending=0; bad=0
+            while IFS= read -r name; do
+              [ -z "$name" ] && continue
+              row=$(printf '%s' "$runs" | jq -r --arg n "$name" \
+                '[.workflow_runs[] | select(.name == $n)] | sort_by(.created_at) | (last // {}) | [(.status // "none"), (.conclusion // "")] | @tsv')
+              status=${row%%$'\t'*}; conclusion=${row#*$'\t'}
+              if [ "$status" = "none" ]; then
+                if [ $SECONDS -ge $grace ]; then echo "ĐỎ: không thấy lượt chạy '$name' trên $HEAD_SHA"; bad=1; else pending=1; fi
+              elif [ "$status" != "completed" ]; then
+                pending=1
+              elif [ "$conclusion" != "success" ]; then
+                echo "ĐỎ: '$name' kết thúc '$conclusion'"; bad=1
+              fi
+            done <<< "$need"
+            if [ $bad -eq 1 ]; then exit 1; fi
+            if [ $pending -eq 0 ]; then echo "Tất cả workflow bắt buộc đã xanh."; exit 0; fi
+            if [ $SECONDS -ge $deadline ]; then echo "ĐỎ: quá giờ chờ workflow bắt buộc"; exit 1; fi
+            sleep 30
+          done
