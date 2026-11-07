@@ -1280,14 +1280,16 @@
       "host": "pixeldrain.com",
       "mode": "direct",
       "pattern": "/u/([A-Za-z0-9]+)",
-      "directUrl": "https://pixeldrain.com/api/file/$1?download"
+      "directUrl": "https://pixeldrain.com/api/file/$1?download",
+      "autoDirect": false
     },
     {
       "name": "Pixeldrain",
       "host": "pixeldrain.com",
       "mode": "direct",
       "pattern": "/d/([A-Za-z0-9]+)",
-      "directUrl": "https://pixeldrain.com/api/filesystem/$1?attach"
+      "directUrl": "https://pixeldrain.com/api/filesystem/$1?attach",
+      "autoDirect": false
     },
     {
       "name": "Pixeldrain",

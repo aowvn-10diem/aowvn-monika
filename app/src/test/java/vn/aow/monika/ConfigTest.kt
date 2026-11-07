@@ -250,7 +250,8 @@ class ConfigTest {
             <a href="https://www.aowvn.org/p/tai-trinh-gia-lap-gba.html">z</a>"""
         val links = LinkResolver.extract(html, cfg.downloadHosts)
         assertEquals(2, links.size)
-        assertEquals("https://pixeldrain.com/api/file/abc123?download", links[0].directUrl)
+        // V193 G2: bài viết không còn tự tải Pixeldrain; bấm sẽ mở trình duyệt.
+        assertNull(links[0].directUrl)
         assertNull(links[1].directUrl)
     }
 
@@ -258,7 +259,12 @@ class ConfigTest {
     fun `lay link pixeldrain dang thu muc va chu tren nut`() {
         val html = """<li><a class="download" href="https://pixeldrain.com/d/yd6J5KeC" rel="nofollow">TẢI VỀ</a></li>"""
         val link = LinkResolver.extract(html, cfg.downloadHosts).single()
-        assertEquals("https://pixeldrain.com/api/filesystem/yd6J5KeC?attach", link.directUrl)
+        // Tự động: không tải; thủ công sau cảnh báo: có link thẳng.
+        assertNull(link.directUrl)
+        assertEquals(
+            "https://pixeldrain.com/api/filesystem/yd6J5KeC?attach",
+            LinkResolver.resolve(link.pageUrl, cfg.downloadHosts, manual = true)?.directUrl,
+        )
         assertEquals("TẢI VỀ", link.label)
         assertTrue(LinkResolver.isBlogPage("https://www.aow.vn/p/tai-gia-lap-joiplay.html"))
         assertTrue(!LinkResolver.isBlogPage("https://www.aow.vn/2026/02/game.html"))
