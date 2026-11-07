@@ -40,6 +40,16 @@ class GateExpectedTest(unittest.TestCase):
         # scripts/README.md: Build/Coverage bỏ qua (đuôi .md) nhưng CodeQL chạy vì nằm trong scripts/**.
         self.assertEqual(ge.expected(["scripts/README.md"]), ["CodeQL (V41)"])
 
+    def test_rename_from_code_to_docs_counts_old_name(self):
+        # app/X.kt đổi thành docs/X.md: gate đưa cả tên cũ lẫn tên mới vào danh sách.
+        self.assertEqual(ge.expected(["docs/X.md", "app/X.kt"]), ALL)
+
+    def test_json_lines_keep_odd_filenames(self):
+        # Tên tệp có xuống dòng: dạng JSON giữ nguyên là một tên, không tách thành hai mảnh tài liệu.
+        names = ge.parse_json_lines(['"a.md\\nx.kt"', '"docs/ok.md"'])
+        self.assertEqual(names[0], "a.md\nx.kt")
+        self.assertEqual(ge.expected(names), BUILD)
+
     def test_order_is_stable(self):
         self.assertEqual(ge.expected(["scripts/a.py", "app/B.kt"]), ALL)
 

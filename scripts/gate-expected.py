@@ -10,6 +10,7 @@ Phản chiếu bộ lọc đường dẫn thật của workflow. Đổi bộ l�
 Quy tắc GitHub: workflow có paths-ignore chỉ bị bỏ qua khi MỌI tệp đổi đều khớp mẫu bỏ qua;
 workflow có paths chỉ chạy khi có ÍT NHẤT một tệp khớp.
 """
+import json
 import sys
 
 BUILD_NAMES = ("Build", "Coverage")
@@ -32,6 +33,13 @@ def expected(paths):
     return out
 
 
+def parse_json_lines(lines):
+    """Mỗi dòng là một chuỗi JSON (gh --jq '... | @json'): giữ nguyên tên tệp có ký tự lạ."""
+    return [json.loads(line) for line in lines if line.strip()]
+
+
 if __name__ == "__main__":
-    for name in expected(sys.stdin.read().splitlines()):
+    data = sys.stdin.read().splitlines()
+    names = parse_json_lines(data) if "--json" in sys.argv[1:] else data
+    for name in expected(names):
         print(name)

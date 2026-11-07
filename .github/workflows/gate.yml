@@ -11,6 +11,7 @@ name: Gate (V200)
 #     hiện thì đỏ. PR chỉ sửa tài liệu thì xanh ngay.
 # Không dùng secret, không bên thứ ba, quyền chỉ đọc. Không đầu vào do người ngoài đặt nào vào lệnh shell
 # (chỉ số PR và SHA của GitHub, truyền qua biến môi trường).
+# Chạy lại Build/Coverage/CodeQL sau khi đỏ thì phải chạy lại cả gate (gate chỉ nhìn một lần).
 # Ranh giới tin cậy: PR sửa chính tệp này hoặc scripts/gate-expected.py vẫn tự duyệt mình được, nên mọi PR
 # đụng .github/workflows/** hoặc hai tệp trên phải qua duyệt hai lượt và sếp (đã ghi ở docs/BAO-VE-MAIN.md).
 on:
@@ -45,8 +46,15 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          files=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/files" --jq '.[].filename')
-          need=$(printf '%s\n' "$files" | python3 scripts/gate-expected.py)
+          # Mỗi tệp một dòng JSON (an toàn với tên có xuống dòng); tệp đổi tên tính cả tên cũ.
+          files=""
+          for try in 1 2 3; do
+            if files=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/files?per_page=100" \
+                --jq '.[] | .filename, (.previous_filename // empty) | @json'); then break; fi
+            [ "$try" = 3 ] && { echo "ĐỎ: không đọc được danh sách tệp của PR"; exit 1; }
+            sleep 20
+          done
+          need=$(printf '%s\n' "$files" | python3 scripts/gate-expected.py --json)
           if [ -z "$need" ]; then
             echo "PR chỉ sửa tài liệu: không cần Build/Coverage/CodeQL."
             exit 0
@@ -56,7 +64,11 @@ jobs:
           grace=$((SECONDS + 240))    # chờ workflow khác kịp xuất hiện
           deadline=$((SECONDS + 3300))
           while true; do
-            runs=$(gh api "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100")
+            # Lỗi API thoáng qua (5xx, giới hạn lượt gọi): thử lại, không làm đỏ oan; vẫn tôn trọng deadline.
+            if ! runs=$(gh api "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100"); then
+              if [ $SECONDS -ge $deadline ]; then echo "ĐỎ: quá giờ chờ (API lỗi)"; exit 1; fi
+              sleep 60; continue
+            fi
             pending=0; bad=0
             while IFS= read -r name; do
               [ -z "$name" ] && continue
@@ -74,5 +86,5 @@ jobs:
             if [ $bad -eq 1 ]; then exit 1; fi
             if [ $pending -eq 0 ]; then echo "Tất cả workflow bắt buộc đã xanh."; exit 0; fi
             if [ $SECONDS -ge $deadline ]; then echo "ĐỎ: quá giờ chờ workflow bắt buộc"; exit 1; fi
-            sleep 30
+            sleep 60
           done
