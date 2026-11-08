@@ -18,9 +18,9 @@ Mốc kiểm: `main@6fa3e1188977d72abafba5abb3ff67594d47856e` (08/11/2026). Số
 
 | Gói | Đang dùng | Mã cảnh báo | Mức | Bản vá | Vào APK qua | Kế hoạch |
 |---|---|---|---|---|---|---|
-| `com.google.guava:guava` | 32.0.1-jre | GHSA-xxph-c9ww-hj94 | HIGH | 33.7.2 | `:j2me` → `ch.acra:acra-http` → `auto-service` → guava | PR-2: ghim 33.7.2-jre |
-| `org.apache.commons:commons-lang3` | 3.16.0 | GHSA-j288-q9x7-2f5v | MODERATE | 3.18.0 | `commons-compress:1.27.1` | PR-2: ghim 3.18.0 |
-| `junit:junit` | 4.12 | GHSA-269g-pwp5-87pp | MODERATE | 4.13.1 | `:j2me` → `pngj:2.2.3` (POM khai `compile`) | PR-2: loại khỏi runtime, giữ 4.13.2 cho test |
+| `com.google.guava:guava` | 32.0.1-jre | GHSA-xxph-c9ww-hj94 | HIGH | 33.7.2 | `:j2me` → `ch.acra:acra-http` → `auto-service` → guava | #544: ghim 33.7.2-jre |
+| `org.apache.commons:commons-lang3` | 3.16.0 | GHSA-j288-q9x7-2f5v | MODERATE | 3.18.0 | `commons-compress:1.27.1` | #544: ghim 3.18.0 |
+| `junit:junit` | 4.12 | GHSA-269g-pwp5-87pp | MODERATE | 4.13.1 | `:j2me` → `pngj:2.2.3` (POM khai `compile`) | #544: loại khỏi runtime, giữ 4.13.2 cho test |
 
 `junit` không phải thư viện chạy của app: `pngj` chỉ cần nó lúc biên dịch, nên cách đúng là **loại khỏi runtime** thay vì nâng phiên bản. Guava và commons-lang3 thì phải nâng.
 
@@ -57,10 +57,10 @@ Không vào APK. Vá được thì vá; không vá được thì đóng bằng l
 |---|---|---|---|---|---|---|
 | `io.netty:netty-handler` | 4.1.93.Final | GHSA-c4c3-7fpv-j4q5 | CRITICAL | 4.2.17.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `org.freemarker:freemarker` | 2.3.32 | GHSA-27j2-h3m2-8237 | CRITICAL | 2.3.35 | classpath (Kover) | #471 (có) |
-| `com.google.guava:guava` | 32.0.1-jre | GHSA-xxph-c9ww-hj94 | HIGH | 33.7.2 | APK — `:j2me` → `acra-http` → `auto-service` | PR-2 (APK) / PR-3 (build) |
-| `com.google.guava:guava` | 33.4.8-jre | GHSA-xxph-c9ww-hj94 | HIGH | 33.7.2 | classpath (AGP) | PR-2 (APK) / PR-3 (build) |
-| `com.google.protobuf:protobuf-java` | 3.22.3 | GHSA-735f-pc8j-v9w8 | HIGH | 4.28.2 | classpath (AGP) | PR-3 (CI định) |
-| `commons-io:commons-io` | 2.13.0 | GHSA-78wr-2p64-hpwj | HIGH | 2.14.0 | classpath (AGP) | PR-3 |
+| `com.google.guava:guava` | 32.0.1-jre | GHSA-xxph-c9ww-hj94 | HIGH | 33.7.2 | APK — `:j2me` → `acra-http` → `auto-service` | #544 (APK) / #546 (build) |
+| `com.google.guava:guava` | 33.4.8-jre | GHSA-xxph-c9ww-hj94 | HIGH | 33.7.2 | classpath (AGP) | #544 (APK) / #546 (build) |
+| `com.google.protobuf:protobuf-java` | 3.22.3 | GHSA-735f-pc8j-v9w8 | HIGH | 4.28.2 | classpath (AGP) | #546 (CI định) |
+| `commons-io:commons-io` | 2.13.0 | GHSA-78wr-2p64-hpwj | HIGH | 2.14.0 | classpath (AGP) | #546 |
 | `io.netty:netty-codec` | 4.1.93.Final | GHSA-558v-64gr-wgg4 | HIGH | 4.1.136.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-codec` | 4.1.93.Final | GHSA-mj4r-2hfc-f8p6 | HIGH | 4.1.133.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-codec-http` | 4.1.93.Final | GHSA-57rv-r2g8-2cj3 | HIGH | 4.2.13.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
@@ -78,9 +78,9 @@ Không vào APK. Vá được thì vá; không vá được thì đóng bằng l
 | `io.netty:netty-handler` | 4.1.93.Final | GHSA-4g8c-wm8x-jfhw | HIGH | 4.1.118.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-handler` | 4.1.93.Final | GHSA-c653-97m9-rcg9 | HIGH | 4.2.15.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-handler` | 4.1.93.Final | GHSA-x4gw-5cx5-pgmh | HIGH | 4.2.15.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
-| `org.bitbucket.b_c:jose4j` | 0.9.5 | GHSA-3677-xxcr-wjqv | HIGH | 0.9.6 | classpath (AGP) | PR-3 |
-| `org.jdom:jdom2` | 2.0.6 | GHSA-2363-cqg2-863c | HIGH | 2.0.6.1 | classpath (AGP) | PR-3 |
-| `org.xerial:sqlite-jdbc` | 3.36.0 | GHSA-6phf-6h5g-97j2 | HIGH | 3.41.2.2 | test (Robolectric) | PR-3 (test) |
+| `org.bitbucket.b_c:jose4j` | 0.9.5 | GHSA-3677-xxcr-wjqv | HIGH | 0.9.6 | classpath (AGP) | #546 |
+| `org.jdom:jdom2` | 2.0.6 | GHSA-2363-cqg2-863c | HIGH | 2.0.6.1 | classpath (AGP) | #546 |
+| `org.xerial:sqlite-jdbc` | 3.36.0 | GHSA-6phf-6h5g-97j2 | HIGH | 3.41.2.2 | test (Robolectric) | #546 (test) |
 | `io.netty:netty-codec` | 4.1.93.Final | GHSA-3p8m-j85q-pgmj | MODERATE | 4.1.125.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-codec-http` | 4.1.93.Final | GHSA-38f8-5428-x5cv | MODERATE | 4.2.13.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-codec-http` | 4.1.93.Final | GHSA-4mp9-239f-g9hg | MODERATE | 4.2.16.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
@@ -102,10 +102,10 @@ Không vào APK. Vá được thì vá; không vá được thì đóng bằng l
 | `io.netty:netty-common` | 4.1.93.Final | GHSA-xq3w-v528-46rv | MODERATE | 4.1.115.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-handler` | 4.1.93.Final | GHSA-6mjq-h674-j845 | MODERATE | 4.1.94.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-handler` | 4.1.93.Final | GHSA-fccg-mwvh-qqg4 | MODERATE | 4.2.17.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
-| `junit:junit` | 4.12 | GHSA-269g-pwp5-87pp | MODERATE | 4.13.1 | APK — `:j2me` → `pngj:2.2.3` | PR-2 (APK) |
-| `org.apache.commons:commons-compress` | 1.21 | GHSA-4265-ccf5-phj5 | MODERATE | 1.26.0 | classpath (AGP) | PR-3 (CI định) |
-| `org.apache.commons:commons-compress` | 1.21 | GHSA-4g9r-vxhx-9pgx | MODERATE | 1.26.0 | classpath (AGP) | PR-3 (CI định) |
-| `org.apache.commons:commons-lang3` | 3.16.0 | GHSA-j288-q9x7-2f5v | MODERATE | 3.18.0 | APK — `commons-compress` + classpath | PR-2 |
+| `junit:junit` | 4.12 | GHSA-269g-pwp5-87pp | MODERATE | 4.13.1 | APK — `:j2me` → `pngj:2.2.3` | #544 (APK) |
+| `org.apache.commons:commons-compress` | 1.21 | GHSA-4265-ccf5-phj5 | MODERATE | 1.26.0 | classpath (AGP) | #546 (CI định) |
+| `org.apache.commons:commons-compress` | 1.21 | GHSA-4g9r-vxhx-9pgx | MODERATE | 1.26.0 | classpath (AGP) | #546 (CI định) |
+| `org.apache.commons:commons-lang3` | 3.16.0 | GHSA-j288-q9x7-2f5v | MODERATE | 3.18.0 | APK — `commons-compress` + classpath | #544 |
 | `org.jetbrains.kotlin:kotlin-gradle-plugin` | 2.0.21 | GHSA-r937-wjx7-w2jp | MODERATE | 2.4.20-Beta1 | classpath (KGP) | PR-4 (Kotlin) |
 | `io.netty:netty-codec-http` | 4.1.93.Final | GHSA-fghv-69vj-qj49 | LOW | 4.2.5.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-handler-proxy` | 4.1.93.Final | GHSA-45q3-82m4-75jr | LOW | 4.2.13.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
@@ -115,8 +115,8 @@ Không vào APK. Vá được thì vá; không vá được thì đóng bằng l
 | Việc | Nội dung | Phủ | Hạn |
 |---|---|---|---|
 | #471 (đã có, DeepSeek 6) | Ghim `netty` 4.1.137.Final (cả họ `io.netty`) + `freemarker` 2.3.35 trên classpath plugin | 41 cảnh báo netty (1 critical) + 1 critical freemarker | 11/11 — đang chờ gỡ chi tiết bảo mật khỏi mô tả + duyệt |
-| PR-2 `phuthuoc/app-apk` | Ghim `guava` 33.7.2-jre, `commons-lang3` 3.18.0; loại `junit` khỏi runtime của `:j2me` | 1 high + 2 moderate **trong APK** | 11/11 (high) |
-| PR-3 `phuthuoc/classpath` | Ghim nhóm chỉ build: `commons-io` 2.14.0, `jdom2` 2.0.6.1, `jose4j` 0.9.6, `guava` 33.7.2-jre, `sqlite-jdbc` (test); thử `protobuf-java`/`commons-compress` — CI đỏ thì bỏ dòng đó và ghi lý do | các high còn lại ở công cụ build | 11/11 |
+| #544 `phuthuoc/app-apk` | Ghim `guava` 33.7.2-jre, `commons-lang3` 3.18.0; loại `junit` khỏi runtime của `:j2me` | 1 high + 2 moderate **trong APK** | 11/11 (high) |
+| #546 `phuthuoc/classpath` | Ghim nhóm chỉ build: `commons-io` 2.14.0, `jdom2` 2.0.6.1, `jose4j` 0.9.6, `guava` 33.7.2-jre, `sqlite-jdbc` (test); thử `protobuf-java`/`commons-compress` — CI đỏ thì bỏ dòng đó và ghi lý do | các high còn lại ở công cụ build | 11/11 |
 | PR-4 (riêng) | Nâng Kotlin (Dependabot #216) — kéo `kotlin-gradle-plugin` lên bản vá | 1 moderate ở công cụ build | 15/11, cần PM chốt vì dễ vỡ build |
 | Đóng có lý do | Cảnh báo không có bản vá tương thích với AGP 8.7.3 / Robolectric, hoặc chỉ công cụ build | phần còn lại | 15/11 |
 
