@@ -16,6 +16,8 @@ val ALLOWED_DOWNLOAD_HOSTS: Set<String> = setOf(
     "buildbot.libretro.com",            // lõi libretro nightly (đường tải cũ)
     "cdn.jsdelivr.net",                 // script web player (ruffle)
     "monika.aow.vn",                    // CDN/trang chính thức
+    "aow.vn",                           // link mời cài app/plugin (externalApps, plugins)
+    "www.aow.vn",
 )
 
 /** [host] đã hạ chữ thường trước khi truyền vào. */

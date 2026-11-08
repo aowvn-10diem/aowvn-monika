@@ -284,4 +284,35 @@ class ConfigRepositoryValidationTest {
         assertEquals(bundled, r.current.configVersion)
         assertFalse(r.remoteApplied.value)
     }
+
+    // ---- V196: link tải/mời cài của app ngoài và plugin cũng phải qua allowlist ----
+
+    @Test fun downloadUrlCuaAppNgoaiVaPluginPhaiThuocAllowlist() {
+        val evilApp = """{"externalApps":[{"id":"x","name":"X","downloadUrl":"https://evil.example/tai.html"}]}"""
+        val evilPlugin = """{"externalApps":[{"id":"x","name":"X","plugins":[{"name":"P","downloadUrl":"https://evil.example/p.html"}]}]}"""
+        val httpApp = """{"externalApps":[{"id":"x","name":"X","downloadUrl":"http://www.aow.vn/p/tai.html"}]}"""
+        for (json in listOf(evilApp, evilPlugin, httpApp)) {
+            val error = runCatching { ConfigValidation.parse(json, 0) }.exceptionOrNull()
+            assertTrue("phải bị từ chối: $json -> $error", error is IllegalArgumentException)
+        }
+
+        val emptyOk = """{"externalApps":[{"id":"x","name":"X","downloadUrl":"","plugins":[{"name":"P","downloadUrl":""}]}]}"""
+        val accepted = ConfigValidation.parse(emptyOk, 0)
+        assertEquals("", accepted.externalApps.single().downloadUrl)
+        assertEquals("", accepted.externalApps.single().plugins.single().downloadUrl)
+
+        val aowOk = """{"externalApps":[{"id":"x","name":"X","downloadUrl":"https://www.aow.vn/p/tai.html","plugins":[{"name":"P","downloadUrl":"https://aow.vn/p/p.html"}]}]}"""
+        val ok = ConfigValidation.parse(aowOk, 0)
+        assertEquals("https://www.aow.vn/p/tai.html", ok.externalApps.single().downloadUrl)
+        assertEquals("https://aow.vn/p/p.html", ok.externalApps.single().plugins.single().downloadUrl)
+    }
+
+    @Test fun cacheCoDownloadUrlLaThiDungBanDongGoi() {
+        cache.writeText(
+            """{"configVersion":${bundled + 70},"externalApps":[{"id":"x","name":"X","downloadUrl":"https://evil.example/tai.html"}]}"""
+        )
+        val r = repo()
+        assertEquals(bundled, r.current.configVersion)
+        assertFalse(r.remoteApplied.value)
+    }
 }
