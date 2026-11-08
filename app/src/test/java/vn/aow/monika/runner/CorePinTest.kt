@@ -44,8 +44,8 @@ class CorePinTest {
     }.build()
     private fun cfg(version: String, expected: String, abi: String = "arm64-v8a", pinned: Boolean = true): ConfigRepository {
         val base = ConfigRepository(app, OkHttpClient()).current.configVersion
-        val artifacts = if (pinned) """, "artifacts":{"$abi":{"url":"https://example.test/$version-$abi.zip","sha256":"$expected","version":"$version"}}""" else ""
-        File(app.filesDir, ConfigRepository.ASSET_NAME).writeText("""{"configVersion":$base,"cores":{"gambatte":{"version":"legacy","url":"https://example.test/latest/{abi}.zip","abis":["arm64-v8a","armeabi-v7a"]$artifacts}}}""")
+        val artifacts = if (pinned) """, "artifacts":{"$abi":{"url":"https://buildbot.libretro.com/$version-$abi.zip","sha256":"$expected","version":"$version"}}""" else ""
+        File(app.filesDir, ConfigRepository.ASSET_NAME).writeText("""{"configVersion":$base,"cores":{"gambatte":{"version":"legacy","url":"https://buildbot.libretro.com/latest/{abi}.zip","abis":["arm64-v8a","armeabi-v7a"]$artifacts}}}""")
         return ConfigRepository(app, OkHttpClient())
     }
     private val dir get() = File(app.filesDir, "cores/gambatte")
@@ -62,7 +62,7 @@ class CorePinTest {
     @Test fun pinnedUrlHashVersionAndConfigRollback() = runBlocking { onMain {
         val first = CoreManager(app, http(), cfg("one", hash(payload)))
         first.ensureCore("gambatte"); assertTrue(first.isReady("gambatte")); assertEquals("one", first.installedVersion("gambatte"))
-        assertEquals("https://example.test/one-arm64-v8a.zip", requests.last())
+        assertEquals("https://buildbot.libretro.com/one-arm64-v8a.zip", requests.last())
         val second = CoreManager(app, http(), cfg("two", hash(payload)))
         assertFalse(second.isReady("gambatte")); second.ensureCore("gambatte"); assertEquals("two", second.installedVersion("gambatte"))
         // PM quay config về URL/hash/version cũ (configVersion vẫn tăng): tải lại đúng ảnh chụp một.
@@ -101,9 +101,39 @@ class CorePinTest {
             assertEquals(listOf("core-check", "core-cache"), steps.map { it.stage })
         }
     } }
+    @Test fun bundledPspPinsRejectChangedZipAndPreserveLegacyCoreForBothArms() = runBlocking { onMain {
+        val previousDir = app.applicationInfo.nativeLibraryDir
+        try {
+            val config = ConfigRepository(app, OkHttpClient())
+            val psp = File(app.filesDir, "cores/ppsspp").apply { mkdirs() }
+            val library = File(psp, "ppsspp_libretro_android.so").apply { writeText("old-psp") }
+            File(psp, "version").writeText("1")
+            for ((nativeDir, abi) in listOf("arm64" to "arm64-v8a", "arm" to "armeabi-v7a")) {
+                app.applicationInfo.nativeLibraryDir = "/fake/$nativeDir"
+                requests.clear()
+                val manager = CoreManager(app, http(), config)
+                assertFalse(manager.isReady("ppsspp"))
+                val error = runCatching { manager.ensureCore("ppsspp") }.exceptionOrNull()
+                assertTrue(error is java.io.IOException)
+                assertTrue(error?.message.orEmpty().contains("SHA-256"))
+                assertEquals(listOf("https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-ppsspp-1/ppsspp-$abi.zip"), requests)
+                assertEquals("old-psp", library.readText())
+                assertEquals("1", manager.installedVersion("ppsspp"))
+            }
+            app.applicationInfo.nativeLibraryDir = "/fake/x86_64"
+            requests.clear()
+            val unsupported = CoreManager(app, http(), config)
+            assertFalse(unsupported.supports("ppsspp"))
+            assertTrue(runCatching { unsupported.ensureCore("ppsspp") }.isFailure)
+            assertTrue(requests.isEmpty())
+        } finally {
+            app.applicationInfo.nativeLibraryDir = previousDir
+        }
+    } }
+
     @Test fun legacyConfigKeepsUrlAndVersionBehavior() = runBlocking { onMain {
         val legacy = CoreManager(app, http(), cfg("unused", "", pinned = false))
         assertTrue(legacy.supports("gambatte")); legacy.ensureCore("gambatte")
-        assertEquals("https://example.test/latest/arm64-v8a.zip", requests.single()); assertEquals("legacy", legacy.installedVersion("gambatte")); assertTrue(legacy.isReady("gambatte"))
+        assertEquals("https://buildbot.libretro.com/latest/arm64-v8a.zip", requests.single()); assertEquals("legacy", legacy.installedVersion("gambatte")); assertTrue(legacy.isReady("gambatte"))
     } }
 }
