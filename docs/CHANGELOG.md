@@ -3,14 +3,14 @@
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
 ## v0.8.11 (Bản thử)
-> Phát hành ngày 08/11/2026 (UTC), bản thử nghiệm.
+<!-- bien-tap: v0.8.11 -->
+> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
 
 - **Mới:** Trang game có mục **Save**: xem các bản save, nhập save từ tệp và chia sẻ bản sao lưu ra ngoài. ([#499](https://github.com/aowvn-10diem/aowvn-monika/pull/499))
 - **Mới:** Thư viện có mục **Tệp** để tìm game, tài liệu và tệp khác trong cùng một chỗ. ([#434](https://github.com/aowvn-10diem/aowvn-monika/pull/434))
-- **Sửa lỗi:** Xóa game an toàn hơn: app sao lưu cả thư mục game trước khi xóa, không tạo tệp ZIP dở khi thiếu save, không đụng thư mục lạ trong kho. ([#434](https://github.com/aowvn-10diem/aowvn-monika/pull/434))
-- **Thay đổi:** Tải game từ link: app không tự tải từ Pixeldrain nữa; bạn tự dán link, app cảnh báo khi tệp đến từ nguồn bên thứ ba và chỉ tải từ nguồn được cho phép. ([#501](https://github.com/aowvn-10diem/aowvn-monika/pull/501))
-- **Thay đổi:** Bài viết trong app mặc định tắt; bật lại bằng công tắc trong Cài đặt (cả bản GitHub và bản Play). ([#498](https://github.com/aowvn-10diem/aowvn-monika/pull/498))
-- Nội bộ: dựng lõi giả lập (mGBA, Gambatte, FCEUmm, PPSSPP) từ nguồn ghim; tăng kiểm tra quyền cho máy chủ gói và trang quản trị. ([#492](https://github.com/aowvn-10diem/aowvn-monika/pull/492), [#502](https://github.com/aowvn-10diem/aowvn-monika/pull/502), [#493](https://github.com/aowvn-10diem/aowvn-monika/pull/493))
+- **Mới:** Tải game từ Pixeldrain nay do bạn chủ động: dán link vào **Tải xuống › Tải từ link**, app cảnh báo trước khi tải. ([#501](https://github.com/aowvn-10diem/aowvn-monika/pull/501))
+- **Mới:** Bài viết từ aow.vn mặc định tắt; muốn xem và nhận thông báo bài mới, bật lại ở **Cài đặt › Bài viết & tin tức**. ([#498](https://github.com/aowvn-10diem/aowvn-monika/pull/498))
+- Nội bộ: xóa game (#434) sao lưu cả thư mục và không tạo ZIP dở khi thiếu save; dựng lõi giả lập từ nguồn ghim; tăng kiểm tra quyền cho máy chủ gói và trang quản trị. ([#434](https://github.com/aowvn-10diem/aowvn-monika/pull/434), [#492](https://github.com/aowvn-10diem/aowvn-monika/pull/492), [#502](https://github.com/aowvn-10diem/aowvn-monika/pull/502), [#493](https://github.com/aowvn-10diem/aowvn-monika/pull/493))
 
 ## v0.8.10 (Bản thử)
 <!-- bien-tap: v0.8.10 -->
