@@ -3,6 +3,27 @@ package vn.aow.monika.config
 import kotlinx.serialization.Serializable
 
 /**
+ * Host được phép cho URL **tải mã/gói** trong config từ xa (lõi, module/engine, apk cập nhật,
+ * script web player). Danh sách nằm trong APK — config từ xa **không thể tự mở rộng** nó, nên
+ * một config bị đầu độc không trỏ được app sang host lạ. Thêm CDN mới = phát hành app mới.
+ */
+val ALLOWED_DOWNLOAD_HOSTS: Set<String> = setOf(
+    "github.com",                       // releases của repo packs/app
+    "objects.githubusercontent.com",    // CDN asset cũ của GitHub Releases
+    "release-assets.githubusercontent.com", // đích 302 thật của asset GitHub Releases (kiểm 05/11/2026)
+    "raw.githubusercontent.com",
+    "codeload.github.com",
+    "buildbot.libretro.com",            // lõi libretro nightly (đường tải cũ)
+    "cdn.jsdelivr.net",                 // script web player (ruffle)
+    "monika.aow.vn",                    // CDN/trang chính thức
+    "aow.vn",                           // link mời cài app/plugin (externalApps, plugins)
+    "www.aow.vn",
+)
+
+/** [host] đã hạ chữ thường trước khi truyền vào. */
+internal fun isAllowedDownloadHost(host: String): Boolean = host in ALLOWED_DOWNLOAD_HOSTS
+
+/**
  * Ánh xạ 1-1 với config/monika-config.json.
  * Thêm trường mới: luôn cho giá trị mặc định để file cấu hình cũ vẫn đọc được.
  */

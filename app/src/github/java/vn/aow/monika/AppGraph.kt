@@ -1,8 +1,10 @@
 package vn.aow.monika
 
 import android.app.Application
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import vn.aow.monika.config.ConfigRepository
+import vn.aow.monika.download.DownloadGuard
 import vn.aow.monika.download.Downloader
 import vn.aow.monika.feed.FeedRepository
 import vn.aow.monika.library.GameLibrary
@@ -44,7 +46,30 @@ object AppGraph {
     }
 
     val prefs by lazy { Prefs(app) }
-    val config by lazy { ConfigRepository(app, http) }
+
+    /** Host của hai nguồn config (Pages + Worker) — tính từ nguồn duy nhất ở [vn.aow.monika.config.ConfigEndpoints]. */
+    private fun configHosts(): Set<String> = setOfNotNull(
+        vn.aow.monika.config.ConfigEndpoints.PAGES_CONFIG_URL.toHttpUrlOrNull()?.host,
+        vn.aow.monika.config.ConfigEndpoints.WORKER_CONFIG_URL.toHttpUrlOrNull()?.host,
+    )
+
+    private fun downloadHostAllowed(host: String): Boolean =
+        vn.aow.monika.config.isAllowedDownloadHost(host) || host in configHosts()
+
+    /**
+     * V196: client cho mọi đường tải do config quyết định (config, lõi, module/engine).
+     * Guard gắn ở **network interceptor** nên chạy lại cho từng hop, kể cả sau redirect.
+     */
+    val downloadHttp: OkHttpClient by lazy {
+        http.newBuilder().addNetworkInterceptor(DownloadGuard(::downloadHostAllowed)).build()
+    }
+
+    /** Trình duyệt nhúng: người dùng tự chọn link nên chỉ siết HTTPS ở mọi hop, không giới hạn host. */
+    val browserHttp: OkHttpClient by lazy {
+        http.newBuilder().addNetworkInterceptor(DownloadGuard { true }).build()
+    }
+
+    val config by lazy { ConfigRepository(app, downloadHttp) }
 
     /** V193 G1: lựa chọn người dùng thắng config; mặc định tắt (config.feed.enabled = false). */
     val feedEnabled: Boolean get() = prefs.feedEnabled ?: config.current.feed.enabled
@@ -57,11 +82,11 @@ object AppGraph {
 
     val feed by lazy { FeedRepository(http, config, java.io.File(app.cacheDir, "feed").apply { mkdirs() }, app) { feedEnabled } }
     val forum by lazy { vn.aow.monika.forum.ForumRepository(http, config, java.io.File(app.cacheDir, "forum").apply { mkdirs() }) }
-    val cores by lazy { CoreManager(app, http, config) }
-    val packs by lazy { vn.aow.monika.pack.SimpleModule(app, http, config) }
-    val azahar by lazy { vn.aow.monika.azahar.AzaharModule(app, http, config) }
+    val cores by lazy { CoreManager(app, downloadHttp, config) }
+    val packs by lazy { vn.aow.monika.pack.SimpleModule(app, downloadHttp, config) }
+    val azahar by lazy { vn.aow.monika.azahar.AzaharModule(app, downloadHttp, config) }
     val downloader by lazy { Downloader(app, http, prefs) }
-    val browserDownloads by lazy { vn.aow.monika.download.BrowserDownloads(app, http, prefs) }
+    val browserDownloads by lazy { vn.aow.monika.download.BrowserDownloads(app, browserHttp, prefs) }
     val gameInfo by lazy {
         vn.aow.monika.library.GameInfoResolver(app, feed, boxArts = vn.aow.monika.library.BoxArts(http, java.io.File(app.filesDir, "boxarts")))
     }
