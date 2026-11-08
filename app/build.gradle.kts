@@ -10,12 +10,17 @@ plugins {
 // V192: BouncyCastle đi vào APK qua `libadb-android` (kéo bản cũ). Ghim bản trong
 // `gradle/libs.versions.toml` cho MỌI cấu hình của app (mọi `*Classpath`, cả 2 flavor).
 val bcVersion = libs.versions.bouncycastle.get()
+// V0811: hai thư viện dưới đây nằm trong APK nhưng không do app gọi trực tiếp (xem docs/bao-mat/PHU-THUOC-0811.md).
+val guavaVersion = libs.versions.guava.get()
+val commonsLang3Version = libs.versions.commonsLang3.get()
 configurations.configureEach {
     resolutionStrategy.force(
         "org.bouncycastle:bcprov-jdk15to18:$bcVersion",
         "org.bouncycastle:bcprov-jdk18on:$bcVersion",
         "org.bouncycastle:bcpkix-jdk18on:$bcVersion",
         "org.bouncycastle:bcutil-jdk18on:$bcVersion",
+        "com.google.guava:guava:$guavaVersion",
+        "org.apache.commons:commons-lang3:$commonsLang3Version",
     )
 }
 
