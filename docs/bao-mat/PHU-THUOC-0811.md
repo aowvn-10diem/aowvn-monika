@@ -59,7 +59,7 @@ Không vào APK. Vá được thì vá; không vá được thì đóng bằng l
 | `org.freemarker:freemarker` | 2.3.32 | GHSA-27j2-h3m2-8237 | CRITICAL | 2.3.35 | classpath (Kover) | #471 (có) |
 | `com.google.guava:guava` | 32.0.1-jre | GHSA-xxph-c9ww-hj94 | HIGH | 33.7.2 | APK — `:j2me` → `acra-http` → `auto-service` | #544 (APK) / #546 (build) |
 | `com.google.guava:guava` | 33.4.8-jre | GHSA-xxph-c9ww-hj94 | HIGH | 33.7.2 | classpath (AGP) | #544 (APK) / #546 (build) |
-| `com.google.protobuf:protobuf-java` | 3.22.3 | GHSA-735f-pc8j-v9w8 | HIGH | 4.28.2 | classpath (AGP) | #546 (CI định) |
+| `com.google.protobuf:protobuf-java` | 3.22.3 | GHSA-735f-pc8j-v9w8 | HIGH | 3.25.5 (nhánh 3.x) | classpath (AGP) | #546 (CI định) |
 | `commons-io:commons-io` | 2.13.0 | GHSA-78wr-2p64-hpwj | HIGH | 2.14.0 | classpath (AGP) | #546 |
 | `io.netty:netty-codec` | 4.1.93.Final | GHSA-558v-64gr-wgg4 | HIGH | 4.1.136.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-codec` | 4.1.93.Final | GHSA-mj4r-2hfc-f8p6 | HIGH | 4.1.133.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
@@ -109,6 +109,8 @@ Không vào APK. Vá được thì vá; không vá được thì đóng bằng l
 | `org.jetbrains.kotlin:kotlin-gradle-plugin` | 2.0.21 | GHSA-r937-wjx7-w2jp | MODERATE | 2.4.20-Beta1 | classpath (KGP) | PR-4 (Kotlin) |
 | `io.netty:netty-codec-http` | 4.1.93.Final | GHSA-fghv-69vj-qj49 | LOW | 4.2.5.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-handler-proxy` | 4.1.93.Final | GHSA-45q3-82m4-75jr | LOW | 4.2.13.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
+
+Ghi chú cột "Bản vá": đó là bản nhỏ nhất cơ sở OSV trả về, có thể thuộc nhánh khác nhánh đang dùng. `protobuf-java` có bản vá riêng cho nhánh 3.x (3.25.5) và nhánh 4.x (4.28.2) — #546 ghim 3.25.5 để không nhảy major. Họ `netty` có bản vá 4.1.137.Final cho cả nhánh 4.1.x (đúng bản #471 ghim) và 4.2.x cho nhánh 4.2.
 
 ## 5. Kế hoạch vá và hạn
 
