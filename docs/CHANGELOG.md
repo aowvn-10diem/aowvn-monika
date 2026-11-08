@@ -4,7 +4,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 ## v0.8.11 (Bản thử)
 <!-- bien-tap: v0.8.11 -->
-> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+> Phát hành ngày 08/11/2026 (UTC), bản thử nghiệm.
 
 - **Mới:** Trang game có mục **Save**: xem các bản save, nhập save từ tệp và chia sẻ bản sao lưu ra ngoài. ([#499](https://github.com/aowvn-10diem/aowvn-monika/pull/499))
 - **Mới:** Thư viện có mục **Tệp** để tìm game, tài liệu và tệp khác trong cùng một chỗ. ([#434](https://github.com/aowvn-10diem/aowvn-monika/pull/434))
