@@ -22,7 +22,8 @@ out=()
 
 # 1. PR: kết luận mới nhất trên đúng head + CI bắt buộc.
 for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user.login|test("dependabot")|not)|.number'); do
-  read -r sha draft mst < <(gh api "repos/$R/pulls/$p" --jq '"\(.head.sha) \(.draft) \(.mergeable_state)"')
+  read -r sha draft mst base < <(gh api "repos/$R/pulls/$p" --jq '"\(.head.sha) \(.draft) \(.mergeable_state) \(.base.ref)"')
+  [ "$base" != "main" ] && { echo "PMXEM #$p base=$base (không phải main: KHÔNG gộp, đổi base hoặc đợi PR nền gộp)"; continue; }
   grep -qw "$p" "$(dirname "$0")/../giu.txt" 2>/dev/null && continue   # PR PM tạm giữ (vd. ngoài A85): không báo
   [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || continue   # API lỗi/hạn mức: bỏ qua, không bao giờ in GOP thiếu sha
   ci=$(gh api "repos/$R/commits/$sha/check-runs?per_page=60" --jq '[.check_runs[]|select(.name|test("^(build|coverage|n04-tests|analyze)"))|.conclusion//"chay"]|unique|join(",")')
