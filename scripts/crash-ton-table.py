@@ -9,6 +9,9 @@ Ví dụ:
   gh issue list --label crash-moi --state open --limit 100 \
     --json number,title,body,createdAt,updatedAt,comments > issues.json
   python3 scripts/crash-ton-table.py --issues issues.json --out docs/loi/TON-0811.md
+  # kèm bằng chứng V174 (tải artifact crash-insight.md của workflow):
+  python3 scripts/crash-ton-table.py --issues issues.json \
+    --insight docs/loi/v174-2026-11-08.md --out docs/loi/TON-0811.md
 """
 
 import argparse
@@ -16,6 +19,9 @@ import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+
+# 12 hex đầu SHA-256 chứng thư ký APK phát hành chính thức (scripts/verify-apk-cert.py).
+OFFICIAL_CERT = "c46902e97029"
 
 # Ngày phát hành v0.8.10 (04/11/2026 UTC) — bản phát hành mới nhất. Issue cập nhật
 # từ ngày này trở đi, không có bình luận, được coi là còn tái diễn sau bản mới nhất.
@@ -30,7 +36,7 @@ GROUPS = {
     "A": {
         "name": "Hệ thống giết / hết RAM / ANR",
         "types": ("killed", "lowmem", "anr"),
-        "action": "Đo RAM đỉnh khi chạy lõi; giải phóng surface/bitmap lúc pause; kiểm onTrimMemory",
+        "action": "Đo RAM tiến trình chính (ảnh feed/cache) và RAM đỉnh của lõi; giải phóng bitmap lúc pause, onTrimMemory; đo lại sau 2 bản",
     },
     "B": {
         "name": "Native crash trong .so của lõi",
@@ -78,10 +84,14 @@ SESSION_FALLBACK = "Lỗi 4"
 
 # Kế hoạch tới hạn 15/11. Đổi ở đây, không sửa tay trong file markdown.
 PLAN = (
-    "09/11: PM chạy V174 một lần; điền thành phần + giả thuyết của Worker vào bảng, "
-    "chốt danh sách issue đóng được (trùng/đã sửa/thiếu dữ liệu).",
-    "10–11/11: PR nhóm A theo lõi (NDS · unknown+mgba · citra+ppsspp), mỗi PR một nhóm nguyên nhân.",
-    "12/11: PR nhóm D (op-fail) sau khi có `Thành phần: op:<tên>` từ Worker.",
+    "09/11 (**xong**): V174 đã chạy — 918/1007 lượt trong cửa sổ đến từ tiến trình chính "
+    "(`app:chính` 833, `net` 72), lõi chỉ 89. Ưu tiên nhóm A-app (RAM ảnh feed/cache), "
+    "không phải lõi giả lập.",
+    "10–11/11: PR nhóm A-app (Lỗi 2): đo RAM tiến trình chính, giải phóng bitmap/feed cache, "
+    "onTrimMemory; chứng minh bằng test đơn vị + số lowmem sau 2 bản.",
+    "10–11/11: PR nhóm A-lõi (Lỗi 1, Lỗi 3): melondsds 78 lượt trong cửa sổ; tách báo cáo "
+    "từ chứng thư lạ `1e08a903aef9` (75 lượt) trước khi kết luận.",
+    "12/11: PR nhóm D: nhóm duy nhất trong cửa sổ là `op:tai-feed` (10 lượt) — sửa luồng tải feed.",
     "13/11: PR nhóm B/C (native, core-error): symbolic bằng symbols đúng BuildId; lỗi upstream thì báo upstream.",
     "14/11: nhóm E/F/G/H: đóng có lý do (người dùng thoát, lỗi bắt được, trùng) hoặc comment chờ dữ liệu.",
     "15/11: issue còn mở phải có comment lý do + hướng tiếp; báo PM tổng kết.",
@@ -89,8 +99,12 @@ PLAN = (
 
 # Ghi chú dữ liệu đã kiểm bằng chứng (không phải nguyên nhân gốc).
 NOTES = {
-    304: "Lượt 11.072, ngày 30/10 chỉ 2.048 (đúng 2^11); v0.8.8 đã chỉnh giới hạn gửi lại "
-         "nên số này có thể bị thổi bởi lần gửi lặp → [CHƯA KIỂM].",
+    302: "Cửa sổ V174 chỉ có một nhóm `unknown/resource`, thành phần `app:chính` (vượt hạn mức "
+         "tài nguyên) → nhiều khả năng #302 là tiến trình chính; chưa quy tuyệt đối.",
+    304: "Phần lớn `unknown/lowmem` trong cửa sổ V174 là `app:chính` (833/906 lượt) → nhiều khả năng "
+         "tiến trình chính bị Android tắt vì RAM; chưa quy tuyệt đối cho #304.",
+    306: "Trong cửa sổ V174, 75/78 lượt `melondsds/killed` mang chứng thư `1e08a903aef9`, khác chứng thư "
+         "phát hành `c46902e97029` → phải tách trước khi coi là lỗi bản chính thức [CHƯA KIỂM].",
     535: "`melonds` là mã lõi riêng trong `config/monika-config.json` (cạnh `melondsds`), "
          "không phải trùng với các issue `melondsds`.",
     387: "Lõi `unknown` + `native`: bot không xác định được lõi, cần frame của Worker để quy hệ máy.",
@@ -158,7 +172,89 @@ def cell(value):
     return str(value).replace("|", "\\|")
 
 
-def build(issues, since):
+def parse_insight(text):
+    """Đọc bảng markdown của V174 (crash-insight.md) thành danh sách dòng.
+
+    Chỉ nhận dòng đủ 9 cột; dòng tiêu đề/ngăn cách bị bỏ. Không đoán thêm.
+    """
+    rows = []
+    for line in text.splitlines():
+        if not line.startswith("|"):
+            continue
+        parts = [part.strip() for part in line.split("|")]
+        if len(parts) != 11:
+            continue
+        sig, core, kind, hits, apps, cert, _device, component, guess = parts[1:10]
+        if not hits.isdigit():
+            continue
+        rows.append({
+            "signature": "" if sig == "—" else sig,
+            "core": "" if core == "—" else core,
+            "kind": "" if kind == "—" else kind,
+            "hits": int(hits),
+            "apps": "" if apps == "—" else apps,
+            "cert": "" if cert == "—" else cert,
+            "component": "" if component == "—" else component,
+            "guess": "" if guess == "—" else guess,
+        })
+    return rows
+
+
+def component_bucket(component):
+    if component.startswith("engine:"):
+        return "lõi"
+    if component.startswith(("op:", "pack:", "app:", "net", "ra")):
+        return "app / thao tác"
+    return "không rõ"
+
+
+def insight_lines(rows, artifact):
+    by_component = {}
+    for row in rows:
+        key = row["component"]
+        item = by_component.setdefault(key, {"hits": 0, "cores": set(), "kinds": set(), "guess": ""})
+        item["hits"] += row["hits"]
+        if row["core"]:
+            item["cores"].add(row["core"])
+        if row["kind"]:
+            item["kinds"].add(row["kind"])
+        item["guess"] = item["guess"] or row["guess"]
+    ordered = sorted(by_component.items(), key=lambda kv: (-kv[1]["hits"], kv[0]))
+
+    out = ["## Bằng chứng V174 (100 báo cáo gần nhất)", ""]
+    out.append(f"Nguồn: `{artifact}` (workflow V174). Cửa sổ chỉ 100 báo cáo mới nhất "
+               "nên **không phủ hết** 99 issue; đây là bằng chứng về thành phần, "
+               "không phải kết luận nguyên nhân.")
+    out.append("")
+    out.append("| Thành phần | Lõi / loại | Lượt | Giả thuyết của V174 |")
+    out.append("|---|---|---:|---|")
+    for component, item in ordered:
+        cores = ",".join(sorted(item["cores"])) or "—"
+        kinds = "/".join(sorted(item["kinds"])) or "—"
+        out.append(f"| `{cell(component or 'không rõ')}` | {cell(cores)} / `{cell(kinds)}` | "
+                   f"{item['hits']} | {cell(item['guess'] or '[CHƯA KIỂM]')} |")
+    out.append("")
+    totals = {}
+    for component, item in by_component.items():
+        bucket = component_bucket(component)
+        totals[bucket] = totals.get(bucket, 0) + item["hits"]
+    out.append("- Theo nhóm thành phần: "
+               + " · ".join(f"**{name}** {hits} lượt" for name, hits in sorted(totals.items(), key=lambda kv: -kv[1])) + ".")
+    foreign = {}
+    for row in rows:
+        if row["cert"] and not row["cert"].startswith(OFFICIAL_CERT):
+            foreign[row["cert"]] = foreign.get(row["cert"], 0) + row["hits"]
+    if foreign:
+        listed = ", ".join(f"`{cert}` ({hits} lượt)" for cert, hits in sorted(foreign.items(), key=lambda kv: -kv[1]))
+        out.append(f"- **Chứng thư khác bản phát hành** ({OFFICIAL_CERT}…): {listed}. "
+                   "Đây là trường client gửi lên; phải đối chiếu tay, **không** kết luận bản giả.")
+    else:
+        out.append(f"- Mọi báo cáo trong cửa sổ mang chứng thư phát hành `{OFFICIAL_CERT}…` hoặc không gửi chứng thư.")
+    out.append("")
+    return out
+
+
+def build(issues, since, insight=None, artifact=""):
     rows = [parse_issue(raw) for raw in issues]
     rows.sort(key=lambda row: (group_of(row["kind"]), -1 * (row["count"] or 0), row["number"]))
     total = sum(row["count"] or 0 for row in rows)
@@ -226,13 +322,19 @@ def build(issues, since):
     for line in PLAN:
         write(f"- {line}")
     write("")
+    if insight:
+        out.extend(insight_lines(insight, artifact))
     write("## Giới hạn bằng chứng")
     write("")
     write("- Không có frame/chữ ký đầy đủ trong thân issue: bot chỉ ghi hash `lõi + loại + "
           "tối đa 3 frame đầu` (`docs/CRASH-ISSUE-BOT.md`). Muốn biết frame phải đọc Worker.")
-    write("- `/reports` từng trả HTTP 500 khi KV lỗi tạm thời (lượt V174 02/11, có PR #451 "
-          "đang sửa thành 503 + tự thử lại). V174 là `workflow_dispatch`; token của phiên này "
-          "không có `actions:write` nên **cần PM chạy V174 một lần** để lấy `crash-insight.md`.")
+    if insight:
+        write(f"- V174 đã chạy và artifact nằm ở `{artifact}`: chỉ 100 báo cáo mới nhất, "
+              "nên thành phần ở trên là bằng chứng một phần, không phải toàn bộ 99 issue.")
+    else:
+        write("- `/reports` từng trả HTTP 500 khi KV lỗi tạm thời (lượt V174 02/11, có PR #451 "
+              "đang sửa thành 503 + tự thử lại). V174 là `workflow_dispatch`; token của phiên này "
+              "không có `actions:write` nên **cần PM chạy V174 một lần** để lấy `crash-insight.md`.")
     write("- Chưa có mapping R8 của bản đang chạy và chưa có gói symbols cho từng BuildId, "
           "nên nhóm B/G chưa retrace được.")
     write("")
@@ -244,6 +346,7 @@ def main():
     parser.add_argument("--issues", required=True, help="JSON danh sách issue")
     parser.add_argument("--out", required=True, help="File markdown đầu ra")
     parser.add_argument("--since", default=DEFAULT_SINCE, help="Ngày coi là còn tái diễn")
+    parser.add_argument("--insight", help="Bảng markdown V174 (crash-insight.md), tuỳ chọn")
     args = parser.parse_args()
 
     data = json.loads(Path(args.issues).read_text(encoding="utf-8"))
@@ -252,7 +355,16 @@ def main():
     if not isinstance(data, list):
         raise SystemExit("BLOCKED: --issues phải là mảng JSON hoặc {issues: [...]}")
 
-    text = build(data, args.since)
+    insight, artifact = None, ""
+
+    if args.insight:
+        path = Path(args.insight)
+        insight = parse_insight(path.read_text(encoding="utf-8"))
+        artifact = str(path).replace("\\", "/")
+        if not insight:
+            raise SystemExit("BLOCKED: --insight không có dòng dữ liệu nào")
+
+    text = build(data, args.since, insight, artifact)
     text += f"\n<!-- sinh {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')} -->\n"
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

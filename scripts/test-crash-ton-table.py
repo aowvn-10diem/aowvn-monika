@@ -124,5 +124,42 @@ class BuildTest(unittest.TestCase):
         self.assertIn("`a\\|b`", row)
 
 
+class InsightTest(unittest.TestCase):
+    TABLE = "\n".join([
+        "| chữ ký | lõi | loại | số lượt | bản app | chứng thư | đời máy | màn | giả thuyết |",
+        "|---|---|---|---|---|---|---|---|---|",
+        "| 363ea01f | unknown | lowmem | 424 | 0.8.10 | c46902e97029 | — | app:chính | máy hết RAM |",
+        "| d529a7fd | melondsds | killed | 75 | 0.8.9 | 1e08a903aef9 | — | engine:libretro:melondsds | hệ thống tắt |",
+        "| — | — | op-fail | 10 | 0.8.7 | — | — | op:tai-feed | tải feed lỗi |",
+    ])
+
+    def test_parse_skips_header_and_keeps_dash_as_empty(self):
+        rows = m.parse_insight(self.TABLE)
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows[0]["core"], "unknown")
+        self.assertEqual(rows[0]["hits"], 424)
+        self.assertEqual(rows[2]["signature"], "")
+        self.assertEqual(rows[2]["component"], "op:tai-feed")
+
+    def test_parse_garbage_is_empty(self):
+        self.assertEqual(m.parse_insight("không phải bảng"), [])
+        self.assertEqual(m.parse_insight("| a | b |"), [])
+
+    def test_buckets_sum_hits_and_flag_foreign_cert(self):
+        lines = m.insight_lines(m.parse_insight(self.TABLE), "docs/loi/v174.md")
+        text = "\n".join(lines)
+        self.assertIn("**app / thao tác** 434 lượt", text)
+        self.assertIn("**lõi** 75 lượt", text)
+        # chứng thư phát hành không bị coi là lạ, chứng thư khác thì có
+        self.assertIn("`1e08a903aef9` (75 lượt)", text)
+        self.assertNotIn("`c46902e97029`", text.split("Chứng thư khác")[1])
+
+    def test_build_with_insight_changes_limitation_text(self):
+        text = m.build(ISSUES, "2026-11-03", m.parse_insight(self.TABLE), "docs/loi/v174.md")
+        self.assertIn("## Bằng chứng V174", text)
+        self.assertIn("`docs/loi/v174.md`", text)
+        self.assertNotIn("cần PM chạy V174 một lần", text)
+
+
 if __name__ == "__main__":
     unittest.main()
