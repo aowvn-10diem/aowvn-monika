@@ -17,9 +17,10 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Ngày phát hành v0.8.9 (02/11/2026 UTC). Issue cập nhật từ ngày này trở đi,
-# không có bình luận, được coi là còn tái diễn sau bản mới nhất.
-DEFAULT_SINCE = "2026-11-03"
+# Ngày phát hành v0.8.10 (04/11/2026 UTC) — bản phát hành mới nhất. Issue cập nhật
+# từ ngày này trở đi, không có bình luận, được coi là còn tái diễn sau bản mới nhất.
+# (v0.8.11 đã cắt trong main nhưng chưa phát hành.)
+DEFAULT_SINCE = "2026-11-05"
 
 TITLE_RE = re.compile(r"^\[Crash\]\s+([^/]+?)\s*/\s*([^/]+?)\s*/\s*(\S+)")
 COUNT_RE = re.compile(r"Số lần quan sát đã thông báo:\s*(\d+)")
@@ -172,8 +173,9 @@ def build(issues, since):
     write(f"- Tổng: **{len(rows)} issue** đang mở, "
           f"**{total} lượt** quan sát đã thông báo.")
     write("- `Lượt` = số lần bot đã thông báo (không phải số người, không phải toàn bộ lịch sử).")
-    write(f"- `Tái diễn` = issue được bot cập nhật từ {since} (sau v0.8.9) và chưa có bình luận. "
-          "Đây là dấu hiệu còn tái diễn, **không** phải bằng chứng nguyên nhân.")
+    write(f"- `Tái diễn` = issue được bot cập nhật từ {since} (sau bản phát hành mới nhất "
+          "v0.8.10, 04/11) và chưa có bình luận. Đây là dấu hiệu còn tái diễn, "
+          "**không** phải bằng chứng nguyên nhân.")
     write("- `Nhóm` suy từ `loại` trong tiêu đề issue. Nguyên nhân cụ thể của từng chữ ký "
           "phải lấy từ frame của Worker → chưa có thì ghi `[CHƯA KIỂM]`.")
     write("")
