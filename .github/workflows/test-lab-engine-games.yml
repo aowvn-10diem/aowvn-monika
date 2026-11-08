@@ -38,6 +38,7 @@ concurrency:
 
 jobs:
   prepare:
+    if: github.repository == 'aowvn-10diem/aowvn-monika'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:

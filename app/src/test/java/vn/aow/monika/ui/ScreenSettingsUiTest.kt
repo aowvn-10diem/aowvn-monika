@@ -18,6 +18,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import vn.aow.monika.AppGraph
 import vn.aow.monika.runner.CoreOptions
+import vn.aow.monika.runner.DsScreen
 import vn.aow.monika.ui.controls.ScreenSettings
 import vn.aow.monika.ui.theme.MonikaTheme
 
@@ -81,5 +82,27 @@ class ScreenSettingsUiTest {
         CoreOptions.save(rule.activity, "melondsds", "melonds_screen_layout1", "hybrid-bottom")
         show()
         rule.onNodeWithText("3 : 1").assertExists() // bố cục "Một màn lớn" đang chọn → hiện tỉ lệ
+    }
+
+    /** V188: mục "Màn hình" có tiêu đề nhóm; chọn bố cục → lưu, mở lại vẫn đúng bố cục người chơi chọn. */
+    @Test fun groupsAndChosenLayoutSurviveReopen() {
+        show()
+        rule.onNodeWithText("Màn hình").assertExists()
+        rule.onNodeWithText("Bố cục").assertExists()
+        rule.onNodeWithText("Cạnh nhau").performClick()
+        rule.mainClock.advanceTimeBy(500)
+        assertEquals("left-right", saved()["melonds_screen_layout1"])
+        // Mở lại game/app: mặc định config + lựa chọn đã lưu → vẫn là bố cục người chơi chọn (config không đè).
+        val initial = CoreOptions.initial(rule.activity, "melondsds", core.options)
+        assertEquals("left-right", DsScreen.current(core.screen!!, initial).layout.value)
+        assertEquals("left-right", DsScreen.rotationLayout(core.screen!!, initial, landscape = false))
+    }
+
+    /** V188: bố cục lạ trong config giữ nguyên nhãn của nó, không tự đổi tên. */
+    @Test fun unknownLayoutKeepsItsOwnName() {
+        val custom = core.screen!!.copy(layouts = listOf(vn.aow.monika.config.ScreenChoice("x", "Bố cục lạ ABC", "strange-layout")))
+        rule.setContent { MonikaTheme { Column(Modifier.padding(16.dp)) { ScreenSettings("melondsds", custom, core.options) } } }
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithText("Bố cục lạ ABC").assertExists()
     }
 }

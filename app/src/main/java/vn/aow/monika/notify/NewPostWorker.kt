@@ -19,6 +19,8 @@ import java.util.concurrent.TimeUnit
 class NewPostWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        // V193 G1: người dùng tắt bài viết → không gọi mạng, không thông báo.
+        if (!AppGraph.feedEnabled) return Result.success()
         val prefs = AppGraph.prefs
         val posts = runCatching { AppGraph.feed.fetch(max = 10) }.getOrElse { return Result.retry() }
         val seen = prefs.seenPostIds
@@ -54,6 +56,11 @@ class NewPostWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                 .build()
             WorkManager.getInstance(context)
                 .enqueueUniquePeriodicWork(NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
+        }
+
+        /** V193 G1: tắt bài viết → bỏ lịch thăm dò đã đặt từ bản cũ. */
+        fun cancel(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(NAME)
         }
     }
 }

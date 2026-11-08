@@ -50,6 +50,7 @@ import vn.aow.monika.AppGraph
 import vn.aow.monika.R
 import vn.aow.monika.config.ExternalApp
 import vn.aow.monika.library.Game
+import vn.aow.monika.library.GameSaveBackup
 import vn.aow.monika.library.LibraryDocument
 import vn.aow.monika.library.documentViewIntent
 import vn.aow.monika.library.GameStorage
@@ -87,6 +88,10 @@ fun LibraryScreen(onSettings: () -> Unit) {
     var scanned by remember { mutableStateOf(AppGraph.library.cached) } // null = đang quét lần đầu
     var documents by remember { mutableStateOf(AppGraph.library.cachedDocuments) }
     var documentToDelete by remember { mutableStateOf<LibraryDocument?>(null) }
+    // V141: mục Tệp — tệp đang chờ xác nhận xoá (game/tài liệu app quản lý).
+    var fileToDelete by remember { mutableStateOf<LibraryFileEntry?>(null) }
+    // Bản sao lưu save vừa tạo (nếu có) để người dùng chia sẻ/lưu ra ngoài.
+    var backupToShare by remember { mutableStateOf<java.io.File?>(null) }
     val games = scanned.orEmpty()
     var reloadKey by remember { mutableIntStateOf(0) }
     var busy by remember { mutableStateOf(false) }
@@ -118,6 +123,12 @@ fun LibraryScreen(onSettings: () -> Unit) {
     fun selectSection(target: LibrarySection) {
         section = target
         AppGraph.prefs.librarySection = target.key
+    }
+    // V141: mục Tệp — chỉ dựng từ game + tài liệu app đã nhận diện (không liệt kê thư mục lạ).
+    // null = đang dựng danh sách (không nháy "Chưa có tệp nào" rồi mới hiện tệp).
+    val fileEntries by produceState<List<LibraryFileEntry>?>(null, section, games, documents, reloadKey) {
+        if (section != LibrarySection.FILES) return@produceState
+        value = withContext(Dispatchers.IO) { libraryFileEntries(games, documents) }
     }
 
     val playedTick by AppGraph.prefs.playedTick.collectAsState()
@@ -242,6 +253,23 @@ fun LibraryScreen(onSettings: () -> Unit) {
     }
     playRef[0] = play
 
+    /** Mở tài liệu bằng ứng dụng đọc có trong máy; thiếu app thì báo rõ thay vì im lặng. */
+    fun openDocument(document: LibraryDocument) {
+        try {
+            context.startActivity(documentViewIntent(context, document))
+        } catch (_: android.content.ActivityNotFoundException) {
+            info = "Chưa có ứng dụng mở loại tài liệu này. Hãy cài ứng dụng đọc tài liệu rồi thử lại."
+        } catch (_: Exception) {
+            info = "Chưa mở được tài liệu. Kiểm tra quyền đọc tệp rồi thử lại."
+        }
+    }
+
+    /** Bấm một dòng ở mục Tệp: game thì chạy, tài liệu (và tệp khác) thì mở bằng ứng dụng phù hợp. */
+    fun openFile(entry: LibraryFileEntry) {
+        entry.game?.let { play(it); return }
+        openDocument(entry.document ?: LibraryDocument(entry.file))
+    }
+
     // Bộ lọc: Tất cả · Chơi gần đây · Chơi thường xuyên · Theo hệ máy (bấm → menu chọn hệ).
     val prefs = AppGraph.prefs
     val systems = games.mapNotNull { it.system?.name }.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }
@@ -267,6 +295,7 @@ fun LibraryScreen(onSettings: () -> Unit) {
                 deviceScanning -> "Đang quét máy… ($scanDirs thư mục)"
                 else -> "${games.size} game trong máy" + if (documents.isNotEmpty()) " · ${documents.size} tài liệu" else ""
             },
+            left = { vn.aow.monika.donate.DonationButton() },
             right = { CircleButton(R.drawable.ic_fluent_grid_24_regular, "Menu thư viện", { libMenu = true }) },
         )
         // V138: khung 3 mục Chơi / Đọc / Tệp + một cửa "+ Thêm" cho mọi cách đưa đồ vào Thư viện.
@@ -352,18 +381,20 @@ fun LibraryScreen(onSettings: () -> Unit) {
         }
         // Mục Đọc: dùng danh sách tài liệu sẵn có (LibraryDocuments), chưa có thì hiện trạng thái rỗng.
         if (section == LibrarySection.READ) LibraryReadPage(documents,
-            onOpen = { document ->
-                try {
-                    context.startActivity(documentViewIntent(context, document))
-                } catch (_: android.content.ActivityNotFoundException) {
-                    info = "Chưa có ứng dụng mở loại tài liệu này. Hãy cài ứng dụng đọc tài liệu rồi thử lại."
-                } catch (_: Exception) {
-                    info = "Chưa mở được tài liệu. Kiểm tra quyền đọc tệp rồi thử lại."
-                }
-            },
+            onOpen = ::openDocument,
             onDelete = { documentToDelete = it },
         )
-        if (section == LibrarySection.FILES) LibraryFilesPage()
+        // Mục Tệp: game + tài liệu app quản lý, bấm để mở đúng hành động.
+        if (section == LibrarySection.FILES) {
+            val entries = fileEntries
+            if (entries == null) Box(Modifier.fillMaxWidth().height(240.dp), Alignment.Center) { Spinner() }
+            else LibraryFilesPage(
+                entries = entries,
+                onOpen = ::openFile,
+                onDelete = { fileToDelete = it },
+                onAdd = { addSheet = true },
+            )
+        }
       }
 
         // ---- Menu popup (cùng thiết kế menu trung tâm) ----
@@ -421,6 +452,75 @@ fun LibraryScreen(onSettings: () -> Unit) {
             containerColor = c.surface, shape = Radius.large,
         )
     }
+    // V141: xoá an toàn — chỉ xoá thứ app quản lý, sao lưu save trước khi xoá game [A54].
+    fileToDelete?.let { entry ->
+        val game = entry.game
+        val document = entry.document
+        val external = game?.external == true
+        AlertDialog(
+            onDismissRequest = { fileToDelete = null },
+            title = {
+                Text(
+                    when {
+                        external -> "Ẩn khỏi Thư viện?"
+                        game != null -> "Xoá game?"
+                        else -> "Xoá tài liệu?"
+                    },
+                    style = Monika.type.cardTitle,
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    when {
+                        external -> Text(
+                            "Chỉ ẩn \"${entry.name}\" khỏi danh sách. Tệp game trong máy và save không bị xoá.",
+                            style = Monika.type.body, color = c.textSecondary,
+                        )
+                        game != null -> {
+                            Text(
+                                "Sẽ xoá: thư mục game \"${entry.name}\" (${formatFileSize(entry.sizeBytes)}) trong kho Monika.",
+                                style = Monika.type.body, color = c.text,
+                            )
+                            Text(
+                                "Được giữ lại: save của giả lập và mọi thư mục khác trong kho. " +
+                                    "Toàn bộ thư mục game (mọi tệp, kể cả save đuôi lạ) được sao lưu vào ${GameSaveBackup.DIR} trước khi xoá.",
+                                style = Monika.type.caption, color = c.textSecondary,
+                            )
+                        }
+                        else -> {
+                            Text(
+                                "Sẽ xoá: tệp \"${entry.name}\" (${formatFileSize(entry.sizeBytes)}).",
+                                style = Monika.type.body, color = c.text,
+                            )
+                            Text(
+                                "Được giữ lại: các tệp khác trong thư mục, save và mọi thư mục khác trong kho.",
+                                style = Monika.type.caption, color = c.textSecondary,
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                GradientButton(if (external) "Ẩn" else "Xoá", {
+                    fileToDelete = null
+                    scope.launch {
+                        val result = withContext(Dispatchers.IO) {
+                            when {
+                                game != null -> deleteGameWithSaveBackup(context, game)
+                                document != null -> deleteDocumentFile(document)
+                                else -> FileDeleteResult(false, null, "Không xác định được tệp để xoá.")
+                            }
+                        }
+                        info = result.message
+                        backupToShare = result.backup
+                        reloadKey++
+                    }
+                }, height = 44.dp)
+            },
+            dismissButton = { DarkButton("Hủy", { fileToDelete = null }) },
+            containerColor = c.surface, shape = Radius.large,
+        )
+    }
     documentToDelete?.let { document ->
         AlertDialog(
             onDismissRequest = { documentToDelete = null },
@@ -438,11 +538,17 @@ fun LibraryScreen(onSettings: () -> Unit) {
             containerColor = c.surface, shape = Radius.large,
         )
     }
-    info?.let {
+    info?.let { text ->
         AlertDialog(
-            onDismissRequest = { info = null },
-            confirmButton = { GradientButton("OK", { info = null }, height = 44.dp) },
-            text = { Text(it, style = Monika.type.body, color = c.text) },
+            onDismissRequest = { info = null; backupToShare = null },
+            confirmButton = {
+                GradientButton("OK", { info = null; backupToShare = null }, height = 44.dp)
+            },
+            // Bản sao lưu nằm trong filesDir: cho người dùng gửi/lưu ra ngoài (Drive, Zalo, Files…).
+            dismissButton = backupToShare?.let { file ->
+                { DarkButton("Chia sẻ bản sao lưu", { shareBackup(context, file)?.let { info = it } }) }
+            },
+            text = { Text(text, style = Monika.type.body, color = c.text) },
             containerColor = c.surface, shape = Radius.large,
         )
     }

@@ -49,7 +49,8 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
         Notifier.createChannels(this)
         // Làm nóng hồ sơ tài khoản → điểm danh hiện tức thì.
         scope.launch(Dispatchers.IO) { runCatching { AppGraph.aow.cachedProfile(); if (AppGraph.account.session.value != null) AppGraph.aow.profile() } }
-        NewPostWorker.schedule(this, AppGraph.config.current.feed.pollMinutes)
+        // V193 G1: chỉ đặt lịch thăm dò bài mới khi người dùng bật bài viết.
+        syncFeedSchedule()
         CacheCleanWorker.schedule(this)
         scope.launch(Dispatchers.IO) { runCatching { StorageCleaner.clean(this@MonikaApp) } }
         // Lần đầu: tải sẵn các lõi phổ biến (GBA, NES...) kèm thông báo; đã đủ lõi thì worker thoát ngay.
@@ -58,7 +59,7 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
             while (true) {
                 // Lấy cấu hình mới; nếu chu kỳ kiểm tra bài đổi thì đặt lịch lại.
                 AppGraph.config.refresh().onSuccess {
-                    NewPostWorker.schedule(this@MonikaApp, it.feed.pollMinutes)
+                    syncFeedSchedule()
                     // Config mới có thể thêm lõi tải sẵn / nâng version lõi.
                     runCatching { vn.aow.monika.library.CorePrefetchWorker.enqueue(this@MonikaApp) }
                 }
@@ -69,10 +70,16 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
         // V132: cấu hình mới nhận giữa phiên (kể cả bấm "Cập nhật cấu hình") → lõi đọc lại, xếp tải lại.
         scope.launch {
             AppGraph.config.config.map { it.configVersion }.distinctUntilChanged().drop(1).collect {
-                NewPostWorker.schedule(this@MonikaApp, AppGraph.config.current.feed.pollMinutes)
+                syncFeedSchedule()
                 runCatching { vn.aow.monika.library.CorePrefetchWorker.enqueue(this@MonikaApp) }
             }
         }
+    }
+
+    /** V193 G1: bật → đặt lịch thăm dò bài mới; tắt → bỏ lịch (không gọi feed). */
+    private fun syncFeedSchedule() {
+        if (AppGraph.feedEnabled) NewPostWorker.schedule(this, AppGraph.config.current.feed.pollMinutes)
+        else NewPostWorker.cancel(this)
     }
 
     /** Tách riêng để test khởi động (Robolectric không nạp được lớp javax.* của J2ME). */

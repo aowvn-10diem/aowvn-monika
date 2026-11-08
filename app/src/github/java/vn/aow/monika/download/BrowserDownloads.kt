@@ -57,6 +57,8 @@ class DlJob(val id: Int, val url: String, val userAgent: String?, val referer: S
     var state by mutableStateOf(DlState.RUNNING)
     var error by mutableStateOf<String?>(null)
     var confirmed by mutableStateOf(false)
+    /** V193: người dùng đã thấy cảnh báo nguồn Pixeldrain và đồng ý tải — tách khỏi [confirmed] (tên/nơi lưu). */
+    var pixeldrainConfirmed = false
     @Volatile var dest: SaveDest? = null
     @Volatile var call: Call? = null
     @Volatile var savedName: String = ""
@@ -77,6 +79,8 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
     val jobs = mutableStateListOf<DlJob>()
     /** Lượt tải cần hỏi tên / nơi lưu (hiện menu popup). */
     var sheetFor by mutableStateOf<DlJob?>(null)
+    /** Test hook: báo khi một job kết thúc (mọi nhánh tải). */
+    @Volatile internal var onJobFinished: ((DlJob) -> Unit)? = null
     /** Thông báo ngắn "đã tải xong" hiện ở góc. */
     var justSaved by mutableStateOf<String?>(null)
     /** Thư mục vừa chọn từ trình chọn thư mục hệ thống, chờ menu popup nhận. */
@@ -89,10 +93,18 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
     private fun staging(): File = runCatching { File(GameStorage.downloads(context), ".tmp").apply { mkdirs() } }
         .getOrNull()?.takeIf { it.isDirectory && it.canWrite() } ?: File(context.cacheDir, "dl").apply { mkdirs() }
 
-    /** Bắt đầu tải ngay. Gọi từ luồng bất kỳ. */
-    fun start(url: String, userAgent: String?, contentDisposition: String?, mime: String?, referer: String?, meta: GameMeta? = null): DlJob {
+    /** Bắt đầu tải ngay. Gọi từ luồng bất kỳ. [confirmed] = người dùng đã xác nhận cảnh báo ở hộp thoại dán link. */
+    fun start(url: String, userAgent: String?, contentDisposition: String?, mime: String?, referer: String?, meta: GameMeta? = null, confirmed: Boolean = false, pixeldrainConfirmed: Boolean = false): DlJob {
         val job = DlJob(ids.getAndIncrement(), url, userAgent, referer, mime, meta)
         job.name = suggestName(url, contentDisposition, mime)
+        job.pixeldrainConfirmed = pixeldrainConfirmed
+        // V193 G2: chốt chặn cuối — không có đồng ý cảnh báo Pixeldrain thì không phát request nào.
+        if (PixeldrainHost.matches(url) && !job.pixeldrainConfirmed) {
+            job.error = "${PixeldrainHost.WARNING} Hãy dán link Pixeldrain trong mục Tải xuống để xác nhận."
+            job.state = DlState.FAILED
+            main.post { jobs.add(job) }
+            return job
+        }
         job.part = File(staging(), "${System.currentTimeMillis()}-${job.id}.part")
         main.post { jobs.add(job); sheetFor = job; ensureService() }
         scope.launch { vn.aow.monika.library.Prefetch.onDownloadStart(context, meta?.labels.orEmpty(), job.name) }
@@ -102,41 +114,64 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
 
     private fun download(job: DlJob) {
         try {
-            val b = Request.Builder().url(job.url)
-            job.userAgent?.let { b.header("User-Agent", it) }
-            job.referer?.let { b.header("Referer", it) }
-            runCatching { CookieManager.getInstance().getCookie(job.url) }.getOrNull()?.takeIf { it.isNotBlank() }?.let { b.header("Cookie", it) }
-            val call = http.newBuilder().readTimeout(0, java.util.concurrent.TimeUnit.SECONDS).callTimeout(0, java.util.concurrent.TimeUnit.SECONDS)
-                .build().newCall(b.build())
-            job.call = call
-            call.execute().use { r ->
-                if (!r.isSuccessful) throw IOException("Máy chủ trả lỗi ${r.code}")
-                // Kiểm "đã xác nhận" LẠI trên luồng chính lúc áp tên: nếu người dùng đặt tên đúng lúc tiêu đề máy chủ về (race), tên người dùng đặt không được bị đè.
-                r.header("Content-Disposition")?.let { cd -> main.post { if (!job.confirmed) job.name = suggestName(job.url, cd, job.mime) } }
-                val len = r.body!!.contentLength()
-                main.post { job.total = len }
-                var last = System.nanoTime(); var lastBytes = 0L; var got = 0L
-                job.part.parentFile?.mkdirs()
-                r.body!!.byteStream().use { ins ->
-                    // V166: `ins` là luồng mạng → bọc để đứt giữa chừng được đánh dấu là chuyện mạng.
-                    val source = vn.aow.monika.diag.Diagnostics.networkStream(ins)
-                    job.part.outputStream().buffered(1 shl 16).use { out ->
-                        val buf = ByteArray(1 shl 16)
-                        while (true) {
-                            val n = source.read(buf)
-                            if (n < 0) break
-                            out.write(buf, 0, n); got += n
-                            val now = System.nanoTime()
-                            if (now - last > 250_000_000L) {
-                                val sp = (got - lastBytes) * 1_000_000_000L / (now - last)
-                                val g = got
-                                main.post { job.done = g; job.speed = sp }
-                                last = now; lastBytes = got
+            // V193: tự theo redirect bị tắt cho luồng này để kiểm từng hop; client dùng chung không đổi.
+            val client = http.newBuilder()
+                .followRedirects(false).followSslRedirects(false)
+                .readTimeout(0, java.util.concurrent.TimeUnit.SECONDS).callTimeout(0, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+            var url = job.url
+            var hops = 0
+            while (true) {
+                val b = Request.Builder().url(url)
+                job.userAgent?.let { b.header("User-Agent", it) }
+                job.referer?.let { b.header("Referer", it) }
+                // diag: bỏ qua cookie không đọc được là lỗi hệ thống, không phải lỗi app.
+                runCatching { CookieManager.getInstance().getCookie(url) }.getOrNull()?.takeIf { it.isNotBlank() }?.let { b.header("Cookie", it) }
+                val call = client.newCall(b.build())
+                job.call = call
+                var nextUrl: String? = null
+                call.execute().use { r ->
+                    if (r.code in 300..399) {
+                        val location = r.header("Location") ?: throw IOException("Chuyển hướng thiếu Location")
+                        val next = r.request.url.resolve(location) ?: throw IOException("Chuyển hướng không hợp lệ")
+                        // Chốt từng hop: không gửi request tới Pixeldrain nếu chưa có đồng ý cảnh báo Pixeldrain.
+                        if (PixeldrainHost.matches(next.toString()) && !job.pixeldrainConfirmed) {
+                            throw IOException("${PixeldrainHost.WARNING} Link này chuyển tới Pixeldrain; hãy dán link Pixeldrain trong mục Tải xuống để xác nhận.")
+                        }
+                        if (++hops > MAX_REDIRECTS) throw IOException("Quá nhiều chuyển hướng")
+                        nextUrl = next.toString()
+                        return@use
+                    }
+                    if (!r.isSuccessful) throw IOException("Máy chủ trả lỗi ${r.code}")
+                    // Kiểm "đã xác nhận" LẠI trên luồng chính lúc áp tên: nếu người dùng đặt tên đúng lúc tiêu đề máy chủ về (race), tên người dùng đặt không được bị đè.
+                    r.header("Content-Disposition")?.let { cd -> main.post { if (!job.confirmed) job.name = suggestName(job.url, cd, job.mime) } }
+                    val len = r.body!!.contentLength()
+                    main.post { job.total = len }
+                    var last = System.nanoTime(); var lastBytes = 0L; var got = 0L
+                    job.part.parentFile?.mkdirs()
+                    r.body!!.byteStream().use { ins ->
+                        // V166: `ins` là luồng mạng → bọc để đứt giữa chừng được đánh dấu là chuyện mạng.
+                        val source = vn.aow.monika.diag.Diagnostics.networkStream(ins)
+                        job.part.outputStream().buffered(1 shl 16).use { out ->
+                            val buf = ByteArray(1 shl 16)
+                            while (true) {
+                                val n = source.read(buf)
+                                if (n < 0) break
+                                out.write(buf, 0, n); got += n
+                                val now = System.nanoTime()
+                                if (now - last > 250_000_000L) {
+                                    val sp = (got - lastBytes) * 1_000_000_000L / (now - last)
+                                    val g = got
+                                    main.post { job.done = g; job.speed = sp }
+                                    last = now; lastBytes = got
+                                }
                             }
                         }
                     }
+                    main.post { job.done = got; if (job.total < 0) job.total = got; job.speed = 0 }
                 }
-                main.post { job.done = got; if (job.total < 0) job.total = got; job.speed = 0 }
+                val next = nextUrl ?: break
+                url = next
             }
             if (job.state == DlState.CANCELED) { runCatching { job.part.delete() }; return }
             // Hủy có thể xen vào giữa lúc kiểm tra ở trên và lúc chạy trên luồng chính → không được ghi đè trạng thái "đã hủy".
@@ -149,6 +184,8 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
             vn.aow.monika.diag.Diagnostics.opFail(context, vn.aow.monika.diag.Diagnostics.Op.DOWNLOAD, "tai-ve", e, job.name)
             main.post { job.error = e.message ?: "Lỗi mạng"; job.state = DlState.FAILED }
             Notifier.downloadDone(context, "Tải thất bại", "${job.name}: ${e.message ?: "lỗi mạng"}", Intent(context, MainActivity::class.java))
+        } finally {
+            onJobFinished?.invoke(job)
         }
     }
 
@@ -271,6 +308,7 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
     fun activeJobs(): List<DlJob> = jobs.filter { it.active }
 
     companion object {
+        private const val MAX_REDIRECTS = 5
         fun sanitize(n: String) = n.replace(Regex("""[\\/:*?"<>|]"""), "_").trim().trim('.').take(180)
 
         fun suggestName(url: String, disposition: String?, mime: String?): String {

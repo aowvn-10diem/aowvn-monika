@@ -7,6 +7,18 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+// V192: BouncyCastle đi vào APK qua `libadb-android` (kéo bản cũ). Ghim bản trong
+// `gradle/libs.versions.toml` cho MỌI cấu hình của app (mọi `*Classpath`, cả 2 flavor).
+val bcVersion = libs.versions.bouncycastle.get()
+configurations.configureEach {
+    resolutionStrategy.force(
+        "org.bouncycastle:bcprov-jdk15to18:$bcVersion",
+        "org.bouncycastle:bcprov-jdk18on:$bcVersion",
+        "org.bouncycastle:bcpkix-jdk18on:$bcVersion",
+        "org.bouncycastle:bcutil-jdk18on:$bcVersion",
+    )
+}
+
 android {
     namespace = "vn.aow.monika"
     compileSdk = 35
@@ -21,8 +33,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 54
-        versionName = "0.8.9"
+        versionCode = 56
+        versionName = "0.8.11"
         // V56: runner chỉ nằm trong APK instrumentation, không thêm lối vào app phát hành.
         testInstrumentationRunner = "vn.aow.monika.testlab.KirikiriArmRunner"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
@@ -230,6 +242,9 @@ dependencies {
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // V196: kiểm redirect 302 thật ở mỗi hop mà không cần mạng (máy chủ HTTPS cục bộ trong test)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.okhttp.tls)
     // Test giao diện trên JVM (Robolectric): mở từng màn hình, bắt crash, chụp ảnh → app/build/screenshots/
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.compose.bom))

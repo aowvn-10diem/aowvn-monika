@@ -7,8 +7,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -33,9 +36,116 @@ internal fun GameSaveButtons(enabled: Boolean, busy: Boolean, onExport: () -> Un
 
 internal data class SaveUiActions(val busy: Boolean, val onExport: () -> Unit, val onImport: () -> Unit)
 
+/** Trạng thái mục Save ở trang game. */
+internal sealed interface SaveListState {
+    data object Loading : SaveListState
+    /** Hệ này chưa có đường chuyển save trong Monika (save vẫn nằm trong kết quả chơi của game). */
+    data object Unsupported : SaveListState
+    data class Ready(val saves: List<GameSaveEntry>) : SaveListState
+    data class Failed(val message: String) : SaveListState
+}
+
+/** Câu báo lỗi chung — không chứa tên tệp/đường dẫn của người dùng. */
+internal const val SAVE_LIST_ERROR = "Không đọc được save của game. Hãy kiểm tra dung lượng và thử lại."
+
+/**
+ * Đọc danh sách save của [game] trên luồng IO; đọc lại khi [reloadKey] đổi (sau khi nhập save).
+ * Không ném lỗi ra UI: mọi lỗi thành [SaveListState.Failed] có câu tiếng Việt.
+ */
+@Composable
+internal fun rememberSaveList(game: Game, reloadKey: Int): State<SaveListState> {
+    val context = LocalContext.current
+    return produceState<SaveListState>(SaveListState.Loading, game.key, reloadKey) {
+        value = withContext(Dispatchers.IO) {
+            try {
+                if (!GameSaveCatalog.supported(context, game)) SaveListState.Unsupported
+                else SaveListState.Ready(GameSaveCatalog.list(context, game))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: SaveTransferException) {
+                SaveListState.Failed(error.message ?: SAVE_LIST_ERROR)
+            } catch (error: Exception) {
+                // Chỉ mã lỗi + loại ngoại lệ; không ghi tên tệp/đường dẫn của người dùng.
+                Diagnostics.recordHandled(
+                    context, "app:save-transfer", "doc-save-loi", java.io.IOException(error.javaClass.simpleName),
+                )
+                SaveListState.Failed(SAVE_LIST_ERROR)
+            }
+        }
+    }
+}
+
+/**
+ * Mục Save của trang game: liệt kê save hiện có (tên, thời điểm, dung lượng), nút nhập save từ tệp
+ * và chia sẻ/xuất save. Chỉ hiển thị; mọi thao tác đi qua [onImport]/[onExport] của màn gọi.
+ */
+@Composable
+internal fun GameSaveSection(
+    state: SaveListState,
+    busy: Boolean,
+    onImport: () -> Unit,
+    onExport: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val c = Monika.colors
+    val actionsEnabled = !busy && state !is SaveListState.Unsupported
+    MonikaCard(modifier.fillMaxWidth(), shape = Radius.large, padding = PaddingValues(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Save", style = Monika.type.cardTitle, color = c.text, modifier = Modifier.weight(1f))
+            if (state is SaveListState.Ready && state.saves.isNotEmpty()) Tag("${state.saves.size} mục")
+        }
+        Spacer(Modifier.height(8.dp))
+        when (state) {
+            SaveListState.Loading -> Text("Đang đọc save…", style = Monika.type.body, color = c.textSecondary)
+            SaveListState.Unsupported -> Text(
+                "Hệ này chưa hỗ trợ chuyển save trên Monika. Bạn vẫn chơi và lưu trong game bình thường.",
+                style = Monika.type.body, color = c.textSecondary,
+            )
+            is SaveListState.Failed -> Text(state.message, style = Monika.type.body, color = c.textSecondary)
+            is SaveListState.Ready -> if (state.saves.isEmpty()) {
+                Text("Chưa có save nào.", style = Monika.type.body, color = c.text)
+                Text(
+                    "Chơi game rồi lưu trong game, hoặc nhập tệp save có sẵn bên dưới.",
+                    style = Monika.type.caption, color = c.textSecondary,
+                )
+            } else {
+                state.saves.forEach { SaveRow(it) }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        GradientButton("Chia sẻ save", onExport, Modifier.fillMaxWidth(), enabled = actionsEnabled)
+        Spacer(Modifier.height(8.dp))
+        DarkButton("Nhập save từ tệp", onImport, Modifier.fillMaxWidth(), enabled = actionsEnabled)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            if (busy) "Đang chuyển save…" else "Save cũ luôn được sao lưu trong app trước khi ghi đè. Game không bị xóa.",
+            style = Monika.type.caption, color = c.textSecondary,
+        )
+    }
+}
+
+/** Một dòng save: tên + thời điểm bên trái, dung lượng bên phải. */
+@Composable
+private fun SaveRow(save: GameSaveEntry) {
+    val c = Monika.colors
+    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(save.name, style = Monika.type.body, color = c.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(saveTime(save.savedAt), style = Monika.type.caption, color = c.textSecondary)
+        }
+        Text(formatGameSize(save.size), style = Monika.type.caption, color = c.textSecondary)
+    }
+}
+
+/** "12/03/2026 21:05"; không rõ thời điểm thì nói thẳng thay vì hiện 01/01/1970. */
+internal fun saveTime(epochMillis: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String =
+    if (epochMillis <= 0) "Không rõ thời điểm"
+    else java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+        .format(java.time.Instant.ofEpochMilli(epochMillis).atZone(zone))
+
 /** Launcher/plan nằm ngoài sheet nên đóng menu hoặc hủy SAF không thể nhập nhầm sang game khác. */
 @Composable
-internal fun rememberGameSaveActions(game: Game?): SaveUiActions {
+internal fun rememberGameSaveActions(game: Game?, onImported: () -> Unit = {}): SaveUiActions {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
@@ -99,6 +209,7 @@ internal fun rememberGameSaveActions(game: Game?): SaveUiActions {
                 val imported = withContext(Dispatchers.IO) { GameSaveTransfer.commit(context, proposed) }
                 plan = null; backup = imported.backup
                 result = "Đã nhập ${imported.count} file. Bản sao save cũ được giữ trong app; bạn có thể xuất ra file ZIP ngay."
+                onImported()
             } }, enabled = !busy) },
             dismissButton = { SoftPillButton("Hủy", { if (!busy) plan = null }) },
             containerColor = Monika.colors.surface,

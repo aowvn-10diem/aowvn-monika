@@ -84,7 +84,8 @@ class Rendering(unittest.TestCase):
 
     def test_anr_without_session_gets_main_thread_hypothesis(self):
         groups = insight.group_rows([row(k="anr", component="app:chính", fp="cccccccccccc3333")])
-        self.assertEqual("treo tiến trình chính (không có phiên game)", insight.table_rows(groups)[0][7])
+        cell = dict(zip(insight.COLUMNS, insight.table_rows(groups)[0]))
+        self.assertEqual("treo tiến trình chính (không có phiên game)", cell["giả thuyết"])
 
     def test_csv_header_and_rows_are_machine_readable(self):
         table = insight.render_csv(insight.group_rows([row(count=7)]))
@@ -108,6 +109,74 @@ class Rendering(unittest.TestCase):
         self.assertEqual(0, groups)
         self.assertIn("| " + " | ".join(insight.COLUMNS) + " |", markdown)
         self.assertEqual(1, len(table.splitlines()))
+
+
+class Certificate(unittest.TestCase):
+    """V155b: cột + bảng đếm theo chứng thư để nhóm và đối chiếu thủ công với chứng thư bản phát hành."""
+
+    CERT_A = "a1b2c3d4e5f60718" + "a" * 48
+    CERT_B = "0011223344556677" + "b" * 48
+
+    def test_certificate_caveat_is_stated_in_table(self):
+        # Luna 5: cert do client gửi — chỉ để đối chiếu, KHÔNG phải bằng chứng xác thực / không kết luận "bản giả".
+        markdown = insight.render_markdown(insight.group_rows([row(cert=self.CERT_A), row(cert=self.CERT_B, fp="bbbbbbbbbbbb2222")]), 2)
+        self.assertIn("bằng chứng xác thực", markdown)
+        self.assertIn("client gửi lên", markdown)
+        self.assertIn("kết luận đây là bản giả", markdown)
+        self.assertNotIn("để phát hiện bản giả", markdown)
+
+    def test_group_criteria_line_matches_group_rows(self):        # Luna 5: mô tả "số nhóm" phải khớp tiêu chí gộp thật (5 phần, có thành phần và chứng thư).
+        markdown = insight.render_markdown(insight.group_rows([row()]), 1)
+        line = next(l for l in markdown.splitlines() if l.startswith("Số dòng nhận được"))
+        for part in ("lõi", "loại", "chữ ký", "thành phần", "chứng thư"):
+            self.assertIn(part, line)
+        self.assertIn("client gửi lên", markdown)
+
+    def test_different_component_is_a_separate_group(self):
+        groups = insight.group_rows([row(component="op:giai-nen"), row(component="app:chính")])
+        self.assertEqual(2, len(groups))
+
+    def cell(self, group, column):
+        return dict(zip(insight.COLUMNS, insight.table_rows([group])[0]))[column]
+
+    def test_certificate_is_a_column_and_separates_groups(self):
+        groups = insight.group_rows([row(cert=self.CERT_A), row(cert=self.CERT_B)])
+        self.assertEqual(2, len(groups))
+        self.assertEqual(sorted([self.CERT_A[:12], self.CERT_B[:12]]), sorted(self.cell(g, "chứng thư") for g in groups))
+
+    def test_certificate_counts_block_sums_reports_and_uses(self):
+        groups = insight.group_rows([
+            row(cert=self.CERT_A, count=3), row(cert=self.CERT_A, count=4),
+            row(cert=self.CERT_B, count=1, fp="bbbbbbbbbbbb2222"),
+        ])
+        markdown = insight.render_markdown(groups, 3)
+        self.assertIn("Đếm theo chứng thư", markdown)
+        self.assertIn("| %s | 2 | 7 |" % self.CERT_A[:12], markdown)
+        self.assertIn("| %s | 1 | 1 |" % self.CERT_B[:12], markdown)
+        self.assertIn("2 chứng thư khác nhau", markdown)
+
+    def test_single_certificate_has_no_warning(self):
+        markdown = insight.render_markdown(insight.group_rows([row(cert=self.CERT_A)]), 1)
+        self.assertNotIn("chứng thư khác nhau", markdown)
+
+    def test_missing_certificate_is_dash_and_reported_in_footer(self):
+        markdown = insight.render_markdown(insight.group_rows([row()]), 1)
+        self.assertEqual(insight.MISSING, self.cell(insight.group_rows([row()])[0], "chứng thư"))
+        self.assertIn("Thiếu trường:", markdown)
+        self.assertIn("chứng thư", markdown)
+        self.assertIn("`cert`", markdown)
+
+    def test_csv_carries_certificate_column(self):
+        table = insight.render_csv(insight.group_rows([row(cert=self.CERT_A)]))
+        self.assertIn("chứng thư", table.splitlines()[0])
+        self.assertIn(self.CERT_A[:12], table.splitlines()[1])
+
+    def test_non_hex_certificate_is_not_echoed(self):
+        poisoned = "<script>alert(1)</script>"
+        markdown, table, _, _ = insight.build({"reports": [row(cert=poisoned)]})
+        for output in (markdown, table):
+            self.assertNotIn("script", output)
+            self.assertNotIn("alert", output)
 
 
 class Endpoint(unittest.TestCase):

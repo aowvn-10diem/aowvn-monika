@@ -40,6 +40,7 @@ jobs:
               'test-fetch-3ds-game.py',
               'test-r3ds-evidence.py',
               'test-real-games.py',
+              'test-crash-insight.py',
               'test-crash-ton-table.py',
           )
           failed = []
@@ -54,3 +55,11 @@ jobs:
           PY
       - name: Kiểm thử lại NDK bằng SDK giả (V123, offline)
         run: python3 scripts/test-ci-install-j2me-ndk.py
+      - name: Kiểm script trước push bằng lỗi giả (Bash, offline)
+        run: python3 scripts/test-truoc-khi-push.py
+      - name: Kiểm lock và recipe dựng lõi từ nguồn (V198, offline)
+        run: python3 scripts/test-prepare-core-build.py
+      - name: Kiểm snapshot PPSSPP bằng dữ liệu giả, không đăng (V198)
+        run: python3 scripts/test-ppsspp-snapshot.py
+      - name: Kiểm tin sáng Telegram bằng dữ liệu giả (V177, offline)
+        run: python3 scripts/test-telegram-tom-tat.py

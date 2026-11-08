@@ -25,6 +25,29 @@ const json = (o, status = 200, extra = {}) => new Response(JSON.stringify(o), { 
 const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
 const s = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
 
+// V195: quyền quản trị — so sánh trên SHA-256 (độ dài cố định) thay vì so chuỗi thô,
+// để thời gian so sánh không phụ thuộc nội dung/ký tự đầu tiên khác nhau.
+const authEncoder = new TextEncoder();
+async function authDigest(text) {
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", authEncoder.encode(text)));
+}
+export async function authEquals(provided, expected) {
+  if (typeof provided !== "string" || typeof expected !== "string" || expected.length === 0) return false;
+  const [a, b] = await Promise.all([authDigest(provided), authDigest(expected)]);
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+// Chưa cấu hình mã quản trị thì đóng cửa (503): không so sánh, không lộ tên/giá trị cấu hình.
+// Trả Response khi bị chặn, null khi được phép.
+async function requireAdmin(req, env) {
+  const token = env && env.ADMIN_TOKEN;
+  if (typeof token !== "string" || token.trim().length === 0) return json({ ok: false, error: "unavailable" }, 503);
+  const header = req.headers.get("authorization") || "";
+  if (!(await authEquals(header, `Bearer ${token}`))) return json({ ok: false, error: "unauthorized" }, 401);
+  return null;
+}
+
 // Chỉ chấp nhận JPEG có cấu trúc/chiều ảnh khớp; giới hạn trước giải mã base64.
 export function reportImage(image, kind) {
   if (image == null) return null;
@@ -89,6 +112,161 @@ export function rateLimitConfig(env) {
   };
 }
 
+// V194: bộ đếm chống spam nằm trong bộ nhớ của isolate — không tốn lượt ghi KV nào.
+// (Trước đây mỗi báo cáo ghi thêm 1 khoá `rl:` vào KV ⇒ 2 ghi/báo cáo, đốt hạn mức 1000 ghi/ngày.)
+// V194 (Luna 4): mỗi lượt giữ chỗ có **token riêng**; hoàn tác chỉ xoá đúng token của mình nên
+// không thể xoá lượt giữ chỗ của request đồng thời. JS đơn luồng + reserve đồng bộ (không `await`
+// xen giữa kiểm và thêm token) nên không cần CAS của KV.
+const RATE_STATE_MAX = 5000;
+const rateState = new Map(); // băm IP -> { window, tokens: Set<token> }
+export function resetRateState() { rateState.clear(); }
+
+function rateEntry(ipHash, window) {
+  let entry = rateState.get(ipHash);
+  if (!entry || entry.window !== window) {
+    if (rateState.size >= RATE_STATE_MAX && !rateState.has(ipHash)) rateState.clear(); // chặn Map phình to
+    entry = { window, tokens: new Set() };
+    rateState.set(ipHash, entry);
+  }
+  return entry;
+}
+
+/** Giữ chỗ 1 lượt; trả token của reservation, hoặc null nếu đã vượt hạn mức. Chạy đồng bộ. */
+function reserveRate(ipHash, window, max) {
+  const entry = rateEntry(ipHash, window);
+  if (entry.tokens.size >= max) return null;
+  const token = crypto.randomUUID();
+  entry.tokens.add(token);
+  return token;
+}
+
+/** Hoàn tác ĐÚNG reservation của mình (khi ghi KV lỗi); reservation của request khác không bị đụng. */
+function releaseRate(ipHash, window, token) {
+  const entry = rateState.get(ipHash);
+  if (!entry || entry.window !== window) return;
+  entry.tokens.delete(token);
+}
+
+/** Chỉ để test đọc trạng thái: tổng số lượt đang giữ chỗ trong isolate. */
+export function rateReservedCount() {
+  return [...rateState.values()].reduce((total, entry) => total + entry.tokens.size, 0);
+}
+
+// ---- V193-G3: URL tải gói có chữ ký TTL ngắn ----
+// Worker chỉ ký rồi trả 302; byte của tệp đi thẳng từ CDN/R2 tới app, không qua Worker.
+// Secret dùng để ký là `PACKS_TOKEN` (đã có trong GitHub Actions của repo packs); danh sách
+// gói cho phép nằm ở env `PACKS_ALLOW` (phẩy ngăn cách), host tải ở env `PACKS_BASE`.
+export const PACK_TTL_DEFAULT_SECONDS = 300;
+export const PACK_TTL_MAX_SECONDS = 3600;
+const PACK_NAME = /^[a-z0-9][a-z0-9._-]{0,79}$/;
+const PACK_SIG = /^[A-Za-z0-9_-]{43}$/;
+
+// Đồng hồ dùng cho hạn dùng của URL tải gói. Tách riêng để test cố định thời gian;
+// mặc định vẫn là giờ hệ thống của Worker.
+let clockMs = () => Date.now();
+export function setClockForTest(fn) {
+  clockMs = typeof fn === "function" ? fn : () => Date.now();
+}
+
+export function packTtl(env) {
+  const raw = env && env.PACK_TTL_SECONDS;
+  const text = typeof raw === "number" ? String(raw) : (typeof raw === "string" ? raw.trim() : "");
+  if (!/^\d+$/.test(text)) return PACK_TTL_DEFAULT_SECONDS;
+  const n = Number(text);
+  return Number.isSafeInteger(n) && n > 0 && n <= PACK_TTL_MAX_SECONDS ? n : PACK_TTL_DEFAULT_SECONDS;
+}
+
+/** Tên gói hợp lệ: đúng một đoạn, không bắt đầu bằng '.', không chứa '..', không có '/'. */
+export function packNameSafe(name) {
+  return typeof name === "string" && PACK_NAME.test(name) && !name.startsWith(".") && !name.includes("..");
+}
+
+export function packAllowed(env, name) {
+  const list = env && env.PACKS_ALLOW;
+  if (typeof list !== "string") return false;
+  return list.split(",").map((v) => v.trim()).filter(Boolean).includes(name);
+}
+
+/** Host tải phải nằm trong `PACKS_HOSTS` (phẩy ngăn cách, so sau khi hạ chữ thường). */
+export function packHostAllowed(env, host) {
+  const list = env && env.PACKS_HOSTS;
+  if (typeof list !== "string") return false;
+  return list.split(",").map((v) => v.trim().toLowerCase()).filter(Boolean).includes(String(host).toLowerCase());
+}
+
+/**
+ * Chuẩn hoá `PACKS_BASE` và chỉ nhận URL tải hợp lệ: HTTPS, không userinfo, không port lạ,
+ * không query/fragment, host nằm trong `PACKS_HOSTS`. Sai/thiếu → null (caller trả 503).
+ */
+export function packBase(env) {
+  const raw = env && env.PACKS_BASE;
+  if (typeof raw !== "string" || raw.trim() === "") return null;
+  let parsed;
+  try {
+    parsed = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "https:") return null;
+  if (parsed.username !== "" || parsed.password !== "") return null;
+  if (parsed.port !== "" && parsed.port !== "443") return null;
+  if (parsed.search !== "" || parsed.hash !== "") return null;
+  if (!packHostAllowed(env, parsed.hostname)) return null;
+  return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, "");
+}
+
+const base64url = (bytes) =>
+  btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+async function hmac(secret, text) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return base64url(new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(text))));
+}
+
+/** Chữ ký cho cặp (tên gói, hạn dùng) — phía kiểm dùng đúng công thức này. */
+export async function packSignature(secret, name, exp) {
+  return hmac(secret, `pack\n${name}\n${exp}`);
+}
+
+// So sánh chuỗi cùng độ dài theo kiểu không rò thời gian (chữ ký luôn 43 ký tự base64url).
+const sameText = (a, b) => {
+  if (typeof a !== "string" || typeof b !== "string" || a.length === 0 || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+};
+
+// GET /pack/<tên>            -> 302 tới /pack/<tên>?exp=..&sig=..  (URL có hạn)
+// GET /pack/<tên>?exp&sig    -> kiểm hạn + chữ ký -> 302 tới PACKS_BASE/<tên>
+async function packRoute(req, env, url) {
+  if (req.method !== "GET" && req.method !== "HEAD") return json({ ok: false, error: "method_not_allowed" }, 405);
+  const secret = env && env.PACKS_TOKEN;
+  const base = packBase(env);
+  if (typeof secret !== "string" || secret.trim() === "" || base === null) {
+    return json({ ok: false, error: "unavailable" }, 503);
+  }
+  const name = url.pathname.slice("/pack/".length);
+  if (!packNameSafe(name)) return json({ ok: false, error: "bad_pack" }, 400);
+  if (!packAllowed(env, name)) return json({ ok: false, error: "not_allowed" }, 403);
+
+  const exp = url.searchParams.get("exp");
+  const sig = url.searchParams.get("sig");
+  if (exp === null && sig === null) {
+    const until = Math.floor(clockMs() / 1000) + packTtl(env);
+    const signed = `${url.origin}/pack/${name}?exp=${until}&sig=${await packSignature(secret, name, until)}`;
+    return new Response(null, { status: 302, headers: {
+      location: signed, "cache-control": "no-store", "x-signature-expires": String(until),
+    } });
+  }
+  if (!/^\d{1,12}$/.test(exp || "") || !PACK_SIG.test(sig || "")) return json({ ok: false, error: "forbidden" }, 403);
+  if (Number(exp) < Math.floor(clockMs() / 1000)) return json({ ok: false, error: "expired" }, 403);
+  if (!sameText(sig, await packSignature(secret, name, Number(exp)))) return json({ ok: false, error: "forbidden" }, 403);
+  return new Response(null, { status: 302, headers: {
+    location: `${base}/${name}`, "cache-control": "no-store",
+  } });
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -139,30 +317,41 @@ export default {
       }
       if (bytes(stored) > MAX_BODY) return json({ ok: false, error: "too_large" }, 413);
 
-      // Chống spam (V153): tối đa `max` báo cáo / cửa sổ / IP, ngưỡng và độ dài
-      // cửa sổ lấy từ env (RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_SECONDS; mặc định
-      // 20 báo cáo/giờ). Chỉ lưu băm IP, không lưu IP. Không thêm lượt gọi KV:
-      // mỗi báo cáo vẫn 1 đọc hạn mức + 1 ghi hạn mức + 1 ghi báo cáo.
+      // Chống spam (V153; đổi cách đếm ở V194): tối đa `max` báo cáo / cửa sổ / IP, ngưỡng và độ dài
+      // cửa sổ lấy từ env (RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_SECONDS; mặc định 20 báo cáo/giờ).
+      // V194: hạn mức ghi KV miễn phí chỉ 1000/ngày → mỗi báo cáo đúng **1 lần ghi** (bản ghi chính).
+      // Bộ đếm hạn mức chuyển vào bộ nhớ của isolate (không ghi KV nữa): chặn mềm, đủ chống spam;
+      // chặn cứng là ngân sách ghi của KV. Vẫn chỉ giữ băm IP, không lưu IP.
       const limit = rateLimitConfig(env);
       const now = Date.now();
       const windowMs = limit.windowSeconds * 1000;
-      const rk = `rl:${Math.floor(now / windowMs)}:${await sha(req.headers.get("CF-Connecting-IP") || "?")}`;
-      const n = parseInt((await env.REPORTS.get(rk)) || "0", 10);
-      if (n >= limit.max) {
+      const ipHash = await sha(req.headers.get("CF-Connecting-IP") || "?");
+      const window = Math.floor(now / windowMs);
+      // Giữ chỗ ngay (đồng bộ, không `await`) — token định danh riêng cho lượt này.
+      const token = reserveRate(ipHash, window, limit.max);
+      if (token === null) {
         const retryAfter = Math.max(1, Math.ceil((windowMs - (now % windowMs)) / 1000));
         return json({ ok: false, error: "rate_limited" }, 429, { "retry-after": String(retryAfter) });
       }
-      await env.REPORTS.put(rk, String(n + 1), { expirationTtl: Math.max(60, limit.windowSeconds * 2) });
 
       const id = `r:${String(Date.now()).padStart(13, "0")}:${crypto.randomUUID().slice(0, 8)}`;
-      const meta = { k: slim.kind, c: slim.core || slim.session?.core || "", y: slim.system || slim.session?.system || "", g: (slim.session?.game || "").slice(0, 60), a: slim.app.slice(0, 40), st: slim.stage || slim.session?.stage || "", t: slim.time, component: slim.component, fp: slim.fingerprint, count: slim.count };
-      await env.REPORTS.put(id, stored, { expirationTtl: 60 * 86400, metadata: meta });
+      // V155b: đưa băm chứng thư (16 hex đầu) vào metadata của danh sách để /reports thấy bản đang chạy
+      // (bảng crash-insight đếm theo chứng thư). App cũ không gửi trường này → để rỗng, không đổi định dạng cũ.
+      const meta = { k: slim.kind, c: slim.core || slim.session?.core || "", y: slim.system || slim.session?.system || "", g: (slim.session?.game || "").slice(0, 60), a: slim.app.slice(0, 40), st: slim.stage || slim.session?.stage || "", t: slim.time, component: slim.component, fp: slim.fingerprint, count: slim.count, cert: (slim.certSha256 || "").slice(0, 16) };
+      try {
+        await env.REPORTS.put(id, stored, { expirationTtl: 60 * 86400, metadata: meta });
+      } catch (error) {
+        // Chỉ nhả đúng reservation của mình; lượt giữ chỗ của request đồng thời vẫn còn.
+        releaseRate(ipHash, window, token);
+        throw error;
+      }
       return json({ ok: true });
     }
 
     // V103: đọc index từng trang, không trả tên game hay ghi/chỉnh báo cáo.
     if (url.pathname === "/report-index") {
-      if (!env.ADMIN_TOKEN || (req.headers.get("authorization") || "") !== `Bearer ${env.ADMIN_TOKEN}`) return json({ ok: false, error: "unauthorized" }, 401);
+      const denied = await requireAdmin(req, env);
+      if (denied) return denied;
       if (req.method !== "GET") return json({ ok: false, error: "method_not_allowed" }, 405);
       const cursor = url.searchParams.get("cursor") || undefined;
       if (cursor && (cursor.length > 2048 || /[\u0000-\u001f]/.test(cursor))) return json({ ok: false, error: "bad_cursor" }, 400);
@@ -175,7 +364,8 @@ export default {
 
     // ---- Quản trị ----
     if (url.pathname.startsWith("/reports") || url.pathname === "/stats") {
-      if ((req.headers.get("authorization") || "") !== `Bearer ${env.ADMIN_TOKEN}`) return json({ ok: false, error: "unauthorized" }, 401);
+      const denied = await requireAdmin(req, env);
+      if (denied) return denied;
       if (url.pathname.startsWith("/reports/")) {
         const v = await env.REPORTS.get(decodeURIComponent(url.pathname.slice(9)));
         return v ? new Response(v, { headers: { "content-type": "application/json; charset=utf-8" } }) : json({ ok: false, error: "not_found" }, 404);
@@ -194,6 +384,11 @@ export default {
       }
       return json({ total: all.length, reports: all.reverse().slice(0, 100).map((k) => ({ id: k.name, ...(k.metadata || {}) })) });
     }
+
+    // ---- V193-G3: cổng tải gói (lõi/engine/module) ----
+    // Worker chỉ ký URL có hạn rồi trả 302; byte của tệp đi thẳng từ CDN/R2 tới app.
+    if (url.pathname.startsWith("/pack/")) return packRoute(req, env, url);
+
     return json({ name: "aowvn-monika-crash", ok: true });
   },
 };

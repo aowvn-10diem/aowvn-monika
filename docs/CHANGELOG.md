@@ -2,6 +2,32 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.11 (Bản thử)
+<!-- bien-tap: v0.8.11 -->
+> Phát hành ngày 08/11/2026 (UTC), bản thử nghiệm.
+
+- **Mới:** Trang game có mục **Save**: xem các bản save, nhập save từ tệp và chia sẻ bản sao lưu ra ngoài. ([#499](https://github.com/aowvn-10diem/aowvn-monika/pull/499))
+- **Mới:** Thư viện có mục **Tệp** để tìm game, tài liệu và tệp khác trong cùng một chỗ. ([#434](https://github.com/aowvn-10diem/aowvn-monika/pull/434))
+- **Mới:** Tải game từ Pixeldrain nay do bạn chủ động: dán link vào **Tải xuống › Tải từ link**, app cảnh báo trước khi tải. ([#501](https://github.com/aowvn-10diem/aowvn-monika/pull/501))
+- **Mới:** Bài viết từ aow.vn mặc định tắt; muốn xem và nhận thông báo bài mới, bật lại ở **Cài đặt › Bài viết & tin tức**. ([#498](https://github.com/aowvn-10diem/aowvn-monika/pull/498))
+
+## v0.8.10 (Bản thử)
+<!-- bien-tap: v0.8.10 -->
+> Phát hành ngày 04/11/2026 (UTC), bản thử nghiệm.
+
+- **Mới:** Thư viện có trang chi tiết game với dung lượng, nơi lưu tệp và các nút Chơi, Xóa. ([#430](https://github.com/aowvn-10diem/aowvn-monika/pull/430))
+- **Mới:** Trước khi xóa game, app tự sao lưu dữ liệu game; sao lưu không xong thì không xóa. ([#430](https://github.com/aowvn-10diem/aowvn-monika/pull/430))
+- **Sửa lỗi:** Phím ảo không còn tự ẩn khi máy chưa kết nối tay cầm thật. ([#450](https://github.com/aowvn-10diem/aowvn-monika/pull/450))
+- **Sửa lỗi:** Khi ẩn phím ảo, nút bật lại phím luôn hiện rõ và ít che màn hình game. ([#450](https://github.com/aowvn-10diem/aowvn-monika/pull/450))
+- **Sửa lỗi:** Game Java nhận đúng các phím số 1, 3, 7, 9 khi bấm. ([#449](https://github.com/aowvn-10diem/aowvn-monika/pull/449))
+- **Sửa lỗi:** Game Java: nút menu không còn nằm đè lên phím điều khiển. ([#449](https://github.com/aowvn-10diem/aowvn-monika/pull/449))
+- **Mới:** Cài đặt Nintendo DS chia rõ Màn hình, Bố cục, Hiệu năng; chọn cách xếp hai màn hình dễ hơn. ([#456](https://github.com/aowvn-10diem/aowvn-monika/pull/456))
+- **Mới:** Mục Bản chính thức trong Cài đặt giúp kiểm tra nơi tải Monika và báo bản giả. ([#461](https://github.com/aowvn-10diem/aowvn-monika/pull/461))
+- **Mới:** App cảnh báo rõ khi bản Monika đang cài không phải bản chính thức. ([#454](https://github.com/aowvn-10diem/aowvn-monika/pull/454))
+- **Mới:** Nút ủng hộ mở ngay bảng mã QR và chọn ngân hàng trong Monika. ([#446](https://github.com/aowvn-10diem/aowvn-monika/pull/446))
+- **Sửa lỗi:** Nhập game từ tệp nén an toàn hơn. ([#466](https://github.com/aowvn-10diem/aowvn-monika/pull/466))
+- **Mới:** Tải game từ link giờ do bạn tự dán và xác nhận; app cảnh báo khi tệp đến từ nguồn bên thứ ba. ([#501](https://github.com/aowvn-10diem/aowvn-monika/pull/501))
+
 ## v0.8.9 (Bản thử)
 <!-- bien-tap: v0.8.9 -->
 > Phát hành ngày 02/11/2026 (UTC), bản thử nghiệm.
