@@ -75,6 +75,17 @@ SESSIONS = (
 )
 SESSION_FALLBACK = "Lỗi 4"
 
+# Kế hoạch tới hạn 15/11. Đổi ở đây, không sửa tay trong file markdown.
+PLAN = (
+    "09/11: PM chạy V174 một lần; điền thành phần + giả thuyết của Worker vào bảng, "
+    "chốt danh sách issue đóng được (trùng/đã sửa/thiếu dữ liệu).",
+    "10–11/11: PR nhóm A theo lõi (NDS · unknown+mgba · citra+ppsspp), mỗi PR một nhóm nguyên nhân.",
+    "12/11: PR nhóm D (op-fail) sau khi có `Thành phần: op:<tên>` từ Worker.",
+    "13/11: PR nhóm B/C (native, core-error): symbolic bằng symbols đúng BuildId; lỗi upstream thì báo upstream.",
+    "14/11: nhóm E/F/G/H: đóng có lý do (người dùng thoát, lỗi bắt được, trùng) hoặc comment chờ dữ liệu.",
+    "15/11: issue còn mở phải có comment lý do + hướng tiếp; báo PM tổng kết.",
+)
+
 # Ghi chú dữ liệu đã kiểm bằng chứng (không phải nguyên nhân gốc).
 NOTES = {
     304: "Lượt 11.072, ngày 30/10 chỉ 2.048 (đúng 2^11); v0.8.8 đã chỉnh giới hạn gửi lại "
@@ -208,13 +219,18 @@ def build(issues, since):
         for number, note in notes:
             write(f"- #{number}: {note}")
         write("")
+    write("## Kế hoạch 7 ngày")
+    write("")
+    for line in PLAN:
+        write(f"- {line}")
+    write("")
     write("## Giới hạn bằng chứng")
     write("")
     write("- Không có frame/chữ ký đầy đủ trong thân issue: bot chỉ ghi hash `lõi + loại + "
           "tối đa 3 frame đầu` (`docs/CRASH-ISSUE-BOT.md`). Muốn biết frame phải đọc Worker.")
-    write("- Workflow V174 (`crash-insight.yml`) lần chạy gần nhất 02/11/2026 trả "
-          "`BLOCKED: Worker returned HTTP 500`; token hiện có không có quyền `actions:write` "
-          "nên chưa chạy lại được → mọi nguyên nhân cụ thể là `[CHƯA KIỂM]`.")
+    write("- `/reports` từng trả HTTP 500 khi KV lỗi tạm thời (lượt V174 02/11, có PR #451 "
+          "đang sửa thành 503 + tự thử lại). V174 là `workflow_dispatch`; token của phiên này "
+          "không có `actions:write` nên **cần PM chạy V174 một lần** để lấy `crash-insight.md`.")
     write("- Chưa có mapping R8 của bản đang chạy và chưa có gói symbols cho từng BuildId, "
           "nên nhóm B/G chưa retrace được.")
     write("")
