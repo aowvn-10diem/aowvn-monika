@@ -128,3 +128,14 @@ Nguyên tắc: mỗi nhóm thư viện một PR; nâng phiên bản lớn (Kotli
 2. **CodeQL**: chưa đọc được danh sách cảnh báo code (cùng lý do quyền). Sẽ bổ sung khi có quyền.
 3. **Chốt PR-4**: nâng Kotlin 2.0.21 → 2.4.x là thay đổi lớn (compose compiler, KSP, R8); cần PM đồng ý đánh đổi thời gian CI và rủi ro vỡ build trước 15/11.
 4. PR Dependabot đang mở: #215 (`actions/checkout` 4 → 7), #290 (`actions/cache` 4 → 6), #216 (Kotlin), #217 (AGP 8.7.3 → 9.4.1). Hai PR actions không phải cảnh báo bảo mật — gộp riêng khi rảnh runner. #217 (AGP 9) là thay đổi lớn, không gộp cùng vá nhỏ.
+
+## 7. Trạng thái và việc còn lại (cập nhật cuối ngày 08/11)
+
+- **#544 và #546 CI xanh toàn bộ** (build hai flavor, unit test, CodeQL, kiểm gói thật). Đã kiểm lại cây sau khi ghim:
+  `guava` 33.7.2-jre, `commons-lang3` 3.18.0, `commons-io` 2.14.0, `jdom2` 2.0.6.1, `jose4j` 0.9.6,
+  `protobuf-java`/`protobuf-java-util` 3.25.5, `sqlite-jdbc` 3.41.2.2; `junit:junit` không còn trong runtime của APK.
+- **Cảnh báo tự đóng sau khi gộp**: workflow *Automatic Dependency Submission (Gradle)* nộp lại cây phụ thuộc mỗi lần chạy; Dependabot đóng cảnh báo khi gói không còn bản lỗi. Phần đã vá không cần đóng tay.
+- **Đề nghị đóng kèm lý do** (cần quyền, xem mục 6):
+  - `org.apache.commons:commons-compress` 1.21 — 2 moderate. Đây là bản AGP kéo vào classpath plugin, **chỉ công cụ build**, không vào APK; nâng được chỉ khi lên AGP 9 (#217).
+  - `org.jetbrains.kotlin:kotlin-gradle-plugin` 2.0.21 — 1 moderate. Chỉ công cụ build; nếu PM không duyệt PR-4 (nâng Kotlin) thì đóng bằng lý do này.
+- **Chưa kiểm**: danh sách cảnh báo CodeQL — API trả 403 với token của phiên này.
