@@ -11,6 +11,8 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,9 +42,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -61,11 +67,22 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import vn.aow.monika.diag.Diagnostics
 
 /* Thành phần giao diện Aow Monika. Màn hình chỉ ghép từ các thành phần này. */
 
@@ -540,4 +557,100 @@ fun AowPixelButton(
             Text(">", color = label, style = Monika.type.button)
         }
     }
+}
+
+/**
+ * Hộp thoại chuẩn Aow Monika: mặt `surface`, bo `Radius.large`, tiêu đề `cardTitle`.
+ * Nút xác nhận/huỷ do màn truyền vào (GradientButton/DarkButton) để giữ đúng ngữ cảnh.
+ */
+@Composable
+fun MonikaDialog(
+    onDismissRequest: () -> Unit,
+    title: String,
+    confirm: @Composable () -> Unit,
+    dismiss: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    /** V193 UX: nút huỷ là mặc định (Enter) để tránh lỡ tay xác nhận. */
+    defaultDismiss: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val c = Monika.colors
+    val ctx = LocalContext.current
+    val dismissFocus = remember { FocusRequester() }
+    if (defaultDismiss) LaunchedEffect(Unit) {
+        try {
+            dismissFocus.requestFocus()
+        } catch (e: Exception) {
+            // Không có context/nút chưa vào cây: ghi nhận để biết, không nuốt im lặng.
+            Diagnostics.recordHandled(ctx, "app:dialog", "Không đặt được focus nút Hủy", e)
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        containerColor = c.surface,
+        shape = Radius.large,
+        title = { Text(title, style = Monika.type.cardTitle, color = c.text) },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp), content = content) },
+        confirmButton = confirm,
+        dismissButton = {
+            Box(
+                Modifier.then(
+                    if (defaultDismiss) {
+                        Modifier.focusRequester(dismissFocus).focusable().onPreviewKeyEvent { e ->
+                            if (dialogKeyAction(e.key, e.type) == DialogKeyAction.DISMISS) {
+                                onDismissRequest(); true
+                            } else false
+                        }
+                    } else Modifier,
+                ),
+            ) { dismiss() }
+        },
+    )
+}
+
+/** Phím trong hộp thoại: Enter/NumPadEnter (lúc nhấn xuống) luôn chọn Hủy, không xác nhận tải. */
+internal enum class DialogKeyAction { DISMISS, IGNORE }
+
+internal fun dialogKeyAction(key: Key, type: KeyEventType): DialogKeyAction =
+    if (type == KeyEventType.KeyDown && (key == Key.Enter || key == Key.NumPadEnter)) DialogKeyAction.DISMISS
+    else DialogKeyAction.IGNORE
+
+/** Ô nhập một dòng theo token giao diện (màu viền/nhãn/chữ từ `Monika.colors`).
+ *  [onEnter]: chỉ dùng cho hộp cần hành động an toàn khi đang focus ô nhập (vd. Hủy tải). */
+@Composable
+fun MonikaTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    onEnter: (() -> Unit)? = null,
+) {
+    val c = Monika.colors
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier.then(
+            if (onEnter != null) Modifier.onPreviewKeyEvent { e ->
+                if (dialogKeyAction(e.key, e.type) == DialogKeyAction.DISMISS) {
+                    onEnter(); true
+                } else false
+            } else Modifier,
+        ),
+        singleLine = true,
+        shape = Radius.small,
+        keyboardOptions = if (onEnter != null) KeyboardOptions(imeAction = ImeAction.Done) else KeyboardOptions.Default,
+        keyboardActions = if (onEnter != null) KeyboardActions(onDone = { onEnter() }) else KeyboardActions.Default,
+        label = { Text(label, style = Monika.type.caption) },
+        textStyle = Monika.type.body.copy(color = c.text),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = c.text,
+            unfocusedTextColor = c.text,
+            focusedBorderColor = c.accentCoral,
+            unfocusedBorderColor = c.textTertiary,
+            focusedLabelColor = c.accentCoral,
+            unfocusedLabelColor = c.textSecondary,
+            cursorColor = c.accentCoral,
+        ),
+    )
 }

@@ -17,6 +17,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 - **Mới:** App cảnh báo rõ khi bản Monika đang cài không phải bản chính thức. ([#454](https://github.com/aowvn-10diem/aowvn-monika/pull/454))
 - **Mới:** Nút ủng hộ mở ngay bảng mã QR và chọn ngân hàng trong Monika. ([#446](https://github.com/aowvn-10diem/aowvn-monika/pull/446))
 - **Sửa lỗi:** Nhập game từ tệp nén an toàn hơn. ([#466](https://github.com/aowvn-10diem/aowvn-monika/pull/466))
+- **Mới:** Tải game từ link giờ do bạn tự dán và xác nhận; app cảnh báo khi tệp đến từ nguồn bên thứ ba. ([#501](https://github.com/aowvn-10diem/aowvn-monika/pull/501))
 
 ## v0.8.9 (Bản thử)
 <!-- bien-tap: v0.8.9 -->
