@@ -1,0 +1,37 @@
+name: Gemini định kỳ (V102 & dọn crash-moi)
+on:
+  schedule:
+    # 7:20 đến 23:20 GMT+7 (Asia/Ho_Chi_Minh) mỗi 2 tiếng: 00:20 -> 16:20 UTC
+    - cron: '20 0-16/2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: gemini-dinh-ky
+  cancel-in-progress: true
+
+jobs:
+  gemini-job:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Lấy mã nguồn
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Cài đặt Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Chạy script định kỳ của Gemini
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 scripts/gemini-dinh-ky.py
