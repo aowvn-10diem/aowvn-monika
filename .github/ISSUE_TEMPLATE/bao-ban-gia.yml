@@ -1,0 +1,31 @@
+name: Báo bản giả hoặc nguồn tải đáng ngờ
+description: Giúp AowVN kiểm tra nơi phát hành hoặc tài khoản nhận ủng hộ có dấu hiệu giả mạo.
+title: "[Bản giả] "
+body:
+  - type: markdown
+    attributes:
+      value: "Chỉ gửi thông tin công khai. Không gửi mật khẩu, mã xác thực, thông tin đăng nhập, game hoặc ROM."
+  - type: input
+    id: source
+    attributes:
+      label: Nguồn bạn gặp
+      description: Đường dẫn trang, kho ứng dụng hoặc tài khoản đang phát hành bản đáng ngờ.
+    validations:
+      required: true
+  - type: textarea
+    id: detail
+    attributes:
+      label: Điểm khác thường
+      description: Ví dụ tên tài khoản nhận ủng hộ bị đổi, địa chỉ tải lạ hoặc chứng thư APK khác.
+    validations:
+      required: true
+  - type: input
+    id: certificate
+    attributes:
+      label: SHA-256 chứng thư ký APK (nếu đã tự kiểm)
+      description: Chỉ gửi dấu vân tay công khai, không gửi khóa ký hay tệp APK.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Ảnh chụp hoặc thông tin bổ sung
+      description: Che thông tin cá nhân trước khi gửi ảnh. Không đính kèm game hoặc ROM.

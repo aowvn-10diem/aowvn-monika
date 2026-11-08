@@ -3,6 +3,27 @@ package vn.aow.monika.config
 import kotlinx.serialization.Serializable
 
 /**
+ * Host được phép cho URL **tải mã/gói** trong config từ xa (lõi, module/engine, apk cập nhật,
+ * script web player). Danh sách nằm trong APK — config từ xa **không thể tự mở rộng** nó, nên
+ * một config bị đầu độc không trỏ được app sang host lạ. Thêm CDN mới = phát hành app mới.
+ */
+val ALLOWED_DOWNLOAD_HOSTS: Set<String> = setOf(
+    "github.com",                       // releases của repo packs/app
+    "objects.githubusercontent.com",    // CDN asset cũ của GitHub Releases
+    "release-assets.githubusercontent.com", // đích 302 thật của asset GitHub Releases (kiểm 05/11/2026)
+    "raw.githubusercontent.com",
+    "codeload.github.com",
+    "buildbot.libretro.com",            // lõi libretro nightly (đường tải cũ)
+    "cdn.jsdelivr.net",                 // script web player (ruffle)
+    "monika.aow.vn",                    // CDN/trang chính thức
+    "aow.vn",                           // link mời cài app/plugin (externalApps, plugins)
+    "www.aow.vn",
+)
+
+/** [host] đã hạ chữ thường trước khi truyền vào. */
+internal fun isAllowedDownloadHost(host: String): Boolean = host in ALLOWED_DOWNLOAD_HOSTS
+
+/**
  * Ánh xạ 1-1 với config/monika-config.json.
  * Thêm trường mới: luôn cho giá trị mặc định để file cấu hình cũ vẫn đọc được.
  */
@@ -10,6 +31,8 @@ import kotlinx.serialization.Serializable
 data class MonikaConfig(
     val configVersion: Int = 0,
     val app: AppInfo = AppInfo(),
+    /** Nơi tải, hướng dẫn kiểm và kênh báo bản giả; bản Play lọc dữ liệu phân phối ngoài. */
+    val official: OfficialConfig = OfficialConfig(),
     val feed: FeedConfig = FeedConfig(),
     val systems: List<SystemDef> = emptyList(),
     val engines: List<EngineRule> = emptyList(),
@@ -42,6 +65,8 @@ data class MonikaConfig(
     val saveTransfer: SaveTransferConfig = SaveTransferConfig(),
     /** V135: đoán độ phân giải game Java lần đầu mở; game đã có config thì giữ nguyên. */
     val j2meScreen: J2meScreenConfig = J2meScreenConfig(),
+    /** [A78] V154: tự kiểm chứng thư ký APK lúc mở app để cảnh báo bản giả mạo. */
+    val security: SecurityConfig = SecurityConfig(),
 ) {
     fun system(id: String): SystemDef? = systems.firstOrNull { it.id == id }
     fun externalApp(id: String): ExternalApp? = externalApps.firstOrNull { it.id == id }
@@ -87,6 +112,25 @@ data class CrashConfig(
     /** true = tự gửi báo lỗi game sập (nếu có endpoint) không cần hỏi. */
     val autoSend: Boolean = false,
 )
+
+/**
+ * [A78] V154: chống app giả mạo. App so SHA-256 chứng thư đang ký với [officialCertSha256] lúc mở;
+ * khác thì hiện thẻ cảnh báo đỏ trên Trang chủ — **chỉ cảnh báo, không chặn chạy** (GPLv3 cho phép bản tự build).
+ * Bản debug luôn bỏ qua kiểm.
+ */
+@Serializable
+data class SecurityConfig(
+    /**
+     * SHA-256 (hex thường) chứng thư ký bản chính thức. Bản Play ký bằng Play App Signing nên giá trị
+     * khác bản GitHub; catalog Play để trống = bỏ qua kiểm khi chưa có chứng thư chính thức.
+     */
+    val officialCertSha256: String = OFFICIAL_CERT_SHA256,
+) {
+    companion object {
+        /** Chứng thư khóa phát hành AowVN (bản GitHub) — PM chốt; chỉ đổi khi ký lại APK bằng khóa khác. */
+        const val OFFICIAL_CERT_SHA256 = "c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c"
+    }
+}
 
 @Serializable
 data class CoreOptionText(
@@ -156,6 +200,8 @@ data class AppInfo(
 
 @Serializable
 data class FeedConfig(
+    /** V193 G1: mặc định tắt — bản tự build không tự gọi aow.vn; người dùng bật trong Cài đặt. */
+    val enabled: Boolean = false,
     val url: String = "https://www.aow.vn/feeds/posts/default",
     val pageSize: Int = 20,
     val pollMinutes: Long = 60,
@@ -337,6 +383,11 @@ data class DownloadHost(
     val mode: String,
     val pattern: String? = null,
     val directUrl: String? = null,
+    /**
+     * V193 G2: chỉ tự tải thẳng khi host đã được duyệt. Mặc định false — Pixeldrain chỉ tải khi
+     * người dùng chủ động dán link + xác nhận cảnh báo.
+     */
+    val autoDirect: Boolean = false,
 )
 
 /**

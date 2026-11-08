@@ -8,7 +8,6 @@ import java.io.IOException
 /** Giải nén .zip bằng zip4j (Java thuần): ZipCrypto + AES-256, tên file tiếng Việt, chặn đường dẫn thoát khỏi thư mục đích. */
 object ZipExtractor {
     fun extract(source: File, target: File, passwords: List<String>, progress: ExtractProgress? = null) {
-        val root = target.canonicalPath + File.separator
         val candidates = listOf<String?>(null) + passwords.filter { it.isNotEmpty() }.distinct()
         var sawPassword = false
         for (pw in candidates) {
@@ -25,8 +24,8 @@ object ZipExtractor {
                 val tracker = ArchiveExtractor.Tracker(progress)
                 var done = 0L
                 for (h in headers) {
-                    val out = File(target, h.fileName).canonicalFile
-                    if (!out.path.startsWith(root) && out.path + File.separator != root) throw IOException("File nén không hợp lệ: ${h.fileName}")
+                    val out = SafeZipPath.resolve(target, h.fileName)
+                        ?: throw IOException("File nén không hợp lệ: ${h.fileName}")
                     if (h.isDirectory) { out.mkdirs(); continue }
                     zip.extractFile(h, target.absolutePath)
                     done += h.uncompressedSize

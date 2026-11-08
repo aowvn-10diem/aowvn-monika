@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,9 +79,14 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
     val c = Monika.colors
     val context = LocalContext.current
     var refresh by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    // V193 G1: bài viết mặc định tắt; bật/tắt ngay trên màn, không cần vào Cài đặt.
+    var feedOn by remember { mutableStateOf(AppGraph.feedEnabled) }
     val bottomClearance = vn.aow.monika.ui.theme.dockContentClearance()
+    // [A78] V154: bản bị đóng gói lại bằng khóa khác → cảnh báo đỏ (chỉ cảnh báo, vẫn chạy được).
+    val cfg by AppGraph.config.config.collectAsState()
     // Hiện ngay bản đã lưu (lần trước), rồi tải bản mới ở nền → quay lại Trang chủ không phải chờ.
-    val posts by produceState<Result<List<Post>>?>(AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }, refresh) {
+    val posts by produceState<Result<List<Post>>?>(AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }, refresh, feedOn) {
+        if (!feedOn) { value = null; return@produceState }
         value = AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }
         val fresh = runCatching { AppGraph.feed.fetchList(HOME_KEY, max = 12) }
         if (fresh.isSuccess || value == null) value = fresh
@@ -108,18 +114,21 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
     Screen {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomClearance)) {
             item {
-                // Header gọn: logo Monika bên trái, avatar bên phải (menu + thông báo nằm ở nút Menu dưới đáy).
+                // Header gọn: logo Monika bên trái, ủng hộ và avatar bên phải (menu + thông báo nằm ở nút Menu dưới đáy).
                 Row(
                     Modifier.fillMaxWidth().statusBarsPadding().padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    MonikaWordmark(Modifier.height(44.dp))
-                    Spacer(Modifier.weight(1f))
+                    Box(Modifier.weight(1f)) { MonikaWordmark(Modifier.height(44.dp)) }
+                    vn.aow.monika.donate.DonationButton()
+                    Spacer(Modifier.width(8.dp))
                     AvatarButton(onGo)
                 }
             }
+            item { OfficialBuildWarning(cfg.security.officialCertSha256, OFFICIAL_BUILD_WARNING) }
             val list = posts?.getOrNull()
             when {
+                !feedOn -> item { FeedOff { AppGraph.setFeedEnabled(true); feedOn = true } }
                 posts == null -> item { FeedStatus(true) { refresh++ } }
                 list.isNullOrEmpty() -> item { FeedStatus(false) { refresh++ } }
                 else -> item { HeroCarousel(list.take(3), onOpenPost) }
@@ -259,19 +268,18 @@ private fun AvatarButton(onGo: (String) -> Unit) {
     }
 }
 
-/** Thẻ kêu gọi ủng hộ AowVN (thay hàng lối tắt cũ) + nút Donate nổi bật mở hệ thống donate trên web. */
+/** Thẻ kêu gọi ủng hộ AowVN (thay hàng lối tắt cũ) + nút ủng hộ mở bảng chuyển khoản native. */
 @Composable
 private fun DonateBanner() {
-    val context = LocalContext.current
     val cfg by AppGraph.config.config.collectAsState()
-    val url = cfg.account.donateUrl.ifBlank { cfg.account.voteUrl }
+    var donationOpen by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     Box(Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
         MonikaCard(Modifier.fillMaxWidth(), dark = true, shape = Radius.hero, padding = PaddingValues(18.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 androidx.compose.foundation.Image(painterResource(R.drawable.fluent3d_smiling_face), null, Modifier.size(44.dp))
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Monika miễn phí mãi mãi cho bạn yêu 💖", style = Monika.type.cardTitle, color = Color.White)
+                    Text("Monika miễn phí mãi mãi cho bạn yêu 💖", style = Monika.type.cardTitle, color = Monika.colors.textOnDark)
                     Spacer(Modifier.height(6.dp))
                     Text(
                         "Nhưng chúng mình cũng phải nghĩ tới chi phí duy trì hệ thống và hỗ trợ các team Việt hóa. " +
@@ -282,9 +290,10 @@ private fun DonateBanner() {
             }
             Spacer(Modifier.height(14.dp))
             GradientButton(
-                "Ủng hộ AowVN", { vn.aow.monika.browser.InAppBrowserActivity.start(context, url) }, Modifier.fillMaxWidth(),
+                "Ủng hộ AowVN", { donationOpen = true }, Modifier.fillMaxWidth(),
                 icon = R.drawable.ic_fluent_heart_24_filled, height = 52.dp,
             )
         }
     }
+    if (donationOpen) vn.aow.monika.donate.DonationSheet(cfg.account.donate, { donationOpen = false })
 }

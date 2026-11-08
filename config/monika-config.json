@@ -1,15 +1,38 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 55,
+  "configVersion": 62,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
-    "latestVersionCode": 53,
-    "latestVersionName": "0.8.8",
+    "latestVersionCode": 55,
+    "latestVersionName": "0.8.10",
     "minVersionCode": 1,
-    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.8/AowVN-Monika-v0.8.8.apk",
-    "changelog": "Báo ngay khi có cập nhật quan trọng. Rút tay cầm không còn kẹt nút."
+    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.10/AowVN-Monika-v0.8.10.apk",
+    "changelog": "Bản thử 0.8.10: Thư viện có trang chi tiết game, sao lưu trước khi xóa. Sửa phím ảo và phím Java; dễ xếp hai màn hình Nintendo DS hơn. Thêm nơi kiểm tra bản Monika chính thức."
+  },
+  "security": {
+    "officialCertSha256": "c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c"
+  },
+  "official": {
+    "pageUrl": "https://monika.aow.vn/chinh-thuc/",
+    "downloadSources": [
+      {
+        "title": "monika.aow.vn",
+        "url": "https://monika.aow.vn/"
+      },
+      {
+        "title": "GitHub Releases",
+        "url": "https://github.com/aowvn-10diem/aowvn-monika/releases"
+      }
+    ],
+    "reportFakeUrl": "https://github.com/aowvn-10diem/aowvn-monika/issues/new?template=bao-ban-gia.yml",
+    "verificationSteps": [
+      "Đối chiếu địa chỉ nơi tải với danh sách bên trên. Tên và biểu tượng giống nhau chưa đủ để xác nhận bản chính thức.",
+      "Trên máy tính có Android SDK Build-Tools, đổi tên tệp APK thành app.apk rồi chạy: apksigner verify --print-certs app.apk. Đối chiếu dòng Signer #1 certificate SHA-256 digest với chứng thư bên trên.",
+      "Trước khi ủng hộ, đối chiếu ngân hàng, số tài khoản và chủ tài khoản trong mục Ủng hộ. Gặp thông tin khác hoặc nguồn tải đáng ngờ, hãy bấm Báo bản giả."
+    ]
   },
   "feed": {
+    "enabled": false,
     "url": "https://www.aow.vn/feeds/posts/default",
     "pageSize": 20,
     "pollMinutes": 60
@@ -694,16 +717,74 @@
     "loginUrl": "https://www.aow.vn/p/device-login.html",
     "voteUrl": "https://www.aow.vn/p/vote-game.html",
     "donate": {
-      "bankId": "970454",
-      "accountNo": "9021870093495",
+      "bankId": "icb",
+      "accountNo": "101867601261",
       "accountName": "VU DOAN BINH MINH",
       "template": "compact2",
       "memoPrefix": "AowVN",
       "amounts": [
-        10000,
-        20000,
-        50000,
-        100000
+        100000,
+        200000,
+        300000
+      ],
+      "bankName": "VietinBank",
+      "memo": "Ung ho AowVN Monika",
+      "minAmount": 1000,
+      "maxAmount": 500000000,
+      "qrBaseUrl": "https://img.vietqr.io/image/",
+      "payUrl": "https://dl.vietqr.io/pay",
+      "banksUrl": "https://api.vietqr.io/v2/android-app-deeplinks",
+      "returnUrl": "https://monika.aow.vn/",
+      "appeal": "Chúng mình cố gắng phát triển Monika hoàn toàn miễn phí, nhưng AowVN vẫn cần phải chi trả chi phí cho máy chủ, AI. Đừng ngần ngại donate ủng hộ chúng mình nha, 200k, 100k hay 10k đều rất đáng trân trọng á.",
+      "fallbackBanks": [
+        {
+          "id": "icb",
+          "name": "VietinBank"
+        },
+        {
+          "id": "vcb",
+          "name": "Vietcombank"
+        },
+        {
+          "id": "mb",
+          "name": "MB Bank"
+        },
+        {
+          "id": "tcb",
+          "name": "Techcombank"
+        },
+        {
+          "id": "bidv",
+          "name": "BIDV"
+        },
+        {
+          "id": "acb",
+          "name": "ACB"
+        },
+        {
+          "id": "vpb",
+          "name": "VPBank"
+        },
+        {
+          "id": "tpb",
+          "name": "TPBank"
+        },
+        {
+          "id": "shb",
+          "name": "SHB"
+        },
+        {
+          "id": "ocb",
+          "name": "OCB"
+        },
+        {
+          "id": "lpb",
+          "name": "LPBank"
+        },
+        {
+          "id": "seab",
+          "name": "SeABank"
+        }
       ]
     }
   },
@@ -874,8 +955,8 @@
       }
     },
     "ppsspp": {
-      "version": "1",
-      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/ppsspp_libretro_android.so.zip",
+      "version": "cores-ppsspp-1",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-ppsspp-1/ppsspp-{abi}.zip",
       "systemFiles": "https://buildbot.libretro.com/assets/system/PPSSPP.zip",
       "lowLatencyAudio": false,
       "perf": {
@@ -885,7 +966,23 @@
         "full": {
           "ppsspp_internal_resolution": "960x544"
         }
-      }
+      },
+      "artifacts": {
+        "arm64-v8a": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-ppsspp-1/ppsspp-arm64-v8a.zip",
+          "sha256": "336f6bfe825950dc1eff5d503cc89cb7d0963a671ca362496c4d9550675b4119",
+          "version": "cores-ppsspp-1"
+        },
+        "armeabi-v7a": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-ppsspp-1/ppsspp-armeabi-v7a.zip",
+          "sha256": "194c8b3cc8b6b35d8750dff46c8ac6262fa21d5a8837a3d87be53b43014400da",
+          "version": "cores-ppsspp-1"
+        }
+      },
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a"
+      ]
     },
     "easyrpg": {
       "version": "1",
@@ -1183,14 +1280,16 @@
       "host": "pixeldrain.com",
       "mode": "direct",
       "pattern": "/u/([A-Za-z0-9]+)",
-      "directUrl": "https://pixeldrain.com/api/file/$1?download"
+      "directUrl": "https://pixeldrain.com/api/file/$1?download",
+      "autoDirect": false
     },
     {
       "name": "Pixeldrain",
       "host": "pixeldrain.com",
       "mode": "direct",
       "pattern": "/d/([A-Za-z0-9]+)",
-      "directUrl": "https://pixeldrain.com/api/filesystem/$1?attach"
+      "directUrl": "https://pixeldrain.com/api/filesystem/$1?attach",
+      "autoDirect": false
     },
     {
       "name": "Pixeldrain",

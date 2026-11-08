@@ -30,6 +30,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -152,6 +154,9 @@ class InGameState {
     /** Khác null = đang mở bảng tùy chọn giả lập. */
     var options by mutableStateOf<List<CoreOption>?>(null)
 
+    /** V188: mã lõi đang chạy — để bảng tùy chọn biết có chia nhóm NDS hay không. */
+    var coreId by mutableStateOf("")
+
     /** Cụm trái đang là cần analog (null = theo mặc định của bố cục). */
     var stickMode by mutableStateOf<Boolean?>(null)
 
@@ -229,6 +234,8 @@ fun InGameOverlay(
     autoHideHeader: Boolean = true,
     /** V162: báo lựa chọn tự ẩn phím ảo để activity ghi vào Prefs. */
     onPadHiddenChange: (Boolean) -> Unit = {},
+    /** V188: mục "Màn hình" của lõi NDS trong config — bố cục/tỉ lệ chọn bằng chip, danh sách lấy từ đây. */
+    screen: vn.aow.monika.config.CoreScreen? = null,
 ) {
     // Nút Back của máy: mở menu (thay vì thoát ngay, dễ bấm nhầm khi đang chơi); đang chỉnh phím → xong.
     androidx.activity.compose.BackHandler(enabled = !state.menuOpen && state.options == null) {
@@ -270,12 +277,12 @@ fun InGameOverlay(
         if (padShown) VirtualPad(layout, state, send, onMotion, Modifier.align(Alignment.BottomCenter),
             chipVisible = headerVisible, bottomReserve = if (headerAtBottom) NDS_BOTTOM_BAR_DP.dp else 0.dp)
 
-        // V162: nút nhỏ ẩn/hiện phím ảo — luôn với tới được, kể cả khi phím đang ẩn.
+        // V162/V184: nút nhỏ ẩn/hiện phím ảo — luôn hiện, đục, góc trái trên (né nút vai phải khi xoay ngang).
         if (showPad) {
             PadToggle(
                 hidden = !state.padVisible,
                 onClick = { onPadHiddenChange(state.togglePad()) },
-                modifier = Modifier.align(Alignment.CenterStart),
+                modifier = Modifier.align(Alignment.TopStart).windowInsetsPadding(SafeTop).padding(top = 76.dp, start = 8.dp),
             )
         }
 
@@ -332,23 +339,24 @@ fun InGameOverlay(
 
         // Tùy chọn lõi: bấm 1 dòng = chuyển sang giá trị kế tiếp, áp ngay vào game.
         val opts = state.options
+        // V188: lõi NDS xếp 3 nhóm cố định (Màn hình · Bố cục · Hiệu năng) cho dễ tìm.
+        val ndsSections = opts?.takeIf { NdsSettings.isNds(state.coreId, it) }?.let { NdsSettings.sections(it) }
         MonikaMenuSheet(
             opts != null, { state.options = null },
             title = "Tùy chọn giả lập",
             subtitle = if (opts.isNullOrEmpty()) "Lõi này không có tùy chọn chỉnh được." else "Vài tùy chọn chỉ có tác dụng sau khi mở lại game.",
             header = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    opts.orEmpty().forEach { o ->
-                        SheetRow(
-                            o.label,
-                            trailing = {
-                                Text(
-                                    o.display(), style = Monika.type.bodyStrong, color = Color.White, maxLines = 1,
-                                    modifier = Modifier.padding(start = 10.dp).clip(Radius.pill).background(primaryGradient()).padding(horizontal = 12.dp, vertical = 6.dp),
-                                )
-                            },
-                            onClick = { onOptionChange(o, o.next()) },
-                        )
+                    if (ndsSections != null) {
+                        ndsSections.forEach { (group, groupOptions) ->
+                            Text(
+                                group?.title ?: "Khác", style = Monika.type.bodyStrong, color = SheetColors.textSecondary,
+                                modifier = Modifier.padding(start = 2.dp, top = 8.dp),
+                            )
+                            groupOptions.forEach { o -> OptionRow(o, screen, onOptionChange) }
+                        }
+                    } else {
+                        opts.orEmpty().forEach { o -> OptionRow(o, null, onOptionChange) }
                     }
                 }
             },
@@ -360,9 +368,48 @@ fun InGameOverlay(
     }
 }
 
+/**
+ * V188: 1 tùy chọn trong bảng. Bố cục / tỉ lệ của NDS hiện bằng chip (danh sách lấy từ config, nên đúng 3 bố cục);
+ * các tùy chọn khác giữ kiểu cũ: bấm 1 dòng = sang giá trị kế tiếp.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun EditChip(text: String, on: Boolean, onClick: () -> Unit) {
-    Text(
+private fun OptionRow(option: CoreOption, screen: vn.aow.monika.config.CoreScreen?, onOptionChange: (CoreOption, String) -> Unit) {
+    val choices = when (option.key) {
+        screen?.layoutKey -> screen.layouts
+        screen?.ratioKey -> screen.ratios
+        else -> null
+    }
+    if (choices.isNullOrEmpty()) {
+        SheetRow(
+            option.label,
+            trailing = {
+                Text(
+                    option.display(), style = Monika.type.bodyStrong, color = Color.White, maxLines = 1,
+                    modifier = Modifier.padding(start = 10.dp).clip(Radius.pill).background(primaryGradient()).padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            },
+            onClick = { onOptionChange(option, option.next()) },
+        )
+        return
+    }
+    Column(
+        Modifier.fillMaxWidth().clip(Radius.medium).background(SheetColors.row).padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(option.label, style = Monika.type.bodyStrong, color = SheetColors.text)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            choices.forEach { choice ->
+                SheetChip(choice.label, on = NdsSettings.sameChoice(choice.value, option.value)) {
+                    onOptionChange(option, choice.value)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditChip(text: String, on: Boolean, onClick: () -> Unit) {    Text(
         text, style = Monika.type.bodyStrong, color = Color.White,
         modifier = Modifier.clip(Radius.pill)
             .background(if (on) primaryGradient() else Brush.linearGradient(listOf(SheetColors.tile, SheetColors.tile)))
@@ -609,28 +656,31 @@ private fun PillKey(label: String, key: Int, send: (Int, Int) -> Unit) {
 }
 
 /**
- * V162: nút nhỏ ẩn/hiện phím ảo. Đang hiện → chấm tròn kính mờ (icon bàn phím) ở mép trái, hơi trong;
- * đang ẩn → viên "Hiện phím" nổi bật để người chơi tìm lại được. Luôn nằm ngoài cụm phím nên với tới được.
+ * V162/V184: nút tròn nhỏ ẩn/hiện phím ảo. Luôn đục và không tự ẩn (sếp 0.8.9: nút cũ quá to, lại mờ dần);
+ * đang ẩn phím thì nền gradient cam để người chơi tìm lại được.
  */
 @Composable
 private fun PadToggle(hidden: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier.padding(6.dp).alpha(if (hidden) 1f else 0.55f).clip(Radius.pill)
-            .background(if (hidden) primaryGradient() else Brush.linearGradient(listOf(Color(0xB8181719), Color(0xB8181719))))
-            .border(1.dp, Color(0x24FFFFFF), Radius.pill)
+    Box(
+        modifier.size(PAD_TOGGLE_DP).clip(Radius.pill)
+            .background(if (hidden) primaryGradient() else Brush.linearGradient(listOf(PAD_TOGGLE_BG, PAD_TOGGLE_BG)))
+            .border(1.dp, Color(0x33FFFFFF), Radius.pill)
             .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(); if (awaitRelease()) onClick() } }
-            .padding(horizontal = if (hidden) 12.dp else 10.dp, vertical = 10.dp)
             .testTag(PAD_TOGGLE_TAG),
-        verticalAlignment = Alignment.CenterVertically,
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             painterResource(R.drawable.ic_fluent_keyboard_24_regular),
             if (hidden) "Hiện phím ảo" else "Ẩn phím ảo",
-            Modifier.size(20.dp), tint = Color.White,
+            Modifier.size(18.dp), tint = Color.White,
         )
-        if (hidden) Text("Hiện phím", Modifier.padding(start = 6.dp), style = Monika.type.caption, color = Color.White, maxLines = 1)
     }
 }
+
+/** Cạnh nút ẩn/hiện phím ảo (dp) — nhỏ, không che game. */
+private val PAD_TOGGLE_DP = 36.dp
+/** Nền nút khi phím đang hiện: than kính đục vừa, không dùng alpha để nút không bị "mờ dần". */
+private val PAD_TOGGLE_BG = Color(0xCC181719)
 
 /** testTag của nút ẩn/hiện phím ảo (V162, test giao diện). */
 const val PAD_TOGGLE_TAG = "pad-toggle"

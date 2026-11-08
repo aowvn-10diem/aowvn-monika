@@ -135,6 +135,39 @@ class ConfigTest {
     }
 
     @Test
+    fun `ban chinh thuc dung chung chung thu va tai khoan tu config`() {
+        assertEquals(vn.aow.monika.config.SecurityConfig.OFFICIAL_CERT_SHA256, cfg.security.officialCertSha256)
+        assertEquals(listOf("https://monika.aow.vn/", "https://github.com/aowvn-10diem/aowvn-monika/releases"), cfg.official.downloadSources.map { it.url })
+        assertEquals("https://monika.aow.vn/chinh-thuc/", cfg.official.pageUrl)
+        assertTrue(cfg.official.reportFakeUrl.contains("template=bao-ban-gia.yml"))
+        assertTrue(cfg.official.verificationSteps.isNotEmpty())
+        val legacy = ConfigRepository.parse("{}")
+        assertEquals(cfg.security.officialCertSha256, legacy.security.officialCertSha256)
+        assertTrue(legacy.official.downloadSources.isNotEmpty())
+    }
+
+    @Test
+    fun `donate config-first hop le va config cu co mac dinh`() {
+        val donate = cfg.account.donate
+        assertTrue(donate.bankId.matches(Regex("[A-Za-z0-9]+")))
+        assertTrue(donate.accountNo.matches(Regex("[0-9]{4,32}")))
+        assertTrue(donate.accountName.isNotBlank() && donate.memo.isNotBlank())
+        assertTrue(donate.minAmount > 0 && donate.maxAmount >= donate.minAmount)
+        assertTrue(donate.amounts.isNotEmpty() && donate.amounts.all { it in donate.minAmount..donate.maxAmount })
+        assertTrue(donate.fallbackBanks.isNotEmpty() && donate.fallbackBanks.all { it.id.isNotBlank() && it.name.isNotBlank() })
+        assertTrue(donate.qrBaseUrl.startsWith("https://img.vietqr.io/"))
+        assertTrue(donate.payUrl.startsWith("https://dl.vietqr.io/"))
+        assertTrue(donate.banksUrl.startsWith("https://api.vietqr.io/"))
+        assertTrue(donate.returnUrl.startsWith("https://"))
+        val old = ConfigRepository.parse("""{"account":{"donate":{"bankId":"old","accountNo":"123456"}}}""").account.donate
+        assertEquals("old", old.bankId)
+        assertEquals("123456", old.accountNo)
+        assertEquals(1_000L, old.minAmount)
+        assertEquals(500_000_000L, old.maxAmount)
+        assertEquals(12, old.fallbackBanks.size)
+    }
+
+    @Test
     fun `goi kirikiri nam dung trong modules co url sha va chi arm64`() {
         val m = cfg.modules["kirikiri"] ?: error("modules.kirikiri thiếu (có thể bị chèn nhầm sang mục khác)")
         assertTrue(m.url.startsWith("https://") && m.url.endsWith("kirikiri-arm64.zip"))
@@ -145,9 +178,30 @@ class ConfigTest {
         assertEquals("kirikiri", cfg.system("kirikiri")?.engine)
     }
 
+    @Test fun pspPinsBothArmsToVerifiedPublishedArchives() {
+        val core = cfg.cores.getValue("ppsspp")
+        val tag = "cores-ppsspp-1"
+        val root = "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/$tag"
+        val hashes = mapOf(
+            "arm64-v8a" to "336f6bfe825950dc1eff5d503cc89cb7d0963a671ca362496c4d9550675b4119",
+            "armeabi-v7a" to "194c8b3cc8b6b35d8750dff46c8ac6262fa21d5a8837a3d87be53b43014400da",
+        )
+        assertEquals(tag, core.version)
+        assertEquals("$root/ppsspp-{abi}.zip", core.url)
+        assertEquals(hashes.keys, core.artifacts.keys)
+        assertEquals(hashes.keys, core.abis.toSet())
+        hashes.forEach { (abi, hash) ->
+            val artifact = core.artifacts.getValue(abi)
+            assertEquals("$root/ppsspp-$abi.zip", artifact.url)
+            assertEquals(hash, artifact.sha256)
+            assertEquals(tag, artifact.version)
+        }
+        assertEquals(1, cfg.app.minVersionCode)
+    }
+
     @Test
     fun `rgss ghim goi cong khai va van giu Joiplay du phong`() {
-        assertEquals(55, cfg.configVersion)
+        assertEquals(62, cfg.configVersion)
         val module = cfg.modules["rgss"] ?: error("modules.rgss thiếu")
         assertEquals("engines-rgss-6", module.version)
         assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/engines-rgss-6/rgss-arm64-v8a.zip", module.url)
@@ -165,7 +219,7 @@ class ConfigTest {
     fun `GBA tat color correction o mac dinh goc va moi style`() {
         val core = cfg.cores.getValue("mgba")
         val display = requireNotNull(core.display)
-        assertEquals(55, cfg.configVersion)
+        assertEquals(62, cfg.configVersion)
         assertEquals("OFF", core.options["mgba_color_correction"])
         assertEquals("lcd", display.default)
         assertTrue(display.styles.isNotEmpty())
@@ -196,7 +250,8 @@ class ConfigTest {
             <a href="https://www.aowvn.org/p/tai-trinh-gia-lap-gba.html">z</a>"""
         val links = LinkResolver.extract(html, cfg.downloadHosts)
         assertEquals(2, links.size)
-        assertEquals("https://pixeldrain.com/api/file/abc123?download", links[0].directUrl)
+        // V193 G2: bài viết không còn tự tải Pixeldrain; bấm sẽ mở trình duyệt.
+        assertNull(links[0].directUrl)
         assertNull(links[1].directUrl)
     }
 
@@ -204,7 +259,12 @@ class ConfigTest {
     fun `lay link pixeldrain dang thu muc va chu tren nut`() {
         val html = """<li><a class="download" href="https://pixeldrain.com/d/yd6J5KeC" rel="nofollow">TẢI VỀ</a></li>"""
         val link = LinkResolver.extract(html, cfg.downloadHosts).single()
-        assertEquals("https://pixeldrain.com/api/filesystem/yd6J5KeC?attach", link.directUrl)
+        // Tự động: không tải; thủ công sau cảnh báo: có link thẳng.
+        assertNull(link.directUrl)
+        assertEquals(
+            "https://pixeldrain.com/api/filesystem/yd6J5KeC?attach",
+            LinkResolver.resolve(link.pageUrl, cfg.downloadHosts, manual = true)?.directUrl,
+        )
         assertEquals("TẢI VỀ", link.label)
         assertTrue(LinkResolver.isBlogPage("https://www.aow.vn/p/tai-gia-lap-joiplay.html"))
         assertTrue(!LinkResolver.isBlogPage("https://www.aow.vn/2026/02/game.html"))

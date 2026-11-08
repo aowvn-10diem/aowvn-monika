@@ -11,7 +11,18 @@ import androidx.compose.ui.unit.dp
 import vn.aow.monika.R
 import vn.aow.monika.ui.theme.*
 
-/** Skeleton tĩnh: không có hoạt ảnh lặp khi máy chọn OFF. Mạng bị chặn ở 10 giây. */
+/** V193 G1: bài viết đang tắt — giải thích + nút bật rõ ràng, không tự gọi mạng. */
+@Composable
+internal fun FeedOff(onEnable: () -> Unit) {
+    EmptyState(
+        R.drawable.fluent3d_newspaper,
+        "Bài viết đang tắt",
+        "Bản tự build không tự tải bài viết từ aow.vn. Bật để xem tin và nhận thông báo bài mới.",
+    ) {
+        GradientButton("Bật bài viết", onEnable)
+    }
+}
+
 @Composable
 internal fun FeedStatus(loading: Boolean, onRetry: () -> Unit) {
     if (loading) {
