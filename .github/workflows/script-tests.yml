@@ -23,7 +23,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - name: Chạy đủ 10 test N04, báo lỗi sau khi chạy hết
+      - name: Chạy đủ 11 test N04, báo lỗi sau khi chạy hết
         run: |
           python3 - <<'PY'
           import subprocess
