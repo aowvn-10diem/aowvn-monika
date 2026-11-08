@@ -13,6 +13,8 @@ internal object ConfigValidation {
 
     private fun isDownloadUrl(path: String, field: String): Boolean = when {
         field == "apkUrl" || field == "systemFiles" -> true
+        // V196: link tải/mời cài của app ngoài và plugin cũng phải qua allowlist (link aow.vn hoặc rỗng).
+        field == "downloadUrl" -> true
         field == "script" -> path.startsWith("config.webPlayers.")
         field == "url" -> downloadSections.any { path.startsWith(it) }
         else -> false
