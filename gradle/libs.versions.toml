@@ -34,6 +34,13 @@ r8 = "8.7.18" # D8: biên dịch bộ nạp data thành .dex lúc build
 # BouncyCastle: bản vá dùng chung cho classpath plugin Gradle và runtime của app (libadb kéo vào APK).
 # Bốn artifact phải cùng một phiên bản; nâng = sửa đúng dòng này.
 bouncycastle = "1.85"
+# V0811: các gói dưới đây chỉ nằm trên classpath plugin Gradle hoặc cấu hình test — không đóng gói
+# vào APK (docs/bao-mat/PHU-THUOC-0811.md). Phiên bản là bản vá cảnh báo bảo mật.
+commonsIo = "2.14.0"
+jdom2 = "2.0.6.1"
+jose4j = "0.9.6"
+protobufJava = "3.25.5"
+sqliteJdbc = "3.41.2.2"
 
 [libraries]
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
