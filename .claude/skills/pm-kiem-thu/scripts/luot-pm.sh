@@ -115,7 +115,7 @@ if { [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; } || [ "$(date -u +%s)" -lt "$(dat
   since=$(date -u -d '-24 hours' +%FT%TZ)
   # Đọc comment toàn repo 1 lượt (mới nhất trước): đội có thể báo ở hộp thư khác hoặc trên PR (Sol 2 báo #337, DeepSeek báo trên PR).
   cmt=$(gh api "repos/$R/issues/comments?since=$since&per_page=100&sort=updated&direction=desc" 2>/dev/null)
-  for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Duyệt DeepSeek|duyet/|337|\\[(Trưởng nhóm )?Duyệt DeepSeek"; do
+  for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Duyệt DeepSeek|duyet/|337|\\[(Trưởng nhóm )?Duyệt DeepSeek" "Nhóm Lỗi|loi/|337|\\[Trưởng nhóm Lỗi" "Nhóm Phụ thuộc|phuthuoc/|337|\\[Trưởng nhóm Phụ thuộc"; do
     IFS='|' read -r ten nhanh hop tien <<<"$doi"
     t1=$(echo "$act" | grep -E "^refs/heads/$nhanh" | awk '{print $2}' | sort | tail -1)
     tien=${tien//\\/\\\\}   # jq cần "\\[" (một "\[" là escape sai, lỗi bị nuốt nên trước đây chỉ đọc được lần push)
