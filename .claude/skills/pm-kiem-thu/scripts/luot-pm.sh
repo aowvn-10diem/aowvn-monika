@@ -23,6 +23,7 @@ out=()
 # 1. PR: kết luận mới nhất trên đúng head + CI bắt buộc.
 for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user.login|test("dependabot")|not)|.number'); do
   read -r sha draft mst < <(gh api "repos/$R/pulls/$p" --jq '"\(.head.sha) \(.draft) \(.mergeable_state)"')
+  grep -qw "$p" "$(dirname "$0")/../giu.txt" 2>/dev/null && continue   # PR PM tạm giữ (vd. ngoài A85): không báo
   [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || continue   # API lỗi/hạn mức: bỏ qua, không bao giờ in GOP thiếu sha
   ci=$(gh api "repos/$R/commits/$sha/check-runs?per_page=60" --jq '[.check_runs[]|select(.name|test("^(build|coverage|n04-tests|analyze)"))|.conclusion//"chay"]|unique|join(",")')
   # Kết luận Luna 3 / Luna Ultra trên đúng head (review hoặc comment có "Kết luận").
@@ -114,7 +115,7 @@ if { [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; } || [ "$(date -u +%s)" -lt "$(dat
   since=$(date -u -d '-24 hours' +%FT%TZ)
   # Đọc comment toàn repo 1 lượt (mới nhất trước): đội có thể báo ở hộp thư khác hoặc trên PR (Sol 2 báo #337, DeepSeek báo trên PR).
   cmt=$(gh api "repos/$R/issues/comments?since=$since&per_page=100&sort=updated&direction=desc" 2>/dev/null)
-  for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Sol 2|sol2/|119|\\[Sol 2" "Duyệt DeepSeek|duyet/|337|\\[(Trưởng nhóm )?Duyệt DeepSeek"; do
+  for doi in "DeepSeek|deepseek[0-9]*/|337|\\[(Trưởng nhóm )?DeepSeek" "Duyệt DeepSeek|duyet/|337|\\[(Trưởng nhóm )?Duyệt DeepSeek"; do
     IFS='|' read -r ten nhanh hop tien <<<"$doi"
     t1=$(echo "$act" | grep -E "^refs/heads/$nhanh" | awk '{print $2}' | sort | tail -1)
     tien=${tien//\\/\\\\}   # jq cần "\\[" (một "\[" là escape sai, lỗi bị nuốt nên trước đây chỉ đọc được lần push)

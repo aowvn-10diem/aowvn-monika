@@ -1,0 +1,5 @@
+# PR PM tạm giữ, luot-pm.sh bỏ qua (mỗi dòng: số PR  lý do). Xóa dòng khi thả.
+451 ngoài A85
+469 ngoài A85
+457 ngoài A85
+441 ngoài A85
