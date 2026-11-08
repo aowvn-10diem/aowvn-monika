@@ -6,14 +6,14 @@ name: Gate (V200)
 #
 # gate:
 #   - Lấy danh sách tệp đổi của PR (API, không chạy mã của PR).
-#   - scripts/gate-expected.py cho biết workflow nào phải xanh (Build, Coverage, CodeQL).
+#   - scripts/gate-expected.py cho biết workflow nào phải xanh (Build, Coverage, CodeQL), đối chiếu theo đường dẫn tệp workflow.
 #   - Đợi các workflow đó trên ĐÚNG SHA head của PR; xanh hết thì xanh, có cái nào đỏ/hủy/không xuất
 #     hiện thì đỏ. PR chỉ sửa tài liệu thì xanh ngay.
 # Không dùng secret, không bên thứ ba, quyền chỉ đọc. Không đầu vào do người ngoài đặt nào vào lệnh shell
 # (chỉ số PR và SHA của GitHub, truyền qua biến môi trường).
 # Chạy lại Build/Coverage/CodeQL sau khi đỏ thì phải chạy lại cả gate (gate chỉ nhìn một lần).
-# Ranh giới tin cậy: PR sửa chính tệp này hoặc scripts/gate-expected.py vẫn tự duyệt mình được, nên mọi PR
-# đụng .github/workflows/** hoặc hai tệp trên phải qua duyệt hai lượt và sếp (đã ghi ở docs/BAO-VE-MAIN.md).
+# Ranh giới tin cậy: PR sửa chính tệp này, scripts/gate-expected.py hoặc scripts/test-gate-expected.py (gate chạy trực tiếp tệp này từ nhánh PR) vẫn tự duyệt mình được, nên mọi PR
+# đụng .github/workflows/** hoặc ba tệp trên phải qua duyệt hai lượt và sếp (đã ghi ở docs/BAO-VE-MAIN.md).
 on:
   pull_request:
 
@@ -68,7 +68,7 @@ jobs:
             exit 0
           fi
           echo "Cần xanh trên $HEAD_SHA:"
-          printf '%s\n' "$need" | sed 's/^/  - /'
+          printf '%s\n' "$need" | cut -f2 | sed 's/^/  - /'
           grace=$((SECONDS + 240))    # chờ workflow khác kịp xuất hiện
           deadline=$((SECONDS + 3300))
           while true; do
@@ -78,10 +78,10 @@ jobs:
               sleep 60; continue
             fi
             pending=0; bad=0
-            while IFS= read -r name; do
-              [ -z "$name" ] && continue
-              row=$(printf '%s' "$runs" | jq -r --arg n "$name" \
-                '[.workflow_runs[] | select(.name == $n)] | sort_by(.created_at) | (last // {}) | [(.status // "none"), (.conclusion // "")] | @tsv')
+            while IFS=$'\t' read -r wpath name; do
+              [ -z "$wpath" ] && continue
+              row=$(printf '%s' "$runs" | jq -r --arg p "$wpath" \
+                '[.workflow_runs[] | select(.path == $p)] | sort_by(.created_at) | (last // {}) | [(.status // "none"), (.conclusion // "")] | @tsv')
               status=${row%%$'\t'*}; conclusion=${row#*$'\t'}
               if [ "$status" = "none" ]; then
                 if [ $SECONDS -ge $grace ]; then echo "ĐỎ: không thấy lượt chạy '$name' trên $HEAD_SHA"; bad=1; else pending=1; fi

@@ -62,6 +62,12 @@ class WorkflowDriftTest(unittest.TestCase):
     def read(self, name):
         return (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
 
+    def test_workflow_paths_exist_and_match_names(self):
+        self.assertEqual(set(ge.WORKFLOW_PATH), set(ge.BUILD_NAMES) | {ge.CODEQL_NAME})
+        for name, path in ge.WORKFLOW_PATH.items():
+            text = (ROOT / path).read_text(encoding="utf-8")
+            self.assertRegex(text, r"(?m)^name: " + re.escape(name) + r"\s*$", path)
+
     def test_build_and_coverage_filters(self):
         for fname, wf in (("build.yml", "Build"), ("coverage.yml", "Coverage")):
             text = self.read(fname)

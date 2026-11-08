@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """V200: cho danh sách tệp đổi của một PR (mỗi dòng một đường dẫn, đọc từ stdin),
-in tên các workflow bắt buộc phải xanh (mỗi dòng một tên). Không in gì = PR chỉ sửa tài liệu.
+in các workflow bắt buộc phải xanh, mỗi dòng `đường-dẫn<TAB>tên`. Không in gì = PR chỉ sửa tài liệu.
 
 Phản chiếu bộ lọc đường dẫn thật của workflow. Đổi bộ lọc ở workflow nào thì phải đổi ở đây:
   - Build:        build.yml     pull_request paths-ignore ["docs/**", "**/*.md"]
@@ -15,6 +15,12 @@ import sys
 
 BUILD_NAMES = ("Build", "Coverage")
 CODEQL_NAME = "CodeQL (V41)"
+# gate đối chiếu lượt chạy theo ĐƯỜNG DẪN workflow (không đụng tên hiển thị với workflow khác), tên chỉ để in log.
+WORKFLOW_PATH = {
+    "Build": ".github/workflows/build.yml",
+    "Coverage": ".github/workflows/coverage.yml",
+    CODEQL_NAME: ".github/workflows/codeql.yml",
+}
 CODEQL_PREFIXES = ("app/", "cloudflare/", "scripts/", ".github/workflows/")
 CODEQL_FILES = (".github/codeql-config.yml", "gradle/libs.versions.toml")
 
@@ -42,4 +48,4 @@ if __name__ == "__main__":
     data = sys.stdin.read().splitlines()
     names = parse_json_lines(data) if "--json" in sys.argv[1:] else data
     for name in expected(names):
-        print(name)
+        print(WORKFLOW_PATH[name] + "\t" + name)
