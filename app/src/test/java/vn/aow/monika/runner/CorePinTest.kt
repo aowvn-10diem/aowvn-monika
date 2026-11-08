@@ -101,6 +101,36 @@ class CorePinTest {
             assertEquals(listOf("core-check", "core-cache"), steps.map { it.stage })
         }
     } }
+    @Test fun bundledPspPinsRejectChangedZipAndPreserveLegacyCoreForBothArms() = runBlocking { onMain {
+        val previousDir = app.applicationInfo.nativeLibraryDir
+        try {
+            val config = ConfigRepository(app, OkHttpClient())
+            val psp = File(app.filesDir, "cores/ppsspp").apply { mkdirs() }
+            val library = File(psp, "ppsspp_libretro_android.so").apply { writeText("old-psp") }
+            File(psp, "version").writeText("1")
+            for ((nativeDir, abi) in listOf("arm64" to "arm64-v8a", "arm" to "armeabi-v7a")) {
+                app.applicationInfo.nativeLibraryDir = "/fake/$nativeDir"
+                requests.clear()
+                val manager = CoreManager(app, http(), config)
+                assertFalse(manager.isReady("ppsspp"))
+                val error = runCatching { manager.ensureCore("ppsspp") }.exceptionOrNull()
+                assertTrue(error is java.io.IOException)
+                assertTrue(error?.message.orEmpty().contains("SHA-256"))
+                assertEquals(listOf("https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-ppsspp-1/ppsspp-$abi.zip"), requests)
+                assertEquals("old-psp", library.readText())
+                assertEquals("1", manager.installedVersion("ppsspp"))
+            }
+            app.applicationInfo.nativeLibraryDir = "/fake/x86_64"
+            requests.clear()
+            val unsupported = CoreManager(app, http(), config)
+            assertFalse(unsupported.supports("ppsspp"))
+            assertTrue(runCatching { unsupported.ensureCore("ppsspp") }.isFailure)
+            assertTrue(requests.isEmpty())
+        } finally {
+            app.applicationInfo.nativeLibraryDir = previousDir
+        }
+    } }
+
     @Test fun legacyConfigKeepsUrlAndVersionBehavior() = runBlocking { onMain {
         val legacy = CoreManager(app, http(), cfg("unused", "", pinned = false))
         assertTrue(legacy.supports("gambatte")); legacy.ensureCore("gambatte")
