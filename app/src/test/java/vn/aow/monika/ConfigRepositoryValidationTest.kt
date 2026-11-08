@@ -194,7 +194,7 @@ class ConfigRepositoryValidationTest {
         val c = ConfigValidation.parse("""{"configVersion":1,"modules":{"x":{"version":"1","url":"https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/x/{abi}.zip","sha256":"${"AB".repeat(32)}"}},"systems":[{"id":"x","name":"X","runner":"j2me"}]}""", 1)
         assertEquals(1, c.configVersion)
         assertEquals(0, ConfigValidation.parse("{}", 0).configVersion)
-        ConfigValidation.parse("""{"downloadHosts":[{"name":"x","host":"x.test","mode":"direct","pattern":"^https?://x[.]test/(.+)","directUrl":"https://x.test/$1"}]}""", 0)
+        ConfigValidation.parse("""{"downloadHosts":[{"name":"x","host":"pixeldrain.com","mode":"direct","pattern":"^https?://pixeldrain[.]com/(.+)","directUrl":"https://pixeldrain.com/$1"}]}""", 0)
         ConfigValidation.parse(app.assets.open(ConfigRepository.ASSET_NAME).bufferedReader().use { it.readText() }, 0)
     }
 
@@ -252,6 +252,34 @@ class ConfigRepositoryValidationTest {
 
     @Test fun cachedConfigWithForeignDownloadHostFallsBackToBundled() {
         cache.writeText("""{"configVersion":${bundled + 50},"cores":{"x":{"version":"1","url":"https://evil.example/core.zip"}}}""")
+        val r = repo()
+        assertEquals(bundled, r.current.configVersion)
+        assertFalse(r.remoteApplied.value)
+    }
+
+    // ---- V196b: URL tệp trong downloadHosts[].directUrl ----
+
+    @Test fun directUrlHttpOrForeignHostIsRejected() {
+        val httpUrl = """{"downloadHosts":[{"name":"X","host":"pixeldrain.com","mode":"direct","pattern":"^https?://pixeldrain[.]com/(.+)","directUrl":"http://pixeldrain.com/api/file/$1"}]}"""
+        val foreign = """{"downloadHosts":[{"name":"X","host":"pixeldrain.com","mode":"direct","pattern":"^https?://pixeldrain[.]com/(.+)","directUrl":"https://evil.example/api/file/$1"}]}"""
+        for (json in listOf(httpUrl, foreign)) {
+            val error = runCatching { ConfigValidation.parse(json, 0) }.exceptionOrNull()
+            assertTrue("phải bị từ chối: $json -> $error", error is IllegalArgumentException)
+        }
+    }
+
+    @Test fun directUrlAllowedHostIsAccepted() {
+        val json = """{"downloadHosts":[{"name":"X","host":"pixeldrain.com","mode":"direct","pattern":"^https?://pixeldrain[.]com/(.+)","directUrl":"https://pixeldrain.com/api/file/$1"}]}"""
+        assertEquals(
+            "https://pixeldrain.com/api/file/$1",
+            ConfigValidation.parse(json, 0).downloadHosts.single().directUrl,
+        )
+    }
+
+    @Test fun cachedConfigWithForeignDirectUrlFallsBackToBundled() {
+        cache.writeText(
+            """{"configVersion":${bundled + 60},"downloadHosts":[{"name":"X","host":"pixeldrain.com","mode":"direct","pattern":"^https?://pixeldrain[.]com/(.+)","directUrl":"https://evil.example/api/file/$1"}]}"""
+        )
         val r = repo()
         assertEquals(bundled, r.current.configVersion)
         assertFalse(r.remoteApplied.value)

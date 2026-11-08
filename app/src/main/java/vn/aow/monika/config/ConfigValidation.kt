@@ -55,7 +55,10 @@ internal object ConfigValidation {
                     if (text.isNotEmpty()) {
                         val url = text.replace("{abi}", "arm64-v8a").toHttpUrlOrNull()
                         require(url != null && url.scheme == "https" && text.startsWith("https://")) { "$path: URL phải là HTTPS hợp lệ" }
-                        if (isDownloadUrl(path, field)) {
+                        if (field == "directUrl") {
+                            // V196b: URL tệp do config tạo, đi thẳng vào trình quản lý tải của hệ thống.
+                            require(isAllowedDirectUrlHost(url!!.host.lowercase())) { "$path: host tải tệp không nằm trong danh sách cho phép" }
+                        } else if (isDownloadUrl(path, field)) {
                             // Chỉ nhận host đã chốt trong APK; không in URL/host ra log (chỉ nêu đường dẫn trường).
                             require(isAllowedDownloadHost(url!!.host.lowercase())) { "$path: host tải không nằm trong danh sách cho phép" }
                         }
