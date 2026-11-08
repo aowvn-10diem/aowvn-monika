@@ -10,7 +10,6 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 - **Mới:** Thư viện có mục **Tệp** để tìm game, tài liệu và tệp khác trong cùng một chỗ. ([#434](https://github.com/aowvn-10diem/aowvn-monika/pull/434))
 - **Mới:** Tải game từ Pixeldrain nay do bạn chủ động: dán link vào **Tải xuống › Tải từ link**, app cảnh báo trước khi tải. ([#501](https://github.com/aowvn-10diem/aowvn-monika/pull/501))
 - **Mới:** Bài viết từ aow.vn mặc định tắt; muốn xem và nhận thông báo bài mới, bật lại ở **Cài đặt › Bài viết & tin tức**. ([#498](https://github.com/aowvn-10diem/aowvn-monika/pull/498))
-- Nội bộ: xóa game (#434) sao lưu cả thư mục và không tạo ZIP dở khi thiếu save; dựng lõi giả lập từ nguồn ghim; tăng kiểm tra quyền cho máy chủ gói và trang quản trị. ([#434](https://github.com/aowvn-10diem/aowvn-monika/pull/434), [#492](https://github.com/aowvn-10diem/aowvn-monika/pull/492), [#502](https://github.com/aowvn-10diem/aowvn-monika/pull/502), [#493](https://github.com/aowvn-10diem/aowvn-monika/pull/493))
 
 ## v0.8.10 (Bản thử)
 <!-- bien-tap: v0.8.10 -->
