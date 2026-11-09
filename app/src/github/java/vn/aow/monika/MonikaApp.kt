@@ -26,6 +26,13 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
         .respectCacheHeaders(false) // Ảnh Blogger không đổi theo link → giữ lâu.
         .build()
 
+    /** V202: Android báo thiếu RAM hoặc app vừa bị ẩn → nhả bộ đệm ảnh/feed/bảng chặn. */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (isCrashProcess() || isGameProcess()) return
+        AppGraph.trimMemory(level)
+    }
+
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun attachBaseContext(base: Context) {

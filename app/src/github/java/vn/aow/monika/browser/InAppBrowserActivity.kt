@@ -392,7 +392,14 @@ class InAppBrowserActivity : ComponentActivity() {
         view.evaluateJavascript(js, null)
     }
 
+    override fun onResume() {
+        super.onResume()
+        web?.onResume()
+    }
+
     override fun onPause() {
+        // V202: dừng WebView khi mở app khác để không giữ CPU/RAM của tiến trình chính.
+        web?.onPause()
         CookieManager.getInstance().flush()
         super.onPause()
     }

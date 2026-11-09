@@ -37,6 +37,8 @@ import java.io.FileInputStream
  */
 class WebGameActivity : ComponentActivity() {
 
+    private var webView: WebView? = null
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -120,6 +122,7 @@ class WebGameActivity : ComponentActivity() {
             addView(web)
             addView(overlay)
         })
+        webView = web
         if (player == "onsyuri") {
             // Engine ONScripter nằm trong gói tải khi cần (thường đã được tải trước lúc bấm tải game).
             val pm = vn.aow.monika.pack.PackManager
@@ -142,12 +145,32 @@ class WebGameActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        webView?.onResume()
+        webView?.resumeTimers()
         clock?.resume()
     }
 
     override fun onPause() {
+        // V202: dừng WebView khi ra nền — không để renderer giữ CPU/RAM sau lưng game khác.
+        webView?.onPause()
+        webView?.pauseTimers()
         clock?.pause()
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        // V202: gỡ và huỷ WebView để tiến trình chính không giữ renderer sau khi thoát game web.
+        webView?.let { web ->
+            (web.parent as? android.view.ViewGroup)?.removeView(web)
+            // diag: bỏ qua lỗi lúc đóng WebView — activity đang huỷ, không còn gì để báo.
+            runCatching { web.stopLoading() }
+            // diag: bỏ qua lỗi nạp about:blank khi huỷ — chỉ để nhả renderer.
+            runCatching { web.loadUrl("about:blank") }
+            // diag: bỏ qua lỗi destroy — WebView đã ở trạng thái đóng.
+            runCatching { web.destroy() }
+        }
+        webView = null
+        super.onDestroy()
     }
 
     /** Phục vụ file trong thư mục game, chặn đọc ra ngoài thư mục. */

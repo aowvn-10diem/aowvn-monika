@@ -14,6 +14,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import vn.aow.monika.config.ConfigRepository
 
+/** V202: số bài giữ trong RAM và số danh sách feed giữ lại sau khi nhả bộ đệm. */
+private const val CACHE_POSTS = 60
+private const val CACHE_LISTS = 3
+
 @kotlinx.serialization.Serializable
 data class Post(
     /** Mã bài của Blogger (phần sau ".post-"). */
@@ -35,7 +39,11 @@ class FeedRepository(
     /** V193 G1: false = không gọi mạng (bài viết đang tắt). */
     private val enabled: () -> Boolean = { true },
 ) {
-    private val cache = mutableMapOf<String, Post>()
+    /**
+     * V202: giới hạn RAM cho bài đã đọc. 60 bài gần nhất là đủ cho luồng đọc;
+     * LruCache tự đồng bộ luồng nên không cần khoá thêm.
+     */
+    private val cache = android.util.LruCache<String, Post>(CACHE_POSTS)
 
     /** Chốt duy nhất trước mọi request feed; tắt là không có request nào rời máy. */
     private fun requireEnabled() {
@@ -51,7 +59,7 @@ class FeedRepository(
     /** Bản đã lưu của danh sách [key] (RAM trước, rồi đĩa). Null nếu chưa từng tải. */
     fun cachedList(key: String): List<Post>? = lists[key] ?: runCatching {
         listFile(key)?.takeIf { it.exists() }?.readText()?.let { listJson.decodeFromString(kotlinx.serialization.builtins.ListSerializer(Post.serializer()), it) }
-    }.getOrNull()?.also { lists[key] = it; it.forEach { p -> cache[p.id] = p } }
+    }.getOrNull()?.also { lists[key] = it; it.forEach { p -> cache.put(p.id, p) } }
 
     /** Tải danh sách và cập nhật bản lưu. */
     suspend fun fetchList(key: String, label: String? = null, max: Int? = null): List<Post> =
@@ -62,7 +70,7 @@ class FeedRepository(
             }
         }
 
-    fun cached(id: String): Post? = cache[id]
+    fun cached(id: String): Post? = cache.get(id)
 
     /** @param query tìm kiếm toàn văn (tham số q của Blogger). */
     suspend fun fetch(label: String? = null, startIndex: Int = 1, max: Int? = null, query: String? = null): List<Post> {
@@ -73,7 +81,7 @@ class FeedRepository(
         val url = "$base?alt=json&orderby=published&start-index=$startIndex&max-results=${max ?: feed.pageSize}$q"
         val root = getJson(url).jsonObject["feed"]!!.jsonObject
         val entries = root["entry"] as? JsonArray ?: return emptyList()
-        return entries.map { parseEntry(it.jsonObject) }.onEach { cache[it.id] = it }
+        return entries.map { parseEntry(it.jsonObject) }.onEach { cache.put(it.id, it) }
     }
 
     /**
@@ -94,13 +102,31 @@ class FeedRepository(
     }
 
     suspend fun fetchPost(id: String): Post {
-        cache[id]?.let { return it }
+        cache.get(id)?.let { return it }
         requireEnabled()
         val url = configRepo.current.feed.url.trimEnd('/') + "/$id?alt=json"
-        return parseEntry(getJson(url).jsonObject["entry"]!!.jsonObject).also { cache[it.id] = it }
+        return parseEntry(getJson(url).jsonObject["entry"]!!.jsonObject).also { cache.put(it.id, it) }
     }
 
     private var pagesCache: List<Post>? = null
+
+    /**
+     * V202: nhả bộ đệm khi app ra nền hoặc hệ thống báo thiếu RAM. Giữ tối đa [CACHE_LISTS]
+     * danh sách (đủ để mở lại tức thì), bỏ nội dung HTML của mọi bài đã đọc — mở lại bài sẽ
+     * tải lại hoặc lấy lại từ danh sách. Không đụng dữ liệu trên đĩa.
+     */
+    fun trimMemory() {
+        pagesCache = null
+        val keys = lists.keys.toList()
+        if (keys.size > CACHE_LISTS) keys.drop(CACHE_LISTS).forEach { lists.remove(it) }
+        for (key in lists.keys.toList()) {
+            lists[key] = lists[key]?.map { it.copy(contentHtml = "") } ?: continue
+        }
+        for (id in cache.snapshot().keys.toList()) {
+            val post = cache.get(id) ?: continue
+            if (post.contentHtml.isNotEmpty()) cache.put(id, post.copy(contentHtml = ""))
+        }
+    }
 
     /**
      * Đọc 1 trang tĩnh của blog (aow.vn/p/...) qua feed pages, không cần mở trình duyệt.
