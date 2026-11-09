@@ -22,6 +22,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <memory>
 #include <unordered_set>
 
 #include "libretrodroid.h"
@@ -316,20 +317,28 @@ void LibretroDroid::loadGameFromPath(const std::string& gamePath, const std::fun
     core->retro_get_system_info(&system_info);
 
     struct retro_game_info game_info {};
-    game_info.path = Utils::cloneToCString(gamePath);
+    // V202: chuỗi đường dẫn do cloneToCString cấp bằng new[] — phải có chủ sở hữu để giải phóng.
+    std::unique_ptr<const char[]> pathHolder(Utils::cloneToCString(gamePath));
+    game_info.path = pathHolder.get();
     game_info.meta = nullptr;
 
+    std::unique_ptr<char[]> dataHolder;
     if (system_info.need_fullpath) {
         game_info.data = nullptr;
         game_info.size = 0;
     } else {
         struct Utils::ReadResult file = Utils::readFileAsBytes(gamePath);
-        game_info.data = file.data;
+        // V202: lõi need_fullpath=false tự sao chép dữ liệu trong retro_load_game, nên bản sao
+        // ROM 128–512 MB này chỉ sống tới hết lời gọi; giải phóng ngay sau đó.
+        dataHolder.reset(file.data);
+        game_info.data = dataHolder.get();
         game_info.size = file.size;
     }
 
     if (progress) progress("core-load-game");
     bool result = core->retro_load_game(&game_info);
+    dataHolder.reset();
+    pathHolder.reset();
     if (!result) {
         LOGE("Cannot load game. Leaving.");
         throw std::runtime_error("Cannot load game");
@@ -383,8 +392,11 @@ void LibretroDroid::loadGameFromVirtualFiles(std::vector<VFSFile> virtualFiles) 
     bool loadUsingVFS = system_info.need_fullpath || virtualFiles.size() > 1;
 
     struct retro_game_info game_info {};
-    game_info.path = Utils::cloneToCString(firstFilePath);
+    std::unique_ptr<const char[]> pathHolder(Utils::cloneToCString(firstFilePath));
+    game_info.path = pathHolder.get();
     game_info.meta = nullptr;
+
+    std::unique_ptr<char[]> dataHolder;
 
     if (loadUsingVFS) {
         VFS::getInstance().initialize(std::move(virtualFiles));
@@ -395,11 +407,14 @@ void LibretroDroid::loadGameFromVirtualFiles(std::vector<VFSFile> virtualFiles) 
         game_info.size = 0;
     } else {
         struct Utils::ReadResult file = Utils::readFileAsBytes(firstFileFD);
-        game_info.data = file.data;
+        dataHolder.reset(file.data);
+        game_info.data = dataHolder.get();
         game_info.size = file.size;
     }
 
     bool result = core->retro_load_game(&game_info);
+    dataHolder.reset();
+    pathHolder.reset();
     if (!result) {
         LOGE("Cannot load game. Leaving.");
         throw std::runtime_error("Cannot load game");
@@ -601,7 +616,9 @@ void LibretroDroid::resetCheat() {
 void LibretroDroid::setCheat(unsigned index, bool enabled, const std::string& code) {
     std::lock_guard<std::mutex> lock(coreLock);
 
-    core->retro_cheat_set(index, enabled, Utils::cloneToCString(code));
+    // V202: cùng kiểu rò rỉ new[] như đường nạp game — giữ chủ sở hữu và giải phóng sau lời gọi.
+    std::unique_ptr<const char[]> codeHolder(Utils::cloneToCString(code));
+    core->retro_cheat_set(index, enabled, codeHolder.get());
 }
 
 bool LibretroDroid::requiresVideoRefresh() const {
