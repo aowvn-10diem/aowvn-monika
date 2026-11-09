@@ -63,7 +63,7 @@ data class MonikaConfig(
     val forum: ForumConfig = ForumConfig(),
     /** Chặn quảng cáo trong trình duyệt nhúng. */
     val adblock: AdBlockConfig = AdBlockConfig(),
-    /** Tài khoản AowVN (Firebase của web aow.vn): đăng nhập, điểm danh, đánh giá, vote/donate. */
+    /** Tài khoản AowVN (Firebase của web aow.vn): đăng nhập, điểm danh, đánh giá, bình chọn. */
     val account: AccountConfig = AccountConfig(),
     /** Bản dịch tên/giá trị tùy chọn lõi giả lập (tiếng Anh → tiếng Việt). */
     val coreOptionText: CoreOptionText = CoreOptionText(),

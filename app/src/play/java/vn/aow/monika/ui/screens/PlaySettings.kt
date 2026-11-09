@@ -84,8 +84,8 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
             if (header != null) header()
             else MonikaHeader("Cài đặt", subtitle = "Aow Monika", left = onBack?.let { back -> { CircleButton(R.drawable.ic_fluent_arrow_left_24_regular, "Quay lại", back) } })
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Bạn có thể ủng hộ AowVN trên web aow.vn.", style = Monika.type.caption, color = c.textSecondary)
-                if (cfg.account.enabled) AccountCard()
+                // [A95] Bản Play không có câu mời trả tiền ngoài cửa hàng (anti-steering).
+                // [A65] Bản Play ẩn thẻ tài khoản: không mời đăng nhập hay sang trang web AowVN.
                 // Thẻ tối: app + phiên bản + cập nhật.
                 MonikaCard(Modifier.fillMaxWidth(), dark = true, shape = Radius.hero, padding = PaddingValues(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

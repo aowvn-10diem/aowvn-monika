@@ -14,9 +14,21 @@ FORBIDDEN_CLASSES = (
     b'Lvn/aow/monika/browser/InAppBrowserActivity', b'Lvn/aow/monika/ui/screens/SupportStrip',
     b'Lvn/aow/monika/config/Donate',
     b'Lvn/aow/monika/ui/ForceUpdateScreenKt',
+    # [A65] Thẻ tài khoản chỉ thuộc bản GitHub; bản Play không đóng gói.
+    b'Lvn/aow/monika/ui/screens/AccountCardKt',
 )
-FORBIDDEN_TEXT = ('img.vietqr.io', 'vote-game.html', 'Tải bản mới', 'monika-loader.dex')
-FORBIDDEN_PERMISSIONS = ('REQUEST_INSTALL_PACKAGES', 'MANAGE_EXTERNAL_STORAGE', 'QUERY_ALL_PACKAGES')
+# [A95] Anti-steering: bản Play không có câu mời trả tiền ngoài cửa hàng (chữ có dấu, tên khoá và tiếng Anh).
+# Thêm chuỗi mới thì thêm vào đây — test offline tự quét lại từng mục.
+FORBIDDEN_TEXT = (
+    'img.vietqr.io', 'vote-game.html', 'Tải bản mới', 'monika-loader.dex',
+    'ủng hộ', 'Ủng hộ', 'chuyển khoản', 'Chuyển khoản',
+    'vietqr', 'VietQR', 'donate', 'Donate', 'DONATE',
+)
+FORBIDDEN_PERMISSIONS = (
+    'REQUEST_INSTALL_PACKAGES', 'MANAGE_EXTERNAL_STORAGE', 'QUERY_ALL_PACKAGES',
+    # [A65] :j2me kéo micro, vị trí, Bluetooth và shortcut vào manifest chung — bản Play gỡ hết.
+    'RECORD_AUDIO', 'ACCESS_FINE_LOCATION', 'BLUETOOTH', 'INSTALL_SHORTCUT',
+)
 REQUIRED_ASSETS = (
     'assets/licenses/j2me-loader.txt', 'assets/licenses/fluent-system-icons.txt',
     'assets/rgss/monika-win32api.rb', 'assets/rgss/monika-ruby18.rb',
