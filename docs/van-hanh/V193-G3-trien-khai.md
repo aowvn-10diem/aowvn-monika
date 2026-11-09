@@ -18,7 +18,7 @@ Không ghi giá trị khóa/secret vào tài liệu, issue/PR hay log. Chỉ nê
 | Kho R2 | Bucket riêng cho gói, **private**; đã đồng bộ đủ gói hiện có | Liệt kê object trong bucket (kho nội bộ) |
 | Khóa ký | Cặp khóa S3 **chỉ đọc** (`Object Read Only`), giới hạn đúng bucket gói, **tách khỏi** khóa CI đóng gói | Trang quản trị Cloudflare (kho nội bộ) |
 | Worker | Đã deploy bản có `/pack` trên **custom domain thuộc `aow.vn`** (không dùng `*.workers.dev`, để đi qua WAF) | `curl -sS -o /dev/null -w '%{http_code}\n' https://<domain-aow-vn>/pack/<tên-gói>` |
-| Env Worker | Secrets: `PACK_SIGN_KEY_ID`, `PACK_SIGN_SECRET`. Vars: `PACK_R2_ACCOUNT_ID`, `PACK_R2_BUCKET`, `PACK_TTL_SECONDS` (mặc định 300), `PACKS_ALLOW` hoặc `PACKS_MAP` | Xem mục 1 |
+| Env Worker | Secrets: `PACK_SIGN_KEY_ID`, `PACK_SIGN_SECRET`. Vars: `PACK_R2_ACCOUNT_ID`, `PACK_R2_BUCKET`, `PACK_TTL_SECONDS` (mặc định 300, tối đa 3600; giá trị sai/quá lớn dùng mặc định), `PACKS_MAP` (JSON: tên gói → object key) hoặc `PACKS_ALLOW` (danh sách tên phẳng), `PACK_RATE_MAX`, `PACK_RATE_WINDOW_SECONDS` | Xem mục 1 |
 | Allowlist của app | Phải chứa **cả** host custom domain của Worker **và** host của URL R2 ký sẵn (`ALLOWED_DOWNLOAD_HOSTS` trong `app/src/main/java/vn/aow/monika/config/MonikaConfig.kt`) | `grep -n 'ALLOWED_DOWNLOAD_HOSTS' app/src/main/java/vn/aow/monika/config/MonikaConfig.kt` — nếu thiếu host R2 thì **phải phát hành app bổ sung trước bước 3** |
 | Repo packs | Còn public (để link cũ sống tới bước 4) | Mở link release cũ bằng trình duyệt ẩn danh |
 
@@ -48,15 +48,23 @@ sleep $((PACK_TTL_SECONDS + 5))
 curl -sS -o /dev/null -w '%{http_code}\n' "$SIGNED"
 ```
 
-- **Đạt:** (1) `302` + `location` trỏ thẳng host R2; (2) `200`; (3) `403`.
+- **Đạt:**
+  - `GET /pack/<tên>` trả **đúng một `302`**, header `location` trỏ thẳng
+    `https://<PACK_R2_ACCOUNT_ID>.r2.cloudflarestorage.com/<PACK_R2_BUCKET>/<object-key>?X-Amz-…`,
+    kèm header `x-signature-expires`.
+  - Tải URL đó trong hạn: `200`. Sau khi quá hạn: `403` (bucket private từ chối).
+  - Gọi vượt `PACK_RATE_MAX` trong cửa sổ: `429`.
 - **Dấu hiệu hỏng:**
-  - `503` → thiếu secrets/vars (đóng cửa an toàn).
-  - `403` ngay ở bước (1) → tên gói không có trong `PACKS_ALLOW`/`PACKS_MAP`.
+  - `503` → thiếu secrets/vars R2 (đóng cửa an toàn).
+  - `403` ngay ở bước (1) → tên gói không có trong `PACKS_MAP`/`PACKS_ALLOW`.
+  - `400` → URL có query string (Worker không nhận query cho `/pack`), hoặc tên gói không hợp lệ.
   - `200 {"name":…}` → bản deploy chưa có `/pack`.
   - Tải được **sau** TTL → khóa/TTL cấu hình sai, dừng lại kiểm cấu hình.
-  - Chuyển hướng nhiều bước hoặc trỏ về `*.workers.dev` → sai bản deploy/route.
+  - Chuyển hướng nhiều bước, hoặc `location` trỏ về `*.workers.dev` → sai bản deploy/route.
 
-**Kiểm thêm:** giới hạn tần suất cho riêng `/pack/*` (gọi liên tiếp vượt ngưỡng phải bị chặn, không ảnh hưởng `/report`).
+**Kiểm thêm:** giới hạn tần suất riêng cho `/pack/*` (`PACK_RATE_MAX`, `PACK_RATE_WINDOW_SECONDS`); gọi liên tiếp vượt ngưỡng phải bị `429`, không ảnh hưởng hạn mức `/report`.
+
+**Đường cũ (chỉ còn để chuyển tiếp):** nếu **không** đặt biến R2 nào, Worker quay về luồng cũ `PACKS_TOKEN` + `PACKS_BASE` + `PACKS_HOSTS`. Chỉ giữ trong thời gian chuyển; sau khi APK cầu nối phủ đủ (bước 3) thì **gỡ các biến này** để khóa CI cũ không còn dùng được cho việc phục vụ tải.
 
 **Lùi:** rollback Worker về bản deploy trước (endpoint tạm đóng), app vẫn dùng link cũ. Không cần đổi config app.
 
