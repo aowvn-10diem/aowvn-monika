@@ -133,6 +133,8 @@ Nguyên tắc: mỗi nhóm thư viện một PR; nâng phiên bản lớn (Kotli
 
 ## 7. Trạng thái và việc còn lại (cập nhật 09/11)
 
+- **09/11 — hòa `main` sau khi gộp #544/#548**: #546 merge `origin/main` bằng merge commit (không rebase, không force push), giữ cả hai nhóm ghim trong `gradle/libs.versions.toml` (guava/commons-lang3 của #544; commons-io/jdom2/jose4j/protobuf/sqlite của #546). SBOM tự kiểm lúc 04:48Z (sau #544): **51 cảnh báo / 15 tổ hợp**, giảm 3 so với mốc 54 (hết `junit` 4.12 trong APK, hết `commons-lang3` 3.16.0 và `guava` 33.4.8 trên classpath); **không có cảnh báo mới**. `guava` 32.0.1-jre còn trong SBOM chỉ ở công cụ build (AGP/room-compiler/grpc), không vào APK. Dependabot API vẫn 403 nên số trên là tự kiểm.
+
 - **#544/#546/#548 đều đã qua hai lượt duyệt** (lượt hai DeepSeek: #544 Đạt, #546 Đạt, #548 Cần sửa → đã sửa câu ghi chú cột "Bản vá" ở mục 4). CI trên head xanh; #544 và #546 `MERGEABLE` với `main`. Thứ tự gộp vẫn là **#544 trước**, rồi #546 hòa lại `main` và chạy lại CI trên head mới.
 - **Ghim `sqlite-jdbc` là phòng ngừa, chưa đóng cảnh báo**: `dependencyInsight` không thấy `org.xerial:sqlite-jdbc` trong mọi cấu hình của `:app`; SBOM ghi 3.36.0 đến từ `androidx.room:room-compiler` 2.5.2 (classpath plugin). `force` trong `app/build.gradle.kts` không chạm classpath plugin, nên cảnh báo `GHSA-6phf-6h5g-97j2` chỉ đóng được khi cây plugin thật sự hết bản lỗi.
 - **#544 và #546 CI xanh toàn bộ** (build hai flavor, unit test, CodeQL, kiểm gói thật). Đã kiểm lại cây sau khi ghim:
