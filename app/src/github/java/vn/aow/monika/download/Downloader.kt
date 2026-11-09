@@ -57,6 +57,8 @@ class Downloader(
             request.setDestinationInExternalFilesDir(context, GameStorage.FOLDER, sub)
         }
         return dm.enqueue(request).also { id ->
+            // V204: chỉ xử lý broadcast cho ID do app này đặt.
+            prefs.markDownload(id)
             if (isTool) prefs.markToolDownload(id)
             meta?.let { prefs.setDownloadMeta(id, it.toJson()) }
         }
@@ -98,8 +100,10 @@ class Downloader(
 
 class DownloadReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // V204: chỉ nhận đúng broadcast tải xong và ID do chính app này đặt vào DownloadManager.
+        if (intent.action != DownloadManager.ACTION_DOWNLOAD_COMPLETE) return
         val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-        if (id < 0) return
+        if (id < 0 || !AppGraph.prefs.isOwnDownload(id)) return
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {

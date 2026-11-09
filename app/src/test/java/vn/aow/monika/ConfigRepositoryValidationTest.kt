@@ -315,4 +315,16 @@ class ConfigRepositoryValidationTest {
         assertEquals(bundled, r.current.configVersion)
         assertFalse(r.remoteApplied.value)
     }
+
+    @Test fun loginUrlChiDuocThuocMienAow() {
+        // V204: chặn config từ xa trỏ phiên đăng nhập sang miền khác.
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigValidation.parse("""{"configVersion":0,"account":{"loginUrl":"https://evil.example/login"}}""", 0)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigValidation.parse("""{"configVersion":0,"account":{"loginUrl":"https://aow.vn.evil.example/login"}}""", 0)
+        }
+        val ok = ConfigValidation.parse("""{"configVersion":0,"account":{"loginUrl":"https://monika.aow.vn/login"}}""", 0)
+        assertEquals("https://monika.aow.vn/login", ok.account.loginUrl)
+    }
 }
