@@ -2,6 +2,12 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.12 (Bản thử)
+<!-- bien-tap: v0.8.12 -->
+> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+
+- **Mới:** (chờ khối câu chữ của Gemini — không tự viết)
+
 ## v0.8.11 (Bản thử)
 <!-- bien-tap: v0.8.11 -->
 > Phát hành ngày 08/11/2026 (UTC), bản thử nghiệm.
