@@ -16,6 +16,10 @@ name: Gate (V200)
 # đụng .github/workflows/** hoặc ba tệp trên phải qua duyệt hai lượt và sếp (đã ghi ở docs/BAO-VE-MAIN.md).
 on:
   pull_request:
+    # edited: đổi nhánh đích làm đổi tập tệp so với base; ready_for_review: PM yêu cầu (07/11 Argon duyệt).
+    # Lưu ý: mỗi lần sửa mô tả PR gate chạy lại (concurrency hủy lượt cũ); KHÔNG lọc bớt bằng `if:` vì
+    # lượt bị bỏ qua có thể che một lượt đỏ trước đó.
+    types: [opened, synchronize, reopened, edited, ready_for_review]
 
 permissions:
   contents: read
@@ -73,7 +77,8 @@ jobs:
           deadline=$((SECONDS + 3300))
           while true; do
             # Lỗi API thoáng qua (5xx, giới hạn lượt gọi): thử lại, không làm đỏ oan; vẫn tôn trọng deadline.
-            if ! runs=$(gh api "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100"); then
+            if ! runs=$(gh api --paginate "repos/$REPO/actions/runs?head_sha=$HEAD_SHA&event=pull_request&per_page=100" \
+                | jq -s '{workflow_runs: [.[].workflow_runs[]]}'); then
               if [ $SECONDS -ge $deadline ]; then echo "ĐỎ: quá giờ chờ (API lỗi)"; exit 1; fi
               sleep 60; continue
             fi
