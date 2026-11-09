@@ -58,10 +58,10 @@ jobs:
       - name: Unit trên config chuẩn
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
-          sudo apt-get install -y python3-pil
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-pil p7zip-full
           python3 scripts/test-rgss-real-verdict.py
           ./gradlew testDebugUnitTest --console=plain
-          command -v 7z >/dev/null || sudo apt-get install -y p7zip-full
       - name: Chuẩn bị đúng ba nguồn G2 trong CI
         env:
           RGSS_TAG: ${{ inputs.rgss_tag || 'engines-rgss-7' }}
