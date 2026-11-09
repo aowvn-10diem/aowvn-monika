@@ -1,13 +1,13 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 62,
+  "configVersion": 63,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
-    "latestVersionCode": 55,
-    "latestVersionName": "0.8.10",
+    "latestVersionCode": 56,
+    "latestVersionName": "0.8.11",
     "minVersionCode": 1,
-    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.10/AowVN-Monika-v0.8.10.apk",
-    "changelog": "Bản thử 0.8.10: Thư viện có trang chi tiết game, sao lưu trước khi xóa. Sửa phím ảo và phím Java; dễ xếp hai màn hình Nintendo DS hơn. Thêm nơi kiểm tra bản Monika chính thức."
+    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.11/AowVN-Monika-v0.8.11.apk",
+    "changelog": "Bản thử 0.8.11: Trang game có mục Save để xem, nhập và chia sẻ save. Thư viện có mục Tệp; tải game từ Pixeldrain do bạn tự dán link và app cảnh báo trước khi tải; bài viết aow.vn mặc định tắt, bật lại trong Cài đặt."
   },
   "security": {
     "officialCertSha256": "c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c"
