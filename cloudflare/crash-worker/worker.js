@@ -118,26 +118,77 @@ export function rateLimitConfig(env) {
 // không thể xoá lượt giữ chỗ của request đồng thời. JS đơn luồng + reserve đồng bộ (không `await`
 // xen giữa kiểm và thêm token) nên không cần CAS của KV.
 const RATE_STATE_MAX = 5000;
-const rateState = new Map(); // băm IP -> { window, tokens: Set<token> }
-export function resetRateState() { rateState.clear(); }
+const rateState = new Map(); // băm IP (/report) -> { window, tokens: Set<token> }
+const packRateState = new Map(); // băm IP (/pack) -> { window, tokens: Set<token> }
+const r2SigningKeyCache = new Map(); // "<secretHash>:<YYYYMMDD>" -> CryptoKey
+export function resetRateState() {
+  rateState.clear();
+  packRateState.clear();
+  r2SigningKeyCache.clear();
+}
 
-function rateEntry(ipHash, window) {
-  let entry = rateState.get(ipHash);
-  if (!entry || entry.window !== window) {
-    if (rateState.size >= RATE_STATE_MAX && !rateState.has(ipHash)) rateState.clear(); // chặn Map phình to
-    entry = { window, tokens: new Set() };
-    rateState.set(ipHash, entry);
+/**
+ * Chuẩn hoá địa chỉ nguồn trước khi băm để chống xoay địa chỉ trong cùng dải IPv6 /64:
+ * - IPv4 giữ nguyên chữ thường; IPv4-mapped IPv6 (`::ffff:a.b.c.d`) đưa về IPv4.
+ * - IPv6 chuẩn mở rộng đủ 8 nhóm 16-bit rồi gom theo 4 nhóm đầu (`xxxx:xxxx:xxxx:xxxx::/64`).
+ */
+export function normalizeClientIp(raw) {
+  if (typeof raw !== "string") return "?";
+  const text = raw.trim().toLowerCase();
+  if (!text) return "?";
+  const v4Mapped = text.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (v4Mapped) return v4Mapped[1];
+  if (!text.includes(":")) return text;
+  const zoneCut = text.split("%")[0];
+  const halves = zoneCut.split("::");
+  if (halves.length > 2) return zoneCut;
+  const parsePart = (part) => (part ? part.split(":").filter(Boolean) : []);
+  const left = parsePart(halves[0]);
+  const right = halves.length === 2 ? parsePart(halves[1]) : [];
+  // Xử lý dạng lai cuối chuỗi có IPv4 (vd. 64:ff9b::192.0.2.33).
+  if (right.length && right[right.length - 1].includes(".")) {
+    const octets = right.pop().split(".").map(Number);
+    if (octets.length !== 4 || octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return zoneCut;
+    right.push(((octets[0] << 8) | octets[1]).toString(16), ((octets[2] << 8) | octets[3]).toString(16));
   }
+  const missing = halves.length === 2 ? 8 - (left.length + right.length) : 0;
+  if ((halves.length === 2 && missing < 1) || (halves.length === 1 && left.length !== 8)) return zoneCut;
+  const groups = [...left, ...Array(Math.max(0, missing)).fill("0"), ...right];
+  if (groups.length !== 8 || groups.some((g) => !/^[0-9a-f]{1,4}$/.test(g))) return zoneCut;
+  return `${groups.slice(0, 4).map((g) => g.padStart(4, "0")).join(":")}::/64`;
+}
+
+function stateEntry(map, ipHash, window) {
+  const existing = map.get(ipHash);
+  if (existing && existing.window === window) return existing;
+  if (existing) map.delete(ipHash);
+  if (map.size >= RATE_STATE_MAX) {
+    // Dọn các mục thuộc cửa sổ cũ trước; nếu cùng cửa sổ vẫn đầy thì đuổi 1 mục cũ nhất (FIFO),
+    // không xoá trắng toàn bộ Map để tránh kẻ tấn công bơm 5000 IP reset bộ đếm của mình.
+    for (const [key, val] of map) {
+      if (val.window !== window) map.delete(key);
+    }
+    if (map.size >= RATE_STATE_MAX) {
+      const oldest = map.keys().next().value;
+      if (oldest !== undefined) map.delete(oldest);
+    }
+  }
+  const entry = { window, tokens: new Set() };
+  map.set(ipHash, entry);
   return entry;
 }
 
 /** Giữ chỗ 1 lượt; trả token của reservation, hoặc null nếu đã vượt hạn mức. Chạy đồng bộ. */
-function reserveRate(ipHash, window, max) {
-  const entry = rateEntry(ipHash, window);
+function reserveState(map, ipHash, window, max) {
+  const entry = stateEntry(map, ipHash, window);
   if (entry.tokens.size >= max) return null;
   const token = crypto.randomUUID();
   entry.tokens.add(token);
   return token;
+}
+
+function reserveRate(ipHash, window, max) {
+  return reserveState(rateState, ipHash, window, max);
 }
 
 /** Hoàn tác ĐÚNG reservation của mình (khi ghi KV lỗi); reservation của request khác không bị đụng. */
@@ -153,13 +204,22 @@ export function rateReservedCount() {
 }
 
 // ---- V193-G3: URL tải gói có chữ ký TTL ngắn ----
-// Worker chỉ ký rồi trả 302; byte của tệp đi thẳng từ CDN/R2 tới app, không qua Worker.
-// Secret dùng để ký là `PACKS_TOKEN` (đã có trong GitHub Actions của repo packs); danh sách
-// gói cho phép nằm ở env `PACKS_ALLOW` (phẩy ngăn cách), host tải ở env `PACKS_BASE`.
+// Worker chỉ ký rồi trả 302; byte của tệp đi thẳng từ R2/CDN tới app, không qua Worker.
+// Chế độ chính (A85): ký 1-hop AWS SigV4 Presigned URL tới Cloudflare R2 riêng tư bằng cặp khóa
+// chỉ-đọc riêng (`PACK_SIGN_KEY_ID` + `PACK_SIGN_SECRET` + `PACK_R2_ACCOUNT_ID` + `PACK_R2_BUCKET`),
+// danh sách/ánh xạ gói ở `PACKS_MAP` (JSON) hoặc `PACKS_ALLOW` (phẩy ngăn cách).
+// Tương thích ngược: khi chưa cấu hình bất kỳ biến R2 nào ở trên thì giữ nguyên đường cũ
+// (`PACKS_TOKEN` + `PACKS_BASE` + `PACKS_HOSTS`).
 export const PACK_TTL_DEFAULT_SECONDS = 300;
 export const PACK_TTL_MAX_SECONDS = 3600;
+export const PACK_RATE_DEFAULT_MAX = 30;
+export const PACK_RATE_DEFAULT_WINDOW_SECONDS = 600;
 const PACK_NAME = /^[a-z0-9][a-z0-9._-]{0,79}$/;
 const PACK_SIG = /^[A-Za-z0-9_-]{43}$/;
+const R2_ACCOUNT_RE = /^[0-9a-f]{32}$/i;
+const R2_BUCKET_RE = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/;
+const R2_OBJECT_KEY_RE = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$/;
+const R2_ENV_KEYS = ["PACK_SIGN_KEY_ID", "PACK_SIGN_SECRET", "PACK_R2_ACCOUNT_ID", "PACK_R2_BUCKET"];
 
 // Đồng hồ dùng cho hạn dùng của URL tải gói. Tách riêng để test cố định thời gian;
 // mặc định vẫn là giờ hệ thống của Worker.
@@ -176,15 +236,78 @@ export function packTtl(env) {
   return Number.isSafeInteger(n) && n > 0 && n <= PACK_TTL_MAX_SECONDS ? n : PACK_TTL_DEFAULT_SECONDS;
 }
 
+export function packRateLimitConfig(env) {
+  return {
+    max: positive(env && env.PACK_RATE_MAX, PACK_RATE_DEFAULT_MAX, 100000),
+    windowSeconds: positive(env && env.PACK_RATE_WINDOW_SECONDS, PACK_RATE_DEFAULT_WINDOW_SECONDS, RATE_LIMIT_MAX_WINDOW_SECONDS),
+  };
+}
+
 /** Tên gói hợp lệ: đúng một đoạn, không bắt đầu bằng '.', không chứa '..', không có '/'. */
 export function packNameSafe(name) {
   return typeof name === "string" && PACK_NAME.test(name) && !name.startsWith(".") && !name.includes("..");
 }
 
-export function packAllowed(env, name) {
+/** Key đối tượng trong R2: cho phép phân tầng thư mục đơn giản nhưng cấm '..', '//' hoặc '/' đầu/cuối. */
+export function r2ObjectKeySafe(key) {
+  return typeof key === "string" && R2_OBJECT_KEY_RE.test(key) && !key.startsWith(".")
+    && !key.endsWith("/") && !key.includes("..") && !key.includes("//");
+}
+
+function matchedPackAllow(env, name) {
   const list = env && env.PACKS_ALLOW;
-  if (typeof list !== "string") return false;
-  return list.split(",").map((v) => v.trim()).filter(Boolean).includes(name);
+  if (typeof list !== "string") return null;
+  return list.split(",").map((v) => v.trim()).find((v) => v.length > 0 && v === name) || null;
+}
+
+export function packAllowed(env, name) {
+  return matchedPackAllow(env, name) !== null;
+}
+
+/**
+ * Tra cứu object key đích cho gói `name`:
+ * - Nếu `PACKS_MAP` được đặt: phải là JSON object hợp lệ `{ "<tên-gói>": "<r2-object-key>" }`
+ *   (sai JSON hoặc sai kiểu/key không an toàn → `{ invalidConfig: true }` để fail-closed 503).
+ * - Nếu không khớp trong `PACKS_MAP`, kiểm tiếp `PACKS_ALLOW` (ánh xạ 1-1 `name -> name`).
+ */
+export function packTargetKey(env, name) {
+  const rawMap = env && env.PACKS_MAP;
+  if (rawMap !== undefined && rawMap !== null && String(rawMap).trim() !== "") {
+    if (typeof rawMap !== "string") return { key: null, invalidConfig: true };
+    let parsed;
+    try {
+      parsed = JSON.parse(rawMap);
+    } catch {
+      return { key: null, invalidConfig: true };
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { key: null, invalidConfig: true };
+    }
+    const matchedEntry = Object.entries(parsed).find(([k]) => k === name);
+    if (matchedEntry) {
+      const target = matchedEntry[1];
+      if (!r2ObjectKeySafe(target)) return { key: null, invalidConfig: true };
+      return { key: target, invalidConfig: false };
+    }
+  }
+  const allowed = matchedPackAllow(env, name);
+  if (allowed !== null) return { key: allowed, invalidConfig: false };
+  return { key: null, invalidConfig: false };
+}
+
+function hasR2EnvConfigured(env) {
+  return Boolean(env) && R2_ENV_KEYS.some((k) => env[k] !== undefined && env[k] !== null);
+}
+
+export function r2PackConfig(env) {
+  if (!env) return null;
+  const keyId = typeof env.PACK_SIGN_KEY_ID === "string" ? env.PACK_SIGN_KEY_ID.trim() : "";
+  const secret = typeof env.PACK_SIGN_SECRET === "string" ? env.PACK_SIGN_SECRET.trim() : "";
+  const accountId = typeof env.PACK_R2_ACCOUNT_ID === "string" ? env.PACK_R2_ACCOUNT_ID.trim().toLowerCase() : "";
+  const bucket = typeof env.PACK_R2_BUCKET === "string" ? env.PACK_R2_BUCKET.trim() : "";
+  if (!keyId || /[\s/?#&=%]/.test(keyId) || !secret) return null;
+  if (!R2_ACCOUNT_RE.test(accountId) || !R2_BUCKET_RE.test(bucket)) return null;
+  return { keyId, secret, accountId, bucket };
 }
 
 /** Host tải phải nằm trong `PACKS_HOSTS` (phẩy ngăn cách, so sau khi hạ chữ thường). */
@@ -215,16 +338,71 @@ export function packBase(env) {
   return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, "");
 }
 
+const hexLower = (buf) => [...buf].map((b) => b.toString(16).padStart(2, "0")).join("");
+const encodeRfc3986 = (value) =>
+  encodeURIComponent(value).replace(/[!'()*]/g, (ch) => "%" + ch.charCodeAt(0).toString(16).toUpperCase());
+
+async function sha256Hex(text) {
+  return hexLower(new Uint8Array(await crypto.subtle.digest("SHA-256", authEncoder.encode(text))));
+}
+
+async function hmacBytes(rawKey, message) {
+  const key = rawKey instanceof CryptoKey
+    ? rawKey
+    : await crypto.subtle.importKey("raw", rawKey, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", key, authEncoder.encode(message)));
+}
+
+async function deriveR2SigningKey(secret, dateStamp) {
+  const secretDigest = await sha256Hex(secret);
+  const cacheKey = `${secretDigest}:${dateStamp}`;
+  const cached = r2SigningKeyCache.get(cacheKey);
+  if (cached) return cached;
+  const kDate = await hmacBytes(authEncoder.encode(`AWS4${secret}`), dateStamp);
+  const kRegion = await hmacBytes(kDate, "auto");
+  const kService = await hmacBytes(kRegion, "s3");
+  const kSigning = await hmacBytes(kService, "aws4_request");
+  const cryptoKey = await crypto.subtle.importKey("raw", kSigning, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  if (r2SigningKeyCache.size >= 8) {
+    const oldest = r2SigningKeyCache.keys().next().value;
+    if (oldest !== undefined) r2SigningKeyCache.delete(oldest);
+  }
+  r2SigningKeyCache.set(cacheKey, cryptoKey);
+  return cryptoKey;
+}
+
+/**
+ * Tạo URL có chữ ký AWS SigV4 (Query-String Authentication) cho Cloudflare R2 S3 endpoint.
+ * Chỉ dùng quyền đọc đối tượng (`GET` / `HEAD`), hạn `ttlSeconds`, payload `UNSIGNED-PAYLOAD`.
+ */
+export async function r2PresignUrl({ method = "GET", accountId, bucket, objectKey, keyId, secret, nowMs, ttlSeconds }) {
+  const stamp = new Date(nowMs).toISOString().replace(/[:-]|\.\d{3}/g, "");
+  const dateStamp = stamp.slice(0, 8);
+  const host = `${accountId.toLowerCase()}.r2.cloudflarestorage.com`;
+  const canonicalUri = `/${encodeRfc3986(bucket)}/${objectKey.split("/").map(encodeRfc3986).join("/")}`;
+  const scope = `${dateStamp}/auto/s3/aws4_request`;
+  const canonicalQuery = [
+    ["X-Amz-Algorithm", "AWS4-HMAC-SHA256"],
+    ["X-Amz-Credential", `${keyId}/${scope}`],
+    ["X-Amz-Date", stamp],
+    ["X-Amz-Expires", String(ttlSeconds)],
+    ["X-Amz-SignedHeaders", "host"],
+  ].map(([k, v]) => `${encodeRfc3986(k)}=${encodeRfc3986(v)}`).join("&");
+  const canonicalRequest = `${method}\n${canonicalUri}\n${canonicalQuery}\nhost:${host}\n\nhost\nUNSIGNED-PAYLOAD`;
+  const stringToSign = `AWS4-HMAC-SHA256\n${stamp}\n${scope}\n${await sha256Hex(canonicalRequest)}`;
+  const signingKey = await deriveR2SigningKey(secret, dateStamp);
+  const signature = hexLower(await hmacBytes(signingKey, stringToSign));
+  return `https://${host}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
+}
+
 const base64url = (bytes) =>
   btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
 async function hmac(secret, text) {
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  return base64url(new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(text))));
+  return base64url(await hmacBytes(authEncoder.encode(secret), text));
 }
 
-/** Chữ ký cho cặp (tên gói, hạn dùng) — phía kiểm dùng đúng công thức này. */
+/** Chữ ký cho cặp (tên gói, hạn dùng) — phía kiểm của đường tương thích cũ dùng đúng công thức này. */
 export async function packSignature(secret, name, exp) {
   return hmac(secret, `pack\n${name}\n${exp}`);
 }
@@ -237,30 +415,76 @@ const sameText = (a, b) => {
   return diff === 0;
 };
 
-// GET /pack/<tên>            -> 302 tới /pack/<tên>?exp=..&sig=..  (URL có hạn)
-// GET /pack/<tên>?exp&sig    -> kiểm hạn + chữ ký -> 302 tới PACKS_BASE/<tên>
+async function checkPackRateLimit(req, env, nowMs) {
+  const limit = packRateLimitConfig(env);
+  const windowMs = limit.windowSeconds * 1000;
+  const ipHash = await sha(normalizeClientIp(req.headers.get("CF-Connecting-IP") || "?"));
+  const window = Math.floor(nowMs / windowMs);
+  if (reserveState(packRateState, ipHash, window, limit.max) === null) {
+    const retryAfter = Math.max(1, Math.ceil((windowMs - (nowMs % windowMs)) / 1000));
+    return json({ ok: false, error: "rate_limited" }, 429, { "retry-after": String(retryAfter) });
+  }
+  return null;
+}
+
+// Chế độ R2 mới: GET /pack/<tên> -> 302 thẳng sang R2 SigV4 Presigned URL (1-hop, khóa chỉ đọc riêng).
+// Chế độ tương thích cũ (khi chưa đặt biến R2 nào): giữ nguyên luồng `PACKS_TOKEN` + `PACKS_BASE`.
 async function packRoute(req, env, url) {
   if (req.method !== "GET" && req.method !== "HEAD") return json({ ok: false, error: "method_not_allowed" }, 405);
+  const name = url.pathname.slice("/pack/".length);
+
+  if (hasR2EnvConfigured(env)) {
+    const r2 = r2PackConfig(env);
+    if (!r2) return json({ ok: false, error: "unavailable" }, 503);
+    if (!packNameSafe(name)) return json({ ok: false, error: "bad_pack" }, 400);
+    if (url.search !== "") return json({ ok: false, error: "bad_pack" }, 400);
+    const resolved = packTargetKey(env, name);
+    if (resolved.invalidConfig) return json({ ok: false, error: "unavailable" }, 503);
+    if (!resolved.key) return json({ ok: false, error: "not_allowed" }, 403);
+
+    const nowMs = clockMs();
+    const limited = await checkPackRateLimit(req, env, nowMs);
+    if (limited) return limited;
+
+    const ttl = packTtl(env);
+    const until = Math.floor(nowMs / 1000) + ttl;
+    const signedUrl = await r2PresignUrl({
+      method: req.method,
+      accountId: r2.accountId,
+      bucket: r2.bucket,
+      objectKey: resolved.key,
+      keyId: r2.keyId,
+      secret: r2.secret,
+      nowMs,
+      ttlSeconds: ttl,
+    });
+    return new Response(null, { status: 302, headers: {
+      location: signedUrl, "cache-control": "no-store", "x-signature-expires": String(until),
+    } });
+  }
+
   const secret = env && env.PACKS_TOKEN;
   const base = packBase(env);
   if (typeof secret !== "string" || secret.trim() === "" || base === null) {
     return json({ ok: false, error: "unavailable" }, 503);
   }
-  const name = url.pathname.slice("/pack/".length);
   if (!packNameSafe(name)) return json({ ok: false, error: "bad_pack" }, 400);
   if (!packAllowed(env, name)) return json({ ok: false, error: "not_allowed" }, 403);
 
+  const nowMs = clockMs();
   const exp = url.searchParams.get("exp");
   const sig = url.searchParams.get("sig");
   if (exp === null && sig === null) {
-    const until = Math.floor(clockMs() / 1000) + packTtl(env);
+    const limited = await checkPackRateLimit(req, env, nowMs);
+    if (limited) return limited;
+    const until = Math.floor(nowMs / 1000) + packTtl(env);
     const signed = `${url.origin}/pack/${name}?exp=${until}&sig=${await packSignature(secret, name, until)}`;
     return new Response(null, { status: 302, headers: {
       location: signed, "cache-control": "no-store", "x-signature-expires": String(until),
     } });
   }
   if (!/^\d{1,12}$/.test(exp || "") || !PACK_SIG.test(sig || "")) return json({ ok: false, error: "forbidden" }, 403);
-  if (Number(exp) < Math.floor(clockMs() / 1000)) return json({ ok: false, error: "expired" }, 403);
+  if (Number(exp) < Math.floor(nowMs / 1000)) return json({ ok: false, error: "expired" }, 403);
   if (!sameText(sig, await packSignature(secret, name, Number(exp)))) return json({ ok: false, error: "forbidden" }, 403);
   return new Response(null, { status: 302, headers: {
     location: `${base}/${name}`, "cache-control": "no-store",
@@ -304,6 +528,11 @@ export default {
       // Thiếu hoặc sai dạng thì bỏ qua — không chặn báo cáo, không đổi JSON của báo cáo cũ.
       const cert = typeof r.certSha256 === "string" ? r.certSha256.trim().toLowerCase() : "";
       if (/^[0-9a-f]{64}$/.test(cert)) slim.certSha256 = cert;
+      // Tùy chọn lọc theo `OFFICIAL_CERT_SHA256` (nếu cấu hình trên môi trường): không tốn lượt ghi KV cho bản lạ.
+      const requiredCert = typeof env?.OFFICIAL_CERT_SHA256 === "string" ? env.OFFICIAL_CERT_SHA256.trim().toLowerCase() : "";
+      if (/^[0-9a-f]{64}$/.test(requiredCert) && slim.certSha256 !== requiredCert) {
+        return json({ ok: true, filtered: true }, 202);
+      }
       if (image) slim.image = image;
       let stored = JSON.stringify(slim);
       // Ưu tiên ảnh hợp lệ, bớt chữ nếu JSON chuẩn hóa thêm default vượt ngân sách.
@@ -325,7 +554,7 @@ export default {
       const limit = rateLimitConfig(env);
       const now = Date.now();
       const windowMs = limit.windowSeconds * 1000;
-      const ipHash = await sha(req.headers.get("CF-Connecting-IP") || "?");
+      const ipHash = await sha(normalizeClientIp(req.headers.get("CF-Connecting-IP") || "?"));
       const window = Math.floor(now / windowMs);
       // Giữ chỗ ngay (đồng bộ, không `await`) — token định danh riêng cho lượt này.
       const token = reserveRate(ipHash, window, limit.max);
@@ -386,7 +615,7 @@ export default {
     }
 
     // ---- V193-G3: cổng tải gói (lõi/engine/module) ----
-    // Worker chỉ ký URL có hạn rồi trả 302; byte của tệp đi thẳng từ CDN/R2 tới app.
+    // Worker chỉ ký URL có hạn rồi trả 302; byte của tệp đi thẳng từ R2/CDN tới app.
     if (url.pathname.startsWith("/pack/")) return packRoute(req, env, url);
 
     return json({ name: "aowvn-monika-crash", ok: true });
