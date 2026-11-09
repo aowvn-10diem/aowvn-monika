@@ -34,6 +34,10 @@ r8 = "8.7.18" # D8: biên dịch bộ nạp data thành .dex lúc build
 # BouncyCastle: bản vá dùng chung cho classpath plugin Gradle và runtime của app (libadb kéo vào APK).
 # Bốn artifact phải cùng một phiên bản; nâng = sửa đúng dòng này.
 bouncycastle = "1.85"
+# netty: chỉ nằm trên classpath plugin Gradle (grpc-netty của AGP); cả họ io.netty dùng chung số này.
+netty = "4.1.137.Final"
+# freemarker: chỉ nằm trên classpath plugin Gradle (Kover kéo qua coverage-report).
+freemarker = "2.3.35"
 # guava: vào APK qua `:j2me` → `acra-http` → `auto-service`, đồng thời có trên classpath plugin (AGP).
 # Nâng để vá cảnh báo bảo mật mức high; không phải thư viện app gọi trực tiếp.
 guava = "33.7.2-jre"
