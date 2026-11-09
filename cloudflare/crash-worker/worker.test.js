@@ -367,7 +367,7 @@ const packGet = (env, path, method = "GET") =>
 const FIXED_MS = 1_700_000_000_000;
 const FIXED_SEC = FIXED_MS / 1000;
 const nowSec = () => FIXED_SEC;
-beforeEach(() => setClockForTest(() => FIXED_MS));
+beforeEach(() => { resetRateState(); setClockForTest(() => FIXED_MS); });
 afterEach(() => setClockForTest(null));
 
 test("V193-G3 xin tai goi: 302 toi URL co chu ky + han, khong co byte tep nao", async () => {
@@ -590,4 +590,157 @@ test("V155b hai chung thu khac nhau hien rieng trong danh sach", async () => {
   await atTime(1700000001000, () => c.post({ ...fixture, certSha256: "0".repeat(64) }));
   const rows = (await (await c.read("/reports")).json()).reports;
   assert.deepEqual(rows.map((r) => r.cert).sort(), [CERT.slice(0, 16), "0".repeat(16)].sort());
+});
+
+// ---- A85-G3: 1-hop R2 SigV4 Presigned URL, PACKS_MAP, IPv6 /64, FIFO eviction & lọc chứng thư ----
+import { createHash as nodeHash, createHmac as nodeHmac } from "node:crypto";
+import { normalizeClientIp, r2PresignUrl } from "./worker.js";
+
+const R2_ACCOUNT = "0123456789abcdef0123456789abcdef";
+const r2Env = (extra = {}) => ({
+  PACK_SIGN_KEY_ID: "r2-read-key-id-fixture",
+  PACK_SIGN_SECRET: "r2-read-secret-fixture-only",
+  PACK_R2_ACCOUNT_ID: R2_ACCOUNT,
+  PACK_R2_BUCKET: "monika-packs",
+  PACKS_ALLOW: "core-gb.zip,sevenzip-arm64-v8a.zip",
+  ...extra,
+});
+
+function expectedSigV4({ method, accountId, bucket, key, keyId, secret, isoBasic, ttl }) {
+  const date = isoBasic.slice(0, 8);
+  const host = `${accountId}.r2.cloudflarestorage.com`;
+  const enc = (s) => encodeURIComponent(s).replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
+  const uri = `/${enc(bucket)}/${key.split("/").map(enc).join("/")}`;
+  const scope = `${date}/auto/s3/aws4_request`;
+  const query = [
+    `X-Amz-Algorithm=AWS4-HMAC-SHA256`,
+    `X-Amz-Credential=${enc(`${keyId}/${scope}`)}`,
+    `X-Amz-Date=${isoBasic}`,
+    `X-Amz-Expires=${ttl}`,
+    `X-Amz-SignedHeaders=host`,
+  ].join("&");
+  const canon = `${method}\n${uri}\n${query}\nhost:${host}\n\nhost\nUNSIGNED-PAYLOAD`;
+  const canonHash = nodeHash("sha256").update(canon).digest("hex");
+  const sts = `AWS4-HMAC-SHA256\n${isoBasic}\n${scope}\n${canonHash}`;
+  const h = (k, d) => nodeHmac("sha256", k).update(d).digest();
+  const kSigning = h(h(h(h(`AWS4${secret}`, date), "auto"), "s3"), "aws4_request");
+  return nodeHmac("sha256", kSigning).update(sts).digest("hex");
+}
+
+test("A85-G3 R2 SigV4: 1-hop 302 thang sang R2, khop chuan AWS4-HMAC-SHA256 cho ca GET va HEAD", async () => {
+  for (const method of ["GET", "HEAD"]) {
+    const env = r2Env();
+    const r = await packGet(env, "/pack/core-gb.zip", method);
+    assert.equal(r.status, 302);
+    assert.equal(r.body, null);
+    assert.equal(r.headers.get("cache-control"), "no-store");
+    assert.equal(Number(r.headers.get("x-signature-expires")), FIXED_SEC + 300);
+
+    const loc = new URL(r.headers.get("location"));
+    assert.equal(loc.origin, `https://${R2_ACCOUNT}.r2.cloudflarestorage.com`);
+    assert.equal(loc.pathname, "/monika-packs/core-gb.zip");
+    assert.equal(loc.searchParams.get("X-Amz-Algorithm"), "AWS4-HMAC-SHA256");
+    assert.equal(loc.searchParams.get("X-Amz-Credential"), `${env.PACK_SIGN_KEY_ID}/20231114/auto/s3/aws4_request`);
+    assert.equal(loc.searchParams.get("X-Amz-Date"), "20231114T221320Z");
+    assert.equal(loc.searchParams.get("X-Amz-Expires"), "300");
+    assert.equal(loc.searchParams.get("X-Amz-SignedHeaders"), "host");
+    const wantSig = expectedSigV4({
+      method,
+      accountId: R2_ACCOUNT,
+      bucket: "monika-packs",
+      key: "core-gb.zip",
+      keyId: env.PACK_SIGN_KEY_ID,
+      secret: env.PACK_SIGN_SECRET,
+      isoBasic: "20231114T221320Z",
+      ttl: 300,
+    });
+    assert.equal(loc.searchParams.get("X-Amz-Signature"), wantSig);
+  }
+});
+
+test("A85-G3 PACKS_MAP anh xa key phan tang R2, chan query la va chan key traversal", async () => {
+  const env = r2Env({
+    PACKS_ALLOW: "",
+    PACKS_MAP: JSON.stringify({ "azahar-arm64.zip": "engines/azahar-2124.3/azahar-arm64.zip" }),
+  });
+  const ok = await packGet(env, "/pack/azahar-arm64.zip");
+  assert.equal(ok.status, 302);
+  const loc = new URL(ok.headers.get("location"));
+  assert.equal(loc.pathname, "/monika-packs/engines/azahar-2124.3/azahar-arm64.zip");
+
+  assert.equal((await packGet(env, "/pack/core-gb.zip")).status, 403);
+  assert.equal((await packGet(env, "/pack/azahar-arm64.zip?exp=1")).status, 400);
+
+  for (const badMap of ["{broken", "[]", JSON.stringify({ "core-gb.zip": "../secret" }), JSON.stringify({ "core-gb.zip": "/abs" })]) {
+    const res = await packGet(r2Env({ PACKS_MAP: badMap }), "/pack/core-gb.zip");
+    assert.equal(res.status, 503, badMap);
+  }
+});
+
+test("A85-G3 cau hinh R2 do dang thi fail-closed 503 (khong roi ngam ve PACKS_TOKEN cu); xoay khoa doi chu ky ngay", async () => {
+  const legacyPlusBrokenR2 = {
+    ...packEnv(),
+    PACK_SIGN_KEY_ID: "only-key-id",
+  };
+  assert.equal((await packGet(legacyPlusBrokenR2, "/pack/core-gb.zip")).status, 503);
+  assert.equal((await packGet(r2Env({ PACK_R2_ACCOUNT_ID: "not-32-hex" }), "/pack/core-gb.zip")).status, 503);
+  assert.equal((await packGet(r2Env({ PACK_R2_BUCKET: "UPPER_BAD" }), "/pack/core-gb.zip")).status, 503);
+
+  const u1 = new URL(await r2PresignUrl({
+    accountId: R2_ACCOUNT, bucket: "monika-packs", objectKey: "core-gb.zip",
+    keyId: "k1", secret: "secret-v1", nowMs: FIXED_MS, ttlSeconds: 300,
+  }));
+  const u2 = new URL(await r2PresignUrl({
+    accountId: R2_ACCOUNT, bucket: "monika-packs", objectKey: "core-gb.zip",
+    keyId: "k2", secret: "secret-v2", nowMs: FIXED_MS, ttlSeconds: 300,
+  }));
+  assert.notEqual(u1.searchParams.get("X-Amz-Signature"), u2.searchParams.get("X-Amz-Signature"));
+});
+
+test("A85 rate limit: gom IPv6 /64, gioi han /pack rieng, va FIFO khong xoa trang IP dang bi chan", async () => {
+  assert.equal(normalizeClientIp("2001:db8:abcd:1::1"), "2001:0db8:abcd:0001::/64");
+  assert.equal(normalizeClientIp("2001:0db8:ABCD:0001:9999:aaaa:bbbb:cccc"), "2001:0db8:abcd:0001::/64");
+  assert.equal(normalizeClientIp("::ffff:203.0.113.9"), "203.0.113.9");
+
+  const env = r2Env({ PACK_RATE_MAX: "2", PACK_RATE_WINDOW_SECONDS: "600" });
+  const reqV6 = (ip) => worker.fetch(new Request("https://example.test/pack/core-gb.zip", {
+    headers: { "CF-Connecting-IP": ip },
+  }), env);
+  assert.equal((await reqV6("2001:db8:abcd:1::10")).status, 302);
+  assert.equal((await reqV6("2001:db8:abcd:1:dead:beef:cafe:1")).status, 302);
+  const blocked = await reqV6("2001:db8:abcd:1::99");
+  assert.equal(blocked.status, 429);
+
+  // Bơm 4.998 IP khác vào cùng cửa sổ (tổng 4.999 < 5.000), rồi chạm trần 5.000 sau khi IP mục tiêu vừa gửi:
+  // IP mới chặn đứng cuối hàng đợi FIFO nên KHÔNG bị xoá khi có IP thứ 5.001 xuất hiện.
+  const c = setup({ RATE_LIMIT_MAX: "1", RATE_LIMIT_WINDOW_SECONDS: "3600" });
+  for (let i = 0; i < 4999; i++) {
+    const ip = `10.${(i >> 16) & 255}.${(i >> 8) & 255}.${i & 255}`;
+    assert.equal((await postWithIp(c, fixture, { headers: { "CF-Connecting-IP": ip } })).status, 200);
+  }
+  const attacker = "198.51.100.250";
+  assert.equal((await postWithIp(c, fixture, { headers: { "CF-Connecting-IP": attacker } })).status, 200);
+  // Mục thứ 5.001 đẩy mục đầu tiên (10.0.0.0) ra khỏi FIFO, còn attacker ở cuối bảng vẫn bị 429!
+  assert.equal((await postWithIp(c, fixture, { headers: { "CF-Connecting-IP": "198.51.100.251" } })).status, 200);
+  assert.equal((await postWithIp(c, fixture, { headers: { "CF-Connecting-IP": attacker } })).status, 429);
+});
+
+test("A85 OFFICIAL_CERT_SHA256 tuy chon loc rac KV /report ma khong anh huong mac dinh", async () => {
+  let puts = 0;
+  const c = setup({ OFFICIAL_CERT_SHA256: CERT });
+  const kv = c.env.REPORTS;
+  c.env.REPORTS = { ...kv, put: async (k, v, o) => { puts++; return kv.put(k, v, o); } };
+
+  const foreign = await c.post({ ...fixture, certSha256: "0".repeat(64) });
+  assert.equal(foreign.status, 202);
+  assert.deepEqual(await foreign.json(), { ok: true, filtered: true });
+  assert.equal(puts, 0);
+
+  const missing = await c.post(fixture);
+  assert.equal(missing.status, 202);
+  assert.equal(puts, 0);
+
+  const official = await c.post({ ...fixture, certSha256: CERT.toUpperCase() });
+  assert.equal(official.status, 200);
+  assert.equal(puts, 1);
 });
