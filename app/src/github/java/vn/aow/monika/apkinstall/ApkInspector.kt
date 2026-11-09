@@ -246,8 +246,11 @@ class ApkInspector(
     }.getOrDefault(emptySet())
 
     private fun reopenEntry(zipFile: File, name: String) = ZipFile(zipFile).let { z ->
-        // Tìm theo tên cuối; đóng ZipFile khi luồng đóng.
-        val e = z.entries().asSequence().first { !it.isDirectory && it.name.replace('\\', '/').endsWith(name) }
+        // V204: khớp đúng ranh giới tên mục ("base.apk" không được khớp "evilbase.apk").
+        val wanted = name.replace('\\', '/')
+        val e = z.entries().asSequence().firstOrNull {
+            !it.isDirectory && (it.name.replace('\\', '/') == wanted || it.name.replace('\\', '/').endsWith("/$wanted"))
+        } ?: run { z.close(); throw java.io.FileNotFoundException(wanted) }
         object : java.io.FilterInputStream(z.getInputStream(e)) { override fun close() { super.close(); z.close() } }
     }
 

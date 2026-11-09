@@ -19,6 +19,8 @@ object SafeZipPath {
     fun isSafeName(name: String): Boolean {
         if (name.isEmpty()) return false
         if (name.indexOf('\u0000') >= 0) return false
+        // Tên mục không bao giờ được chứa ký tự điều khiển (xuống dòng/tab) — tránh lọt qua log và đường dẫn.
+        if (name.any { it.code < 0x20 || it.code == 0x7F }) return false
         val path = name.replace('\\', '/')
         if (path.startsWith("/")) return false                    // /etc/x, //may-chu/share
         if (path.length > 1 && path[1] == ':') return false        // C:/x, C:\x
