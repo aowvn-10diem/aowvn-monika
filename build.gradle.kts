@@ -3,10 +3,12 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 // V192: ghim các thư viện chỉ nằm trên classpath plugin Gradle (AGP kéo bouncycastle cũ,
 // grpc-netty kéo netty cũ, Kover kéo freemarker cũ). Phiên bản lấy từ
 // `gradle/libs.versions.toml` — không ghi số ở đây; nâng cấp = sửa catalog.
+// V0811: ghim thêm guava (AGP kéo bản cũ) — cùng bản với APK.
 buildscript {
     val catalog = project.the<VersionCatalogsExtension>().named("libs")
     fun pinned(name: String) = catalog.findVersion(name).get().requiredVersion
     val bc = pinned("bouncycastle")
+    val guava = pinned("guava")
     val netty = pinned("netty")
     val freemarker = pinned("freemarker")
     configurations.configureEach {
@@ -17,6 +19,7 @@ buildscript {
                     "org.bouncycastle:bcprov-jdk18on:$bc",
                     "org.bouncycastle:bcprov-jdk15to18:$bc",
                     "org.bouncycastle:bcutil-jdk18on:$bc",
+                    "com.google.guava:guava:$guava",
                     "org.freemarker:freemarker:$freemarker",
                 )
                 // Cả họ netty phải cùng phiên bản (handler, codec, codec-http, codec-http2, ...).

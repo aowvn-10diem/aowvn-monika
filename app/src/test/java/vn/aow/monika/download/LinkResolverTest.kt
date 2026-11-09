@@ -13,10 +13,41 @@ class LinkResolverTest {
         DownloadHost("Pixeldrain", "pixeldrain.com", "direct", pattern = "pixeldrain\\.com/u/(\\w+)", directUrl = "https://pixeldrain.com/api/file/$1"),
     )
 
-    @Test fun directHostBuildsDirectUrlFromCapturedGroup() {
+    @Test fun directHostBuildsDirectUrlFromCapturedGroupOnlyWhenManual() {
+        // V193 G2: đường tự động không tải Pixeldrain.
+        assertEquals(
+            DownloadLink("Pixeldrain", "https://pixeldrain.com/u/AbC12", null),
+            LinkResolver.resolve("https://pixeldrain.com/u/AbC12", hosts),
+        )
+        // Đường thủ công (người dùng dán link + xác nhận cảnh báo) mới trả link thẳng.
         assertEquals(
             DownloadLink("Pixeldrain", "https://pixeldrain.com/u/AbC12", "https://pixeldrain.com/api/file/AbC12"),
-            LinkResolver.resolve("https://pixeldrain.com/u/AbC12", hosts),
+            LinkResolver.resolve("https://pixeldrain.com/u/AbC12", hosts, manual = true),
+        )
+    }
+
+    @Test fun manualDirectOnlyAfterWarningAndAutoDirectOptInStillWorks() {
+        assertEquals("https://pixeldrain.com/api/file/AbC12", PixeldrainHost.manualDirect("https://pixeldrain.com/u/AbC12", hosts))
+        assertTrue(PixeldrainHost.WARNING.contains("bên thứ ba"))
+        assertTrue(PixeldrainHost.matches("https://cdn.pixeldrain.com/u/AbC12"))
+        assertFalse(PixeldrainHost.matches("https://pixeldrain.com.evil.test/u/AbC12"))
+        val optedIn = listOf(DownloadHost("X", "pixeldrain.com", "direct", pattern = "pixeldrain\\.com/u/(\\w+)", directUrl = "https://example.test/$1", autoDirect = true))
+        assertEquals("https://example.test/AbC12", LinkResolver.resolve("https://pixeldrain.com/u/AbC12", optedIn)?.directUrl)
+    }
+
+    /** V193: dấu chấm cuối host không được làm lọt chốt chặn Pixeldrain. */
+    @Test fun hostCoDauChamCuoiVanNhanPixeldrain() {
+        assertTrue(PixeldrainHost.matches("https://pixeldrain.com./u/AbC12"))
+        assertTrue(PixeldrainHost.matches("https://PIXELDRAIN.COM./u/AbC12"))
+        assertTrue(PixeldrainHost.matches("https://cdn.pixeldrain.com./u/AbC12"))
+        assertFalse(PixeldrainHost.matches("https://pixeldrain.com.evil.test./u/AbC12"))
+        assertFalse("host rỗng sau chuẩn hoá", PixeldrainHost.matches("https://./u/AbC12"))
+        val hostsWithDot = listOf(
+            DownloadHost("Pixeldrain", "pixeldrain.com.", "direct", pattern = "/u/(\\w+)", directUrl = "https://pixeldrain.com/api/file/$1"),
+        )
+        assertEquals(
+            "https://pixeldrain.com/api/file/AbC12",
+            LinkResolver.resolve("https://PIXELDRAIN.COM./u/AbC12", hostsWithDot, manual = true)?.directUrl,
         )
     }
 
@@ -27,8 +58,12 @@ class LinkResolverTest {
     @Test fun wwwPrefixAndSubdomainStillMatch() {
         assertEquals(DownloadLink("Drive", "https://www.drive.google.com/file/d/1x", null), LinkResolver.resolve("https://www.drive.google.com/file/d/1x", hosts))
         assertEquals(
-            DownloadLink("Pixeldrain", "https://cdn.pixeldrain.com/u/Zz9", "https://pixeldrain.com/api/file/Zz9"),
+            DownloadLink("Pixeldrain", "https://cdn.pixeldrain.com/u/Zz9", null),
             LinkResolver.resolve("https://cdn.pixeldrain.com/u/Zz9", hosts),
+        )
+        assertEquals(
+            DownloadLink("Pixeldrain", "https://cdn.pixeldrain.com/u/Zz9", "https://pixeldrain.com/api/file/Zz9"),
+            LinkResolver.resolve("https://cdn.pixeldrain.com/u/Zz9", hosts, manual = true),
         )
     }
 
@@ -56,7 +91,7 @@ class LinkResolverTest {
         assertEquals(
             listOf(
                 DownloadLink("Drive", "https://drive.google.com/file/d/1x", null, "TẢI VỀ ngay & nhanh"),
-                DownloadLink("Pixeldrain", "https://pixeldrain.com/u/AbC?a=1&b=2", "https://pixeldrain.com/api/file/AbC", "DỰ PHÒNG"),
+                DownloadLink("Pixeldrain", "https://pixeldrain.com/u/AbC?a=1&b=2", null, "DỰ PHÒNG"),
             ),
             LinkResolver.extract(html, hosts),
         )

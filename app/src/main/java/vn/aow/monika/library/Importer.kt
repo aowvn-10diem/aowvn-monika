@@ -127,12 +127,11 @@ object Importer {
 
     /** Giải nén zip từ luồng mạng (dùng cho file hệ thống của lõi giả lập). */
     fun unzip(input: InputStream, target: File) {
-        val root = target.canonicalPath + File.separator
         ZipInputStream(input.buffered()).use { zip ->
             while (true) {
                 val entry = zip.nextEntry ?: break
-                val out = File(target, entry.name).canonicalFile
-                if (!out.path.startsWith(root)) throw IOException("File nén không hợp lệ: ${entry.name}")
+                val out = SafeZipPath.resolve(target, entry.name)
+                    ?: throw IOException("File nén không hợp lệ: ${entry.name}")
                 if (entry.isDirectory) out.mkdirs()
                 else {
                     out.parentFile?.mkdirs()

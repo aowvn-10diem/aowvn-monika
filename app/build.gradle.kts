@@ -10,12 +10,17 @@ plugins {
 // V192: BouncyCastle đi vào APK qua `libadb-android` (kéo bản cũ). Ghim bản trong
 // `gradle/libs.versions.toml` cho MỌI cấu hình của app (mọi `*Classpath`, cả 2 flavor).
 val bcVersion = libs.versions.bouncycastle.get()
+// V0811: hai thư viện dưới đây nằm trong APK nhưng không do app gọi trực tiếp (xem docs/bao-mat/PHU-THUOC-0811.md).
+val guavaVersion = libs.versions.guava.get()
+val commonsLang3Version = libs.versions.commonsLang3.get()
 configurations.configureEach {
     resolutionStrategy.force(
         "org.bouncycastle:bcprov-jdk15to18:$bcVersion",
         "org.bouncycastle:bcprov-jdk18on:$bcVersion",
         "org.bouncycastle:bcpkix-jdk18on:$bcVersion",
         "org.bouncycastle:bcutil-jdk18on:$bcVersion",
+        "com.google.guava:guava:$guavaVersion",
+        "org.apache.commons:commons-lang3:$commonsLang3Version",
     )
 }
 
@@ -33,8 +38,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 54
-        versionName = "0.8.9"
+        versionCode = 56
+        versionName = "0.8.11"
         // V56: runner chỉ nằm trong APK instrumentation, không thêm lối vào app phát hành.
         testInstrumentationRunner = "vn.aow.monika.testlab.KirikiriArmRunner"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
@@ -242,6 +247,9 @@ dependencies {
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    // V196: kiểm redirect 302 thật ở mỗi hop mà không cần mạng (máy chủ HTTPS cục bộ trong test)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.okhttp.tls)
     // Test giao diện trên JVM (Robolectric): mở từng màn hình, bắt crash, chụp ảnh → app/build/screenshots/
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.compose.bom))

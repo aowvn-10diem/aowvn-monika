@@ -3,8 +3,8 @@
 
 - Đọc Worker **đúng một request**: `GET {CRASH_URL}/reports` (Worker tự chặn 100 báo cáo mới nhất;
   đường này không có tham số phân trang nên không thể lặp vô hạn). Không gọi `/reports/<id>`.
-- Gộp theo (lõi, loại, chữ ký) rồi cộng `count`; chỉ dùng các trường Worker trả ở danh sách:
-  `k` loại · `c` lõi · `a` bản app · `component` · `fp` chữ ký · `count` · `t` thời điểm.
+- Gộp theo (lõi, loại, chữ ký, thành phần, chứng thư) rồi cộng `count`; chỉ dùng các trường Worker trả ở danh sách:
+  `k` loại · `c` lõi · `a` bản app · `component` · `fp` chữ ký · `cert` chứng thư · `count` · `t` thời điểm.
 - KHÔNG đưa vào bảng: tên game (`g`), tiêu đề, chi tiết, log, vệt sự kiện, `device`, IP. Chỉ số liệu gộp.
 - Không in token, không ghi token ra tệp.
 
@@ -27,7 +27,7 @@ MAX_ROWS = 100                # Worker chặn 100 báo cáo mới nhất cho /re
 DEFAULT_URL = "https://aowvn-monika-crash.aowvn-system.workers.dev"
 
 # Cột bảng (đúng thứ tự PM chốt) → trường nguồn, để ghi rõ trường nào thiếu.
-COLUMNS = ["chữ ký (băm ngắn)", "lõi", "loại", "số lượt", "bản app", "đời máy", "màn", "giả thuyết"]
+COLUMNS = ["chữ ký (băm ngắn)", "lõi", "loại", "số lượt", "bản app", "chứng thư", "đời máy", "màn", "giả thuyết"]
 MISSING = "—"
 COLUMN_SOURCE = {
     "chữ ký (băm ngắn)": "fp",
@@ -35,6 +35,7 @@ COLUMN_SOURCE = {
     "loại": "k",
     "số lượt": "count",
     "bản app": "a",
+    "chứng thư": "cert",
     "đời máy": None,            # /reports không trả `device`; chỉ báo cáo chi tiết mới có
     "màn": "component",
     "giả thuyết": "k+component",
@@ -104,6 +105,14 @@ def signature_of(row):
     return None
 
 
+def cert_of(row):
+    """V155b: băm ngắn chứng thư ký APK (`cert` trong metadata danh sách). Không phải hex → coi như không có."""
+    cert = text(row.get("cert") or row.get("certSha256"), 64)
+    if cert and re.fullmatch(r"[0-9a-fA-F]{8,64}", cert):
+        return cert.lower()[:12]
+    return None
+
+
 def guess(kind, component):
     if kind == "op-fail" and component in COMPONENT_GUESS:
         return COMPONENT_GUESS[component]
@@ -113,7 +122,7 @@ def guess(kind, component):
 
 
 def group_rows(rows):
-    """Gộp theo (lõi, loại, chữ ký, thành phần). Cộng `count`; liệt kê bản app; giữ thời điểm mới nhất."""
+    """Gộp theo (lõi, loại, chữ ký, thành phần, chứng thư). Cộng `count`; liệt kê bản app; giữ thời điểm mới nhất."""
     groups = {}
     for row in rows:
         if not isinstance(row, dict):
@@ -122,17 +131,19 @@ def group_rows(rows):
         core = text(row.get("c") or row.get("core"), 60)
         component = text(row.get("component"), 160)
         signature = signature_of(row)
-        key = (core or "", kind or "", signature or "", component or "")
+        cert = cert_of(row)
+        key = (core or "", kind or "", signature or "", component or "", cert or "")
         group = groups.setdefault(key, {
-            "signature": signature, "core": core, "kind": kind, "component": component,
-            "count": 0, "apps": set(), "newest": 0,
+            "signature": signature, "core": core, "kind": kind, "component": component, "cert": cert,
+            "count": 0, "apps": set(), "newest": 0, "reports": 0,
         })
         group["count"] += number(row.get("count")) or 1
+        group["reports"] += 1
         app = text(row.get("a") or row.get("app"), 40)
         if app:
             group["apps"].add(app)
         group["newest"] = max(group["newest"], number(row.get("t") or row.get("time")) or 0)
-    return sorted(groups.values(), key=lambda g: (-g["count"], g["kind"] or "", g["signature"] or "", g["component"] or ""))
+    return sorted(groups.values(), key=lambda g: (-g["count"], g["kind"] or "", g["signature"] or "", g["component"] or "", g["cert"] or ""))
 
 
 def apps_label(apps):
@@ -143,7 +154,7 @@ def apps_label(apps):
 
 
 def table_rows(groups):
-    """8 cột đúng thứ tự; trường thiếu → `—`."""
+    """Các cột đúng thứ tự; trường thiếu → `—`."""
     out = []
     for group in groups:
         out.append([
@@ -152,11 +163,27 @@ def table_rows(groups):
             group["kind"] or MISSING,
             str(group["count"]),
             apps_label(group["apps"]),
+            group["cert"] or MISSING,
             MISSING,                                  # Worker /reports không trả `device`
             group["component"] or MISSING,
             guess(group["kind"], group["component"]),
         ])
     return out
+
+
+def cert_totals(groups):
+    """V155b: đếm/nhóm theo chứng thư để **đối chiếu thủ công** với chứng thư bản phát hành.
+
+    Giá trị do **client gửi lên** (app có thể bị sửa) nên không tự kết luận bản nào là chính thức:
+    chỉ là tín hiệu chẩn đoán, không phải bằng chứng xác thực chữ ký.
+    """
+    totals = {}
+    for group in groups:
+        cert = group["cert"] or MISSING
+        entry = totals.setdefault(cert, {"reports": 0, "count": 0})
+        entry["reports"] += group["reports"]
+        entry["count"] += group["count"]
+    return sorted(totals.items(), key=lambda item: (-item[1]["count"], item[0]))
 
 
 def missing_fields(rows):
@@ -179,7 +206,7 @@ def render_markdown(groups, scanned):
         "# Bảng chẩn đoán crash (V174)",
         "",
         "Đọc **một lần** `GET /reports` của Worker (tối đa 100 báo cáo mới nhất); không gọi chi tiết từng báo cáo.",
-        "Số dòng nhận được: %d · số nhóm (lõi + loại + chữ ký): %d." % (scanned, len(groups)),
+        "Số dòng nhận được: %d · số nhóm (lõi + loại + chữ ký + thành phần + chứng thư): %d." % (scanned, len(groups)),
         "",
         "| " + " | ".join(COLUMNS) + " |",
         "|" + "|".join(["---"] * len(COLUMNS)) + "|",
@@ -190,10 +217,23 @@ def render_markdown(groups, scanned):
         lines.append("| " + " | ".join([MISSING] * len(COLUMNS)) + " |")
     lines += [
         "",
+        "Đếm theo chứng thư (SHA-256 chứng thư ký APK, 12 hex đầu):",
+        "",
+        "| chứng thư | số báo cáo | số lượt |",
+        "|---|---|---|",
+    ]
+    for cert, entry in cert_totals(groups):
+        lines.append("| %s | %d | %d |" % (cert, entry["reports"], entry["count"]))
+    distinct = len({cert for cert, _ in cert_totals(groups) if cert != MISSING})
+    if distinct > 1:
+        lines += ["", "⚠ Có **%d chứng thư khác nhau** trong cửa sổ này — đối chiếu **thủ công** với chứng thư bản phát hành chính thức. Giá trị do client gửi lên: chỉ là tín hiệu chẩn đoán, **không** kết luận đây là bản giả và **không** phải bằng chứng xác thực." % distinct]
+    lines += [
+        "",
         "Ghi chú:",
         "- `giả thuyết` suy từ `loại` + `component`, **không phải kết luận** — cần mở báo cáo chi tiết mới xác nhận.",
         "- `màn` lấy từ trường `component` (Worker không có trường màn hình riêng).",
         "- `số lượt` là tổng `count` của các báo cáo cùng nhóm trong cửa sổ đã đọc.",
+        "- `chứng thư` là băm SHA-256 chứng thư ký APK (chỉ hex, không kèm thông tin máy); `—` = app cũ không gửi trường này. Đây là **trường do client gửi lên** — chỉ dùng làm tín hiệu chẩn đoán, **không** phải bằng chứng xác thực (bản fork sửa app có thể gửi giá trị bất kỳ).",
         "- Bảng không chứa tên game, đường dẫn, log hay mã máy.",
     ]
     missing = missing_fields(rows)

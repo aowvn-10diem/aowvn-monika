@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,9 +79,14 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
     val c = Monika.colors
     val context = LocalContext.current
     var refresh by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    // V193 G1: bài viết mặc định tắt; bật/tắt ngay trên màn, không cần vào Cài đặt.
+    var feedOn by remember { mutableStateOf(AppGraph.feedEnabled) }
     val bottomClearance = vn.aow.monika.ui.theme.dockContentClearance()
+    // [A78] V154: bản bị đóng gói lại bằng khóa khác → cảnh báo đỏ (chỉ cảnh báo, vẫn chạy được).
+    val cfg by AppGraph.config.config.collectAsState()
     // Hiện ngay bản đã lưu (lần trước), rồi tải bản mới ở nền → quay lại Trang chủ không phải chờ.
-    val posts by produceState<Result<List<Post>>?>(AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }, refresh) {
+    val posts by produceState<Result<List<Post>>?>(AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }, refresh, feedOn) {
+        if (!feedOn) { value = null; return@produceState }
         value = AppGraph.feed.cachedList(HOME_KEY)?.let { Result.success(it) }
         val fresh = runCatching { AppGraph.feed.fetchList(HOME_KEY, max = 12) }
         if (fresh.isSuccess || value == null) value = fresh
@@ -119,8 +125,10 @@ fun HomeScreen(onOpenPost: (Post) -> Unit, onGo: (String) -> Unit) {
                     AvatarButton(onGo)
                 }
             }
+            item { OfficialBuildWarning(cfg.security.officialCertSha256, OFFICIAL_BUILD_WARNING) }
             val list = posts?.getOrNull()
             when {
+                !feedOn -> item { FeedOff { AppGraph.setFeedEnabled(true); feedOn = true } }
                 posts == null -> item { FeedStatus(true) { refresh++ } }
                 list.isNullOrEmpty() -> item { FeedStatus(false) { refresh++ } }
                 else -> item { HeroCarousel(list.take(3), onOpenPost) }

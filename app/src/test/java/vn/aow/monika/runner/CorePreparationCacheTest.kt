@@ -46,7 +46,7 @@ class CorePreparationCacheTest {
 
     private fun config(system: String = "system.zip"): ConfigRepository {
         val version = ConfigRepository(app, OkHttpClient()).current.configVersion
-        File(app.filesDir, ConfigRepository.ASSET_NAME).writeText("""{"configVersion":$version,"cores":{"melondsds":{"version":"one","url":"https://example.test/core-{abi}.zip","systemFiles":"https://example.test/$system"}},"systems":[{"id":"nds","name":"NDS","extensions":["nds"],"runner":"libretro","core":"melondsds"}]}""")
+        File(app.filesDir, ConfigRepository.ASSET_NAME).writeText("""{"configVersion":$version,"cores":{"melondsds":{"version":"one","url":"https://buildbot.libretro.com/core-{abi}.zip","systemFiles":"https://buildbot.libretro.com/$system"}},"systems":[{"id":"nds","name":"NDS","extensions":["nds"],"runner":"libretro","core":"melondsds"}]}""")
         return ConfigRepository(app, OkHttpClient())
     }
 
