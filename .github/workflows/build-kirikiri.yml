@@ -24,19 +24,26 @@ permissions:
 
 jobs:
   build:
-    if: github.repository == 'aowvn-10diem/aowvn-monika'
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-22.04
     timeout-minutes: 180
+    env:
+      INPUT_REF: ${{ inputs.ref }}
+      INPUT_VARIANT: ${{ inputs.variant }}
     steps:
       - uses: actions/checkout@v4
         with:
           path: self
+          persist-credentials: false
 
       - name: Lấy mã nguồn Kirikiroid2Yuri
         run: |
+          set -euo pipefail
+          [[ "$INPUT_REF" =~ ^[A-Za-z0-9._/-]+$ ]] && [[ "$INPUT_REF" != -* ]] || { echo "::error::ref không hợp lệ"; exit 1; }
+          [[ "$INPUT_VARIANT" == "release" || "$INPUT_VARIANT" == "debug" ]] || { echo "::error::variant không hợp lệ"; exit 1; }
           git clone --depth 1 https://github.com/YuriSizuku/Kirikiroid2Yuri.git src
           cd src
-          if [ "${{ inputs.ref }}" != HEAD ]; then git fetch --depth 1 origin "${{ inputs.ref }}" && git checkout FETCH_HEAD; fi
+          if [ "$INPUT_REF" != HEAD ]; then git fetch --depth 1 origin "$INPUT_REF" && git checkout FETCH_HEAD; fi
           git log -1 --format='%h %ad %s'
           # Bản vá của Aow Monika (kirikiri/patches): mở thẳng game từ Intent, đổi applicationId để không đụng bản gốc
           for p in ../self/kirikiri/patches/*.patch; do echo "áp $p"; git apply --verbose "$p"; done
@@ -88,8 +95,8 @@ jobs:
           set -eo pipefail
           sudo mkdir -p /build_android && sudo chmod 777 /build_android
           chmod +x ./gradlew
-          T=$([ "${{ inputs.variant }}" = release ] && echo assembleRelease || echo assembleDebug)
-          ./gradlew $T --no-daemon --stacktrace 2>&1 | tee /tmp/gradle.log | tail -150
+          T=$([ "$INPUT_VARIANT" = release ] && echo assembleRelease || echo assembleDebug)
+          ./gradlew "$T" --no-daemon --stacktrace 2>&1 | tee /tmp/gradle.log | tail -150
 
       - name: Kết quả
         if: always()

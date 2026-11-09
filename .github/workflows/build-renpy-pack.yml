@@ -21,23 +21,26 @@ permissions:
 
 jobs:
   pack:
-    if: github.repository == 'aowvn-10diem/aowvn-monika'
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         abi: [arm64-v8a, armeabi-v7a]
+    env:
+      RENPY_VERSION: ${{ inputs.version }}
+      TARGET_ABI: ${{ matrix.abi }}
     steps:
       - uses: actions/checkout@v4
-        with: { path: self }
+        with: { path: self, persist-credentials: false }
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: 21 }
 
       - name: Tải SDK + RAPT và kiểm SHA-256 (ghim)
         run: |
           set -eo pipefail
-          V=${{ inputs.version }}
+          V="$RENPY_VERSION"
           case "$V" in
             8.5.3) SDK_SHA=ff57648f9c04f27e381c48af6d8e3ee3cdec296bed4d3831f47f09b0a71b505e; RAPT_SHA=8a12be34a2f5238d125ff6dd76a56772fd8e44838af864f81bca82c1059b00e6 ;;
             *) echo "::error::Chưa ghim SHA-256 cho $V"; exit 1 ;;
@@ -45,15 +48,15 @@ jobs:
           for f in sdk rapt; do curl -sSfL -O "https://www.renpy.org/dl/$V/renpy-$V-$f.zip"; done
           echo "$SDK_SHA  renpy-$V-sdk.zip"   | sha256sum -c -
           echo "$RAPT_SHA  renpy-$V-rapt.zip" | sha256sum -c -
-          unzip -q renpy-$V-sdk.zip
-          unzip -q renpy-$V-rapt.zip -d renpy-$V-sdk
+          unzip -q "renpy-$V-sdk.zip"
+          unzip -q "renpy-$V-rapt.zip" -d "renpy-$V-sdk"
           sudo apt-get update -qq && sudo apt-get install -y -qq xvfb >/dev/null
           echo "SDK_SHA=$SDK_SHA" >> "$GITHUB_ENV"; echo "RAPT_SHA=$RAPT_SHA" >> "$GITHUB_ENV"
 
       - name: Phân phối gói android (không nén)
-        working-directory: renpy-${{ inputs.version }}-sdk
         run: |
           set -o pipefail
+          cd "renpy-$RENPY_VERSION-sdk"
           chmod +x renpy.sh lib/*/* 2>/dev/null || true
           cat > the_question/.android.json <<'EOT'
           {"package":"vn.aow.renpy.pack","name":"Pack","icon_name":"Pack","version":"1.0","numeric_version":1,"orientation":"sensorLandscape","permissions":["VIBRATE","INTERNET"],"store":"none","update_icons":true,"update_always":true,"heap_size":"3","update_keystores":true}
@@ -63,8 +66,8 @@ jobs:
       - name: Ráp gói renpy8 (${{ matrix.abi }})
         run: |
           set -e
-          V=${{ inputs.version }}; ABI=${{ matrix.abi }}
-          SDK=renpy-$V-sdk; D=dist-out/q
+          V="$RENPY_VERSION"; ABI="$TARGET_ABI"
+          SDK="renpy-$V-sdk"; D=dist-out/q
           rm -rf pack && mkdir -p pack/private
           cp "$SDK/rapt/prototype/renpyandroid/src/main/jniLibs/$ABI/librenpython.so" pack/
           cp "$D/the_question.py" pack/private/main.py          # RAPT đổi tên <game>.py → main.py
@@ -80,18 +83,20 @@ jobs:
           Gói này ráp lại từ SDK + RAPT chính thức (SHA-256 SDK $SDK_SHA, RAPT $RAPT_SHA), không sửa mã native.
           Thêm của Aow Monika: private/environment.txt (trỏ game/save), empty.zip.
           EOT
-          python3 - <<PY
+          python3 - <<'PY'
           import json, os, hashlib, datetime
           def sha(p): return hashlib.sha256(open(p,'rb').read()).hexdigest()
-          man={"engine":"renpy","version":"$V","abi":"$ABI","built":datetime.datetime.utcnow().strftime("%FT%TZ"),
-               "sdkSha256":"$SDK_SHA","raptSha256":"$RAPT_SHA","mainLib":"librenpython.so","python":"3.12",
+          man={"engine":"renpy","version":os.environ["RENPY_VERSION"],"abi":os.environ["TARGET_ABI"],
+               "built":datetime.datetime.utcnow().strftime("%FT%TZ"),
+               "sdkSha256":os.environ["SDK_SHA"],"raptSha256":os.environ["RAPT_SHA"],
+               "mainLib":"librenpython.so","python":"3.12",
                "libSize":os.path.getsize("pack/librenpython.so"),"libSha256":sha("pack/librenpython.so")}
           json.dump(man,open("pack/manifest.json","w"),indent=1); print(json.dumps(man,indent=1))
           PY
           du -sh pack pack/private/renpy pack/private/lib pack/librenpython.so
-          (cd pack && zip -q -9 -r ../renpy8-$ABI.zip .)
-          sha256sum renpy8-$ABI.zip | tee renpy8-$ABI.zip.sha256
-          { echo "### renpy8-$ABI"; echo '```'; cat renpy8-$ABI.zip.sha256; stat -c 'size=%s' renpy8-$ABI.zip; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          (cd pack && zip -q -9 -r "../renpy8-$ABI.zip" .)
+          sha256sum "renpy8-$ABI.zip" | tee "renpy8-$ABI.zip.sha256"
+          { echo "### renpy8-$ABI"; echo '```'; cat "renpy8-$ABI.zip.sha256"; stat -c 'size=%s' "renpy8-$ABI.zip"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v7
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
@@ -106,9 +111,9 @@ jobs:
         continue-on-error: true
         run: |
           set -euo pipefail
-          python3 self/scripts/package-native-symbols.py --pack pack --source-root renpy-${{ inputs.version }}-sdk \
-            --readelf readelf --abi ${{ matrix.abi }} \
-            --output "symbols-renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}.zip"
+          python3 self/scripts/package-native-symbols.py --pack pack --source-root "renpy-$RENPY_VERSION-sdk" \
+            --readelf readelf --abi "$TARGET_ABI" \
+            --output "symbols-renpy8-$RENPY_VERSION-${{ github.run_number }}-$TARGET_ABI.zip"
       - uses: actions/upload-artifact@v7
         continue-on-error: true
         with:
@@ -121,9 +126,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "symbols-renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}" "symbols-renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}.zip" \
+          SYM_TAG="symbols-renpy8-$RENPY_VERSION-${{ github.run_number }}-$TARGET_ABI"
+          gh release create "$SYM_TAG" "$SYM_TAG.zip" \
             --repo "${{ github.repository }}" --target "${{ github.sha }}" --prerelease \
-            --title "Ký hiệu renpy8-${{ inputs.version }}-${{ github.run_number }}-${{ matrix.abi }}" \
+            --title "Ký hiệu renpy8-$RENPY_VERSION-${{ github.run_number }}-$TARGET_ABI" \
             --notes "V20/D1: bảng BuildId trong build-ids.tsv; debug/symtab/dynamic-only ghi rõ trong từng dòng."
 
       - name: Đưa lên Releases
@@ -132,6 +138,6 @@ jobs:
           GH_TOKEN: ${{ secrets.PACKS_TOKEN != '' && secrets.PACKS_TOKEN || github.token }}
           GH_REPO: ${{ secrets.PACKS_TOKEN != '' && 'aowvn-10diem/aowvn-monika-packs' || github.repository }}
         run: |
-          gh release create "engines-renpy8-${{ matrix.abi }}-${{ github.run_number }}" renpy8-${{ matrix.abi }}.zip renpy8-${{ matrix.abi }}.zip.sha256 \
-            --title "Ren'Py ${{ inputs.version }} ${{ matrix.abi }} #${{ github.run_number }}" \
-            --notes "Ren'Py ${{ inputs.version }} ráp lại từ SDK + RAPT chính thức (renpy.org). Giấy phép: MIT + LGPL, xem NOTICE.txt trong gói."
+          gh release create "engines-renpy8-$TARGET_ABI-${{ github.run_number }}" "renpy8-$TARGET_ABI.zip" "renpy8-$TARGET_ABI.zip.sha256" \
+            --title "Ren'Py $RENPY_VERSION $TARGET_ABI #${{ github.run_number }}" \
+            --notes "Ren'Py $RENPY_VERSION ráp lại từ SDK + RAPT chính thức (renpy.org). Giấy phép: MIT + LGPL, xem NOTICE.txt trong gói."

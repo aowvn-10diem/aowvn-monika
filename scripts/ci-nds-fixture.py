@@ -4,6 +4,8 @@ import hashlib
 import http.server
 import json
 from pathlib import Path
+import shutil
+import ssl
 import struct
 import subprocess
 import time
@@ -92,8 +94,8 @@ def prepare(out, root=ROOT):
     cfg['prefetchByExtension'] = {}
     cfg['crash'] = {'autoSend': False, 'endpoint': ''}
     core = cfg['cores']['melondsds']
-    core.update(url='http://localhost:18444/melondsds.zip', version='ci-V106', abis=['x86_64'],
-                artifacts={'x86_64': {'url': 'http://localhost:18444/melondsds.zip',
+    core.update(url='https://localhost:18444/melondsds.zip', version='ci-V106', abis=['x86_64'],
+                artifacts={'x86_64': {'url': 'https://localhost:18444/melondsds.zip',
                            'version': 'ci-V106', 'sha256': digest, 'size': len(pack)}})
     # Native bridge is compiled only for the test APK. No engine pack publication or app ABI change.
     gradle = root / 'libretrodroid/build.gradle'
@@ -106,12 +108,30 @@ def prepare(out, root=ROOT):
     needle = 'excludes += listOf("lib/x86/**", "lib/x86_64/**")'
     assert needle in original, 'packaging declaration changed'
     app.write_text(original.replace(needle, '// V106 generated debug build includes its x86_64 test bridge'))
+    # V196: CoreManager routes through DownloadGuard (HTTPS + ALLOWED_DOWNLOAD_HOSTS); allow localhost only in CI fixture APK.
+    monika_cfg = root / 'app/src/main/java/vn/aow/monika/config/MonikaConfig.kt'
+    original = monika_cfg.read_text()
+    needle = '"monika.aow.vn",'
+    assert needle in original, 'ALLOWED_DOWNLOAD_HOSTS declaration changed'
+    monika_cfg.write_text(original.replace(needle, '"monika.aow.vn",\n    "localhost", // V106 CI fixture HTTPS server only'))
+    tls = out / 'tls'
+    tls.mkdir(exist_ok=True)
+    subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
+        '-keyout', str(tls / 'key.pem'), '-out', str(tls / 'ca.pem'), '-subj', '/CN=localhost',
+        '-addext', 'subjectAltName=DNS:localhost'], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     debug = root / 'app/src/debug'
     (debug / 'assets').mkdir(parents=True, exist_ok=True)
     (debug / 'assets/monika-config.json').write_text(json.dumps(cfg, ensure_ascii=False))
-    (debug / 'AndroidManifest.xml').write_text('''<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
-<application android:usesCleartextTraffic="true" tools:replace="android:usesCleartextTraffic" /></manifest>''')
-    print('V106 original NDS ROM + verified x86_64 core; production config/ABI unchanged in git')
+    (debug / 'res/raw').mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(tls / 'ca.pem', debug / 'res/raw/ci_ca.pem')
+    (debug / 'res/xml').mkdir(parents=True, exist_ok=True)
+    (debug / 'res/xml/ci_network.xml').write_text('''<network-security-config>
+<base-config><trust-anchors><certificates src="system" /></trust-anchors></base-config>
+<domain-config includeSubdomains="false"><domain>localhost</domain><trust-anchors><certificates src="@raw/ci_ca" /></trust-anchors></domain-config>
+</network-security-config>''')
+    (debug / 'AndroidManifest.xml').write_text('''<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<application android:networkSecurityConfig="@xml/ci_network" /></manifest>''')
+    print('V106 original NDS ROM + verified x86_64 core over HTTPS; production config/ABI unchanged in git')
 
 
 def serve(out):
@@ -125,7 +145,11 @@ def serve(out):
         def log_request(self, code='-', size='-'):
             with (out / 'requests.jsonl').open('a') as log:
                 log.write(json.dumps({'path': self.path, 'status': code}) + '\n')
-    http.server.ThreadingHTTPServer(('127.0.0.1', 18444), Handler).serve_forever()
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 18444), Handler)
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.load_cert_chain(out / 'tls/ca.pem', out / 'tls/key.pem')
+    server.socket = ctx.wrap_socket(server.socket, server_side=True)
+    server.serve_forever()
 
 
 if __name__ == '__main__':

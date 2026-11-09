@@ -17,7 +17,9 @@ on:
         options: [all, onsyuri, azahar, symbian]
       azahar_repo:
         description: "Kho Azahar để dựng (AzaharPlus đọc được cả ROM mã hóa)"
+        type: choice
         default: "AzaharPlus/AzaharPlus"
+        options: [AzaharPlus/AzaharPlus, azahar-emu/azahar]
       azahar_ref:
         description: "Nhánh/tag Azahar"
         default: "master"
@@ -31,16 +33,21 @@ permissions:
 
 jobs:
   onsyuri-web:
-    if: ${{ github.repository == 'aowvn-10diem/aowvn-monika' && (inputs.only == 'all' || inputs.only == 'onsyuri') }}
+    if: ${{ github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main' && (inputs.only == 'all' || inputs.only == 'onsyuri') }}
     runs-on: ubuntu-24.04
     env:
       EMSDK_HOME: /opt/emsdk
+      ONSYURI_REF: ${{ inputs.onsyuri_ref }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Lấy mã nguồn OnscripterYuri
         run: |
-          git clone --depth 1 --branch "${{ inputs.onsyuri_ref }}" --recurse-submodules --shallow-submodules \
+          set -euo pipefail
+          [[ "$ONSYURI_REF" =~ ^[A-Za-z0-9._/-]+$ ]] && [[ "$ONSYURI_REF" != -* ]] || { echo "::error::onsyuri_ref không hợp lệ"; exit 1; }
+          git clone --depth 1 --branch "$ONSYURI_REF" --recurse-submodules --shallow-submodules \
             https://github.com/YuriSizuku/OnscripterYuri.git ons
           echo "ONS_COMMIT=$(git -C ons rev-parse HEAD)" >> "$GITHUB_ENV"
 
@@ -110,14 +117,20 @@ jobs:
   # ---- 3DS: dựng bản Android của Azahar/AzaharPlus bằng Gradle của họ, trích lõi native libcitra-android.so ----
   # Monika nhúng NHÚNG tầng JNI của Azahar (giao diện là của Monika) và tải thư viện native này khi người chơi có game 3DS.
   azahar-android:
-    if: ${{ github.repository == 'aowvn-10diem/aowvn-monika' && (inputs.only == 'all' || inputs.only == 'azahar') }}
+    if: ${{ github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main' && (inputs.only == 'all' || inputs.only == 'azahar') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 300
+    env:
+      AZAHAR_REPO: ${{ inputs.azahar_repo }}
+      AZAHAR_REF: ${{ inputs.azahar_ref }}
     steps:
       - name: Lấy mã nguồn ${{ inputs.azahar_repo }}
         run: |
-          git clone --depth 1 --branch "${{ inputs.azahar_ref }}" --recurse-submodules --shallow-submodules -j8 \
-            https://github.com/${{ inputs.azahar_repo }}.git src
+          set -euo pipefail
+          [[ "$AZAHAR_REPO" == "AzaharPlus/AzaharPlus" || "$AZAHAR_REPO" == "azahar-emu/azahar" ]] || { echo "::error::azahar_repo không nằm trong danh sách cho phép"; exit 1; }
+          [[ "$AZAHAR_REF" =~ ^[A-Za-z0-9._/-]+$ ]] && [[ "$AZAHAR_REF" != -* ]] || { echo "::error::azahar_ref không hợp lệ"; exit 1; }
+          git clone --depth 1 --branch "$AZAHAR_REF" --recurse-submodules --shallow-submodules -j8 \
+            "https://github.com/$AZAHAR_REPO.git" src
           echo "SRC_COMMIT=$(git -C src rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@v6
@@ -172,11 +185,21 @@ jobs:
           "$READELF" -d pack/libcitra-android.so | grep NEEDED | sed 's/.*\[\(.*\)\]/\1/' > pack/needed.txt
           cat pack/needed.txt
           cat > pack/SOURCE.txt <<EOT
-          ${{ inputs.azahar_repo }} (GPLv2 hoặc mới hơn) — https://github.com/${{ inputs.azahar_repo }}
+          $AZAHAR_REPO (GPLv2 hoặc mới hơn) — https://github.com/$AZAHAR_REPO
           Commit: $SRC_COMMIT
           Dựng bởi workflow build-engines của Aow Monika (Gradle assembleVanillaRelease, arm64-v8a).
           EOT
-          echo "{\"engine\":\"azahar\",\"repo\":\"${{ inputs.azahar_repo }}\",\"commit\":\"$SRC_COMMIT\",\"built\":\"$(date -u +%FT%TZ)\"}" > pack/manifest.json
+          python3 - <<'PY'
+          import datetime, json, os
+          man = {
+              "engine": "azahar",
+              "repo": os.environ["AZAHAR_REPO"],
+              "commit": os.environ["SRC_COMMIT"],
+              "built": datetime.datetime.now(datetime.timezone.utc).strftime("%FT%TZ"),
+          }
+          with open("pack/manifest.json", "w", encoding="utf-8") as fh:
+              json.dump(man, fh)
+          PY
           (cd pack && zip -r ../azahar-android-arm64.zip .)
           ls -la azahar-android-arm64.zip pack
           { echo "### azahar-android"; ls -la pack; echo '```'; cat pack/needed.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
@@ -217,7 +240,7 @@ jobs:
         run: |
           gh release create "engine-azahar-${{ github.run_number }}" azahar-android-arm64.zip \
             --title "Engine 3DS (Azahar) arm64 #${{ github.run_number }}" \
-            --notes "${{ inputs.azahar_repo }} @ $SRC_COMMIT (GPLv2+). Thư viện native cho Aow Monika."
+            --notes "$AZAHAR_REPO @ $SRC_COMMIT (GPLv2+). Thư viện native cho Aow Monika."
 
 
   symbian-android:
@@ -231,8 +254,12 @@ jobs:
       EKA_REF: ${{ inputs.eka2l1_ref }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Lấy EKA2L1 đúng ref và submodule
         run: |
+          set -euo pipefail
+          [[ "$EKA_REF" =~ ^[A-Za-z0-9._/-]+$ ]] && [[ "$EKA_REF" != -* ]] || { echo "::error::eka2l1_ref không hợp lệ"; exit 1; }
           git clone --filter=blob:none --no-checkout https://github.com/EKA2L1/EKA2L1.git src
           git -C src checkout --detach "$EKA_REF"
           git -C src submodule update --init --recursive --jobs 8

@@ -10,12 +10,22 @@ plugins {
 // V192: BouncyCastle đi vào APK qua `libadb-android` (kéo bản cũ). Ghim bản trong
 // `gradle/libs.versions.toml` cho MỌI cấu hình của app (mọi `*Classpath`, cả 2 flavor).
 val bcVersion = libs.versions.bouncycastle.get()
+// V0811: `org.xerial:sqlite-jdbc` 3.36.0 chỉ nằm ở classpath plugin (SBOM: `androidx.room:room-compiler` 2.5.2),
+// không vào APK. `force` dưới đây chỉ áp cho cấu hình của `:app`, KHÔNG chạm classpath plugin; giữ dòng này
+// để nếu gói lọt vào cấu hình app thì đã là bản vá — cảnh báo chỉ đóng khi cây plugin hết bản lỗi.
+val sqliteJdbcVersion = libs.versions.sqliteJdbc.get()
+// V0811: hai thư viện dưới đây nằm trong APK nhưng không do app gọi trực tiếp (xem docs/bao-mat/PHU-THUOC-0811.md).
+val guavaVersion = libs.versions.guava.get()
+val commonsLang3Version = libs.versions.commonsLang3.get()
 configurations.configureEach {
     resolutionStrategy.force(
         "org.bouncycastle:bcprov-jdk15to18:$bcVersion",
         "org.bouncycastle:bcprov-jdk18on:$bcVersion",
         "org.bouncycastle:bcpkix-jdk18on:$bcVersion",
         "org.bouncycastle:bcutil-jdk18on:$bcVersion",
+        "org.xerial:sqlite-jdbc:$sqliteJdbcVersion",
+        "com.google.guava:guava:$guavaVersion",
+        "org.apache.commons:commons-lang3:$commonsLang3Version",
     )
 }
 
@@ -33,8 +43,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 55
-        versionName = "0.8.10"
+        versionCode = 56
+        versionName = "0.8.11"
         // V56: runner chỉ nằm trong APK instrumentation, không thêm lối vào app phát hành.
         testInstrumentationRunner = "vn.aow.monika.testlab.KirikiriArmRunner"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).

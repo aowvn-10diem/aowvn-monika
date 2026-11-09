@@ -92,7 +92,11 @@ dependencies {
     implementation 'com.github.yukuku:ambilwarna:2.0.1'
     implementation 'com.github.nikita36078:mobile-ffmpeg:v4.3.2-compact'
     implementation 'com.github.woesss:filepicker:4.4.0'
-    implementation 'com.github.nikita36078:pngj:2.2.3'
+    implementation('com.github.nikita36078:pngj:2.2.3') {
+        // V0811: POM của pngj khai `junit` là phụ thuộc compile; junit chỉ dùng cho test của nó
+        // nên loại khỏi runtime, không mang vào APK (docs/bao-mat/PHU-THUOC-0811.md).
+        exclude group: 'junit', module: 'junit'
+    }
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
 
     // Aow Monika (V161): test JUnit thường cho bố cục bàn phím ảo máy ngang (AowLandscapePad).

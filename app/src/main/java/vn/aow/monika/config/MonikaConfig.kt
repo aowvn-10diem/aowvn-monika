@@ -24,6 +24,18 @@ val ALLOWED_DOWNLOAD_HOSTS: Set<String> = setOf(
 internal fun isAllowedDownloadHost(host: String): Boolean = host in ALLOWED_DOWNLOAD_HOSTS
 
 /**
+ * V196b: host của **tệp người dùng** (`downloadHosts[].directUrl`, link dán vào để tải game/tài liệu).
+ * Hẹp hơn danh sách host mã/gói ở trên: chỉ những host đã chốt cho luồng tải tệp.
+ * Áp cả khi nạp config và trước khi đưa URL cho trình quản lý tải của hệ thống.
+ */
+val ALLOWED_DIRECT_URL_HOSTS: Set<String> = setOf(
+    "pixeldrain.com",
+)
+
+/** [host] đã hạ chữ thường trước khi truyền vào. */
+internal fun isAllowedDirectUrlHost(host: String): Boolean = host in ALLOWED_DIRECT_URL_HOSTS
+
+/**
  * Ánh xạ 1-1 với config/monika-config.json.
  * Thêm trường mới: luôn cho giá trị mặc định để file cấu hình cũ vẫn đọc được.
  */

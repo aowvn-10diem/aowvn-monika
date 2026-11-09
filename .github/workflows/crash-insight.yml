@@ -6,12 +6,13 @@ permissions:
   contents: read
 jobs:
   insight:
-    if: github.repository == 'aowvn-10diem/aowvn-monika'
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -32,4 +33,4 @@ jobs:
             crash-insight.md
             crash-insight.csv
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 3
