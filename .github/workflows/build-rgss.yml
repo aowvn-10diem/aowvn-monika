@@ -28,22 +28,29 @@ permissions:
 
 jobs:
   build:
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-22.04
     timeout-minutes: 240
+    env:
+      PORT_REF: ${{ inputs.port_ref }}
+      TARGET_ABI: ${{ inputs.abi }}
     steps:
       - uses: actions/checkout@v4
-        with: { path: self }
+        with: { path: self, persist-credentials: false }
 
       - name: Lấy mã nguồn bản port (ghim commit)
         run: |
+          set -euo pipefail
+          [[ "$PORT_REF" =~ ^[A-Za-z0-9._/-]+$ ]] && [[ "$PORT_REF" != -* ]] || { echo "::error::port_ref không hợp lệ"; exit 1; }
+          [[ "$TARGET_ABI" == "arm64-v8a" || "$TARGET_ABI" == "armeabi-v7a" ]] || { echo "::error::abi không hợp lệ"; exit 1; }
           git clone https://github.com/BookerRues9/mkxp-z-android-reworked.git src
-          cd src && git checkout "${{ inputs.port_ref }}"
+          cd src && git checkout "$PORT_REF"
           echo "SRC_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           git log -1 --format='%h %ad %s'
 
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: 11 }
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1
         with: { ruby-version: "3.1" }
 
       - name: Cài NDK 23.2.8568313 + công cụ
@@ -89,16 +96,16 @@ jobs:
           sed -i 's/-O0/-O2/g' Makefile
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/23.2.8568313" ARCH=linux-x86_64
           export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$ARCH/bin:$PATH"
-          if [ "${{ inputs.abi }}" = arm64-v8a ]; then H=aarch64-linux-android; T=aarch64-linux-android; else H=armv7a-linux-androideabi; T=arm-linux-androideabi; fi
-          HOST=$H TARGET=$T ABI=${{ inputs.abi }} make -j"$(nproc)" 2>&1 | tail -15
+          if [ "$TARGET_ABI" = arm64-v8a ]; then H=aarch64-linux-android; T=aarch64-linux-android; else H=armv7a-linux-androideabi; T=arm-linux-androideabi; fi
+          HOST=$H TARGET=$T ABI="$TARGET_ABI" make -j"$(nproc)" 2>&1 | tail -15
 
       - name: ndk-build (Gradle assembleRelease)
         working-directory: src
         run: |
           set -o pipefail
           (cd app/jni/mkxp-z && sh make_xxd.sh | tail -2)
-          sed -i 's/APP_OPTIM := debug/APP_OPTIM := release/; s/^APP_ABI := .*/APP_ABI := ${{ inputs.abi }}/' app/jni/Application.mk
-          sed -i "s/include 'arm64-v8a', 'armeabi-v7a'/include '${{ inputs.abi }}'/" app/build.gradle
+          sed -i "s/APP_OPTIM := debug/APP_OPTIM := release/; s/^APP_ABI := .*/APP_ABI := $TARGET_ABI/" app/jni/Application.mk
+          sed -i "s/include 'arm64-v8a', 'armeabi-v7a'/include '$TARGET_ABI'/" app/build.gradle
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/23.2.8568313"
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease 2>&1 | tail -15
@@ -107,7 +114,7 @@ jobs:
         run: |
           set -e
           NM=$ANDROID_HOME/ndk/23.2.8568313/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm
-          L=$(find src/app/build/intermediates/stripped_native_libs -path "*${{ inputs.abi }}*" -name libSDL2.so | head -1)
+          L=$(find src/app/build/intermediates/stripped_native_libs -path "*$TARGET_ABI*" -name libSDL2.so | head -1)
           echo "libSDL2: $L"
           "$NM" -D "$L" | grep ' Java_' | awk '{print $3}' | sort | tee jni-names.txt | head -5
           BAD=$(grep -vc '^Java_vn_aow_monika_rgss_sdl_' jni-names.txt || true)
@@ -119,15 +126,15 @@ jobs:
         run: |
           set -e
           RE=$ANDROID_HOME/ndk/23.2.8568313/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf
-          for f in $(find src/app/build/intermediates/stripped_native_libs -path "*${{ inputs.abi }}*" -name '*.so'); do
+          for f in $(find src/app/build/intermediates/stripped_native_libs -path "*$TARGET_ABI*" -name '*.so'); do
             "$RE" -d "$f" | grep -E 'NEEDED.*(libssl|libcrypto)' && { echo "::error::$f còn phụ thuộc OpenSSL"; exit 1; } || true
-            n=$(strings "$f" | grep -c 'OpenSSL 1.1.1' || true); echo "$(basename $f) OpenSSL-chuỗi=$n size=$(stat -c %s $f)"
+            n=$(strings "$f" | grep -c 'OpenSSL 1.1.1' || true); echo "$(basename "$f") OpenSSL-chuỗi=$n size=$(stat -c %s "$f")"
           done | tee openssl-check.txt
 
       - name: Đóng gói gói rgss
         run: |
           set -e
-          ABI=${{ inputs.abi }}
+          ABI="$TARGET_ABI"
           D=src/app/build/intermediates/stripped_native_libs
           rm -rf pack && mkdir -p pack/lib
           find "$D" -path "*/$ABI/*" -name '*.so' -exec cp {} pack/lib/ \;
@@ -139,7 +146,7 @@ jobs:
           import json, os, hashlib, datetime
           order = ["SDL2","SDL2_image","SDL2_ttf","SDL2_sound","openal","ruby","mkxp-z"]
           libs = sorted(os.listdir("pack/lib"))
-          man = {"engine":"mkxp-z","commit":os.environ["SRC_COMMIT"],"abi":"${{ inputs.abi }}",
+          man = {"engine":"mkxp-z","commit":os.environ["SRC_COMMIT"],"abi":os.environ["TARGET_ABI"],
                  "built":datetime.datetime.utcnow().strftime("%FT%TZ"),
                  "loadOrder":["lib"+n+".so" for n in order],
                  "files":{f:{"size":os.path.getsize("pack/lib/"+f),"sha256":hashlib.sha256(open("pack/lib/"+f,"rb").read()).hexdigest()} for f in libs}}
@@ -148,10 +155,10 @@ jobs:
           json.dump(man, open("pack/manifest.json","w"), indent=1)
           print(json.dumps(man, indent=1)[:1500])
           PY
-          (cd pack && zip -9 -r ../rgss-$ABI.zip .)
-          sha256sum rgss-$ABI.zip | tee rgss-$ABI.zip.sha256
-          stat -c 'size=%s' rgss-$ABI.zip
-          { echo "### Gói rgss ($ABI)"; echo '```'; cat rgss-$ABI.zip.sha256; stat -c 'size=%s' rgss-$ABI.zip; ls -l pack/lib | awk '{print $5, $9}'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          (cd pack && zip -9 -r "../rgss-$ABI.zip" .)
+          sha256sum "rgss-$ABI.zip" | tee "rgss-$ABI.zip.sha256"
+          stat -c 'size=%s' "rgss-$ABI.zip"
+          { echo "### Gói rgss ($ABI)"; echo '```'; cat "rgss-$ABI.zip.sha256"; stat -c 'size=%s' "rgss-$ABI.zip"; ls -l pack/lib | awk '{print $5, $9}'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v7
         continue-on-error: true   # hạn mức lưu trữ Actions từng đầy: tải artifact lỗi không làm đỏ job
@@ -170,8 +177,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 self/scripts/package-native-symbols.py --pack pack/lib --source-root src \
-            --readelf "$ANDROID_HOME/ndk/23.2.8568313/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" --abi ${{ inputs.abi }} \
-            --output "symbols-rgss-${{ github.run_number }}-${{ inputs.abi }}.zip"
+            --readelf "$ANDROID_HOME/ndk/23.2.8568313/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf" --abi "$TARGET_ABI" \
+            --output "symbols-rgss-${{ github.run_number }}-$TARGET_ABI.zip"
       - uses: actions/upload-artifact@v7
         continue-on-error: true
         with:
@@ -184,9 +191,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "symbols-rgss-${{ github.run_number }}-${{ inputs.abi }}" "symbols-rgss-${{ github.run_number }}-${{ inputs.abi }}.zip" \
+          SYM_TAG="symbols-rgss-${{ github.run_number }}-$TARGET_ABI"
+          gh release create "$SYM_TAG" "$SYM_TAG.zip" \
             --repo "${{ github.repository }}" --target "${{ github.sha }}" --draft \
-            --title "Ký hiệu rgss-${{ github.run_number }}-${{ inputs.abi }}" \
+            --title "Ký hiệu rgss-${{ github.run_number }}-$TARGET_ABI" \
             --notes "V20/D1: bảng BuildId trong build-ids.tsv; debug/symtab/dynamic-only ghi rõ trong từng dòng."
 
       - name: Đưa lên release nháp (chờ G8)
@@ -195,6 +203,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create --draft "engines-rgss-${{ github.run_number }}" rgss-${{ inputs.abi }}.zip rgss-${{ inputs.abi }}.zip.sha256 \
-            --title "RGSS (mkxp-z) ${{ inputs.abi }} #${{ github.run_number }}" \
+          gh release create --draft "engines-rgss-${{ github.run_number }}" "rgss-$TARGET_ABI.zip" "rgss-$TARGET_ABI.zip.sha256" \
+            --title "RGSS (mkxp-z) $TARGET_ABI #${{ github.run_number }}" \
             --notes "mkxp-z dựng từ bản port BookerRues9/mkxp-z-android-reworked @ $SRC_COMMIT (GPL-2.0-or-later, lõi mkxp-z). JNI của SDL đổi sang vn.aow.monika.rgss.sdl. Nguồn + giấy phép: engines/rgss/UPSTREAM.md trong kho Aow Monika."
