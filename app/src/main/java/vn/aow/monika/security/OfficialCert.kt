@@ -38,4 +38,39 @@ object OfficialCert {
         if (official.isEmpty() || actual.isEmpty()) return false
         return official.equals(actual, ignoreCase = true)
     }
+
+    /** Kết luận về bản đang chạy; `UNKNOWN` khi flavor chưa có chứng thư phát hành (bản Play). */
+    enum class BuildTrust { OFFICIAL, FOREIGN, UNKNOWN }
+
+    /**
+     * [A85/A78-3] So chứng thư do `PackageManager` trả với chứng thư đọc trực tiếp từ khối ký của tệp APK.
+     * Lệch nhau = dấu hiệu `PackageManager` bị hook (Signature Killer) → coi là bản ngoại lai.
+     * Bản release không đọc được chứng thư cũng coi là ngoại lai (không có bằng chứng là bản chính thức).
+     */
+    fun trustOf(
+        pmSha256: String,
+        apkBlockSha256: String?,
+        officialSha256: String,
+        debugBuild: Boolean,
+    ): BuildTrust {
+        if (debugBuild) return BuildTrust.OFFICIAL
+        val official = officialSha256.trim()
+        if (official.isEmpty()) return BuildTrust.UNKNOWN
+        val pm = pmSha256.trim()
+        if (pm.isEmpty()) return BuildTrust.UNKNOWN
+        if (apkBlockSha256 != null && !apkBlockSha256.equals(pm, ignoreCase = true)) return BuildTrust.FOREIGN
+        return if (pm.equals(official, ignoreCase = true)) BuildTrust.OFFICIAL else BuildTrust.FOREIGN
+    }
+
+    /** Đọc chứng thư từ `PackageManager` và từ khối chữ ký của APK trên đĩa rồi kết luận. */
+    fun verifyOfficialApk(
+        context: android.content.Context,
+        officialSha256: String = OfficialCertPin.OFFICIAL_APK_CERT_SHA256,
+        debugBuild: Boolean = vn.aow.monika.BuildConfig.DEBUG,
+    ): BuildTrust {
+        val pm = vn.aow.monika.diag.Diagnostics.certSha256(context)
+        val block = context.applicationInfo?.sourceDir
+            ?.let { ApkSigningBlockReader.signingCertSha256(java.io.File(it)) }
+        return trustOf(pm, block, officialSha256, debugBuild)
+    }
 }
