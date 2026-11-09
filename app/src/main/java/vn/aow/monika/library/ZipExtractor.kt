@@ -4,6 +4,7 @@ import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.exception.ZipException
 import java.io.File
 import java.io.IOException
+import vn.aow.monika.util.SafeZipPath
 
 /** Giải nén .zip bằng zip4j (Java thuần): ZipCrypto + AES-256, tên file tiếng Việt, chặn đường dẫn thoát khỏi thư mục đích. */
 object ZipExtractor {

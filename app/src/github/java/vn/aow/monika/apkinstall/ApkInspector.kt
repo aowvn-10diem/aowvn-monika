@@ -1,7 +1,7 @@
 package vn.aow.monika.apkinstall
 
 import com.reandroid.arsc.chunk.xml.AndroidManifestBlock
-import vn.aow.monika.library.SafeZipPath
+import vn.aow.monika.util.SafeZipPath
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
