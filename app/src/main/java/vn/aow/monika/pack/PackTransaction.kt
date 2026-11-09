@@ -47,12 +47,27 @@ internal object PackTransaction {
                 if (old.exists()) move(old, target)
                 throw error
             }
+            // V204: gói đã xác thực SHA-256 xong mới đặt chỉ-đọc; bản .previous phải mở quyền ghi trước khi xoá.
+            setReadOnlyTree(target)
+            setWritableTree(old)
             old.deleteRecursively()
         } finally { work.deleteRecursively() }
     }
 
     private fun move(from: File, to: File) {
         if (!from.renameTo(to)) throw IOException("Không đổi được thư mục gói ${to.name}")
+    }
+
+    /** V204: tệp gói/lõi sau khi xác thực SHA-256 chỉ được đọc, không cho mã hoá lại tại chỗ. */
+    private fun setReadOnlyTree(dir: File) {
+        if (!dir.exists()) return
+        dir.walkTopDown().filter { it.isFile }.forEach { it.setReadOnly() }
+    }
+
+    /** Mở quyền ghi để dọn bản .previous (Windows/Android đều cần trước khi xoá). */
+    private fun setWritableTree(dir: File) {
+        if (!dir.exists()) return
+        dir.walkTopDown().forEach { it.setWritable(true) }
     }
     private fun checkDir(dir: File) {
         if (!dir.isDirectory && !dir.mkdirs()) throw IOException("Không tạo được thư mục cài gói")

@@ -11,6 +11,24 @@ class PackTransactionTest {
     private fun target() = File(Files.createTempDirectory("pack-tx").toFile(), "test")
     private fun old(target: File) { target.mkdirs(); File(target, "main").writeText("good-old"); File(target, "version").writeText("1") }
 
+    @Test fun installedFilesAreReadOnlyAndUpgradeStillWorks() = runBlocking {
+        val target = target(); try {
+            PackTransaction.locked(target) { PackTransaction.install(target) { _, candidate ->
+                File(candidate, "main").writeText("v1"); File(candidate, "version").writeText("1")
+            } }
+            assertTrue(File(target, "main").canRead())
+            assertFalse("V204: tệp gói sau xác thực phải chỉ-đọc", File(target, "main").canWrite())
+            // Nâng cấp lần 2: phải mở quyền ghi để dọn bản .previous, không được ném lỗi.
+            PackTransaction.locked(target) { PackTransaction.install(target) { _, candidate ->
+                File(candidate, "main").writeText("v2"); File(candidate, "version").writeText("2")
+            } }
+            assertEquals("v2", File(target, "main").readText())
+        } finally {
+            target.parentFile!!.walkTopDown().forEach { it.setWritable(true) }
+            target.parentFile!!.deleteRecursively()
+        }
+    }
+
     @Test fun failureBeforePromotionKeepsOldAndRemovesCandidate() = runBlocking {
         val target = target(); try {
             old(target)
