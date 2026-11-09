@@ -1,10 +1,17 @@
 import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { webcrypto, createHash as nodeHash, createHmac as nodeHmac } from "node:crypto";
+import { createHash, createHmac, webcrypto } from "node:crypto";
 import worker, { MAX_BODY, resetRateState, rateReservedCount, packSignature, setClockForTest, authEquals, normalizeClientIp, r2PresignUrl } from "./worker.js";
+// Bí danh dùng trong nhánh test cũ của V186 (giữ nguyên câu chữ test)
+const nodeHash = createHash;
+const nodeHmac = createHmac;
 globalThis.crypto ??= webcrypto;
-const fixture = JSON.parse(readFileSync(new URL("./fixtures/app-report.json", import.meta.url)));
+// V144 lô 1: fixture giả nằm ở resources công khai của app (nguồn duy nhất cho cả
+// CrashContractTest của Kotlin); Worker test đọc đúng hai tệp đó, không giữ bản sao riêng.
+const fixturePath = new URL("../../app/src/test/resources/app-report.json", import.meta.url);
+const fixtureBytes = readFileSync(fixturePath);
+const fixture = JSON.parse(fixtureBytes);
 
 function setup(extra = {}) {
   resetRateState(); // V194: bộ đếm hạn mức nằm trong bộ nhớ isolate → mỗi test phải bắt đầu sạch
@@ -124,8 +131,19 @@ test("giới hạn từng trường, quyền đọc và rate limit vẫn có hi�
   assert.equal((await c.post(fixture)).status, 429);
 });
 
-const jpeg = readFileSync(new URL("./fixtures/user-image.jpg", import.meta.url));
+const jpeg = readFileSync(new URL("../../app/src/test/resources/user-image.jpg", import.meta.url));
 const userImage = {mime:"image/jpeg", data:jpeg.toString("base64"), width:24, height:16};
+
+// V144 lô 1: khoá đúng byte/SHA của hai fixture công khai — đổi dữ liệu mẫu là đỏ ngay,
+// và Worker test chứng minh nó đọc đúng bản mà CrashContractTest (Kotlin) đang dùng.
+test("Fixture công khai giữ nguyên byte/SHA (V144 lô 1)", () => {
+  const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
+  assert.equal(fixtureBytes.length, 816);
+  assert.equal(sha(fixtureBytes), "9036b469a944ac084100cbfd367e0a95955619df89ce414f7be5708d34fd7893");
+  assert.equal(jpeg.length, 637);
+  assert.equal(sha(jpeg), "22c3225e8dbce468d1ed494a6a5ffbba98bc0d4ca1109c5830fd22fd8e2cab03");
+});
+
 test("JPEG thật user → POST → KV → GET giữ nguyên byte/chiều ảnh và trường cũ", async () => {
   const c=setup(), report={...fixture, kind:"user", image:userImage};
   assert.equal((await c.post(report)).status,200);

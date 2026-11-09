@@ -123,7 +123,7 @@ android {
     // Bản cấu hình dự phòng đóng gói trong APK = đúng file config/ ở gốc repo (1 nguồn duy nhất).
     sourceSets["test"].java.setSrcDirs(emptyList<String>())
     sourceSets["testGithub"].java.srcDir("src/test/java")
-    sourceSets["testGithub"].resources.srcDirs("src/test/resources", "../cloudflare/crash-worker/fixtures")
+    sourceSets["testGithub"].resources.srcDirs("src/test/resources")
     // Ghi công, cheat và script RGSS dùng chung; chỉ catalog gốc dành cho GitHub.
     sourceSets["main"].assets.srcDir("src/main/assets")
     sourceSets["github"].assets.srcDir("../config")

@@ -1,0 +1,20 @@
+{
+  "id": 1700000000123,
+  "time": 1700000000123,
+  "kind": "native",
+  "title": "Lõi bị sập khi đang chơi",
+  "app": "0.7.4 (39) debug",
+  "device": "Máy giả · Android 14 (API 34)",
+  "session": {"pid": 4242, "startedAt": 1700000000000, "kind": "rgss", "core": "rgss", "coreInfo": "cfg v31", "game": "Game tự sinh", "system": "RPG Maker XP", "stage": "first-frame", "stageAt": 1700000000100, "lastAlive": 1700000000110},
+  "reason": "CRASH_NATIVE (status 11)",
+  "detail": "#00 pc 123 libmkxp-z.so (build_id giả)",
+  "log": ["DEBUG : signal 11"],
+  "fromGame": true,
+  "seen": false,
+  "sent": false,
+  "component": "engine:rgss",
+  "fingerprint": "abc123",
+  "count": 3,
+  "env": "RAM trống 100/1024 MB · heap 10/128 MB",
+  "crumbs": ["[begin] rgss", "[stage] first-frame"]
+}

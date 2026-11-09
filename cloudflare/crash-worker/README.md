@@ -51,6 +51,6 @@ V101 giữ snapshot phiên theo PID ở app, cập nhật cùng stage; PID hoặ
 
 Các chuỗi/danh sách tùy chọn sai loại được thay bằng rỗng. `seen`/`sent` là cờ UI cục bộ, không lưu ở Worker. Trường lạ bỏ qua. KV giữ 60 ngày; metadata danh sách gồm `component`, `fp`, `count` để lọc lỗi. GET chi tiết trả cùng JSON đã lưu, không cắt thêm. Kho cũ giữ nguyên; báo cáo cũ có thể thiếu trường mới.
 
-Kiểm: `node --test cloudflare/crash-worker/worker.test.js` (KV giả trong bộ nhớ, không mạng). `CrashContractTest` dùng **cùng** `fixtures/app-report.json` để kiểm serializer Kotlin; Build chạy cả hai. Test Worker phủ gửi → lưu → danh sách → đọc, app cũ, loại sai, byte UTF-8, quyền đọc và giới hạn spam.
+Kiểm: `node --test cloudflare/crash-worker/worker.test.js` (KV giả trong bộ nhớ, không mạng). Hai fixture giả nằm ở resources công khai của app — `app/src/test/resources/app-report.json` và `app/src/test/resources/user-image.jpg` — dùng chung cho `CrashContractTest` (Kotlin) và test Worker, không còn bản sao trong `cloudflare/`; Build chạy cả hai. Test Worker phủ gửi → lưu → danh sách → đọc, app cũ, loại sai, byte UTF-8, quyền đọc và giới hạn spam.
 
 Triển khai: cần người có quyền sửa/deploy Worker `aowvn-monika-crash` và gắn namespace KV `REPORTS` hiện có; nếu dùng API cần quyền Cloudflare Workers Scripts:Edit và Workers KV Storage tương ứng tài khoản. Sonnet/chủ tài khoản triển khai sau PM duyệt, giữ binding và secret hiện tại. [CHƯA KIỂM] ai có quyền này và mã đang chạy. Sol không đổi secret, không triển khai, không chuyển giao thức/endpoint hay dữ liệu KV cũ.
