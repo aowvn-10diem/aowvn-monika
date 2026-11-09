@@ -10,9 +10,9 @@ plugins {
 // V192: BouncyCastle đi vào APK qua `libadb-android` (kéo bản cũ). Ghim bản trong
 // `gradle/libs.versions.toml` cho MỌI cấu hình của app (mọi `*Classpath`, cả 2 flavor).
 val bcVersion = libs.versions.bouncycastle.get()
-// V0811: `org.xerial:sqlite-jdbc` 3.36.0 chỉ nằm ở classpath plugin (SBOM: `androidx.room:room-compiler` 2.5.2),
-// không vào APK. `force` dưới đây chỉ áp cho cấu hình của `:app`, KHÔNG chạm classpath plugin; giữ dòng này
-// để nếu gói lọt vào cấu hình app thì đã là bản vá — cảnh báo chỉ đóng khi cây plugin hết bản lỗi.
+// V0911: `org.xerial:sqlite-jdbc` từng ở classpath trình biên dịch qua `androidx.room:room-compiler` 2.5.2 của
+// `:j2me` (3.36.0, GHSA-6phf-6h5g-97j2). `:j2me` nay dùng Room 2.6.1 nên cây đó là 3.41.2.2 (bản vá); `force`
+// dưới đây vẫn áp cho mọi cấu hình của `:app` như chốt chặn nếu bản lỗi lọt vào cây.
 val sqliteJdbcVersion = libs.versions.sqliteJdbc.get()
 // V0811: hai thư viện dưới đây nằm trong APK nhưng không do app gọi trực tiếp (xem docs/bao-mat/PHU-THUOC-0811.md).
 val guavaVersion = libs.versions.guava.get()
