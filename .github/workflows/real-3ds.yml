@@ -37,17 +37,17 @@ concurrency:
 
 jobs:
   peek:
-    if: ${{ github.repository == 'aowvn-10diem/aowvn-monika' && inputs.peek_run_id != '' }}
+    if: ${{ github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main' && inputs.peek_run_id != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-      - uses: google-github-actions/setup-gcloud@v3
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
       - name: Đọc bằng chứng Test Lab của lượt cũ (đã scrub)
         env:
           PEEK_RUN_ID: ${{ inputs.peek_run_id }}
@@ -55,7 +55,7 @@ jobs:
           [[ "$PEEK_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]] || { echo "peek_run_id phải là số nguyên dương"; exit 1; }
           python3 scripts/peek-testlab.py --run-id "$PEEK_RUN_ID"
   real-3ds:
-    if: ${{ github.repository == 'aowvn-10diem/aowvn-monika' && inputs.peek_run_id == '' }}
+    if: ${{ github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main' && inputs.peek_run_id == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -91,11 +91,11 @@ jobs:
       - name: Build APK debug và instrumentation (không ký, không phát hành)
         if: ${{ !inputs.fetch_only }}
         run: ./gradlew :app:assembleGithubDebug :app:assembleGithubDebugAndroidTest --console=plain
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
         if: ${{ !inputs.fetch_only }}
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-      - uses: google-github-actions/setup-gcloud@v3
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
         if: ${{ !inputs.fetch_only }}
       - name: Chọn đúng một máy ARM64 vật lý
         if: ${{ !inputs.fetch_only }}

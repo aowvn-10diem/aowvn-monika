@@ -2,6 +2,15 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.11 (Bản thử)
+<!-- bien-tap: v0.8.11 -->
+> Phát hành ngày 08/11/2026 (UTC), bản thử nghiệm.
+
+- **Mới:** Trang game có mục **Save**: xem các bản save, nhập save từ tệp và chia sẻ bản sao lưu ra ngoài. ([#499](https://github.com/aowvn-10diem/aowvn-monika/pull/499))
+- **Mới:** Thư viện có mục **Tệp** để tìm game, tài liệu và tệp khác trong cùng một chỗ. ([#434](https://github.com/aowvn-10diem/aowvn-monika/pull/434))
+- **Mới:** Tải game từ Pixeldrain nay do bạn chủ động: dán link vào **Tải xuống › Tải từ link**, app cảnh báo trước khi tải. ([#501](https://github.com/aowvn-10diem/aowvn-monika/pull/501))
+- **Mới:** Bài viết từ aow.vn mặc định tắt; muốn xem và nhận thông báo bài mới, bật lại ở **Cài đặt › Bài viết & tin tức**. ([#498](https://github.com/aowvn-10diem/aowvn-monika/pull/498))
+
 ## v0.8.10 (Bản thử)
 <!-- bien-tap: v0.8.10 -->
 > Phát hành ngày 04/11/2026 (UTC), bản thử nghiệm.
@@ -17,6 +26,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 - **Mới:** App cảnh báo rõ khi bản Monika đang cài không phải bản chính thức. ([#454](https://github.com/aowvn-10diem/aowvn-monika/pull/454))
 - **Mới:** Nút ủng hộ mở ngay bảng mã QR và chọn ngân hàng trong Monika. ([#446](https://github.com/aowvn-10diem/aowvn-monika/pull/446))
 - **Sửa lỗi:** Nhập game từ tệp nén an toàn hơn. ([#466](https://github.com/aowvn-10diem/aowvn-monika/pull/466))
+- **Mới:** Tải game từ link giờ do bạn tự dán và xác nhận; app cảnh báo khi tệp đến từ nguồn bên thứ ba. ([#501](https://github.com/aowvn-10diem/aowvn-monika/pull/501))
 
 ## v0.8.9 (Bản thử)
 <!-- bien-tap: v0.8.9 -->

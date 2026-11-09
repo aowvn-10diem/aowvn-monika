@@ -55,6 +55,8 @@ class LibraryDocumentUiTest {
             File(game, "Manual.pdf").writeText("synthetic fixture")
             File(unknown, "unknown.bin").writeText("synthetic fixture")
             AppGraph.prefs.libraryStorageExplained = true
+            // V141: mục đang chọn nhớ trong Prefs và AppGraph dùng chung giữa các lớp test → đặt rõ mục Chơi.
+            AppGraph.prefs.librarySection = "play"
             val listed = AppGraph.library.list()
             assertTrue(listed.any { it.dir == game && it.system?.id == "gba" })
             assertFalse(listed.any { it.dir == docs || it.dir == unknown })

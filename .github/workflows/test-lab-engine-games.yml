@@ -87,11 +87,11 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || !inputs.catalog_only
         run: ./gradlew :app:assembleGithubDebug :app:assembleGithubDebugAndroidTest --console=plain
       # PR chỉ biên dịch; không có GCP Secrets, máy thật hay artifact APK/game trên PR.
-      - uses: google-github-actions/auth@v2
+      - uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
         if: github.event_name == 'workflow_dispatch'
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-      - uses: google-github-actions/setup-gcloud@v3
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
         if: github.event_name == 'workflow_dispatch'
       - name: Catalog V105 only (không dùng máy/quota)
         if: github.event_name == 'workflow_dispatch' && inputs.catalog_only

@@ -39,7 +39,7 @@ jobs:
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
           python3 -m pip install Pillow
           python3 scripts/test-ci-nds-frame.py
-      - uses: reactivecircus/android-emulator-runner@v2
+      - uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: 34
           arch: x86_64

@@ -225,6 +225,33 @@ class BotTest(unittest.TestCase):
             with self.assertRaises(ValueError): bot.live(client, client, "o/r", OWNERS)
             self.assertEqual(client.writes, [])
 
+    def test_component_is_written_when_whitelisted(self):
+        row = record(1)
+        row["report"]["component"] = "op:download"
+        body = bot.plan([row], [], OWNERS)[0]["body"]
+        self.assertIn("Thành phần: `op:download`", body)
+        for allowed in ["pack:sevenzip", "engine:libretro:melondsds", "app:ui", "net", "ra", "op"]:
+            row["report"]["component"] = allowed
+            self.assertIn(f"Thành phần: `{allowed}`", bot.plan([row], [], OWNERS)[0]["body"])
+
+    def test_component_does_not_change_signature_or_leak_hostile_text(self):
+        row = record(1)
+        base = bot.plan([row], [], OWNERS)[0]["title"]
+        for hostile in ["private/path", "a@b.c", "op:../etc", "op:", "x" * 41, "op:two words",
+                        "op:x\nThành phần: `ra`", None, 7, ["op:x"]]:
+            with self.subTest(hostile=hostile):
+                row["report"]["component"] = hostile
+                action = bot.plan([row], [], OWNERS)[0]
+                self.assertEqual(action["title"], base)
+                self.assertNotIn("Thành phần:", action["body"])
+
+    def test_multiple_components_in_one_signature_are_counted(self):
+        rows = [record(1), record(2)]
+        rows[0]["report"]["component"] = "op:download"
+        rows[1]["report"]["component"] = "op:unzip"
+        body = bot.plan(rows, [], OWNERS)[0]["body"]
+        self.assertIn("Thành phần: `op:download` (+1)", body)
+
     def test_many_seen_hashes_still_fit_issue_body(self):
         old = issue(bot.plan([record(i) for i in range(1000)], [], OWNERS)[0])
         updated = bot.plan([record(i) for i in range(1000, 1100)], [old], OWNERS)[0]

@@ -3,6 +3,39 @@ package vn.aow.monika.config
 import kotlinx.serialization.Serializable
 
 /**
+ * Host được phép cho URL **tải mã/gói** trong config từ xa (lõi, module/engine, apk cập nhật,
+ * script web player). Danh sách nằm trong APK — config từ xa **không thể tự mở rộng** nó, nên
+ * một config bị đầu độc không trỏ được app sang host lạ. Thêm CDN mới = phát hành app mới.
+ */
+val ALLOWED_DOWNLOAD_HOSTS: Set<String> = setOf(
+    "github.com",                       // releases của repo packs/app
+    "objects.githubusercontent.com",    // CDN asset cũ của GitHub Releases
+    "release-assets.githubusercontent.com", // đích 302 thật của asset GitHub Releases (kiểm 05/11/2026)
+    "raw.githubusercontent.com",
+    "codeload.github.com",
+    "buildbot.libretro.com",            // lõi libretro nightly (đường tải cũ)
+    "cdn.jsdelivr.net",                 // script web player (ruffle)
+    "monika.aow.vn",                    // CDN/trang chính thức
+    "aow.vn",                           // link mời cài app/plugin (externalApps, plugins)
+    "www.aow.vn",
+)
+
+/** [host] đã hạ chữ thường trước khi truyền vào. */
+internal fun isAllowedDownloadHost(host: String): Boolean = host in ALLOWED_DOWNLOAD_HOSTS
+
+/**
+ * V196b: host của **tệp người dùng** (`downloadHosts[].directUrl`, link dán vào để tải game/tài liệu).
+ * Hẹp hơn danh sách host mã/gói ở trên: chỉ những host đã chốt cho luồng tải tệp.
+ * Áp cả khi nạp config và trước khi đưa URL cho trình quản lý tải của hệ thống.
+ */
+val ALLOWED_DIRECT_URL_HOSTS: Set<String> = setOf(
+    "pixeldrain.com",
+)
+
+/** [host] đã hạ chữ thường trước khi truyền vào. */
+internal fun isAllowedDirectUrlHost(host: String): Boolean = host in ALLOWED_DIRECT_URL_HOSTS
+
+/**
  * Ánh xạ 1-1 với config/monika-config.json.
  * Thêm trường mới: luôn cho giá trị mặc định để file cấu hình cũ vẫn đọc được.
  */
@@ -362,6 +395,11 @@ data class DownloadHost(
     val mode: String,
     val pattern: String? = null,
     val directUrl: String? = null,
+    /**
+     * V193 G2: chỉ tự tải thẳng khi host đã được duyệt. Mặc định false — Pixeldrain chỉ tải khi
+     * người dùng chủ động dán link + xác nhận cảnh báo.
+     */
+    val autoDirect: Boolean = false,
 )
 
 /**

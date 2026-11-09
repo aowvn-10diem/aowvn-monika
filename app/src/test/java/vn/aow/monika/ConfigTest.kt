@@ -178,9 +178,30 @@ class ConfigTest {
         assertEquals("kirikiri", cfg.system("kirikiri")?.engine)
     }
 
+    @Test fun pspPinsBothArmsToVerifiedPublishedArchives() {
+        val core = cfg.cores.getValue("ppsspp")
+        val tag = "cores-ppsspp-1"
+        val root = "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/$tag"
+        val hashes = mapOf(
+            "arm64-v8a" to "336f6bfe825950dc1eff5d503cc89cb7d0963a671ca362496c4d9550675b4119",
+            "armeabi-v7a" to "194c8b3cc8b6b35d8750dff46c8ac6262fa21d5a8837a3d87be53b43014400da",
+        )
+        assertEquals(tag, core.version)
+        assertEquals("$root/ppsspp-{abi}.zip", core.url)
+        assertEquals(hashes.keys, core.artifacts.keys)
+        assertEquals(hashes.keys, core.abis.toSet())
+        hashes.forEach { (abi, hash) ->
+            val artifact = core.artifacts.getValue(abi)
+            assertEquals("$root/ppsspp-$abi.zip", artifact.url)
+            assertEquals(hash, artifact.sha256)
+            assertEquals(tag, artifact.version)
+        }
+        assertEquals(1, cfg.app.minVersionCode)
+    }
+
     @Test
     fun `rgss ghim goi cong khai va van giu Joiplay du phong`() {
-        assertEquals(60, cfg.configVersion)
+        assertEquals(62, cfg.configVersion)
         val module = cfg.modules["rgss"] ?: error("modules.rgss thiếu")
         assertEquals("engines-rgss-6", module.version)
         assertEquals("https://github.com/aowvn-10diem/aowvn-monika/releases/download/engines-rgss-6/rgss-arm64-v8a.zip", module.url)
@@ -198,7 +219,7 @@ class ConfigTest {
     fun `GBA tat color correction o mac dinh goc va moi style`() {
         val core = cfg.cores.getValue("mgba")
         val display = requireNotNull(core.display)
-        assertEquals(60, cfg.configVersion)
+        assertEquals(62, cfg.configVersion)
         assertEquals("OFF", core.options["mgba_color_correction"])
         assertEquals("lcd", display.default)
         assertTrue(display.styles.isNotEmpty())
@@ -229,7 +250,8 @@ class ConfigTest {
             <a href="https://www.aowvn.org/p/tai-trinh-gia-lap-gba.html">z</a>"""
         val links = LinkResolver.extract(html, cfg.downloadHosts)
         assertEquals(2, links.size)
-        assertEquals("https://pixeldrain.com/api/file/abc123?download", links[0].directUrl)
+        // V193 G2: bài viết không còn tự tải Pixeldrain; bấm sẽ mở trình duyệt.
+        assertNull(links[0].directUrl)
         assertNull(links[1].directUrl)
     }
 
@@ -237,7 +259,12 @@ class ConfigTest {
     fun `lay link pixeldrain dang thu muc va chu tren nut`() {
         val html = """<li><a class="download" href="https://pixeldrain.com/d/yd6J5KeC" rel="nofollow">TẢI VỀ</a></li>"""
         val link = LinkResolver.extract(html, cfg.downloadHosts).single()
-        assertEquals("https://pixeldrain.com/api/filesystem/yd6J5KeC?attach", link.directUrl)
+        // Tự động: không tải; thủ công sau cảnh báo: có link thẳng.
+        assertNull(link.directUrl)
+        assertEquals(
+            "https://pixeldrain.com/api/filesystem/yd6J5KeC?attach",
+            LinkResolver.resolve(link.pageUrl, cfg.downloadHosts, manual = true)?.directUrl,
+        )
         assertEquals("TẢI VỀ", link.label)
         assertTrue(LinkResolver.isBlogPage("https://www.aow.vn/p/tai-gia-lap-joiplay.html"))
         assertTrue(!LinkResolver.isBlogPage("https://www.aow.vn/2026/02/game.html"))

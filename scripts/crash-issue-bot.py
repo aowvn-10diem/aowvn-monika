@@ -27,6 +27,15 @@ def token(value):
     return value if isinstance(value, str) and re.fullmatch(r"[a-zA-Z0-9_.-]{1,60}", value) else "unknown"
 
 
+# Thành phần do app gán (pack:<tên>, engine:<lõi>, op:<thao tác>, app:<mục>, net, ra).
+# Chỉ nhận đúng dạng whitelist này; mọi chuỗi khác bị bỏ, không đưa vào issue.
+COMPONENT_RE = re.compile(r"(?:op|pack|engine|app|net|ra)(?::[A-Za-z0-9_.-]{1,40}){0,3}")
+
+
+def component(value):
+    return value if isinstance(value, str) and COMPONENT_RE.fullmatch(value) else ""
+
+
 def frames(report):
     text = str(report.get("detail", "")) + "\n" + "\n".join(report.get("log", []))
     result = []
@@ -63,8 +72,11 @@ def group_reports(records):
         count = report.get("count", 1)
         if type(count) is not int or not 1 <= count <= 1000000:
             raise ValueError("invalid report count")
-        group = groups.setdefault(signature, {"signature": signature, "core": core, "kind": kind, "seen": {}})
+        group = groups.setdefault(signature, {"signature": signature, "core": core, "kind": kind, "seen": {}, "components": set()})
         group["seen"][digest(row["id"])[:32]] = count
+        label = component(report.get("component", ""))
+        if label:
+            group["components"].add(label)
     return groups
 
 
@@ -111,8 +123,11 @@ def plan(records, issues, owners):
         seen = {k: seen[k] for k in old_keys + list(group["seen"])}
         saved = {"signature": signature, "count": state["count"] + delta, "seen": seen}
         role = "Sonnet" if any(x in group["core"].lower() for x in ("azahar", "kirikiri", "mkxp")) else "Sol"
+        labels = sorted(group["components"])
+        label = (f"`{labels[0]}`" + (f" (+{len(labels) - 1})" if len(labels) > 1 else "")) if labels else ""
         section = ("<!-- " + MARKER + json.dumps(saved, separators=(",", ":")) + " -->\n"
                    + f"Lõi: `{group['core']}` · Loại: `{group['kind']}` · Chữ ký: `{signature}`\n"
+                   + (f"Thành phần: {label}\n" if label else "")
                    + f"Số lần quan sát đã thông báo: {saved['count']} (+{delta}). Phụ trách: {role}.\n"
                    + "Phạm vi: tối đa 100 bản ghi mới nhất Worker trả về; không suy toàn bộ lịch sử. "
                    + "Chữ ký băm lõi + loại + tối đa 3 frame đầu; không chép stack, game, ảnh, URL hoặc thiết bị.\n")
