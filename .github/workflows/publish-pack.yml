@@ -18,34 +18,46 @@ permissions:
 
 jobs:
   publish:
-    if: github.repository == 'aowvn-10diem/aowvn-monika'
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     env:
       PACKS_REPO: aowvn-10diem/aowvn-monika-packs
+      PACK_NAME: ${{ inputs.name }}
+      PACK_TAG: ${{ inputs.tag }}
     steps:
       - uses: actions/checkout@v4
-      - name: Kiểm secret
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Kiểm secret và đầu vào
         env:
           T: ${{ secrets.PACKS_TOKEN }}
         run: |
+          set -euo pipefail
           if [ -z "$T" ]; then echo "::error::Thiếu secret PACKS_TOKEN"; exit 1; fi
-          ls -la "packs/${{ inputs.name }}"
+          [[ "$PACK_NAME" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "::error::Tên gói không hợp lệ"; exit 1; }
+          [[ "$PACK_TAG" =~ ^[A-Za-z0-9._-]+$ ]] && [[ "$PACK_TAG" != -* ]] || { echo "::error::Tag không hợp lệ"; exit 1; }
+          ls -la "packs/$PACK_NAME"
       - name: Đưa sang repo phụ
         env:
           GH_TOKEN: ${{ secrets.PACKS_TOKEN }}
         run: |
-          files=$(ls packs/${{ inputs.name }}/*.zip)
-          if gh release view "${{ inputs.tag }}" --repo "$PACKS_REPO" >/dev/null 2>&1; then
-            gh release upload "${{ inputs.tag }}" $files --repo "$PACKS_REPO" --clobber
+          set -euo pipefail
+          shopt -s nullglob
+          files=(packs/"$PACK_NAME"/*.zip)
+          [ "${#files[@]}" -gt 0 ] || { echo "::error::Không có tệp zip trong packs/$PACK_NAME"; exit 1; }
+          if gh release view "$PACK_TAG" --repo "$PACKS_REPO" >/dev/null 2>&1; then
+            gh release upload "$PACK_TAG" "${files[@]}" --repo "$PACKS_REPO" --clobber
           else
-            gh release create "${{ inputs.tag }}" $files --repo "$PACKS_REPO" --title "${{ inputs.tag }}" \
-              --notes "Gói thư viện native cho Aow Monika (${{ inputs.name }}). Nguồn: 7-Zip-JBinding-4Android (LGPL-2.1 + license 7-Zip), lấy nguyên bản từ AAR gốc."
+            gh release create "$PACK_TAG" "${files[@]}" --repo "$PACKS_REPO" --title "$PACK_TAG" \
+              --notes "Gói thư viện native cho Aow Monika ($PACK_NAME). Nguồn: 7-Zip-JBinding-4Android (LGPL-2.1 + license 7-Zip), lấy nguyên bản từ AAR gốc."
           fi
       - name: Kiểm tải thẳng không cần đăng nhập + SHA-256
         run: |
-          for f in packs/${{ inputs.name }}/*.zip; do
+          set -euo pipefail
+          for f in packs/"$PACK_NAME"/*.zip; do
             n=$(basename "$f")
-            url="https://github.com/$PACKS_REPO/releases/download/${{ inputs.tag }}/$n"
+            url="https://github.com/$PACKS_REPO/releases/download/$PACK_TAG/$n"
             code=$(curl -sSL -o dl.bin -w '%{http_code}' "$url")
             echo "HTTP $code — $url"
             [ "$code" = 200 ] || { echo "::error::Không tải được $url"; exit 1; }

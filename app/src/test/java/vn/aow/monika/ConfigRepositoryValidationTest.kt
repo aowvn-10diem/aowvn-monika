@@ -66,24 +66,24 @@ class ConfigRepositoryValidationTest {
     }
 
     @Test fun oldCacheWithoutExperimentalFlagFallsBackToBundledWarning() {
-        assertEquals(61, bundled)
+        assertEquals(62, bundled)
         cache.writeText(valid(38))
         val current = repo().current
-        assertEquals(61, current.configVersion)
+        assertEquals(62, current.configVersion)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
 
-    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled61() {
+    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled62() {
         cache.writeText("""{"configVersion":47,"saveTransfer":{"systems":{}}}""")
         val current = repo().current
-        assertEquals(61, current.configVersion)
+        assertEquals(62, current.configVersion)
         assertEquals(setOf("java", "nds", "gba", "3ds", "psp", "ps1"), current.saveTransfer.systems.keys)
     }
 
     @Test fun cache39FallsBackToBundledDocumentConfiguration() {
         cache.writeText("""{"configVersion":39,"documentExtensions":[]}""")
         val current = repo().current
-        assertEquals(61, current.configVersion)
+        assertEquals(62, current.configVersion)
         assertEquals(listOf("pdf", "doc", "docx", "txt", "epub"), current.documentExtensions)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
@@ -91,7 +91,7 @@ class ConfigRepositoryValidationTest {
     @Test fun cache55WithStable088FallsBackToBundledTrial0810() {
         cache.writeText("""{"configVersion":55,"app":{"latestVersionCode":53,"latestVersionName":"0.8.8","minVersionCode":1,"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.8/AowVN-Monika-v0.8.8.apk"}}""")
         val current = repo().current
-        assertEquals(61, current.configVersion)
+        assertEquals(62, current.configVersion)
         assertEquals(55, current.app.latestVersionCode)
         assertEquals("0.8.10", current.app.latestVersionName)
         assertEquals(1, current.app.minVersionCode)
@@ -119,7 +119,7 @@ class ConfigRepositoryValidationTest {
             """"community":{"discord":"javascript:alert(1)"}""",
             """"adblock":{"lists":["http://example.test/list"]}""",
             """"webPlayers":{"x":{"script":"file:///private/script.js"}}""",
-            """"modules":{"x":{"version":"1","url":"https://example.test/{abi}.zip","sha256":"bad"}}""",
+            """"modules":{"x":{"version":"1","url":"https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/x/{abi}.zip","sha256":"bad"}}""",
             """"modules":{"x":{"version":"1","sha256ByAbi":{"arm64-v8a":"${"g".repeat(64)}"}}}""",
             """"systems":[{"id":"x","name":"X","runner":"unknown"}]""",
             """"feed":{"url":42}"""
@@ -191,10 +191,128 @@ class ConfigRepositoryValidationTest {
     }
 
     @Test fun httpsTemplatesAndUppercaseHashesAreAcceptedAndOldOptionalFieldsStayOptional() {
-        val c = ConfigValidation.parse("""{"configVersion":1,"modules":{"x":{"version":"1","url":"https://example.test/{abi}.zip","sha256":"${"AB".repeat(32)}"}},"systems":[{"id":"x","name":"X","runner":"j2me"}]}""", 1)
+        val c = ConfigValidation.parse("""{"configVersion":1,"modules":{"x":{"version":"1","url":"https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/x/{abi}.zip","sha256":"${"AB".repeat(32)}"}},"systems":[{"id":"x","name":"X","runner":"j2me"}]}""", 1)
         assertEquals(1, c.configVersion)
         assertEquals(0, ConfigValidation.parse("{}", 0).configVersion)
-        ConfigValidation.parse("""{"downloadHosts":[{"name":"x","host":"x.test","mode":"direct","pattern":"^https?://x[.]test/(.+)","directUrl":"https://x.test/$1"}]}""", 0)
+        ConfigValidation.parse("""{"downloadHosts":[{"name":"x","host":"pixeldrain.com","mode":"direct","pattern":"^https?://pixeldrain[.]com/(.+)","directUrl":"https://pixeldrain.com/$1"}]}""", 0)
         ConfigValidation.parse(app.assets.open(ConfigRepository.ASSET_NAME).bufferedReader().use { it.readText() }, 0)
+    }
+
+    // ---- V196: chỉ nhận URL tải từ host cho phép (chống config bị đầu độc) ----
+
+    @Test fun downloadUrlOutsideAllowedHostsIsRejectedAndNeverRequested() = runBlocking {
+        val requested = mutableListOf<String>()
+        val r = ConfigRepository(app, OkHttpClient.Builder().addInterceptor { chain ->
+            requested += chain.request().url.host
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body(ResponseBody.create(null, reply)).build()
+        }.build())
+        val version = bundled + 10
+        val payloads = listOf(
+            """"cores":{"x":{"version":"1","url":"https://evil.example/core.zip"}}""",
+            """"cores":{"x":{"version":"1","systemFiles":"https://evil.example/system.zip"}}""",
+            """"cores":{"x":{"version":"1","artifacts":{"arm64-v8a":{"url":"https://evil.example/{abi}.zip","sha256":"${"a".repeat(64)}"}}}}""",
+            """"modules":{"x":{"version":"1","url":"https://evil.example/{abi}.zip","sha256":"${"a".repeat(64)}"}}""",
+            """"app":{"apkUrl":"https://evil.example/app.apk"}""",
+            """"webPlayers":{"x":{"script":"https://evil.example/player.js"}}""",
+        )
+        for (payload in payloads) {
+            reply = """{"configVersion":${version + 1},$payload}"""
+            assertTrue(payload, r.refresh(true).isFailure)
+            assertFalse("không ghi config lạ vào cache", cache.exists())
+            assertEquals(bundled, r.current.configVersion)
+        }
+        assertTrue(requested.isNotEmpty())
+        assertTrue("không có request nào tới host lạ: $requested", requested.none { it == "evil.example" })
+        assertFalse(r.remoteApplied.value)
+    }
+
+    @Test fun httpDownloadUrlIsRejectedEvenOnAllowedHost() = runBlocking {
+        val r = repo()
+        val version = bundled + 11
+        reply = """{"configVersion":$version,"cores":{"x":{"version":"1","url":"http://github.com/aowvn-10diem/x.zip"}}}"""
+        assertTrue(r.refresh(true).isFailure)
+        assertFalse(cache.exists())
+        assertEquals(bundled, r.current.configVersion)
+    }
+
+    @Test fun allowedHostsAreAcceptedAndApplied() = runBlocking {
+        val r = repo()
+        val version = bundled + 12
+        reply = """{"configVersion":$version,
+            "cores":{"x":{"version":"1","url":"https://buildbot.libretro.com/nightly/android/latest/{abi}/x_libretro_android.so.zip"}},
+            "modules":{"y":{"version":"1","url":"https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/e/y.zip","sha256":"${"b".repeat(64)}"},
+                       "z":{"version":"1","url":"https://release-assets.githubusercontent.com/github-production-release-asset/1/z.zip","sha256":"${"c".repeat(64)}"}},
+            "app":{"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0/x.apk"}}"""
+        assertTrue(r.refresh(true).isSuccess)
+        assertEquals(version, r.current.configVersion)
+        assertTrue(cache.exists())
+        assertTrue(r.remoteApplied.value)
+    }
+
+    @Test fun cachedConfigWithForeignDownloadHostFallsBackToBundled() {
+        cache.writeText("""{"configVersion":${bundled + 50},"cores":{"x":{"version":"1","url":"https://evil.example/core.zip"}}}""")
+        val r = repo()
+        assertEquals(bundled, r.current.configVersion)
+        assertFalse(r.remoteApplied.value)
+    }
+
+    // ---- V196b: URL tệp trong downloadHosts[].directUrl ----
+
+    @Test fun directUrlHttpOrForeignHostIsRejected() {
+        val httpUrl = """{"downloadHosts":[{"name":"X","host":"pixeldrain.com","mode":"direct","pattern":"^https?://pixeldrain[.]com/(.+)","directUrl":"http://pixeldrain.com/api/file/$1"}]}"""
+        val foreign = """{"downloadHosts":[{"name":"X","host":"pixeldrain.com","mode":"direct","pattern":"^https?://pixeldrain[.]com/(.+)","directUrl":"https://evil.example/api/file/$1"}]}"""
+        for (json in listOf(httpUrl, foreign)) {
+            val error = runCatching { ConfigValidation.parse(json, 0) }.exceptionOrNull()
+            assertTrue("phải bị từ chối: $json -> $error", error is IllegalArgumentException)
+        }
+    }
+
+    @Test fun directUrlAllowedHostIsAccepted() {
+        val json = """{"downloadHosts":[{"name":"X","host":"pixeldrain.com","mode":"direct","pattern":"^https?://pixeldrain[.]com/(.+)","directUrl":"https://pixeldrain.com/api/file/$1"}]}"""
+        assertEquals(
+            "https://pixeldrain.com/api/file/$1",
+            ConfigValidation.parse(json, 0).downloadHosts.single().directUrl,
+        )
+    }
+
+    @Test fun cachedConfigWithForeignDirectUrlFallsBackToBundled() {
+        cache.writeText(
+            """{"configVersion":${bundled + 60},"downloadHosts":[{"name":"X","host":"pixeldrain.com","mode":"direct","pattern":"^https?://pixeldrain[.]com/(.+)","directUrl":"https://evil.example/api/file/$1"}]}"""
+        )
+        val r = repo()
+        assertEquals(bundled, r.current.configVersion)
+        assertFalse(r.remoteApplied.value)
+    }
+
+    // ---- V196: link tải/mời cài của app ngoài và plugin cũng phải qua allowlist ----
+
+    @Test fun downloadUrlCuaAppNgoaiVaPluginPhaiThuocAllowlist() {
+        val evilApp = """{"externalApps":[{"id":"x","name":"X","downloadUrl":"https://evil.example/tai.html"}]}"""
+        val evilPlugin = """{"externalApps":[{"id":"x","name":"X","plugins":[{"name":"P","downloadUrl":"https://evil.example/p.html"}]}]}"""
+        val httpApp = """{"externalApps":[{"id":"x","name":"X","downloadUrl":"http://www.aow.vn/p/tai.html"}]}"""
+        for (json in listOf(evilApp, evilPlugin, httpApp)) {
+            val error = runCatching { ConfigValidation.parse(json, 0) }.exceptionOrNull()
+            assertTrue("phải bị từ chối: $json -> $error", error is IllegalArgumentException)
+        }
+
+        val emptyOk = """{"externalApps":[{"id":"x","name":"X","downloadUrl":"","plugins":[{"name":"P","downloadUrl":""}]}]}"""
+        val accepted = ConfigValidation.parse(emptyOk, 0)
+        assertEquals("", accepted.externalApps.single().downloadUrl)
+        assertEquals("", accepted.externalApps.single().plugins.single().downloadUrl)
+
+        val aowOk = """{"externalApps":[{"id":"x","name":"X","downloadUrl":"https://www.aow.vn/p/tai.html","plugins":[{"name":"P","downloadUrl":"https://aow.vn/p/p.html"}]}]}"""
+        val ok = ConfigValidation.parse(aowOk, 0)
+        assertEquals("https://www.aow.vn/p/tai.html", ok.externalApps.single().downloadUrl)
+        assertEquals("https://aow.vn/p/p.html", ok.externalApps.single().plugins.single().downloadUrl)
+    }
+
+    @Test fun cacheCoDownloadUrlLaThiDungBanDongGoi() {
+        cache.writeText(
+            """{"configVersion":${bundled + 70},"externalApps":[{"id":"x","name":"X","downloadUrl":"https://evil.example/tai.html"}]}"""
+        )
+        val r = repo()
+        assertEquals(bundled, r.current.configVersion)
+        assertFalse(r.remoteApplied.value)
     }
 }

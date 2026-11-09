@@ -46,7 +46,7 @@ class ConfigUpdateTest {
     private fun payload(version: Int, withCore: Boolean = true): String {
         val systems =
             """"systems":[{"id":"v132","name":"V132","runner":"libretro","extensions":["v132rom"]}]"""
-        val cores = if (withCore) ""","cores":{"v132core":{"version":"1","url":"https://example.test/v132core.zip"}}""" else ""
+        val cores = if (withCore) ""","cores":{"v132core":{"version":"1","url":"https://buildbot.libretro.com/nightly/android/latest/{abi}/v132core.zip"}}""" else ""
         return """{"configVersion":$version,$systems$cores}"""
     }
 

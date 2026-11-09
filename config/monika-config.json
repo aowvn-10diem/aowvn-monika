@@ -1,6 +1,6 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 61,
+  "configVersion": 62,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
     "latestVersionCode": 55,
@@ -955,8 +955,8 @@
       }
     },
     "ppsspp": {
-      "version": "1",
-      "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/ppsspp_libretro_android.so.zip",
+      "version": "cores-ppsspp-1",
+      "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-ppsspp-1/ppsspp-{abi}.zip",
       "systemFiles": "https://buildbot.libretro.com/assets/system/PPSSPP.zip",
       "lowLatencyAudio": false,
       "perf": {
@@ -966,7 +966,23 @@
         "full": {
           "ppsspp_internal_resolution": "960x544"
         }
-      }
+      },
+      "artifacts": {
+        "arm64-v8a": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-ppsspp-1/ppsspp-arm64-v8a.zip",
+          "sha256": "336f6bfe825950dc1eff5d503cc89cb7d0963a671ca362496c4d9550675b4119",
+          "version": "cores-ppsspp-1"
+        },
+        "armeabi-v7a": {
+          "url": "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/cores-ppsspp-1/ppsspp-armeabi-v7a.zip",
+          "sha256": "194c8b3cc8b6b35d8750dff46c8ac6262fa21d5a8837a3d87be53b43014400da",
+          "version": "cores-ppsspp-1"
+        }
+      },
+      "abis": [
+        "arm64-v8a",
+        "armeabi-v7a"
+      ]
     },
     "easyrpg": {
       "version": "1",

@@ -58,15 +58,15 @@ jobs:
       - name: Unit trên config chuẩn
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
-          sudo apt-get install -y python3-pil
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3-pil p7zip-full
           python3 scripts/test-rgss-real-verdict.py
           ./gradlew testDebugUnitTest --console=plain
-          command -v 7z >/dev/null || sudo apt-get install -y p7zip-full
       - name: Chuẩn bị đúng ba nguồn G2 trong CI
         env:
           RGSS_TAG: ${{ inputs.rgss_tag || 'engines-rgss-7' }}
         run: python3 scripts/ci-rgss-real.py --scratch "$RUNNER_TEMP/v25" --report out/r6 --rgss-tag "$RGSS_TAG" --pack-file "$RUNNER_TEMP/v25-engine/rgss.zip"
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1
         with: {ruby-version: '3.1'} # Cùng minor Ruby trong mkxp-z; không chạy script game.
       - name: V44 hình dạng cú pháp VX (không ghi nội dung game)
         id: vx_shape
@@ -123,7 +123,7 @@ jobs:
         run: |
           curl -fsSL https://get.maestro.mobile.dev | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
-      - uses: reactivecircus/android-emulator-runner@v2
+      - uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
           api-level: 34
           arch: x86_64

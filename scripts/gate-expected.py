@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+"""V200: cho danh sách tệp đổi của một PR (mỗi dòng một đường dẫn, đọc từ stdin),
+in các workflow bắt buộc phải xanh, mỗi dòng `đường-dẫn<TAB>tên`. Không in gì = PR chỉ sửa tài liệu.
+
+Phản chiếu bộ lọc đường dẫn thật của workflow. Đổi bộ lọc ở workflow nào thì phải đổi ở đây:
+  - Build:        build.yml     pull_request paths-ignore ["docs/**", "**/*.md"]
+  - Coverage:     coverage.yml  pull_request paths-ignore ["docs/**", "**/*.md"]
+  - CodeQL (V41): codeql.yml    pull_request paths [app/**, cloudflare/**, scripts/**,
+                  .github/workflows/**, .github/codeql-config.yml, gradle/libs.versions.toml]
+Quy tắc GitHub: workflow có paths-ignore chỉ bị bỏ qua khi MỌI tệp đổi đều khớp mẫu bỏ qua;
+workflow có paths chỉ chạy khi có ÍT NHẤT một tệp khớp.
+"""
+import json
+import sys
+
+BUILD_NAMES = ("Build", "Coverage")
+CODEQL_NAME = "CodeQL (V41)"
+# gate đối chiếu lượt chạy theo ĐƯỜNG DẪN workflow (không đụng tên hiển thị với workflow khác), tên chỉ để in log.
+WORKFLOW_PATH = {
+    "Build": ".github/workflows/build.yml",
+    "Coverage": ".github/workflows/coverage.yml",
+    CODEQL_NAME: ".github/workflows/codeql.yml",
+}
+CODEQL_PREFIXES = ("app/", "cloudflare/", "scripts/", ".github/workflows/")
+CODEQL_FILES = (".github/codeql-config.yml", "gradle/libs.versions.toml")
+
+
+def is_doc(path: str) -> bool:
+    return path.startswith("docs/") or path.endswith(".md")
+
+
+def expected(paths):
+    paths = [p.strip() for p in paths if p.strip()]
+    out = []
+    if any(not is_doc(p) for p in paths):
+        out.extend(BUILD_NAMES)
+    if any(p.startswith(CODEQL_PREFIXES) or p in CODEQL_FILES for p in paths):
+        out.append(CODEQL_NAME)
+    return out
+
+
+def parse_json_lines(lines):
+    """Mỗi dòng là một chuỗi JSON (gh --jq '... | @json'): giữ nguyên tên tệp có ký tự lạ."""
+    return [json.loads(line) for line in lines if line.strip()]
+
+
+if __name__ == "__main__":
+    data = sys.stdin.read().splitlines()
+    names = parse_json_lines(data) if "--json" in sys.argv[1:] else data
+    for name in expected(names):
+        print(WORKFLOW_PATH[name] + "\t" + name)

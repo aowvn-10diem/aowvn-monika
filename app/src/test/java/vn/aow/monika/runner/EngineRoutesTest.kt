@@ -48,7 +48,7 @@ class EngineRoutesTest {
         File(app.filesDir, ConfigRepository.ASSET_NAME).delete()
     }
 
-    private fun pack(id: String, abis: String = "\"arm64-v8a\"", url: String = "https://example.test/$id.zip") =
+    private fun pack(id: String, abis: String = "\"arm64-v8a\"", url: String = "https://buildbot.libretro.com/$id.zip") =
         """"$id":{"version":"1","url":"$url","abis":[$abis]}"""
 
     /** Máy giả với ABI [abi] ("arm64" hoặc "arm" = thư mục thư viện native) và các gói [modules] trong config. */
