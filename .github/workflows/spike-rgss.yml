@@ -21,18 +21,24 @@ jobs:
   spike:
     runs-on: ubuntu-22.04
     timeout-minutes: 240
+    env:
+      TARGET_REF: ${{ inputs.ref }}
+      TARGET_ABI: ${{ inputs.abi }}
     steps:
       - name: Lấy mã nguồn
         run: |
+          set -euo pipefail
+          [[ "$TARGET_REF" =~ ^[A-Za-z0-9._/-]+$ ]] && [[ "$TARGET_REF" != -* ]] || { echo "::error::Ref không hợp lệ"; exit 1; }
+          [[ "$TARGET_ABI" == "arm64-v8a" || "$TARGET_ABI" == "armeabi-v7a" ]] || { echo "::error::ABI không hợp lệ"; exit 1; }
           git clone https://github.com/BookerRues9/mkxp-z-android-reworked.git src
           cd src
-          if [ "${{ inputs.ref }}" != HEAD ]; then git checkout "${{ inputs.ref }}"; fi
+          if [ "$TARGET_REF" != HEAD ]; then git checkout "$TARGET_REF"; fi
           git log -1 --format='%h %ad %s'
 
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: 11 }
 
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1
         with: { ruby-version: "3.1" }
 
       - name: Cài NDK 23.2.8568313
@@ -56,16 +62,16 @@ jobs:
           sed -i 's/-O0/-O2/g' Makefile
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/23.2.8568313" ARCH=linux-x86_64
           export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$ARCH/bin:$PATH"
-          if [ "${{ inputs.abi }}" = arm64-v8a ]; then H=aarch64-linux-android; T=aarch64-linux-android; else H=armv7a-linux-androideabi; T=arm-linux-androideabi; fi
-          HOST=$H TARGET=$T ABI=${{ inputs.abi }} make -j"$(nproc)" 2>&1 | tee ../../../make.log | tail -40
+          if [ "$TARGET_ABI" = arm64-v8a ]; then H=aarch64-linux-android; T=aarch64-linux-android; else H=armv7a-linux-androideabi; T=arm-linux-androideabi; fi
+          HOST=$H TARGET=$T ABI="$TARGET_ABI" make -j"$(nproc)" 2>&1 | tee ../../../make.log | tail -40
 
       - name: Gradle assembleRelease (ndk-build, tối ưu)
         working-directory: src
         run: |
           set -o pipefail
           (cd app/jni/mkxp-z && sh make_xxd.sh | tail -3)   # nhúng icon/phông/shader thành *.xxd (bước README bỏ sót)
-          sed -i 's/APP_OPTIM := debug/APP_OPTIM := release/; s/^APP_ABI := .*/APP_ABI := ${{ inputs.abi }}/' app/jni/Application.mk
-          sed -i "s/include 'arm64-v8a', 'armeabi-v7a'/include '${{ inputs.abi }}'/" app/build.gradle
+          sed -i "s/APP_OPTIM := debug/APP_OPTIM := release/; s/^APP_ABI := .*/APP_ABI := $TARGET_ABI/" app/jni/Application.mk
+          sed -i "s/include 'arm64-v8a', 'armeabi-v7a'/include '$TARGET_ABI'/" app/build.gradle
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/23.2.8568313"
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease 2>&1 | tee ../gradle.log | tail -40
@@ -74,9 +80,9 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Kết quả spike RGSS (${{ inputs.abi }})"
+            echo "## Kết quả spike RGSS ($TARGET_ABI)"
             echo '```'
-            find src -name '*.so' -path '*${{ inputs.abi }}*' \( -path '*/build/*' -o -path '*/libs/*' -o -path '*/obj/*' \) -exec ls -l {} \; 2>/dev/null | awk '{print $5, $9}' | sort -u | head -40
+            find src -name '*.so' -path "*$TARGET_ABI*" \( -path '*/build/*' -o -path '*/libs/*' -o -path '*/obj/*' \) -exec ls -l {} \; 2>/dev/null | awk '{print $5, $9}' | sort -u | head -40
             find src/app/build -name '*.apk' -exec ls -l {} \; 2>/dev/null | awk '{print $5, $9}'
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"

@@ -4,11 +4,16 @@ name: Native check (biên dịch nhanh :libretrodroid)
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   native:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@v6
         with:
           distribution: temurin

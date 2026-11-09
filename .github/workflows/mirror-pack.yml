@@ -18,26 +18,35 @@ permissions:
 
 jobs:
   mirror:
-    if: github.repository == 'aowvn-10diem/aowvn-monika'
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     env:
       PACKS_REPO: aowvn-10diem/aowvn-monika-packs
+      INPUT_TAG: ${{ inputs.tag }}
+      INPUT_ASSET: ${{ inputs.asset }}
+      GH_REPO_SELF: ${{ github.repository }}
     steps:
-      - name: Kiểm secret
+      - name: Kiểm secret và đầu vào
         env:
           T: ${{ secrets.PACKS_TOKEN }}
         run: |
+          set -euo pipefail
           if [ -z "$T" ]; then echo "::error::Thiếu secret PACKS_TOKEN (Contents: read+write vào $PACKS_REPO)."; exit 1; fi
+          [[ "$INPUT_ASSET" =~ ^[A-Za-z0-9._-]+$ ]] && [[ "$INPUT_ASSET" != .* ]] || { echo "::error::Tên asset không hợp lệ"; exit 1; }
+          if [ -n "$INPUT_TAG" ]; then
+            [[ "$INPUT_TAG" =~ ^[A-Za-z0-9._-]+$ ]] && [[ "$INPUT_TAG" != -* ]] || { echo "::error::Tag không hợp lệ"; exit 1; }
+          fi
 
       - name: Lấy asset từ repo này
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="${{ inputs.tag }}"
-          if [ -z "$tag" ]; then tag=$(gh release list --repo "${{ github.repository }}" --limit 50 --json tagName --jq '[.[]|select(.tagName|startswith("engine-azahar-"))][0].tagName'); fi
-          [ -n "$tag" ] || { echo "::error::Không tìm thấy Release engine-azahar-*"; exit 1; }
+          set -euo pipefail
+          tag="$INPUT_TAG"
+          if [ -z "$tag" ]; then tag=$(gh release list --repo "$GH_REPO_SELF" --limit 50 --json tagName --jq '[.[]|select(.tagName|startswith("engine-azahar-"))][0].tagName'); fi
+          [ -n "$tag" ] && [[ "$tag" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::Không tìm thấy Release engine-azahar-*"; exit 1; }
           echo "TAG=$tag" >> "$GITHUB_ENV"
-          gh release download "$tag" --repo "${{ github.repository }}" --pattern "${{ inputs.asset }}" --output asset.bin
+          gh release download "$tag" --repo "$GH_REPO_SELF" --pattern "$INPUT_ASSET" --output asset.bin
           ls -la asset.bin
           sha256sum asset.bin | tee asset.sha256
 
@@ -45,18 +54,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PACKS_TOKEN }}
         run: |
+          set -euo pipefail
           sha=$(cut -d' ' -f1 asset.sha256)
-          cp asset.bin "${{ inputs.asset }}"
+          cp -- asset.bin "$INPUT_ASSET"
           if gh release view "$TAG" --repo "$PACKS_REPO" >/dev/null 2>&1; then
-            gh release upload "$TAG" "${{ inputs.asset }}" --repo "$PACKS_REPO" --clobber
+            gh release upload "$TAG" "$INPUT_ASSET" --repo "$PACKS_REPO" --clobber
           else
-            gh release create "$TAG" "${{ inputs.asset }}" --repo "$PACKS_REPO" --title "$TAG" \
+            gh release create "$TAG" "$INPUT_ASSET" --repo "$PACKS_REPO" --title "$TAG" \
               --notes "Gói engine cho Aow Monika. SHA-256: $sha. Mã nguồn: xem manifest.json trong gói (repo + commit)."
           fi
 
       - name: Kiểm tải thẳng không cần đăng nhập
         run: |
-          url="https://github.com/$PACKS_REPO/releases/download/$TAG/${{ inputs.asset }}"
+          set -euo pipefail
+          url="https://github.com/$PACKS_REPO/releases/download/$TAG/$INPUT_ASSET"
           code=$(curl -sSL -o dl.bin -w '%{http_code}' "$url")
           echo "HTTP $code — $url"
           [ "$code" = 200 ] || { echo "::error::Link không tải được công khai (repo phụ có Public không?)"; exit 1; }
