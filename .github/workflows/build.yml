@@ -34,7 +34,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
         with: {cache-provider: basic}
       - name: Cài NDK cho J2ME Loader
         run: bash scripts/ci-install-j2me-ndk.sh
@@ -60,6 +60,8 @@ jobs:
           retention-days: 2   # hạn mức lưu trữ Actions từng đầy (14 GB artifact) → giữ ngắn
       - name: Kiểm chính sách máy ảo (V71, không mạng/SDK)
         run: python3 scripts/test-ci-emulator-policy.py
+      - name: Cài PyYAML cho kiểm bảo mật workflow
+        run: python3 -m pip install --quiet --disable-pip-version-check pyyaml
       - name: Kiểm major action và bảo mật workflow (V50, A85)
         run: |
           python3 scripts/test-workflow-action-majors.py

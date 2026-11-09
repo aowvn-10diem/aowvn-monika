@@ -244,8 +244,8 @@ jobs:
 
 
   symbian-android:
-    # Spike riêng: không đi vào mặc định all vì các job cũ có bước publish.
-    if: ${{ inputs.only == 'symbian' }}
+    # Spike riêng: không đi vào mặc định "all" vì các job cũ có bước publish.
+    if: ${{ github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main' && inputs.only == 'symbian' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 300
     permissions:
@@ -268,7 +268,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
       - name: Cài công cụ đúng nguồn ghim
         run: |
           sudo apt-get update

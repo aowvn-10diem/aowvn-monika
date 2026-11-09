@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
-"""A85: kiểm tĩnh bảo mật toàn bộ workflow GitHub Actions (chỉ dùng thư viện chuẩn Python)."""
+"""A85: kiểm tĩnh bảo mật toàn bộ workflow GitHub Actions (cần PyYAML để kiểm cấu trúc)."""
 from pathlib import Path
 import re
+import sys
 import unittest
 
 try:
     import yaml  # type: ignore
-except ImportError:  # Windows / setup-python trần không cài PyYAML
-    yaml = None
+except ImportError:  # pragma: no cover - môi trường thiếu thư viện phải báo rõ, không bỏ qua âm thầm
+    sys.stderr.write(
+        "Thiếu PyYAML: script cần PyYAML để kiểm cấu trúc workflow.\n"
+        "Cài: python3 -m pip install pyyaml\n"
+    )
+    raise SystemExit(2)
 
 WORKFLOWS_DIR = Path(__file__).resolve().parents[1] / ".github/workflows"
+
+# Ngưỡng bền: không phải "số chính xác hiện tại" mà là sàn để phát hiện quét hụt cả thư mục.
+MIN_WORKFLOWS = 30
+
+# Hành động chính thức của GitHub / đường dẫn nội bộ được phép dùng tag major.
+# Mọi `uses:` khác BẮT BUỘC ghim SHA 40 ký tự (deny-by-default: action thêm sau này cũng bị phủ).
+FIRST_PARTY_PREFIXES = ("actions/", "github/", "./")
+SHA_PINNED = re.compile(r"^[^@\s]+@[0-9a-f]{40}$")
+
+# Input nhận lệnh/đoạn mã: nội suy dữ liệu không tin cậy vào đây cũng là chỗ chèn lệnh.
+RISKY_WITH_INPUTS = {"script", "command", "args", "cmd", "entrypoint", "shell", "run"}
 
 UNTRUSTED_RUN_EXPR = re.compile(
     r"\$\{\{\s*(?:"
@@ -17,13 +33,6 @@ UNTRUSTED_RUN_EXPR = re.compile(
     r"github\.event\.(?:inputs|comment|issue|pull_request\.title|pull_request\.body|pull_request\.head\.ref|head_commit\.message)|"
     r"github\.head_ref"
     r")"
-)
-
-THIRD_PARTY_PREFIXES = (
-    "softprops/",
-    "google-github-actions/",
-    "ruby/setup-ruby",
-    "reactivecircus/",
 )
 
 
@@ -76,6 +85,21 @@ def extract_run_blocks(text: str) -> list[tuple[int, str]]:
     return blocks
 
 
+def iter_steps(document) -> list[dict]:
+    """Mọi `steps:` trong workflow đã parse (bỏ qua job không có steps)."""
+    steps: list[dict] = []
+    jobs = (document or {}).get("jobs") or {}
+    if not isinstance(jobs, dict):
+        return steps
+    for job in jobs.values():
+        if not isinstance(job, dict):
+            continue
+        for step in job.get("steps") or []:
+            if isinstance(step, dict):
+                steps.append(step)
+    return steps
+
+
 def has_explicit_permissions(text: str) -> bool:
     if re.search(r"^permissions\s*:", text, re.MULTILINE):
         return True
@@ -100,15 +124,18 @@ def has_explicit_permissions(text: str) -> bool:
 class WorkflowSecurityTest(unittest.TestCase):
     def iter_workflows(self):
         files = sorted(WORKFLOWS_DIR.glob("*.yml"))
-        self.assertGreaterEqual(len(files), 40)
+        self.assertGreaterEqual(
+            len(files), MIN_WORKFLOWS,
+            f"chỉ thấy {len(files)} workflow (sàn {MIN_WORKFLOWS}) — kiểm lại thư mục quét",
+        )
         for path in files:
             text = path.read_text(encoding="utf-8")
-            if yaml is not None:
-                yaml.safe_load(text)
-            yield path, text
+            document = yaml.safe_load(text)
+            self.assertIsInstance(document, dict, f"{path.name}: YAML phải là object")
+            yield path, text, document
 
     def test_no_dangerous_pull_request_target_or_workflow_run(self):
-        for path, text in self.iter_workflows():
+        for path, text, _ in self.iter_workflows():
             self.assertIsNone(
                 re.search(r"^\s*pull_request_target\s*:", text, re.MULTILINE),
                 f"{path.name}: cấm pull_request_target",
@@ -119,14 +146,14 @@ class WorkflowSecurityTest(unittest.TestCase):
             )
 
     def test_every_workflow_declares_explicit_permissions(self):
-        for path, text in self.iter_workflows():
+        for path, text, _ in self.iter_workflows():
             self.assertTrue(
                 has_explicit_permissions(text),
                 f"{path.name}: thiếu khai báo permissions tường minh",
             )
 
     def test_no_untrusted_expressions_interpolated_in_run_blocks(self):
-        for path, text in self.iter_workflows():
+        for path, text, _ in self.iter_workflows():
             for line_no, script in extract_run_blocks(text):
                 match = UNTRUSTED_RUN_EXPR.search(script)
                 self.assertIsNone(
@@ -134,17 +161,42 @@ class WorkflowSecurityTest(unittest.TestCase):
                     f"{path.name}:L{line_no} nội suy đầu vào trực tiếp vào run: {match.group(0) if match else ''}",
                 )
 
+    def test_no_untrusted_expressions_in_script_or_with_inputs(self):
+        for path, _text, document in self.iter_workflows():
+            for step in iter_steps(document):
+                where = step.get("uses") or step.get("name") or "step"
+                script = step.get("script")
+                if isinstance(script, str):
+                    match = UNTRUSTED_RUN_EXPR.search(script)
+                    self.assertIsNone(
+                        match,
+                        f"{path.name}: nội suy đầu vào trực tiếp vào script của {where}: {match.group(0) if match else ''}",
+                    )
+                with_ = step.get("with")
+                if not isinstance(with_, dict):
+                    continue
+                for key, value in with_.items():
+                    if key not in RISKY_WITH_INPUTS or not isinstance(value, str):
+                        continue
+                    match = UNTRUSTED_RUN_EXPR.search(value)
+                    self.assertIsNone(
+                        match,
+                        f"{path.name}: nội suy đầu vào trực tiếp vào with.{key} của {where}: {match.group(0) if match else ''}",
+                    )
+
     def test_third_party_actions_are_pinned_to_40_char_sha(self):
+        """Deny-by-default: mọi `uses:` ngoài actions/, github/, ./ phải ghim SHA 40 ký tự."""
         uses_re = re.compile(r"^\s*(?:-\s+)?uses:\s*['\"]?([^\s#'\"]+)", re.MULTILINE)
-        for path, text in self.iter_workflows():
+        for path, text, _ in self.iter_workflows():
             for m in uses_re.finditer(text):
                 uses = m.group(1)
-                if uses.startswith(THIRD_PARTY_PREFIXES):
-                    self.assertRegex(
-                        uses,
-                        r"^[^@]+@[0-9a-f]{40}$",
-                        f"{path.name}: action bên thứ ba chưa ghim SHA 40 ký tự: {uses}",
-                    )
+                if uses.startswith(FIRST_PARTY_PREFIXES):
+                    continue
+                self.assertRegex(
+                    uses,
+                    SHA_PINNED.pattern,
+                    f"{path.name}: action ngoài actions/github/./ chưa ghim SHA 40 ký tự: {uses}",
+                )
 
     def test_detector_catches_synthetic_violations(self):
         bad_run = "jobs:\n  x:\n    steps:\n      - run: |\n          echo ${{ inputs.tag }}\n"
@@ -153,6 +205,30 @@ class WorkflowSecurityTest(unittest.TestCase):
         self.assertIsNotNone(UNTRUSTED_RUN_EXPR.search(blocks[0][1]))
         self.assertFalse(has_explicit_permissions("on: push\njobs:\n  a:\n    runs-on: ubuntu-latest\n"))
         self.assertTrue(has_explicit_permissions("on: push\npermissions: {}\njobs:\n  a:\n    runs-on: ubuntu-latest\n"))
+
+        sha = "a" * 40
+        self.assertIsNone(SHA_PINNED.search("foo/bar@v1"))
+        self.assertIsNone(SHA_PINNED.search("gradle/actions/setup-gradle@v6"))
+        self.assertIsNotNone(SHA_PINNED.search(f"foo/bar@{sha}"))
+        self.assertTrue("actions/checkout@v4".startswith(FIRST_PARTY_PREFIXES))
+
+        doc = yaml.safe_load(
+            "jobs:\n  x:\n    steps:\n"
+            "      - uses: actions/github-script@v9\n"
+            "        with:\n"
+            "          script: |\n"
+            "            console.log('${{ inputs.tag }}')\n"
+            "      - uses: foo/bar@" + sha + "\n"
+            "        with:\n"
+            "          args: ${{ github.head_ref }}\n"
+        )
+        found = 0
+        for step in iter_steps(doc):
+            with_ = step.get("with") or {}
+            for key, value in with_.items():
+                if key in RISKY_WITH_INPUTS and isinstance(value, str) and UNTRUSTED_RUN_EXPR.search(value):
+                    found += 1
+        self.assertEqual(found, 2, "phải bắt được cả script: và with.args")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 package vn.aow.monika.config
 
 import kotlinx.serialization.Serializable
+import vn.aow.monika.BuildConfig
 
 /**
  * Host được phép cho URL **tải mã/gói** trong config từ xa (lõi, module/engine, apk cập nhật,
@@ -18,7 +19,10 @@ val ALLOWED_DOWNLOAD_HOSTS: Set<String> = setOf(
     "monika.aow.vn",                    // CDN/trang chính thức
     "aow.vn",                           // link mời cài app/plugin (externalApps, plugins)
     "www.aow.vn",
-)
+) + BuildConfig.EXTRA_DOWNLOAD_HOSTS
+    .split(',', ';')
+    .map { it.trim().lowercase() }
+    .filter { it.isNotEmpty() }
 
 /** [host] đã hạ chữ thường trước khi truyền vào. */
 internal fun isAllowedDownloadHost(host: String): Boolean = host in ALLOWED_DOWNLOAD_HOSTS
