@@ -31,7 +31,7 @@ jobs:
       INPUT_REF: ${{ inputs.ref }}
       INPUT_VARIANT: ${{ inputs.variant }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: self
           persist-credentials: false
