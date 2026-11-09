@@ -87,7 +87,9 @@ internal fun libraryFileEntries(
         // Game đã bị dọn bộ đệm (chỉ còn thông tin bài viết) không còn tệp nào để liệt kê.
         if (!game.dir.exists()) continue
         entries += LibraryFileEntry(
-            key = "game:$dir",
+            // V207: game quét ngoài máy có thể dùng chung một thư mục (vd. Download);
+            // khoá theo `game.key` (đường dẫn tệp chạy) để LazyColumn không trùng khoá.
+            key = "game:${game.key}",
             name = game.name,
             kind = LibraryFileKind.GAME,
             // Game quét trong máy: chỉ tính đúng tệp chạy, không tính cả thư mục Download.
@@ -108,9 +110,10 @@ internal fun libraryFileEntries(
             document = document,
         )
     }
-    return entries.sortedWith(
-        compareByDescending<LibraryFileEntry> { it.addedAt }.thenBy { it.name.lowercase(Locale.ROOT) },
-    )
+    return entries
+        .sortedWith(compareByDescending<LibraryFileEntry> { it.addedAt }.thenBy { it.name.lowercase(Locale.ROOT) })
+        // Chốt chặn cuối: khoá LazyColumn phải duy nhất kể cả khi kho có bản ghi trùng.
+        .distinctBy { it.key }
 }
 
 /** Dung lượng tệp (thư mục: cộng dồn bên trong). Tệp không đọc được tính 0, không làm hỏng mục Tệp. */
