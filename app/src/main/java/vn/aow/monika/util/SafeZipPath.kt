@@ -52,6 +52,8 @@ object SafeZipPath {
     fun sanitizeSingleFileName(raw: String): String? {
         var name = raw.replace('\\', '/').substringAfterLast('/')
         name = name.filterNot { it.code < 0x20 || it.code == 0x7F }
+        // Ký tự hệ tệp không hợp lệ (Windows/SAF) đổi thành "_" như hành vi cũ, giữ tên dễ đọc.
+        name = name.replace(Regex("""[:*?"<>|]"""), "_")
         name = name.trim().trimEnd('.', ' ')
         if (name.isEmpty() || name == "." || name == "..") return null
         if (!isSafeName(name)) return null
