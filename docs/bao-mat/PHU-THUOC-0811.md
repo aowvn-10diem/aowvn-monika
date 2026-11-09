@@ -43,7 +43,7 @@ Không vào APK. Vá được thì vá; không vá được thì đóng bằng l
 | `io.netty:netty-codec-http2` | 4.1.93.Final | 9 | HIGH 5, MODERATE 4 | classpath (`grpc-netty` của AGP) |
 | `org.bitbucket.b_c:jose4j` | 0.9.5 | 1 | HIGH 1 | classpath (AGP) |
 | `org.jdom:jdom2` | 2.0.6 | 1 | HIGH 1 | classpath (AGP) |
-| `org.xerial:sqlite-jdbc` | 3.36.0 | 1 | HIGH 1 | test (Robolectric) |
+| `org.xerial:sqlite-jdbc` | 3.36.0 | 1 | HIGH 1 | classpath plugin (SBOM: `androidx.room:room-compiler` 2.5.2) |
 | `io.netty:netty-common` | 4.1.93.Final | 2 | MODERATE 2 | classpath (`grpc-netty` của AGP) |
 | `junit:junit` | 4.12 | 1 | MODERATE 1 | APK — `:j2me` → `pngj:2.2.3` |
 | `org.apache.commons:commons-compress` | 1.21 | 2 | MODERATE 2 | classpath (AGP) |
@@ -80,7 +80,7 @@ Không vào APK. Vá được thì vá; không vá được thì đóng bằng l
 | `io.netty:netty-handler` | 4.1.93.Final | GHSA-x4gw-5cx5-pgmh | HIGH | 4.2.15.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `org.bitbucket.b_c:jose4j` | 0.9.5 | GHSA-3677-xxcr-wjqv | HIGH | 0.9.6 | classpath (AGP) | #546 |
 | `org.jdom:jdom2` | 2.0.6 | GHSA-2363-cqg2-863c | HIGH | 2.0.6.1 | classpath (AGP) | #546 |
-| `org.xerial:sqlite-jdbc` | 3.36.0 | GHSA-6phf-6h5g-97j2 | HIGH | 3.41.2.2 | test (Robolectric) | #546 (test) |
+| `org.xerial:sqlite-jdbc` | 3.36.0 | GHSA-6phf-6h5g-97j2 | HIGH | 3.41.2.2 | classpath plugin (SBOM: `androidx.room:room-compiler` 2.5.2) | #546 (ghim phòng ngừa — chưa chạm classpath plugin) |
 | `io.netty:netty-codec` | 4.1.93.Final | GHSA-3p8m-j85q-pgmj | MODERATE | 4.1.125.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-codec-http` | 4.1.93.Final | GHSA-38f8-5428-x5cv | MODERATE | 4.2.13.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-codec-http` | 4.1.93.Final | GHSA-4mp9-239f-g9hg | MODERATE | 4.2.16.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
@@ -110,7 +110,7 @@ Không vào APK. Vá được thì vá; không vá được thì đóng bằng l
 | `io.netty:netty-codec-http` | 4.1.93.Final | GHSA-fghv-69vj-qj49 | LOW | 4.2.5.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 | `io.netty:netty-handler-proxy` | 4.1.93.Final | GHSA-45q3-82m4-75jr | LOW | 4.2.13.Final | classpath (`grpc-netty` của AGP) | #471 (có) |
 
-Ghi chú cột "Bản vá": đó là bản nhỏ nhất cơ sở OSV trả về, có thể thuộc nhánh khác nhánh đang dùng. `protobuf-java` có bản vá riêng cho nhánh 3.x (3.25.5) và nhánh 4.x (4.28.2) — #546 ghim 3.25.5 để không nhảy major. Họ `netty` có bản vá 4.1.137.Final cho cả nhánh 4.1.x (đúng bản #471 ghim) và 4.2.x cho nhánh 4.2.
+Ghi chú cột "Bản vá": cột ghi bản vá của nhánh 4.2.x (họ `netty`) / 4.x (`protobuf-java`) do OSV trả về; cùng một cảnh báo thường có bản vá riêng cho nhánh đang dùng, nên cột này **không** có nghĩa phải nhảy major mới hết lỗi. `protobuf-java`: 3.25.5 (nhánh 3.x) và 4.27.5/4.28.2 (nhánh 4.x) — #546 ghim 3.25.5 để giữ nguyên major. Họ `netty`: 4.1.137.Final (nhánh 4.1.x, đúng bản #471 ghim) và 4.2.x (4.2.17.Final vá bản critical `netty-handler`).
 
 ## 5. Kế hoạch vá và hạn
 
@@ -118,7 +118,7 @@ Ghi chú cột "Bản vá": đó là bản nhỏ nhất cơ sở OSV trả về,
 |---|---|---|---|
 | #471 (đã có, DeepSeek 6) | Ghim `netty` 4.1.137.Final (cả họ `io.netty`) + `freemarker` 2.3.35 trên classpath plugin | 41 cảnh báo netty (1 critical) + 1 critical freemarker | 11/11 — đang chờ gỡ chi tiết bảo mật khỏi mô tả + duyệt |
 | #544 `phuthuoc/app-apk` | Ghim `guava` 33.7.2-jre, `commons-lang3` 3.18.0; loại `junit` khỏi runtime của `:j2me` | 1 high + 2 moderate **trong APK** | 11/11 (high) |
-| #546 `phuthuoc/classpath` | Ghim nhóm chỉ build: `commons-io` 2.14.0, `jdom2` 2.0.6.1, `jose4j` 0.9.6, `guava` 33.7.2-jre, `sqlite-jdbc` (test); thử `protobuf-java`/`commons-compress` — CI đỏ thì bỏ dòng đó và ghi lý do | các high còn lại ở công cụ build | 11/11 |
+| #546 `phuthuoc/classpath` | Ghim nhóm chỉ build: `commons-io` 2.14.0, `jdom2` 2.0.6.1, `jose4j` 0.9.6, `guava` 33.7.2-jre, thử `protobuf-java`/`commons-compress` — CI đỏ thì bỏ dòng đó và ghi lý do; `sqlite-jdbc` chỉ ghim phòng ngừa (không chạm classpath plugin) | các high còn lại ở công cụ build | 11/11 |
 | PR-4 (riêng) | Nâng Kotlin (Dependabot #216) — kéo `kotlin-gradle-plugin` lên bản vá | 1 moderate ở công cụ build | 15/11, cần PM chốt vì dễ vỡ build |
 | Đóng có lý do | Cảnh báo không có bản vá tương thích với AGP 8.7.3 / Robolectric, hoặc chỉ công cụ build | phần còn lại | 15/11 |
 
@@ -131,8 +131,10 @@ Nguyên tắc: mỗi nhóm thư viện một PR; nâng phiên bản lớn (Kotli
 3. **Chốt PR-4**: nâng Kotlin 2.0.21 → 2.4.x là thay đổi lớn (compose compiler, KSP, R8); cần PM đồng ý đánh đổi thời gian CI và rủi ro vỡ build trước 15/11.
 4. PR Dependabot đang mở: #215 (`actions/checkout` 4 → 7), #290 (`actions/cache` 4 → 6), #216 (Kotlin), #217 (AGP 8.7.3 → 9.4.1). Hai PR actions không phải cảnh báo bảo mật — gộp riêng khi rảnh runner. #217 (AGP 9) là thay đổi lớn, không gộp cùng vá nhỏ.
 
-## 7. Trạng thái và việc còn lại (cập nhật cuối ngày 08/11)
+## 7. Trạng thái và việc còn lại (cập nhật 09/11)
 
+- **#544/#546/#548 đều đã qua hai lượt duyệt** (lượt hai DeepSeek: #544 Đạt, #546 Đạt, #548 Cần sửa → đã sửa câu ghi chú cột "Bản vá" ở mục 4). CI trên head xanh; #544 và #546 `MERGEABLE` với `main`. Thứ tự gộp vẫn là **#544 trước**, rồi #546 hòa lại `main` và chạy lại CI trên head mới.
+- **Ghim `sqlite-jdbc` là phòng ngừa, chưa đóng cảnh báo**: `dependencyInsight` không thấy `org.xerial:sqlite-jdbc` trong mọi cấu hình của `:app`; SBOM ghi 3.36.0 đến từ `androidx.room:room-compiler` 2.5.2 (classpath plugin). `force` trong `app/build.gradle.kts` không chạm classpath plugin, nên cảnh báo `GHSA-6phf-6h5g-97j2` chỉ đóng được khi cây plugin thật sự hết bản lỗi.
 - **#544 và #546 CI xanh toàn bộ** (build hai flavor, unit test, CodeQL, kiểm gói thật). Đã kiểm lại cây sau khi ghim:
   `guava` 33.7.2-jre, `commons-lang3` 3.18.0, `commons-io` 2.14.0, `jdom2` 2.0.6.1, `jose4j` 0.9.6,
   `protobuf-java`/`protobuf-java-util` 3.25.5, `sqlite-jdbc` 3.41.2.2; `junit:junit` không còn trong runtime của APK.
