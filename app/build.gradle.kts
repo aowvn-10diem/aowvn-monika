@@ -54,6 +54,12 @@ android {
         )
         // [A65] flavor `play` (V150) đặt false: màn "Cần cập nhật" chỉ ghi "Cập nhật trên Google Play", không mở link APK ngoài.
         buildConfigField("boolean", "APK_DOWNLOAD_ALLOWED", "true")
+        // V196: host tải bổ sung CHỈ cho bản test/CI (rỗng ở bản phát hành). CI đặt biến môi trường
+        // `MONIKA_EXTRA_DOWNLOAD_HOSTS` trước khi build; allowlist production trong mã không bị sửa.
+        buildConfigField(
+            "String", "EXTRA_DOWNLOAD_HOSTS",
+            "\"${System.getenv("MONIKA_EXTRA_DOWNLOAD_HOSTS").orEmpty().replace("\"", "")}\""
+        )
     }
 
     flavorDimensions += "distribution"

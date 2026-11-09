@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import http.server
 import json
+import os
 from pathlib import Path
 import shutil
 import ssl
@@ -108,12 +109,14 @@ def prepare(out, root=ROOT):
     needle = 'excludes += listOf("lib/x86/**", "lib/x86_64/**")'
     assert needle in original, 'packaging declaration changed'
     app.write_text(original.replace(needle, '// V106 generated debug build includes its x86_64 test bridge'))
-    # V196: CoreManager routes through DownloadGuard (HTTPS + ALLOWED_DOWNLOAD_HOSTS); allow localhost only in CI fixture APK.
-    monika_cfg = root / 'app/src/main/java/vn/aow/monika/config/MonikaConfig.kt'
-    original = monika_cfg.read_text()
-    needle = '"monika.aow.vn",'
-    assert needle in original, 'ALLOWED_DOWNLOAD_HOSTS declaration changed'
-    monika_cfg.write_text(original.replace(needle, '"monika.aow.vn",\n    "localhost", // V106 CI fixture HTTPS server only'))
+    # V196: APK test cần host `localhost` cho server fixture, nhưng KHÔNG sửa allowlist production trong mã.
+    # Ghi vào GITHUB_ENV để bước Gradle sau (assembleGithubDebug) nhận qua BuildConfig của bản debug.
+    github_env = os.environ.get('GITHUB_ENV')
+    if github_env:
+        with open(github_env, 'a', encoding='utf-8') as handle:
+            handle.write('MONIKA_EXTRA_DOWNLOAD_HOSTS=localhost\n')
+    else:
+        print('CẢNH BÁO: thiếu GITHUB_ENV — hãy export MONIKA_EXTRA_DOWNLOAD_HOSTS=localhost trước khi build APK debug.', flush=True)
     tls = out / 'tls'
     tls.mkdir(exist_ok=True)
     subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',

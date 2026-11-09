@@ -30,7 +30,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
         with: {cache-provider: basic}
         if: matrix.language == 'java-kotlin'
       - name: Cài NDK cho build app
