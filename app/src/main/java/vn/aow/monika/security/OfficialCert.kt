@@ -23,4 +23,19 @@ object OfficialCert {
         if (official.isEmpty() || actual.isEmpty()) return false
         return !official.equals(actual, ignoreCase = true)
     }
+
+    /**
+     * [A85/A78-2] Màn Ủng hộ chỉ được vẽ VietQR/STK khi APK đúng chứng thư phát hành.
+     *
+     * Khác [isForeignBuild]: bản release mà **không đọc được** chứng thư (rỗng) hoặc chưa cấu hình
+     * chứng thư chính thức đều **không** được vẽ thông tin nhận tiền — đây là bề mặt bị giả mạo nhiều nhất.
+     * Bản debug vẫn hiện để dev kiểm giao diện.
+     */
+    fun donationAllowed(actualSha256: String, officialSha256: String, debugBuild: Boolean): Boolean {
+        if (debugBuild) return true
+        val official = officialSha256.trim()
+        val actual = actualSha256.trim()
+        if (official.isEmpty() || actual.isEmpty()) return false
+        return official.equals(actual, ignoreCase = true)
+    }
 }

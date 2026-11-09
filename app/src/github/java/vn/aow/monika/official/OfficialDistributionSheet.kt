@@ -35,7 +35,7 @@ fun OfficialDistributionSheet(official: OfficialConfig, security: SecurityConfig
     val context = LocalContext.current
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Monika.colors.bg,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        OfficialDistributionPanel(official, security.officialCertSha256, donate, onDismiss) { openOfficialUrl(context, it) }
+        OfficialDistributionPanel(official, vn.aow.monika.security.OfficialCertPin.OFFICIAL_APK_CERT_SHA256, donate, onDismiss) { openOfficialUrl(context, it) }
     }
 }
 

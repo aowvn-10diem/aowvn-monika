@@ -54,7 +54,7 @@ class MainActivity : ComponentActivity() {
                     // Trang game có thanh tiêu đề riêng (nút Quay lại) nên không lặp tiêu đề app.
                     if (page != "game") MonikaHeader("Aow Monika", right = { SoftPillButton("Bài viết", { page = "articles" }) })
                     // Bản Play mở vào Thư viện (trang chủ của flavor này): cảnh báo đỏ, không tắt được.
-                    if (page == "library") OfficialBuildWarning(config.security.officialCertSha256, OFFICIAL_BUILD_WARNING)
+                    if (page == "library") OfficialBuildWarning(vn.aow.monika.security.OfficialCertPin.OFFICIAL_APK_CERT_SHA256, OFFICIAL_BUILD_WARNING)
                     Box(Modifier.weight(1f)) {
                         when (page) {
                             "settings" -> SettingsScreen(onBack = { page = "library" })
