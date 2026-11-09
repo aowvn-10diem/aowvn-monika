@@ -14,6 +14,9 @@ val bcVersion = libs.versions.bouncycastle.get()
 // không vào APK. `force` dưới đây chỉ áp cho cấu hình của `:app`, KHÔNG chạm classpath plugin; giữ dòng này
 // để nếu gói lọt vào cấu hình app thì đã là bản vá — cảnh báo chỉ đóng khi cây plugin hết bản lỗi.
 val sqliteJdbcVersion = libs.versions.sqliteJdbc.get()
+// V0811: hai thư viện dưới đây nằm trong APK nhưng không do app gọi trực tiếp (xem docs/bao-mat/PHU-THUOC-0811.md).
+val guavaVersion = libs.versions.guava.get()
+val commonsLang3Version = libs.versions.commonsLang3.get()
 configurations.configureEach {
     resolutionStrategy.force(
         "org.bouncycastle:bcprov-jdk15to18:$bcVersion",
@@ -21,6 +24,8 @@ configurations.configureEach {
         "org.bouncycastle:bcpkix-jdk18on:$bcVersion",
         "org.bouncycastle:bcutil-jdk18on:$bcVersion",
         "org.xerial:sqlite-jdbc:$sqliteJdbcVersion",
+        "com.google.guava:guava:$guavaVersion",
+        "org.apache.commons:commons-lang3:$commonsLang3Version",
     )
 }
 

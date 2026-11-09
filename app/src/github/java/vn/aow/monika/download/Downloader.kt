@@ -11,16 +11,20 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import vn.aow.monika.AppGraph
 import vn.aow.monika.Prefs
+import vn.aow.monika.config.isAllowedDirectUrlHost
+import vn.aow.monika.config.isAllowedDownloadHost
 import vn.aow.monika.library.GameStorage
 import vn.aow.monika.library.GameMeta
 import vn.aow.monika.library.ImportWorker
 import vn.aow.monika.notify.Notifier
 import vn.aow.monika.runner.Installer
 import java.io.File
+import java.io.IOException
 
 /**
  * Tải bằng DownloadManager của Android: chạy nền, tự nối lại, có thanh tiến độ ở thông báo.
@@ -38,6 +42,8 @@ class Downloader(
      * @param meta thông tin bài viết (tên, ảnh bìa) để game tải xong hiển thị đẹp.
      */
     suspend fun enqueue(url: String, isTool: Boolean = false, meta: GameMeta? = null): Long {
+        // V196b: kiểm trước khi đưa URL cho trình quản lý tải của hệ thống (luồng này không đi qua OkHttp).
+        requireAllowedDownloadUrl(url)
         val name = resolveFileName(url)
         if (!isTool) vn.aow.monika.library.Prefetch.onDownloadStart(context, meta?.labels.orEmpty(), name)
         val request = DownloadManager.Request(Uri.parse(url))
@@ -65,6 +71,20 @@ class Downloader(
     }
 
     companion object {
+        /**
+         * V196b: URL đưa cho trình quản lý tải phải là HTTPS và host thuộc danh sách đã chốt
+         * (host mã/gói hoặc host tệp người dùng). Sai → ném lỗi rõ ràng, không thử tiếp.
+         */
+        internal fun requireAllowedDownloadUrl(url: String) {
+            val parsed = url.toHttpUrlOrNull()
+            val host = parsed?.host?.lowercase()
+            if (parsed == null || parsed.scheme != "https" || host == null ||
+                !(isAllowedDownloadHost(host) || isAllowedDirectUrlHost(host))
+            ) {
+                throw IOException("Chặn tải: địa chỉ không phải HTTPS hoặc host không nằm trong danh sách cho phép")
+            }
+        }
+
         /** Tên file từ URL và Content-Disposition; tách ra để test không cần mạng. */
         internal fun fileNameFrom(url: String, disposition: String?): String {
             // Hỗ trợ cả filename*=UTF-8''... (tên tiếng Việt) mà URLUtil không đọc được.
