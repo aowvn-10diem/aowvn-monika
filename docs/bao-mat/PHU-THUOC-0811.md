@@ -153,3 +153,9 @@ Nguyên tắc: mỗi nhóm thư viện một PR; nâng phiên bản lớn (Kotli
 - #471 đóng đúng phần `freemarker` 2.3.32 (1 critical) nhưng **không** chạm họ `netty` 4.1.93: SBOM sau gộp vẫn có đủ 41 cảnh báo netty, gồm critical `GHSA-c4c3-7fpv-j4q5` (`netty-handler`), cùng `guava` 32.0.1-jre, `protobuf-java` 3.22.3, `commons-io` 2.13.0, `commons-compress` 1.21, `sqlite-jdbc` 3.36.0 (`kotlin-gradle-plugin` 2.0.21 chờ #216/PR-4).
 - Nguyên nhân: `force` trong `buildscript` chỉ áp cho cấu hình tên `classpath` của build script; AGP nạp qua `plugins {}` → `pluginManagement` nên cây `com.android.tools` 31.7.3 → `grpc-netty` 1.57.0 / `room-compiler` 2.5.2 vẫn giữ bản cũ. Gradle không có API force bắc cầu cho classpath plugin (chỉ `eachPlugin` đổi toạ độ plugin), nên **không mở PR mã mới**: sửa được chỉ khi lên AGP 9 (#217) hoặc đóng kèm lý do khi có quyền.
 - Chỉ tiêu "hết họ netty" trong mục 5 dời sang #217; hạn 11/11 cho phần netty **không còn khả thi bằng ghim**, cần PM chốt hướng (AGP 9 hay đóng kèm lý do).
+
+## 9. Sau khi gộp #575 (10/11, 00:14Z) — hết `sqlite-jdbc`, còn 47 cảnh báo
+
+- PM gộp #575 (`0236007`): `:j2me` dùng Room 2.6.1, `org.xerial:sqlite-jdbc` lên 3.41.2.2 ngay tại nguồn (`room-compiler`), nên `GHSA-6phf-6h5g-97j2` (HIGH) **đã hết**; gói này không còn trong mục "đóng kèm lý do".
+- SBOM mới nhất (đã có `room-compiler` 2.6.1 / `sqlite-jdbc` 3.41.2.2) đối chiếu OSV: **47 cảnh báo / 11 tổ hợp** — 1 critical, 20 high, 24 moderate, 2 low; không có mã nào ngoài bảng mục 4; vẫn **0 cảnh báo trong APK**. API Dependabot vẫn 403 nên đây là số tự kiểm.
+- Phần còn lại không đổi: họ `netty` 4.1.93 (41 cảnh báo, 1 critical) cùng `guava` 32.0.1-jre, `protobuf-java` 3.22.3, `commons-io` 2.13.0, `commons-compress` 1.21, `kotlin-gradle-plugin` 2.0.21 — chỉ ở classpath công cụ build. Hướng xử lý vẫn là AGP 9 (#217, chờ PM chốt) hoặc đóng kèm lý do khi có quyền.
