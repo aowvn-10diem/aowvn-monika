@@ -23,7 +23,7 @@
 -keep class vn.aow.monika.diag.Diagnostics$Report* { *; }
 -keep class vn.aow.monika.diag.Diagnostics$Session* { *; }
 -keep class vn.aow.monika.diag.Diagnostics$DeathSnapshot* { *; }
--keep class vn.aow.monika.diag.ReportImage* { *; }
+-keep class vn.aow.monika.diag.Diagnostics$ReportImage* { *; }
 -keep class vn.aow.monika.library.GameInfoResolver* { *; }
 
 # Engine 3DS nhúng (Azahar): thư viện native gọi ngược lớp Kotlin theo tên/chữ ký

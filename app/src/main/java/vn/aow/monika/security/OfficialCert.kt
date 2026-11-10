@@ -57,7 +57,7 @@ object OfficialCert {
         val official = officialSha256.trim()
         if (official.isEmpty()) return BuildTrust.UNKNOWN
         val pm = pmSha256.trim()
-        if (pm.isEmpty()) return BuildTrust.UNKNOWN
+        if (pm.isEmpty()) return BuildTrust.FOREIGN
         if (apkBlockSha256 != null && !apkBlockSha256.equals(pm, ignoreCase = true)) return BuildTrust.FOREIGN
         return if (pm.equals(official, ignoreCase = true)) BuildTrust.OFFICIAL else BuildTrust.FOREIGN
     }

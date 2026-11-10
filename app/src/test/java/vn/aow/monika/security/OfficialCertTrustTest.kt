@@ -16,9 +16,9 @@ class OfficialCertTrustTest {
         assertEquals(OfficialCert.BuildTrust.UNKNOWN, OfficialCert.trustOf(official, official, "", false))
     }
 
-    @Test fun releaseWithoutReadableCertIsUnknown() {
-        // Thiếu dữ liệu thì không buộc tội (màn Ủng hộ vẫn bị chặn riêng theo A78-2).
-        assertEquals(OfficialCert.BuildTrust.UNKNOWN, OfficialCert.trustOf("", null, official, false))
+    @Test fun releaseWithoutReadableCertIsForeign() {
+        // Bản release không đọc được chứng thư = không có bằng chứng là bản chính thức.
+        assertEquals(OfficialCert.BuildTrust.FOREIGN, OfficialCert.trustOf("", null, official, false))
     }
 
     @Test fun hookingDetectionComparesPackageManagerWithApkBlock() {
