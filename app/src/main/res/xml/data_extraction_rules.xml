@@ -7,7 +7,9 @@
     <cloud-backup>
         <include domain="sharedpref" path="." />
         <include domain="database" path="." />
-        <exclude domain="sharedpref" path="monika.xml" />
+        <exclude domain="sharedpref" path="account.xml" />
+    <exclude domain="sharedpref" path="ra.xml" />
+    <exclude domain="sharedpref" path="monika.xml" />
         <exclude domain="sharedpref" path="monika_game.xml" />
         <exclude domain="root" path="app_webview/" />
         <exclude domain="file" path="cores/" />
@@ -20,7 +22,9 @@
     <device-transfer>
         <include domain="sharedpref" path="." />
         <include domain="database" path="." />
-        <exclude domain="sharedpref" path="monika.xml" />
+        <exclude domain="sharedpref" path="account.xml" />
+    <exclude domain="sharedpref" path="ra.xml" />
+    <exclude domain="sharedpref" path="monika.xml" />
         <exclude domain="sharedpref" path="monika_game.xml" />
         <exclude domain="root" path="app_webview/" />
         <exclude domain="file" path="cores/" />
