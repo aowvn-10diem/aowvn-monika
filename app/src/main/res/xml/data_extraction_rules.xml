@@ -1,37 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  V204: Android 12+ dùng data_extraction_rules thay fullBackupContent.
-  Không đưa phiên đăng nhập/cloud backup; chỉ giữ dữ liệu người chơi.
+  V204: Android 12+ dùng data_extraction_rules thay fullBackupContent. Chỉ giữ SharedPreferences
+  và database; mọi <exclude> phải nằm trong đường đã include nên chỉ loại trừ tệp phiên đăng nhập.
 -->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="sharedpref" path="." />
         <include domain="database" path="." />
         <exclude domain="sharedpref" path="account.xml" />
-    <exclude domain="sharedpref" path="ra.xml" />
-    <exclude domain="sharedpref" path="monika.xml" />
+        <exclude domain="sharedpref" path="ra.xml" />
+        <exclude domain="sharedpref" path="monika.xml" />
         <exclude domain="sharedpref" path="monika_game.xml" />
-        <exclude domain="root" path="app_webview/" />
-        <exclude domain="file" path="cores/" />
-        <exclude domain="file" path="packs/" />
-        <exclude domain="file" path="adblock/" />
-        <exclude domain="file" path="diag/" />
-        <exclude domain="external" path="feed/" />
-        <exclude domain="external" path="images/" />
     </cloud-backup>
     <device-transfer>
         <include domain="sharedpref" path="." />
         <include domain="database" path="." />
         <exclude domain="sharedpref" path="account.xml" />
-    <exclude domain="sharedpref" path="ra.xml" />
-    <exclude domain="sharedpref" path="monika.xml" />
+        <exclude domain="sharedpref" path="ra.xml" />
+        <exclude domain="sharedpref" path="monika.xml" />
         <exclude domain="sharedpref" path="monika_game.xml" />
-        <exclude domain="root" path="app_webview/" />
-        <exclude domain="file" path="cores/" />
-        <exclude domain="file" path="packs/" />
-        <exclude domain="file" path="adblock/" />
-        <exclude domain="file" path="diag/" />
-        <exclude domain="external" path="feed/" />
-        <exclude domain="external" path="images/" />
     </device-transfer>
 </data-extraction-rules>
