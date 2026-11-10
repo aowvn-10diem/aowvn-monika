@@ -491,9 +491,115 @@ async function packRoute(req, env, url) {
   } });
 }
 
+// ---- V195: D1 (binding `CRASH_DB`) ----
+// Bảng cột → KHOÁ NGẮN (giữ nguyên hợp đồng `/reports` của chế độ KV):
+//   kind → k · core → c · system → y · game → g · app → a · stage → st
+//   time → t · component → component · fingerprint → fp · count → count · cert → cert
+// `id` là khoá chính (id báo cáo đầu tiên của nhóm), `detail` là JSON đầy đủ mới nhất.
+export const REPORT_SHORT_KEYS = Object.freeze({
+  kind: "k", core: "c", system: "y", game: "g", app: "a", stage: "st",
+  time: "t", component: "component", fingerprint: "fp", count: "count", cert: "cert",
+});
+const REPORT_SHORT_COLUMNS = Object.values(REPORT_SHORT_KEYS);
+export const INDEX_PAGE_SIZE = 100;
+
+/** Có binding D1 dùng được không; không có thì Worker chạy đường KV như cũ (fallback). */
+export function hasD1(env) {
+  return !!(env && env.CRASH_DB && typeof env.CRASH_DB.prepare === "function");
+}
+
+/** Dựng hàng ghi D1 từ báo cáo đã chuẩn hoá; `cert16` = 16 hex đầu của `certSha256`. */
+export function reportRow(slim, id, nowMs) {
+  const cert = typeof slim.certSha256 === "string" ? slim.certSha256.slice(0, 16) : "";
+  return {
+    id,
+    fp: slim.fingerprint || "",
+    k: slim.kind || "",
+    c: slim.core || slim.session?.core || "",
+    y: slim.system || slim.session?.system || "",
+    g: (slim.session?.game || "").slice(0, 60),
+    a: (slim.app || "").slice(0, 40),
+    st: slim.stage || slim.session?.stage || "",
+    t: number(slim.time, nowMs),
+    component: slim.component || "",
+    count: Math.max(1, number(slim.count, 1)),
+    cert,
+    detail: JSON.stringify(slim),
+  };
+}
+
+/** Ghi 1 hàng: gộp theo `fp` (tăng `count`, giữ `id` đầu tiên) — mỗi báo cáo đúng 1 lượt ghi. */
+export async function d1SaveReport(db, row, nowMs) {
+  await db.prepare(
+    `INSERT INTO reports (id, fp, k, c, y, g, a, st, t, component, count, cert, detail, first_t, last_t)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(fp) DO UPDATE SET
+       k = excluded.k, c = excluded.c, y = excluded.y, g = excluded.g, a = excluded.a,
+       st = excluded.st, t = excluded.t, component = excluded.component, count = reports.count + excluded.count,
+       cert = excluded.cert, detail = excluded.detail, last_t = excluded.last_t`
+  ).bind(
+    row.id, row.fp, row.k, row.c, row.y, row.g, row.a, row.st, row.t,
+    row.component, row.count, row.cert, row.detail, nowMs, nowMs,
+  ).run();
+}
+
+/** Danh sách mới nhất (khoá ngắn) + tổng số nhóm. */
+export async function d1ListReports(db, limit = 100) {
+  const rows = await db.prepare(
+    `SELECT id, ${REPORT_SHORT_COLUMNS.join(", ")} FROM reports ORDER BY last_t DESC, id DESC LIMIT ?`
+  ).bind(limit).all();
+  const total = await db.prepare("SELECT COUNT(*) AS n FROM reports").first();
+  return { total: number(total && total.n, 0), rows: (rows && rows.results) || [] };
+}
+
+/** Thống kê theo (lõi, loại, giai đoạn): `n` = số nhóm, `uses` = tổng lượt. */
+export async function d1Stats(db) {
+  const rows = await db.prepare(
+    "SELECT c, k, st, COUNT(*) AS n, SUM(count) AS uses FROM reports GROUP BY c, k, st ORDER BY n DESC, c, k, st"
+  ).all();
+  const total = await db.prepare("SELECT COUNT(*) AS n FROM reports").first();
+  return { total: number(total && total.n, 0), rows: (rows && rows.results) || [] };
+}
+
+/** Một báo cáo đầy đủ theo id (JSON đã lưu). */
+export async function d1GetReport(db, id) {
+  const row = await db.prepare("SELECT detail FROM reports WHERE id = ?").bind(id).first();
+  return row && typeof row.detail === "string" ? row.detail : null;
+}
+
+/** Trang index mới nhất trước; `after` = { lastT, id } của hàng cuối trang trước. */
+export async function d1IndexPage(db, after, limit = INDEX_PAGE_SIZE) {
+  const sql = after
+    ? "SELECT id, a, last_t FROM reports WHERE (last_t < ?) OR (last_t = ? AND id < ?) ORDER BY last_t DESC, id DESC LIMIT ?"
+    : "SELECT id, a, last_t FROM reports ORDER BY last_t DESC, id DESC LIMIT ?";
+  const stmt = after
+    ? db.prepare(sql).bind(after.lastT, after.lastT, after.id, limit)
+    : db.prepare(sql).bind(limit);
+  const page = await stmt.all();
+  return (page && page.results) || [];
+}
+
+/** Cursor index: base64url("<last_seen_ms>:<id>"). */
+export function encodeIndexCursor(lastT, id) {
+  const raw = `${lastT}:${id}`;
+  return btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export function decodeIndexCursor(text) {
+  if (typeof text !== "string" || !/^[A-Za-z0-9_-]{1,512}$/.test(text)) return null;
+  try {
+    const padded = text.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (text.length % 4)) % 4);
+    const match = /^(\d{1,16}):(.{1,64})$/.exec(atob(padded));
+    if (!match) return null;
+    const lastT = Number(match[1]);
+    return Number.isSafeInteger(lastT) && lastT >= 0 ? { lastT, id: match[2] } : null;
+  } catch {
+    return null;
+  }
+}
+
 export default {
-  async fetch(req, env) {
-    const url = new URL(req.url);
+  async fetch(req, env) {    const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "content-type, authorization", "access-control-allow-methods": "GET, POST" } });
 
     if (url.pathname === "/report" && req.method === "POST") {
@@ -564,6 +670,16 @@ export default {
       }
 
       const id = `r:${String(Date.now()).padStart(13, "0")}:${crypto.randomUUID().slice(0, 8)}`;
+      // V195: có D1 thì ghi 1 hàng/nhóm (gộp theo fingerprint) — vẫn 1 lượt ghi mỗi báo cáo.
+      if (hasD1(env)) {
+        try {
+          await d1SaveReport(env.CRASH_DB, reportRow(slim, id, Date.now()), Date.now());
+        } catch {
+          releaseRate(ipHash, window, token);
+          return json({ ok: false, error: "storage_unavailable" }, 503);
+        }
+        return json({ ok: true });
+      }
       // V155b: đưa băm chứng thư (16 hex đầu) vào metadata của danh sách để /reports thấy bản đang chạy
       // (bảng crash-insight đếm theo chứng thư). App cũ không gửi trường này → để rỗng, không đổi định dạng cũ.
       const meta = { k: slim.kind, c: slim.core || slim.session?.core || "", y: slim.system || slim.session?.system || "", g: (slim.session?.game || "").slice(0, 60), a: slim.app.slice(0, 40), st: slim.stage || slim.session?.stage || "", t: slim.time, component: slim.component, fp: slim.fingerprint, count: slim.count, cert: (slim.certSha256 || "").slice(0, 16) };
@@ -584,6 +700,23 @@ export default {
       if (req.method !== "GET") return json({ ok: false, error: "method_not_allowed" }, 405);
       const cursor = url.searchParams.get("cursor") || undefined;
       if (cursor && (cursor.length > 2048 || /[\u0000-\u001f]/.test(cursor))) return json({ ok: false, error: "bad_cursor" }, 400);
+      // V195: nhánh D1 dùng cursor base64url("<last_seen_ms>:<id>"); nhánh KV giữ nguyên hợp đồng cũ.
+      if (hasD1(env)) {
+        let after = null;
+        if (cursor) {
+          after = decodeIndexCursor(cursor);
+          if (!after) return json({ ok: false, error: "bad_cursor" }, 400);
+        }
+        const page = await d1IndexPage(env.CRASH_DB, after, INDEX_PAGE_SIZE + 1);
+        const complete = page.length <= INDEX_PAGE_SIZE;
+        const rows = page.slice(0, INDEX_PAGE_SIZE);
+        const last = rows[rows.length - 1];
+        return json({
+          complete,
+          cursor: complete || !last ? null : encodeIndexCursor(last.last_t, last.id),
+          reports: rows.map((row) => ({ id: row.id, app: row.a || "" })),
+        });
+      }
       const page = await env.REPORTS.list({ prefix: "r:", cursor, limit: 100 });
       if (typeof page.list_complete !== "boolean" || !Array.isArray(page.keys) || page.keys.length > 100) return json({ ok: false, error: "incomplete_index" }, 503);
       if (!page.list_complete && !page.cursor) return json({ ok: false, error: "incomplete_index" }, 503);
@@ -595,6 +728,31 @@ export default {
     if (url.pathname.startsWith("/reports") || url.pathname === "/stats") {
       const denied = await requireAdmin(req, env);
       if (denied) return denied;
+      // V195: nhánh D1 — cùng khoá ngắn như chế độ KV.
+      if (hasD1(env)) {
+        if (url.pathname.startsWith("/reports/")) {
+          let id;
+          try { id = decodeURIComponent(url.pathname.slice(9)).trim(); } catch { return json({ ok: false, error: "bad_id" }, 400); }
+          if (!id) return json({ ok: false, error: "bad_id" }, 400);
+          const detail = await d1GetReport(env.CRASH_DB, id);
+          return detail
+            ? new Response(detail, { headers: { "content-type": "application/json; charset=utf-8" } })
+            : json({ ok: false, error: "not_found" }, 404);
+        }
+        if (url.pathname === "/stats") {
+          const { total, rows } = await d1Stats(env.CRASH_DB);
+          return json({
+            total,
+            byCoreKindStage: rows.map((row) => ({
+              k: `${row.c || "?"} | ${row.k || "?"} | ${row.st || "?"}`,
+              n: number(row.n, 0),
+              uses: number(row.uses, 0),
+            })),
+          });
+        }
+        const { total, rows } = await d1ListReports(env.CRASH_DB, 100);
+        return json({ total, reports: rows.map((row) => ({ id: row.id, ...Object.fromEntries(REPORT_SHORT_COLUMNS.map((key) => [key, row[key] ?? ""])) })) });
+      }
       if (url.pathname.startsWith("/reports/")) {
         const v = await env.REPORTS.get(decodeURIComponent(url.pathname.slice(9)));
         return v ? new Response(v, { headers: { "content-type": "application/json; charset=utf-8" } }) : json({ ok: false, error: "not_found" }, 404);

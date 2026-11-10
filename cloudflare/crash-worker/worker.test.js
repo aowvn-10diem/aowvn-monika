@@ -759,3 +759,162 @@ test("A85 OFFICIAL_CERT_SHA256 tuy chon loc rac KV /report ma khong anh huong ma
   assert.equal(official.status, 200);
   assert.equal(puts, 1);
 });
+
+// ---- V195: D1 (`CRASH_DB`) — cùng hợp đồng khoá ngắn, fallback KV khi chưa gắn binding ----
+function fakeD1() {
+  const rows = new Map(); // fp -> hàng
+  const statements = [];
+
+  function execute(sql, args) {
+    if (/INSERT INTO reports/i.test(sql)) {
+      const [id, fp, k, c, y, g, a, st, t, component, count, cert, detail, firstT, lastT] = args;
+      const old = rows.get(fp);
+      rows.set(fp, old
+        ? { ...old, k, c, y, g, a, st, t, component, count: old.count + count, cert, detail, last_t: lastT }
+        : { id, fp, k, c, y, g, a, st, t, component, count, cert, detail, first_t: firstT, last_t: lastT });
+      return [];
+    }
+    if (/COUNT\(\*\)/i.test(sql) && !/GROUP BY/i.test(sql)) return [{ n: rows.size }];
+    if (/GROUP BY/i.test(sql)) {
+      const by = new Map();
+      for (const row of rows.values()) {
+        const key = `${row.c}\u0000${row.k}\u0000${row.st}`;
+        const item = by.get(key) || { c: row.c, k: row.k, st: row.st, n: 0, uses: 0 };
+        item.n += 1; item.uses += row.count;
+        by.set(key, item);
+      }
+      return [...by.values()].sort((left, right) => right.n - left.n);
+    }
+    if (/WHERE id = \?/i.test(sql)) {
+      const found = [...rows.values()].find((row) => row.id === args[0]);
+      return found ? [{ detail: found.detail }] : [];
+    }
+    if (/ORDER BY last_t DESC/i.test(sql)) {
+      let list = [...rows.values()].sort((left, right) =>
+        right.last_t - left.last_t || (right.id < left.id ? -1 : right.id > left.id ? 1 : 0));
+      if (/last_t < \?/i.test(sql)) {
+        const [lastT, sameT, id] = args;
+        list = list.filter((row) => row.last_t < lastT || (row.last_t === sameT && row.id < id));
+      }
+      const limit = args[args.length - 1];
+      return list.slice(0, limit);
+    }
+    throw new Error("fakeD1: chưa hỗ trợ câu SQL: " + sql);
+  }
+
+  return {
+    rows,
+    statements,
+    prepare(sql) {
+      statements.push(sql);
+      const api = {
+        args: [],
+        bind(...values) { api.args = values; return api; },
+        async run() { execute(sql, api.args); return { success: true }; },
+        async first() { return execute(sql, api.args)[0] || null; },
+        async all() { return { results: execute(sql, api.args) }; },
+      };
+      return api;
+    },
+  };
+}
+
+function d1Setup(extra = {}) {
+  const db = fakeD1();
+  const c = setup({ CRASH_DB: db, ...extra });
+  return { ...c, db };
+}
+
+test("V195 D1: gộp theo fingerprint — cùng dấu vân tay chỉ 1 hàng, count cộng dồn", async () => {
+  const c = d1Setup();
+  assert.equal((await c.post({ ...fixture, count: 2 })).status, 200);
+  assert.equal((await c.post({ ...fixture, count: 3 })).status, 200);
+  assert.equal((await c.post({ ...fixture, count: 1 })).status, 200);
+  assert.equal(c.db.rows.size, 1, "3 báo cáo cùng fingerprint → 1 hàng");
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 1);
+  assert.equal(body.reports[0].count, 6, "count cộng dồn 2+3+1");
+});
+
+test("V195 D1: /reports trả đúng bộ khoá ngắn trong bảng cột → khoá", async () => {
+  const c = d1Setup();
+  await c.post({ ...fixture, certSha256: CERT });
+  const entry = (await (await c.read("/reports")).json()).reports[0];
+  assert.deepEqual(Object.keys(entry).sort(), ["a", "c", "cert", "component", "count", "fp", "g", "id", "k", "st", "t", "y"]);
+  assert.equal(entry.k, fixture.kind);
+  assert.equal(entry.fp, fixture.fingerprint);
+  assert.equal(entry.a, fixture.app.slice(0, 40));
+  assert.equal(entry.cert, CERT.slice(0, 16), "cert16 = 16 hex đầu");
+  assert.equal(entry.c, fixture.core || fixture.session?.core || "unknown");
+});
+
+test("V195 D1: /reports/<id> trả bản ghi đầy đủ, 404 khi không có", async () => {
+  const c = d1Setup();
+  await c.post(fixture);
+  const entry = (await (await c.read("/reports")).json()).reports[0];
+  const detail = await (await c.read(`/reports/${encodeURIComponent(entry.id)}`)).json();
+  assert.equal(detail.kind, fixture.kind);
+  assert.equal(detail.fingerprint, fixture.fingerprint);
+  assert.equal((await c.read("/reports/r:1:khong-co")).status, 404);
+});
+
+test("V195 D1: /stats gộp theo (lõi, loại, giai đoạn) kèm tổng lượt", async () => {
+  const c = d1Setup();
+  await c.post({ ...fixture, count: 4 });
+  await c.post({ ...fixture, fingerprint: "bbbbbbbbbbbb2222", count: 2 });
+  const body = await (await c.read("/stats")).json();
+  assert.equal(body.total, 2);
+  assert.equal(body.byCoreKindStage.length, 1);
+  assert.equal(body.byCoreKindStage[0].n, 2, "n = số nhóm");
+  assert.equal(body.byCoreKindStage[0].uses, 6, "uses = tổng lượt");
+});
+
+test("V195 D1: /report-index phân trang 100 mục, cursor base64url('<ms>:<id>')", async () => {
+  const c = d1Setup({ RATE_LIMIT_MAX: "1000" });
+  for (let i = 0; i < 150; i++) {
+    await atTime(1700000000000 + i * 1000, () => c.post({ ...fixture, fingerprint: `fp-${String(i).padStart(4, "0")}` }));
+  }
+  const first = await (await c.read("/report-index")).json();
+  assert.equal(first.reports.length, 100);
+  assert.equal(first.complete, false);
+  const decoded = Buffer.from(first.cursor.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString();
+  assert.match(decoded, /^\d{13}:r:\d{13}:[0-9a-f]{8}$/);
+  const second = await (await c.read(`/report-index?cursor=${first.cursor}`)).json();
+  assert.equal(second.reports.length, 50);
+  assert.equal(second.complete, true);
+  assert.equal(second.cursor, null);
+  assert.equal(new Set([...first.reports, ...second.reports].map((r) => r.id)).size, 150, "không trùng mục giữa 2 trang");
+});
+
+test("V195 D1: cursor hỏng trả 400, cursor hợp lệ nhưng cũ vẫn trả trang", async () => {
+  const c = d1Setup();
+  await c.post(fixture);
+  assert.equal((await c.read("/report-index?cursor=%%%")).status, 400);
+  assert.equal((await c.read("/report-index?cursor=abc")).status, 400);
+  const ok = await (await c.read("/report-index")).json();
+  assert.equal(ok.complete, true);
+  assert.equal(ok.reports.length, 1);
+});
+
+test("V195 D1: thiếu binding CRASH_DB vẫn chạy đường KV như cũ (fallback)", async () => {
+  const c = setup(); // không có CRASH_DB
+  assert.equal((await c.post(fixture)).status, 200);
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 1);
+  assert.equal(body.reports[0].cert, "", "KV vẫn trả khoá ngắn như trước");
+  const index = await (await c.read("/report-index")).json();
+  assert.equal(index.complete, true);
+});
+
+test("V195 D1: ghi D1 lỗi thì trả 503 và nhả lượt hạn mức", async () => {
+  const db = fakeD1();
+  const realPrepare = db.prepare;
+  let failNext = true;
+  db.prepare = (...args) => {
+    if (failNext) { failNext = false; throw new Error("D1 down"); }
+    return realPrepare.apply(db, args);
+  };
+  const c = setup({ CRASH_DB: db, RATE_LIMIT_MAX: "1" });
+  assert.equal((await postWithIp(c, fixture)).status, 503);
+  assert.equal((await postWithIp(c, fixture)).status, 200, "lượt giữ chỗ đã được nhả");
+});

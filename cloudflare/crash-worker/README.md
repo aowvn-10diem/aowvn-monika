@@ -28,6 +28,23 @@ Bộ đếm trong Worker chỉ là chặn mềm (mục trên). Khi bị spam th�
 
 Ghi chú: luật WAF tính theo IP ở biên nên **không phụ thuộc isolate/colo** — đây là lớp bù cho giới hạn của bộ đếm trong Worker. Ngưỡng WAF là cấu hình dashboard, không nằm trong repo.
 
+## Lưu trữ D1 (`CRASH_DB`) — V195
+Worker ghi báo cáo vào **D1** khi có binding `CRASH_DB`; **chưa gắn binding thì chạy đường KV như cũ** (không lỗi, không đổi định dạng trả về).
+
+- **Bảng cột → khoá ngắn** (giữ nguyên hợp đồng `/reports` của chế độ KV, xem `REPORT_SHORT_KEYS` trong `worker.js`):
+  `kind → k` · `core → c` · `system → y` · `game → g` · `app → a` · `stage → st` · `time → t` · `component` · `fingerprint → fp` · `count` · `cert` (16 hex đầu của `certSha256`).
+  `core = slim.core || slim.session.core`.
+- **Gộp trùng**: mỗi **fingerprint đúng 1 hàng** (`UNIQUE INDEX reports_fp`); báo cáo trùng thì `count = count + excluded.count` và cập nhật `detail`/`last_t` — nhờ vậy số hàng ghi mỗi ngày thấp hơn nhiều so với 1 hàng/báo cáo (D1 free: 100.000 hàng/ngày).
+- **Cursor `/report-index` (nhánh D1)**: `base64url("<last_seen_ms>:<id>")`, trang 100 mục, mới nhất trước (`ORDER BY last_t DESC, id DESC`). Nhánh KV giữ nguyên hợp đồng cũ (503 `incomplete_index` khi trang chưa đủ mà thiếu cursor).
+- `/stats` (D1) trả `{ total, byCoreKindStage: [{ k: "c | k | st", n, uses }] }` — `n` = số nhóm, `uses` = tổng lượt.
+
+**Áp dụng**
+```bash
+wrangler d1 create aowvn-monika-crash
+wrangler d1 execute aowvn-monika-crash --remote --file=cloudflare/crash-worker/d1-schema.sql
+```
+Rồi gắn binding `CRASH_DB` (trỏ database vừa tạo) cho Worker trong `wrangler.toml` hoặc dashboard → deploy. Muốn quay lại KV: bỏ binding `CRASH_DB` rồi deploy lại (không cần đổi mã).
+
 ## Hợp đồng JSON (V29)
 
 `Diagnostics.Report` được gửi tới `POST /report`; Worker chỉ bổ sung trường, vẫn nhận app cũ. `kind`, `title`, `app` bắt buộc là chuỗi; JSON sai trả 400. Báo cáo và giá trị KV đều tối đa 60.000 **byte UTF-8**; quá giới hạn trả 413, không ghi báo cáo. Body được đọc theo stream có chặn dung lượng, không dựa riêng Content-Length.
