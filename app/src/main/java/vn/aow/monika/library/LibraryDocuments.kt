@@ -33,7 +33,7 @@ internal fun partitionLibrary(detected: List<Game>, config: MonikaConfig): Libra
             documents += files.sortedBy { it.name.lowercase(java.util.Locale.ROOT) }.map(::LibraryDocument)
         }
     }
-    return LibraryContents(games, documents)
+    return LibraryContents(games, documents.distinctBy { it.key })
 }
 
 /** URI cấp quyền đọc cho ứng dụng ngoài; không dùng file:// hay cấp quyền ghi. */

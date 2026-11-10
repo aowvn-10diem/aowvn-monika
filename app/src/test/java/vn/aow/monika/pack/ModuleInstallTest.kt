@@ -69,7 +69,7 @@ class ModuleInstallTest {
     }.build()
     private fun config(id: String, expected: String): ConfigRepository {
         val base = ConfigRepository(app, OkHttpClient()).current.configVersion
-        File(app.filesDir, ConfigRepository.ASSET_NAME).writeText("""{"configVersion":$base,"modules":{"$id":{"version":"2","url":"https://example.test/pack.zip","abis":["arm64-v8a"],"sha256":"$expected"}}}""")
+        File(app.filesDir, ConfigRepository.ASSET_NAME).writeText("""{"configVersion":$base,"modules":{"$id":{"version":"2","url":"https://buildbot.libretro.com/pack.zip","abis":["arm64-v8a"],"sha256":"$expected"}}}""")
         return ConfigRepository(app, OkHttpClient())
     }
     private fun old(dir: File, main: String) { File(dir, main).apply { parentFile!!.mkdirs(); writeText("old-good") }; File(dir, "version").writeText("1") }

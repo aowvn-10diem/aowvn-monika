@@ -2,6 +2,26 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.12 (Bản thử)
+<!-- bien-tap: v0.8.12 -->
+> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+
+- **Sửa lỗi:** Mở mục Tệp trong Thư viện không còn bị văng app khi có nhiều game cùng nằm trong thư mục Download. ([#561](https://github.com/aowvn-10diem/aowvn-monika/pull/561))
+- **Sửa lỗi:** Thoát game xong, app trả lại bộ nhớ đã dùng cho game, đỡ bị máy tự tắt app khi chuyển sang việc khác. ([#570](https://github.com/aowvn-10diem/aowvn-monika/pull/570))
+- **Mới:** Tải và nhập game an toàn hơn: app chỉ tải từ nguồn chính thức và từ chối tệp có tên lạ. ([#550](https://github.com/aowvn-10diem/aowvn-monika/pull/550), [#580](https://github.com/aowvn-10diem/aowvn-monika/pull/580))
+- **Mới:** Lỡ cài phải bản app giả mạo, app sẽ cảnh báo rõ và ẩn mã QR ủng hộ để bạn không chuyển tiền nhầm. ([#584](https://github.com/aowvn-10diem/aowvn-monika/pull/584))
+- **Mới:** Trang đọc bài và trình duyệt trong app chặn các liên kết lạ, đọc tin an toàn hơn. ([#582](https://github.com/aowvn-10diem/aowvn-monika/pull/582))
+- Nội bộ: lọc báo lỗi khi Android dọn app chạy nền bình thường ([#569](https://github.com/aowvn-10diem/aowvn-monika/pull/569)); vá thư viện ([#544](https://github.com/aowvn-10diem/aowvn-monika/pull/544), [#471](https://github.com/aowvn-10diem/aowvn-monika/pull/471), [#546](https://github.com/aowvn-10diem/aowvn-monika/pull/546), [#575](https://github.com/aowvn-10diem/aowvn-monika/pull/575)); gia cố máy chủ tải gói và quy trình kiểm tự động ([#554](https://github.com/aowvn-10diem/aowvn-monika/pull/554), [#555](https://github.com/aowvn-10diem/aowvn-monika/pull/555), [#528](https://github.com/aowvn-10diem/aowvn-monika/pull/528)); tách tệp thử khỏi mã máy chủ ([#539](https://github.com/aowvn-10diem/aowvn-monika/pull/539)); bảng chẩn đoán lỗi chỉ đếm bản chính thức ([#590](https://github.com/aowvn-10diem/aowvn-monika/pull/590), [#545](https://github.com/aowvn-10diem/aowvn-monika/pull/545)).
+
+## v0.8.11 (Bản thử)
+<!-- bien-tap: v0.8.11 -->
+> Phát hành ngày 08/11/2026 (UTC), bản thử nghiệm.
+
+- **Mới:** Trang game có mục **Save**: xem các bản save, nhập save từ tệp và chia sẻ bản sao lưu ra ngoài. ([#499](https://github.com/aowvn-10diem/aowvn-monika/pull/499))
+- **Mới:** Thư viện có mục **Tệp** để tìm game, tài liệu và tệp khác trong cùng một chỗ. ([#434](https://github.com/aowvn-10diem/aowvn-monika/pull/434))
+- **Mới:** Tải game từ Pixeldrain nay do bạn chủ động: dán link vào **Tải xuống › Tải từ link**, app cảnh báo trước khi tải. ([#501](https://github.com/aowvn-10diem/aowvn-monika/pull/501))
+- **Mới:** Bài viết từ aow.vn mặc định tắt; muốn xem và nhận thông báo bài mới, bật lại ở **Cài đặt › Bài viết & tin tức**. ([#498](https://github.com/aowvn-10diem/aowvn-monika/pull/498))
+
 ## v0.8.10 (Bản thử)
 <!-- bien-tap: v0.8.10 -->
 > Phát hành ngày 04/11/2026 (UTC), bản thử nghiệm.

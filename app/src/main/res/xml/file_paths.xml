@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  V204: giữ external-path "." vì game quét ngoài máy có thể nằm ở bất kỳ thư mục người dùng
+  (thu hẹp sẽ làm FileProvider.getUriForFile ném lỗi khi chia sẻ tệp game/save).
+  Provider vẫn exported=false và chỉ cấp quyền theo từng URI.
+-->
 <paths>
-    <external-path name="shared" path="." />
-    <external-files-path name="app_external" path="." />
     <files-path name="app_internal" path="." />
+    <external-files-path name="app_external" path="." />
+    <external-path name="shared" path="." />
 </paths>

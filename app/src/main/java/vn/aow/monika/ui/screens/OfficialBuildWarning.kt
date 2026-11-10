@@ -31,14 +31,20 @@ import vn.aow.monika.ui.theme.Radius
 @Composable
 fun OfficialBuildWarning(officialSha256: String, message: String) {
     val context = LocalContext.current
-    val actual = remember { Diagnostics.certSha256(context) }
-    OfficialBuildWarning(actual, officialSha256, BuildConfig.DEBUG, message)
+    // A78-3: so cả chứng thư PackageManager với khối chữ ký trong APK để phát hiện hook.
+    val trust = remember { OfficialCert.verifyOfficialApk(context, officialSha256) }
+    OfficialBuildWarning(trust, message)
 }
 
 /** Phần vẽ tách riêng để test được đủ 4 ca trên JVM, không cần chứng thư thật. */
 @Composable
 internal fun OfficialBuildWarning(actualSha256: String, officialSha256: String, debugBuild: Boolean, message: String) {
-    if (!OfficialCert.isForeignBuild(actualSha256, officialSha256, debugBuild)) return
+    OfficialBuildWarning(OfficialCert.trustOf(actualSha256, null, officialSha256, debugBuild), message)
+}
+
+@Composable
+internal fun OfficialBuildWarning(trust: OfficialCert.BuildTrust, message: String) {
+    if (trust != OfficialCert.BuildTrust.FOREIGN) return
     val c = Monika.colors
     Column(
         Modifier.fillMaxWidth()

@@ -18,6 +18,8 @@ jobs:
   spike:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
+    env:
+      RENPY_VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/setup-java@v6
         with: { distribution: temurin, java-version: 21 }
@@ -25,16 +27,17 @@ jobs:
       - name: Tải SDK + RAPT chính thức
         run: |
           set -eo pipefail
-          V=${{ inputs.version }}
+          [[ "$RENPY_VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-[A-Za-z0-9._-]+)?$ ]] || { echo "::error::Phiên bản Ren'Py không hợp lệ"; exit 1; }
+          V="$RENPY_VERSION"
           for f in sdk rapt; do curl -sSfL -O "https://www.renpy.org/dl/$V/renpy-$V-$f.zip"; done
           sha256sum *.zip
-          unzip -q renpy-$V-sdk.zip
-          unzip -q renpy-$V-rapt.zip -d renpy-$V-sdk
+          unzip -q "renpy-$V-sdk.zip"
+          unzip -q "renpy-$V-rapt.zip" -d "renpy-$V-sdk"
           sudo apt-get update -qq && sudo apt-get install -y -qq xvfb >/dev/null
 
       - name: Cấu hình dự án the_question (android.json)
-        working-directory: renpy-${{ inputs.version }}-sdk
         run: |
+          cd "renpy-$RENPY_VERSION-sdk"
           cat > the_question/.android.json <<'EOT'
           {"package":"vn.aow.spike.question","name":"The Question","icon_name":"Question","version":"1.0","numeric_version":1,
            "orientation":"sensorLandscape","permissions":["VIBRATE","INTERNET"],"include_pil":false,"include_sqlite":false,
@@ -43,9 +46,9 @@ jobs:
           EOT
 
       - name: Phân phối gói android (không nén)
-        working-directory: renpy-${{ inputs.version }}-sdk
         run: |
           set -o pipefail
+          cd "renpy-$RENPY_VERSION-sdk"
           chmod +x renpy.sh lib/*/* 2>/dev/null || true
           xvfb-run -a ./renpy.sh launcher distribute the_question --package android --no-archive --packagedest "$PWD/../dist-out/question" 2>&1 | tee ../distribute.log | tail -30
           ls -la ../dist-out
@@ -54,7 +57,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Bố cục phân phối Ren'Py ${{ inputs.version }} (android, không nén)"
+            echo "## Bố cục phân phối Ren'Py $RENPY_VERSION (android, không nén)"
             echo '```'
             ls -la dist-out 2>/dev/null
             D=$(find dist-out -maxdepth 2 -type d -name 'question*' | head -1); [ -z "$D" ] && D=dist-out
@@ -63,8 +66,8 @@ jobs:
             echo "--- lib/ tìm python"; find "$D/lib" -maxdepth 2 | head -20
             echo "--- kích thước"; du -sh "$D"/* 2>/dev/null | sort -h | tail -15
             echo "--- kích thước renpy/ + lib/ + common"; du -sh "$D/renpy" "$D/lib" "$D/renpy/common" 2>/dev/null
-            echo "--- ngoài ra: jniLibs của RAPT"; ls -l renpy-${{ inputs.version }}-sdk/rapt/prototype/renpyandroid/src/main/jniLibs/*/librenpython.so
-            echo "--- blocklist/keeplist của RAPT"; cat renpy-${{ inputs.version }}-sdk/rapt/blocklist.txt; cat renpy-${{ inputs.version }}-sdk/rapt/keeplist.txt
+            echo "--- ngoài ra: jniLibs của RAPT"; ls -l "renpy-$RENPY_VERSION-sdk"/rapt/prototype/renpyandroid/src/main/jniLibs/*/librenpython.so
+            echo "--- blocklist/keeplist của RAPT"; cat "renpy-$RENPY_VERSION-sdk/rapt/blocklist.txt"; cat "renpy-$RENPY_VERSION-sdk/rapt/keeplist.txt"
             echo '```'
           } 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
 

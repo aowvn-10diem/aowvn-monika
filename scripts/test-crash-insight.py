@@ -27,6 +27,17 @@ def row(**kw):
 
 
 class Grouping(unittest.TestCase):
+    def test_official_only_drops_foreign_cert_rows(self):
+        payload = {"reports": [
+            row(cert="c46902e97029a965"),          # chứng thư phát hành
+            row(cert="1e08a903aef90000"),          # bản khác chứng thư → loại
+            row(cert=""),                          # bản cũ không gửi chứng thư → giữ
+        ]}
+        _, _, scanned, groups = insight.build(payload, official_only=True)
+        self.assertEqual(3, scanned)
+        self.assertEqual(2, groups)
+        _, _, _, all_groups = insight.build(payload)
+        self.assertEqual(3, all_groups)
     def test_same_core_kind_signature_is_one_group_and_counts_add_up(self):
         groups = insight.group_rows([row(count=2), row(count=3), row(t=1_700_000_000_100)])
         self.assertEqual(1, len(groups))

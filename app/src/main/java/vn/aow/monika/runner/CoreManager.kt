@@ -144,7 +144,7 @@ class CoreManager(
                 val expectedHash = artifact.sha256
                 if (!expectedHash.matches(Regex("[a-fA-F0-9]{64}")) || wantedVersion.isBlank())
                     throw IOException("Ảnh chụp lõi thiếu hash/version")
-                PackTransaction.install(coreDir(id)) { archive, candidate ->
+                PackTransaction.install(coreDir(id), readOnly = true) { archive, candidate ->
                     var serverDate = ""; var lastBytes = -1L; var lastPct = -1
                     http.newCall(Request.Builder().url(url).build()).execute().use { response ->
                         if (!response.isSuccessful) throw IOException("Tải lõi thất bại (HTTP ${response.code})")
