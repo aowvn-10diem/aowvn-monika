@@ -76,8 +76,6 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
     val c = Monika.colors
     var open by remember { mutableStateOf<String?>(null) }
     var refreshTick by remember { mutableIntStateOf(0) }
-    // V193 G1: mặc định tắt; công tắc này là nơi duy nhất bật lại.
-    var feedOn by remember { mutableStateOf(AppGraph.feedEnabled) }
 
     Screen {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = if (onBack == null) DockClearance else 24.dp)) {
@@ -109,16 +107,8 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                     )
                 }
 
-                SettingGroup("feed", open, { open = it }, R.drawable.ic_fluent_news_24_regular, primaryGradient(), "Bài viết & tin tức", if (feedOn) "Đang bật" else "Đang tắt") {
-                    ChipBar(listOf(true, false), feedOn, { if (it) "Bật" else "Tắt" }, { on ->
-                        feedOn = on
-                        AppGraph.setFeedEnabled(on)
-                    }, accent = true, contentPadding = PaddingValues(0.dp))
-                    Text(
-                        "Khi bật, app tải bài viết từ aow.vn. Mặc định tắt để bản tự build không gọi dịch vụ AowVN.",
-                        style = Monika.type.caption, color = c.textSecondary,
-                    )
-                }
+                // [A65] Bản Play không có trình đọc bài viết (đã bỏ PlayArticles) nên ẩn hẳn công tắc
+                // "Bài viết & tin tức": feed luôn tắt trong catalog Play, không mời người chơi sang aow.vn.
 
                 SettingGroup("controller", open, { open = it }, R.drawable.ic_fluent_xbox_controller_24_regular, primaryGradient(), "Tay cầm ảo", "Rung, hiệu ứng bấm và cỡ nút") {
                     vn.aow.monika.ui.controls.ControllerSettings(AppGraph.prefs)

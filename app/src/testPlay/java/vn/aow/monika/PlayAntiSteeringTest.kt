@@ -87,6 +87,7 @@ class PlayAntiSteeringTest {
     @Test fun playScreensHideAccountCardAndArticles() {
         val settings = File(appModule(), "src/play/java/vn/aow/monika/ui/screens/PlaySettings.kt").readText()
         assertFalse("Cài đặt bản Play còn thẻ tài khoản AowVN", settings.contains("AccountCard"))
+        assertFalse("Cài đặt bản Play còn công tắc Bài viết & tin tức", settings.contains("SettingGroup(\"feed\""))
         val main = File(appModule(), "src/play/java/vn/aow/monika/ui/MainActivity.kt").readText()
         assertFalse("Màn chính bản Play còn trình đọc bài viết", main.contains("PlayArticles"))
         assertFalse("Màn chính bản Play còn lối vào bài viết", main.contains("\"articles\""))

@@ -28,6 +28,7 @@ import org.microemu.microedition.io.ConnectionImplementation;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import javax.bluetooth.BluetoothStateException;
 import javax.bluetooth.UUID;
 import javax.microedition.io.StreamConnection;
 import javax.microedition.io.StreamConnectionNotifier;
@@ -79,63 +80,73 @@ public class Connection implements ConnectionImplementation, StreamConnectionNot
 		java.util.UUID btUuid = connUuid.uuid;
 
 		BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-		if (adapter.isDiscovering()) {
-			adapter.cancelDiscovery();
+		if (adapter == null) {
+			// [A65] Bản Play không cấp quyền Bluetooth: báo lỗi JSR-82 thay vì để app văng.
+			throw new BluetoothStateException("Thiết bị không hỗ trợ Bluetooth");
 		}
-		// java.util.UUID btUuid = getJavaUUID(uuid);
-		// "localhost" indicates that we are acting as server
-		if (host.equals("localhost")) {
-			// btUuid = new javax.bluetooth.UUID(0x1101).uuid;
+		try {
+			if (adapter.isDiscovering()) {
+				adapter.cancelDiscovery();
+			}
+			// java.util.UUID btUuid = getJavaUUID(uuid);
+			// "localhost" indicates that we are acting as server
+			if (host.equals("localhost")) {
+				// btUuid = new javax.bluetooth.UUID(0x1101).uuid;
 
-			// Android 6.0.1 bug: UUID is reversed
-			// see https://issuetracker.google.com/issues/37075233
-			UUID NameUuid = new UUID(0x1102);
-			nameServerSocket = adapter.listenUsingInsecureRfcommWithServiceRecord(srvname, NameUuid.uuid);
+				// Android 6.0.1 bug: UUID is reversed
+				// see https://issuetracker.google.com/issues/37075233
+				UUID NameUuid = new UUID(0x1102);
+				nameServerSocket = adapter.listenUsingInsecureRfcommWithServiceRecord(srvname, NameUuid.uuid);
 
-			String finalSrvname = srvname;
-			// Send service name to client
-			Thread connectThread = new Thread(() -> {
+				String finalSrvname = srvname;
+				// Send service name to client
+				Thread connectThread = new Thread(() -> {
+					try {
+						byte[] dstByte = new byte[256];
+						byte[] srcByte = finalSrvname.getBytes();
+						System.arraycopy(srcByte, 0, dstByte, 0, srcByte.length);
+						BluetoothSocket connectSocket = nameServerSocket.accept();
+						OutputStream os = connectSocket.getOutputStream();
+						os.write(0);
+						os.write(dstByte);
+						os.flush();
+						nameServerSocket.close();
+					} catch (IOException | SecurityException e) {
+						Log.w(TAG, "openConnection: ", e);
+					}
+				});
+				connectThread.start();
+				if (secure) {
+					serverSocket = adapter.listenUsingRfcommWithServiceRecord(finalSrvname, btUuid);
+				} else {
+					serverSocket = adapter.listenUsingInsecureRfcommWithServiceRecord(finalSrvname, btUuid);
+				}
+				return this;
+			} else {
+				StringBuilder sb = new StringBuilder(host);
+				for (int i = 2; i < sb.length(); i += 3) {
+					sb.insert(i, ':');
+				}
+				String addr = sb.toString();
+
+				BluetoothDevice dev = adapter.getRemoteDevice(addr);
+				if (secure) {
+					socket = dev.createRfcommSocketToServiceRecord(btUuid);
+				} else {
+					socket = dev.createInsecureRfcommSocketToServiceRecord(btUuid);
+				}
+
 				try {
-					byte[] dstByte = new byte[256];
-					byte[] srcByte = finalSrvname.getBytes();
-					System.arraycopy(srcByte, 0, dstByte, 0, srcByte.length);
-					BluetoothSocket connectSocket = nameServerSocket.accept();
-					OutputStream os = connectSocket.getOutputStream();
-					os.write(0);
-					os.write(dstByte);
-					os.flush();
-					nameServerSocket.close();
-				} catch (IOException e) {
+					socket.connect();
+				} catch (IOException | SecurityException e) {
 					Log.w(TAG, "openConnection: ", e);
 				}
-			});
-			connectThread.start();
-			if (secure) {
-				serverSocket = adapter.listenUsingRfcommWithServiceRecord(finalSrvname, btUuid);
-			} else {
-				serverSocket = adapter.listenUsingInsecureRfcommWithServiceRecord(finalSrvname, btUuid);
+				return new SPPConnectionImpl(socket, false);
 			}
-			return this;
-		} else {
-			StringBuilder sb = new StringBuilder(host);
-			for (int i = 2; i < sb.length(); i += 3) {
-				sb.insert(i, ':');
-			}
-			String addr = sb.toString();
-
-			BluetoothDevice dev = adapter.getRemoteDevice(addr);
-			if (secure) {
-				socket = dev.createRfcommSocketToServiceRecord(btUuid);
-			} else {
-				socket = dev.createInsecureRfcommSocketToServiceRecord(btUuid);
-			}
-
-			try {
-				socket.connect();
-			} catch (IOException e) {
-				Log.w(TAG, "openConnection: ", e);
-			}
-			return new SPPConnectionImpl(socket, false);
+		} catch (SecurityException e) {
+			// [A65] Bản Play gỡ quyền Bluetooth (BLUETOOTH_*); JSR-82 phải báo lỗi, không crash.
+			Log.w(TAG, "openConnection: thiếu quyền Bluetooth", e);
+			throw new BluetoothStateException("Ứng dụng chưa được cấp quyền Bluetooth");
 		}
 	}
 
