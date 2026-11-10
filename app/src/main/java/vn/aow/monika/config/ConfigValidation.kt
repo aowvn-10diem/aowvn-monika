@@ -57,7 +57,11 @@ internal object ConfigValidation {
                     if (text.isNotEmpty()) {
                         val url = text.replace("{abi}", "arm64-v8a").toHttpUrlOrNull()
                         require(url != null && url.scheme == "https" && text.startsWith("https://")) { "$path: URL phải là HTTPS hợp lệ" }
-                        if (field == "directUrl") {
+                        if (field == "loginUrl") {
+                            // V204: phiên đăng nhập chỉ được gửi tới miền aow.vn (aow.vn hoặc tên miền con).
+                            val host = url!!.host.lowercase()
+                            require(host == "aow.vn" || host.endsWith(".aow.vn")) { "$path: loginUrl phải thuộc aow.vn" }
+                        } else if (field == "directUrl") {
                             // V196b: URL tệp do config tạo, đi thẳng vào trình quản lý tải của hệ thống.
                             require(isAllowedDirectUrlHost(url!!.host.lowercase())) { "$path: host tải tệp không nằm trong danh sách cho phép" }
                         } else if (isDownloadUrl(path, field)) {

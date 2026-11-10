@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  V204: sao lưu chỉ giữ dữ liệu người chơi cần khôi phục.
+  Loại trừ phiên đăng nhập (SharedPreferences "account", "ra", "monika", cookie WebView), mã lõi/gói tải lại được,
+  đệm ảnh/feed và dữ liệu chẩn đoán.
+-->
+<full-backup-content>
+    <include domain="sharedpref" path="." />
+    <include domain="database" path="." />
+    <exclude domain="sharedpref" path="account.xml" />
+    <exclude domain="sharedpref" path="ra.xml" />
+    <exclude domain="sharedpref" path="monika.xml" />
+    <exclude domain="sharedpref" path="monika_game.xml" />
+    <exclude domain="root" path="app_webview/" />
+    <exclude domain="file" path="cores/" />
+    <exclude domain="file" path="packs/" />
+    <exclude domain="file" path="adblock/" />
+    <exclude domain="file" path="diag/" />
+    <exclude domain="external" path="feed/" />
+    <exclude domain="external" path="images/" />
+</full-backup-content>

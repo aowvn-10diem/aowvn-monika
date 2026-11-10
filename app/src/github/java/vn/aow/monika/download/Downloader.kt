@@ -58,6 +58,8 @@ class Downloader(
             request.setDestinationInExternalFilesDir(context, GameStorage.FOLDER, sub)
         }
         return dm.enqueue(request).also { id ->
+            // V204: chỉ xử lý broadcast cho ID do app này đặt.
+            prefs.markDownload(id)
             if (isTool) prefs.markToolDownload(id)
             meta?.let { prefs.setDownloadMeta(id, it.toJson()) }
         }
@@ -99,10 +101,18 @@ class Downloader(
     }
 }
 
+/**
+ * Chỉ xử lý broadcast tải xong của ID do chính app này đặt. `exported=true` là bắt buộc vì
+ * `ACTION_DOWNLOAD_COMPLETE` do DownloadProvider (UID `android.media`) gửi; lớp chặn thật là
+ * danh sách ID đã đánh dấu khi `enqueue`.
+ */
+internal fun shouldHandleDownload(action: String?, id: Long, ownId: Boolean): Boolean =
+    action == DownloadManager.ACTION_DOWNLOAD_COMPLETE && id >= 0 && ownId
+
 class DownloadReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-        if (id < 0) return
+        if (!shouldHandleDownload(intent.action, id, id >= 0 && AppGraph.prefs.isOwnDownload(id))) return
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
