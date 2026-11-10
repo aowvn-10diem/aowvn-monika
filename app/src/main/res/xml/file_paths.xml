@@ -2,13 +2,10 @@
 <!--
   V204: giữ external-path "." vì game quét ngoài máy có thể nằm ở bất kỳ thư mục người dùng
   (thu hẹp sẽ làm FileProvider.getUriForFile ném lỗi khi chia sẻ tệp game/save).
-  Bổ sung cache-path để không phải mở rộng thêm domain khác; provider vẫn exported=false
-  và chỉ cấp quyền theo từng URI.
+  Provider vẫn exported=false và chỉ cấp quyền theo từng URI.
 -->
 <paths>
     <files-path name="app_internal" path="." />
-    <cache-path name="app_cache" path="." />
     <external-files-path name="app_external" path="." />
-    <external-cache-path name="app_external_cache" path="." />
     <external-path name="shared" path="." />
 </paths>

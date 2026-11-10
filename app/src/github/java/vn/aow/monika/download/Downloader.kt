@@ -98,12 +98,18 @@ class Downloader(
     }
 }
 
+/**
+ * Chỉ xử lý broadcast tải xong của ID do chính app này đặt. `exported=true` là bắt buộc vì
+ * `ACTION_DOWNLOAD_COMPLETE` do DownloadProvider (UID `android.media`) gửi; lớp chặn thật là
+ * danh sách ID đã đánh dấu khi `enqueue`.
+ */
+internal fun shouldHandleDownload(action: String?, id: Long, ownId: Boolean): Boolean =
+    action == DownloadManager.ACTION_DOWNLOAD_COMPLETE && id >= 0 && ownId
+
 class DownloadReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        // V204: chỉ nhận đúng broadcast tải xong và ID do chính app này đặt vào DownloadManager.
-        if (intent.action != DownloadManager.ACTION_DOWNLOAD_COMPLETE) return
         val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-        if (id < 0 || !AppGraph.prefs.isOwnDownload(id)) return
+        if (!shouldHandleDownload(intent.action, id, id >= 0 && AppGraph.prefs.isOwnDownload(id))) return
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
