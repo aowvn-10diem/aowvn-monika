@@ -17,6 +17,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstring>
+#include <stdexcept>
 #include <unistd.h>
 
 #include "utils.h"
@@ -25,33 +27,58 @@
 namespace libretrodroid {
 
 Utils::ReadResult Utils::readFileAsBytes(const std::string &filePath) {
-    std::ifstream fileStream(filePath);
-    fileStream.seekg(0, std::ios::end);
-    size_t size = fileStream.tellg();
+    // V202: mở nhị phân + đo kích thước bằng tellg; tellg < 0 (không mở được) phải ném lỗi rõ,
+    // không được ép sang size_t (thành SIZE_MAX) rồi new char[...] gây bad_alloc/SIGABRT.
+    std::ifstream fileStream(filePath, std::ios::binary | std::ios::ate);
+    if (!fileStream) {
+        throw std::runtime_error("Cannot open game file: " + filePath);
+    }
+    std::streampos end = fileStream.tellg();
+    if (end < 0) {
+        throw std::runtime_error("Cannot read game file size: " + filePath);
+    }
+    size_t size = static_cast<size_t>(end);
     char* bytes = new char[size];
     fileStream.seekg(0, std::ios::beg);
-    fileStream.read(bytes, size);
+    if (size > 0 && !fileStream.read(bytes, static_cast<std::streamsize>(size))) {
+        delete[] bytes;
+        throw std::runtime_error("Cannot read game file: " + filePath);
+    }
     fileStream.close();
 
     return ReadResult { size, bytes };
 }
 
 Utils::ReadResult Utils::readFileAsBytes(const int fileDescriptor) {
-    FILE* file = fdopen(fileDescriptor, "r");
+    FILE* file = fdopen(fileDescriptor, "rb");
+    if (file == nullptr) {
+        close(fileDescriptor);
+        throw std::runtime_error("Cannot open game file descriptor");
+    }
     size_t size = getFileSize(file);
 
     char* bytes = new char[size];
-    fread(bytes, sizeof(char), size, file);
-    close(fileDescriptor);
+    size_t read = size == 0 ? 0 : fread(bytes, sizeof(char), size, file);
+    // V202: fclose tự đóng cả fd; trước đây close(fd) để rò FILE*.
+    fclose(file);
+    if (read != size) {
+        delete[] bytes;
+        throw std::runtime_error("Cannot read game file descriptor");
+    }
     return ReadResult { size, bytes };
 }
 
 size_t Utils::getFileSize(FILE* file) {
+    if (file == nullptr) return 0;
     fseek(file, 0, SEEK_SET);
     fseek(file, 0, SEEK_END);
-    size_t size = ftell(file);
+    long size = ftell(file);
     fseek(file, 0, SEEK_SET);
-    return size;
+    if (size < 0) {
+        LOGE("Cannot read file size");
+        return 0;
+    }
+    return static_cast<size_t>(size);
 }
 
 const char* Utils::cloneToCString(const std::string &input) {

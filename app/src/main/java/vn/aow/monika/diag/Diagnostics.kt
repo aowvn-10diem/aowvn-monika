@@ -294,7 +294,8 @@ object Diagnostics {
             ApplicationExitInfo.REASON_OTHER -> "OTHER"
             else -> "code ${e.reason}"
         }
-        return "$name (status ${e.status}) ${e.description.orEmpty()}".trim()
+        val detail = if (Build.VERSION.SDK_INT >= 30) " imp=${e.importance} pss=${e.pss shr 10}MB" else ""
+        return "$name (status ${e.status}) ${e.description.orEmpty()}$detail".trim()
     }
 
     /** Tombstone của Android (protobuf) — không parse đầy đủ, chỉ nhặt các chuỗi đọc được: tên .so, hàm, tín hiệu. */
@@ -803,6 +804,24 @@ object Diagnostics {
     }.getOrDefault("")
 
     /**
+     * V202: Android thu hồi tiến trình nền `IMPORTANCE_CACHED` là cơ chế bình thường, không phải
+     * lỗi của app; chỉ báo `lowmem` khi tiến trình còn quan trọng hoặc có phiên chết khớp.
+     * Tiến trình sandbox của WebView cũng bỏ (không phải tiến trình app).
+     */
+    internal fun shouldReportLowMem(importance: Int, processName: String?, hasDeathSession: Boolean): Boolean {
+        if (processName?.contains("sandboxed_process") == true) return false
+        if (!hasDeathSession && importance >= ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED) return false
+        return true
+    }
+
+    /**
+     * V202: khi `trace` rỗng (lowmem), không trộn `crumbs` cũ vào phần đoán thành phần — crumb
+     * mạng cũ sẽ gán nhầm tiến trình chính thành `net`/`pack:*`. Có trace thì mới dùng crumbs.
+     */
+    internal fun componentHint(trace: String, crumbs: List<String>): String =
+        if (trace.isNotBlank()) trace + "\n" + crumbs.joinToString("\n") else ""
+
+    /**
      * Quét lý do chết của CHÍNH tiến trình chính (và ":midlet"/":crash") do Android ghi lại: native crash, ANR, hết RAM…
      * — những lần chết không có ngoại lệ Java để CrashReporter bắt. Gọi lúc mở app; chỉ tạo báo cáo cho lần chết mới.
      */
@@ -829,8 +848,14 @@ object Diagnostics {
             val trace = scrub(c, traceStrings(e).joinToString("\n"))
             val crumbs = Breadcrumbs.read(c, e.pid)
             val deathSession = if (kind == "anr" || kind == "lowmem") readDeathSession(c, e.pid, e.timestamp, e.processStateSummary) else null
+            // V202: bỏ ca Android dọn tiến trình nền bình thường; vẫn dọn trạng thái để không quét lại.
+            if (kind == "lowmem" && !shouldReportLowMem(e.importance, e.processName, deathSession != null)) {
+                Breadcrumbs.drop(c, e.pid)
+                clearDeathSession(c, e.pid, e.processStateSummary)
+                continue
+            }
             val proc = e.processName.orEmpty().substringAfter(':', "chính")
-            val comp = Components.of(c, deathSession, trace + "\n" + crumbs.joinToString("\n")).ifBlank { "app:$proc" }
+            val comp = Components.of(c, deathSession, componentHint(trace, crumbs)).ifBlank { "app:$proc" }
             out += record(c, Report(
                 id = e.timestamp, time = e.timestamp, kind = kind,
                 title = when (kind) {
