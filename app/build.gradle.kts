@@ -54,12 +54,6 @@ android {
         )
         // [A65] flavor `play` (V150) đặt false: màn "Cần cập nhật" chỉ ghi "Cập nhật trên Google Play", không mở link APK ngoài.
         buildConfigField("boolean", "APK_DOWNLOAD_ALLOWED", "true")
-        // V196: host tải bổ sung CHỈ cho bản test/CI (rỗng ở bản phát hành). CI đặt biến môi trường
-        // `MONIKA_EXTRA_DOWNLOAD_HOSTS` trước khi build; allowlist production trong mã không bị sửa.
-        buildConfigField(
-            "String", "EXTRA_DOWNLOAD_HOSTS",
-            "\"${System.getenv("MONIKA_EXTRA_DOWNLOAD_HOSTS").orEmpty().replace("\"", "")}\""
-        )
     }
 
     flavorDimensions += "distribution"
@@ -89,10 +83,21 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName(if (keystore != null) "release" else "debug")
+            // V196/A85: bản phát hành LUÔN rỗng — không đọc biến môi trường nào để nới allowlist tải.
+            buildConfigField("String", "EXTRA_DOWNLOAD_HOSTS", "\"\"")
             // R8: thu gọn + bỏ code thừa. Luật giữ lớp: proguard-rules.pro (+ luật của j2me/).
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        debug {
+            // V196/A85: host tải bổ sung CHỈ cho bản test/CI. CI đặt biến môi trường
+            // `MONIKA_EXTRA_DOWNLOAD_HOSTS` trước khi build; allowlist production trong mã không bị sửa.
+            // Bản release không bao giờ đọc biến này (xem `release` ở trên).
+            buildConfigField(
+                "String", "EXTRA_DOWNLOAD_HOSTS",
+                "\"${System.getenv("MONIKA_EXTRA_DOWNLOAD_HOSTS").orEmpty().replace("\"", "")}\""
+            )
         }
     }
     // Mỗi loại chip 1 APK (nhẹ ~1/2) + 1 bản chung cho mọi máy.

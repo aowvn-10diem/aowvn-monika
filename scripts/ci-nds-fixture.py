@@ -112,11 +112,13 @@ def prepare(out, root=ROOT):
     # V196: APK test cần host `localhost` cho server fixture, nhưng KHÔNG sửa allowlist production trong mã.
     # Ghi vào GITHUB_ENV để bước Gradle sau (assembleGithubDebug) nhận qua BuildConfig của bản debug.
     github_env = os.environ.get('GITHUB_ENV')
-    if github_env:
-        with open(github_env, 'a', encoding='utf-8') as handle:
-            handle.write('MONIKA_EXTRA_DOWNLOAD_HOSTS=localhost\n')
-    else:
-        print('CẢNH BÁO: thiếu GITHUB_ENV — hãy export MONIKA_EXTRA_DOWNLOAD_HOSTS=localhost trước khi build APK debug.', flush=True)
+    if not github_env:
+        raise SystemExit(
+            'Thiếu GITHUB_ENV: bước build APK debug sẽ không nhận MONIKA_EXTRA_DOWNLOAD_HOSTS=localhost.\n'
+            'Chạy trong GitHub Actions, hoặc export GITHUB_ENV trước khi gọi prepare.'
+        )
+    with open(github_env, 'a', encoding='utf-8') as handle:
+        handle.write('MONIKA_EXTRA_DOWNLOAD_HOSTS=localhost\n')
     tls = out / 'tls'
     tls.mkdir(exist_ok=True)
     subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',

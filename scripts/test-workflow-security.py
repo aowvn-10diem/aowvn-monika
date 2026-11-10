@@ -121,6 +121,31 @@ def has_explicit_permissions(text: str) -> bool:
     return True
 
 
+def workflow_triggers(document) -> set[str]:
+    """Tập trigger của workflow. PyYAML đọc `on:` thành khoá boolean True (YAML 1.1)."""
+    on = document.get("on", document.get(True))
+    if isinstance(on, str):
+        return {on}
+    if isinstance(on, list):
+        return {str(item) for item in on}
+    if isinstance(on, dict):
+        return {str(key) for key in on}
+    return set()
+
+
+def has_write_permission(permissions) -> bool:
+    if permissions == "write-all":
+        return True
+    if isinstance(permissions, dict):
+        return any(value == "write" for value in permissions.values())
+    return False
+
+
+def job_has_repository_guard(job: dict) -> bool:
+    condition = job.get("if")
+    return isinstance(condition, str) and "github.repository" in condition
+
+
 class WorkflowSecurityTest(unittest.TestCase):
     def iter_workflows(self):
         files = sorted(WORKFLOWS_DIR.glob("*.yml"))
@@ -151,6 +176,36 @@ class WorkflowSecurityTest(unittest.TestCase):
                 has_explicit_permissions(text),
                 f"{path.name}: thiếu khai báo permissions tường minh",
             )
+
+    def test_write_workflows_on_schedule_or_dispatch_guard_every_job(self):
+        """Workflow có `schedule`/`workflow_dispatch` + quyền write ⇒ mọi job phải có guard `github.repository`.
+
+        Đóng bằng test thay vì thêm guard thủ công: workflow chạy định kỳ hoặc bấm tay mà có
+        token ghi thì chỉ được chạy trong repo chính thức, tránh fork/bản sao dùng token ghi.
+        """
+        for path, _text, document in self.iter_workflows():
+            triggers = workflow_triggers(document)
+            if not ({"schedule", "workflow_dispatch"} & triggers):
+                continue
+            top_write = has_write_permission(document.get("permissions"))
+            for name, job in (document.get("jobs") or {}).items():
+                if not isinstance(job, dict):
+                    continue
+                # Job reusable (`uses:`) không có `if` riêng để kiểm ở đây.
+                if "uses" in job:
+                    continue
+                writes = (
+                    has_write_permission(job["permissions"])
+                    if "permissions" in job
+                    else top_write
+                )
+                if not writes:
+                    continue
+                self.assertTrue(
+                    job_has_repository_guard(job),
+                    f"{path.name}: job `{name}` có quyền write và chạy schedule/dispatch "
+                    "nhưng thiếu guard `github.repository`",
+                )
 
     def test_no_untrusted_expressions_interpolated_in_run_blocks(self):
         for path, text, _ in self.iter_workflows():
@@ -229,6 +284,25 @@ class WorkflowSecurityTest(unittest.TestCase):
                 if key in RISKY_WITH_INPUTS and isinstance(value, str) and UNTRUSTED_RUN_EXPR.search(value):
                     found += 1
         self.assertEqual(found, 2, "phải bắt được cả script: và with.args")
+
+        # Guard: workflow schedule/dispatch + write phải có github.repository ở mọi job.
+        guarded = yaml.safe_load(
+            "on:\n  schedule: [{cron: '0 1 * * *'}]\npermissions:\n  contents: write\n"
+            "jobs:\n  a:\n    if: github.repository == 'aowvn-10diem/aowvn-monika'\n    steps: []\n"
+        )
+        unguarded = yaml.safe_load(
+            "on:\n  workflow_dispatch:\npermissions:\n  contents: write\n"
+            "jobs:\n  a:\n    steps: []\n"
+        )
+        read_only = yaml.safe_load(
+            "on:\n  workflow_dispatch:\npermissions:\n  contents: read\n"
+            "jobs:\n  a:\n    steps: []\n"
+        )
+        self.assertIn("schedule", workflow_triggers(guarded))
+        self.assertTrue(has_write_permission(guarded["permissions"]))
+        self.assertTrue(job_has_repository_guard(guarded["jobs"]["a"]))
+        self.assertFalse(job_has_repository_guard(unguarded["jobs"]["a"]))
+        self.assertFalse(has_write_permission(read_only["permissions"]))
 
 
 if __name__ == "__main__":
