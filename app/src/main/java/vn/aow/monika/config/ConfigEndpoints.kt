@@ -13,6 +13,13 @@ import vn.aow.monika.BuildConfig
 object ConfigEndpoints {
     const val PAGES_CONFIG_URL = "https://monika.aow.vn/config.json"
 
+    /** V206: bản đã ký (cùng nội dung + chữ ký Ed25519 ở dòng đầu), tải 1 lượt GET. */
+    const val PAGES_SIGNED_CONFIG_URL = "https://monika.aow.vn/config.signed.json"
+
     /** Worker giữ nguyên link build sẵn của APK (không hard-code lại). */
     val WORKER_CONFIG_URL: String get() = BuildConfig.REMOTE_CONFIG_URL
+
+    /** V206: bản đã ký cùng nguồn Worker, suy ra từ [WORKER_CONFIG_URL]. */
+    val WORKER_SIGNED_CONFIG_URL: String
+        get() = WORKER_CONFIG_URL.replace("/config.json", "/config.signed.json")
 }

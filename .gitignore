@@ -20,3 +20,6 @@ __pycache__/
 # Tệp tạm khi giao việc cho DeepSeek (tools/ds)
 tools/ds/.work/
 .cxx/
+
+# V206: tệp ký sinh ra lúc CI (không commit lên main)
+config.signed.json
