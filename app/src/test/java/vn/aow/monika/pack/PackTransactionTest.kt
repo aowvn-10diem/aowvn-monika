@@ -13,18 +13,30 @@ class PackTransactionTest {
 
     @Test fun installedFilesAreReadOnlyAndUpgradeStillWorks() = runBlocking {
         val target = target(); try {
-            PackTransaction.locked(target) { PackTransaction.install(target) { _, candidate ->
+            PackTransaction.locked(target) { PackTransaction.install(target, readOnly = true) { _, candidate ->
                 File(candidate, "main").writeText("v1"); File(candidate, "version").writeText("1")
             } }
             assertTrue(File(target, "main").canRead())
-            assertFalse("V204: tệp gói sau xác thực phải chỉ-đọc", File(target, "main").canWrite())
+            assertFalse("V204: thư mục lõi sau xác thực phải chỉ-đọc", File(target, "main").canWrite())
             // Nâng cấp lần 2: phải mở quyền ghi để dọn bản .previous, không được ném lỗi.
-            PackTransaction.locked(target) { PackTransaction.install(target) { _, candidate ->
+            PackTransaction.locked(target) { PackTransaction.install(target, readOnly = true) { _, candidate ->
                 File(candidate, "main").writeText("v2"); File(candidate, "version").writeText("2")
             } }
             assertEquals("v2", File(target, "main").readText())
         } finally {
             target.parentFile!!.walkTopDown().forEach { it.setWritable(true) }
+            target.parentFile!!.deleteRecursively()
+        }
+    }
+
+    @Test fun packDirectoryStaysWritableByDefault() = runBlocking {
+        val target = target(); try {
+            PackTransaction.locked(target) { PackTransaction.install(target) { _, candidate ->
+                File(candidate, "engine.cfg").writeText("cfg")
+            } }
+            // Thư mục gói có thể bị engine ghi config → mặc định không đặt chỉ-đọc.
+            assertTrue(File(target, "engine.cfg").canWrite())
+        } finally {
             target.parentFile!!.deleteRecursively()
         }
     }

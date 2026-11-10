@@ -35,7 +35,7 @@ internal object PackTransaction {
             }
         }
 
-    suspend fun install(target: File, prepare: suspend (archive: File, candidate: File) -> Unit) {
+    suspend fun install(target: File, readOnly: Boolean = false, prepare: suspend (archive: File, candidate: File) -> Unit) {
         val work = File(target.parentFile, ".${target.name}.install-${UUID.randomUUID()}")
         val candidate = File(work, "candidate")
         checkDir(candidate)
@@ -47,8 +47,8 @@ internal object PackTransaction {
                 if (old.exists()) move(old, target)
                 throw error
             }
-            // V204: gói đã xác thực SHA-256 xong mới đặt chỉ-đọc; bản .previous phải mở quyền ghi trước khi xoá.
-            setReadOnlyTree(target)
+            // V204: chỉ thư mục lõi (đã xác thực SHA-256) mới đặt chỉ-đọc; thư mục gói có thể bị engine ghi config.
+            if (readOnly) setReadOnlyTree(target)
             setWritableTree(old)
             old.deleteRecursively()
         } finally { work.deleteRecursively() }

@@ -208,6 +208,32 @@ public class AppInstaller {
 		}
 	}
 
+	/**
+	 * V204: mở kết nối HTTPS và tự đi từng bước chuyển hướng, kiểm scheme ở MỖI bước.
+	 * Không dùng `setInstanceFollowRedirects(true)` vì nó tự nhảy (kể cả xuống http://) trước khi ta kiểm.
+	 */
+	private HttpURLConnection openHttps(String url) throws IOException, ConverterException {
+		String current = url;
+		for (int hop = 0; hop < 5; hop++) {
+			if (!current.startsWith("https://")) throw new ConverterException("Chỉ tải qua HTTPS");
+			HttpURLConnection connection = (HttpURLConnection) new URL(current).openConnection();
+			connection.setInstanceFollowRedirects(false);
+			connection.setReadTimeout(3 * 60 * 1000);
+			connection.setConnectTimeout(15000);
+			int code = connection.getResponseCode();
+			if (code == HttpURLConnection.HTTP_MOVED_PERM || code == HttpURLConnection.HTTP_MOVED_TEMP ||
+				code == HttpURLConnection.HTTP_SEE_OTHER || code == 307 || code == 308) {
+				String next = connection.getHeaderField("Location");
+				connection.disconnect();
+				if (next == null || next.isEmpty()) throw new ConverterException("Chuyển hướng không có địa chỉ");
+				current = new URL(new URL(current), next).toString();
+				continue;
+			}
+			return connection;
+		}
+		throw new ConverterException("Quá nhiều lần chuyển hướng");
+	}
+
 	private void downloadJad() throws ConverterException {
 		if (!cacheDir.exists() && !cacheDir.mkdirs()) {
 			throw new ConverterException("Can't create cache dir");
@@ -218,22 +244,7 @@ public class AppInstaller {
 		Exception exception;
 		HttpURLConnection connection = null;
 		try {
-			connection = (HttpURLConnection) new URL(url).openConnection();
-			connection.setInstanceFollowRedirects(true);
-			connection.setReadTimeout(3 * 60 * 1000);
-			connection.setConnectTimeout(15000);
-			int code = connection.getResponseCode();
-			if (code == HttpURLConnection.HTTP_MOVED_PERM ||
-				code == HttpURLConnection.HTTP_MOVED_TEMP) {
-				String urlStr = connection.getHeaderField("Location");
-				// V204: không đi theo chuyển hướng xuống HTTP không mã hoá.
-				if (urlStr == null || !urlStr.startsWith("https://")) throw new ConverterException("Chỉ tải qua HTTPS");
-				connection.disconnect();
-				connection = (HttpURLConnection) new URL(urlStr).openConnection();
-				connection.setInstanceFollowRedirects(true);
-				connection.setReadTimeout(3 * 60 * 1000);
-				connection.setConnectTimeout(15000);
-			}
+			connection = openHttps(url);
 			try (InputStream inputStream = connection.getInputStream();
 				 OutputStream outputStream = new FileOutputStream(srcFile)) {
 				byte[] buffer = new byte[2048];
@@ -458,22 +469,7 @@ public class AppInstaller {
 		Exception exception;
 		HttpURLConnection connection = null;
 		try {
-			connection = (HttpURLConnection) new URL(url).openConnection();
-			connection.setInstanceFollowRedirects(true);
-			connection.setReadTimeout(3 * 60 * 1000);
-			connection.setConnectTimeout(15000);
-			int code = connection.getResponseCode();
-			if (code == HttpURLConnection.HTTP_MOVED_PERM ||
-				code == HttpURLConnection.HTTP_MOVED_TEMP) {
-				String urlStr = connection.getHeaderField("Location");
-				// V204: không đi theo chuyển hướng xuống HTTP không mã hoá.
-				if (urlStr == null || !urlStr.startsWith("https://")) throw new ConverterException("Chỉ tải qua HTTPS");
-				connection.disconnect();
-				connection = (HttpURLConnection) new URL(urlStr).openConnection();
-				connection.setInstanceFollowRedirects(true);
-				connection.setReadTimeout(3 * 60 * 1000);
-				connection.setConnectTimeout(15000);
-			}
+			connection = openHttps(url);
 			try (InputStream inputStream = connection.getInputStream();
 				 OutputStream outputStream = new FileOutputStream(srcJar)) {
 				byte[] buffer = new byte[2048];
