@@ -185,10 +185,10 @@ fun SettingsScreen(onBack: (() -> Unit)? = null, header: (@Composable () -> Unit
                         "Bật: khi sắp chơi (vd. mở Thư viện có game \"Tiếp tục chơi\"), Monika đọc sẵn file game và dựng sẵn trình chạy ở nền để vào game nhanh hơn.",
                         style = Monika.type.caption, color = c.textSecondary,
                     )
-                    var autoCrash by remember { mutableStateOf(AppGraph.prefs.autoSendCrash) }
-                    ChipBar(listOf(true, false), autoCrash, { if (it) "Tự gửi báo lỗi game: Bật" else "Tự gửi báo lỗi game: Tắt" }, { autoCrash = it; AppGraph.prefs.autoSendCrash = it }, accent = true, contentPadding = PaddingValues(0.dp))
+                    // [A65] Catalog Play đặt crash.autoSend=false nên công tắc tự gửi không còn tác dụng:
+                    // bản Play chỉ gửi báo lỗi khi người dùng chủ động bấm gửi (Data Safety khai tùy chọn).
                     Text(
-                        "Khi lõi giả lập sập hoặc không chạy được game, Monika tự gửi báo lỗi ẩn danh (tên game, hệ máy, lõi, kiểu máy, log của lõi; không có tên bạn, email hay đường dẫn file) để AowVN sửa nhanh.",
+                        "Bản Play không tự gửi báo lỗi. Khi lõi giả lập sập, Monika hiện nút để bạn xem và tự bấm gửi báo lỗi ẩn danh (tên game, hệ máy, lõi, kiểu máy, log của lõi; không có tên bạn, email hay đường dẫn file).",
                         style = Monika.type.caption, color = c.textSecondary,
                     )
                 }

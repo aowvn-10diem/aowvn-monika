@@ -27,7 +27,7 @@ FORBIDDEN_TEXT = (
 FORBIDDEN_PERMISSIONS = (
     'REQUEST_INSTALL_PACKAGES', 'MANAGE_EXTERNAL_STORAGE', 'QUERY_ALL_PACKAGES',
     # [A65] :j2me kéo micro, vị trí, Bluetooth và shortcut vào manifest chung — bản Play gỡ hết.
-    'RECORD_AUDIO', 'ACCESS_FINE_LOCATION', 'BLUETOOTH', 'INSTALL_SHORTCUT',
+    'RECORD_AUDIO', 'ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'BLUETOOTH', 'INSTALL_SHORTCUT',
 )
 REQUIRED_ASSETS = (
     'assets/licenses/j2me-loader.txt', 'assets/licenses/fluent-system-icons.txt',
@@ -79,6 +79,15 @@ def check(apk):
             raise ValueError('Catalog Play còn đường phân phối ngoài')
         if any(k in cfg.get('account', {}) for k in ('donate', 'donateUrl', 'voteUrl')):
             raise ValueError('Catalog Play còn dữ liệu ủng hộ')
+        account = cfg.get('account', {})
+        if account.get('enabled') or any(account.get(k) for k in ('apiKey', 'databaseUrl', 'loginUrl')):
+            raise ValueError('Catalog Play còn bật đăng nhập hoặc URL aow.vn')
+        if (cfg.get('feed') or {}).get('url') or (cfg.get('feed') or {}).get('enabled'):
+            raise ValueError('Catalog Play còn nguồn bài viết ngoài')
+        if (cfg.get('forum') or {}).get('baseUrl') or (cfg.get('forum') or {}).get('enabled'):
+            raise ValueError('Catalog Play còn diễn đàn ngoài')
+        if (cfg.get('crash') or {}).get('autoSend'):
+            raise ValueError('Catalog Play còn tự gửi báo lỗi mặc định')
         if any(c.get('url') or c.get('artifacts') or c.get('systemFiles') for c in cfg.get('cores', {}).values()):
             raise ValueError('Catalog Play còn link lõi ngoài Play')
         if any(m.get('url') for m in cfg.get('modules', {}).values()):

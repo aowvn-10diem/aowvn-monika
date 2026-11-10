@@ -14,6 +14,7 @@
          bản Play không dùng các API đó nên gỡ khỏi APK, bản GitHub giữ nguyên. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove" />
     <uses-permission android:name="android.permission.BLUETOOTH" tools:node="remove" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" tools:node="remove" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" tools:node="remove" />
