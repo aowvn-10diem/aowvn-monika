@@ -1,5 +1,6 @@
 package vn.aow.monika.config
 
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import vn.aow.monika.BuildConfig
 
 /**
@@ -14,12 +15,27 @@ object ConfigEndpoints {
     const val PAGES_CONFIG_URL = "https://monika.aow.vn/config.json"
 
     /** V206: bản đã ký (cùng nội dung + chữ ký Ed25519 ở dòng đầu), tải 1 lượt GET. */
-    const val PAGES_SIGNED_CONFIG_URL = "https://monika.aow.vn/config.signed.json"
+    val PAGES_SIGNED_CONFIG_URL: String get() = signedConfigUrl(PAGES_CONFIG_URL).orEmpty()
 
     /** Worker giữ nguyên link build sẵn của APK (không hard-code lại). */
     val WORKER_CONFIG_URL: String get() = BuildConfig.REMOTE_CONFIG_URL
 
-    /** V206: bản đã ký cùng nguồn Worker, suy ra từ [WORKER_CONFIG_URL]. */
-    val WORKER_SIGNED_CONFIG_URL: String
-        get() = WORKER_CONFIG_URL.replace("/config.json", "/config.signed.json")
+    /** V206: bản đã ký cùng nguồn Worker; rỗng khi URL không đúng mẫu (vd. bản Play để trống). */
+    val WORKER_SIGNED_CONFIG_URL: String get() = signedConfigUrl(WORKER_CONFIG_URL).orEmpty()
+
+    /**
+     * V206: suy URL bản ký từ URL cấu hình bằng cách dựng lại từ URL đã parse (giữ nguyên query),
+     * không `replace` chuỗi. Trả null khi URL rỗng/không hợp lệ hoặc không kết thúc bằng `/config.json`
+     * — thà bỏ qua bản ký còn hơn tải nhầm URL thường rồi verify hỏng im lặng.
+     */
+    fun signedConfigUrl(configUrl: String): String? {
+        if (configUrl.isBlank()) return null
+        val url = configUrl.toHttpUrlOrNull() ?: return null
+        val path = url.encodedPath
+        if (!path.endsWith("/config.json")) return null
+        return url.newBuilder()
+            .encodedPath(path.removeSuffix("config.json") + "config.signed.json")
+            .build()
+            .toString()
+    }
 }

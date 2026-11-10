@@ -36,11 +36,14 @@ jobs:
           persist-credentials: false
       - name: Kiểm tra JSON
         run: python3 -c "import json;json.load(open('config/monika-config.json'))"
+      - name: Cài cryptography (ghim bản + hash, không có secret)
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check \
+            --require-hashes --only-binary=:all: -r scripts/requirements-config-sign.txt
       - name: Ký config (Ed25519)
         env:
           CONFIG_ED25519_PRIVKEY: ${{ secrets.CONFIG_ED25519_PRIVKEY }}
         run: |
-          python3 -m pip install --quiet --disable-pip-version-check cryptography
           python3 scripts/sign-config.py --config config/monika-config.json --out config.signed.json
       - name: Đẩy lên KV
         env:
@@ -59,11 +62,8 @@ jobs:
               -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: text/plain" \
               --data-binary @config.signed.json
           else
-            # Bỏ bản ký cũ để app không nhận cấu hình cũ đã hết hạn ký.
-            curl -sS -X DELETE \
-              "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/storage/kv/namespaces/$NAMESPACE_ID/values/config.signed.json" \
-              -H "Authorization: Bearer $CF_TOKEN" > /dev/null || true
-            echo "::warning::Chưa có config.signed.json — KV chỉ có bản chưa ký."
+            # V206: thiếu secret ký thì GIỮ NGUYÊN bản ký cũ trên KV (không xoá) để app còn bản đã ký.
+            echo "::warning::Chưa có config.signed.json mới — giữ nguyên bản ký cũ trên KV (nếu có)."
           fi
       - name: Đẩy lên GitHub Pages (nhánh trang-web)
         env:
@@ -93,9 +93,8 @@ jobs:
               cp config.signed.json "$pages/config.signed.json"
               git -C "$pages" add config.signed.json
             else
-              # Không có bản ký mới: gỡ bản cũ để app rơi về config.json chưa ký.
-              git -C "$pages" rm -f --quiet config.signed.json > /dev/null 2>&1 || true
-              echo "::warning::Chưa có config.signed.json — trang-web chỉ có bản chưa ký."
+              # V206: thiếu secret ký thì GIỮ NGUYÊN bản ký cũ trên trang-web (không gỡ).
+              echo "::warning::Chưa có config.signed.json mới — giữ nguyên bản ký cũ trên $PAGES_BRANCH (nếu có)."
             fi
             if git -C "$pages" diff --cached --quiet; then
               echo "config.json trên $PAGES_BRANCH đã khớp — không cần đẩy."
