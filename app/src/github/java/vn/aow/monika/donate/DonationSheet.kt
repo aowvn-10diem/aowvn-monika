@@ -86,12 +86,14 @@ fun DonationSheet(
     debugBuild: Boolean = vn.aow.monika.BuildConfig.DEBUG,
 ) {
     val context = LocalContext.current
-    // A78-2: bản không đúng chứng thư phát hành (hoặc không đọc được chứng thư) không được vẽ QR/STK.
-    val allowed = vn.aow.monika.security.OfficialCert.donationAllowed(
-        actualSha256 ?: vn.aow.monika.diag.Diagnostics.certSha256(context),
-        officialSha256,
-        debugBuild,
-    )
+    // A78-2/A78-3: chỉ vẽ QR/STK khi đối chiếu chứng thư (PackageManager + khối ký APK) ra OFFICIAL.
+    val allowed = if (actualSha256 != null) {
+        vn.aow.monika.security.OfficialCert.trustOf(actualSha256, null, officialSha256, debugBuild) ==
+            vn.aow.monika.security.OfficialCert.BuildTrust.OFFICIAL
+    } else {
+        vn.aow.monika.security.OfficialCert.verifyOfficialApk(context, officialSha256, debugBuild) ==
+            vn.aow.monika.security.OfficialCert.BuildTrust.OFFICIAL
+    }
     if (!allowed) {
         ModalBottomSheet(
             onDismissRequest = onDismiss,

@@ -44,8 +44,12 @@ object OfficialCert {
 
     /**
      * [A85/A78-3] So chứng thư do `PackageManager` trả với chứng thư đọc trực tiếp từ khối ký của tệp APK.
-     * Lệch nhau = dấu hiệu `PackageManager` bị hook (Signature Killer) → coi là bản ngoại lai.
-     * Bản release không đọc được chứng thư cũng coi là ngoại lai (không có bằng chứng là bản chính thức).
+     *
+     * - `debugBuild` → `OFFICIAL` (dev ký bằng khoá debug).
+     * - Chưa cấu hình chứng thư phát hành (`official` rỗng, vd. bản Play chờ Play App Signing) → `UNKNOWN`.
+     * - Không đọc được chứng thư từ `PackageManager` → `FOREIGN` (release không có bằng chứng chính thức).
+     * - Đọc được cả hai nguồn mà lệch nhau → `FOREIGN` (dấu hiệu `PackageManager` bị hook).
+     * - Còn lại: khớp hằng phát hành → `OFFICIAL`, khác → `FOREIGN`.
      */
     fun trustOf(
         pmSha256: String,

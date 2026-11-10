@@ -33,9 +33,11 @@ import vn.aow.monika.ui.theme.*
 @Composable
 fun OfficialDistributionSheet(official: OfficialConfig, security: SecurityConfig, donate: DonateConfig, onDismiss: () -> Unit) {
     val context = LocalContext.current
+    // A78-3: đối chiếu PackageManager với khối ký APK; chỉ hiện STK ủng hộ khi là bản chính thức.
+    val trust = androidx.compose.runtime.remember { vn.aow.monika.security.OfficialCert.verifyOfficialApk(context) }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Monika.colors.bg,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        OfficialDistributionPanel(official, vn.aow.monika.security.OfficialCertPin.OFFICIAL_APK_CERT_SHA256, donate, onDismiss) { openOfficialUrl(context, it) }
+        OfficialDistributionPanel(official, vn.aow.monika.security.OfficialCertPin.OFFICIAL_APK_CERT_SHA256, donate, onDismiss, { openOfficialUrl(context, it) }, trust)
     }
 }
 
@@ -46,6 +48,7 @@ internal fun OfficialDistributionPanel(
     donate: DonateConfig,
     onDismiss: () -> Unit,
     openUrl: (String) -> Unit,
+    trust: vn.aow.monika.security.OfficialCert.BuildTrust = vn.aow.monika.security.OfficialCert.BuildTrust.OFFICIAL,
 ) {
     val c = Monika.colors
     val clipboard = LocalClipboardManager.current
@@ -67,8 +70,18 @@ internal fun OfficialDistributionPanel(
             SoftPillButton("Sao chép chứng thư", { clipboard.setText(AnnotatedString(certificate)) }, R.drawable.ic_fluent_copy_24_regular)
         }
         Text("Tài khoản ủng hộ duy nhất", style = Monika.type.bodyStrong, color = c.text)
-        Text("${donate.bankName}\n${donate.accountNo}\n${donate.accountName}", style = Monika.type.body, color = c.text)
-        SoftPillButton("Sao chép số tài khoản", { clipboard.setText(AnnotatedString(donate.accountNo)) }, R.drawable.ic_fluent_copy_24_regular)
+        if (trust == vn.aow.monika.security.OfficialCert.BuildTrust.OFFICIAL) {
+            Text("${donate.bankName}\n${donate.accountNo}\n${donate.accountName}", style = Monika.type.body, color = c.text)
+            SoftPillButton("Sao chép số tài khoản", { clipboard.setText(AnnotatedString(donate.accountNo)) }, R.drawable.ic_fluent_copy_24_regular)
+        } else {
+            // A78-2/A78-3: bản không đúng chứng thư phát hành không được hiển thị thông tin nhận tiền.
+            Text(
+                "Bản ứng dụng này không được ký bằng khóa phát hành chính thức của AowVN. " +
+                    "Thông tin ủng hộ chỉ hiển thị trên bản chính thức tại monika.aow.vn.",
+                style = Monika.type.body, color = c.textSecondary,
+                modifier = Modifier.testTag("official-donation-unavailable"),
+            )
+        }
         Text("Cách tự kiểm", style = Monika.type.bodyStrong, color = c.text)
         official.verificationSteps.forEachIndexed { index, step ->
             Text("${index + 1}. $step", style = Monika.type.body, color = c.textSecondary)
