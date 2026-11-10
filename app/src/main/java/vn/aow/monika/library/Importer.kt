@@ -7,6 +7,7 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.util.zip.ZipInputStream
+import vn.aow.monika.util.SafeZipPath
 
 data class ImportResult(
     /** Thư mục game trong thư viện. */
@@ -100,7 +101,9 @@ object Importer {
 
     /** V112: mở/chép file người dùng chọn là bước "nhập game" → lỗi để lại op-fail rồi ném lại như cũ cho giao diện hiện thông báo. */
     private fun copyUri(context: Context, uri: Uri, dest: File, name: String) {
-        vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.IMPORT, name) {
+        // V204: tên dùng cho báo cáo cũng phải là tên đơn đã làm sạch.
+        val safeName = SafeZipPath.sanitizeSingleFileName(name) ?: "game-${System.currentTimeMillis()}"
+        vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.IMPORT, safeName) {
             step("mo-file")
             (context.contentResolver.openInputStream(uri) ?: throw IOException("Không mở được file")).use { input ->
                 step("chep-file")
@@ -153,6 +156,7 @@ object Importer {
 
     private fun displayName(context: Context, uri: Uri): String? =
         context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
-            if (c.moveToFirst()) c.getString(0) else null
+            // V204: tên do hệ thống trả về có thể chứa đường dẫn/ký tự điều khiển — làm sạch trước khi đặt tên thư mục.
+            if (c.moveToFirst()) SafeZipPath.sanitizeSingleFileName(c.getString(0).orEmpty()) else null
         }
 }
