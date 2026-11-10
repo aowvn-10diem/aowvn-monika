@@ -17,6 +17,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   analyze:
+    # A85: chỉ chạy trong repo chính thức (workflow có quyền write security-events).
+    if: github.repository == 'aowvn-10diem/aowvn-monika'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:

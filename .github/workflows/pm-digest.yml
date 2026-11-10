@@ -33,7 +33,8 @@ jobs:
         with: {name: pm-digest-preview, path: out/preview/, retention-days: 3}
   digest:
     # PR chỉ preview một lần; không tạo digest thứ hai hoặc chạy token ghi trên code PR.
-    if: github.event_name != 'pull_request'
+    # A85: chỉ chạy trong repo chính thức và trên nhánh main (job có quyền contents: write).
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
