@@ -7,3 +7,4 @@
 216 V203: chờ lộ trình Argon, không gộp thẳng
 217 V203: chờ lộ trình Argon, không gộp thẳng
 553 Gemini tự động đóng issue: PM giữ
+431 # V152 ngoài A85, PM giữ 10/11
