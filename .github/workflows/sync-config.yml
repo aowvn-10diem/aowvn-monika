@@ -1,13 +1,17 @@
 name: Sync config lên Cloudflare và trang web
 
 # Mỗi lần config/monika-config.json đổi trên main:
-#   1. Đẩy lên Cloudflare KV (app dự phòng khi GitHub Pages lỗi).
-#   2. Đẩy config.json lên nhánh trang-web → GitHub Pages phục vụ https://monika.aow.vn/config.json.
+#   1. Ký Ed25519 thành config.signed.json (Environment `ky-config`, secret CONFIG_ED25519_PRIVKEY).
+#   2. Đẩy lên Cloudflare KV (app dự phòng khi GitHub Pages lỗi).
+#   3. Đẩy config.json + config.signed.json lên nhánh trang-web → GitHub Pages phục vụ
+#      https://monika.aow.vn/config.json và https://monika.aow.vn/config.signed.json.
 # App đọc Pages trước, lỗi mạng/HTTP/JSON mới rơi về Worker.
 # Cần secret CLOUDFLARE_API_TOKEN (Workers KV Storage — Edit). Phần Pages dùng github.token,
 # không cần secret mới; workflow cần quyền contents: write để đẩy lên nhánh trang-web.
 # workflow_dispatch luôn checkout refs/heads/main (không lấy config của nhánh được chọn) — dispatch
 # từ nhánh nào cũng chỉ đồng bộ cấu hình main.
+# V206: job dùng Environment `ky-config` (sếp duyệt mỗi lần chạy). Thiếu secret ký thì bước ký bỏ qua
+# kèm cảnh báo; app vẫn đọc config.json chưa ký như trước.
 on:
   push:
     branches: [main]
@@ -20,6 +24,7 @@ permissions:
 jobs:
   sync:
     if: github.repository == 'aowvn-10diem/aowvn-monika'
+    environment: ky-config
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +36,12 @@ jobs:
           persist-credentials: false
       - name: Kiểm tra JSON
         run: python3 -c "import json;json.load(open('config/monika-config.json'))"
+      - name: Ký config (Ed25519)
+        env:
+          CONFIG_ED25519_PRIVKEY: ${{ secrets.CONFIG_ED25519_PRIVKEY }}
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check cryptography
+          python3 scripts/sign-config.py --config config/monika-config.json --out config.signed.json
       - name: Đẩy lên KV
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -42,6 +53,18 @@ jobs:
             "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/storage/kv/namespaces/$NAMESPACE_ID/values/config.json" \
             -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: text/plain" \
             --data-binary @config/monika-config.json
+          if [ -f config.signed.json ]; then
+            curl -fsS -X PUT \
+              "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/storage/kv/namespaces/$NAMESPACE_ID/values/config.signed.json" \
+              -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: text/plain" \
+              --data-binary @config.signed.json
+          else
+            # Bỏ bản ký cũ để app không nhận cấu hình cũ đã hết hạn ký.
+            curl -sS -X DELETE \
+              "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/storage/kv/namespaces/$NAMESPACE_ID/values/config.signed.json" \
+              -H "Authorization: Bearer $CF_TOKEN" > /dev/null || true
+            echo "::warning::Chưa có config.signed.json — KV chỉ có bản chưa ký."
+          fi
       - name: Đẩy lên GitHub Pages (nhánh trang-web)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -66,6 +89,14 @@ jobs:
             git -C "$pages" reset --hard "origin/$PAGES_BRANCH"
             cp config/monika-config.json "$pages/config.json"
             git -C "$pages" add config.json
+            if [ -f config.signed.json ]; then
+              cp config.signed.json "$pages/config.signed.json"
+              git -C "$pages" add config.signed.json
+            else
+              # Không có bản ký mới: gỡ bản cũ để app rơi về config.json chưa ký.
+              git -C "$pages" rm -f --quiet config.signed.json > /dev/null 2>&1 || true
+              echo "::warning::Chưa có config.signed.json — trang-web chỉ có bản chưa ký."
+            fi
             if git -C "$pages" diff --cached --quiet; then
               echo "config.json trên $PAGES_BRANCH đã khớp — không cần đẩy."
               exit 0
@@ -74,7 +105,7 @@ jobs:
             # Mã commit là bản main đã checkout (không phải nhánh bấm workflow_dispatch).
             git -C "$pages" commit -m "config: đồng bộ từ main $(git rev-parse --short=8 HEAD) [skip ci]"
             if pages_git -C "$pages" push origin "HEAD:$PAGES_BRANCH"; then
-              echo "Đã đẩy config.json lên $PAGES_BRANCH."
+              echo "Đã đẩy config.json (kèm config.signed.json nếu có) lên $PAGES_BRANCH."
               exit 0
             fi
             echo "Push bị từ chối (lần đồng bộ khác vừa chạy) — thử lại lần $attempt."
