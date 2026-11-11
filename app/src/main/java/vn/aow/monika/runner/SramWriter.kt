@@ -28,8 +28,8 @@ internal object SramWriter {
                     false
                 }
             }
-        } catch (error: Exception) {
             // diag: bỏ qua lỗi ghi tệp tại đây — nơi gọi nhận false và báo Diagnostics (không nuốt im lặng).
+        } catch (error: Exception) {
             tmp.delete()
             false
         }
