@@ -8,6 +8,7 @@ import json
 import os
 import sys
 import unittest
+import urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("crash_insight", os.path.join(HERE, "crash-insight.py"))
@@ -122,6 +123,75 @@ class Rendering(unittest.TestCase):
         self.assertEqual(1, len(table.splitlines()))
 
 
+class Response:
+    def __init__(self, body):
+        import io
+        self.body = io.BytesIO(body)
+
+    def read(self, _n=-1):
+        return self.body.read()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_exc):
+        return False
+
+
+class Flaky:
+    """Giả lập Worker: n lần đầu trả 500 rồi trả JSON."""
+
+    def __init__(self, failures, payload=b'{"reports":[]}'):
+        self.failures = failures
+        self.payload = payload
+        self.calls = 0
+
+    def __call__(self, _request, timeout=None):
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise urllib.error.HTTPError("https://x.workers.dev/reports", 500, "Internal", {}, None)
+        return Response(self.payload)
+
+
+class Retry(unittest.TestCase):
+    def fetch(self, opener):
+        return insight.fetch_listing("https://x.workers.dev", "token", opener=opener, sleep=lambda _s: None)
+
+    def test_server_error_is_retried_until_it_succeeds(self):
+        flaky = Flaky(failures=2)
+        self.assertEqual({"reports": []}, self.fetch(flaky))
+        self.assertEqual(3, flaky.calls)
+
+    def test_permanent_server_error_stops_after_three_attempts(self):
+        flaky = Flaky(failures=99)
+        with self.assertRaises(ValueError) as error:
+            self.fetch(flaky)
+        self.assertIn("HTTP 500", str(error.exception))
+        self.assertEqual(insight.ATTEMPTS, flaky.calls)
+
+    def test_client_error_is_not_retried(self):
+        calls = []
+
+        def unauthorized(_request, timeout=None):
+            calls.append(1)
+            raise urllib.error.HTTPError("https://x.workers.dev/reports", 401, "Unauthorized", {}, None)
+
+        with self.assertRaises(ValueError) as error:
+            self.fetch(unauthorized)
+        self.assertIn("HTTP 401", str(error.exception))
+        self.assertEqual(1, len(calls))
+
+    def test_network_failure_is_retried_then_reported(self):
+        calls = []
+
+        def offline(_request, timeout=None):
+            calls.append(1)
+            raise urllib.error.URLError("down")
+
+        with self.assertRaises(ValueError) as error:
+            self.fetch(offline)
+        self.assertIn("cannot reach Worker", str(error.exception))
+        self.assertEqual(insight.ATTEMPTS, len(calls))
 class Certificate(unittest.TestCase):
     """V155b: cột + bảng đếm theo chứng thư để nhóm và đối chiếu thủ công với chứng thư bản phát hành."""
 

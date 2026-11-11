@@ -27,6 +27,7 @@
 #include <EGL/egl.h>
 #include <unordered_map>
 #include <array>
+#include <mutex>
 
 #include "../../libretro-common/include/libretro.h"
 #include "log.h"
@@ -104,9 +105,10 @@ public:
 
     std::array<libretrodroid::RumbleState, 4> & getLastRumbleStates();
 
-    const std::vector<struct Variable> getVariables() const;
+    std::vector<struct Variable> getVariables() const;
 
-    const std::vector<std::vector<struct Controller>> &getControllers() const;
+    // Aow Monika: trả bản sao (không trả tham chiếu) vì lõi có thể ghi đè danh sách trên GLThread.
+    std::vector<std::vector<struct Controller>> getControllers() const;
 
     // Aow Monika: bản đồ bộ nhớ do lõi khai báo (RETRO_ENVIRONMENT_SET_MEMORY_MAPS), dùng cho RetroAchievements. nullptr nếu lõi không khai.
     const struct retro_memory_map* getMemoryMap() const;
@@ -148,8 +150,16 @@ private:
 
     std::array<libretrodroid::RumbleState, 4> rumbleStates;
 
+    // Aow Monika: khoá bảo vệ `variables`/`controllers`. UI Thread ghi (updateVariable) trong khi
+    // GLThread đọc (RETRO_ENVIRONMENT_GET_VARIABLE) — không khoá thì đọc phải chuỗi đã bị ghi đè/giải phóng.
+    // Thứ tự khoá trong dự án: coreLock (LibretroDroid) → variablesLock (Environment), không bao giờ ngược lại.
+    mutable std::mutex variablesLock;
+
     std::unordered_map<std::string, struct Variable> variables;
     bool dirtyVariables = false;
+
+    // Aow Monika: vùng đệm cho con trỏ trả về RETRO_ENVIRONMENT_GET_VARIABLE, chỉ ghi khi đang giữ variablesLock.
+    std::string variableValueBuffer;
 
     std::vector<std::vector<struct Controller>> controllers;
 

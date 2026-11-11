@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from http.client import HTTPException
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 import json
 import argparse
@@ -22,6 +22,52 @@ REPORT_PATH = ROOT / "docs/opus/ket-qua/L01-lien-ket.md"
 TIMEOUT_SECONDS = 15
 USER_AGENT = "AowVN-Monika-config-link-check/1.0"
 CORE_URL_PATH = re.compile(r"^cores\.[^.]+\.url$")
+# V42: hai URL này là URL GỐC (tiền tố) của VietQR, không phải endpoint độc lập:
+# gọi thẳng vào chúng luôn 404/400. Phải dựng URL ĐẦY ĐỦ đúng như app dựng (DonationLogic.kt)
+# rồi mới kiểm — nếu không dựng được (cấu hình donate thiếu/sai) thì ghi rõ lý do bỏ qua.
+DONATE_BASE_PATHS = ("account.donate.qrBaseUrl", "account.donate.payUrl")
+
+
+def donate_derived_urls(config):
+    """Dựng URL đầy đủ cho 2 URL gốc VietQR, bám đúng điều kiện của DonationLogic.kt.
+
+    Trả {đường_dẫn_cấu_hình: url_đầy_đủ}; thiếu/sai cấu hình thì không có khoá đó (bị bỏ qua, có ghi lý do).
+    """
+    donate = ((config or {}).get("account") or {}).get("donate") or {}
+    bank = str(donate.get("bankId") or "")
+    account = str(donate.get("accountNo") or "")
+    if not re.fullmatch(r"[A-Za-z0-9]+", bank) or not re.fullmatch(r"[0-9]{4,32}", account):
+        return {}
+    template = str(donate.get("template") or "")
+    amount = donate.get("minAmount")
+    if not isinstance(amount, int) or amount <= 0:
+        return {}
+    memo = str(donate.get("memo") or "")
+    name = str(donate.get("accountName") or "")
+    out = {}
+    qr_base = str(donate.get("qrBaseUrl") or "")
+    if qr_base.startswith("https://") and re.fullmatch(r"[A-Za-z0-9]+", template):
+        out["account.donate.qrBaseUrl"] = qr_base.rstrip("/") + f"/{bank}-{account}-{template}.png?" + urlencode(
+            {"amount": amount, "addInfo": memo, "accountName": name}
+        )
+    pay_base = str(donate.get("payUrl") or "")
+    if pay_base.startswith("https://"):
+        out["account.donate.payUrl"] = pay_base + "?" + urlencode(
+            {
+                "app": bank,
+                "ba": f"{account}@{bank}",
+                "am": amount,
+                "tn": memo,
+                "bn": name,
+                "url": str(donate.get("returnUrl") or ""),
+            }
+        )
+    return out
+
+
+def redact_url(base):
+    """Hiện URL gốc (không tham số) để báo cáo/artifact không lộ số tài khoản hay tên người nhận."""
+    return base + ("…" if base.endswith("/") else "?…")
 
 
 def supported_abis():
@@ -90,6 +136,11 @@ def response_size(headers):
 
 
 def request_head(url):
+    """HEAD trước; nếu máy chủ từ chối HEAD (4xx/5xx) thì thử GET `Range: bytes=0-0` rồi mới kết luận.
+
+    V42: `dl.vietqr.io/pay` trả 404 cho HEAD nhưng 200 cho GET ⇒ chỉ dựa vào HEAD là báo hỏng oan.
+    GET cũng lỗi thì đó mới là lỗi thật.
+    """
     request = Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
     try:
         with urlopen(request, timeout=TIMEOUT_SECONDS) as response:
@@ -98,7 +149,7 @@ def request_head(url):
         headers = error.headers
         status = error.code
         error.close()
-        if status not in (405, 501):
+        if status < 400:
             return status, headers, "HEAD", None
     except (URLError, TimeoutError, socket.timeout, HTTPException, OSError) as error:
         return None, {}, "HEAD", error
@@ -174,6 +225,20 @@ def main():
     config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     abis = supported_abis()
     records = collect_urls(config, abis)
+    # V42: URL gốc VietQR phải kiểm bằng URL đầy đủ như app dựng; không dựng được thì bỏ qua có lý do.
+    derived = donate_derived_urls(config)
+    for record in records:
+        if record["source"] not in DONATE_BASE_PATHS:
+            continue
+        full = derived.get(record["source"])
+        if full:
+            record["display"] = redact_url(record["url"])
+            record["url"] = full
+        else:
+            record["skip_reason"] = (
+                "URL gốc cần tham số (không gọi thẳng được) và cấu hình donate thiếu/không hợp lệ "
+                "nên không dựng được URL đầy đủ"
+            )
 
     with ThreadPoolExecutor(max_workers=6) as executor:
         results = list(executor.map(probe, records))
@@ -193,7 +258,8 @@ def main():
         f"Kiểm tra lúc {now}. Nguồn: `config/monika-config.json`; ABI lấy từ `app/build.gradle.kts`: {', '.join(abis)}. Với `cores.<id>.abis`, chỉ kiểm ABI được khai; ABI còn lại được ghi là bỏ qua.",
         f"Tổng {len(results)} mục: {checked} đã gửi yêu cầu, {errors} phản hồi lỗi/kết nối, {skipped} mục không kiểm.",
         "",
-        "URL `aow.vn` được bỏ qua vì máy chạy ngoài Việt Nam; không tính là hỏng. Chỉ gửi HEAD; nếu máy chủ từ chối HEAD (405/501), gửi GET `Range: bytes=0-0` và đọc tối đa 1 byte.",
+        "URL `aow.vn` được bỏ qua vì máy chạy ngoài Việt Nam; không tính là hỏng. Chỉ gửi HEAD; nếu máy chủ từ chối HEAD (4xx/5xx), gửi GET `Range: bytes=0-0` và đọc tối đa 1 byte.",
+        "Hai URL gốc VietQR (`account.donate.qrBaseUrl`, `account.donate.payUrl`) được kiểm bằng **URL đầy đủ dựng như app** (`DonationLogic.kt`); tham số (số tài khoản, tên người nhận) không in ra báo cáo.",
         "Mẫu URL còn tham số (ví dụ `$1`) được ghi nhận nhưng không gửi đi.",
         "",
         "| Nguồn cấu hình | URL | HTTP | Phương thức | Kích thước phản hồi | Kích thước config | So sánh | Ghi chú |",
@@ -212,7 +278,7 @@ def main():
         status_text = str(status) if status is not None else "—"
         lines.append(
             "| " + " | ".join(fmt_cell(value) for value in (
-                row["source"], f'`{row["url"]}`', status_text, row["method"],
+                row["source"], f'`{row.get("display") or row["url"]}`', status_text, row["method"],
                 fmt_size(actual), fmt_size(expected), comparison, row["note"],
             )) + " |"
         )
@@ -223,7 +289,9 @@ def main():
 
     if args.json_output:
         args.json_output.parent.mkdir(parents=True, exist_ok=True)
-        args.json_output.write_text(json.dumps(dict(checked=checked, errors=errors, skipped=skipped, results=results), ensure_ascii=False, indent=2) + "\n")
+        # V42: không ghi URL đầy đủ có tham số (số tài khoản/tên người nhận) vào artifact.
+        public = [{**row, "url": row.get("display") or row["url"]} for row in results]
+        args.json_output.write_text(json.dumps(dict(checked=checked, errors=errors, skipped=skipped, results=public), ensure_ascii=False, indent=2) + "\n")
     if args.fail_on_error and errors:
         raise SystemExit(1)
 

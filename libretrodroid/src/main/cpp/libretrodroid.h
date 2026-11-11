@@ -149,6 +149,7 @@ public:
 
 private:
     void updateAudioSampleRateMultiplier();
+    void refreshAspectRatioLocked();
     float findDefaultAspectRatio(const retro_system_av_info &system_av_info);
     void afterGameLoad();
 
