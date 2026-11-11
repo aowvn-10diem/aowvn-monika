@@ -516,7 +516,7 @@ object Diagnostics {
     }
 
     /** Bước chỉ đọc qua mạng (không đụng tệp cục bộ): luồng đứt ở đây là chuyện mạng. */
-    private val NETWORK_STEPS = setOf("tai", "tai-ve", "tai-bai")
+    private val NETWORK_STEPS = setOf("tai", "tai-ve", "tai-bai", "tai-danh-sach", "tai-chi-muc", "tai-trang")
 
     /**
      * V166 (Luna 3, lần 2): phân loại theo **nguồn đọc tại chỗ ném lỗi**, không theo tên thao tác — vì có thao tác
