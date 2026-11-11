@@ -77,7 +77,7 @@ import vn.aow.monika.ui.theme.SheetRow
  * Màn "Thư viện" bản Play: ba mục Chơi / Đọc / Tệp như bản web.
  *
  * Chỉ giữ phần đọc máy: game đã có sẵn trong máy, tài liệu sẵn có, tệp trong kho Monika.
- * Không có tải game, không link tải ngoài, không tự cập nhật APK, không VietQR/ủng hộ (A65, A68).
+ * Không có tải game, không link tải ngoài, không tự cập nhật APK (A65, A68).
  */
 @Composable
 fun LibraryScreen(onSettings: () -> Unit) {
