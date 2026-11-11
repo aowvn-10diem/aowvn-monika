@@ -28,6 +28,8 @@ import java.io.File
 class ConfigRepository(
     private val context: Context,
     private val http: OkHttpClient,
+    /** V206: khoá công khai Ed25519 của kênh config; rỗng = đọc bản không ký như trước. */
+    private val configPublicKeyHex: String = ConfigSignature.OFFICIAL_CONFIG_ED25519_PUBKEY_HEX,
 ) {
     private val cacheFile = File(context.filesDir, ASSET_NAME)
     private val atomicCache = AtomicFile(cacheFile)
@@ -76,14 +78,14 @@ class ConfigRepository(
                 step("tai-pages")
                 // V181: Pages trước (giảm lượt gọi Worker); lỗi mạng/HTTP/JSON/phiên bản mới thử Worker.
                 val loaded = try {
-                    val text = fetchText(ConfigEndpoints.PAGES_CONFIG_URL)
+                    val text = fetchConfig(ConfigEndpoints.PAGES_CONFIG_URL, ConfigEndpoints.PAGES_SIGNED_CONFIG_URL)
                     step("kiem-tra")
                     text to ConfigValidation.parse(text, current.configVersion)
                 } catch (error: Exception) {
                     if (error is kotlinx.coroutines.CancellationException) throw error
                     Log.w(TAG, "Cấu hình Pages không dùng được, chuyển sang Worker", error)
                     step("tai-worker")
-                    val text = fetchText(ConfigEndpoints.WORKER_CONFIG_URL)
+                    val text = fetchConfig(ConfigEndpoints.WORKER_CONFIG_URL, ConfigEndpoints.WORKER_SIGNED_CONFIG_URL)
                     step("kiem-tra")
                     text to ConfigValidation.parse(text, current.configVersion)
                 }
@@ -98,6 +100,23 @@ class ConfigRepository(
                 Log.w(TAG, "Không tải được cấu hình từ xa, dùng bản hiện có", it)
             }
         }
+    }
+
+    /**
+     * V206: ưu tiên bản đã ký nếu đã có khoá công khai (1 lượt GET). Chữ ký sai/thiếu tệp thì:
+     * - bản chính thức ([ConfigSignature.signatureRequired]) ⇒ ném lỗi để rơi sang nguồn dự phòng;
+     * - bản debug/tự build ⇒ đọc `config.json` như cũ.
+     * Chưa có khoá công khai ⇒ luôn đọc `config.json` (hành vi trước V206).
+     */
+    private fun fetchConfig(plainUrl: String, signedUrl: String): String {
+        if (!ConfigSignature.hasPublicKey(configPublicKeyHex)) return fetchText(plainUrl)
+        val signed = runCatching { fetchText(signedUrl) }.getOrNull()
+        val payload = signed?.let { ConfigSignature.verifyAndExtract(it, configPublicKeyHex) }
+        if (payload != null) return payload
+        if (ConfigSignature.signatureRequired(context, configPublicKeyHex)) {
+            error("Cấu hình tải về không có chữ ký hợp lệ")
+        }
+        return fetchText(plainUrl)
     }
 
     /** Đọc body từ một URL cấu hình; ném lỗi mạng/HTTP để tầng gọi quyết định nguồn kế tiếp. */

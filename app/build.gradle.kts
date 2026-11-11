@@ -232,6 +232,7 @@ dependencies {
     implementation(libs.compose.tooling.preview)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.bcprov) // V206: Ed25519 cho config.signed.json (mọi flavor, kể cả Play)
     implementation(libs.coil.compose)
     // Dịch màn hình: OCR của Google ML Kit bản qua Google Play Services (mô hình tải khi dùng lần đầu, APK không chứa). Dịch dùng khóa API của người dùng.
     implementation(libs.mlkit.ocr)
