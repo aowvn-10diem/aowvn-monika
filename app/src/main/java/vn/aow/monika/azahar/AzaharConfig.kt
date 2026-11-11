@@ -3,6 +3,7 @@ package vn.aow.monika.azahar
 import android.content.Context
 import vn.aow.monika.runner.CoreOption
 import vn.aow.monika.runner.CoreOptions
+import vn.aow.monika.runner.EmuTier
 import java.io.File
 
 /**
@@ -11,6 +12,9 @@ import java.io.File
  */
 object AzaharConfig {
     const val CORE_ID = "azahar"
+
+    /** Khóa chế độ New 3DS — mặc định phụ thuộc sức máy (xem [defaultIsNew3ds]). */
+    private const val NEW_3DS_KEY = "System/is_new_3ds"
 
     /** Có nạp driver GPU tùy biến không (V98). Thiếu module/trường config → false (driver hệ thống). */
     fun shouldInitGpuDriver(module: vn.aow.monika.config.ModuleDef?): Boolean = module?.customGpuDriver == true
@@ -26,14 +30,24 @@ object AzaharConfig {
         Def("Renderer/texture_sampling", "Lọc kết cấu", listOf("0", "1", "2"), "0", mapOf("0" to "Theo game", "1" to "Điểm ảnh", "2" to "Mịn")),
         Def("Core/use_cpu_jit", "CPU JIT", listOf("1", "0"), "1", mapOf("1" to "Bật (nhanh)", "0" to "Tắt (chậm)")),
         Def("Core/cpu_clock_percentage", "Xung nhịp CPU", listOf("100", "75", "150", "200"), "100", mapOf("100" to "100%", "75" to "75% (nhẹ máy)", "150" to "150%", "200" to "200%")),
-        Def("System/is_new_3ds", "Máy New 3DS", listOf("1", "0"), "1", mapOf("1" to "Bật", "0" to "Tắt")),
+        Def(NEW_3DS_KEY, "Máy New 3DS", listOf("1", "0"), "1", mapOf("1" to "Bật", "0" to "Tắt")),
         Def("Layout/layout_option", "Bố cục màn ngang", listOf("2", "3", "0"), "2", mapOf("2" to "Màn lớn", "3" to "Hai màn cạnh nhau", "0" to "Hai màn dọc")),
     )
 
     fun userDir(c: Context) = File(c.filesDir, "azahar").apply { mkdirs() }
 
+    /**
+     * V205: máy LITE (RAM thấp / ít nhân / tiết kiệm pin) bật chế độ New 3DS sẽ tụt khung và dễ bị hệ thống
+     * giết vì hết RAM → mặc định tắt. Người chơi vẫn bật lại được trong "Tùy chọn giả lập" (CoreOptions).
+     */
+    fun defaultIsNew3ds(tier: EmuTier): String = if (tier == EmuTier.LITE) "0" else "1"
+
     /** Giá trị đang dùng = mặc định của Monika, đè bằng lựa chọn của người chơi. */
-    fun values(c: Context): Map<String, String> = defs.associate { it.key to it.default } + CoreOptions.saved(c, CORE_ID)
+    fun values(c: Context): Map<String, String> {
+        val tier = EmuTier.detect(c, vn.aow.monika.AppGraph.prefs.emuPerf)
+        val defaults = defs.associate { it.key to if (it.key == NEW_3DS_KEY) defaultIsNew3ds(tier) else it.default }
+        return defaults + CoreOptions.saved(c, CORE_ID)
+    }
 
     fun options(c: Context): List<CoreOption> {
         val v = values(c)

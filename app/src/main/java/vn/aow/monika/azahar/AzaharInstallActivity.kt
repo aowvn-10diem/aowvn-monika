@@ -72,15 +72,18 @@ class AzaharInstallActivity : ComponentActivity() {
         lifecycleScope.launch {
             val ok = runCatching {
                 AppGraph.azahar.ensure { status = it }
-                withContext(Dispatchers.Default) { AppGraph.azahar.load() }
-                Diagnostics.stage(this@AzaharInstallActivity, "native-loaded")
-                val dir = AzaharConfig.userDir(this@AzaharInstallActivity)
-                AzaharBridge.userDir = dir.absolutePath + "/"
-                NativeLibrary.setUserDirectory(dir.absolutePath)
-                NativeLibrary.createLogFile()
-                NativeLibrary.createConfigFile()
-                AzaharConfig.write(this@AzaharInstallActivity)
-                NativeLibrary.reloadSettings()
+                // V205: nạp engine + tạo config.ini chạy ở luồng nền để màn cài không chặn UI (file .cia có thể rất lớn).
+                withContext(Dispatchers.Default) {
+                    AppGraph.azahar.load()
+                    Diagnostics.stage(this@AzaharInstallActivity, "native-loaded")
+                    val dir = AzaharConfig.userDir(this@AzaharInstallActivity)
+                    AzaharBridge.userDir = dir.absolutePath + "/"
+                    NativeLibrary.setUserDirectory(dir.absolutePath)
+                    NativeLibrary.createLogFile()
+                    NativeLibrary.createConfigFile()
+                    AzaharConfig.write(this@AzaharInstallActivity)
+                    NativeLibrary.reloadSettings()
+                }
             }
             if (ok.isFailure) {
                 status = "Engine 3DS chưa chạy được trên máy này: ${ok.exceptionOrNull()?.message ?: ""}"

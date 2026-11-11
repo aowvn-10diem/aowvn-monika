@@ -12,6 +12,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import vn.aow.monika.azahar.AzaharConfig
 import vn.aow.monika.runner.CoreOptions
+import vn.aow.monika.runner.EmuTier
 import vn.aow.monika.ui.TestApp
 import java.io.File
 
@@ -50,6 +51,22 @@ class AzaharConfigFileTest {
         assertTrue(file.readText().contains("graphics_api = 2"))
         assertTrue(file.readText().contains("graphics_api_custom = keep"))
         assertTrue(file.readText().endsWith("[Audio]\ngraphics_api = audio\n"))
+    }
+
+    @Test fun mayLiteMacDinhTatNew3dsNhungNguoiChoiBatLaiDuoc() {
+        assertEquals("0", AzaharConfig.defaultIsNew3ds(EmuTier.LITE))
+        assertEquals("1", AzaharConfig.defaultIsNew3ds(EmuTier.MID))
+        assertEquals("1", AzaharConfig.defaultIsNew3ds(EmuTier.FULL))
+        val before = AppGraph.prefs.emuPerf
+        try {
+            AppGraph.prefs.emuPerf = "lite"
+            assertEquals("0", AzaharConfig.values(app)["System/is_new_3ds"])
+            CoreOptions.save(app, AzaharConfig.CORE_ID, "System/is_new_3ds", "1")
+            assertEquals("1", AzaharConfig.values(app)["System/is_new_3ds"])
+        } finally {
+            CoreOptions.reset(app, AzaharConfig.CORE_ID)
+            AppGraph.prefs.emuPerf = before
+        }
     }
 
     @Test fun savedOptionOverridesDefaultAndIsWrittenAlongsideFixedValues() {
