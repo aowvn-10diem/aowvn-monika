@@ -23,6 +23,13 @@ import java.io.RandomAccessFile
  */
 object SevenZipNative {
 
+    /**
+     * Gói 7-Zip chưa có trên máy và không tải được (thường là mất mạng / chưa mở mạng lần đầu).
+     * Vẫn là `UnsatisfiedLinkError` để [ArchiveExtractor] rơi về bộ giải thuần Java; khác biệt ở chỗ đây là
+     * luồng bình thường, không phải lỗi app.
+     */
+    class PackUnavailableError(message: String) : UnsatisfiedLinkError(message)
+
     @Volatile private var inited = false
 
     private fun init() {
@@ -41,7 +48,7 @@ object SevenZipNative {
                         kotlinx.coroutines.runBlocking { vn.aow.monika.pack.PackManager.install(vn.aow.monika.pack.PackManager.SEVENZIP) {} }
                     System.load(java.io.File(packs.dir(vn.aow.monika.pack.PackManager.SEVENZIP), vn.aow.monika.pack.PackManager.SEVENZIP_LIB).absolutePath)
                 } catch (e: java.io.IOException) {
-                    throw UnsatisfiedLinkError("Gói 7-Zip chưa tải được: ${e.message}") // ArchiveExtractor rơi về bộ giải thuần Java
+                    throw PackUnavailableError("Gói 7-Zip chưa tải được: ${e.message}") // ArchiveExtractor rơi về bộ giải thuần Java
                 }
             }
             SevenZip.initLoadedLibraries()
