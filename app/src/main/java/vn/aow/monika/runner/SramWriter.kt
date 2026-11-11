@@ -23,8 +23,8 @@ internal object SramWriter {
             }
             move(tmp, file)
             true
-        } catch (error: Exception) {
             // diag: bỏ qua lỗi ghi tệp tại đây — nơi gọi nhận false và báo Diagnostics (không nuốt im lặng).
+        } catch (error: Exception) {
             tmp.delete()
             false
         }
@@ -34,6 +34,7 @@ internal object SramWriter {
     private fun move(from: File, to: File) {
         try {
             Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+            // diag: bỏ qua lỗi ATOMIC_MOVE khi hệ tệp không hỗ trợ — chuyển sang đổi tên đè thường ngay dưới.
         } catch (_: Exception) {
             Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
