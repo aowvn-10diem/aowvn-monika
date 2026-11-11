@@ -20,3 +20,6 @@ __pycache__/
 # Tệp tạm khi giao việc cho DeepSeek (tools/ds)
 tools/ds/.work/
 .cxx/
+
+# SBOM tự kiểm phụ thuộc (scripts/kiem-phu-thuoc.py)
+sbom.json
