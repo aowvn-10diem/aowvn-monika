@@ -23,6 +23,13 @@ import java.io.RandomAccessFile
  */
 object SevenZipNative {
 
+    /**
+     * Gói 7-Zip chưa có trên máy và không tải được (thường là mất mạng / chưa mở mạng lần đầu).
+     * Vẫn là `UnsatisfiedLinkError` để [ArchiveExtractor] rơi về bộ giải thuần Java; khác biệt ở chỗ đây là
+     * luồng bình thường, không phải lỗi app.
+     */
+    class PackUnavailableError(message: String) : UnsatisfiedLinkError(message)
+
     @Volatile private var inited = false
 
     private fun init() {
@@ -33,6 +40,7 @@ object SevenZipNative {
             // (cách đó tìm file .properties trong classpath, không chắc có trong APK).
             try {
                 System.loadLibrary("7-Zip-JBinding") // bản cũ/bản đóng sẵn trong APK
+                // diag: bỏ qua lỗi nạp lib có sẵn — chuyển sang gói tải khi cần (xử lý ngay dưới).
             } catch (_: UnsatisfiedLinkError) {
                 // Bản nhẹ: thư viện nằm trong gói tải khi cần (config.modules.sevenzip), tải ngay nếu chưa có.
                 val packs = vn.aow.monika.AppGraph.packs
@@ -40,8 +48,9 @@ object SevenZipNative {
                     if (!packs.ready(vn.aow.monika.pack.PackManager.SEVENZIP, vn.aow.monika.pack.PackManager.SEVENZIP_LIB))
                         kotlinx.coroutines.runBlocking { vn.aow.monika.pack.PackManager.install(vn.aow.monika.pack.PackManager.SEVENZIP) {} }
                     System.load(java.io.File(packs.dir(vn.aow.monika.pack.PackManager.SEVENZIP), vn.aow.monika.pack.PackManager.SEVENZIP_LIB).absolutePath)
+                    // diag: bỏ qua lỗi gói tại đây — đổi thành PackUnavailableError để ArchiveExtractor phân loại.
                 } catch (e: java.io.IOException) {
-                    throw UnsatisfiedLinkError("Gói 7-Zip chưa tải được: ${e.message}") // ArchiveExtractor rơi về bộ giải thuần Java
+                    throw PackUnavailableError("Gói 7-Zip chưa tải được: ${e.message}") // ArchiveExtractor rơi về bộ giải thuần Java
                 }
             }
             SevenZip.initLoadedLibraries()

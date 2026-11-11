@@ -51,6 +51,29 @@ internal fun DonationAction(onClick: () -> Unit, modifier: Modifier = Modifier) 
     }
 }
 
+/** A78-2: thay toàn bộ QR/STK bằng thông báo trung lập, không chặn chơi game. */
+@Composable
+internal fun DonationUnavailablePanel(onDismiss: () -> Unit) {
+    val c = Monika.colors
+    Column(
+        Modifier.fillMaxWidth().background(c.bg).testTag("donation-unavailable")
+            .padding(horizontal = 20.dp).padding(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Icon(painterResource(R.drawable.ic_fluent_heart_24_filled), null, Modifier.size(26.dp), tint = c.accentCoral)
+            Text("Ủng hộ AowVN", style = Monika.type.sectionTitle, color = c.text)
+        }
+        Text(
+            "Bản ứng dụng này không được ký bằng khóa phát hành chính thức của AowVN (bản tự biên dịch " +
+                "hoặc đóng gói lại). Để bảo vệ người chơi khỏi tài khoản mạo danh, thông tin Ủng hộ chỉ " +
+                "hiển thị trên bản chính thức tại monika.aow.vn.",
+            style = Monika.type.body, color = c.textSecondary,
+        )
+        GradientButton("Đóng", onDismiss)
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DonationSheet(
@@ -58,8 +81,27 @@ fun DonationSheet(
     onDismiss: () -> Unit,
     loadBanks: suspend (DonateConfig) -> List<DonateBankConfig> = { AppGraph.donationBanks.load(it) },
     qrContent: @Composable (Long) -> Unit = { DonationQr(config, it) },
+    officialSha256: String = vn.aow.monika.security.OfficialCertPin.OFFICIAL_APK_CERT_SHA256,
+    actualSha256: String? = null,
+    debugBuild: Boolean = vn.aow.monika.BuildConfig.DEBUG,
 ) {
     val context = LocalContext.current
+    // A78-2/A78-3: chỉ vẽ QR/STK khi đối chiếu chứng thư (PackageManager + khối ký APK) ra OFFICIAL.
+    val allowed = if (actualSha256 != null) {
+        vn.aow.monika.security.OfficialCert.trustOf(actualSha256, null, officialSha256, debugBuild) ==
+            vn.aow.monika.security.OfficialCert.BuildTrust.OFFICIAL
+    } else {
+        vn.aow.monika.security.OfficialCert.verifyOfficialApk(context, officialSha256, debugBuild) ==
+            vn.aow.monika.security.OfficialCert.BuildTrust.OFFICIAL
+    }
+    if (!allowed) {
+        ModalBottomSheet(
+            onDismissRequest = onDismiss,
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = Monika.colors.bg,
+        ) { DonationUnavailablePanel(onDismiss) }
+        return
+    }
     val banks by produceState(config.fallbackBanks, config) { value = loadBanks(config) }
     ModalBottomSheet(
         onDismissRequest = onDismiss,

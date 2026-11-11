@@ -11,17 +11,17 @@
 
 ## Quyết định cần sếp/PM trước khi nộp
 
-1. **Đăng nhập Google (tùy chọn).** App lưu uid, tên, email, ảnh đại diện và token trên máy. Điều này **không khớp** với giả định "không thu thông tin cá nhân" trong [A67]. Cần chọn: giữ đăng nhập trong bản Play và khai đầy đủ, hay ẩn đăng nhập trong bản Play. PM đề xuất 27/10: ẩn ở bản Play, chờ sếp chốt.
-2. **Tự gửi báo lỗi đang bật mặc định.** `Prefs.autoSendCrash` mặc định `true`, và config `crash.autoSend` cũng `true`. Phải khai thu thập dữ liệu thiết bị và nhật ký. Cần chọn: giữ mặc định bật (có thông báo rõ), hay tắt mặc định trong bản Play.
-3. **Ủng hộ qua chuyển khoản (VietQR).** Config có thông tin tài khoản nhận tiền. Sếp chốt [A68] 29/10: bản Play bỏ VietQR và mọi link ủng hộ, chỉ ghi chữ kêu gọi ủng hộ trên aow.vn, không gắn link. Tài liệu này không ghi số tài khoản.
+1. **Đăng nhập Google (tùy chọn).** Bản Play đã **tắt hẳn** trong catalog (`scripts/play-config.py`: `account.enabled=false`, mọi URL rỗng) nên không mở Custom Tab sang aow.vn và không phát sinh nghĩa vụ trang xoá tài khoản. Bản GitHub giữ nguyên.
+2. **Tự gửi báo lỗi.** Bản Play đặt `crash.autoSend=false` trong catalog: chỉ gửi khi người dùng chủ động bấm gửi (Data Safety khai là tùy chọn). Bản GitHub giữ mặc định bật.
+3. **Ủng hộ qua chuyển khoản (VietQR).** Config có thông tin tài khoản nhận tiền. Sếp chốt [A68] 29/10: bản Play bỏ VietQR và mọi link ủng hộ; sau đó [A95] (09/11) chốt chặt hơn: **bản Play bỏ hẳn cả câu chỉ dẫn ủng hộ** (anti-steering của Play cấm dẫn người dùng ra ngoài để trả tiền). Tài liệu này không ghi số tài khoản.
 4. **Email hoặc kênh liên hệ chính thức** cho Play: [CHƯA KIỂM], chưa có trong repo.
 5. **Ngày hiệu lực** và **thời hạn lưu báo lỗi trên máy chủ**: [chờ sếp].
 6. **Ảnh khung màn hình khi dịch** (đọc ảnh trực tiếp, nhà cung cấp/endpoint AI do người dùng cấu hình). Đã khai trong chính sách và Data safety. PM tạm khai 27/10: thu thập có, tùy chọn (người dùng bật); chia sẻ không [CHƯA KIỂM theo biểu mẫu Play hiện hành].
 
 ## Đối chiếu mã đã làm (trên `origin/main` da1235dc)
 
-- **Quyền trong manifest:** INTERNET, VIBRATE, POST_NOTIFICATIONS, REQUEST_INSTALL_PACKAGES, FOREGROUND_SERVICE, FOREGROUND_SERVICE_DATA_SYNC, QUERY_ALL_PACKAGES, MANAGE_EXTERNAL_STORAGE, READ/WRITE_EXTERNAL_STORAGE. Không có quyền vị trí, danh bạ, máy ảnh hay micro.
-- **SDK bên thứ ba:** không thấy SDK phân tích, quảng cáo hay báo lỗi trong `gradle/libs.versions.toml` và `app/build.gradle.kts`.
+- **Quyền trong manifest:** bản GitHub có INTERNET, VIBRATE, POST_NOTIFICATIONS, REQUEST_INSTALL_PACKAGES, FOREGROUND_SERVICE, FOREGROUND_SERVICE_DATA_SYNC, QUERY_ALL_PACKAGES, MANAGE_EXTERNAL_STORAGE, READ/WRITE_EXTERNAL_STORAGE. **Bản Play** gỡ thêm các quyền do `:j2me` kéo vào: `RECORD_AUDIO`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `BLUETOOTH*` và `com.android.launcher.permission.INSTALL_SHORTCUT` (xem `app/src/play/AndroidManifest.xml`), nên không còn quyền micro, vị trí hay Bluetooth.
+- **SDK bên thứ ba:** không có SDK phân tích, quảng cáo hay báo lỗi trong `gradle/libs.versions.toml` và `app/build.gradle.kts`. Có **Google ML Kit Text Recognition** (`play-services-mlkit-text-recognition`, OCR trên máy cho tính năng dịch) — đã khai ở `data-safety.md`.
 - **Báo lỗi:** gửi JSON POST tới `crash.endpoint` trong config (Cloudflare Worker của AowVN). Nội dung và bộ lọc xem `app/src/main/java/vn/aow/monika/diag/Diagnostics.kt`. Bộ lọc thay đường dẫn riêng tư, token, khóa bí mật và email.
 - **Đăng nhập:** `account/Account.kt`, dùng Firebase qua aow.vn và đổi token qua `securetoken.googleapis.com`.
 - **Dịch màn hình:** `translate/ScreenTranslator.kt`. Chỉ chạy khi người dùng chọn nhà cung cấp và nhập khóa API. Dữ liệu không qua máy chủ AowVN. Chế độ đọc ảnh trực tiếp gửi JPEG khung màn hình tới nhà cung cấp/endpoint AI do người dùng cấu hình (provider `ai`, có thể gồm Gemini) khi người dùng bật đọc ảnh trực tiếp (`translate/Translators.kt:74`). Provider `google` (Google Cloud Translation) không dùng đường này.
@@ -30,3 +30,17 @@
 ## Bản Play (V150) làm thay đổi gì
 
 Bản Play bỏ tải game từ aow.vn, bỏ tự cập nhật APK, bỏ `REQUEST_INSTALL_PACKAGES` và có thể đổi quyền lưu trữ. Các tài liệu này viết cho cả hai bản. Khi V150 xong, cần đối chiếu lại mục quyền và danh sách hệ máy.
+
+## [A95]/[A65] bản Play sạch chỉ dẫn trả tiền (09/11)
+
+- **Bỏ câu chỉ dẫn trả tiền** ở Cài đặt bản Play (`PlaySettings.kt`); không còn câu nào dẫn người dùng sang aow.vn để trả tiền.
+- **Ẩn thẻ tài khoản** (`AccountCard` chuyển sang source set `github`) và **bỏ mục bài viết** (`PlayArticles`) khỏi màn chính bản Play.
+- **Gỡ quyền thừa của `:j2me`** trong `app/src/play/AndroidManifest.xml` bằng `tools:node="remove"`.
+- **Chống tái phát:** `app/src/testPlay/.../PlayAntiSteeringTest.kt` quét nguồn + catalog Play, `scripts/check-play-apk.py` quét APK thật (chuỗi, lớp, quyền); `scripts/test-play-distribution.py` giữ các ca đỏ khi ai thêm lại.
+
+### [A65] phần còn lại (10/11)
+
+- `scripts/play-config.py`: catalog Play tắt đăng nhập (`account` rỗng), tắt đọc bài viết (`feed`), tắt diễn đàn (`forum`), tắt tự gửi báo lỗi (`crash.autoSend=false`).
+- Giữ `FOREGROUND_SERVICE`/`FOREGROUND_SERVICE_DATA_SYNC`: `ImportWorker` của bản Play vẫn giải nén tệp người dùng chọn (việc nền dài), cần dịch vụ nền để không bị hệ thống ngắt.
+- Giữ `WAKE_LOCK`: runtime Ren'Py dùng cho giữ sáng màn hình; đây là quyền thường, Play không bắt khai báo.
+- JSR-82 (`:j2me`): thiếu quyền Bluetooth thì trả `BluetoothStateException` thay vì làm app văng.

@@ -26,7 +26,7 @@ import java.io.IOException
 class DownloadGuardTest {
     private val app get() = ApplicationProvider.getApplicationContext<Application>()
 
-    private fun guardFor(vararg hosts: String) = DownloadGuard { it in hosts.toSet() }
+    private fun guardFor(vararg hosts: String) = DownloadGuard({ it in hosts.toSet() })
 
     private fun url(s: String): String = s
 
@@ -34,6 +34,30 @@ class DownloadGuardTest {
         val chain = FakeChain(url("https://github.com/aowvn-10diem/pack.zip"))
         assertNotNull(guardFor("github.com").intercept(chain))
         assertNotNull(chain.proceeded)
+    }
+
+    @Test fun chanDuongDanNgoaiTienToTrenHostDungChung() {
+        // V206: host đúng chưa đủ — đường dẫn phải nằm trong tiền tố chủ sở hữu/gói đã chốt.
+        val guard = guardFor("github.com", "cdn.jsdelivr.net")
+        for (ok in listOf(
+            "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/v1/x.zip",
+            "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle/ruffle.js",
+            "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle@0.1.0/dist/ruffle.js",
+        )) {
+            val chain = FakeChain(ok)
+            assertNotNull(ok, guard.intercept(chain))
+            assertNotNull(ok, chain.proceeded)
+        }
+        for (bad in listOf(
+            "https://github.com/evil/repo/releases/download/v1/core.zip",
+            "https://github.com/aowvn-10diem-khac/repo/x.zip",
+            "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle.evil/x.js",
+            "https://cdn.jsdelivr.net/gh/abpvn/abpvn@master/filter/x.txt",
+        )) {
+            val chain = FakeChain(bad)
+            assertTrue(bad, runCatching { guard.intercept(chain) }.exceptionOrNull() is IOException)
+            assertNull(bad, chain.proceeded)
+        }
     }
 
     @Test fun hopRedirectSangHostLaBiChanTruocKhiGui() {
@@ -59,12 +83,17 @@ class DownloadGuardTest {
 
     @Test fun guardCuaAppGraphChoPhepHostTaiVaHostConfigChanHostKhac() {
         val guard = AppGraph.downloadHttp.networkInterceptors.filterIsInstance<DownloadGuard>().single()
-        for (ok in listOf("https://github.com/x.zip", "https://monika.aow.vn/config.json")) {
+        for (ok in listOf("https://github.com/aowvn-10diem/x.zip", "https://monika.aow.vn/config.json")) {
             val chain = FakeChain(url(ok))
             assertNotNull(ok, guard.intercept(chain))
             assertNotNull(ok, chain.proceeded)
         }
-        for (bad in listOf("https://evil.example/x.zip", "http://github.com/x.zip")) {
+        for (bad in listOf(
+            "https://evil.example/x.zip",
+            "http://github.com/aowvn-10diem/x.zip",
+            // V206: host đúng nhưng đường dẫn ngoài tiền tố chủ sở hữu.
+            "https://github.com/evil/repo/releases/download/v1/core.zip",
+        )) {
             val chain = FakeChain(url(bad))
             assertTrue(bad, runCatching { guard.intercept(chain) }.exceptionOrNull() is IOException)
             assertNull(bad, chain.proceeded)
@@ -78,9 +107,24 @@ class DownloadGuardTest {
         assertFalse(vn.aow.monika.config.isAllowedDownloadHost("evil.example"))
 
         val guard = AppGraph.downloadHttp.networkInterceptors.filterIsInstance<DownloadGuard>().single()
-        val hop = FakeChain(url("https://release-assets.githubusercontent.com/github-production-release-asset/1/x.zip?sig=abc&se=2026-11-05"))
+        val officialOrigin = "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/v1/x.zip"
+        val hop = FakeChain(
+            url("https://release-assets.githubusercontent.com/github-production-release-asset/1/x.zip?sig=abc&se=2026-11-05"),
+            origin = officialOrigin,
+        )
         assertNotNull(guard.intercept(hop))
         assertNotNull(hop.proceeded)
+
+        // V206: host CDN GitHub không được là URL gốc, kể cả khi hop trước đó trỏ repo người khác.
+        val direct = FakeChain(url("https://release-assets.githubusercontent.com/github-production-release-asset/1/x.zip"))
+        assertTrue(runCatching { guard.intercept(direct) }.exceptionOrNull() is IOException)
+        assertNull(direct.proceeded)
+        val foreignOrigin = FakeChain(
+            url("https://release-assets.githubusercontent.com/github-production-release-asset/1/x.zip"),
+            origin = "https://github.com/evil/repo/releases/download/v1/x.zip",
+        )
+        assertTrue(runCatching { guard.intercept(foreignOrigin) }.exceptionOrNull() is IOException)
+        assertNull(foreignOrigin.proceeded)
 
         val evil = FakeChain(url("https://evil.example/x.zip"))
         assertTrue(runCatching { guard.intercept(evil) }.exceptionOrNull() is IOException)

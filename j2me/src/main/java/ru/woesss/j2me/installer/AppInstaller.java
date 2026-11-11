@@ -113,9 +113,12 @@ public class AppInstaller {
 			return;
 		}
 		boolean isLocal;
-		if ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) {
+		if ("https".equals(uri.getScheme())) {
 			downloadJad();
 			isLocal = false;
+		} else if ("http".equals(uri.getScheme())) {
+			// V204: không tải JAD qua HTTP không mã hoá.
+			throw new ConverterException("Chỉ tải JAD qua HTTPS");
 		} else {
 			srcFile = FileUtils.getFileForUri(uri);
 			isLocal = true;
@@ -205,6 +208,32 @@ public class AppInstaller {
 		}
 	}
 
+	/**
+	 * V204: mở kết nối HTTPS và tự đi từng bước chuyển hướng, kiểm scheme ở MỖI bước.
+	 * Không dùng `setInstanceFollowRedirects(true)` vì nó tự nhảy (kể cả xuống http://) trước khi ta kiểm.
+	 */
+	private HttpURLConnection openHttps(String url) throws IOException, ConverterException {
+		String current = url;
+		for (int hop = 0; hop < 5; hop++) {
+			if (!current.startsWith("https://")) throw new ConverterException("Chỉ tải qua HTTPS");
+			HttpURLConnection connection = (HttpURLConnection) new URL(current).openConnection();
+			connection.setInstanceFollowRedirects(false);
+			connection.setReadTimeout(3 * 60 * 1000);
+			connection.setConnectTimeout(15000);
+			int code = connection.getResponseCode();
+			if (code == HttpURLConnection.HTTP_MOVED_PERM || code == HttpURLConnection.HTTP_MOVED_TEMP ||
+				code == HttpURLConnection.HTTP_SEE_OTHER || code == 307 || code == 308) {
+				String next = connection.getHeaderField("Location");
+				connection.disconnect();
+				if (next == null || next.isEmpty()) throw new ConverterException("Chuyển hướng không có địa chỉ");
+				current = new URL(new URL(current), next).toString();
+				continue;
+			}
+			return connection;
+		}
+		throw new ConverterException("Quá nhiều lần chuyển hướng");
+	}
+
 	private void downloadJad() throws ConverterException {
 		if (!cacheDir.exists() && !cacheDir.mkdirs()) {
 			throw new ConverterException("Can't create cache dir");
@@ -215,20 +244,7 @@ public class AppInstaller {
 		Exception exception;
 		HttpURLConnection connection = null;
 		try {
-			connection = (HttpURLConnection) new URL(url).openConnection();
-			connection.setInstanceFollowRedirects(true);
-			connection.setReadTimeout(3 * 60 * 1000);
-			connection.setConnectTimeout(15000);
-			int code = connection.getResponseCode();
-			if (code == HttpURLConnection.HTTP_MOVED_PERM ||
-				code == HttpURLConnection.HTTP_MOVED_TEMP) {
-				String urlStr = connection.getHeaderField("Location");
-				connection.disconnect();
-				connection = (HttpURLConnection) new URL(urlStr).openConnection();
-				connection.setInstanceFollowRedirects(true);
-				connection.setReadTimeout(3 * 60 * 1000);
-				connection.setConnectTimeout(15000);
-			}
+			connection = openHttps(url);
 			try (InputStream inputStream = connection.getInputStream();
 				 OutputStream outputStream = new FileOutputStream(srcFile)) {
 				byte[] buffer = new byte[2048];
@@ -350,8 +366,9 @@ public class AppInstaller {
 	private boolean checkJarFile(File jad) throws IOException, ConverterException {
 		File dir = jad.getParentFile();
 		String jarUrl = newDesc.getJarUrl();
-		File jar = new File(dir, jarUrl);
-		if (!jar.exists()) {
+		// V204: đường dẫn JAR trong JAD không được thoát ra ngoài thư mục chứa JAD.
+		File jar = resolveInside(dir, jarUrl);
+		if (jar == null || !jar.exists()) {
 			String name = jad.getName();
 			jar = new File(dir, name.substring(0, name.length() - 4) + ".jar");
 			if (!jar.exists()) {
@@ -361,6 +378,19 @@ public class AppInstaller {
 		srcJar = jar;
 		manifest = loadManifest(jar);
 		return manifest.equals(newDesc);
+	}
+
+	/** File con của [dir] sau khi chuẩn hoá; null nếu thoát ra ngoài hoặc không đọc được. */
+	private static File resolveInside(File dir, String name) {
+		if (dir == null || name == null || name.isEmpty()) return null;
+		try {
+			File base = dir.getCanonicalFile();
+			File out = new File(base, name).getCanonicalFile();
+			String prefix = base.getPath().endsWith(File.separator) ? base.getPath() : base.getPath() + File.separator;
+			return out.getPath().startsWith(prefix) ? out : null;
+		} catch (IOException e) {
+			return null;
+		}
 	}
 
 	private int checkDescriptor() {
@@ -427,28 +457,19 @@ public class AppInstaller {
 				path.append('/').append(jarUri.getPath());
 				jarUri = uri.buildUpon().path(path.toString()).build();
 			} else {
-				jarUri = jarUri.buildUpon().scheme("http").build();
+				// V204: JAD cục bộ không có nguồn HTTPS để suy ra JAR — không tải JAR qua HTTP không mã hoá.
+				throw new ConverterException("Không xác định được nguồn HTTPS cho JAR");
 			}
+		}
+		if (!"https".equals(jarUri.getScheme())) {
+			throw new ConverterException("Chỉ tải JAR qua HTTPS");
 		}
 		String url = jarUri.toString();
 		Log.d(TAG, "Downloading " + url);
 		Exception exception;
 		HttpURLConnection connection = null;
 		try {
-			connection = (HttpURLConnection) new URL(url).openConnection();
-			connection.setInstanceFollowRedirects(true);
-			connection.setReadTimeout(3 * 60 * 1000);
-			connection.setConnectTimeout(15000);
-			int code = connection.getResponseCode();
-			if (code == HttpURLConnection.HTTP_MOVED_PERM ||
-				code == HttpURLConnection.HTTP_MOVED_TEMP) {
-				String urlStr = connection.getHeaderField("Location");
-				connection.disconnect();
-				connection = (HttpURLConnection) new URL(urlStr).openConnection();
-				connection.setInstanceFollowRedirects(true);
-				connection.setReadTimeout(3 * 60 * 1000);
-				connection.setConnectTimeout(15000);
-			}
+			connection = openHttps(url);
 			try (InputStream inputStream = connection.getInputStream();
 				 OutputStream outputStream = new FileOutputStream(srcJar)) {
 				byte[] buffer = new byte[2048];

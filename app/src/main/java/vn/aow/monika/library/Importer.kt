@@ -7,6 +7,7 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.util.zip.ZipInputStream
+import vn.aow.monika.util.SafeZipPath
 
 data class ImportResult(
     /** Thư mục game trong thư viện. */
@@ -24,11 +25,23 @@ data class ImportResult(
  */
 object Importer {
 
-    /** V112: giải nén là thao tác người dùng → lỗi thật (hỏng file, hết chỗ, thiếu bộ giải nén…) để lại báo cáo `op-fail`; cần mật khẩu là luồng bình thường nên không báo. */
+    /**
+     * V112: giải nén là thao tác người dùng → lỗi thật (file hỏng, hết chỗ, lib 7-Zip lỗi…) để lại báo cáo `op-fail`.
+     * Cần mật khẩu, và máy thiếu gói 7-Zip mà không có mạng để tải, là luồng bình thường → chỉ ghi vệt, không báo.
+     * Tên bước kèm định dạng file (`giai-nen:7z`) để đọc báo cáo là biết hỏng ở bộ giải nào.
+     */
     internal fun extractOp(context: Context?, name: String, block: () -> Unit): Throwable? {
         if (context == null) return runCatching(block).exceptionOrNull() // diag: bỏ qua — gọi từ nơi không có Context (test/tiện ích)
+        val stepName = "giai-nen:" + archiveFormat(name)
         return vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.EXTRACT, name,
-            expected = { it is ArchiveExtractor.PasswordException }) { step("giai-nen"); block() }.exceptionOrNull()
+            expected = { it is ArchiveExtractor.PasswordException || it is ArchiveExtractor.NeedsExtractorPackException }) { step(stepName); block() }.exceptionOrNull()
+    }
+
+    /** Đuôi file nén cho tên bước: chỉ chữ/số, không lộ tên file. Bộ nhiều phần `game.7z.001` → `7z`. */
+    private fun archiveFormat(name: String): String {
+        val n = name.lowercase()
+        val ext = if (Regex("""\.7z\.\d{3}$""").containsMatchIn(n)) "7z" else n.substringAfterLast('.', "")
+        return ext.filter { it in 'a'..'z' || it in '0'..'9' }.take(8).ifBlank { "khac" }
     }
 
     fun importFile(context: Context, src: File, deleteSource: Boolean, passwords: List<String>, progress: ExtractProgress? = null): ImportResult {
@@ -80,6 +93,8 @@ object Importer {
         }
         dir.deleteRecursively()
         if (error is ArchiveExtractor.PasswordException) return ImportResult(staging, error.message, pending = true)
+        // Thiếu gói 7-Zip + không có mạng: báo đúng việc cần làm, không nói "thiếu phần" gây hiểu nhầm.
+        if (error is ArchiveExtractor.NeedsExtractorPackException) return ImportResult(staging, error.message, pending = true)
         return pending("Đã nhận ${parts.size} phần của \"${piece.base}\" nhưng chưa đủ bộ. Tải tiếp các phần còn lại.")
     }
 
@@ -100,7 +115,9 @@ object Importer {
 
     /** V112: mở/chép file người dùng chọn là bước "nhập game" → lỗi để lại op-fail rồi ném lại như cũ cho giao diện hiện thông báo. */
     private fun copyUri(context: Context, uri: Uri, dest: File, name: String) {
-        vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.IMPORT, name) {
+        // V204: tên dùng cho báo cáo cũng phải là tên đơn đã làm sạch.
+        val safeName = SafeZipPath.sanitizeSingleFileName(name) ?: "game-${System.currentTimeMillis()}"
+        vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.IMPORT, safeName) {
             step("mo-file")
             (context.contentResolver.openInputStream(uri) ?: throw IOException("Không mở được file")).use { input ->
                 step("chep-file")
@@ -153,6 +170,7 @@ object Importer {
 
     private fun displayName(context: Context, uri: Uri): String? =
         context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
-            if (c.moveToFirst()) c.getString(0) else null
+            // V204: tên do hệ thống trả về có thể chứa đường dẫn/ký tự điều khiển — làm sạch trước khi đặt tên thư mục.
+            if (c.moveToFirst()) SafeZipPath.sanitizeSingleFileName(c.getString(0).orEmpty()) else null
         }
 }

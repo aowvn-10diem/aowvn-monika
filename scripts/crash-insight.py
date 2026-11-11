@@ -25,6 +25,8 @@ import urllib.request
 MAX_BYTES = 2 * 1024 * 1024   # danh sách 100 dòng metadata: dư sức trong 2 MB
 MAX_ROWS = 100                # Worker chặn 100 báo cáo mới nhất cho /reports
 DEFAULT_URL = "https://aowvn-monika-crash.aowvn-system.workers.dev"
+# A78-4: 12 hex đầu chứng thư ký APK phát hành (khớp scripts/verify-apk-cert.py).
+OFFICIAL_CERT_PREFIX = "c46902e97029"
 
 # Cột bảng (đúng thứ tự PM chốt) → trường nguồn, để ghi rõ trường nào thiếu.
 COLUMNS = ["chữ ký (băm ngắn)", "lõi", "loại", "số lượt", "bản app", "chứng thư", "đời máy", "màn", "giả thuyết"]
@@ -277,10 +279,14 @@ def fetch_listing(base, token):
         raise ValueError("response is not JSON") from None
 
 
-def build(payload):
+def build(payload, official_only=False):
     """payload → (markdown, csv, số dòng, số nhóm). Dùng chung cho mạng và tệp offline."""
     rows = rows_of(payload)
     groups = group_rows(rows)
+    if official_only:
+        # Giữ báo cáo không gửi chứng thư (bản cũ) và báo cáo khớp chứng thư phát hành;
+        # loại báo cáo mang chứng thư khác (bản mod/đóng gói lại).
+        groups = [g for g in groups if not g["cert"] or g["cert"] == OFFICIAL_CERT_PREFIX]
     return render_markdown(groups, len(rows)), render_csv(groups), len(rows), len(groups)
 
 
@@ -288,6 +294,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out-dir", default=".", help="thư mục ghi crash-insight.md/.csv")
     parser.add_argument("--file", help="đọc payload /reports từ tệp (offline, không gọi mạng)")
+    parser.add_argument("--official-only", action="store_true", help="chỉ giữ báo cáo khớp chứng thư phát hành (A78-4)")
     args = parser.parse_args()
     try:
         if args.file:
@@ -297,7 +304,7 @@ def main():
         else:
             base = validate_base(os.environ.get("CRASH_URL") or DEFAULT_URL)
             payload = fetch_listing(base, os.environ.get("CRASH_ADMIN_TOKEN", "").strip())
-        markdown, table, scanned, groups = build(payload)
+        markdown, table, scanned, groups = build(payload, args.official_only)
         os.makedirs(args.out_dir, exist_ok=True)
         with open(os.path.join(args.out_dir, "crash-insight.md"), "w", encoding="utf-8") as handle:
             handle.write(markdown)

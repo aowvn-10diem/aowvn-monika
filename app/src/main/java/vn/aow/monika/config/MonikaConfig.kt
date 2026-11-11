@@ -24,6 +24,45 @@ val ALLOWED_DOWNLOAD_HOSTS: Set<String> = setOf(
 internal fun isAllowedDownloadHost(host: String): Boolean = host in ALLOWED_DOWNLOAD_HOSTS
 
 /**
+ * V206: tiền tố đường dẫn **bắt buộc** trên host dùng chung nhiều chủ sở hữu.
+ *
+ * `github.com`, `raw.githubusercontent.com`, `codeload.github.com` phục vụ mọi tài khoản, nên chỉ kiểm
+ * tên miền là không đủ. Ghim tiền tố chủ sở hữu để URL tải mã/gói luôn nằm trong kho chính thức.
+ * Host không có trong map thì không ràng buộc đường dẫn.
+ */
+val REQUIRED_DOWNLOAD_PATH_PREFIXES: Map<String, String> = mapOf(
+    "github.com" to "/aowvn-10diem/",
+    "raw.githubusercontent.com" to "/aowvn-10diem/",
+    "codeload.github.com" to "/aowvn-10diem/",
+    // Script web player (ruffle): chỉ đúng gói đã chốt, không nhận gói khác trên cùng CDN.
+    "cdn.jsdelivr.net" to "/npm/@ruffle-rs/ruffle",
+)
+
+/**
+ * Host chỉ được xuất hiện như **hop redirect** từ một URL gốc hợp lệ, không được là URL gốc trong config
+ * (asset GitHub Releases luôn 302 sang các host này; nội dung do GitHub ký nên không tự đặt được).
+ */
+val REDIRECT_ONLY_DOWNLOAD_HOSTS: Set<String> = setOf(
+    "objects.githubusercontent.com",
+    "release-assets.githubusercontent.com",
+)
+
+/** [host] đã hạ chữ thường trước khi truyền vào. */
+internal fun isRedirectOnlyDownloadHost(host: String): Boolean = host in REDIRECT_ONLY_DOWNLOAD_HOSTS
+
+/**
+ * V206 (CFG-01): [path] (đường dẫn đã chuẩn hoá, không gồm query) phải bắt đầu bằng tiền tố của [host].
+ * Tiền tố kết thúc bằng `/` nên `/aowvn-10diem-khac/` không lọt; với jsDelivr còn chặn `ruffle.evil`.
+ */
+internal fun isAllowedDownloadPath(host: String, path: String): Boolean {
+    val prefix = REQUIRED_DOWNLOAD_PATH_PREFIXES[host] ?: return true
+    if (!path.startsWith(prefix)) return false
+    if (prefix.endsWith("/") || path.length == prefix.length) return true
+    return path[prefix.length] == '/' || path[prefix.length] == '@'
+}
+
+
+/**
  * V196b: host của **tệp người dùng** (`downloadHosts[].directUrl`, link dán vào để tải game/tài liệu).
  * Hẹp hơn danh sách host mã/gói ở trên: chỉ những host đã chốt cho luồng tải tệp.
  * Áp cả khi nạp config và trước khi đưa URL cho trình quản lý tải của hệ thống.
@@ -63,7 +102,7 @@ data class MonikaConfig(
     val forum: ForumConfig = ForumConfig(),
     /** Chặn quảng cáo trong trình duyệt nhúng. */
     val adblock: AdBlockConfig = AdBlockConfig(),
-    /** Tài khoản AowVN (Firebase của web aow.vn): đăng nhập, điểm danh, đánh giá, vote/donate. */
+    /** Tài khoản AowVN (Firebase của web aow.vn): đăng nhập, điểm danh, đánh giá, bình chọn. */
     val account: AccountConfig = AccountConfig(),
     /** Bản dịch tên/giá trị tùy chọn lõi giả lập (tiếng Anh → tiếng Việt). */
     val coreOptionText: CoreOptionText = CoreOptionText(),
