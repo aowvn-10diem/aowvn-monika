@@ -1,8 +1,11 @@
 import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createHash, webcrypto } from "node:crypto";
-import worker, { MAX_BODY, resetRateState, rateReservedCount, packSignature, setClockForTest, authEquals } from "./worker.js";
+import { createHash, createHmac, webcrypto } from "node:crypto";
+import worker, { MAX_BODY, resetRateState, rateReservedCount, packSignature, setClockForTest, authEquals, normalizeClientIp, r2PresignUrl } from "./worker.js";
+// Bí danh dùng trong nhánh test cũ của V186 (giữ nguyên câu chữ test)
+const nodeHash = createHash;
+const nodeHmac = createHmac;
 globalThis.crypto ??= webcrypto;
 // V144 lô 1: fixture giả nằm ở resources công khai của app (nguồn duy nhất cho cả
 // CrashContractTest của Kotlin); Worker test đọc đúng hai tệp đó, không giữ bản sao riêng.
@@ -607,9 +610,122 @@ test("V155b hai chung thu khac nhau hien rieng trong danh sach", async () => {
   assert.deepEqual(rows.map((r) => r.cert).sort(), [CERT.slice(0, 16), "0".repeat(16)].sort());
 });
 
+// ---- V186/V190: /reports & /stats không trả 500 khi KV lỗi hoặc listing hỏng ----
+test("V186 KV list loi tam thoi -> 503 kv_unavailable (khong phai 500 trang)", async () => {
+  const c = setup();
+  await c.post(fixture);
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => { throw new Error("KV list failed"); } };
+  const response = await c.read("/reports");
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { ok: false, error: "kv_unavailable" });
+});
+
+test("V190 KV tra trang sai dang -> 400 co ma loi (khong con 500)", async () => {
+  // V190: trang listing sai cấu trúc là lỗi dữ liệu đầu vào của lần đọc → 400, không để nổ 500.
+  for (const broken of [{}, { list_complete: false, keys: [] }, { list_complete: true }, { list_complete: true, keys: "x" }]) {
+    const c = setup();
+    c.env.REPORTS = { ...c.env.REPORTS, list: async () => broken };
+    const response = await c.read("/reports");
+    assert.equal(response.status, 400, JSON.stringify(broken));
+    assert.equal((await response.json()).error, "bad_listing");
+  }
+});
+
+test("V190 keys co phan tu hong (null/rong/so/khong co name) -> 400, khong 500", async () => {
+  for (const keys of [[null], [""], [123], [{}], [{ name: 5 }], [{ name: "" }]]) {
+    const c = setup();
+    c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys }) };
+    for (const path of ["/reports", "/stats"]) {
+      const response = await c.read(path);
+      assert.equal(response.status, 400, `${path} ${JSON.stringify(keys)}`);
+      assert.equal((await response.json()).error, "malformed_keys");
+    }
+  }
+});
+
+test("V190b trang co ca khoa hop le lan khoa hong: van 200, bao so khoa bi bo va log mot lan", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys: [
+    { name: "r:1700000000000:aaaaaaaa", metadata: { k: "anr", c: "unknown" } },
+    null,
+    { name: "" },
+    123,
+    { name: "r:1700000001000:bbbbbbbb", metadata: { k: "lowmem", c: "unknown" } },
+  ] }) };
+  const warnings = [];
+  const realWarn = console.warn;
+  console.warn = (line) => warnings.push(String(line));
+  try {
+    for (const path of ["/reports", "/stats"]) {
+      const body = await (await c.read(path)).json();
+      assert.equal(body.total, 2, path);                        // vẫn trả dữ liệu hợp lệ
+      assert.deepEqual(body.meta, { skippedInvalid: 3 }, path); // báo rõ số khoá bị bỏ
+    }
+  } finally { console.warn = realWarn; }
+  assert.equal(warnings.length, 2, "mỗi lượt đọc log đúng 1 lần");
+  for (const line of warnings) {
+    assert.match(line, /3 khoá KV hỏng/);
+    assert.equal(line.includes("r:1700000000000"), false, "không log tên khoá");
+  }
+});
+
+test("V190b khong co khoa hong thi meta.skippedInvalid = 0 va khong log", async () => {
+  const c = setup();
+  await c.post(fixture);
+  const warnings = [];
+  const realWarn = console.warn;
+  console.warn = (line) => warnings.push(String(line));
+  try {
+    const body = await (await c.read("/reports")).json();
+    assert.equal(body.total, 1);
+    assert.deepEqual(body.meta, { skippedInvalid: 0 });
+    assert.equal((await (await c.read("/stats")).json()).meta.skippedInvalid, 0);
+  } finally { console.warn = realWarn; }
+  assert.equal(warnings.length, 0);
+});
+
+test("V190 khoa hop le van 200, metadata sai kieu khong lam sap /reports hay /stats", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys: [
+    { name: "r:1700000000000:aaaaaaaa", metadata: { k: "anr", c: "unknown", a: "0.8.8 (128)" } },
+    { name: "r:1700000001000:bbbbbbbb", metadata: "hong" },
+    { name: "r:1700000002000:cccccccc", metadata: [1, 2] },
+  ] }) };
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 3);
+  assert.equal(body.reports[0].id, "r:1700000002000:cccccccc");
+  assert.deepEqual(body.reports[0], { id: "r:1700000002000:cccccccc" });
+  assert.equal(body.reports[1].id, "r:1700000001000:bbbbbbbb");
+  assert.equal((await c.read("/stats")).status, 200);
+});
+
+test("V190 id bao cao hong (percent-encoding sai/rong) -> 400", async () => {
+  const c = setup();
+  for (const path of ["/reports/%E0%A4%A", "/reports/%20"]) {
+    const response = await c.read(path);
+    assert.equal(response.status, 400, path);
+    assert.equal((await response.json()).error, "bad_id");
+  }
+});
+
+test("V186 /reports van tra dung 100 muc moi nhat va tong so khoa khi KV chia trang", async () => {
+  const c = setup();
+  const key = (i) => `r:${String(1700000000000 + i).padStart(13, "0")}:${String(i).padStart(8, "0")}`;
+  const pages = new Map();
+  for (let page = 0; page < 3; page++) {
+    pages.set(page === 0 ? undefined : `c${page}`, {
+      list_complete: page === 2, cursor: page === 2 ? undefined : `c${page + 1}`,
+      keys: Array.from({ length: 400 }, (_, i) => ({ name: key(page * 400 + i), metadata: { k: "anr", c: "unknown", a: "0.8.8 (128)" } })),
+    });
+  }
+  c.env.REPORTS = { ...c.env.REPORTS, list: async ({ cursor }) => pages.get(cursor) };
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 1200);
+  assert.equal(body.reports.length, 100);
+  assert.equal(body.reports[0].id, key(1199)); // mới nhất đứng đầu
+  assert.equal(body.reports[99].id, key(1100));
+});
 // ---- A85-G3: 1-hop R2 SigV4 Presigned URL, PACKS_MAP, IPv6 /64, FIFO eviction & lọc chứng thư ----
-import { createHash as nodeHash, createHmac as nodeHmac } from "node:crypto";
-import { normalizeClientIp, r2PresignUrl } from "./worker.js";
 
 const R2_ACCOUNT = "0123456789abcdef0123456789abcdef";
 const r2Env = (extra = {}) => ({
@@ -758,4 +874,86 @@ test("A85 OFFICIAL_CERT_SHA256 tuy chon loc rac KV /report ma khong anh huong ma
   const official = await c.post({ ...fixture, certSha256: CERT.toUpperCase() });
   assert.equal(official.status, 200);
   assert.equal(puts, 1);
+});
+
+// ---- V190c: log lỗi KV, /report-index bọc try, chốt cursor lặp ----
+function captureConsoleErrors(run) {
+  const lines = [];
+  const real = console.error;
+  console.error = (line) => lines.push(String(line));
+  try {
+    return { lines, result: run() };
+  } finally {
+    console.error = real;
+  }
+}
+
+test("V190c /report-index: KV list ném lỗi -> 503 incomplete_index, có console.error (không 500 trắng)", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => { throw new TypeError("KV boom"); } };
+  const lines = [];
+  const real = console.error;
+  console.error = (line) => lines.push(String(line));
+  let response;
+  try {
+    response = await c.read("/report-index");
+  } finally { console.error = real; }
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { ok: false, error: "incomplete_index" });
+  assert.equal(lines.length, 1, "đúng 1 dòng log mỗi lượt");
+  assert.match(lines[0], /TypeError: KV boom/);
+  assert.equal(/r:\d{13}:[0-9a-f]{8}/.test(lines[0]), false, "không log tên khoá");
+});
+
+test("V190c /reports: KV ném lỗi vẫn 503 kv_unavailable nhưng CÓ console.error để thấy nguyên nhân gốc", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => { throw new RangeError("bug trong mã"); } };
+  const lines = [];
+  const real = console.error;
+  console.error = (line) => lines.push(String(line));
+  let response;
+  try {
+    response = await c.read("/reports");
+  } finally { console.error = real; }
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { ok: false, error: "kv_unavailable" });
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /RangeError: bug trong mã/);
+});
+
+test("V190c /report-index: trang rỗng mà vẫn chưa xong -> 503 (không trả cursor lặp cho client)", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: false, cursor: "c1", keys: [] }) };
+  const response = await c.read("/report-index?cursor=c1");
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "incomplete_index");
+});
+
+test("V190c /report-index: khoá hỏng (null) -> 503, không 500", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys: [null, { name: "" }] }) };
+  assert.equal((await c.read("/report-index")).status, 503);
+});
+
+test("V190c /reports: KV trả cursor lặp -> dừng vòng đọc (không treo), vẫn trả dữ liệu đã đọc", async () => {
+  let calls = 0;
+  const c = setup();
+  c.env.REPORTS = {
+    ...c.env.REPORTS,
+    list: async () => {
+      calls++;
+      return { list_complete: false, cursor: "same-cursor", keys: [{ name: `r:17000000000${calls}:aaaaaaaa`, metadata: { a: "0.8.9" } }] };
+    },
+  };
+  const warnings = [];
+  const realWarn = console.warn;
+  console.warn = (line) => warnings.push(String(line));
+  let response;
+  try {
+    response = await c.read("/reports");
+  } finally { console.warn = realWarn; }
+  assert.equal(response.status, 200);
+  assert.equal(calls, 2, "dừng sau 2 lượt gọi, không lặp vô hạn");
+  assert.equal((await response.json()).reports.length, 2);
+  assert.equal(warnings.some((line) => line.includes("cursor lặp")), true);
 });
