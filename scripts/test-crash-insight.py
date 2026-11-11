@@ -27,17 +27,24 @@ def row(**kw):
 
 
 class Grouping(unittest.TestCase):
-    def test_official_only_drops_foreign_cert_rows(self):
+    def test_foreign_cert_rows_are_excluded_from_statistics_by_default(self):
         payload = {"reports": [
             row(cert="c46902e97029a965"),          # chứng thư phát hành
             row(cert="1e08a903aef90000"),          # bản khác chứng thư → loại
             row(cert=""),                          # bản cũ không gửi chứng thư → giữ
         ]}
-        _, _, scanned, groups = insight.build(payload, official_only=True)
+        markdown, table, scanned, groups = insight.build(payload)
         self.assertEqual(3, scanned)
         self.assertEqual(2, groups)
-        _, _, _, all_groups = insight.build(payload)
+        self.assertIn("Đã loại khỏi thống kê", markdown)
+        self.assertIn("**1 báo cáo**", markdown)
+        # Chứng thư lạ không xuất hiện trong bảng, phần đếm chứng thư hay CSV.
+        for output in (markdown, table):
+            self.assertNotIn("1e08a903aef9", output)
+        all_markdown, _, _, all_groups = insight.build(payload, include_foreign=True)
         self.assertEqual(3, all_groups)
+        self.assertNotIn("Đã loại khỏi thống kê", all_markdown)
+
     def test_same_core_kind_signature_is_one_group_and_counts_add_up(self):
         groups = insight.group_rows([row(count=2), row(count=3), row(t=1_700_000_000_100)])
         self.assertEqual(1, len(groups))
@@ -165,6 +172,15 @@ class Certificate(unittest.TestCase):
         self.assertIn("| %s | 2 | 7 |" % self.CERT_A[:12], markdown)
         self.assertIn("| %s | 1 | 1 |" % self.CERT_B[:12], markdown)
         self.assertIn("2 chứng thư khác nhau", markdown)
+
+    def test_foreign_certificate_is_summarised_not_counted(self):
+        # V205: báo cáo chứng thư lạ chỉ còn dòng tổng "đã loại", không vào bảng đếm chứng thư.
+        payload = {"reports": [row(cert="c46902e97029a965", count=2), row(cert=self.CERT_B, count=5)]}
+        markdown, _, _, group_count = insight.build(payload)
+        self.assertEqual(1, group_count)
+        self.assertIn("**1 báo cáo** · **5 lượt**", markdown)
+        self.assertIn("| c46902e97029 | 1 | 2 |", markdown)
+        self.assertNotIn(self.CERT_B[:12], markdown)
 
     def test_single_certificate_has_no_warning(self):
         markdown = insight.render_markdown(insight.group_rows([row(cert=self.CERT_A)]), 1)

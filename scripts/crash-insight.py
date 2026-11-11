@@ -5,6 +5,9 @@
   đường này không có tham số phân trang nên không thể lặp vô hạn). Không gọi `/reports/<id>`.
 - Gộp theo (lõi, loại, chữ ký, thành phần, chứng thư) rồi cộng `count`; chỉ dùng các trường Worker trả ở danh sách:
   `k` loại · `c` lõi · `a` bản app · `component` · `fp` chữ ký · `cert` chứng thư · `count` · `t` thời điểm.
+- V205: mặc định **chỉ tính báo cáo khớp chứng thư bản phát hành** (`OFFICIAL_CERT_PREFIX`) và báo cáo cũ
+  không gửi chứng thư; báo cáo mang chứng thư khác bị loại khỏi bảng và mọi con số thống kê, chỉ ghi lại
+  tổng số báo cáo/lượt đã loại ở cuối bảng. Dùng `--all-certs` khi cần xem cả bản mod/đóng gói lại.
 - KHÔNG đưa vào bảng: tên game (`g`), tiêu đề, chi tiết, log, vệt sự kiện, `device`, IP. Chỉ số liệu gộp.
 - Không in token, không ghi token ra tệp.
 
@@ -202,7 +205,7 @@ def missing_fields(rows):
     return missing
 
 
-def render_markdown(groups, scanned):
+def render_markdown(groups, scanned, excluded=None):
     rows = table_rows(groups)
     lines = [
         "# Bảng chẩn đoán crash (V174)",
@@ -229,6 +232,15 @@ def render_markdown(groups, scanned):
     distinct = len({cert for cert, _ in cert_totals(groups) if cert != MISSING})
     if distinct > 1:
         lines += ["", "⚠ Có **%d chứng thư khác nhau** trong cửa sổ này — đối chiếu **thủ công** với chứng thư bản phát hành chính thức. Giá trị do client gửi lên: chỉ là tín hiệu chẩn đoán, **không** kết luận đây là bản giả và **không** phải bằng chứng xác thực." % distinct]
+    if excluded:
+        dropped_reports = sum(group["reports"] for group in excluded)
+        dropped_counts = sum(group["count"] for group in excluded)
+        dropped_certs = len({group["cert"] for group in excluded})
+        lines.append(
+            "\nĐã loại khỏi thống kê (V205): **%d báo cáo** · **%d lượt** từ **%d chứng thư** không khớp chứng thư bản phát hành. "
+            "Mọi số liệu phía trên chỉ tính bản phát hành chính thức; dùng `--all-certs` để xem cả báo cáo bị loại."
+            % (dropped_reports, dropped_counts, dropped_certs)
+        )
     lines += [
         "",
         "Ghi chú:",
@@ -279,22 +291,40 @@ def fetch_listing(base, token):
         raise ValueError("response is not JSON") from None
 
 
-def build(payload, official_only=False):
-    """payload → (markdown, csv, số dòng, số nhóm). Dùng chung cho mạng và tệp offline."""
+def partition_by_cert(groups):
+    """V205: tách nhóm khớp chứng thư bản phát hành (và bản cũ không gửi chứng thư) khỏi nhóm lạ.
+
+    Chứng thư do client gửi lên: chỉ dùng để lọc nhiễu thống kê, không phải bằng chứng xác thực.
+    """
+    kept, foreign = [], []
+    for group in groups:
+        if group["cert"] and group["cert"] != OFFICIAL_CERT_PREFIX:
+            foreign.append(group)
+        else:
+            kept.append(group)
+    return kept, foreign
+
+
+def build(payload, include_foreign=False):
+    """payload → (markdown, csv, số dòng, số nhóm). Dùng chung cho mạng và tệp offline.
+
+    Mặc định loại báo cáo mang chứng thư khác bản phát hành (V205) để tỷ lệ lỗi không bị bản mod thổi lên;
+    `include_foreign=True` (cờ `--all-certs`) giữ tất cả để điều tra.
+    """
     rows = rows_of(payload)
     groups = group_rows(rows)
-    if official_only:
-        # Giữ báo cáo không gửi chứng thư (bản cũ) và báo cáo khớp chứng thư phát hành;
-        # loại báo cáo mang chứng thư khác (bản mod/đóng gói lại).
-        groups = [g for g in groups if not g["cert"] or g["cert"] == OFFICIAL_CERT_PREFIX]
-    return render_markdown(groups, len(rows)), render_csv(groups), len(rows), len(groups)
+    excluded = []
+    if not include_foreign:
+        groups, excluded = partition_by_cert(groups)
+    return render_markdown(groups, len(rows), excluded), render_csv(groups), len(rows), len(groups)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out-dir", default=".", help="thư mục ghi crash-insight.md/.csv")
     parser.add_argument("--file", help="đọc payload /reports từ tệp (offline, không gọi mạng)")
-    parser.add_argument("--official-only", action="store_true", help="chỉ giữ báo cáo khớp chứng thư phát hành (A78-4)")
+    parser.add_argument("--all-certs", action="store_true", help="gộp cả báo cáo mang chứng thư khác bản phát hành (mặc định: loại khỏi thống kê)")
+    parser.add_argument("--official-only", action="store_true", help="giữ tương thích; lọc chứng thư bản phát hành nay là mặc định")
     args = parser.parse_args()
     try:
         if args.file:
@@ -304,7 +334,7 @@ def main():
         else:
             base = validate_base(os.environ.get("CRASH_URL") or DEFAULT_URL)
             payload = fetch_listing(base, os.environ.get("CRASH_ADMIN_TOKEN", "").strip())
-        markdown, table, scanned, groups = build(payload, args.official_only)
+        markdown, table, scanned, groups = build(payload, args.all_certs)
         os.makedirs(args.out_dir, exist_ok=True)
         with open(os.path.join(args.out_dir, "crash-insight.md"), "w", encoding="utf-8") as handle:
             handle.write(markdown)
