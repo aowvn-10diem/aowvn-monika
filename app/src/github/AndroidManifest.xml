@@ -100,8 +100,11 @@
             android:noHistory="true"
             android:theme="@android:style/Theme.NoDisplay" />
 
+        <!-- [V152] Activity game giữ phím Back kiểu cũ (menu Monika/phím midlet) nên tự opt-out
+             predictive back; Android 16 vẫn giao KEYCODE_BACK cho các activity này. -->
         <activity
             android:name=".runner.RgssGameActivity"
+            android:enableOnBackInvokedCallback="false"
             android:process=":game"
             android:taskAffinity="com.aow.monika.rgss"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|layoutDirection|keyboard|keyboardHidden|navigation"
@@ -122,6 +125,7 @@
 
         <activity
             android:name=".runner.KirikiriGameActivity"
+            android:enableOnBackInvokedCallback="false"
             android:process=":game"
             android:taskAffinity="com.aow.monika.kirikiri"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|layoutDirection|keyboard|keyboardHidden|navigation"
