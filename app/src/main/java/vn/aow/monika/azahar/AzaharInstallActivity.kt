@@ -73,6 +73,7 @@ class AzaharInstallActivity : ComponentActivity() {
             }
         }
         lifecycleScope.launch {
+            // diag: bỏ qua lỗi nạp engine tại đây — nhánh dưới dùng `ok` để báo Diagnostics và hiện lỗi cho người dùng.
             val ok = runCatching {
                 AppGraph.azahar.ensure { status = it }
                 withContext(Dispatchers.Default) { AppGraph.azahar.load() }
