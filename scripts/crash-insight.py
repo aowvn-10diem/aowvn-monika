@@ -211,7 +211,7 @@ def render_markdown(groups, scanned, excluded=None):
         "# Bảng chẩn đoán crash (V174)",
         "",
         "Đọc **một lần** `GET /reports` của Worker (tối đa 100 báo cáo mới nhất); không gọi chi tiết từng báo cáo.",
-        "Số dòng nhận được: %d · số nhóm (lõi + loại + chữ ký + thành phần + chứng thư): %d." % (scanned, len(groups)),
+        "Số dòng nhận được (trước lọc): %d · số nhóm (sau lọc theo lõi + loại + chữ ký + thành phần + chứng thư): %d." % (scanned, len(groups)),
         "",
         "| " + " | ".join(COLUMNS) + " |",
         "|" + "|".join(["---"] * len(COLUMNS)) + "|",
@@ -238,7 +238,9 @@ def render_markdown(groups, scanned, excluded=None):
         dropped_certs = len({group["cert"] for group in excluded})
         lines.append(
             "\nĐã loại khỏi thống kê (V205): **%d báo cáo** · **%d lượt** từ **%d chứng thư** không khớp chứng thư bản phát hành. "
-            "Mọi số liệu phía trên chỉ tính bản phát hành chính thức; dùng `--all-certs` để xem cả báo cáo bị loại."
+            "Bảng và số nhóm phía trên **không** gồm các báo cáo này, nhưng **vẫn có thể** gồm báo cáo không gửi chứng thư (app cũ) "
+            "hoặc báo cáo có trường chứng thư không phải hex (bị coi như rỗng) — đây là giới hạn vì chứng thư do client gửi lên, "
+            "nên không thể coi toàn bộ số liệu là bản phát hành chính thức. Dùng `--all-certs` để xem cả báo cáo bị loại."
             % (dropped_reports, dropped_counts, dropped_certs)
         )
     lines += [
@@ -247,7 +249,7 @@ def render_markdown(groups, scanned, excluded=None):
         "- `giả thuyết` suy từ `loại` + `component`, **không phải kết luận** — cần mở báo cáo chi tiết mới xác nhận.",
         "- `màn` lấy từ trường `component` (Worker không có trường màn hình riêng).",
         "- `số lượt` là tổng `count` của các báo cáo cùng nhóm trong cửa sổ đã đọc.",
-        "- `chứng thư` là băm SHA-256 chứng thư ký APK (chỉ hex, không kèm thông tin máy); `—` = app cũ không gửi trường này. Đây là **trường do client gửi lên** — chỉ dùng làm tín hiệu chẩn đoán, **không** phải bằng chứng xác thực (bản fork sửa app có thể gửi giá trị bất kỳ).",
+        "- `chứng thư` là băm SHA-256 chứng thư ký APK (chỉ hex, không kèm thông tin máy); `—` = app cũ không gửi trường này. Đây là **trường do client gửi lên** — chỉ dùng làm tín hiệu chẩn đoán, **không** phải bằng chứng xác thực (bản fork sửa app có thể gửi giá trị bất kỳ). Giá trị **không phải hex** bị coi như rỗng (không có chứng thư) nên **vẫn** nằm trong bảng.",
         "- Bảng không chứa tên game, đường dẫn, log hay mã máy.",
     ]
     missing = missing_fields(rows)
@@ -324,7 +326,6 @@ def main():
     parser.add_argument("--out-dir", default=".", help="thư mục ghi crash-insight.md/.csv")
     parser.add_argument("--file", help="đọc payload /reports từ tệp (offline, không gọi mạng)")
     parser.add_argument("--all-certs", action="store_true", help="gộp cả báo cáo mang chứng thư khác bản phát hành (mặc định: loại khỏi thống kê)")
-    parser.add_argument("--official-only", action="store_true", help="giữ tương thích; lọc chứng thư bản phát hành nay là mặc định")
     args = parser.parse_args()
     try:
         if args.file:
