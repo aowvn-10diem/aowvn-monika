@@ -493,6 +493,14 @@ async function packRoute(req, env, url) {
   } });
 }
 
+// V190c: log nguyên nhân gốc khi KV lỗi. Chỉ ghi tên lớp + thông điệp (cắt ngắn); KHÔNG ghi token,
+// tên khoá hay nội dung báo cáo — để không lộ dữ liệu mà vẫn phân biệt được "KV lỗi" với bug trong mã.
+function logKvFailure(where, error) {
+  const name = error && error.name ? String(error.name) : "Error";
+  const message = error && error.message ? String(error.message) : String(error);
+  console.error(`[V190] ${where}: đọc KV lỗi — ${name}: ${message.slice(0, 120)}`);
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -586,11 +594,28 @@ export default {
       if (req.method !== "GET") return json({ ok: false, error: "method_not_allowed" }, 405);
       const cursor = url.searchParams.get("cursor") || undefined;
       if (cursor && (cursor.length > 2048 || /[\u0000-\u001f]/.test(cursor))) return json({ ok: false, error: "bad_cursor" }, 400);
-      const page = await env.REPORTS.list({ prefix: "r:", cursor, limit: 100 });
-      if (typeof page.list_complete !== "boolean" || !Array.isArray(page.keys) || page.keys.length > 100) return json({ ok: false, error: "incomplete_index" }, 503);
-      if (!page.list_complete && !page.cursor) return json({ ok: false, error: "incomplete_index" }, 503);
+      // V190c: bọc `list()` như nhánh /reports — KV ném lỗi thì 503 (thử lại được) thay vì 500 trắng.
+      let page;
+      try {
+        page = await env.REPORTS.list({ prefix: "r:", cursor, limit: 100 });
+      } catch (error) {
+        logKvFailure("/report-index", error);
+        return json({ ok: false, error: "incomplete_index" }, 503);
+      }
+      // Từng phần tử `keys` cũng phải hợp lệ: `keys:[null]` trước đây lọt qua `Array.isArray` rồi nổ ở `k.name`.
+      const pageKeys = Array.isArray(page && page.keys)
+        ? page.keys.filter((k) => k && typeof k === "object" && typeof k.name === "string" && k.name.length > 0)
+        : null;
+      if (typeof page?.list_complete !== "boolean" || pageKeys === null || page.keys.length > 100 || pageKeys.length !== page.keys.length) {
+        return json({ ok: false, error: "incomplete_index" }, 503);
+      }
+      if (!page.list_complete && (!page.cursor || pageKeys.length === 0)) {
+        // KV trả "chưa xong" mà không có cursor, hoặc cursor + trang rỗng: nếu vẫn trả cursor cũ thì client
+        // sẽ lặp vô hạn. Coi là index chưa đọc được → 503 để client dừng/thử lại sau.
+        return json({ ok: false, error: "incomplete_index" }, 503);
+      }
       return json({ complete: page.list_complete, cursor: page.list_complete ? null : page.cursor,
-        reports: page.keys.map(k => ({ id: k.name, app: k.metadata?.a || "" })) });
+        reports: pageKeys.map(k => ({ id: k.name, app: k.metadata?.a || "" })) });
     }
 
     // ---- Quản trị ----
@@ -612,6 +637,7 @@ export default {
       // `meta.skippedInvalid` + 1 dòng log cho cả lượt (không log từng khoá, không lộ tên khoá).
       const all = [];
       let cursor;
+      let previousCursor;
       let skippedInvalid = 0;
       try {
         do {
@@ -622,9 +648,18 @@ export default {
           if (page.keys.length > 0 && keys.length === 0) return json({ ok: false, error: "malformed_keys" }, 400);
           skippedInvalid += page.keys.length - keys.length;
           all.push(...keys);
+          previousCursor = cursor;
           cursor = page.list_complete ? undefined : page.cursor;
+          // V190c: KV trả lại CÙNG cursor (hoặc trang rỗng mà vẫn "chưa xong") → dừng, tránh lặp vô hạn.
+          if (cursor && (cursor === previousCursor || keys.length === 0)) {
+            console.warn("[V190] /reports: KV trả cursor lặp hoặc trang rỗng, dừng vòng đọc");
+            break;
+          }
         } while (cursor && all.length < LIST_MAX);
-      } catch {
+      } catch (error) {
+        // V190c: trước đây `catch {}` nuốt mọi lỗi thành 503 nên bug TypeError trong mã cũng bị gán nhãn KV.
+        // Ghi mã lỗi (không ghi token/khoá/nội dung báo cáo) để còn thấy nguyên nhân gốc trong log Worker.
+        logKvFailure("/reports", error);
         return json({ ok: false, error: "kv_unavailable" }, 503);
       }
       const meta = { skippedInvalid };

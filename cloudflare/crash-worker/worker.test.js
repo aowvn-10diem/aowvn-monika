@@ -875,3 +875,85 @@ test("A85 OFFICIAL_CERT_SHA256 tuy chon loc rac KV /report ma khong anh huong ma
   assert.equal(official.status, 200);
   assert.equal(puts, 1);
 });
+
+// ---- V190c: log lỗi KV, /report-index bọc try, chốt cursor lặp ----
+function captureConsoleErrors(run) {
+  const lines = [];
+  const real = console.error;
+  console.error = (line) => lines.push(String(line));
+  try {
+    return { lines, result: run() };
+  } finally {
+    console.error = real;
+  }
+}
+
+test("V190c /report-index: KV list ném lỗi -> 503 incomplete_index, có console.error (không 500 trắng)", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => { throw new TypeError("KV boom"); } };
+  const lines = [];
+  const real = console.error;
+  console.error = (line) => lines.push(String(line));
+  let response;
+  try {
+    response = await c.read("/report-index");
+  } finally { console.error = real; }
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { ok: false, error: "incomplete_index" });
+  assert.equal(lines.length, 1, "đúng 1 dòng log mỗi lượt");
+  assert.match(lines[0], /TypeError: KV boom/);
+  assert.equal(/r:\d{13}:[0-9a-f]{8}/.test(lines[0]), false, "không log tên khoá");
+});
+
+test("V190c /reports: KV ném lỗi vẫn 503 kv_unavailable nhưng CÓ console.error để thấy nguyên nhân gốc", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => { throw new RangeError("bug trong mã"); } };
+  const lines = [];
+  const real = console.error;
+  console.error = (line) => lines.push(String(line));
+  let response;
+  try {
+    response = await c.read("/reports");
+  } finally { console.error = real; }
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { ok: false, error: "kv_unavailable" });
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /RangeError: bug trong mã/);
+});
+
+test("V190c /report-index: trang rỗng mà vẫn chưa xong -> 503 (không trả cursor lặp cho client)", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: false, cursor: "c1", keys: [] }) };
+  const response = await c.read("/report-index?cursor=c1");
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "incomplete_index");
+});
+
+test("V190c /report-index: khoá hỏng (null) -> 503, không 500", async () => {
+  const c = setup();
+  c.env.REPORTS = { ...c.env.REPORTS, list: async () => ({ list_complete: true, keys: [null, { name: "" }] }) };
+  assert.equal((await c.read("/report-index")).status, 503);
+});
+
+test("V190c /reports: KV trả cursor lặp -> dừng vòng đọc (không treo), vẫn trả dữ liệu đã đọc", async () => {
+  let calls = 0;
+  const c = setup();
+  c.env.REPORTS = {
+    ...c.env.REPORTS,
+    list: async () => {
+      calls++;
+      return { list_complete: false, cursor: "same-cursor", keys: [{ name: `r:17000000000${calls}:aaaaaaaa`, metadata: { a: "0.8.9" } }] };
+    },
+  };
+  const warnings = [];
+  const realWarn = console.warn;
+  console.warn = (line) => warnings.push(String(line));
+  let response;
+  try {
+    response = await c.read("/reports");
+  } finally { console.warn = realWarn; }
+  assert.equal(response.status, 200);
+  assert.equal(calls, 2, "dừng sau 2 lượt gọi, không lặp vô hạn");
+  assert.equal((await response.json()).reports.length, 2);
+  assert.equal(warnings.some((line) => line.includes("cursor lặp")), true);
+});
