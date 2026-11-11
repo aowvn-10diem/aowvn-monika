@@ -774,13 +774,18 @@ function fakeD1() {
         : { id, fp, k, c, y, g, a, st, t, component, count, cert, detail, first_t: firstT, last_t: lastT });
       return [];
     }
+    if (/SUM\(count\) AS n/i.test(sql) && !/GROUP BY/i.test(sql)) {
+      let n = 0;
+      for (const row of rows.values()) n += row.count;
+      return [{ n, groups: rows.size }];
+    }
     if (/COUNT\(\*\)/i.test(sql) && !/GROUP BY/i.test(sql)) return [{ n: rows.size }];
     if (/GROUP BY/i.test(sql)) {
       const by = new Map();
       for (const row of rows.values()) {
         const key = `${row.c}\u0000${row.k}\u0000${row.st}`;
-        const item = by.get(key) || { c: row.c, k: row.k, st: row.st, n: 0, uses: 0 };
-        item.n += 1; item.uses += row.count;
+        const item = by.get(key) || { c: row.c, k: row.k, st: row.st, n: 0, groups: 0 };
+        item.n += row.count; item.groups += 1;
         by.set(key, item);
       }
       return [...by.values()].sort((left, right) => right.n - left.n);
@@ -832,7 +837,8 @@ test("V195 D1: gộp theo fingerprint — cùng dấu vân tay chỉ 1 hàng, co
   assert.equal((await c.post({ ...fixture, count: 1 })).status, 200);
   assert.equal(c.db.rows.size, 1, "3 báo cáo cùng fingerprint → 1 hàng");
   const body = await (await c.read("/reports")).json();
-  assert.equal(body.total, 1);
+  assert.equal(body.total, 6, "total = số báo cáo (SUM count)");
+  assert.equal(body.groups, 1, "groups = số hàng/nhóm fingerprint");
   assert.equal(body.reports[0].count, 6, "count cộng dồn 2+3+1");
 });
 
@@ -858,15 +864,32 @@ test("V195 D1: /reports/<id> trả bản ghi đầy đủ, 404 khi không có", 
   assert.equal((await c.read("/reports/r:1:khong-co")).status, 404);
 });
 
-test("V195 D1: /stats gộp theo (lõi, loại, giai đoạn) kèm tổng lượt", async () => {
+test("V195 D1: /stats giữ n = số báo cáo (SUM count) và thêm groups", async () => {
   const c = d1Setup();
   await c.post({ ...fixture, count: 4 });
   await c.post({ ...fixture, fingerprint: "bbbbbbbbbbbb2222", count: 2 });
   const body = await (await c.read("/stats")).json();
-  assert.equal(body.total, 2);
+  assert.equal(body.total, 6, "total = số báo cáo, không phải số nhóm");
+  assert.equal(body.groups, 2, "groups = số nhóm fingerprint");
   assert.equal(body.byCoreKindStage.length, 1);
-  assert.equal(body.byCoreKindStage[0].n, 2, "n = số nhóm");
-  assert.equal(body.byCoreKindStage[0].uses, 6, "uses = tổng lượt");
+  assert.equal(body.byCoreKindStage[0].n, 6, "n = SUM(count) — giữ nghĩa như nhánh KV");
+  assert.equal(body.byCoreKindStage[0].groups, 2, "groups = số nhóm trong nhóm thống kê");
+  assert.equal(body.byCoreKindStage[0].uses, undefined, "bỏ khoá uses cũ");
+});
+
+test("V195 D1: báo cáo fingerprint rỗng giữ riêng từng hàng, không gộp mất", async () => {
+  const c = d1Setup({ RATE_LIMIT_MAX: "1000" });
+  const userReports = [1, 2, 3].map((n) => ({ ...fixture, kind: "user", fingerprint: "", count: 1, detail: `báo cáo ${n}`, title: `user ${n}` }));
+  for (const report of userReports) assert.equal((await c.post(report)).status, 200);
+  assert.equal(c.db.rows.size, 3, "3 báo cáo không fingerprint → 3 hàng");
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 3);
+  assert.equal(body.groups, 3);
+  assert.equal(new Set(body.reports.map((entry) => entry.id)).size, 3);
+  for (const entry of body.reports) {
+    const detail = await (await c.read(`/reports/${encodeURIComponent(entry.id)}`)).json();
+    assert.match(detail.detail, /^báo cáo [123]$/, "chi tiết từng báo cáo còn nguyên");
+  }
 });
 
 test("V195 D1: /report-index phân trang 100 mục, cursor base64url('<ms>:<id>')", async () => {
@@ -917,4 +940,18 @@ test("V195 D1: ghi D1 lỗi thì trả 503 và nhả lượt hạn mức", async
   const c = setup({ CRASH_DB: db, RATE_LIMIT_MAX: "1" });
   assert.equal((await postWithIp(c, fixture)).status, 503);
   assert.equal((await postWithIp(c, fixture)).status, 200, "lượt giữ chỗ đã được nhả");
+});
+
+test("V195 D1: đọc D1 lỗi trả 503 nhất quán cho /reports, /reports/<id>, /stats, /report-index", async () => {
+  const db = fakeD1();
+  await setup({ CRASH_DB: db }).post(fixture);
+  const broken = {
+    prepare() { throw new Error("D1 down"); },
+  };
+  const c = setup({ CRASH_DB: broken });
+  for (const path of ["/reports", "/reports/r:1:aaaaaaaa", "/stats", "/report-index"]) {
+    const res = await c.read(path);
+    assert.equal(res.status, 503, path);
+    assert.equal((await res.json()).error, "storage_unavailable", path);
+  }
 });

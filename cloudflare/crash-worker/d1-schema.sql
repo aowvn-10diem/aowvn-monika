@@ -1,6 +1,9 @@
 -- V195 — D1 schema cho crash Worker (binding `CRASH_DB`).
--- Mỗi HÀNG là một fingerprint (gộp trùng): báo cáo cùng dấu vân tay chỉ tăng `count`,
--- nhờ vậy số hàng ghi mỗi ngày thấp hơn nhiều so với 1 hàng/báo cáo (D1 free: 100.000 hàng/ngày).
+-- Mỗi HÀNG là một nhóm fingerprint (gộp trùng): báo cáo cùng dấu vân tay chỉ tăng `count`/`last_t`.
+-- Mỗi báo cáo vẫn ĐÚNG 1 lượt ghi (upsert): gộp làm giảm số HÀNG LƯU và kích thước `/reports`,
+-- KHÔNG làm giảm số hàng ghi mỗi ngày (D1 free: 100.000 hàng ghi/ngày).
+-- Báo cáo không có fingerprint dùng `id` làm khoá nên mỗi báo cáo là một hàng riêng.
+-- Không có TTL/prune tự động: hàng D1 tồn tới khi chạy lệnh xoá tay (nhánh KV cũ tự hết hạn sau 60 ngày).
 --
 -- Cột khớp bảng "khoá ngắn" trong worker.js (REPORT_SHORT_KEYS):
 --   k = kind · c = core · y = system · g = game · a = app · st = stage

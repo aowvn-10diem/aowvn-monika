@@ -34,9 +34,11 @@ Worker ghi báo cáo vào **D1** khi có binding `CRASH_DB`; **chưa gắn bindi
 - **Bảng cột → khoá ngắn** (giữ nguyên hợp đồng `/reports` của chế độ KV, xem `REPORT_SHORT_KEYS` trong `worker.js`):
   `kind → k` · `core → c` · `system → y` · `game → g` · `app → a` · `stage → st` · `time → t` · `component` · `fingerprint → fp` · `count` · `cert` (16 hex đầu của `certSha256`).
   `core = slim.core || slim.session.core`.
-- **Gộp trùng**: mỗi **fingerprint đúng 1 hàng** (`UNIQUE INDEX reports_fp`); báo cáo trùng thì `count = count + excluded.count` và cập nhật `detail`/`last_t` — nhờ vậy số hàng ghi mỗi ngày thấp hơn nhiều so với 1 hàng/báo cáo (D1 free: 100.000 hàng/ngày).
+- **Gộp trùng**: mỗi **fingerprint đúng 1 hàng** (`UNIQUE INDEX reports_fp`); báo cáo trùng thì `count = count + excluded.count` và cập nhật `detail`/`last_t`. Mỗi báo cáo vẫn **đúng 1 lượt ghi** (upsert) — gộp làm giảm số hàng **lưu** và kích thước `/reports`, **không** làm giảm số hàng ghi mỗi ngày (ngân sách D1 free: 100.000 hàng ghi/ngày). Báo cáo **không có fingerprint** dùng `id` làm khoá nên mỗi báo cáo là một hàng riêng.
 - **Cursor `/report-index` (nhánh D1)**: `base64url("<last_seen_ms>:<id>")`, trang 100 mục, mới nhất trước (`ORDER BY last_t DESC, id DESC`). Nhánh KV giữ nguyên hợp đồng cũ (503 `incomplete_index` khi trang chưa đủ mà thiếu cursor).
-- `/stats` (D1) trả `{ total, byCoreKindStage: [{ k: "c | k | st", n, uses }] }` — `n` = số nhóm, `uses` = tổng lượt.
+- `/stats` (D1) giữ nghĩa như nhánh KV: `total` = **số báo cáo** (`SUM(count)`), thêm `groups` = số nhóm fingerprint; `byCoreKindStage: [{ k: "c | k | st", n, groups }]` với `n = SUM(count)`, `groups` = số nhóm trong nhóm đó. `/reports` cũng trả `total` (số báo cáo) + `groups`; nhánh KV không có `groups`.
+- **Lưu trữ**: nhánh KV tự hết hạn sau 60 ngày (`expirationTtl`); D1 **không có TTL/prune tự động** — hàng tồn tới khi chạy lệnh xoá tay (vd. `DELETE FROM reports WHERE last_t < <ms>`), và không backfill báo cáo cũ từ KV (thống kê tính từ mốc bật D1).
+- **Lỗi đọc D1**: mọi nhánh GET (`/reports`, `/reports/<id>`, `/stats`, `/report-index`) trả `503 storage_unavailable` khi D1 lỗi, không ném 500 thô.
 
 **Áp dụng**
 ```bash
