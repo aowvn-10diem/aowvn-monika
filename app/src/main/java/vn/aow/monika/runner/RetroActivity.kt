@@ -664,7 +664,12 @@ class RetroActivity : ComponentActivity() {
     private fun saveSram() {
         if (!firstFrame) return
         val view = retroView ?: return
-        val bytes = view.serializeSRAMOrNull(SRAM_CAPTURE_TIMEOUT_MS) ?: return
+        val bytes = view.serializeSRAMOrNull(SRAM_CAPTURE_TIMEOUT_MS)
+        if (bytes == null) {
+            // V202 PR3: lõi giữ GLThread quá hạn — bỏ lượt chụp nhưng để lại vệt để đo tần suất.
+            Diagnostics.crumb(this, "sram", "chụp quá hạn ${SRAM_CAPTURE_TIMEOUT_MS}ms, bỏ lượt lưu")
+            return
+        }
         if (bytes.isEmpty()) return
         sramJob?.cancel()
         sramJob = lifecycleScope.launch(Dispatchers.IO) {
