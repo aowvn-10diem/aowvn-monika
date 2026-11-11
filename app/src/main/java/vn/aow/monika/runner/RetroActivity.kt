@@ -488,7 +488,7 @@ class RetroActivity : ComponentActivity() {
         val view = retroView ?: run { showToast("Game chưa chạy xong"); return }
         lifecycleScope.launch {
             val saved = withContext(Dispatchers.IO) {
-                runCatching { view.serializeState().also { slotFile(0).writeBytes(it) }.isNotEmpty() }.getOrDefault(false)
+                runCatching { view.serializeState().also { if (it.isNotEmpty()) slotFile(0).writeBytes(it) }.isNotEmpty() }.getOrDefault(false)
             }
             refreshSlots()
             if (saved) showToast("Đã tự lưu game")
@@ -534,7 +534,7 @@ class RetroActivity : ComponentActivity() {
         ui.menuOpen = false
         lifecycleScope.launch {
             val ok = withContext(Dispatchers.IO) {
-                runCatching { view.serializeState().also { slotFile(slot).writeBytes(it) }.isNotEmpty() }.getOrDefault(false)
+                runCatching { view.serializeState().also { if (it.isNotEmpty()) slotFile(slot).writeBytes(it) }.isNotEmpty() }.getOrDefault(false)
             }
             refreshSlots()
             showToast(if (ok) "Đã lưu vào ô $slot" else "Lõi này chưa hỗ trợ lưu trạng thái")
