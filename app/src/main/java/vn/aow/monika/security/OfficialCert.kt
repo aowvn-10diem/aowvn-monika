@@ -25,7 +25,7 @@ object OfficialCert {
     }
 
     /**
-     * [A85/A78-2] Màn Ủng hộ chỉ được vẽ VietQR/STK khi APK đúng chứng thư phát hành.
+     * [A85/A78-2] Màn hỗ trợ dự án chỉ được vẽ mã QR/số tài khoản khi APK đúng chứng thư phát hành.
      *
      * Khác [isForeignBuild]: bản release mà **không đọc được** chứng thư (rỗng) hoặc chưa cấu hình
      * chứng thư chính thức đều **không** được vẽ thông tin nhận tiền — đây là bề mặt bị giả mạo nhiều nhất.

@@ -39,7 +39,6 @@
     <string name="create_apps_dir_failed">Không thể tạo thư mục trong đường dẫn:\n\'%s\'\nchọn cái khác.</string>
     <string name="default_label">"%s (mặc định)"</string>
     <string name="dismiss">Bỏ qua</string>
-    <string name="donate">Ủng hộ</string>
     <string name="donation_paypal_item" translatable="false">J2ME Loader donation</string>
     <string name="edit">Chỉnh sửa</string>
     <string name="enter_name">Nhập tên</string>

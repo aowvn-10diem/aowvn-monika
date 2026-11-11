@@ -7,7 +7,7 @@
 | Loại dữ liệu | Có thu thập? | Chia sẻ với bên thứ ba? | Bắt buộc hay tùy chọn | Ghi chú cho Play |
 |---|---|---|---|---|
 | Thông tin thiết bị (hãng, model, phiên bản Android, CPU, phần cứng) | Có | Không | Tự động, tắt được | Gửi kèm báo lỗi tới máy chủ AowVN |
-| Nhật ký và chẩn đoán lỗi (nhật ký kỹ thuật, vệt thao tác, trạng thái máy) | Có | Không | Tự động (mặc định bật), tắt được | Đã lọc đường dẫn riêng tư, token, khóa, email |
+| Nhật ký và chẩn đoán lỗi (nhật ký kỹ thuật, vệt thao tác, trạng thái máy) | Có | Không | Tùy chọn: bản Play tắt mặc định, người dùng bấm gửi | Đã lọc đường dẫn riêng tư, token, khóa, email |
 | Tên game đang chạy khi lỗi | Có | Không | Tự động, cùng báo lỗi | Chỉ khi lỗi xảy ra trong lúc chơi |
 | Mô tả và ảnh do người dùng gửi khi báo lỗi | Có | Không | Tùy chọn (người dùng chủ động gửi) | Chỉ gửi khi người dùng bấm gửi |
 | Ảnh khung màn hình khi dịch (chỉ khi bật đọc ảnh trực tiếp và chọn nhà cung cấp/endpoint AI do người dùng cấu hình) | Có, tùy chọn (người dùng bật) | Không. Người dùng chủ động gửi tới nhà cung cấp họ chọn, không qua máy chủ AowVN. Có thể thuộc ngoại lệ Play cho dữ liệu người dùng chủ động chuyển đi [CHƯA KIỂM theo biểu mẫu Play hiện hành] | Tùy chọn (người dùng bật) | PM tạm khai 27/10 |
@@ -18,6 +18,8 @@
 
 Ghi chú về mã hóa và xóa: dữ liệu gửi đi qua HTTPS [CHƯA KIỂM: xác nhận toàn bộ endpoint đều HTTPS]. Người dùng có thể yêu cầu xóa báo lỗi [chờ sếp: kênh và thời hạn].
 
+Ghi chú SDK bên thứ ba (bản Play): nhận chữ trong ảnh dùng **Google ML Kit Text Recognition** (`play-services-mlkit-text-recognition`) chạy trên máy; mô hình do Google Play Services tải về, ảnh không gửi tới Google. Dịch chữ do nhà cung cấp người dùng chọn thực hiện (xem bảng trên).
+
 Phần dịch màn hình: dữ liệu chữ được gửi tới nhà cung cấp người dùng tự chọn, không qua máy chủ AowVN. Khi bật đọc ảnh trực tiếp và chọn nhà cung cấp/endpoint AI do người dùng cấu hình (có thể gồm Gemini), ảnh khung màn hình (JPEG) cũng được gửi tới nhà cung cấp đó; xem dòng riêng ở bảng trên. Khai theo cách Play yêu cầu về dữ liệu đi qua bên thứ ba do người dùng khởi tạo. [CHƯA KIỂM: cách khai đúng]
 
 ## B. Data collected and shared (English)
@@ -25,7 +27,7 @@ Phần dịch màn hình: dữ liệu chữ được gửi tới nhà cung cấp
 | Data type | Collected? | Shared with third parties? | Required or optional | Notes for Play |
 |---|---|---|---|---|
 | Device information (manufacturer, model, Android version, CPU, hardware) | Yes | No | Automatic; can be turned off | Sent with error reports to AowVN's server |
-| Diagnostics and logs (technical logs, action trail, device state) | Yes | No | Automatic (on by default); can be turned off | Private paths, tokens, keys, and emails are removed first |
+| Diagnostics and logs (technical logs, action trail, device state) | Yes | No | Optional: off by default in the Play build; the user presses send | Private paths, tokens, keys, and emails are removed first |
 | Name of the game running when the error occurred | Yes | No | Automatic, with error reports | Only if the error happened during play |
 | Description and screenshot a user sends with a report | Yes | No | Optional (user sends it) | Sent only when the user presses send |
 | Screen frame image sent for translation (only with direct image reading on and an AI provider/endpoint the user configures) | Yes, when turned on | No. The user sends it to the provider they chose, not through AowVN's server. May fall under Play's exception for data the user chooses to send [UNVERIFIED under the current Play form] | Optional (user turns it on) | PM's provisional entry, 27/10 |
@@ -35,5 +37,7 @@ Phần dịch màn hình: dữ liệu chữ được gửi tới nhà cung cấp
 | Advertising or ad ID | No | No | — | No ad SDK |
 
 Encryption and deletion: data is sent over HTTPS [UNVERIFIED: confirm every endpoint]. Users can request deletion of error reports [owner to decide: channel and retention].
+
+Third-party SDK note (Play build): in-image text recognition uses **Google ML Kit Text Recognition** (`play-services-mlkit-text-recognition`) on device; the model is downloaded by Google Play Services and images are not sent to Google. Translation is done by the provider the user chooses (see the table above).
 
 On-screen translation: recognised text goes to the provider the user chose, not through AowVN's server. With direct image reading on and an AI provider/endpoint the user configures (may include Gemini), the screen frame (JPEG) also goes to that provider; see the table above. Declare it the way Play requires for user-initiated third-party sharing. [UNVERIFIED: correct declaration]
