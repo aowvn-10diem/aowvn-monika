@@ -63,16 +63,14 @@ class GLRetroView(
     var viewport: RectF by Delegates.observable(RectF(0f, 0f, 1f, 1f)) { _, _, value ->
         // Aow Monika: setter chạy trên UI Thread (xoay màn hình, đổi bố cục) nên chỉ xếp việc vào GLThread,
         // không chờ — chờ ở đây là nguồn ANR khi GLThread đang biên dịch shader hoặc nạp state.
-        val queued = queueEvent {
+        queueEvent {
             LibretroDroid.setViewport(value.left, value.top, value.width(), value.height())
         }
-        if (!queued) Log.w(TAG_LOG, "GLThread đã đóng, bỏ qua lời gọi đổi viewport")
     }
 
     var viewportAlignment: ViewportAlignment by Delegates.observable(ViewportAlignment.CENTER) { _, _, value ->
         // Aow Monika: cùng lý do với `viewport` — setter chỉ đặt cấu hình, không cần chờ.
-        val queued = queueEvent { LibretroDroid.setViewportAlignment(value.value) }
-        if (!queued) Log.w(TAG_LOG, "GLThread đã đóng, bỏ qua lời gọi đổi căn viewport")
+        queueEvent { LibretroDroid.setViewportAlignment(value.value) }
     }
 
     private val openGLESVersion: Int
@@ -252,8 +250,7 @@ class GLRetroView(
 
     fun setControllerType(port: Int, type: Int) {
         // Aow Monika: gọi JNI trên GLThread như các lệnh lõi khác, không đụng lõi từ UI Thread.
-        val queued = queueEvent { LibretroDroid.setControllerType(port, type) }
-        if (!queued) Log.w(TAG_LOG, "GLThread đã đóng, bỏ qua lời gọi đổi loại tay cầm")
+        queueEvent { LibretroDroid.setControllerType(port, type) }
     }
 
     fun getVariables(): Array<Variable> {
@@ -449,11 +446,8 @@ class GLRetroView(
         }
 
         val task = EmulationThreadTask<T>()
-        // Aow Monika: queueEvent trả false khi surface đã huỷ (không còn GLThread để chạy).
-        if (!queueEvent { task.complete(block()) }) {
-            Log.w(TAG_LOG, "GLThread đã đóng, trả giá trị dự phòng")
-            return fallback()
-        }
+        // Aow Monika: GLThread đã đóng thì task không bao giờ hoàn tất; chờ có hạn bên dưới sẽ trả fallback.
+        queueEvent { task.complete(block()) }
 
         // Aow Monika: chờ có hạn. GLThread đang biên dịch shader hoặc nạp state rất lâu thì trả giá trị
         // dự phòng thay vì treo Main Thread tới mức ANR (ffdfa861, #318, #529, #533, #535).
