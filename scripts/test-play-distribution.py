@@ -104,6 +104,32 @@ class PlayDistributionTest(unittest.TestCase):
             self.fixture(manifest=('<manifest package="com.aow.monika.play">' + value + '</manifest>').encode())
             with self.assertRaises(ValueError): scanner.check(self.apk)
 
+    def test_catalog_turns_off_account_feed_forum_and_auto_send(self):
+        self.fixture()
+        scanner.check(self.apk)
+        self.assertFalse(self.cfg['account']['enabled'])
+        self.assertEqual('', self.cfg['account']['loginUrl'])
+        self.assertEqual('', self.cfg['feed']['url'])
+        self.assertFalse(self.cfg['feed']['enabled'])
+        self.assertEqual('', self.cfg['forum']['baseUrl'])
+        self.assertFalse(self.cfg['forum']['enabled'])
+        self.assertFalse(self.cfg['crash']['autoSend'])
+
+    def test_restored_account_feed_forum_or_auto_send_is_rejected(self):
+        patches = (
+            {'account': {**self.cfg['account'], 'enabled': True}},
+            {'account': {**self.cfg['account'], 'loginUrl': 'https://www.aow.vn/p/device-login.html'}},
+            {'feed': {**self.cfg['feed'], 'url': 'https://www.aow.vn/feeds/posts/default'}},
+            {'forum': {**self.cfg['forum'], 'baseUrl': 'https://forum.aowvn.org'}},
+            {'crash': {**self.cfg['crash'], 'autoSend': True}},
+        )
+        for patch in patches:
+            with self.subTest(patch=tuple(patch)):
+                cfg = copy.deepcopy(self.cfg)
+                cfg.update(patch)
+                self.fixture(cfg=cfg)
+                with self.assertRaises(ValueError): scanner.check(self.apk)
+
     def test_restored_external_config_is_rejected(self):
         self.fixture(cfg=self.source)
         with self.assertRaises(ValueError): scanner.check(self.apk)

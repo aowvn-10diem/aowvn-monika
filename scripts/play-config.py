@@ -13,8 +13,13 @@ def for_play(source):
             cfg.pop(key)
     cfg['app'] = {}
     cfg.pop('official', None)
-    account = cfg.get('account', {})
-    cfg['account'] = {k: v for k, v in account.items() if k in ('enabled', 'apiKey', 'databaseUrl', 'loginUrl')}
+    # [A65] Bản Play không đăng nhập: không mở Custom Tab sang aow.vn (bỏ nghĩa vụ trang xoá tài khoản),
+    # cũng không giữ khoá/database của web.
+    cfg['account'] = {'enabled': False, 'apiKey': '', 'databaseUrl': '', 'loginUrl': ''}
+    # [A65] Bản Play không đọc bài viết hay diễn đàn ngoài; báo lỗi chỉ gửi khi người dùng chủ động.
+    cfg['feed'] = {**cfg.get('feed', {}), 'enabled': False, 'url': ''}
+    cfg['forum'] = {**cfg.get('forum', {}), 'enabled': False, 'baseUrl': ''}
+    cfg.setdefault('crash', {})['autoSend'] = False
     cfg['downloadHosts'] = []
     cfg['externalApps'] = []
     for core in cfg.get('cores', {}).values():
