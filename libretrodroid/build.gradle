@@ -48,4 +48,6 @@ android {
 
 dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'
+    // V205: unit test cho hàng đợi emulation (timeout UI thread) — không cần Robolectric/GL thật.
+    testImplementation libs.junit
 }

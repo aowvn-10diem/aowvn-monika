@@ -32,7 +32,6 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.coroutineScope
-import com.swordfish.libretrodroid.KtUtils.awaitUninterruptibly
 import com.swordfish.libretrodroid.gamepad.GamepadsManager
 import com.swordfish.libretrodroid.gamepad.PadKeyMap
 import kotlinx.coroutines.GlobalScope
@@ -41,9 +40,56 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
+
+/** V205: chờ tối đa 2 giây — dưới ngưỡng ANR, đủ cho phần lớn lần dựng shader/nạp state. */
+internal const val EMULATION_THREAD_TIMEOUT_MS = 2_000L
+
+/**
+ * V205 (ANR `ffdfa861`): chạy [block] trên luồng emulation qua [enqueue] và **không chờ vô hạn**.
+ *
+ * - Xong trong [timeoutMs] → trả kết quả; lỗi của [block] vẫn được ném lại như trước.
+ * - Quá hạn → gọi [onTimeout] rồi trả [fallback]: Main Thread không bị giữ khi GLThread đang
+ *   biên dịch shader/nạp state, và app không crash.
+ *
+ * Tách khỏi `GLSurfaceView` để unit test được bằng hàng đợi giả (không cần GL thật).
+ */
+internal fun <T> runWithEmulationTimeout(
+    enqueue: (() -> Unit) -> Unit,
+    timeoutMs: Long,
+    fallback: T,
+    onTimeout: (Long) -> Unit,
+    block: () -> T,
+): T {
+    val latch = CountDownLatch(1)
+    var result: T? = null
+    var failure: Throwable? = null
+    enqueue {
+        try {
+            result = block()
+        } catch (t: Throwable) {
+            failure = t
+        } finally {
+            latch.countDown()
+        }
+    }
+    val finished = try {
+        latch.await(timeoutMs, TimeUnit.MILLISECONDS)
+    } catch (e: InterruptedException) {
+        Thread.currentThread().interrupt()
+        false
+    }
+    if (!finished) {
+        onTimeout(timeoutMs)
+        return fallback
+    }
+    failure?.let { throw it }
+    @Suppress("UNCHECKED_CAST")
+    return result as T
+}
 
 class GLRetroView(
     context: Context,
@@ -63,7 +109,9 @@ class GLRetroView(
     }
 
     var viewport: RectF by Delegates.observable(RectF(0f, 0f, 1f, 1f)) { _, _, value ->
-        runOnEmulationThread(true) {
+        // V205 (ANR ffdfa861): không chặn UI thread — xếp vào hàng đợi GL rồi trả về ngay.
+        // Trước đây runOnEmulationThread(true) giữ Main Thread tới khi GLThread rảnh (shader/state).
+        queueEvent {
             LibretroDroid.setViewport(value.left, value.top, value.width(), value.height())
         }
     }
@@ -198,38 +246,39 @@ class GLRetroView(
     }
 
     fun serializeState(useEmulationThread: Boolean = true): ByteArray {
-        return runOnEmulationThread(useEmulationThread) {
+        return runOnEmulationThread(useEmulationThread, fallback = ByteArray(0)) {
             LibretroDroid.serializeState()
         }
     }
 
     fun setCheat(index: Int, enable: Boolean, code: String, useEmulationThread: Boolean = true) {
-        runOnEmulationThread(useEmulationThread) {
+        runOnEmulationThread(useEmulationThread, fallback = Unit) {
             LibretroDroid.setCheat(index, enable, code)
         }
     }
 
     fun unserializeState(data: ByteArray, useEmulationThread: Boolean = true): Boolean {
-        return runOnEmulationThread(useEmulationThread) {
+        return runOnEmulationThread(useEmulationThread, fallback = false) {
             LibretroDroid.unserializeState(data)
         }
     }
 
     fun serializeSRAM(useEmulationThread: Boolean = true): ByteArray {
-        return runOnEmulationThread(useEmulationThread) {
+        return runOnEmulationThread(useEmulationThread, fallback = ByteArray(0)) {
             LibretroDroid.serializeSRAM()
         }
     }
 
     fun unserializeSRAM(data: ByteArray, useEmulationThread: Boolean = true): Boolean {
-        return runOnEmulationThread(useEmulationThread) {
+        return runOnEmulationThread(useEmulationThread, fallback = false) {
             LibretroDroid.unserializeSRAM(data)
         }
     }
 
-    fun reset(useEmulationThread: Boolean = true) = runOnEmulationThread(useEmulationThread) {
-        LibretroDroid.reset()
-    }
+    fun reset(useEmulationThread: Boolean = true) =
+        runOnEmulationThread(useEmulationThread, fallback = Unit) {
+            LibretroDroid.reset()
+        }
 
     fun getGLRetroEvents(): Flow<GLRetroEvents> {
         return retroGLEventsSubject
@@ -262,15 +311,15 @@ class GLRetroView(
     }
 
     fun getAvailableDisks(useEmulationThread: Boolean = true): Int {
-        return runOnEmulationThread(useEmulationThread) { LibretroDroid.availableDisks() }
+        return runOnEmulationThread(useEmulationThread, fallback = 0) { LibretroDroid.availableDisks() }
     }
 
     fun getCurrentDisk(useEmulationThread: Boolean = true): Int {
-        return runOnEmulationThread(useEmulationThread) { LibretroDroid.currentDisk() }
+        return runOnEmulationThread(useEmulationThread, fallback = 0) { LibretroDroid.currentDisk() }
     }
 
     fun changeDisk(index: Int, useEmulationThread: Boolean = true) {
-        runOnEmulationThread(useEmulationThread) { LibretroDroid.changeDisk(index) }
+        runOnEmulationThread(useEmulationThread, fallback = Unit) { LibretroDroid.changeDisk(index) }
     }
 
     private fun getGLESVersion(context: Context): Int {
@@ -432,20 +481,28 @@ class GLRetroView(
         }
     }
 
-    private fun <T> runOnEmulationThread(useEmulationThread: Boolean, block: () -> T): T {
+    private fun <T> runOnEmulationThread(
+        useEmulationThread: Boolean,
+        fallback: T,
+        block: () -> T,
+    ): T {
         if (!useEmulationThread || Thread.currentThread().name.startsWith("GLThread")) {
             return block()
         }
-
-        val latch = CountDownLatch(1)
-        var result: T? = null
-        queueEvent {
-            result = block()
-            latch.countDown()
-        }
-
-        latch.awaitUninterruptibly()
-        return result!!
+        return runWithEmulationTimeout(
+            enqueue = { queueEvent(it) },
+            timeoutMs = EMULATION_THREAD_TIMEOUT_MS,
+            fallback = fallback,
+            onTimeout = { waitedMs ->
+                // V205 (ANR ffdfa861): GLThread đang biên dịch shader/nạp state → bỏ thao tác này
+                // thay vì giữ Main Thread; log để Diagnostics/đội lỗi thấy, không crash.
+                Log.w(
+                    TAG_LOG,
+                    "runOnEmulationThread quá hạn ${waitedMs}ms — bỏ qua thao tác, không chặn UI thread",
+                )
+            },
+            block = block,
+        )
     }
 
     private fun buildShader(config: ShaderConfig): GLRetroShader {
@@ -534,7 +591,7 @@ class GLRetroView(
     }
 
     private fun refreshAspectRatio() {
-        runOnEmulationThread(true) {
+        runOnEmulationThread(true, fallback = Unit) {
             LibretroDroid.refreshAspectRatio()
         }
     }
