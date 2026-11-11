@@ -184,11 +184,31 @@ std::pair<int8_t*, size_t> LibretroDroid::serializeSRAM() {
 
 void LibretroDroid::onSurfaceChanged(unsigned int width, unsigned int height) {
     LOGD("Performing libretrodroid onSurfaceChanged");
+    // V205: surface có thể đổi kích thước trước khi Video được tạo (hoặc sau khi destroy).
+    if (!video) {
+        LOGW("onSurfaceChanged: chưa có Video, bỏ qua");
+        return;
+    }
     video->updateScreenSize(width, height);
 }
 
 void LibretroDroid::onSurfaceCreated() {
+    // V205: khoá chung với step()/destroy() — surface mới có thể tới đúng lúc lõi đang chạy hoặc đã bị gỡ.
+    std::lock_guard<std::mutex> lock(coreLock);
     LOGD("Performing libretrodroid onSurfaceCreated");
+
+    if (!core) {
+        LOGW("onSurfaceCreated: lõi đã bị huỷ, bỏ qua");
+        return;
+    }
+
+    // V205: huỷ context GL của lõi TRƯỚC khi bỏ Video (EGL cũ) rồi tạo context mới. Thiếu bước này lõi còn
+    // giữ handle/buffer GL thuộc context đã chết → SIGSEGV/SIGABRT trong lõi (ppsspp native).
+    if (hwContextLive) {
+        auto hwDestroy = Environment::getInstance().getHwContextDestroy();
+        if (hwDestroy != nullptr) hwDestroy();
+        hwContextLive = false;
+    }
 
     struct retro_system_av_info system_av_info {};
     core->retro_get_system_av_info(&system_av_info);
@@ -219,8 +239,9 @@ void LibretroDroid::onSurfaceCreated() {
 
     video = std::unique_ptr<Video>(newVideo);
 
-    if (Environment::getInstance().getHwContextReset() != nullptr) {
-        Environment::getInstance().getHwContextReset()();
+    if (auto hwReset = Environment::getInstance().getHwContextReset(); hwReset != nullptr) {
+        hwReset();
+        hwContextLive = true;
     }
 }
 
@@ -428,8 +449,12 @@ void LibretroDroid::destroy() {
 
     LOGD("Performing libretrodroid destroy");
 
-    if (Environment::getInstance().getHwContextDestroy() != nullptr) {
-        Environment::getInstance().getHwContextDestroy()();
+    // V205: huỷ context GL của lõi TRƯỚC khi gỡ game/deinit; chỉ gọi khi context còn sống
+    // (tránh gọi context_destroy hai lần cho cùng một context).
+    if (hwContextLive) {
+        auto hwDestroy = Environment::getInstance().getHwContextDestroy();
+        if (hwDestroy != nullptr) hwDestroy();
+        hwContextLive = false;
     }
 
     // Aow Monika: hủy Achievements TRƯỚC khi gỡ game (còn đọc bộ nhớ lõi lúc gửi tiến độ).
@@ -437,13 +462,17 @@ void LibretroDroid::destroy() {
     achievementsConfig.reset();
     currentGamePath.clear();
 
-    core->retro_unload_game();
-    core->retro_deinit();
+    // V205: destroy() có thể bị gọi lặp (Activity huỷ + surface huỷ) — không dereference lõi đã gỡ.
+    if (core) {
+        core->retro_unload_game();
+        core->retro_deinit();
+    }
 
     video = nullptr;
-    core = nullptr;
+    input = nullptr;
     rumble = nullptr;
     fpsSync = nullptr;
+    core = nullptr;
     audio = nullptr;
 
     Environment::getInstance().deinitialize();
@@ -451,18 +480,28 @@ void LibretroDroid::destroy() {
 }
 
 void LibretroDroid::resume() {
+    // V205: khoá chung với `step()`/`destroy()` — trước đây resume/pause chạy không khoá nên có thể
+    // đụng `fpsSync`/`audio`/`input` đang bị `destroy()` giải phóng (use-after-free).
+    std::lock_guard<std::mutex> lock(coreLock);
     LOGD("Performing libretrodroid resume");
+
+    if (!core) {
+        LOGW("resume: lõi đã bị huỷ, bỏ qua");
+        return;
+    }
 
     input = std::make_unique<Input>();
 
-    fpsSync->reset();
-    audio->start();
+    if (fpsSync) fpsSync->reset();
+    if (audio) audio->start();
     refreshAspectRatio();
 }
 
 void LibretroDroid::pause() {
+    std::lock_guard<std::mutex> lock(coreLock);
     LOGD("Performing libretrodroid pause");
-    audio->stop();
+
+    if (audio) audio->stop();
 
     input = nullptr;
 }
@@ -522,6 +561,8 @@ float LibretroDroid::getAspectRatio() {
 }
 
 void LibretroDroid::refreshAspectRatio() {
+    // V205: `video` có thể chưa tạo (resume trước khi có surface) hoặc đã bị destroy() — không deref null.
+    if (!video) return;
     video->updateAspectRatio(getAspectRatio());
 }
 

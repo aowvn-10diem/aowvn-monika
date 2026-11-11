@@ -85,8 +85,15 @@ void Environment::updateVariable(const std::string& key, const std::string& valu
 }
 
 bool Environment::environment_handle_set_variables(const struct retro_variable* received) {
+    if (received == nullptr) return false;
     unsigned count = 0;
     while (received[count].key != nullptr) {
+        // V205: chuỗi mô tả/giá trị do lõi cấp có thể null — bỏ qua thay vì dựng std::string từ nullptr.
+        if (received[count].value == nullptr) {
+            LOGW("Received variable %s without value, skipped", received[count].key);
+            count++;
+            continue;
+        }
         LOGD("Received variable %s: %s", received[count].key, received[count].value);
 
         std::string key(received[count].key);
@@ -115,6 +122,7 @@ bool Environment::environment_handle_set_variables(const struct retro_variable* 
 }
 
 bool Environment::environment_handle_get_variable(struct retro_variable* requested) {
+    if (requested == nullptr || requested->key == nullptr) return false;
     LOGD("Variable requested %s", requested->key);
     auto foundVariable = variables.find(std::string(requested->key));
 
@@ -122,7 +130,19 @@ bool Environment::environment_handle_get_variable(struct retro_variable* request
         return false;
     }
 
-    requested->value = foundVariable->second.value.c_str();
+    // V205 — chống Use-After-Free: KHÔNG trả `value.c_str()` của chuỗi nằm trong map, vì lần cập nhật sau
+    // (`updateVariable`/`SET_VARIABLES`) gán chuỗi mới có thể cấp phát lại bộ nhớ, làm con trỏ lõi đang giữ
+    // trỏ vào vùng đã giải phóng. Giữ một bản sao trong `publishedVariableValues` (deque — tham chiếu ổn định)
+    // và chỉ thêm bản mới khi giá trị thực sự đổi.
+    auto &slot = foundVariable->second;
+    if (slot.published == nullptr || slot.publishedValue != slot.value) {
+        publishedVariableValues.push_back(slot.value);
+        slot.published = publishedVariableValues.back().c_str();
+        slot.publishedValue = slot.value;
+        LOGD("Publishing variable %s: %s", slot.key.c_str(), slot.published);
+    }
+
+    requested->value = slot.published;
     return true;
 }
 

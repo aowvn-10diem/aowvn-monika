@@ -180,8 +180,12 @@ private:
 
     float defaultAspectRatio = 1.0;
     bool dirtyVideo = false;
-
     std::mutex coreLock;
+    /**
+     * V205: context GL của lõi đang sống (đã gọi `context_reset` và chưa `context_destroy`).
+     * Dùng để chỉ huỷ context đúng một lần, tránh gọi `context_destroy` hai lần cho cùng context.
+     */
+    bool hwContextLive = false;
 
     std::unique_ptr<Core> core;
     std::unique_ptr<Audio> audio;

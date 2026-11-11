@@ -26,6 +26,7 @@
 #include <cmath>
 #include <EGL/egl.h>
 #include <unordered_map>
+#include <deque>
 #include <array>
 
 #include "../../libretro-common/include/libretro.h"
@@ -150,6 +151,13 @@ private:
 
     std::unordered_map<std::string, struct Variable> variables;
     bool dirtyVariables = false;
+    /**
+     * V205: kho chứa các giá trị ĐÃ TRẢ cho lõi. `std::deque` không làm hỏng tham chiếu tới phần tử cũ khi
+     * `push_back`, nên con trỏ cấp cho lõi (RETRO_ENVIRONMENT_GET_VARIABLE) sống tới hết phiên — kể cả khi
+     * `variables[key].value` bị gán giá trị mới (gán `std::string` có thể cấp phát lại bộ nhớ → UAF).
+     * Chỉ thêm khi giá trị đổi, nên số phần tử bằng số lần đổi cấu hình, không tăng theo mỗi khung hình.
+     */
+    std::deque<std::string> publishedVariableValues;
 
     std::vector<std::vector<struct Controller>> controllers;
 
@@ -165,6 +173,13 @@ public:
     std::string key;
     std::string value;
     std::string description;
+    /**
+     * V205: con trỏ đã trả cho lõi qua RETRO_ENVIRONMENT_GET_VARIABLE. Lõi giữ con trỏ này suốt phiên,
+     * nên nó phải trỏ vào bộ nhớ ỔN ĐỊNH (không bị cấp phát lại khi giá trị đổi) — xem `publishedVariableValues`.
+     */
+    const char *published = nullptr;
+    /** Bản sao giá trị lúc publish, để biết khi nào cần publish lại (so sánh rẻ, không cấp phát thêm). */
+    std::string publishedValue;
 };
 
 struct Controller {
