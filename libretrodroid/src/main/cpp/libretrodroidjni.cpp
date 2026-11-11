@@ -200,6 +200,8 @@ JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_seri
 
         jbyteArray result = env->NewByteArray(size);
         env->SetByteArrayRegion(result, 0, size, data);
+        // V202 PR3: serializeState cấp new int8_t[] — giải phóng sau khi copy sang mảng Java.
+        delete[] data;
 
         return result;
 
@@ -271,6 +273,8 @@ JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_seri
 
         jbyteArray result = env->NewByteArray(size);
         env->SetByteArrayRegion(result, 0, size, (jbyte *) data);
+        // V202 PR3: serializeSRAM cấp new int8_t[] — giải phóng sau khi copy sang mảng Java.
+        delete[] data;
 
         return result;
 

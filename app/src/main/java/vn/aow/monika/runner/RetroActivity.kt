@@ -28,6 +28,7 @@ import com.swordfish.libretrodroid.GLRetroViewData
 import com.swordfish.libretrodroid.Variable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -641,10 +642,12 @@ class RetroActivity : ComponentActivity() {
     private var loadingGone = false
 
     override fun onDestroy() {
+        if (isFinishing) {
+            // V202 PR3: chờ job ghi SRAM TRƯỚC khi super.onDestroy() huỷ lifecycleScope, tránh mất lượt ghi cuối.
+            runBlocking { withTimeoutOrNull(SRAM_WRITE_WAIT_MS) { sramJob?.join() } }
+        }
         try { super.onDestroy() } finally { saveTransferLease?.close(); saveTransferLease = null }
         if (isFinishing) {
-            // V202 PR3: chờ job ghi SRAM tối đa 1.500 ms trước khi tắt tiến trình, tránh tệp cụt.
-            runBlocking { withTimeoutOrNull(SRAM_WRITE_WAIT_MS) { sramJob?.join() } }
             // Thoát bình thường: xóa phiên (không báo lỗi) rồi TẮT tiến trình game → lõi native giải phóng sạch RAM,
             // lần chơi sau chạy tiến trình mới (không dính trạng thái/leak của lõi lần trước).
             Diagnostics.end(this)
@@ -663,17 +666,20 @@ class RetroActivity : ComponentActivity() {
         val view = retroView ?: return
         val bytes = view.serializeSRAMOrNull(SRAM_CAPTURE_TIMEOUT_MS) ?: return
         if (bytes.isEmpty()) return
+        sramJob?.cancel()
         sramJob = lifecycleScope.launch(Dispatchers.IO) {
-            if (!SramWriter.writeAtomic(sramFile, bytes)) {
-                Diagnostics.recordHandled(this@RetroActivity, "app:save", "không ghi được SRAM", java.io.IOException("SramWriter"))
+            withContext(NonCancellable) {
+                if (!SramWriter.writeAtomic(sramFile, bytes)) {
+                    Diagnostics.recordHandled(this@RetroActivity, "app:save", "không ghi được SRAM", java.io.IOException("SramWriter"))
+                }
             }
         }
     }
 
     companion object {
         private const val LOG_TAG = "MonikaGame"
-        /** V202 PR3: hạn chờ chụp SRAM (UI không bị khóa lâu hơn khi lõi kẹt). */
-        private const val SRAM_CAPTURE_TIMEOUT_MS = 400L
+        /** V202 PR3: hạn chờ chụp SRAM (UI không bị khóa lâu hơn khi lõi kẹt; dưới ngưỡng pause timeout). */
+        private const val SRAM_CAPTURE_TIMEOUT_MS = 150L
         /** V202 PR3: hạn chờ ghi SRAM xong trước khi killProcess. */
         private const val SRAM_WRITE_WAIT_MS = 1_500L
         private const val EXTRA_CORE = "core"

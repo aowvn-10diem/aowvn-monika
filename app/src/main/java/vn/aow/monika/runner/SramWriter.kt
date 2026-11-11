@@ -9,6 +9,8 @@ import java.io.FileOutputStream
  */
 internal object SramWriter {
 
+    /** V202 PR3: chỉ một lượt ghi tại một thời điểm — hai lượt `saveSram` sát nhau không tranh `.tmp`. */
+    @Synchronized
     fun writeAtomic(file: File, bytes: ByteArray): Boolean {
         val dir = file.parentFile ?: return false
         val tmp = File(dir, file.name + ".tmp")
