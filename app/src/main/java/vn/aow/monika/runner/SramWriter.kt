@@ -2,10 +2,12 @@ package vn.aow.monika.runner
 
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 /**
  * V202 PR3: ghi SRAM nguyên tử — ghi `.tmp`, fsync, rồi đổi tên đè tệp cũ.
- * Lỗi giữa chừng thì tệp `.srm` cũ vẫn nguyên (không bị cắt cụt).
+ * Không xoá `.srm` cũ trước khi biết chắc tệp mới đã sẵn sàng: lỗi giữa chừng thì save cũ vẫn nguyên.
  */
 internal object SramWriter {
 
@@ -19,21 +21,21 @@ internal object SramWriter {
                 out.write(bytes)
                 out.fd.sync()
             }
-            if (tmp.renameTo(file)) {
-                true
-            } else {
-                // Một số hệ tệp (Windows) không cho đổi tên đè tệp đã có; Android/Linux đổi được.
-                if (file.delete() && tmp.renameTo(file)) {
-                    true
-                } else {
-                    tmp.delete()
-                    false
-                }
-            }
-            // diag: bỏ qua lỗi ghi tệp tại đây — nơi gọi nhận false và báo Diagnostics (không nuốt im lặng).
+            move(tmp, file)
+            true
         } catch (error: Exception) {
+            // diag: bỏ qua lỗi ghi tệp tại đây — nơi gọi nhận false và báo Diagnostics (không nuốt im lặng).
             tmp.delete()
             false
+        }
+    }
+
+    /** Android API 26+: đổi tên đè nguyên tử; hệ tệp không hỗ trợ thì đổi tên đè thường (không xoá trước). */
+    private fun move(from: File, to: File) {
+        try {
+            Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+        } catch (_: Exception) {
+            Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
     }
 }

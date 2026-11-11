@@ -683,8 +683,8 @@ class RetroActivity : ComponentActivity() {
 
     companion object {
         private const val LOG_TAG = "MonikaGame"
-        /** V202 PR3: hạn chờ chụp SRAM (UI không bị khóa lâu hơn khi lõi kẹt; dưới ngưỡng pause timeout). */
-        private const val SRAM_CAPTURE_TIMEOUT_MS = 150L
+        /** V202 PR3: hạn chờ chụp SRAM (dưới ngưỡng pause timeout nhưng đủ cho khung nặng). */
+        private const val SRAM_CAPTURE_TIMEOUT_MS = 300L
         /** V202 PR3: hạn chờ ghi SRAM xong trước khi killProcess. */
         private const val SRAM_WRITE_WAIT_MS = 1_500L
         private const val EXTRA_CORE = "core"
