@@ -176,3 +176,18 @@ Nguyên tắc: mỗi nhóm thư viện một PR; nâng phiên bản lớn (Kotli
 - Lượt hai duyệt DeepSeek bắt 5 lỗi, đã sửa hết: OSV trả thiếu kết quả ⇒ dừng với mã thoát 3 thay vì in "0 cảnh báo"; bọc `URLError`/`HTTPError`, thử lại 3 lần khi 429 hoặc 5xx; tự tính điểm CVSS 3.0/3.1 từ vector trần (OSV không kèm điểm) và quy vector 4.0 về 3.1 khi thiếu nhãn; `--codes` trỏ tệp thiếu trả 2 như lỗi SBOM; thêm `sbom.json` vào `.gitignore`; thêm `test-kiem-phu-thuoc.py` vào danh sách V57 để 27 test chạy trên CI — **token phiên này thiếu scope `workflow` nên 1 dòng đó chưa đẩy được, xem diff dán trong #605 để sếp áp**. **Bản Play: không áp dụng (công cụ).**
 - PR Dependabot không đổi: #215 (4 đỏ: `build`, `links`, `repeated-tests`, `gate` huỷ), #216 (5 đỏ), #217 (4 đỏ), #290 (1 đỏ `build`); **0 review** cả bốn, head không đổi từ 09/11 (#215) và 12/10 (#216/#217) ⇒ **không mở PR ghim mới**.
 - Vẫn chờ PM chốt hướng cho phần còn lại: (a) nhánh `phuthuoc/agp9`, hay (b) đóng kèm lý do "chỉ công cụ build, không đóng gói" khi có token `Code security: write`.
+
+### Việc còn lại cho sếp ở lượt này
+
+Token phiên Trưởng nhóm Phụ thuộc thiếu scope `workflow`, nên 1 dòng dưới đây không đẩy được. Áp vào `.github/workflows/script-tests.yml` rồi gộp #605:
+
+```diff
+-      - name: Chạy đủ 10 test N04, báo lỗi sau khi chạy hết
++      - name: Chạy đủ test N04, báo lỗi sau khi chạy hết
+             'test-crash-insight.py',
++            'test-kiem-phu-thuoc.py',
+         )
+```
+
+Chưa áp thì V57 xanh **không** phải bằng chứng cho 27 test mới; vẫn chạy được tại chỗ bằng `python -X utf8 scripts/test-kiem-phu-thuoc.py`.
+
