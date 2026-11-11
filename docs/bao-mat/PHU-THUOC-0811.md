@@ -145,3 +145,25 @@ Nguyên tắc: mỗi nhóm thư viện một PR; nâng phiên bản lớn (Kotli
   - `org.apache.commons:commons-compress` 1.21 — 2 moderate. Đây là bản AGP kéo vào classpath plugin, **chỉ công cụ build**, không vào APK; nâng được chỉ khi lên AGP 9 (#217).
   - `org.jetbrains.kotlin:kotlin-gradle-plugin` 2.0.21 — 1 moderate. Chỉ công cụ build; nếu PM không duyệt PR-4 (nâng Kotlin) thì đóng bằng lý do này.
 - **Chưa kiểm**: danh sách cảnh báo CodeQL — API trả 403 với token của phiên này.
+
+## 8. Sau khi gộp #471 (09/11, 10:14Z) — phạm vi hẹp hơn kế hoạch
+
+- PM gộp #471 lúc 10:14Z, `main` = `9112314`; workflow *Automatic Dependency Submission (Gradle)* chạy lại trên đúng head này (nộp SBOM 10:39Z). API Dependabot vẫn 403 nên số dưới đây là tự kiểm SBOM + OSV.
+- **48 cảnh báo / 12 tổ hợp — 1 critical, 21 high, 24 moderate, 2 low**; không có mã cảnh báo nào ngoài bảng mục 4; **0 cảnh báo trong APK**.
+- #471 đóng đúng phần `freemarker` 2.3.32 (1 critical) nhưng **không** chạm họ `netty` 4.1.93: SBOM sau gộp vẫn có đủ 41 cảnh báo netty, gồm critical `GHSA-c4c3-7fpv-j4q5` (`netty-handler`), cùng `guava` 32.0.1-jre, `protobuf-java` 3.22.3, `commons-io` 2.13.0, `commons-compress` 1.21, `sqlite-jdbc` 3.36.0 (`kotlin-gradle-plugin` 2.0.21 chờ #216/PR-4).
+- Nguyên nhân: `force` trong `buildscript` chỉ áp cho cấu hình tên `classpath` của build script; AGP nạp qua `plugins {}` → `pluginManagement` nên cây `com.android.tools` 31.7.3 → `grpc-netty` 1.57.0 / `room-compiler` 2.5.2 vẫn giữ bản cũ. Gradle không có API force bắc cầu cho classpath plugin (chỉ `eachPlugin` đổi toạ độ plugin), nên **không mở PR mã mới**: sửa được chỉ khi lên AGP 9 (#217) hoặc đóng kèm lý do khi có quyền.
+- Chỉ tiêu "hết họ netty" trong mục 5 dời sang #217; hạn 11/11 cho phần netty **không còn khả thi bằng ghim**, cần PM chốt hướng (AGP 9 hay đóng kèm lý do).
+
+## 9. Sau khi gộp #575 (10/11, 00:14Z) — hết `sqlite-jdbc`, còn 47 cảnh báo
+
+- PM gộp #575 (`0236007`): `:j2me` dùng Room 2.6.1, `org.xerial:sqlite-jdbc` lên 3.41.2.2 ngay tại nguồn (`room-compiler`), nên `GHSA-6phf-6h5g-97j2` (HIGH) **đã hết**; gói này không còn trong mục "đóng kèm lý do".
+- SBOM mới nhất (đã có `room-compiler` 2.6.1 / `sqlite-jdbc` 3.41.2.2) đối chiếu OSV: **47 cảnh báo / 11 tổ hợp** — 1 critical, 20 high, 24 moderate, 2 low; không có mã nào ngoài bảng mục 4; vẫn **0 cảnh báo trong APK**. API Dependabot vẫn 403 nên đây là số tự kiểm.
+- Phần còn lại không đổi: họ `netty` 4.1.93 (41 cảnh báo, 1 critical) cùng `guava` 32.0.1-jre, `protobuf-java` 3.22.3, `commons-io` 2.13.0, `commons-compress` 1.21, `kotlin-gradle-plugin` 2.0.21 — chỉ ở classpath công cụ build. Hướng xử lý vẫn là AGP 9 (#217, chờ PM chốt) hoặc đóng kèm lý do khi có quyền.
+
+## 10. Lượt 10/11 (sau 08:14Z) — số không đổi; chỉ AGP 9 gỡ được phần còn lại
+
+- API Dependabot vẫn 403 (thiếu `Dependabot alerts: read`); tự kiểm SBOM `main@9b55111` (đã có `room 2.6.1`) + OSV: **47 cảnh báo / 11 tổ hợp** — 1 critical, 20 high, 24 moderate, 2 low; **không mã mới**; **0 trong APK**. Không commit nào chạm `gradle/`, `*.gradle.kts`, `settings.gradle.kts` kể từ #575 (`0236007`), nên số trùng khớp lượt 00:58.
+- Cả 47 cảnh báo đều ở classpath plugin Gradle: họ `netty` 4.1.93 (grpc-netty 1.57.0 của AGP 8.7.3), `protobuf-java` 3.22.3, `commons-io` 2.13.0, `commons-compress` 1.21, `guava` 32.0.1-jre, `kotlin-gradle-plugin` 2.0.21. `force` của build script không chạm classpath `plugins {}` nên không còn đường ghim.
+- **Bằng chứng mới (POM Google Maven, 10/11)**: AGP **9.4.1 không còn phụ thuộc `io.grpc`/`io.netty`**; dùng `protobuf-java` 3.25.5, `commons-io` 2.16.1, `asm` 9.9. Còn AGP **8.13.2** chỉ lên grpc 1.69.1 → netty 4.1.110, vẫn dính cảnh báo cần 4.1.136, nên nâng trong dòng 8.x **không** đóng được critical. Vì vậy "PR kế tiếp" chỉ có nghĩa nếu là AGP 9.
+- Hạn 11/11 **không đạt được bằng ghim**. Cần PM chốt một trong hai: (a) duyệt nhánh `phuthuoc/agp9` (Gradle 9 + AGP 9.4.1 + Kotlin ≥ 2.2, rủi ro vỡ build, tách khỏi A85), hoặc (b) đóng kèm lý do "chỉ công cụ build, không đóng gói" khi có token `Code security: write`.
+- PR Dependabot đang mở (không có PR `phuthuoc/` nào): #216 (Kotlin) và #217 (AGP 9) đỏ CI từ 12/10; #215 (`actions/checkout`) đỏ `build`/`links`/`repeated-tests`; #290 (`actions/cache`) đỏ 1 job `build`.

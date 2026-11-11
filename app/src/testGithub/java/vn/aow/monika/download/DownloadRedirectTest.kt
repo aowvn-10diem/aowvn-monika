@@ -40,7 +40,7 @@ class DownloadRedirectTest {
     private fun client(hosts: Set<String>) = OkHttpClient.Builder()
         .sslSocketFactory(clientCerts.sslSocketFactory(), clientCerts.trustManager)
         .hostnameVerifier { _, _ -> true } // chứng thư tự ký cho localhost trong test
-        .addNetworkInterceptor(DownloadGuard { it in hosts })
+        .addNetworkInterceptor(DownloadGuard({ it in hosts }))
         .build()
 
     private fun call(client: OkHttpClient, url: String): Result<Int> = runCatching {

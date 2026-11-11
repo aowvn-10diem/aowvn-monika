@@ -121,7 +121,7 @@ private fun PostContent(post: Post, onGo: (String) -> Unit, onBack: () -> Unit) 
         // Nội dung đầy đủ (ảnh lớn + tiêu đề + bài) trong WebView, CSS theo hệ thiết kế Monika.
         AndroidView(
             factory = { ctx -> createPostWebView(ctx, scope, post) },
-            update = { it.loadDataWithBaseURL("https://www.aow.vn/", html, "text/html", "utf-8", null) },
+            update = { it.loadDataWithBaseURL("https://appassets.androidplatform.net/post/", html, "text/html", "utf-8", null) },
             modifier = Modifier.fillMaxSize(),
         )
         // Mọi thao tác dồn xuống thanh nổi dưới đáy (vùng ngón cái): Quay lại · Tải game · Menu.
@@ -245,6 +245,13 @@ private fun createPostWebView(context: Context, scope: CoroutineScope, post: Pos
     setBackgroundColor(0)
     settings.javaScriptEnabled = true // Cho video YouTube nhúng trong bài.
     settings.domStorageEnabled = true
+    // V204: nội dung bài viết không được đọc tệp nội bộ của app.
+    settings.allowFileAccess = false
+    settings.allowContentAccess = false
+    @Suppress("DEPRECATION")
+    settings.allowFileAccessFromFileURLs = false
+    @Suppress("DEPRECATION")
+    settings.allowUniversalAccessFromFileURLs = false
     webViewClient = object : WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             handleLink(context, scope, request.url.toString(), post)
@@ -277,6 +284,8 @@ private fun renderHtml(post: Post, c: MonikaColors): String {
     return """
 <!doctype html><html><head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- V204: bài viết chỉ cần ảnh/CSS/frame YouTube; chặn script, tệp nội bộ và mọi nguồn khác. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; media-src https:; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://www.youtube.com/; style-src 'unsafe-inline'; font-src data:; script-src 'none'">
 <style>
   body{margin:0;background:${c.bg.css()};color:${c.text.css()};font-family:Manrope,system-ui,-apple-system,Roboto,sans-serif;
        font-size:16px;line-height:1.6;word-wrap:break-word}

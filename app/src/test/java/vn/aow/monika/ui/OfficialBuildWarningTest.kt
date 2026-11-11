@@ -81,10 +81,11 @@ class OfficialBuildWarningTest {
         assertNoWarning()
     }
 
-    @Test fun unreadableCertDoesNotAccuseTheUser() {
-        assertFalse(OfficialCert.isForeignBuild("", official, debugBuild = false))
+    @Test fun unreadableCertOnReleaseShowsWarning() {
+        // A78-3: release mà không đọc được chứng thư = không có bằng chứng là bản chính thức.
         show("", official, debug = false)
-        assertNoWarning()
+        rule.onNodeWithText(OFFICIAL_BUILD_WARNING).assertIsDisplayed()
+        rule.onNodeWithText("Nội dung Trang chủ").assertIsDisplayed()
     }
 
     @Test fun officialValueIsThePmValueAndOldJsonKeepsIt() {

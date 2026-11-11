@@ -15,9 +15,11 @@ import java.util.concurrent.TimeUnit
 /**
  * Chain giả cho test guard: ghi lại URL thực sự được gửi đi, không chạm mạng.
  * [proceeded] == null nghĩa là guard đã chặn trước khi request ra ngoài.
+ * [origin] mô phỏng request gốc của cả chuỗi redirect (`Call.request()`).
  */
-internal class FakeChain(url: String) : Interceptor.Chain {
+internal class FakeChain(url: String, origin: String = url) : Interceptor.Chain {
     private val urlText = url
+    private val call = OkHttpClient().newCall(Request.Builder().url(origin.toHttpUrl()).build())
     var proceeded: HttpUrl? = null
 
     override fun request(): Request = Request.Builder().url(urlText.toHttpUrl()).build()
@@ -29,7 +31,7 @@ internal class FakeChain(url: String) : Interceptor.Chain {
     }
 
     override fun connection(): Connection? = null
-    override fun call(): Call = OkHttpClient().newCall(request())
+    override fun call(): Call = call
     override fun connectTimeoutMillis(): Int = 0
     override fun readTimeoutMillis(): Int = 0
     override fun writeTimeoutMillis(): Int = 0

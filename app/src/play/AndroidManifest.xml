@@ -10,8 +10,21 @@
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" tools:node="remove" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" tools:node="remove" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="29" tools:node="remove" />
+    <!-- [A65] :j2me (JL-Mod) kéo micro, vị trí và Bluetooth vào manifest chung cho JSR-135/179/82;
+         bản Play không dùng các API đó nên gỡ khỏi APK, bản GitHub giữ nguyên. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.BLUETOOTH" tools:node="remove" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" tools:node="remove" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" tools:node="remove" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" tools:node="remove" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" tools:node="remove" />
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" tools:node="remove" />
     <uses-feature android:glEsVersion="0x00030000" android:required="false" />
-    <application android:name=".MonikaApp" android:allowBackup="true" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:label="@string/app_name" android:supportsRtl="true" android:theme="@style/Theme.Monika" tools:targetApi="35">
+    <application android:name=".MonikaApp" android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:label="@string/app_name" android:supportsRtl="true" android:theme="@style/Theme.Monika" tools:targetApi="35">
         <activity android:name="ru.playsoftware.j2meloader.MainActivity" android:exported="false" tools:node="merge" tools:replace="android:exported" />
         <activity android:name="ru.playsoftware.j2meloader.config.ConfigActivity" android:exported="false" tools:node="merge" tools:replace="android:exported" />
         <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="ocr,ocr_japanese" />

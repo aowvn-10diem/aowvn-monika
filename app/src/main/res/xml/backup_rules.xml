@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  V204: sao lưu chỉ giữ dữ liệu người chơi cần khôi phục (SharedPreferences + database).
+  Khi đã có <include>, mọi <exclude> phải nằm trong một đường được include — nên chỉ loại trừ
+  các tệp SharedPreferences của phiên đăng nhập; lõi/gói/đệm vốn đã nằm ngoài phạm vi include.
+-->
+<full-backup-content>
+    <include domain="sharedpref" path="." />
+    <include domain="database" path="." />
+    <exclude domain="sharedpref" path="account.xml" />
+    <exclude domain="sharedpref" path="ra.xml" />
+    <exclude domain="sharedpref" path="monika.xml" />
+    <exclude domain="sharedpref" path="monika_game.xml" />
+</full-backup-content>

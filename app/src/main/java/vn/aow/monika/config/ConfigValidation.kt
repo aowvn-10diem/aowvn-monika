@@ -11,6 +11,18 @@ internal object ConfigValidation {
     /** Nhánh config chứa URL tải **mã/gói** — phải thuộc [ALLOWED_DOWNLOAD_HOSTS]. */
     private val downloadSections = listOf("config.cores.", "config.modules.", "config.packs.", "config.webPlayers.")
 
+    /**
+     * V206: URL mà app **tự tải rồi thực thi/giải nén** (lõi, module, gói, APK cập nhật, systemFiles, script
+     * web player) — nhóm này phải qua cả tiền tố đường dẫn. Link mời cài app ngoài/plugin (`downloadUrl`) chỉ
+     * cần đúng host vì người dùng mở bằng trình duyệt, không tự chạy.
+     */
+    private fun isPinnedArtifactUrl(path: String, field: String): Boolean = when {
+        field == "apkUrl" || field == "systemFiles" -> true
+        field == "script" -> path.startsWith("config.webPlayers.")
+        field == "url" -> downloadSections.any { path.startsWith(it) }
+        else -> false
+    }
+
     private fun isDownloadUrl(path: String, field: String): Boolean = when {
         field == "apkUrl" || field == "systemFiles" -> true
         // V196: link tải/mời cài của app ngoài và plugin cũng phải qua allowlist (link aow.vn hoặc rỗng).
@@ -57,12 +69,26 @@ internal object ConfigValidation {
                     if (text.isNotEmpty()) {
                         val url = text.replace("{abi}", "arm64-v8a").toHttpUrlOrNull()
                         require(url != null && url.scheme == "https" && text.startsWith("https://")) { "$path: URL phải là HTTPS hợp lệ" }
-                        if (field == "directUrl") {
+                        if (field == "loginUrl") {
+                            // V204: phiên đăng nhập chỉ được gửi tới miền aow.vn (aow.vn hoặc tên miền con).
+                            val host = url!!.host.lowercase()
+                            require(host == "aow.vn" || host.endsWith(".aow.vn")) { "$path: loginUrl phải thuộc aow.vn" }
+                        } else if (field == "directUrl") {
                             // V196b: URL tệp do config tạo, đi thẳng vào trình quản lý tải của hệ thống.
                             require(isAllowedDirectUrlHost(url!!.host.lowercase())) { "$path: host tải tệp không nằm trong danh sách cho phép" }
                         } else if (isDownloadUrl(path, field)) {
                             // Chỉ nhận host đã chốt trong APK; không in URL/host ra log (chỉ nêu đường dẫn trường).
-                            require(isAllowedDownloadHost(url!!.host.lowercase())) { "$path: host tải không nằm trong danh sách cho phép" }
+                            val host = url!!.host.lowercase()
+                            require(isAllowedDownloadHost(host)) { "$path: host tải không nằm trong danh sách cho phép" }
+                            if (isPinnedArtifactUrl(path, field)) {
+                                // V206: mã/gói phải nằm trong tiền tố chủ sở hữu; host CDN GitHub chỉ dùng làm đích redirect.
+                                require(!isRedirectOnlyDownloadHost(host)) {
+                                    "$path: host chỉ được dùng làm đích redirect từ URL gốc hợp lệ"
+                                }
+                                require(isAllowedDownloadPath(host, url.encodedPath)) {
+                                    "$path: đường dẫn tải không nằm trong tiền tố cho phép của host"
+                                }
+                            }
                         }
                     }
                 }

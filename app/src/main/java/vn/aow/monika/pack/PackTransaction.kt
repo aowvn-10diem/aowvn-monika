@@ -35,7 +35,7 @@ internal object PackTransaction {
             }
         }
 
-    suspend fun install(target: File, prepare: suspend (archive: File, candidate: File) -> Unit) {
+    suspend fun install(target: File, readOnly: Boolean = false, prepare: suspend (archive: File, candidate: File) -> Unit) {
         val work = File(target.parentFile, ".${target.name}.install-${UUID.randomUUID()}")
         val candidate = File(work, "candidate")
         checkDir(candidate)
@@ -47,12 +47,27 @@ internal object PackTransaction {
                 if (old.exists()) move(old, target)
                 throw error
             }
+            // V204: chỉ thư mục lõi (đã xác thực SHA-256) mới đặt chỉ-đọc; thư mục gói có thể bị engine ghi config.
+            if (readOnly) setReadOnlyTree(target)
+            setWritableTree(old)
             old.deleteRecursively()
         } finally { work.deleteRecursively() }
     }
 
     private fun move(from: File, to: File) {
         if (!from.renameTo(to)) throw IOException("Không đổi được thư mục gói ${to.name}")
+    }
+
+    /** V204: tệp gói/lõi sau khi xác thực SHA-256 chỉ được đọc, không cho mã hoá lại tại chỗ. */
+    private fun setReadOnlyTree(dir: File) {
+        if (!dir.exists()) return
+        dir.walkTopDown().filter { it.isFile }.forEach { it.setReadOnly() }
+    }
+
+    /** Mở quyền ghi để dọn bản .previous (Windows/Android đều cần trước khi xoá). */
+    private fun setWritableTree(dir: File) {
+        if (!dir.exists()) return
+        dir.walkTopDown().forEach { it.setWritable(true) }
     }
     private fun checkDir(dir: File) {
         if (!dir.isDirectory && !dir.mkdirs()) throw IOException("Không tạo được thư mục cài gói")
