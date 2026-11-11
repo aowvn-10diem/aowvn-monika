@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
@@ -220,6 +221,15 @@ class GLRetroView(
             LibretroDroid.serializeSRAM()
         }
     }
+
+    /**
+     * V202 PR3: chụp SRAM nhưng **không chặn UI vô hạn** khi GLThread đang kẹt trong lõi
+     * (vd melondsds giữ coreLock). Quá hạn trả null để nơi gọi bỏ qua lượt này, không ANR.
+     */
+    fun serializeSRAMOrNull(timeoutMs: Long = 400L, useEmulationThread: Boolean = true): ByteArray? =
+        runOnEmulationThreadOrNull(useEmulationThread, timeoutMs) {
+            LibretroDroid.serializeSRAM()
+        }
 
     fun unserializeSRAM(data: ByteArray, useEmulationThread: Boolean = true): Boolean {
         return runOnEmulationThread(useEmulationThread) {
@@ -446,6 +456,22 @@ class GLRetroView(
 
         latch.awaitUninterruptibly()
         return result!!
+    }
+
+    /** V202 PR3: như [runOnEmulationThread] nhưng có hạn chờ; hết hạn trả null thay vì treo UI. */
+    private fun <T> runOnEmulationThreadOrNull(useEmulationThread: Boolean, timeoutMs: Long, block: () -> T): T? {
+        if (!useEmulationThread || Thread.currentThread().name.startsWith("GLThread")) {
+            return block()
+        }
+
+        val latch = CountDownLatch(1)
+        var result: T? = null
+        queueEvent {
+            result = block()
+            latch.countDown()
+        }
+
+        return if (latch.await(timeoutMs, TimeUnit.MILLISECONDS)) result else null
     }
 
     private fun buildShader(config: ShaderConfig): GLRetroShader {
