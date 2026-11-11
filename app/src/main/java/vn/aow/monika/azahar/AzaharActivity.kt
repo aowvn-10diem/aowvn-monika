@@ -366,6 +366,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
             Diagnostics.end(this)
             if (started) runCatching { NativeLibrary.stopEmulation() }
             // V205: engine ghi Disk Shader Cache lúc dừng; killProcess ngay sẽ bỏ dở/hỏng bộ đệm nên chờ tối đa 1,5s.
+            // diag: bỏ qua lỗi join — chỉ là chờ có giới hạn, không đổi kết quả thoát game
             runCatching { emuThread?.join(1500) }
             android.os.Process.killProcess(android.os.Process.myPid())
         }

@@ -70,6 +70,7 @@ class AzaharInstallActivity : ComponentActivity() {
             }
         }
         lifecycleScope.launch {
+            // diag: bỏ qua lỗi nạp engine — hiện thẳng lên màn cài qua nhánh .isFailure bên dưới
             val ok = runCatching {
                 AppGraph.azahar.ensure { status = it }
                 // V205: nạp engine + tạo config.ini chạy ở luồng nền để màn cài không chặn UI (file .cia có thể rất lớn).
