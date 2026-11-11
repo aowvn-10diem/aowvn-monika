@@ -4,7 +4,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 ## v0.8.12 (Bản thử)
 <!-- bien-tap: v0.8.12 -->
-> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+> Phát hành ngày 10/11/2026 (UTC), bản thử nghiệm.
 
 - **Sửa lỗi:** Mở mục Tệp trong Thư viện không còn bị văng app khi có nhiều game cùng nằm trong thư mục Download. ([#561](https://github.com/aowvn-10diem/aowvn-monika/pull/561))
 - **Sửa lỗi:** Thoát game xong, app trả lại bộ nhớ đã dùng cho game, đỡ bị máy tự tắt app khi chuyển sang việc khác. ([#570](https://github.com/aowvn-10diem/aowvn-monika/pull/570))
