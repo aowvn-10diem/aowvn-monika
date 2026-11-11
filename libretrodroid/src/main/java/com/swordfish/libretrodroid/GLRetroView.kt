@@ -32,7 +32,6 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.coroutineScope
-import com.swordfish.libretrodroid.KtUtils.awaitUninterruptibly
 import com.swordfish.libretrodroid.gamepad.GamepadsManager
 import com.swordfish.libretrodroid.gamepad.PadKeyMap
 import kotlinx.coroutines.GlobalScope
@@ -40,8 +39,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.properties.Delegates
@@ -64,13 +61,16 @@ class GLRetroView(
     }
 
     var viewport: RectF by Delegates.observable(RectF(0f, 0f, 1f, 1f)) { _, _, value ->
-        runOnEmulationThread(true) {
+        // Aow Monika: setter chạy trên UI Thread (xoay màn hình, đổi bố cục) nên chỉ xếp việc vào GLThread,
+        // không chờ — chờ ở đây là nguồn ANR khi GLThread đang biên dịch shader hoặc nạp state.
+        queueEvent {
             LibretroDroid.setViewport(value.left, value.top, value.width(), value.height())
         }
     }
 
     var viewportAlignment: ViewportAlignment by Delegates.observable(ViewportAlignment.CENTER) { _, _, value ->
-        LibretroDroid.setViewportAlignment(value.value)
+        // Aow Monika: cùng lý do với `viewport` — setter chỉ đặt cấu hình, không cần chờ.
+        queueEvent { LibretroDroid.setViewportAlignment(value.value) }
     }
 
     private val openGLESVersion: Int
@@ -199,7 +199,7 @@ class GLRetroView(
     }
 
     fun serializeState(useEmulationThread: Boolean = true): ByteArray {
-        return runOnEmulationThread(useEmulationThread) {
+        return runOnEmulationThread(useEmulationThread, { ByteArray(0) }) {
             LibretroDroid.serializeState()
         }
     }
@@ -211,13 +211,13 @@ class GLRetroView(
     }
 
     fun unserializeState(data: ByteArray, useEmulationThread: Boolean = true): Boolean {
-        return runOnEmulationThread(useEmulationThread) {
+        return runOnEmulationThread(useEmulationThread, { false }) {
             LibretroDroid.unserializeState(data)
         }
     }
 
     fun serializeSRAM(useEmulationThread: Boolean = true): ByteArray {
-        return runOnEmulationThread(useEmulationThread) {
+        return runOnEmulationThread(useEmulationThread, { ByteArray(0) }) {
             LibretroDroid.serializeSRAM()
         }
     }
@@ -232,7 +232,7 @@ class GLRetroView(
         }
 
     fun unserializeSRAM(data: ByteArray, useEmulationThread: Boolean = true): Boolean {
-        return runOnEmulationThread(useEmulationThread) {
+        return runOnEmulationThread(useEmulationThread, { false }) {
             LibretroDroid.unserializeSRAM(data)
         }
     }
@@ -258,7 +258,8 @@ class GLRetroView(
     }
 
     fun setControllerType(port: Int, type: Int) {
-        LibretroDroid.setControllerType(port, type)
+        // Aow Monika: gọi JNI trên GLThread như các lệnh lõi khác, không đụng lõi từ UI Thread.
+        queueEvent { LibretroDroid.setControllerType(port, type) }
     }
 
     fun getVariables(): Array<Variable> {
@@ -272,11 +273,11 @@ class GLRetroView(
     }
 
     fun getAvailableDisks(useEmulationThread: Boolean = true): Int {
-        return runOnEmulationThread(useEmulationThread) { LibretroDroid.availableDisks() }
+        return runOnEmulationThread(useEmulationThread, { 0 }) { LibretroDroid.availableDisks() }
     }
 
     fun getCurrentDisk(useEmulationThread: Boolean = true): Int {
-        return runOnEmulationThread(useEmulationThread) { LibretroDroid.currentDisk() }
+        return runOnEmulationThread(useEmulationThread, { 0 }) { LibretroDroid.currentDisk() }
     }
 
     fun changeDisk(index: Int, useEmulationThread: Boolean = true) {
@@ -388,7 +389,13 @@ class GLRetroView(
 
     // These functions are called from the GL thread.
     private fun initializeCore() = catchExceptions {
-        if (isGameLoaded) return@catchExceptions
+        if (isGameLoaded) {
+            // Aow Monika: GLSurfaceView dựng lại surface/EGL context (khóa-mở máy, đổi độ phân giải, mất context).
+            // Phải dựng lại Video + context HW của lõi, nếu không lõi vẽ vào FBO/texture của context đã chết
+            // → SIGSEGV ở ppsspp/citra (#316, #372, #520). Không nạp lại game, không đăng ký lại observer.
+            LibretroDroid.onSurfaceCreated()
+            return@catchExceptions
+        }
         if (data.initializeOnGlThread) createCore()
         // Aow Monika: cấu hình RetroAchievements trước khi nạp game (native bật sau retro_load_game).
         data.achievements?.let { RetroAchievements.configure(it) }
@@ -442,36 +449,38 @@ class GLRetroView(
         }
     }
 
-    private fun <T> runOnEmulationThread(useEmulationThread: Boolean, block: () -> T): T {
-        if (!useEmulationThread || Thread.currentThread().name.startsWith("GLThread")) {
+    private fun <T> runOnEmulationThread(useEmulationThread: Boolean, fallback: () -> T, block: () -> T): T {
+        if (!useEmulationThread || EmulationThread.isEmulationThread(Thread.currentThread().name)) {
             return block()
         }
 
-        val latch = CountDownLatch(1)
-        var result: T? = null
-        queueEvent {
-            result = block()
-            latch.countDown()
+        val task = EmulationThreadTask<T>()
+        // Aow Monika: GLThread đã đóng thì task không bao giờ hoàn tất; chờ có hạn bên dưới sẽ trả fallback.
+        queueEvent { task.complete(block()) }
+
+        // Aow Monika: chờ có hạn. GLThread đang biên dịch shader hoặc nạp state rất lâu thì trả giá trị
+        // dự phòng thay vì treo Main Thread tới mức ANR (ffdfa861, #318, #529, #533, #535).
+        if (!task.await(EmulationThread.CALL_TIMEOUT_MS)) {
+            Log.w(TAG_LOG, "GLThread không phản hồi sau ${EmulationThread.CALL_TIMEOUT_MS} ms, trả giá trị dự phòng")
+            return fallback()
         }
 
-        latch.awaitUninterruptibly()
-        return result!!
+        return task.result()
+    }
+
+    private fun runOnEmulationThread(useEmulationThread: Boolean, block: () -> Unit) {
+        runOnEmulationThread(useEmulationThread, {}, block)
     }
 
     /** V202 PR3: như [runOnEmulationThread] nhưng có hạn chờ; hết hạn trả null thay vì treo UI. */
     private fun <T> runOnEmulationThreadOrNull(useEmulationThread: Boolean, timeoutMs: Long, block: () -> T): T? {
-        if (!useEmulationThread || Thread.currentThread().name.startsWith("GLThread")) {
+        if (!useEmulationThread || EmulationThread.isEmulationThread(Thread.currentThread().name)) {
             return block()
         }
-
-        val latch = CountDownLatch(1)
-        var result: T? = null
-        queueEvent {
-            result = block()
-            latch.countDown()
-        }
-
-        return if (latch.await(timeoutMs, TimeUnit.MILLISECONDS)) result else null
+        // Dùng chung cơ chế chờ của #606; hết hạn trả null để nơi gọi biết là chưa chụp được.
+        val task = EmulationThreadTask<T>()
+        queueEvent { task.complete(block()) }
+        return if (task.await(timeoutMs)) task.result() else null
     }
 
     private fun buildShader(config: ShaderConfig): GLRetroShader {

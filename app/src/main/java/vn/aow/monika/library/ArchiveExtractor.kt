@@ -18,6 +18,12 @@ object ArchiveExtractor {
 
     class PasswordException(message: String) : IOException(message)
 
+    /**
+     * Máy chưa có gói 7-Zip và không tải được (thường là mất mạng): luồng bình thường, có thông điệp hướng dẫn
+     * cho người chơi → nơi gọi khai báo `expected` để chỉ ghi vệt, không lập báo cáo `op-fail`.
+     */
+    class NeedsExtractorPackException(message: String, cause: Throwable? = null) : IOException(message, cause)
+
     fun isArchive(file: File) = file.extension.lowercase() in EXTENSIONS || MultiPart.parse(file.name) != null
 
     fun extract(source: File, target: File, passwords: List<String>, progress: ExtractProgress? = null) =
@@ -46,6 +52,10 @@ object ArchiveExtractor {
                     target.listFiles()?.forEach { it.deleteRecursively() }
                     if (e3 is PasswordException) throw e3
                 }
+            }
+            // Chỉ "chưa tải được gói" (mất mạng) mới là luồng bình thường; lib nạp lỗi/bản sai ABI vẫn là lỗi thật.
+            if (e7 is SevenZipNative.PackUnavailableError) {
+                throw NeedsExtractorPackException("Chưa giải nén được: cần tải bộ giải nén (kiểm tra mạng) rồi thử lại.", e7)
             }
             throw IOException("Chưa giải nén được: cần tải bộ giải nén (kiểm tra mạng) rồi thử lại.", e7)
         }

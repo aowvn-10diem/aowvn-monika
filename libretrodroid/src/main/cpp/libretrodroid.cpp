@@ -145,6 +145,13 @@ std::vector<std::vector<struct Controller>> LibretroDroid::getControllers() {
 }
 
 void LibretroDroid::setControllerType(unsigned int port, unsigned int type) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
+    if (!core) {
+        LOGE("Cannot set controller type without a core");
+        return;
+    }
+
     core->retro_set_controller_port_device(port, type);
 }
 
@@ -186,15 +193,32 @@ std::pair<int8_t*, size_t> LibretroDroid::serializeSRAM() {
 }
 
 void LibretroDroid::onSurfaceChanged(unsigned int width, unsigned int height) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     LOGD("Performing libretrodroid onSurfaceChanged");
-    video->updateScreenSize(width, height);
+    if (video) {
+        video->updateScreenSize(width, height);
+    }
 }
 
 void LibretroDroid::onSurfaceCreated() {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     LOGD("Performing libretrodroid onSurfaceCreated");
+
+    if (!core) {
+        LOGE("Cannot create the video surface without a core");
+        return;
+    }
 
     struct retro_system_av_info system_av_info {};
     core->retro_get_system_av_info(&system_av_info);
+
+    // Aow Monika: EGL context mới thì phải huỷ context HW của lõi trước khi dựng Video mới,
+    // nếu không lõi giữ FBO/texture của context đã chết sau khi xoay màn hình hoặc khóa/mở máy.
+    if (video != nullptr && Environment::getInstance().getHwContextDestroy() != nullptr) {
+        Environment::getInstance().getHwContextDestroy()();
+    }
 
     video = nullptr;
 
@@ -440,32 +464,54 @@ void LibretroDroid::destroy() {
     achievementsConfig.reset();
     currentGamePath.clear();
 
-    core->retro_unload_game();
-    core->retro_deinit();
+    // Aow Monika: destroy() có thể tới sau khi lõi đã lỗi/đã gỡ — không được gọi vào con trỏ rỗng.
+    if (core) {
+        core->retro_unload_game();
+        core->retro_deinit();
+    }
 
     video = nullptr;
     core = nullptr;
     rumble = nullptr;
     fpsSync = nullptr;
     audio = nullptr;
+    input = nullptr;
 
     Environment::getInstance().deinitialize();
     VFS::getInstance().deinitialize();
 }
 
 void LibretroDroid::resume() {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     LOGD("Performing libretrodroid resume");
+
+    if (!core) {
+        LOGE("Cannot resume: the core is not loaded");
+        return;
+    }
 
     input = std::make_unique<Input>();
 
-    fpsSync->reset();
-    audio->start();
-    refreshAspectRatio();
+    if (fpsSync) {
+        fpsSync->reset();
+    }
+    if (audio) {
+        audio->start();
+    }
+
+    refreshAspectRatioLocked();
 }
 
 void LibretroDroid::pause() {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     LOGD("Performing libretrodroid pause");
-    audio->stop();
+
+    // Aow Monika: pause() có thể tới sau destroy() hoặc trước afterGameLoad() — audio/fpsSync có thể rỗng.
+    if (audio) {
+        audio->stop();
+    }
 
     input = nullptr;
 }
@@ -525,7 +571,16 @@ float LibretroDroid::getAspectRatio() {
 }
 
 void LibretroDroid::refreshAspectRatio() {
-    video->updateAspectRatio(getAspectRatio());
+    std::lock_guard<std::mutex> lock(coreLock);
+
+    refreshAspectRatioLocked();
+}
+
+void LibretroDroid::refreshAspectRatioLocked() {
+    // Aow Monika: gọi từ resume()/UI khi video chưa dựng xong là bình thường — bỏ qua, không deref rỗng.
+    if (video) {
+        video->updateAspectRatio(getAspectRatio());
+    }
 }
 
 void LibretroDroid::setRumbleEnabled(bool enabled) {
@@ -537,6 +592,8 @@ bool LibretroDroid::isRumbleEnabled() const {
 }
 
 void LibretroDroid::setFrameSpeed(unsigned int speed) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     frameSpeed = speed;
     updateAudioSampleRateMultiplier();
 }
@@ -546,6 +603,8 @@ void LibretroDroid::setAudioEnabled(bool enabled) {
 }
 
 void LibretroDroid::setShaderConfig(ShaderManager::Config shaderConfig) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     fragmentShaderConfig = std::move(shaderConfig);
     if (video) {
         video->updateShaderType(fragmentShaderConfig);
@@ -682,6 +741,8 @@ void LibretroDroid::handleRumbleUpdates(const std::function<void(int, float, flo
 }
 
 void LibretroDroid::setViewport(Rect viewportRect) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     this->viewportRect = viewportRect;
 
     if (video != nullptr) {
@@ -690,6 +751,8 @@ void LibretroDroid::setViewport(Rect viewportRect) {
 }
 
 void LibretroDroid::setViewportAlignment(unsigned int viewportAlignment) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     this-> viewportAlignment = viewportAlignment;
 
     if (video) {
