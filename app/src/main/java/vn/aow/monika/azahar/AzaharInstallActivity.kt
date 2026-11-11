@@ -28,6 +28,7 @@ import org.citra.citra_emu.NativeLibrary
 import org.citra.citra_emu.utils.CiaInstallWorker
 import vn.aow.monika.AppGraph
 import vn.aow.monika.diag.Diagnostics
+import vn.aow.monika.runner.EmuTier
 import vn.aow.monika.ui.theme.MonikaMenuSheet
 import vn.aow.monika.ui.theme.MonikaTheme
 import vn.aow.monika.ui.theme.SheetChip
@@ -63,6 +64,8 @@ class AzaharInstallActivity : ComponentActivity() {
                                 lines.forEach { (n, s) -> SheetRow(n, subtitle = s) }
                                 if (!done) Text("Đang cài… $pct%", color = SheetColors.textSecondary)
                                 else SheetChip("Xong", true) { finish() }
+                                // V205: .cia là bộ cài đặt (game/cập nhật/DLC), không phải ROM chạy trực tiếp.
+                                Text("File .cia là bộ cài đặt. Cài xong, mở ROM .3ds của game để chơi.", color = SheetColors.textSecondary)
                             }
                         },
                     )
@@ -79,23 +82,28 @@ class AzaharInstallActivity : ComponentActivity() {
                 NativeLibrary.setUserDirectory(dir.absolutePath)
                 NativeLibrary.createLogFile()
                 NativeLibrary.createConfigFile()
-                AzaharConfig.write(this@AzaharInstallActivity)
+                AzaharConfig.write(this@AzaharInstallActivity, EmuTier.detect(this@AzaharInstallActivity, AppGraph.prefs.emuPerf))
                 NativeLibrary.reloadSettings()
             }
             if (ok.isFailure) {
                 status = "Engine 3DS chưa chạy được trên máy này: ${ok.exceptionOrNull()?.message ?: ""}"
+                // Người chơi vừa bấm cài .cia mà engine không nạp được → để lại vệt lỗi (không nuốt).
+                Diagnostics.recordHandled(this@AzaharInstallActivity, "app:azahar-cia", "Không cài được .cia, engine 3DS không nạp", ok.exceptionOrNull())
                 done = true
                 return@launch
             }
             status = "Đang cài ${files.size} file…"
             val worker = CiaInstallWorker()
+            val staging = AzaharCia.stagingDir(cacheDir)
             for (f in files) {
                 lines.add(f.name to "Đang cài…")
                 val idx = lines.lastIndex
                 pct = 0
                 Diagnostics.stage(this@AzaharInstallActivity, "install ${f.name.take(40)}")
                 val res = withContext(Dispatchers.IO) {
-                    runCatching { worker.installCIA("!" + f.absolutePath) }.getOrNull()
+                    runCatching { worker.installCIA("!" + f.absolutePath) }
+                        .onFailure { Diagnostics.recordHandled(this@AzaharInstallActivity, "app:azahar-cia", "Không cài được ${f.name}", it) }
+                        .getOrNull()
                 }
                 lines[idx] = f.name to when (res) {
                     NativeLibrary.InstallStatus.Success -> "Đã cài xong"
@@ -105,7 +113,10 @@ class AzaharInstallActivity : ComponentActivity() {
                     NativeLibrary.InstallStatus.ErrorFailedToOpenFile, NativeLibrary.InstallStatus.ErrorFileNotFound -> "Lỗi: không mở được file"
                     else -> "Lỗi không rõ"
                 }
-                runCatching { f.delete() }
+                // Chỉ xoá bản sao Monika tự chép vào bộ đệm; `.cia` gốc người chơi mở từ thư viện phải còn nguyên.
+                if (AzaharCia.isStagedCopy(staging, f) && !f.delete()) {
+                    Diagnostics.crumb(this@AzaharInstallActivity, "azahar-cia", "Không xoá được bản sao .cia trong bộ đệm")
+                }
             }
             status = "Xong ${lines.count { it.second.startsWith("Đã") }}/${files.size} file"
             done = true
@@ -130,11 +141,11 @@ class AzaharInstallActivity : ComponentActivity() {
 
         /** Chép các .cia người chơi chọn vào bộ nhớ đệm (gọi ở luồng nền, file có thể vài trăm MB). */
         fun stage(activity: Activity, uris: List<android.net.Uri>): List<String> {
-            val dir = File(activity.cacheDir, "cia").apply { mkdirs() }
+            val dir = AzaharCia.stagingDir(activity.cacheDir).apply { mkdirs() }
             return uris.mapIndexed { i, u ->
                 val name = activity.contentResolver.query(u, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
                     ?.use { if (it.moveToFirst()) it.getString(0) else null } ?: "game$i.cia"
-                File(dir, "$i-${name.replace('/', '_')}").also { f ->
+                File(dir, AzaharCia.stagedName(i, name)).also { f ->
                     activity.contentResolver.openInputStream(u)?.use { ins -> f.outputStream().use { ins.copyTo(it) } }
                 }.absolutePath
             }

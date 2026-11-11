@@ -35,6 +35,7 @@ import org.citra.citra_emu.NativeLibrary
 import vn.aow.monika.AppGraph
 import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.runner.CoreOptions
+import vn.aow.monika.runner.EmuTier
 import vn.aow.monika.runner.GamepadInput
 import vn.aow.monika.runner.InGameOverlay
 import vn.aow.monika.runner.InGameState
@@ -66,6 +67,14 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
     private lateinit var title: String
     private lateinit var systemName: String
     private var saveTransferLease: java.io.Closeable? = null
+    /** Luồng chạy engine; phải chờ nó thoát trước khi kill tiến trình (V205). */
+    private var emuThread: Thread? = null
+    /** Thư mục người dùng của engine — nơi đặt dấu phiên chơi ([AzaharSession]). */
+    private var sessionDir: File? = null
+    /** Mức máy: quyết định mặc định New 3DS và các tùy chọn nặng/nhẹ. */
+    private val tier by lazy { EmuTier.detect(this, AppGraph.prefs.emuPerf) }
+    /** Đã chuyển sang màn cài `.cia` → tiến trình phải sống tiếp cho màn đó. */
+    private var handoffToInstall = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,6 +91,9 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         gamePath = intent.getStringExtra(EXTRA_GAME) ?: return finish()
         systemName = intent.getStringExtra(EXTRA_SYSTEM).orEmpty()
         title = intent.getStringExtra(EXTRA_TITLE) ?: File(gamePath).nameWithoutExtension
+        // V205: `.cia` là gói cài đặt, không phải ROM. Đưa thẳng vào NativeLibrary.run thì engine thoát
+        // với core-error (hoặc sập native) → dẫn người chơi sang màn cài (CiaInstallWorker) rồi mới chơi.
+        if (AzaharCia.isCia(gamePath)) { installCia(File(gamePath)); return }
         try {
             saveTransferLease = vn.aow.monika.library.GameSaveGate.acquire(filesDir)
         } catch (error: java.io.IOException) {
@@ -150,7 +162,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
                                 prefs.setPadOffset("face", ui.faceOffset.x, ui.faceOffset.y)
                                 showToast("Đã lưu vị trí phím")
                             },
-                            onOptions = { ui.options = AzaharConfig.options(this@AzaharActivity) },
+                            onOptions = { ui.options = AzaharConfig.options(this@AzaharActivity, tier) },
                             onAsk = { askGroup() },
                             extraActions = listOf(
                                 vn.aow.monika.ui.theme.SheetAction("Mã cheat", vn.aow.monika.R.drawable.ic_fluent_document_24_regular) { cheats.show() },
@@ -159,13 +171,13 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
                             onOptionChange = { o, v ->
                                 CoreOptions.save(this@AzaharActivity, AzaharConfig.CORE_ID, o.key, v)
                                 ui.options = ui.options?.map { if (it.key == o.key) it.copy(value = v) else it }
-                                AzaharConfig.write(this@AzaharActivity)
+                                AzaharConfig.write(this@AzaharActivity, tier)
                                 runCatching { NativeLibrary.reloadSettings() }
                             },
                             onOptionsReset = {
                                 CoreOptions.reset(this@AzaharActivity, AzaharConfig.CORE_ID)
                                 ui.options = null
-                                AzaharConfig.write(this@AzaharActivity)
+                                AzaharConfig.write(this@AzaharActivity, tier)
                                 runCatching { NativeLibrary.reloadSettings() }
                                 showToast("Đã về mặc định. Mở lại game để áp dụng hết.", 2600)
                             },
@@ -221,6 +233,27 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         }
     }
 
+    /**
+     * `.cia` phải cài vào bộ nhớ máy 3DS trước khi chơi: mở màn cài ([AzaharInstallActivity] →
+     * `CiaInstallWorker`) với chính tệp của người chơi, rồi đóng màn chơi. Màn cài chỉ xoá bản sao
+     * Monika tự chép vào bộ đệm ([AzaharCia.isStagedCopy]) nên tệp gốc luôn còn.
+     */
+    private fun installCia(file: File) {
+        if (!file.isFile) {
+            Diagnostics.recordHandled(
+                this, "app:azahar-cia", "Không thấy tệp .cia để cài",
+                java.io.FileNotFoundException(file.absolutePath),
+            )
+            android.widget.Toast.makeText(this, "Không tìm thấy tệp .cia để cài.", android.widget.Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+        // Tiến trình :game phải sống tiếp cho màn cài → onDestroy không được killProcess (xem handoffToInstall).
+        handoffToInstall = true
+        AzaharInstallActivity.launch(this, listOf(file.absolutePath))
+        finish()
+    }
+
     /** Engine không nạp được → chơi bằng lõi Citra libretro (giao diện vẫn của Monika). */
     private fun fallback(status: TextView, e: Throwable) {
         val core = "citra"
@@ -235,7 +268,15 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
 
     private fun setUp() {
         val dir = AzaharConfig.userDir(this)
+        sessionDir = dir
         AzaharBridge.userDir = dir.absolutePath + "/"
+        // V205: phiên trước sập trước khung hình đầu → bộ đệm shader trên đĩa có thể ghi dở/hỏng
+        // (engine đọc lại rồi sập tiếp). Chỉ xoá đúng trường hợp đó; cache của phiên chạy bình thường giữ nguyên.
+        if (AzaharSession.shaderCacheBroken(AzaharSession.read(this, dir)) && diskShaderCacheOn()) {
+            val removed = AzaharSession.purgeShaderCache(this, dir)
+            Diagnostics.crumb(this, "azahar", "setUp: xoá bộ đệm shader hỏng của phiên trước ($removed tệp)")
+        }
+        AzaharSession.begin(this, dir)
         // V118: vệt trước/sau từng lệnh JNI để báo cáo native chỉ ra đúng bước sập (vệt sống sót qua SIGSEGV).
         Diagnostics.crumb(this, "azahar", "setUp: setUserDirectory")
         NativeLibrary.setUserDirectory(dir.absolutePath)
@@ -244,7 +285,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         Diagnostics.crumb(this, "azahar", "setUp: createConfigFile")
         NativeLibrary.createConfigFile()
         Diagnostics.crumb(this, "azahar", "setUp: AzaharConfig.write")
-        AzaharConfig.write(this)
+        AzaharConfig.write(this, tier)
         Diagnostics.crumb(this, "azahar", "setUp: reloadSettings")
         NativeLibrary.reloadSettings()
         Diagnostics.crumb(this, "azahar", "setUp: xong phần nền")
@@ -260,6 +301,10 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         }
         refreshSlots()
     }
+
+    /** Người chơi có bật bộ đệm shader trên đĩa không — tắt thì không có gì để dọn khi phiên trước sập. */
+    private fun diskShaderCacheOn(): Boolean =
+        AzaharConfig.values(this, tier)["Renderer/use_disk_shader_cache"] != "0"
 
     private fun gameLayoutParams(): FrameLayout.LayoutParams {
         val dm = resources.displayMetrics
@@ -301,11 +346,13 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         Diagnostics.stage(this, "surface")
         if (!started) {
             started = true
-            Thread({
+            val thread = Thread({
                 Diagnostics.stage(this, "run-started") // native chạy game từ đây; chết sau dòng này = lõi/game
                 NativeLibrary.run(gamePath)
                 runOnUiThread { finish() }
-            }, "NativeEmulation").start()
+            }, "NativeEmulation")
+            emuThread = thread
+            thread.start()
             Choreographer.getInstance().postFrameCallback(this)
             // Không có tín hiệu "nạp shader xong" (bộ đệm rỗng) → coi là có hình sau khi engine báo đang chạy.
             lifecycleScope.launch {
@@ -323,6 +370,8 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         if (firstFrame) return
         firstFrame = true
         Diagnostics.stage(this, "first-frame")
+        // Đã có hình → bộ đệm shader đang dùng bình thường, lần mở sau không phải dọn (xem AzaharSession).
+        sessionDir?.let { AzaharSession.firstFrame(this, it) }
         val v = loading ?: root.getChildAt(1)
         if (v != null && v !== surface) v.animate().alpha(0f).setDuration(180).withEndAction { root.removeView(v) }.start()
     }
@@ -352,10 +401,33 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         AzaharBridge.onExit = {}; AzaharBridge.onFirstFrame = {}; AzaharBridge.onError = {}
         if (isFinishing) {
             Diagnostics.end(this)
-            if (started) runCatching { NativeLibrary.stopEmulation() }
-            android.os.Process.killProcess(android.os.Process.myPid())
+            sessionDir?.let { AzaharSession.end(this, it) }
+            if (started) {
+                runCatching { NativeLibrary.stopEmulation() }
+                awaitEmuThread()
+            }
+            // V205: chuyển sang màn cài `.cia` thì tiến trình :game phải sống tiếp cho màn đó chạy.
+            if (!handoffToInstall) android.os.Process.killProcess(android.os.Process.myPid())
         }
         } finally { saveTransferLease?.close(); saveTransferLease = null }
+    }
+
+    /**
+     * Chờ luồng giả lập thoát (tối đa 1500 ms) trước khi kill tiến trình. Kill ngay sau [NativeLibrary.stopEmulation]
+     * làm engine bị cắt cụt giữa lúc ghi bộ đệm shader/NAND → lần sau mở game đọc phải tệp dở (sập tiếp).
+     */
+    private fun awaitEmuThread() {
+        val thread = emuThread ?: return
+        if (thread === Thread.currentThread()) return
+        Diagnostics.crumb(this, "azahar", "onDestroy: chờ NativeEmulation thoát (tối đa 1500 ms)")
+        try {
+            thread.join(1500)
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            Diagnostics.recordHandled(this, "app:azahar-exit", "Bị ngắt khi chờ luồng giả lập thoát", e)
+            return
+        }
+        if (thread.isAlive) Diagnostics.crumb(this, "azahar", "NativeEmulation còn sống sau 1500 ms")
     }
 
     // ---- Nhập liệu ----
