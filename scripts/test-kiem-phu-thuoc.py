@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import unittest
+import urllib.error
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -100,13 +101,39 @@ class QueryOsvTest(unittest.TestCase):
         self.assertEqual(rows[1][4], "2.0")
 
     def test_severity_from_cvss_when_label_missing(self):
+        # Vector thật của GHSA-j288-q9x7-2f5v: OSV trả vector trần, không kèm
+        # "/9.8", nên phải tự tính điểm (6.4 → MODERATE).
         details = {
             "pkg:maven/a/b@1.0": ["GHSA-3"],
             "_meta": {"GHSA-3": {"severity": [
-                {"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/9.8"}]}},
+                {"type": "CVSS_V3",
+                 "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N"}]}},
+        }
+        rows, _ = self._run(details)
+        self.assertEqual(rows[0][3], "MODERATE")
+
+    def test_severity_from_cvss_v4_when_label_missing(self):
+        details = {
+            "pkg:maven/a/b@1.0": ["GHSA-4"],
+            "_meta": {"GHSA-4": {"severity": [
+                {"type": "CVSS_V4",
+                 "score": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/"
+                          "VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"}]}},
         }
         rows, _ = self._run(details)
         self.assertEqual(rows[0][3], "CRITICAL")
+
+    def test_short_results_stops_instead_of_false_negative(self):
+        components = [
+            ("a:b", "1.0", "pkg:maven/a/b@1.0"),
+            ("c:d", "2.0", "pkg:maven/c/d@2.0"),
+        ]
+
+        def post(url, payload):
+            return {"results": [{}]}  # thiếu 1 kết quả
+
+        with self.assertRaises(kpt.OsvError):
+            kpt.query_osv(components, post=post, get=lambda url: {})
 
     def test_no_vulns_gives_no_rows(self):
         rows, calls = self._run({"pkg:maven/a/b@1.0": [], "_meta": {}})
@@ -142,6 +169,76 @@ class SummarizeTest(unittest.TestCase):
         self.assertIn("1 unknown", text)
 
 
+class CvssTest(unittest.TestCase):
+    def test_v31_vector_without_trailing_score(self):
+        score = kpt._cvss_score("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H")
+        self.assertEqual(score, 9.8)
+
+    def test_v31_scope_changed(self):
+        score = kpt._cvss_score("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H")
+        self.assertEqual(score, 10.0)
+
+    def test_v30_vector_accepted(self):
+        score = kpt._cvss_score("CVSS:3.0/AV:L/AC:H/PR:H/UI:R/S:U/C:L/I:N/A:N")
+        self.assertEqual(score, 1.8)
+
+    def test_explicit_trailing_score_still_used(self):
+        score = kpt._cvss_score("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/9.8")
+        self.assertEqual(score, 9.8)
+
+    def test_v4_vector_mapped(self):
+        score = kpt._cvss_score(
+            "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N")
+        self.assertGreaterEqual(score, 9.0)
+
+    def test_unreadable_vectors_return_minus_one(self):
+        for vector in ("", "9.8", "AV:N/AC:L", "CVSS:3.1/AV:X/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"):
+            self.assertEqual(kpt._cvss_score(vector), -1.0)
+
+
+class NetworkTest(unittest.TestCase):
+    def test_url_error_becomes_osv_error(self):
+        import unittest.mock as mock
+        with mock.patch.object(kpt.urllib.request, "urlopen",
+                               side_effect=urllib.error.URLError("mất mạng")), \
+                mock.patch.object(kpt.time, "sleep"):
+            with self.assertRaises(kpt.OsvError):
+                kpt._get_json("https://api.osv.dev/v1/vulns/X")
+
+    def test_429_is_retried(self):
+        import unittest.mock as mock
+
+        class _Resp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def read(self):
+                return b'{"ok": true}'
+
+        calls = {"n": 0}
+
+        def fake_urlopen(request, timeout):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise urllib.error.HTTPError("u", 429, "too many", {}, None)
+            return _Resp()
+
+        with mock.patch.object(kpt.urllib.request, "urlopen", side_effect=fake_urlopen), \
+                mock.patch.object(kpt.time, "sleep"):
+            self.assertEqual(kpt._get_json("https://api.osv.dev/v1/vulns/X"), {"ok": True})
+        self.assertEqual(calls["n"], 2)
+
+    def test_403_not_retried(self):
+        import unittest.mock as mock
+        with mock.patch.object(kpt.urllib.request, "urlopen",
+                               side_effect=urllib.error.HTTPError("u", 403, "forbidden", {}, None)):
+            with self.assertRaises(kpt.OsvError):
+                kpt._get_json("https://api.osv.dev/v1/vulns/X")
+
+
 class MainTest(unittest.TestCase):
     def test_bad_sbom_returns_2(self):
         import tempfile
@@ -164,6 +261,42 @@ class MainTest(unittest.TestCase):
             with mock.patch.object(kpt, "query_osv", return_value=[]) as q:
                 self.assertEqual(kpt.main([path]), 0)
             self.assertEqual(len(q.call_args[0][0]), 1)
+
+    def test_missing_codes_file_returns_2(self):
+        import tempfile
+        import unittest.mock as mock
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "sbom.json")
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(_sbom(_pkg("a:b", "1.0")), fh)
+            missing = os.path.join(tmp, "khong-co.txt")
+            with mock.patch.object(kpt, "query_osv") as q:
+                self.assertEqual(kpt.main([path, "--codes", missing]), 2)
+            q.assert_not_called()
+
+    def test_osv_error_returns_3(self):
+        import tempfile
+        import unittest.mock as mock
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "sbom.json")
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(_sbom(_pkg("a:b", "1.0")), fh)
+            with mock.patch.object(kpt, "query_osv", side_effect=kpt.OsvError("hỏng")):
+                self.assertEqual(kpt.main([path]), 3)
+
+    def test_codes_report_lists_new_and_gone(self):
+        import tempfile
+        import unittest.mock as mock
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "sbom.json")
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(_sbom(_pkg("a:b", "1.0")), fh)
+            codes = os.path.join(tmp, "codes.txt")
+            with open(codes, "w", encoding="utf-8") as fh:
+                fh.write("GHSA-GONE\n")
+            rows = [("a:b", "1.0", "GHSA-NEW", "HIGH", "2.0")]
+            with mock.patch.object(kpt, "query_osv", return_value=rows):
+                self.assertEqual(kpt.main([path, "--codes", codes]), 0)
 
 
 if __name__ == "__main__":
