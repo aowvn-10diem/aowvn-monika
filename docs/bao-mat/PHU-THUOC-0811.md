@@ -199,3 +199,10 @@ Token phiên Trưởng nhóm Phụ thuộc thiếu scope `workflow`, nên 1 dòn
 
 Chưa áp thì V57 xanh **không** phải bằng chứng cho 27 test mới; vẫn chạy được tại chỗ bằng `python -X utf8 scripts/test-kiem-phu-thuoc.py`.
 
+## 13. Lượt hai 12/11 — #609 đã gộp, số về đúng dự kiến, không có cảnh báo mới
+
+- **#609 đã gộp** (`76ad5cae`, head `7557a0a3`). Tự kiểm trên SBOM `origin/main@ab8a2135`: **48 cảnh báo / 12 tổ hợp / 46 mã** — 1 critical, 21 high, 24 moderate, 2 low; **0 trong APK**. Đúng bằng con số dự kiến ở mục 12: 5 cảnh báo của `org.bouncycastle:bcprov-jdk18on` (2 critical, 2 high, 1 moderate) đã hết, `:reader` **không** còn khai 1.81 trên `debugUnitTestRuntimeClasspath`.
+- **Không có mã mới**: chạy `scripts/kiem-phu-thuoc.py sbom.json --codes <63 mã ở mục 4>` trả *mã ngoài danh sách (0)*. Hai dòng `guava` 32.0.1-jre / 33.4.8-jre còn lại chỉ ở classpath công cụ build (AGP, `room-compiler`, `grpc-netty`), không đóng gói; critical duy nhất còn lại là `netty-handler` (classpath AGP), vẫn chờ #471.
+- **Bốn PR Dependabot vẫn 0 review, head không đổi**: #215 `2ba1eae` (3 đỏ: `build`, `links`, `repeated-tests`), #216 `4e5f949` (**6 đỏ**, thêm `preview` so với lượt trước), #217 `ce0ac6a` (5 đỏ), #290 `5ce2b55` (1 đỏ `build`). Không có gì để vá thêm ở nhánh mình; vẫn chờ PM chốt (a) nhánh `phuthuoc/agp9` hay (b) đóng kèm lý do "chỉ công cụ build".
+- **27 test V57 chạy tại chỗ OK** (`python -X utf8 scripts/test-kiem-phu-thuoc.py` → `Ran 27 tests … OK`). Thử đẩy dòng `test-kiem-phu-thuoc.py` vào `.github/workflows/script-tests.yml` lần này **vẫn bị từ chối** (`refusing to allow a Personal Access Token to create or update workflow … without workflow scope`) ⇒ diff ở mục 12 vẫn cần sếp áp, hoặc cấp scope `workflow` cho token của phiên.
+
