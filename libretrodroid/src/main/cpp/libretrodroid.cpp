@@ -130,10 +130,13 @@ void LibretroDroid::changeDisk(unsigned int index) {
 }
 
 void LibretroDroid::updateVariable(const Variable& variable) {
+    // V202 PR3: biến lõi đọc/ghi từ UI thread phải cùng khoá với vòng retro_run của GLThread.
+    std::lock_guard<std::mutex> lock(coreLock);
     Environment::getInstance().updateVariable(variable.key, variable.value);
 }
 
 std::vector<Variable> LibretroDroid::getVariables() {
+    std::lock_guard<std::mutex> lock(coreLock);
     return Environment::getInstance().getVariables();
 }
 
