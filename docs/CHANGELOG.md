@@ -2,6 +2,15 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.13 (Bản thử)
+<!-- bien-tap: v0.8.13 -->
+> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+
+- **Sửa lỗi:** Chơi game 3DS, NDS, PSP lâu hoặc chuyển sang app khác rồi quay lại không còn bị đứng, văng app. ([#602](https://github.com/aowvn-10diem/aowvn-monika/pull/602), [#606](https://github.com/aowvn-10diem/aowvn-monika/pull/606))
+- **Sửa lỗi:** Ra khỏi game đúng lúc app đang lưu tiến trình thì bản lưu cũ vẫn còn nguyên, không bị ghi dở. ([#602](https://github.com/aowvn-10diem/aowvn-monika/pull/602))
+- **Mới:** Bản Play: Thư viện chia ba mục Chơi, Đọc, Tệp và mở lại đúng mục bạn xem lần trước. ([#469](https://github.com/aowvn-10diem/aowvn-monika/pull/469))
+- Nội bộ: bớt báo lỗi gửi về khi bài viết đã bị gỡ hoặc khi mất mạng lúc nhập tệp nén ([#603](https://github.com/aowvn-10diem/aowvn-monika/pull/603), [#604](https://github.com/aowvn-10diem/aowvn-monika/pull/604)); khung đọc PDF chưa nối vào mục Đọc, người chơi vẫn mở tài liệu bằng ứng dụng có sẵn ([#457](https://github.com/aowvn-10diem/aowvn-monika/pull/457)).
+
 ## v0.8.12 (Bản thử)
 <!-- bien-tap: v0.8.12 -->
 > Phát hành ngày 10/11/2026 (UTC), bản thử nghiệm.
