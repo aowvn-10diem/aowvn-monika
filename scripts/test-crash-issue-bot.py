@@ -178,6 +178,23 @@ class BotTest(unittest.TestCase):
         for core in ["azahar", "kirikiri", "mkxp-z"]:
             self.assertEqual(bot.plan([record(1, core=core)], [], OWNERS)[0]["assignees"], ["sonnet-fixture"])
 
+    def test_closed_issue_body_marks_the_count_as_cumulative_history(self):
+        # #304/#305: issue đã đóng nhưng bot vẫn cộng dồn ⇒ người đọc phải biết số đó không phải mức tăng hiện tại.
+        first = bot.plan([record(1)], [], OWNERS)[0]
+        closed = issue(first)  # helper đặt state="closed"
+        updated = bot.plan([record(i) for i in range(1, 7)], [closed], OWNERS)[0]
+        self.assertIn("Issue này đã đóng", updated["body"])
+        self.assertIn("cộng dồn lịch sử", updated["body"])
+        self.assertEqual(updated["body"].count("cộng dồn lịch sử"), 1)
+
+        opened = dict(closed, state="open")
+        reopened = bot.plan([record(i) for i in range(1, 7)], [opened], OWNERS)[0]
+        self.assertNotIn("cộng dồn lịch sử", reopened["body"])
+
+        # Cập nhật lần sau thay cả khối giữa hai marker nên ghi chú không bị nhân đôi.
+        again = bot.plan([record(i) for i in range(1, 13)], [dict(closed, body=updated["body"])], OWNERS)[0]
+        self.assertEqual(again["body"].count("cộng dồn lịch sử"), 1)
+
     def test_client_count_increase_triggers_without_double_count(self):
         previous = issue(bot.plan([record(1, count=2)], [], OWNERS)[0])
         self.assertEqual(bot.plan([record(1, count=6)], [previous], OWNERS), [])

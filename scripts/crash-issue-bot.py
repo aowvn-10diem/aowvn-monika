@@ -129,6 +129,9 @@ def plan(records, issues, owners):
                    + f"Lõi: `{group['core']}` · Loại: `{group['kind']}` · Chữ ký: `{signature}`\n"
                    + (f"Thành phần: {label}\n" if label else "")
                    + f"Số lần quan sát đã thông báo: {saved['count']} (+{delta}). Phụ trách: {role}.\n"
+                   + ("Issue này đã đóng: số trên là **cộng dồn lịch sử**, \"(+N)\" là lượt mới kể từ lần thông báo "
+                      "trước — không phải mức tăng hiện tại. Bot vẫn cộng dồn để thấy tái diễn; mở lại issue nếu "
+                      "cần theo dõi tiếp.\n" if previous and str(previous.get("state", "")).lower() != "open" else "")
                    + "Phạm vi: tối đa 100 bản ghi mới nhất Worker trả về; không suy toàn bộ lịch sử. "
                    + "Chữ ký băm lõi + loại + tối đa 3 frame đầu; không chép stack, game, ảnh, URL hoặc thiết bị.\n")
         old_body = previous.get("body") or "" if previous else ""
