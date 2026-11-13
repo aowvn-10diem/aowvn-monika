@@ -330,4 +330,28 @@ class DiagnosticsOpTest {
         assertTrue(pw is vn.aow.monika.library.ArchiveExtractor.PasswordException)
         assertEquals("cần mật khẩu không phải lỗi: không thêm báo cáo", 1, opFails().size)
     }
+
+    @Test fun missingExtractorPackStaysOutOfReportsButBrokenArchiveStillReports() {
+        // Máy thiếu gói 7-Zip và không có mạng lúc cần tải gói (#595): luồng bình thường → chỉ ghi vệt.
+        val pack = Importer.extractOp(app, "Game.7z") {
+            throw vn.aow.monika.library.ArchiveExtractor.NeedsExtractorPackException("cần tải bộ giải nén", IOException("mất mạng"))
+        }
+        assertTrue("vẫn trả lỗi về cho giao diện báo người chơi", pack is vn.aow.monika.library.ArchiveExtractor.NeedsExtractorPackException)
+        assertTrue("thiếu gói giải nén không phải lỗi app", opFails().isEmpty())
+        assertTrue(sent.isEmpty())
+        assertTrue("vẫn để lại vệt để đọc log tại máy",
+            vn.aow.monika.diag.Breadcrumbs.read(app, android.os.Process.myPid())
+                .any { it.contains("giai-nen:7z") && it.contains("mong đợi") })
+
+        // File nén hỏng thật → vẫn phải báo; bước có định dạng để biết hỏng ở bộ giải nào.
+        val broken = Importer.extractOp(app, "Hong.7z") { throw IOException("File nén bị hỏng") }
+        assertTrue(broken is IOException)
+        val r = opFails().single()
+        assertEquals("op:giai-nen", r.component)
+        assertTrue(r.detail.contains("bước: giai-nen:7z") && r.detail.contains("đối tượng: Hong.7z"))
+
+        // Gói có trên máy nhưng lib native nạp lỗi (sai ABI…) vẫn là lỗi thật, không được im lặng.
+        Importer.extractOp(app, "Khoa.rar") { throw UnsatisfiedLinkError("dlopen failed: không nạp được") }
+        assertEquals("chỉ đúng ca 'chưa tải được gói' mới bỏ báo", 2, opFails().size)
+    }
 }

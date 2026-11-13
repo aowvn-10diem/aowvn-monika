@@ -74,17 +74,25 @@ void Environment::deinitialize() {
 }
 
 void Environment::updateVariable(const std::string& key, const std::string& value) {
-    auto current = variables[key];
+    std::lock_guard<std::mutex> lock(variablesLock);
+
+    auto &current = variables[key];
     current.key = key;
 
     if (value != current.value) {
         current.value = value;
-        variables[key] = current;
         dirtyVariables = true;
     }
 }
 
 bool Environment::environment_handle_set_variables(const struct retro_variable* received) {
+    if (received == nullptr) {
+        LOGE("Received a null variable list from the core");
+        return false;
+    }
+
+    std::lock_guard<std::mutex> lock(variablesLock);
+
     unsigned count = 0;
     while (received[count].key != nullptr) {
         LOGD("Received variable %s: %s", received[count].key, received[count].value);
@@ -115,18 +123,36 @@ bool Environment::environment_handle_set_variables(const struct retro_variable* 
 }
 
 bool Environment::environment_handle_get_variable(struct retro_variable* requested) {
+    if (requested == nullptr || requested->key == nullptr) {
+        LOGE("Received a null variable request from the core");
+        return false;
+    }
+
     LOGD("Variable requested %s", requested->key);
+
+    std::lock_guard<std::mutex> lock(variablesLock);
+
     auto foundVariable = variables.find(std::string(requested->key));
 
     if (foundVariable == variables.end()) {
         return false;
     }
 
-    requested->value = foundVariable->second.value.c_str();
+    // Aow Monika: trả con trỏ tới vùng đệm riêng của Environment, không trả c_str() của phần tử trong map —
+    // UI Thread có thể ghi đè/giải phóng phần tử đó ngay sau khi nhả khoá.
+    variableValueBuffer = foundVariable->second.value;
+    requested->value = variableValueBuffer.c_str();
     return true;
 }
 
 bool Environment::environment_handle_set_controller_info(const struct retro_controller_info* received) {
+    if (received == nullptr) {
+        LOGE("Received a null controller info list from the core");
+        return false;
+    }
+
+    std::lock_guard<std::mutex> lock(variablesLock);
+
     controllers.clear();
 
     unsigned player = 0;
@@ -255,9 +281,11 @@ bool Environment::handle_callback_environment(unsigned cmd, void *data) {
             return environment_handle_set_variables(static_cast<const struct retro_variable*>(data));
 
         case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE: {
-            LOGD("Called RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE. Is dirty?: %d", dirtyVariables);
-            *((bool*) data) = dirtyVariables;
+            std::lock_guard<std::mutex> lock(variablesLock);
+            bool updated = dirtyVariables;
             dirtyVariables = false;
+            LOGD("Called RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE. Is dirty?: %d", updated);
+            *((bool*) data) = updated;
             return true;
         }
 
@@ -433,21 +461,20 @@ float Environment::getGameGeometryAspectRatio() const {
     return gameGeometryAspectRatio;
 }
 
-const std::vector<struct Variable> Environment::getVariables() const {
-    std::vector<struct Variable> result;
+std::vector<struct Variable> Environment::getVariables() const {
+    std::lock_guard<std::mutex> lock(variablesLock);
 
-    std::for_each(
-        variables.begin(),
-        variables.end(),
-        [&](std::pair<std::string, struct Variable> item) {
-            result.push_back(item.second);
-        }
-    );
+    std::vector<struct Variable> result;
+    result.reserve(variables.size());
+
+    for (const auto &item : variables) {
+        result.push_back(item.second);
+    }
 
     std::sort(
         result.begin(),
         result.end(),
-        [](struct Variable v1, struct Variable v2) {
+        [](const struct Variable &v1, const struct Variable &v2) {
             return v1.key < v2.key;
         }
     );
@@ -455,7 +482,8 @@ const std::vector<struct Variable> Environment::getVariables() const {
     return result;
 }
 
-const std::vector<std::vector<struct Controller>> &Environment::getControllers() const {
+std::vector<std::vector<struct Controller>> Environment::getControllers() const {
+    std::lock_guard<std::mutex> lock(variablesLock);
     return controllers;
 }
 

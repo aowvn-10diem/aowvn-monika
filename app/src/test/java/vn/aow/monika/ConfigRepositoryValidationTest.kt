@@ -133,6 +133,34 @@ class ConfigRepositoryValidationTest {
         assertEquals(before, cache.readText())
     }
 
+    @Test fun artifactUrlsMustStayInsideOwnerPathPrefix() {
+        // V206: host đúng chưa đủ — URL mã/gói phải nằm trong tiền tố chủ sở hữu đã chốt.
+        val hash = "c".repeat(64)
+        fun config(url: String) = """{"configVersion":1,"modules":{"x":{"version":"1","url":"$url","sha256":"$hash"}}}"""
+        val allowed = listOf(
+            "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/v1/x.zip",
+            "https://raw.githubusercontent.com/aowvn-10diem/aowvn-monika/main/x.zip",
+            "https://codeload.github.com/aowvn-10diem/aowvn-monika/zip/refs/heads/main",
+            "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle@0.1.0/dist/ruffle.js",
+        )
+        for (url in allowed) {
+            assertEquals(url, url, ConfigValidation.parse(config(url), 0).modules.getValue("x").url)
+        }
+        val rejected = listOf(
+            "https://github.com/evil/repo/releases/download/v1/core.zip",
+            "https://github.com/aowvn-10diem-khac/repo/x.zip",
+            "https://raw.githubusercontent.com/evil/repo/main/x.zip",
+            "https://codeload.github.com/evil/repo/zip/refs/heads/main",
+            "https://cdn.jsdelivr.net/gh/abpvn/abpvn@master/filter/x.txt",
+            "https://objects.githubusercontent.com/x.zip",
+            "https://release-assets.githubusercontent.com/x.zip",
+        )
+        for (url in rejected) {
+            val error = runCatching { ConfigValidation.parse(config(url), 0) }.exceptionOrNull()
+            assertTrue(url, error is IllegalArgumentException)
+        }
+    }
+
     @Test fun enginePatternBoundariesAcceptDefaultAndMaximumLiteralValues() {
         fun config(patterns: String?) = """{"engines":[{"system":"rgss","markers":[]${patterns?.let { ",\"errorPatterns\":$it" }.orEmpty()}}]}"""
         assertTrue(ConfigValidation.parse(config(null), 0).engines.single().errorPatterns.isEmpty())
@@ -242,7 +270,7 @@ class ConfigRepositoryValidationTest {
         reply = """{"configVersion":$version,
             "cores":{"x":{"version":"1","url":"https://buildbot.libretro.com/nightly/android/latest/{abi}/x_libretro_android.so.zip"}},
             "modules":{"y":{"version":"1","url":"https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/e/y.zip","sha256":"${"b".repeat(64)}"},
-                       "z":{"version":"1","url":"https://release-assets.githubusercontent.com/github-production-release-asset/1/z.zip","sha256":"${"c".repeat(64)}"}},
+                       "w":{"version":"1","url":"https://raw.githubusercontent.com/aowvn-10diem/aowvn-monika/main/w.zip","sha256":"${"c".repeat(64)}"}},
             "app":{"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0/x.apk"}}"""
         assertTrue(r.refresh(true).isSuccess)
         assertEquals(version, r.current.configVersion)

@@ -429,19 +429,25 @@ object Diagnostics {
     /**
      * Chạy một thao tác người dùng; lỗi (trừ hủy coroutine) được ghi thành báo cáo `kind=op-fail` rồi trả về trong [Result]
      * — thay cho `runCatching` nuốt lỗi im lặng. [target] là tên file game (không đường dẫn, không link tải).
-     * [expected] đánh dấu lỗi nằm trong luồng bình thường (vd. cần mật khẩu): vẫn trả về trong [Result] nhưng không lập báo cáo.
+     * [expected] đánh dấu lỗi nằm trong luồng bình thường (vd. cần mật khẩu, thiếu gói giải nén mà mất mạng):
+     * vẫn trả về trong [Result] nhưng không lập báo cáo — chỉ ghi một vệt để đọc log là biết.
      */
     fun <T> op(c: Context, name: String, target: String? = null, expected: (Throwable) -> Boolean = { false }, block: OpScope.() -> T): Result<T> {
         val scope = OpScope(c, name)
         return try { Result.success(scope.block()) } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-        catch (e: Throwable) { if (!expected(e)) opFail(c, name, scope.stepName, e, target); Result.failure(e) }
+        catch (e: Throwable) { if (expected(e)) expectedCrumb(c, name, scope.stepName, e) else opFail(c, name, scope.stepName, e, target); Result.failure(e) }
     }
 
     /** Bản `suspend` của [op]. */
     suspend fun <T> opSuspend(c: Context, name: String, target: String? = null, expected: (Throwable) -> Boolean = { false }, block: suspend OpScope.() -> T): Result<T> {
         val scope = OpScope(c, name)
         return try { Result.success(scope.block()) } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-        catch (e: Throwable) { if (!expected(e)) opFail(c, name, scope.stepName, e, target); Result.failure(e) }
+        catch (e: Throwable) { if (expected(e)) expectedCrumb(c, name, scope.stepName, e) else opFail(c, name, scope.stepName, e, target); Result.failure(e) }
+    }
+
+    /** Lỗi thuộc luồng bình thường: không lập báo cáo, chỉ để lại vệt (cùng nhóm [op-fail] như ca lỗi mạng/hủy). */
+    private fun expectedCrumb(c: Context, name: String, step: String, e: Throwable) {
+        Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: ${errorCode(e)} (mong đợi, không báo)")
     }
 
     /** Ghi một lỗi thao tác đã tự bắt (nơi không bọc được bằng [op]). Trả null nếu trùng trong cửa sổ chống spam. */
@@ -516,7 +522,7 @@ object Diagnostics {
     }
 
     /** Bước chỉ đọc qua mạng (không đụng tệp cục bộ): luồng đứt ở đây là chuyện mạng. */
-    private val NETWORK_STEPS = setOf("tai", "tai-ve", "tai-bai")
+    private val NETWORK_STEPS = setOf("tai", "tai-ve", "tai-bai", "tai-danh-sach", "tai-chi-muc", "tai-trang")
 
     /**
      * V166 (Luna 3, lần 2): phân loại theo **nguồn đọc tại chỗ ném lỗi**, không theo tên thao tác — vì có thao tác
