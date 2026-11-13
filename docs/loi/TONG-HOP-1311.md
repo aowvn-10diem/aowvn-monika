@@ -1,10 +1,12 @@
 # Tổng hợp tình trạng crash — chốt 13/11/2026
 
 Ngày lập: 13/11/2026 · nhánh `chan-doan/tong-hop-1311` · nền `origin/main` `f75b2e6d`
-Nguồn số: khối `<!-- aow-crash-v100:… -->` trong thân **74 issue** đang mở nhãn `crash-moi`.
+Nguồn số: khối `<!-- aow-crash-v100:… -->` trong thân **74 issue**. Nhãn `crash-moi` đang mở **75** issue —
+[#549](https://github.com/aowvn-10diem/aowvn-monika/issues/549) (issue theo dõi `lowmem`) **không** mang khối
+`aow-crash-v100`, nên **74 là số issue có dữ liệu**, không phải đếm thiếu.
 
-> **Số liệu 13/11, 74 issue / 1 285 lượt / 390 khoá máy.**
-> Đếm trực tiếp từ khối `aow-crash-v100` của 74 issue đang mở — không lấy lại số của bảng cũ.
+> **Số liệu 13/11, 74 issue có khối / 1 285 lượt / 390 khoá máy** (75 issue mang nhãn).
+> Đếm trực tiếp từ khối `aow-crash-v100` của 74 issue — không lấy lại số của bảng cũ.
 
 Tài liệu này **thay** `docs/loi/TON-0811.md` (PR **#542**, chốt 08/11, 99 issue, **14 291 lượt**). Số cũ
 không còn so được với hiện tại: số issue giảm 99 → 74, cách gom nhóm đổi (theo **lõi + loại** thay vì nhóm
@@ -31,7 +33,7 @@ Vì vậy tài liệu này **không** xếp hạng theo "mức nguy hiểm" và 
 
 ---
 
-## 2. Bảng theo lõi (74 issue / 1 285 lượt / 390 khoá máy)
+## 2. Bảng theo lõi (74 issue có khối / 1 285 lượt / 390 khoá máy)
 
 | Lõi | Issue | Lượt | Ghi chú |
 |---|---:|---:|---|
@@ -71,8 +73,23 @@ hai chữ ký lớn (`melondsds/anr` 421 và `unknown/resource` 236). Sáu lõi 
 | 9 | `unknown` / `anr` | 7 | 26 | **Bị chặn** — `anr` không có `session.core`; sửa nhãn ở bot (#632) **chưa gộp** | `docs/loi/unknown-anr-1313.md` (**chưa lên main**, PR #634 mở) |
 | 10 | `melondsds` / `core-error` | 1 | 21 | **Chỉ có tài liệu** — burst 21 lượt / 6 lần gửi trong cửa sổ 09/11, không tái diễn; chưa tách được mã `0/1/-1` | `docs/loi/loi-khac-1313.md` §3.2, §7.2 (#636 đã gộp) |
 
-Mười nhóm này là **1 184/1 285 lượt (92%)**. 101 lượt còn lại rải trên các nhóm nhỏ (mỗi nhóm ≤ 3 lượt) —
-không đủ mẫu, không mở việc riêng cho từng chữ ký.
+Mười nhóm này là **1 184/1 285 lượt (92%)**. 101 lượt còn lại nằm ở **22 nhóm đuôi**, và **không đều** —
+đừng đọc là "toàn nhóm ≤ 3 lượt":
+
+| Nhóm đuôi (11–14) | Issue | Lượt | Ghi chú |
+|---|---:|---:|---|
+| `citra` / `killed` | 1 | 18 | thuộc phạm vi #635 (**chưa** lên main) |
+| `melondsds` / `unknown` | 2 | 14 | `unknown` không có `reason` (API < 30) — `loi-khac-1313.md` §5 |
+| `citra` / `anr` | 3 | 13 | thuộc phạm vi #635 (**chưa** lên main) |
+| `kirikiroid2-yuri` / `native` | 1 | 13 | lõi đã ghim **và có** ký hiệu ⇒ giải mã được ngay |
+
+Bốn nhóm trên là **58/101 lượt**; rồi `ppsspp/unknown` 8, `desmume/anr` 7, `snes9x/anr` 5, `mgba/core-error` 4
+(cộng 24 lượt). **14 nhóm cuối chỉ 1–3 lượt (19 lượt)** — nhóm này mới thật sự không đủ mẫu, không mở việc
+riêng cho từng chữ ký.
+
+Hệ quả cho việc lọc theo tài liệu: hai nhóm `citra/anr` + `citra/killed` (31 lượt) **chưa** được tài liệu nào
+trên `main` phủ — chúng nằm trong `docs/loi/citra-con-lai-1313.md` (PR #635, đang mở). Đọc bảng §3 mà bỏ qua
+hai nhóm này sẽ thấy `citra` nhẹ hơn thực tế.
 
 Ghi chú về **cách đếm `citra`**: #627 (đã gộp) sửa `Components.kt` để dấu hiệu lõi libretro **thắng** dấu hiệu
 Azahar, nên crash của `citra_libretro` không còn bị gắn nhãn `engine:azahar`. Số trong bảng này là **sau** #627;
@@ -149,9 +166,12 @@ không cộng lượt.
 lõi — `unknown` đúng theo thiết kế hiện tại, **không** phải bot gán nhầm. Muốn có lõi phải làm **cả hai**:
 
 1. **Phiên cho J2ME** — PR **#638** (gắn phiên `Diagnostics` cho `:midlet`). Chưa gộp.
-2. **Đọc phiên chết cho `native`/`resource`/`initfail`** — thay đổi `Diagnostics.kt:856` +
-   `enrichDeathReport` (`docs/loi/unknown-native-1311.md` §4 mục 1–2), hiện nằm ở **nhánh local**, chờ
-   **#624** để không xung đột cùng tệp. Chưa gộp.
+2. **Đọc phiên chết cho `native`/`resource`/`initfail`** — thay đổi `Diagnostics.kt:867` (dòng
+   `val deathSession = if (kind == "anr" || kind == "lowmem") …`) + `enrichDeathReport` (`Diagnostics.kt:917-918`:
+   `if (r.kind != "lowmem" && r.kind != "anr") return r`) — xem `docs/loi/unknown-native-1311.md` §4 mục 1–2.
+   Hiện nằm ở **nhánh local**, chờ **#624** để không xung đột cùng tệp. Chưa gộp.
+   *(Tài liệu gốc `unknown-native-1311.md` §3.2 dẫn `:856`; trên `f75b2e6d` dòng 856 là nhánh
+   `ApplicationExitInfo.REASON_CRASH_NATIVE -> "native"`, còn dòng cần sửa là `:867`.)*
 
 Thiếu một trong hai thì #302 vẫn `unknown`: mảnh 2 một mình vẫn trả `null` vì `:midlet` không có tệp phiên;
 mảnh 1 một mình chỉ ghi được phiên cho tiến trình **đang sống**, không cứu được báo cáo chết do
