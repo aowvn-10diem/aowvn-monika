@@ -4,10 +4,14 @@ import android.app.Application
 import android.content.ComponentCallbacks2
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -24,8 +28,8 @@ import java.io.File
 
 /**
  * V202 PR4: khi app ra nền/thiếu RAM, bộ đệm tiến trình chính phải nhả được.
- * Kiểm phần đo được offline: cache bài viết có giới hạn + mất nội dung HTML,
- * bảng chặn nhả bảng băm, và AppGraph.trimMemory không ném lỗi khi bộ đệm rỗng.
+ * Kiểm phần đo được offline: cache bài viết có giới hạn + mất nội dung HTML (và đường đọc sau trim
+ * phải tải lại), bảng chặn nhả bảng băm, và AppGraph.trimMemory không ném lỗi khi bộ đệm rỗng.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = TestApp::class, sdk = [34])
@@ -52,10 +56,39 @@ class AppTrimMemoryTest {
 
         repo.trimMemory()
 
+        // Danh sách vẫn còn tiêu đề/ảnh để mở lại tức thì, nhưng không còn HTML.
         assertTrue(repo.cachedList("hom")!!.all { it.contentHtml.isEmpty() })
-        // LruCache(60): giữ bài mới, bài đầu bị đẩy ra.
-        assertNotNull(repo.cached("p70"))
+        assertEquals("Bài 70", repo.cachedList("hom")!!.first { it.id == "p70" }.title)
+        // V202 PR4: cache bài bị xoá hẳn (không giữ bản rỗng) → không còn cache hit rỗng cho fetchPost.
+        assertNull(repo.cached("p70"))
         assertNull(repo.cached("p1"))
+    }
+
+    /** V202 PR4: sau trim, đường đọc duy nhất của màn bài (PostScreen → fetchPost) phải tải lại, không trả bản rỗng. */
+    @Test fun fetchPostReloadsAfterTrim() = runBlocking {
+        var attempts = 0
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            attempts++
+            val body = """
+                {"entry":{
+                  "id":{"${'$'}t":"tag:blogger.com,1999:blog-1.post-p1"},
+                  "title":{"${'$'}t":"Bài 1"},
+                  "published":{"${'$'}t":"2026-11-01"},
+                  "link":[{"rel":"alternate","href":"https://aow.vn/p1"}],
+                  "content":{"${'$'}t":"<p>nội dung tải lại</p>"}
+                }}
+            """.trimIndent()
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1)
+                .code(200).message("OK").body(body.toResponseBody("application/json".toMediaType())).build()
+        }.build()
+        val ctx = ApplicationProvider.getApplicationContext<Context>()
+        val repo = FeedRepository(client, ConfigRepository(ctx, client), tmp.newFolder("feed-reload"))
+
+        assertEquals("<p>nội dung tải lại</p>", repo.fetchPost("p1").contentHtml)
+        repo.trimMemory()
+        assertNull(repo.cached("p1"))
+        assertEquals("<p>nội dung tải lại</p>", repo.fetchPost("p1").contentHtml)
+        assertEquals(2, attempts)
     }
 
     @Test fun adBlockTrimReleasesTables() {

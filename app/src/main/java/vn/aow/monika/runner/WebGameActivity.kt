@@ -146,14 +146,14 @@ class WebGameActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         webView?.onResume()
-        webView?.resumeTimers()
         clock?.resume()
     }
 
     override fun onPause() {
-        // V202: dừng WebView khi ra nền — không để renderer giữ CPU/RAM sau lưng game khác.
+        // V202: tạm dừng riêng WebView của game khi ra nền — không dùng `pauseTimers()` toàn cục:
+        // API đó dừng timer JS của MỌI WebView trong tiến trình (kể cả trình duyệt mở sau đó và
+        // khung đọc bài), nên quay lại trình duyệt sẽ thấy trang đứng im.
         webView?.onPause()
-        webView?.pauseTimers()
         clock?.pause()
         super.onPause()
     }

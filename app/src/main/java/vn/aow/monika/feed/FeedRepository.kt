@@ -112,7 +112,9 @@ class FeedRepository(
     }
 
     suspend fun fetchPost(id: String): Post {
-        cache.get(id)?.let { return it }
+        // V202 PR4: chỉ dùng cache khi còn nội dung. `trimMemory()` bỏ HTML của bài đã đọc, nên bản rỗng
+        // không được thành cache hit — nếu không, mở lại bài sau khi ra nền/mở game sẽ thấy thân bài trắng.
+        cache.get(id)?.takeIf { it.contentHtml.isNotEmpty() }?.let { return it }
         requireEnabled()
         val url = configRepo.current.feed.url.trimEnd('/') + "/$id?alt=json"
         // Bài bị gỡ là chuyện thường (danh sách lưu đĩa còn id cũ): 404 và thiếu `entry` chỉ ghi vệt, không báo.
@@ -124,8 +126,8 @@ class FeedRepository(
 
     /**
      * V202: nhả bộ đệm khi app ra nền hoặc hệ thống báo thiếu RAM. Giữ tối đa [CACHE_LISTS]
-     * danh sách (đủ để mở lại tức thì), bỏ nội dung HTML của mọi bài đã đọc — mở lại bài sẽ
-     * tải lại hoặc lấy lại từ danh sách. Không đụng dữ liệu trên đĩa.
+     * danh sách (đủ để mở lại tức thì) nhưng bỏ HTML của chúng; xoá hẳn cache bài đã đọc.
+     * Bài mở lại sẽ tải từ mạng ([fetchPost] chỉ dùng cache khi còn nội dung). Không đụng dữ liệu trên đĩa.
      */
     fun trimMemory() {
         pagesCache = null
@@ -134,10 +136,9 @@ class FeedRepository(
         for (key in lists.keys.toList()) {
             lists[key] = lists[key]?.map { it.copy(contentHtml = "") } ?: continue
         }
-        for (id in cache.snapshot().keys.toList()) {
-            val post = cache.get(id) ?: continue
-            if (post.contentHtml.isNotEmpty()) cache.put(id, post.copy(contentHtml = ""))
-        }
+        // V202 PR4: bản rỗng gần như không nhả được gì (tiêu đề/ảnh/nhãn vẫn nằm đó) mà lại thành
+        // cache hit rỗng ở [fetchPost] — xoá hẳn để mọi đường đọc thấy "chưa có" và tải lại.
+        cache.evictAll()
     }
 
     /**
