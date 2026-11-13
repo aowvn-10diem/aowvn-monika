@@ -205,7 +205,10 @@ class ConfigTest {
         assertEquals("disabled", ppsspp.options["ppsspp_vertex_cache"])
         assertEquals("480x272", ppsspp.perf.getValue("lite")["ppsspp_internal_resolution"])
         assertEquals("960x544", ppsspp.perf.getValue("full")["ppsspp_internal_resolution"])
-        assertEquals("256x192", cfg.cores.getValue("desmume").perf.getValue("full")["desmume_internal_resolution"])
+        val desmume = cfg.cores.getValue("desmume")
+        assertEquals("256x192", desmume.options["desmume_internal_resolution"])
+        assertEquals("256x192", desmume.perf.getValue("lite")["desmume_internal_resolution"])
+        assertEquals("256x192", desmume.perf.getValue("full")["desmume_internal_resolution"])
     }
 
     @Test

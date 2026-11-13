@@ -822,7 +822,7 @@
       "version": "1",
       "url": "https://buildbot.libretro.com/nightly/android/latest/{abi}/desmume_libretro_android.so.zip",
       "options": {
-        "desmume_internal_resolution": "512x384",
+        "desmume_internal_resolution": "256x192",
         "desmume_num_cores": "2"
       },
       "perf": {
