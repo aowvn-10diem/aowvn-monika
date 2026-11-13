@@ -8,6 +8,7 @@ import org.citra.citra_emu.applets.MiiSelector
 import org.citra.citra_emu.applets.SoftwareKeyboard
 import org.citra.citra_emu.utils.DiskShaderCacheProgress
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /** Hộp thoại do engine yêu cầu; giao diện Monika ([AzaharActivity]) vẽ, kết quả trả về luồng giả lập đang chờ. */
@@ -33,14 +34,45 @@ object AzaharBridge {
     @Volatile var onError: (String) -> Unit = {}
     private val main = android.os.Handler(android.os.Looper.getMainLooper())
 
+    /**
+     * Hạn chờ tối đa cho một hộp thoại engine. Người chơi thường trả lời trong vài giây; đây chỉ là lưới an toàn
+     * để luồng giả lập không bị treo vĩnh viễn khi không còn ai vẽ/trả lời hộp thoại.
+     * `internal` để test hạ xuống vài chục mili giây.
+     */
+    @Volatile internal var dialogTimeoutMs: Long = 60_000
+
     fun isPortrait() = portrait
     fun userDirectory() = userDir
     fun exit(code: Int) { onExit(code) }
 
     private fun <T> ask(build: (CompletableFuture<T>) -> AzDialog, fallback: T): T {
         val f = CompletableFuture<T>()
-        main.post { dialog = build(f) }
-        return runCatching { f.get() }.getOrDefault(fallback).also { main.post { dialog = null } }
+        // Hộp thoại của riêng lần gọi này: lần gọi khác có thể đã thay `dialog` trong lúc ta chờ.
+        val mine = AtomicReference<AzDialog?>(null)
+        main.post {
+            val d = build(f)
+            mine.set(d)
+            // Đã hết hạn chờ trước khi kịp vẽ → không hiện hộp thoại mồ côi (không còn ai đợi câu trả lời).
+            if (!f.isDone) dialog = d
+        }
+        val value = try {
+            // Native chờ hàm này ở luồng giả lập. Không có hạn chờ thì lúc màn hình không còn ai vẽ hộp thoại
+            // (activity đang đóng, người chơi đã rời màn chơi) luồng đó treo vĩnh viễn → game đứng, phải tắt app.
+            f.get(dialogTimeoutMs, TimeUnit.MILLISECONDS)
+        }
+        // diag: bỏ qua ngắt luồng khi rời màn chơi, đã có câu trả lời dự phòng
+        catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            fallback
+        }
+        // diag: bỏ qua hết hạn chờ hộp thoại, đã có câu trả lời dự phòng
+        catch (e: Exception) {
+            fallback
+        } finally {
+            // Chỉ dọn hộp thoại của mình; hộp thoại của lần gọi khác đang chờ thì để nguyên.
+            main.post { if (dialog != null && dialog === mine.get()) dialog = null }
+        }
+        return value
     }
 
     fun alert(title: String, message: String, yesNo: Boolean): Boolean =
