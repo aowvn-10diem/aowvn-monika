@@ -24,15 +24,15 @@ Lưu ý khi đọc số: `Số lần quan sát` là **cộng dồn lịch sử**
 
 ## 2. Vì sao nhóm này không sửa được bằng cách nhả bộ đệm tiến trình chính
 
-- `RetroActivity` (mọi lõi libretro, gồm `melondsds`) chạy ở **tiến trình riêng `:game`** (`app/src/github/AndroidManifest.xml:81`, `app/src/play/AndroidManifest.xml:55`) — tách khỏi tiến trình chính.
+- `RetroActivity` (mọi lõi libretro, gồm `melondsds`) chạy ở **tiến trình riêng `:game`** (`app/src/github/AndroidManifest.xml:82`, `app/src/play/AndroidManifest.xml:55`) — tách khỏi tiến trình chính.
 - Vì vậy việc #574 giải phóng `Coil` memory cache / feed / AdBlock ở tiến trình chính **không thể** làm giảm `melondsds/killed` (khác tiến trình, khác vòng đời).
 - Trong `:game` khi người chơi chuyển sang app khác, phần RAM lớn còn giữ là chính lõi giả lập: ROM + JIT + texture/FBO, cộng EGL context (`preserveEGLContextOnPause = true`, `libretrodroid/.../GLRetroView.kt:111`). Đây là bản chất của trình giả lập: nhả hết thì mất trạng thái đang chơi.
 - Muốn nhả thật khi vào nền phải: chụp state (có hạn 2 s, có thể rỗng) → `retro_unload_game`/`retro_deinit` → nạp lại + `unserialize` khi quay lại. Đổi lại: resume chậm, rủi ro mất tiến trình chơi nếu chụp state hụt. **Không làm** trong lượt này (không có bằng chứng người chơi bị tắt *khi đang chơi*).
 
 ## 3. Bằng chứng chất lượng dữ liệu
 
-- `docs/loi/TON-0811.md` ghi: trong một cửa sổ V174, **75/78 lượt `melondsds/killed` mang chứng thư `1e08a903aef9`**, khác chứng thư phát hành `c46902e97029` ⇒ phần lớn là bản mod/đóng gói lại, không phải bản chính thức. Đánh giá này ghi `[CHƯA KIỂM]` trong tài liệu gốc.
-- `scripts/crash-insight.py` chỉ lọc theo chứng thư khi truyền `--official-only` (`:296-303,311`) — mặc định vẫn tính cả bản lạ.
+- `docs/loi/TON-0811.md` (PR #542, chưa gộp) ghi: trong một cửa sổ V174, **75/78 lượt `melondsds/killed` mang chứng thư `1e08a903aef9`**, khác chứng thư phát hành `c46902e97029` ⇒ phần lớn là bản mod/đóng gói lại, không phải bản chính thức. Đánh giá này ghi `[CHƯA KIỂM]` trong tài liệu gốc.
+- `scripts/crash-insight.py` **mặc định loại** báo cáo mang chứng thư khác bản phát hành (`partition_by_cert`, `:310,334`); muốn gộp cả bản mod/đóng gói lại thì truyền `--all-certs` (`:342`).
 
 ## 4. Lỗ hổng đã sửa: không phân biệt "bị tắt khi đang chơi" và "bị tắt khi ở nền"
 
