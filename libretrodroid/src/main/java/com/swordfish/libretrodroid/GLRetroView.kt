@@ -222,6 +222,15 @@ class GLRetroView(
         }
     }
 
+    /**
+     * V202 PR3: chụp SRAM nhưng **không chặn UI vô hạn** khi GLThread đang kẹt trong lõi
+     * (vd melondsds giữ coreLock). Quá hạn trả null để nơi gọi bỏ qua lượt này, không ANR.
+     */
+    fun serializeSRAMOrNull(timeoutMs: Long = 400L, useEmulationThread: Boolean = true): ByteArray? =
+        runOnEmulationThreadOrNull(useEmulationThread, timeoutMs) {
+            LibretroDroid.serializeSRAM()
+        }
+
     fun unserializeSRAM(data: ByteArray, useEmulationThread: Boolean = true): Boolean {
         return runOnEmulationThread(useEmulationThread, { false }) {
             LibretroDroid.unserializeSRAM(data)
@@ -461,6 +470,17 @@ class GLRetroView(
 
     private fun runOnEmulationThread(useEmulationThread: Boolean, block: () -> Unit) {
         runOnEmulationThread(useEmulationThread, {}, block)
+    }
+
+    /** V202 PR3: như [runOnEmulationThread] nhưng có hạn chờ; hết hạn trả null thay vì treo UI. */
+    private fun <T> runOnEmulationThreadOrNull(useEmulationThread: Boolean, timeoutMs: Long, block: () -> T): T? {
+        if (!useEmulationThread || EmulationThread.isEmulationThread(Thread.currentThread().name)) {
+            return block()
+        }
+        // Dùng chung cơ chế chờ của #606; hết hạn trả null để nơi gọi biết là chưa chụp được.
+        val task = EmulationThreadTask<T>()
+        queueEvent { task.complete(block()) }
+        return if (task.await(timeoutMs)) task.result() else null
     }
 
     private fun buildShader(config: ShaderConfig): GLRetroShader {
