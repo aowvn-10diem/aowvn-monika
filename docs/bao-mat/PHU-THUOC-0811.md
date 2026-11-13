@@ -177,6 +177,14 @@ Nguyên tắc: mỗi nhóm thư viện một PR; nâng phiên bản lớn (Kotli
 - PR Dependabot không đổi: #215 (4 đỏ: `build`, `links`, `repeated-tests`, `gate` huỷ), #216 (5 đỏ), #217 (4 đỏ), #290 (1 đỏ `build`); **0 review** cả bốn, head không đổi từ 09/11 (#215) và 12/10 (#216/#217) ⇒ **không mở PR ghim mới**.
 - Vẫn chờ PM chốt hướng cho phần còn lại: (a) nhánh `phuthuoc/agp9`, hay (b) đóng kèm lý do "chỉ công cụ build, không đóng gói" khi có token `Code security: write`.
 
+## 12. Lượt 12/11 — một tổ hợp mới ở classpath test của `:reader`, đã có PR ghim
+
+- API Dependabot vẫn **403**; tự kiểm bằng `scripts/kiem-phu-thuoc.py` trên SBOM `origin/main@8310cc17`: **53 cảnh báo / 13 tổ hợp / 51 mã** — 3 critical, 23 high, 25 moderate, 2 low. So với lượt 11/11 (47/11/46) tăng đúng **một tổ hợp**: `org.bouncycastle:bcprov-jdk18on` **1.81** (critical `GHSA-574f-3g2m-x479`, `GHSA-9pwp-9qqc-pr26`; high `GHSA-p93r-85wp-75v3`, `GHSA-qp49-qgx5-5m26`; moderate `GHSA-c3fc-8qff-9hwx`).
+- Nguồn: `:reader` (mô-đun mới của V142, gộp #457) khai `testImplementation(libs.robolectric)`; Robolectric 4.16.1 kéo `bcprov-jdk18on` 1.81 vào `debugUnitTestRuntimeClasspath`, còn `:reader` **không có** lệnh ghim BouncyCastle như `:app`. Đây là classpath **test**, không vào APK: `:app` ghim BouncyCastle 1.85 cho mọi cấu hình của nó và là nơi duy nhất đóng APK ⇒ vẫn **0 cảnh báo trong APK**.
+- PR `phuthuoc/bc-test-1211`: thêm khối `force` BouncyCastle (số lấy từ `libs.versions.bouncycastle`) vào `reader/build.gradle.kts`, cùng kiểu với `:app`. Trước: `bcprov-jdk18on:1.81`; sau: `1.81 -> 1.85` trên `debugUnitTestRuntimeClasspath`. Hết 5 cảnh báo của tổ hợp này ⇒ dự kiến **48 cảnh báo / 12 tổ hợp / 46 mã** sau khi gộp.
+- Bốn PR Dependabot vẫn **0 review**, head không đổi: #215 (3 đỏ `build`/`links`/`repeated-tests`), #216 (5 đỏ), #217 (5 đỏ), #290 (1 đỏ `build`). Vẫn chờ PM chốt (a) nhánh `phuthuoc/agp9` hay (b) đóng kèm lý do "chỉ công cụ build".
+- Dòng `test-kiem-phu-thuoc.py` vào `.github/workflows/script-tests.yml` **vẫn chưa áp** trên `main` (token phiên thiếu scope `workflow`) — mục 11 còn nguyên hiệu lực.
+
 ### Việc còn lại cho sếp ở lượt này
 
 Token phiên Trưởng nhóm Phụ thuộc thiếu scope `workflow`, nên 1 dòng dưới đây không đẩy được. Áp vào `.github/workflows/script-tests.yml` rồi gộp #605:
