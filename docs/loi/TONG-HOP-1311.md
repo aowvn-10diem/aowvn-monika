@@ -14,6 +14,10 @@ chữ A–H), và một phần lượt cũ thuộc các issue đã đóng.
 
 **Chỉ tài liệu.** Không sửa mã, không đụng `config/`, không đóng issue nào.
 
+**Quy công:** cột trạng thái phân biệt **sửa mã** và **chỉ tài liệu**, kiểm bằng `git show <merge-commit> --stat`
+ngày 14/11 — **tài liệu ≠ sửa**. Một PR chỉ thêm `.md` được ghi "0 dòng mã" dù tài liệu đó mô tả mã đã có sẵn
+từ PR khác; bảng quy công đầy đủ ở §4.
+
 ---
 
 ## 1. Cách đọc số (đọc trước khi trích dẫn bất kỳ con số nào)
@@ -62,14 +66,14 @@ hai chữ ký lớn (`melondsds/anr` 421 và `unknown/resource` 236). Sáu lõi 
 
 | # | Nhóm | Issue | Lượt | Trạng thái | Căn cứ |
 |---:|---|---:|---:|---|---|
-| 1 | `melondsds` / `anr` | 9 | 421 | **Chỉ có tài liệu** — mã đã bọc hạn mọi lời gọi JNI từ UI (#606, #619, đã gộp); **chưa đo** được chặng chờ GLThread | `docs/loi/melondsds-anr-1313.md` (#633 đã gộp) |
-| 2 | `unknown` / `resource` | 1 | 236 | **Bị chặn** — #302 là tiến trình `:midlet` (game Java) **chưa từng có phiên**, nên không có lõi để ghi | `docs/loi/unknown-native-1311.md` §3.2(d), §4.4 (#622 đã gộp) |
-| 3 | `ppsspp` / `native` | 4 | 206 | **Bị chặn ở dữ liệu** — lõi đã ghim + **có** gói ký hiệu, thiếu `CRASH_ADMIN_TOKEN` để giải mã khung | `docs/loi/ppsspp-native-1311.md` §2(d), §3 (#620 đã gộp) |
-| 4 | `desmume` / `native` | 5 | 97 | **Chỉ có tài liệu** — gom 5 chữ ký, ứng viên theo `tệp:dòng` | `docs/ds/chan-doan-desmume-native.md` (#616 đã gộp; tệp nằm ngoài `docs/loi/`) |
-| 5 | `citra` / `core-error` | 2 | 57 | **Đã sửa một phần** — #637 (đã gộp) chặn `.cia` vào lõi libretro; phần còn lại chỉ có tài liệu | `docs/loi/citra-con-lai-1313.md` (**chưa lên main**, PR #635 mở) + #637 |
+| 1 | `melondsds` / `anr` | 9 | 421 | **Đã sửa mã (#606/#619) nhưng chưa chứng minh hết** — bọc hạn mọi lời gọi JNI từ UI (`GLRetroView.kt:59-67`, `:274-287`, `EmulationCall.kt`); **chưa đo** chặng chờ GLThread. #633 là **tài liệu (0 dòng mã)** | `docs/loi/melondsds-anr-1313.md` (#633 đã gộp) |
+| 2 | `unknown` / `resource` | 1 | 236 | **Bị chặn** — #302 là tiến trình `:midlet` (game Java) **chưa từng có phiên**, nên không có lõi để ghi | `docs/loi/unknown-native-1311.md` §3.2(d), §4.4 (**#625** đã gộp, 0 dòng mã) |
+| 3 | `ppsspp` / `native` | 4 | 206 | **Bị chặn ở dữ liệu** — lõi đã ghim + **có** gói ký hiệu, thiếu `CRASH_ADMIN_TOKEN` để giải mã khung; **không có** bản sửa mã cho `native`: #620 **chỉ là tài liệu (0 dòng mã)**. Mã khoá luồng mà tài liệu #620 mô tả là của **#606/#619** (`GLRetroView.kt:59-67`, `:274-287`; `environment.cpp` `variablesLock`; `libretrodroid.cpp` `coreLock`) và nhắm ANR, **không** nhắm SIGSEGV trong `.so` của lõi | `docs/loi/ppsspp-native-1311.md` §2(d), §3 (#620 đã gộp) |
+| 4 | `desmume` / `native` | 5 | 97 | **Chỉ có tài liệu** — gom 5 chữ ký, ứng viên theo `tệp:dòng` (#616: **0 dòng mã**) | `docs/ds/chan-doan-desmume-native.md` (#616 đã gộp; tệp nằm ngoài `docs/loi/`) |
+| 5 | `citra` / `core-error` | 2 | 57 | **Đã sửa một phần (mã)** — #637 (đã gộp) chặn `.cia` vào lõi libretro; phần còn lại chỉ có tài liệu | `docs/loi/citra-con-lai-1313.md` (**chưa lên main**, PR #635 mở) + #637 |
 | 6 | `pcsx_rearmed` / `core-error` | 2 | 55 | **Bị chặn** — thân issue **không mang mã lỗi** (`0/1/-1`), cần `reason`/`crumbs`; V198 (tự dựng lõi + ký hiệu) chưa triển khai | `docs/loi/loi-khac-1313.md` §3, §7.1 (#636 đã gộp) |
 | 7 | `unknown` / `op-fail` | 13 | 33 | **Chỉ có tài liệu + một phần đã sửa** — #618 (đã gộp) chuyển lỗi chọn nhầm ROM/bản vá thành vệt; 14 issue **không có** dòng `Thành phần` nên chưa quy được op | `docs/loi/op-fail-1311.md`, `docs/loi/op-fail-con-lai-1311.md` (#618, #626 đã gộp) |
-| 8 | `citra` / `native` | 2 | 32 | **Bị chặn** — lõi citra trỏ buildbot `nightly/latest`, `version = "1"`, **không** `sha256`, **không** symbols ⇒ không retrace, không tái hiện | `docs/loi/citra-native-1311.md` §3(1), §4 (#622 đã gộp) |
+| 8 | `citra` / `native` | 2 | 32 | **Bị chặn** — lõi citra trỏ buildbot `nightly/latest`, `version = "1"`, **không** `sha256`, **không** symbols ⇒ không retrace, không tái hiện (#622: **0 dòng mã**) | `docs/loi/citra-native-1311.md` §3(1), §4 (#622 đã gộp) |
 | 9 | `unknown` / `anr` | 7 | 26 | **Bị chặn** — `anr` không có `session.core`; sửa nhãn ở bot (#632) **chưa gộp** | `docs/loi/unknown-anr-1313.md` (**chưa lên main**, PR #634 mở) |
 | 10 | `melondsds` / `core-error` | 1 | 21 | **Chỉ có tài liệu** — burst 21 lượt / 6 lần gửi trong cửa sổ 09/11, không tái diễn; chưa tách được mã `0/1/-1` | `docs/loi/loi-khac-1313.md` §3.2, §7.2 (#636 đã gộp) |
 
@@ -97,25 +101,58 @@ báo cáo do bản app **trước** #627 gửi lên vẫn mang nhãn cũ, nên k
 
 ---
 
-## 4. Đối chiếu việc đã gộp và việc còn mở
+## 4. Quy công: **sửa mã** hay **chỉ tài liệu**
 
-### 4.1 Đã gộp
+Kiểm ngày **14/11/2026** bằng `git show <merge-commit> --stat` cho từng PR. "Dòng mã" = dòng thêm/xoá trong tệp
+mã (`.kt`, `.java`, `.cpp`, `.h`, `.py`), **không** tính `.md`.
 
-| PR | Nội dung | Ảnh hưởng tới bảng trên |
+### 4.1 Bảng quy công — đã gộp
+
+| PR | Merge | Dòng mã đổi (`--stat`) | Tài liệu | Loại |
+|---|---|---|---:|---|
+| **#606** | `833a4c0d` | +342/−63 · 10 tệp (`libretrodroid.cpp` 79, `EmulationThreadTask.kt` +77, `environment.cpp` 58, `GLRetroView.kt` 57, `RetroActivity.kt` 6) | — | **sửa mã** |
+| **#619** | `76492b6a` | +168/−17 (`EmulationCall.kt` +27, `GLRetroView.kt` 38, test +46) | `melondsds-anr-1311.md` +74 | **sửa mã** |
+| **#627** | `68405281` | +77/−3 (`Components.kt` 30, `ComponentsTest.kt` +50) | — | **sửa mã** |
+| **#637** | `bef0afed` | +91/−4 (`GameLauncher.kt` ×2, `CiaRouteTest.kt` +61) | — | **sửa mã** |
+| **#618** | `0e9ef5bd` | +120/−13 (`Diagnostics.kt` +21, `PatchFlow.kt` +17, `DiagnosticsOpTest` +37) | `op-fail-1311.md` +58 | **sửa mã** |
+| **#611** | `34725117` | +569/−29 · 12 tệp (engine Azahar) | — | **sửa mã**, ngoài 12 lõi |
+| **#617** | `fdb757c6` | +131/−2 (`AzaharBridge.kt` +39, `AzaharDialogTest` +94) | — | **sửa mã**, ngoài 12 lõi |
+| **#574** | `7282edd0` | +225/−6 · 11 tệp (`AppGraph`, `MonikaApp`, `FeedRepository`, `WebGameActivity`…) | — | **sửa mã**, tiến trình chính |
+| **#621** | `2f294d00` | +20 (`scripts/crash-issue-bot.py` +3, test +17) | `lowmem-1311.md` +64 | **sửa mã (script bot)** |
+| **#616** | `2a1a8892` | **0** | `docs/ds/chan-doan-desmume-native.md` +102 | **chỉ tài liệu** |
+| **#620** | `1d65b95e` | **0** | `docs/loi/ppsspp-native-1311.md` +71 | **chỉ tài liệu** |
+| **#622** | `f266e090` | **0** | `docs/loi/citra-native-1311.md` +69 | **chỉ tài liệu** |
+| **#625** | `9a079ce5` | **0** | `docs/loi/unknown-native-1311.md` +114 | **chỉ tài liệu** |
+| **#626** | `eca848fb` | **0** | `docs/loi/op-fail-con-lai-1311.md` +110 | **chỉ tài liệu** |
+| **#633** | `f75b2e6d` | **0** | `docs/loi/melondsds-anr-1313.md` +194 | **chỉ tài liệu** |
+| **#636** | `fa88ddd0` | **0** | `docs/loi/loi-khac-1313.md` +317 | **chỉ tài liệu** |
+
+Đọc bảng này cho đúng:
+
+- **#620 không sửa một dòng mã nào.** Những gì tài liệu #620 mô tả — `frameSpeed`/`shader`/`updateVariables` xếp
+  vào GLThread, `getVariables` hết hạn 2 000 ms, `coreLock`, `variablesLock` — đã có trên `main` **trước** #620,
+  do **#606** (`833a4c0d`, 11/11) và **#619** (`76492b6a`, 13/11). Quy công các thay đổi đó cho #620 là sai.
+- **#616** chỉ thêm `.md` (102 dòng, 0 mã) — chẩn đoán `desmume/native`, không có bản sửa.
+- **#621** không phải "chỉ tài liệu": nó đổi **script bot** (`crash-issue-bot.py` +3, test +17), **không** đụng
+  mã app. Đừng ghi #621 là "đã sửa lowmem".
+- **#625** mới là PR thêm `unknown-native-1311.md` (không phải #622 — #622 chỉ thêm `citra-native-1311.md`).
+
+### 4.2 Ánh xạ "sửa mã" vào nhóm
+
+| Nhóm | Mã đã đổi ở đâu (`tệp:dòng` trên `f75b2e6d`) | PR |
 |---|---|---|
-| **#627** | `Components.kt`: nhãn `engine:libretro:citra` không bị `engine:azahar` ăn nhầm | Đổi **cách đếm** `citra`; số cũ trước mốc bị lẫn |
-| **#637** | Chặn `.cia` ở lõi libretro 3DS (`GameLauncher.ciaBlockedReason`) | Nhắm nhóm 5 (`citra/core-error`); **chưa** có số sau bản phát hành |
-| **#616** | Chẩn đoán `desmume/native` | Nhóm 4 |
-| **#620** | Chẩn đoán `ppsspp/native` | Nhóm 3 |
-| **#621** | Chẩn đoán `lowmem` + ghi rõ số trên issue đóng là cộng dồn | §1 (cách đọc số) |
-| **#618**, **#626** | Chẩn đoán `op-fail` + `expected` cho `PatchFlow` | Nhóm 7 |
-| **#622** | Chẩn đoán `citra/native`, `unknown/native` | Nhóm 8, 2 |
-| **#633** | Chẩn đoán `melondsds/anr` (9 chữ ký còn lại) | Nhóm 1 |
-| **#636** | Chẩn đoán "lõi khác" 8 lõi / 19 issue | Nhóm 6, 10 và các lõi nhỏ |
-| **#574** | Nhả bộ đệm tiến trình chính khi ra nền / thiếu RAM | **Không** tính vào nhóm 1: chạy ở tiến trình chính, còn ANR `melondsds` mang thành phần `engine:libretro:melondsds` = tiến trình `:game` (`docs/loi/melondsds-anr-1313.md` §3) |
-| **#606**, **#619** | Bọc hạn mọi lời gọi JNI phát từ UI Thread (`EmulationCall`) | Đã gộp vào main; là mốc để đo lại nhóm 1 |
+| 1 `melondsds/anr` + lớp ANR mọi lõi `:libretrodroid` | `GLRetroView.kt:59-67` (`frameSpeed`/`shader` → `EmulationCall.post`), `:274-279` (`getVariables` → `runBounded`, hết hạn 2 000 ms), `:280-285` (`updateVariables` → `post`), `:471-487` (`runOnEmulationThread` → `runBounded`); `EmulationCall.kt` (+27); `environment.cpp` (`variablesLock`); `libretrodroid.cpp` (`coreLock`) | **#606 + #619** |
+| 5 `citra/core-error` (một phần) | `GameLauncher.ciaBlockedReason` chặn `.cia` vào lõi libretro (github + play) | **#637** |
+| 7 `unknown/op-fail` (một phần) | `Diagnostics.opFail(expected = …)` + `PatchFlow` 4 chỗ chọn nhầm ROM/bản vá → chỉ ghi vệt | **#618** |
+| — (cách đếm) | `Components.kt`: dấu hiệu libretro thắng azahar ⇒ nhãn `engine:libretro:citra` | **#627** |
+| — (§1) | `crash-issue-bot.py`: dòng ghi chú "cộng dồn lịch sử" cho issue đã đóng | **#621** |
 
-### 4.2 Còn mở (đừng coi là đã sửa)
+- Nhóm **không có dòng mã nào đã gộp**: 2, 3, 4, 6, 8, 9, 10 — chỉ có tài liệu (hoặc chưa có gì).
+- Ba PR mã **không** phục vụ bảng này, ghi để khỏi quy công nhầm: **#574** (giải phóng RAM ở **tiến trình
+  chính**; ANR nhóm 1 nằm ở `:game` — `docs/loi/melondsds-anr-1313.md` §3), **#611** và **#617** (engine
+  **Azahar**, không phải 12 lõi libretro trong bảng).
+
+### 4.3 Còn mở (đừng coi là đã sửa)
 
 | PR | Nội dung | Vì sao quan trọng cho bảng này |
 |---|---|---|
@@ -125,13 +162,15 @@ báo cáo do bản app **trước** #627 gửi lên vẫn mang nhãn cũ, nên k
 | **#623** | Chẩn đoán `ppsspp/anr` (nhóm trống) | **Chưa có trên main** |
 | **#624** | `stage = "paused"` + chẩn đoán `melondsds/killed` | **Chưa có trên main**; là mốc chờ của mảnh (b) ở §5 |
 | **#638** | Gắn phiên `Diagnostics` cho tiến trình `:midlet` | Mảnh còn lại của #302 (§5b) |
-| **#639** | Thông điệp chặn `.cia` đúng lối cài | Nối tiếp #637, chưa gộp |
+| **#639** | Thông điệp chặn `.cia` đúng lối cài | Nối tiếp #637, chưa gộp, **0 dòng mã** |
 
-### 4.3 Phân loại theo yêu cầu
+### 4.4 Tóm lại
 
-- **Đã sửa (mã, đã gộp):** #627 (nhãn), #637 (chặn `.cia` ở launcher), #618 (nhiễu `va-rom`), #606/#619 (bọc
-  hạn lời gọi JNI). Chưa nhóm nào có **số đo sau bản phát hành**.
-- **Chỉ có tài liệu:** nhóm 1, 4, 6, 10 và phần lớn nhóm 3, 7 (tài liệu đã gộp nhưng chưa có bản sửa).
+- **Đã sửa mã (đã gộp):** #606 + #619 (ANR), #637 (`.cia`), #618 (nhiễu `va-rom`), #627 (nhãn), #621 (script
+  bot). Chỉ **ba** nhóm trong bảng được hưởng: 1 (một phần), 5 (một phần) và 7 (một phần). Chưa nhóm nào có
+  **số đo sau bản phát hành**.
+- **Chỉ tài liệu:** #616 (nhóm 4), #620 (nhóm 3), #622 (nhóm 8), #625 (nhóm 2 và `unknown/native` 1 lượt),
+  #626 (nhóm 7), #633 (nhóm 1), #636 (nhóm 6, 10).
 - **Bị chặn:** nhóm 2 (thiếu phiên J2ME), 3 (thiếu token), 8 (thiếu ghim bản + ký hiệu), 9 (thiếu #632),
   một phần 5 và 6 (thiếu mã lỗi trong báo cáo).
 
