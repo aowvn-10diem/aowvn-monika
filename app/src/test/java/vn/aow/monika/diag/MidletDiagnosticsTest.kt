@@ -2,6 +2,7 @@ package vn.aow.monika.diag
 
 import android.app.Activity
 import android.app.Application
+import android.app.ApplicationExitInfo
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertFalse
@@ -15,13 +16,14 @@ import org.robolectric.annotation.Config
 import vn.aow.monika.ui.TestApp
 import java.io.File
 
-/** #302: game Java (`:midlet`) có phiên chẩn đoán, và thoát bình thường không bị báo là chết. */
+/** #302: game Java (`:midlet`) có phiên chẩn đoán, và chỉ dọn khi chứng minh được người dùng tự thoát. */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = TestApp::class, sdk = [34])
 class MidletDiagnosticsTest {
     private val app get() = ApplicationProvider.getApplicationContext<Application>()
     private val diag get() = File(app.filesDir, "diag")
     private val session get() = File(diag, "active-session.json")
+    private val deadPid = 2_000_000 // pid không phải tiến trình của bài test
 
     @Before fun clean() { diag.deleteRecursively() }
 
@@ -40,6 +42,15 @@ class MidletDiagnosticsTest {
         assertFalse(MidletDiagnostics.isMidletProcess("com.aow.monika"))
         assertFalse(MidletDiagnostics.isMidletProcess("com.aow.monika:game"))
         assertFalse(MidletDiagnostics.isMidletProcess(null))
+    }
+
+    @Test fun installOnlyInMidletProcessOnApi28Plus() {
+        assertTrue(MidletDiagnostics.shouldInstall(34, "com.aow.monika:midlet"))
+        assertFalse(MidletDiagnostics.shouldInstall(34, "com.aow.monika"))
+        assertFalse(MidletDiagnostics.shouldInstall(34, "com.aow.monika:game"))
+        // getProcessName() chưa có trước API 28 → không đăng ký, chạy như cũ.
+        assertFalse(MidletDiagnostics.shouldInstall(27, "com.aow.monika:midlet"))
+        assertFalse(MidletDiagnostics.shouldInstall(26, null))
     }
 
     @Test fun sessionCarriesMidletCoreAndGameNameThenEnds() {
@@ -61,29 +72,75 @@ class MidletDiagnosticsTest {
     }
 
     @Test fun installIsNoOpOutsideMidletProcessAndNeverThrows() {
-        // Robolectric không chạy tiến trình ":midlet" → không đăng ký callback, chỉ dọn phiên cũ.
+        // Robolectric không chạy tiến trình ":midlet" → không đăng ký callback (và không dọn phiên ở đây).
         MidletDiagnostics.install(app)
         MidletDiagnostics.install(app) // gọi lặp không ném, không nhân đôi callback
+        assertFalse(MidletDiagnostics.isRegistered())
         val name = runCatching { Application.getProcessName() }.getOrNull()
         assertFalse(MidletDiagnostics.isMidletProcess(name))
     }
 
-    @Test fun deadMidletSessionIsClearedButLiveOrForeignKeyIsKept() {
-        // pid 2_000_000 không phải tiến trình của bài test → phiên của lần chơi đã thoát.
-        writeSession(pid = 2_000_000, kind = "midlet")
-        MidletDiagnostics.install(app)
-        assertFalse("thoát bình thường không được để lại phiên", session.exists())
+    @Test fun shouldClearOnlyForProvenNormalExit() {
+        // API < 30: không có dữ liệu để phân biệt → giữ phiên.
+        assertFalse(MidletDiagnostics.shouldClear("midlet", false, ApplicationExitInfo.REASON_EXIT_SELF, 29))
+        // Đúng loại, pid đã chết, API 30+, lý do là người dùng tự thoát → được xoá.
+        assertTrue(MidletDiagnostics.shouldClear("midlet", false, ApplicationExitInfo.REASON_USER_REQUESTED, 34))
+        assertTrue(MidletDiagnostics.shouldClear("midlet", false, ApplicationExitInfo.REASON_EXIT_SELF, 30))
+        // Còn sống hoặc không phải phiên game Java → không đụng.
+        assertFalse(MidletDiagnostics.shouldClear("midlet", true, ApplicationExitInfo.REASON_EXIT_SELF, 34))
+        assertFalse(MidletDiagnostics.shouldClear("libretro", false, ApplicationExitInfo.REASON_EXIT_SELF, 34))
+        // Mọi lý do chết thật / không rõ → giữ để báo (thà báo giả còn hơn che crash thật).
+        for (reason in listOf(
+            ApplicationExitInfo.REASON_ANR,
+            ApplicationExitInfo.REASON_CRASH,
+            ApplicationExitInfo.REASON_CRASH_NATIVE,
+            ApplicationExitInfo.REASON_LOW_MEMORY,
+            ApplicationExitInfo.REASON_OTHER,
+            ApplicationExitInfo.REASON_SIGNALED,
+            ApplicationExitInfo.REASON_UNKNOWN,
+            null,
+        )) assertFalse("reason=$reason", MidletDiagnostics.shouldClear("midlet", false, reason, 34))
+    }
 
-        writeSession(pid = 2_000_000, kind = "libretro")
-        MidletDiagnostics.install(app)
-        assertTrue("phiên của lõi khác do Diagnostics.collect xử lý", session.exists())
-
+    @Test fun cleanupKeepsLiveSession() {
         writeSession(pid = android.os.Process.myPid(), kind = "midlet")
-        MidletDiagnostics.install(app)
+        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_EXIT_SELF }
         assertTrue("tiến trình còn sống thì giữ phiên", session.exists())
     }
 
-    private fun writeSession(pid: Int, kind: String) {
+    @Test fun cleanupKeepsSessionOfOtherCores() {
+        writeSession(pid = deadPid, kind = "libretro")
+        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_USER_REQUESTED }
+        assertTrue("phiên của lõi khác do Diagnostics.collect xử lý", session.exists())
+    }
+
+    @Test fun cleanupKeepsSessionWhenExitReasonIsUnproven() {
+        writeSession(pid = deadPid)
+        MidletDiagnostics.cleanupAfterCollect(app, 34) { null } // không tìm thấy bản ghi
+        assertTrue(session.exists())
+        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_ANR }
+        assertTrue(session.exists())
+        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_CRASH_NATIVE }
+        assertTrue(session.exists())
+        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_OTHER }
+        assertTrue(session.exists())
+    }
+
+    @Test fun cleanupDeletesOnlyProvenNormalExit() {
+        writeSession(pid = deadPid)
+        val snapshot = File(diag, "sessions/$deadPid.json").apply { parentFile!!.mkdirs(); writeText("{}") }
+        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_USER_REQUESTED }
+        assertFalse(session.exists())
+        assertFalse("ảnh chụp của pid đã thoát bình thường không còn ý nghĩa", snapshot.exists())
+    }
+
+    @Test fun cleanupDoesNothingBelowApi30() {
+        writeSession(pid = deadPid)
+        MidletDiagnostics.cleanupAfterCollect(app, 29) { ApplicationExitInfo.REASON_USER_REQUESTED }
+        assertTrue("API < 30 không xoá gì (đánh đổi có chủ ý)", session.exists())
+    }
+
+    private fun writeSession(pid: Int, kind: String = "midlet") {
         diag.mkdirs()
         session.writeText(
             """{"pid":$pid,"startedAt":1,"kind":"$kind","core":"midlet",""" +

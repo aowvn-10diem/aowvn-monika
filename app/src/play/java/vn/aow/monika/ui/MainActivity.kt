@@ -76,6 +76,8 @@ class MainActivity : ComponentActivity() {
                 val fresh = listOfNotNull(vn.aow.monika.diag.Diagnostics.collect(applicationContext)) +
                     vn.aow.monika.diag.Diagnostics.collectProcessDeaths(applicationContext)
                 fresh.forEach { r -> vn.aow.monika.diag.Diagnostics.autoSend(applicationContext, AppGraph.http, r, cr.endpoint, cr.autoSend, AppGraph.prefs.autoSendCrash) }
+                // #302: báo xong mới dọn phiên game Java thoát bình thường — không bao giờ chạy trước collect.
+                runCatching { vn.aow.monika.diag.MidletDiagnostics.cleanupAfterCollect(application) }
                 vn.aow.monika.diag.Breadcrumbs.sweep(applicationContext)
             }
         }
