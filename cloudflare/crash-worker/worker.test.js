@@ -2,7 +2,7 @@ import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createHash, createHmac, webcrypto } from "node:crypto";
-import worker, { MAX_BODY, resetRateState, rateReservedCount, packSignature, setClockForTest, authEquals, normalizeClientIp, r2PresignUrl } from "./worker.js";
+import worker, { MAX_BODY, resetRateState, rateReservedCount, packSignature, setClockForTest, authEquals, normalizeClientIp, r2PresignUrl, resetPruneState } from "./worker.js";
 // Bí danh dùng trong nhánh test cũ của V186 (giữ nguyên câu chữ test)
 const nodeHash = createHash;
 const nodeHmac = createHmac;
@@ -15,6 +15,7 @@ const fixture = JSON.parse(fixtureBytes);
 
 function setup(extra = {}) {
   resetRateState(); // V194: bộ đếm hạn mức nằm trong bộ nhớ isolate → mỗi test phải bắt đầu sạch
+  resetPruneState(); // V195 D1: mốc dọn hàng quá hạn cũng nằm trong bộ nhớ isolate
   const data = new Map();
   const env = { ADMIN_TOKEN: "local-fixture-only", REPORTS: {
     get: async (k) => data.get(k)?.value ?? null,
@@ -874,6 +875,361 @@ test("A85 OFFICIAL_CERT_SHA256 tuy chon loc rac KV /report ma khong anh huong ma
   const official = await c.post({ ...fixture, certSha256: CERT.toUpperCase() });
   assert.equal(official.status, 200);
   assert.equal(puts, 1);
+});
+
+// ---- V195: D1 (`CRASH_DB`) — cùng hợp đồng khoá ngắn, fallback KV khi chưa gắn binding ----
+function fakeD1() {
+  const rows = new Map(); // fp -> hàng
+  const statements = [];
+
+  function execute(sql, args) {
+    if (/INSERT INTO reports/i.test(sql)) {
+      const [id, fp, k, c, y, g, a, st, t, component, count, cert, detail, firstT, lastT] = args;
+      const old = rows.get(fp);
+      rows.set(fp, old
+        ? { ...old, k, c, y, g, a, st, t, component, count: old.count + count, cert, detail, last_t: lastT }
+        : { id, fp, k, c, y, g, a, st, t, component, count, cert, detail, first_t: firstT, last_t: lastT });
+      return [];
+    }
+    // V195 D1: prune hàng quá hạn (`last_t < cutoff`), trả về số hàng đã xoá.
+    if (/DELETE FROM reports/i.test(sql)) {
+      const cutoff = args[0];
+      let removed = 0;
+      for (const [fp, row] of rows) if (row.last_t < cutoff) { rows.delete(fp); removed += 1; }
+      return { removed };
+    }
+    // Điều kiện hạn lưu: mọi truy vấn đọc đều bind `last_t >= ?` (tham số ĐẦU TIÊN).
+    const retention = /last_t >= \?/i.test(sql);
+    const cutoff = retention ? args[0] : null;
+    const visible = () => [...rows.values()].filter((row) => cutoff === null || row.last_t >= cutoff);
+    if (/SUM\(count\) AS n/i.test(sql) && !/GROUP BY/i.test(sql)) {
+      const list = visible();
+      return [{ n: list.reduce((sum, row) => sum + row.count, 0), groups: list.length }];
+    }
+    if (/COUNT\(\*\)/i.test(sql) && !/GROUP BY/i.test(sql)) return [{ n: visible().length }];
+    if (/GROUP BY/i.test(sql)) {
+      const by = new Map();
+      for (const row of visible()) {
+        const key = `${row.c}\u0000${row.k}\u0000${row.st}`;
+        const item = by.get(key) || { c: row.c, k: row.k, st: row.st, n: 0, groups: 0 };
+        item.n += row.count; item.groups += 1;
+        by.set(key, item);
+      }
+      return [...by.values()].sort((left, right) => right.n - left.n);
+    }
+    if (/WHERE id = \?/i.test(sql)) {
+      const found = visible().find((row) => row.id === args[0]);
+      return found ? [{ detail: found.detail }] : [];
+    }
+    if (/ORDER BY last_t DESC/i.test(sql)) {
+      let list = visible().sort((left, right) =>
+        right.last_t - left.last_t || (right.id < left.id ? -1 : right.id > left.id ? 1 : 0));
+      if (/last_t < \?/i.test(sql)) {
+        const [, lastT, sameT, id] = args;
+        list = list.filter((row) => row.last_t < lastT || (row.last_t === sameT && row.id < id));
+      }
+      const limit = args[args.length - 1];
+      return list.slice(0, limit);
+    }
+    throw new Error("fakeD1: chưa hỗ trợ câu SQL: " + sql);
+  }
+
+  return {
+    rows,
+    statements,
+    prepare(sql) {
+      statements.push(sql);
+      const api = {
+        args: [],
+        bind(...values) { api.args = values; return api; },
+        async run() { execute(sql, api.args); return { success: true }; },
+        async first() { return execute(sql, api.args)[0] || null; },
+        async all() { return { results: execute(sql, api.args) }; },
+      };
+      return api;
+    },
+  };
+}
+
+function d1Setup(extra = {}) {
+  const db = fakeD1();
+  const c = setup({ CRASH_DB: db, ...extra });
+  return { ...c, db };
+}
+
+test("V195 D1: gộp theo fingerprint — cùng dấu vân tay chỉ 1 hàng, count cộng dồn", async () => {
+  const c = d1Setup();
+  assert.equal((await c.post({ ...fixture, count: 2 })).status, 200);
+  assert.equal((await c.post({ ...fixture, count: 3 })).status, 200);
+  assert.equal((await c.post({ ...fixture, count: 1 })).status, 200);
+  assert.equal(c.db.rows.size, 1, "3 báo cáo cùng fingerprint → 1 hàng");
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 6, "total = số báo cáo (SUM count)");
+  assert.equal(body.groups, 1, "groups = số hàng/nhóm fingerprint");
+  assert.equal(body.reports[0].count, 6, "count cộng dồn 2+3+1");
+});
+
+test("V195 D1: /reports trả đúng bộ khoá ngắn trong bảng cột → khoá", async () => {
+  const c = d1Setup();
+  await c.post({ ...fixture, certSha256: CERT });
+  const entry = (await (await c.read("/reports")).json()).reports[0];
+  assert.deepEqual(Object.keys(entry).sort(), ["a", "c", "cert", "component", "count", "fp", "g", "id", "k", "st", "t", "y"]);
+  assert.equal(entry.k, fixture.kind);
+  assert.equal(entry.fp, fixture.fingerprint);
+  assert.equal(entry.a, fixture.app.slice(0, 40));
+  assert.equal(entry.cert, CERT.slice(0, 16), "cert16 = 16 hex đầu");
+  assert.equal(entry.c, fixture.core || fixture.session?.core || "unknown");
+});
+
+test("V195 D1: /reports/<id> trả bản ghi đầy đủ, 404 khi không có", async () => {
+  const c = d1Setup();
+  await c.post(fixture);
+  const entry = (await (await c.read("/reports")).json()).reports[0];
+  const detail = await (await c.read(`/reports/${encodeURIComponent(entry.id)}`)).json();
+  assert.equal(detail.kind, fixture.kind);
+  assert.equal(detail.fingerprint, fixture.fingerprint);
+  assert.equal((await c.read("/reports/r:1:khong-co")).status, 404);
+});
+
+test("V195 D1: /stats giữ n = số báo cáo (SUM count) và thêm groups", async () => {
+  const c = d1Setup();
+  await c.post({ ...fixture, count: 4 });
+  await c.post({ ...fixture, fingerprint: "bbbbbbbbbbbb2222", count: 2 });
+  const body = await (await c.read("/stats")).json();
+  assert.equal(body.total, 6, "total = số báo cáo, không phải số nhóm");
+  assert.equal(body.groups, 2, "groups = số nhóm fingerprint");
+  assert.equal(body.byCoreKindStage.length, 1);
+  assert.equal(body.byCoreKindStage[0].n, 6, "n = SUM(count) — giữ nghĩa như nhánh KV");
+  assert.equal(body.byCoreKindStage[0].groups, 2, "groups = số nhóm trong nhóm thống kê");
+  assert.equal(body.byCoreKindStage[0].uses, undefined, "bỏ khoá uses cũ");
+});
+
+test("V195 D1: báo cáo fingerprint rỗng giữ riêng từng hàng, không gộp mất", async () => {
+  const c = d1Setup({ RATE_LIMIT_MAX: "1000" });
+  const userReports = [1, 2, 3].map((n) => ({ ...fixture, kind: "user", fingerprint: "", count: 1, detail: `báo cáo ${n}`, title: `user ${n}` }));
+  for (const report of userReports) assert.equal((await c.post(report)).status, 200);
+  assert.equal(c.db.rows.size, 3, "3 báo cáo không fingerprint → 3 hàng");
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 3);
+  assert.equal(body.groups, 3);
+  assert.equal(new Set(body.reports.map((entry) => entry.id)).size, 3);
+  for (const entry of body.reports) {
+    const detail = await (await c.read(`/reports/${encodeURIComponent(entry.id)}`)).json();
+    assert.match(detail.detail, /^báo cáo [123]$/, "chi tiết từng báo cáo còn nguyên");
+  }
+});
+
+test("V195 D1: /report-index phân trang 100 mục, cursor base64url('<ms>:<id>')", async () => {
+  const c = d1Setup({ RATE_LIMIT_MAX: "1000" });
+  // Mốc gần hiện tại: hàng cũ hơn 30 ngày bị loại khỏi truy vấn (hạn lưu D1), nên không dùng mốc 2023.
+  const base = Date.now() - 3600000;
+  for (let i = 0; i < 150; i++) {
+    await atTime(base + i * 1000, () => c.post({ ...fixture, fingerprint: `fp-${String(i).padStart(4, "0")}` }));
+  }
+  const first = await (await c.read("/report-index")).json();
+  assert.equal(first.reports.length, 100);
+  assert.equal(first.complete, false);
+  const decoded = Buffer.from(first.cursor.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString();
+  assert.match(decoded, /^\d{13}:r:\d{13}:[0-9a-f]{8}$/);
+  const second = await (await c.read(`/report-index?cursor=${first.cursor}`)).json();
+  assert.equal(second.reports.length, 50);
+  assert.equal(second.complete, true);
+  assert.equal(second.cursor, null);
+  assert.equal(new Set([...first.reports, ...second.reports].map((r) => r.id)).size, 150, "không trùng mục giữa 2 trang");
+});
+
+test("V195 D1: cursor hỏng trả 400, cursor hợp lệ nhưng cũ vẫn trả trang", async () => {
+  const c = d1Setup();
+  await c.post(fixture);
+  assert.equal((await c.read("/report-index?cursor=%%%")).status, 400);
+  assert.equal((await c.read("/report-index?cursor=abc")).status, 400);
+  const ok = await (await c.read("/report-index")).json();
+  assert.equal(ok.complete, true);
+  assert.equal(ok.reports.length, 1);
+});
+
+test("V195 D1: thiếu binding CRASH_DB vẫn chạy đường KV như cũ (fallback)", async () => {
+  const c = setup(); // không có CRASH_DB
+  assert.equal((await c.post(fixture)).status, 200);
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 1);
+  assert.equal(body.reports[0].cert, "", "KV vẫn trả khoá ngắn như trước");
+  const index = await (await c.read("/report-index")).json();
+  assert.equal(index.complete, true);
+});
+
+test("V195 D1: ghi D1 lỗi thì trả 503 và nhả lượt hạn mức", async () => {
+  const db = fakeD1();
+  const realPrepare = db.prepare;
+  let failNext = true;
+  db.prepare = (...args) => {
+    if (failNext) { failNext = false; throw new Error("D1 down"); }
+    return realPrepare.apply(db, args);
+  };
+  const c = setup({ CRASH_DB: db, RATE_LIMIT_MAX: "1" });
+  assert.equal((await postWithIp(c, fixture)).status, 503);
+  assert.equal((await postWithIp(c, fixture)).status, 200, "lượt giữ chỗ đã được nhả");
+});
+
+test("V195 D1: đọc D1 lỗi trả 503 nhất quán cho /reports, /reports/<id>, /stats, /report-index", async () => {
+  const db = fakeD1();
+  await setup({ CRASH_DB: db }).post(fixture);
+  const broken = {
+    prepare() { throw new Error("D1 down"); },
+  };
+  const c = setup({ CRASH_DB: broken });
+  for (const path of ["/reports", "/reports/r:1:aaaaaaaa", "/stats", "/report-index"]) {
+    const res = await c.read(path);
+    assert.equal(res.status, 503, path);
+    assert.equal((await res.json()).error, "storage_unavailable", path);
+  }
+});
+// ---- V195 D1 (lượt sửa #587): kẹp count, cache 5 phút, hạn lưu 30 ngày, lùi KV khi bảng chưa tạo ----
+test("V195 count do client gui: chi nhan 1..50, ngoai khoang lay 1 (ca KV)", async () => {
+  const c = setup({ RATE_LIMIT_MAX: "1000" });
+  for (const [count, want] of [[999999999, 1], [51, 1], [50, 50], [7, 7], [0, 1], [-4, 1], [2.5, 1], ["9", 1], [null, 1]]) {
+    assert.equal((await c.post({ ...fixture, count })).status, 200);
+    const key = [...c.data.keys()].pop();
+    const saved = c.data.get(key);
+    assert.equal(saved.options.metadata.count, want, `metadata.count voi count=${String(count)}`);
+    assert.equal(JSON.parse(saved.value).count, want, `JSON.count voi count=${String(count)}`);
+  }
+});
+
+test("V195 D1: count khong hop le khong lam phong total", async () => {
+  const c = d1Setup({ RATE_LIMIT_MAX: "1000" });
+  await c.post({ ...fixture, fingerprint: "fp-a", count: 1000000000 });
+  const body = await (await c.read("/reports")).json();
+  assert.equal(body.total, 1, "count khong hop le bi kep ve 1");
+  assert.equal(body.reports[0].count, 1);
+});
+
+// Cache API của Worker không có trong Node → giả lập đúng phần match/put mà worker dùng.
+function fakeCaches() {
+  const store = new Map();
+  return {
+    store,
+    async match(request) {
+      const entry = store.get(request.url);
+      if (!entry) return null;
+      if (Date.now() - entry.at >= entry.ttlMs) { store.delete(request.url); return null; }
+      return entry.response.clone();
+    },
+    async put(request, response) {
+      const maxAge = /max-age=(\d+)/.exec(response.headers.get("cache-control") || "");
+      store.set(request.url, { response: response.clone(), at: Date.now(), ttlMs: (maxAge ? Number(maxAge[1]) : 0) * 1000 });
+    },
+  };
+}
+
+test("V195 D1: /stats va trang dau /reports cache 5 phut; chi tiet khong cache", async () => {
+  const cache = fakeCaches();
+  const real = globalThis.caches;
+  globalThis.caches = cache;
+  try {
+    const c = d1Setup();
+    await c.post({ ...fixture, count: 2 });
+
+    const firstStats = await c.read("/stats");
+    const firstBody = await firstStats.json();
+    assert.equal(firstStats.headers.get("x-aow-cache"), null, "lượt đầu tính từ D1");
+    assert.equal(firstStats.headers.get("cache-control"), "no-store", "bản trả client không cho CDN cache");
+    const afterFirst = c.db.statements.length;
+    const cachedStats = await c.read("/stats");
+    assert.equal(cachedStats.headers.get("x-aow-cache"), "HIT");
+    assert.deepEqual(await cachedStats.json(), firstBody);
+    assert.equal(c.db.statements.length, afterFirst, "cache hit không chạm D1");
+
+    const firstList = await c.read("/reports");
+    const firstListBody = await firstList.json();
+    const afterList = c.db.statements.length;
+    const cachedList = await c.read("/reports");
+    assert.equal(cachedList.headers.get("x-aow-cache"), "HIT");
+    assert.deepEqual(await cachedList.json(), firstListBody);
+    assert.equal(c.db.statements.length, afterList, "cache hit không chạm D1");
+
+    // Chi tiết đổi sau mỗi báo cáo → không cache.
+    const id = firstListBody.reports[0].id;
+    assert.equal((await c.read(`/reports/${encodeURIComponent(id)}`)).headers.get("x-aow-cache"), null);
+    assert.equal((await c.read(`/reports/${encodeURIComponent(id)}`)).headers.get("x-aow-cache"), null);
+
+    // Bản lưu cache khai báo TTL 300 giây (5 phút).
+    const stored = [...cache.store.values()];
+    assert.equal(stored.length, 2, "chỉ /stats và /reports vào cache");
+    for (const entry of stored) assert.equal(entry.response.headers.get("cache-control"), "public, max-age=300");
+  } finally {
+    globalThis.caches = real;
+  }
+});
+
+function seedD1Row(c, id, overrides = {}) {
+  const lastT = overrides.last_t ?? Date.now();
+  c.db.rows.set(id, {
+    id, fp: id, k: fixture.kind, c: "azahar", y: "android", g: "", a: fixture.app.slice(0, 40),
+    st: "", t: lastT, component: "", count: 1, cert: "", detail: JSON.stringify(fixture),
+    first_t: lastT, last_t: lastT, ...overrides,
+  });
+}
+
+test("V195 D1: chi tinh 30 ngay gan nhat trong /stats, /reports va /report-index", async () => {
+  const c = d1Setup();
+  const now = Date.now();
+  seedD1Row(c, "r:old", { fp: "old", count: 5, last_t: now - 31 * 86400000 });
+  seedD1Row(c, "r:new", { fp: "new", count: 2, last_t: now - 86400000 });
+
+  const stats = await (await c.read("/stats")).json();
+  assert.equal(stats.total, 2, "hàng 31 ngày không còn trong thống kê");
+  assert.equal(stats.groups, 1);
+  const list = await (await c.read("/reports")).json();
+  assert.equal(list.total, 2);
+  assert.deepEqual(list.reports.map((entry) => entry.id), ["r:new"]);
+  const index = await (await c.read("/report-index")).json();
+  assert.deepEqual(index.reports.map((entry) => entry.id), ["r:new"]);
+  // Chi tiết vẫn mở được cho tới khi lượt prune xoá hàng.
+  assert.equal((await c.read("/reports/r:old")).status, 200);
+});
+
+test("V195 D1: POST don hang cu hon 30 ngay, toi da 1 lan/gio", async () => {
+  const c = d1Setup({ RATE_LIMIT_MAX: "1000" });
+  const now = Date.now();
+  seedD1Row(c, "r:old", { fp: "old", last_t: now - 31 * 86400000 });
+  seedD1Row(c, "r:keep", { fp: "keep", last_t: now - 29 * 86400000 });
+
+  assert.equal((await c.post({ ...fixture, fingerprint: "fp-1" })).status, 200);
+  assert.equal(c.db.rows.has("r:old"), false, "hàng 31 ngày bị xoá kèm lượt POST");
+  assert.equal(c.db.rows.has("r:keep"), true, "hàng 29 ngày còn nguyên");
+
+  // Trong cùng giờ: chưa dọn lại.
+  seedD1Row(c, "r:old2", { fp: "old2", last_t: now - 40 * 86400000 });
+  assert.equal((await c.post({ ...fixture, fingerprint: "fp-2" })).status, 200);
+  assert.equal(c.db.rows.has("r:old2"), true, "chưa đủ 1 giờ nên chưa dọn");
+
+  // Qua 1 giờ: lượt POST sau dọn tiếp.
+  await atTime(now + 3600000 + 60000, () => c.post({ ...fixture, fingerprint: "fp-3" }));
+  assert.equal(c.db.rows.has("r:old2"), false, "đủ 1 giờ thì dọn lại");
+});
+
+test("V195 D1: bang chua tao (no such table) thi lui KV cho request do, khong 503", async () => {
+  const db = fakeD1();
+  db.prepare = () => { throw new Error("D1_ERROR: no such table: reports: SQLITE_ERROR"); };
+  const c = setup({ CRASH_DB: db });
+
+  assert.equal((await c.post(fixture)).status, 200, "POST lùi KV thay vì 503");
+  assert.equal(c.data.size, 1, "báo cáo vẫn được lưu (KV)");
+  for (const path of ["/reports", "/stats", "/report-index"]) {
+    const res = await c.read(path);
+    assert.equal(res.status, 200, path);
+  }
+  assert.equal((await (await c.read("/reports")).json()).total, 1);
+  assert.equal((await (await c.read("/report-index")).json()).reports.length, 1);
+  const id = [...c.data.keys()][0];
+  assert.equal((await c.read(`/reports/${encodeURIComponent(id)}`)).status, 200, "chi tiết đọc từ KV");
+});
+
+test("V195 D1: loi D1 khac (khong phai bang chua tao) van 503", async () => {
+  const c = setup({ CRASH_DB: { prepare() { throw new Error("D1_ERROR: network unreachable"); } } });
+  assert.equal((await c.read("/reports")).status, 503);
+  assert.equal((await c.post(fixture)).status, 503);
 });
 
 // ---- V190c: log lỗi KV, /report-index bọc try, chốt cursor lặp ----
