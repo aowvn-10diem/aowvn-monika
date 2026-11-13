@@ -5,19 +5,19 @@ Nguồn: 75 issue mở nhãn `crash-moi` (GitHub API, 13/11), lọc tiêu đề 
 
 ## 1. Kết luận ngắn
 
-- Còn **16 issue `op-fail`, tổng 36 lượt**; chỉ **#393 là tái diễn** (20 lượt, +7, cập nhật 13/11). 15 issue còn lại mới 1–2 lượt.
+- Còn **16 issue `op-fail`, tổng 36 lượt**. **#393 là issue lớn nhất (20 lượt) nhưng chưa kết luận được là tái diễn**: thân issue được sửa lần cuối **05/11 16:32** (chính lần gộp +7); `updatedAt` 13/11 là do bình luận, không phải bot gộp. Bot chỉ PATCH khi `delta ≥ 5` (`scripts/crash-issue-bot.py:117-119`) nên từ 05/11 có thể còn dưới 5 báo cáo mới chưa hiện — **[CHƯA KIỂM]**. 15 issue còn lại mới 1–2 lượt.
 - Chỉ **2 issue có dòng `Thành phần`**: #614 `op:va-rom`, #608 `op:tai-xuong`. **14 issue không có** ⇒ không quy được op từ dữ liệu công khai; mọi phép gán op cho 14 issue đó là suy đoán.
 - Đọc mã: **6 op báo sai** (lỗi môi trường/người dùng thành `op-fail`) cộng **1 nhóm 3 tên op của flavor play**; **5 chỗ báo thiếu** (lỗi thật không thành báo cáo). Không sửa mã trong lượt này; đề xuất ở mục 8.
 
 ## 2. Bảng 16 issue
 
-`Lượt` = “Số lần quan sát đã thông báo” trong thân issue (cộng dồn lịch sử, không phải số người). `Tái diễn?` = bot đã PATCH issue sau lần tạo (chỉ PATCH khi `delta ≥ 5`, `scripts/crash-issue-bot.py:117-119`).
+`Lượt` = “Số lần quan sát đã thông báo” trong thân issue (cộng dồn lịch sử, không phải số người). `Tái diễn?` = bot đã PATCH thân issue sau lần tạo (chỉ PATCH khi `delta ≥ 5`, `scripts/crash-issue-bot.py:117-119`). Không dùng `updatedAt` làm mốc: bình luận cũng đổi mốc này.
 
 | Issue | Lõi | Thành phần trong thân | Lượt | Tái diễn? |
 |---|---|---|---:|---|
-| [#393](https://github.com/aowvn-10diem/aowvn-monika/issues/393) | unknown | — | 20 (+7) | **Có** (14 báo cáo, cập nhật 13/11) |
+| [#393](https://github.com/aowvn-10diem/aowvn-monika/issues/393) | unknown | — | 20 (+7) | **[CHƯA KIỂM]** (14 báo cáo; lần gộp cuối 05/11 16:32, `updatedAt` 13/11 do bình luận) |
 | [#401](https://github.com/aowvn-10diem/aowvn-monika/issues/401) | unknown | — | 2 (+2) | Không (2 báo cáo ngay lần tạo) |
-| [#614](https://github.com/aowvn-10diem/aowvn-monika/issues/614) | unknown | `op:va-rom` | 1 (+1) | Chưa; xem mục 5.1 |
+| [#614](https://github.com/aowvn-10diem/aowvn-monika/issues/614) | unknown | `op:va-rom` | 1 (+1) | Chưa; xem mục 5, ý 1 |
 | [#608](https://github.com/aowvn-10diem/aowvn-monika/issues/608) | unknown | `op:tai-xuong` | 1 (+1) | Chưa |
 | [#564](https://github.com/aowvn-10diem/aowvn-monika/issues/564) | unknown | — | 1 (+1) | Chưa |
 | [#531](https://github.com/aowvn-10diem/aowvn-monika/issues/531) | unknown | — | 1 (+1) | Chưa |
@@ -61,7 +61,7 @@ Tên op nằm ở `Diagnostics.Op` (`Diagnostics.kt:403-411`); `op`/`opSuspend` 
 
 1. **`va-rom` — chọn nhầm ROM/bản vá (chắc chắn).** `PatchFlow.kt:17` ROM quá lớn, `:22` không mở được bản vá, `:26` sai định dạng, `:50` `PatchException` (ROM/bản vá cụt, sai cặp). Cả 4 gọi `opFail` trực tiếp; người chơi chỉ cần chọn nhầm là có báo cáo. #614 (12/11) nhiều khả năng là một trong 4 nhánh — **[CHƯA KIỂM]** vì không đọc được `bước`.
 2. **`tai-xuong` — 4xx và URL hỏng.** `BrowserDownloads.kt:145` ném `IOException("Máy chủ trả lời <code>")` cho **mọi** mã không 2xx, rồi `:184` gọi `opFail`; link chết 404/403 (host xoá file, link hết hạn) thành “thao tác lỗi”. `IllegalArgumentException` do URL sai cũng vào đây. #608 (1 lượt) có thể thuộc nhóm này — **[CHƯA KIỂM]**.
-3. **`tai-cau-hinh` — 4xx mỗi 6 giờ.** `ConfigRepository.kt:107` `check(response.isSuccessful)` ném cho 404/403; `opSuspend` chỉ bỏ qua lỗi mạng. Một lần Cloudflare/Worker trả 403 là mọi máy báo lại ở mỗi lần mở app sau 6 giờ (`MIN_REFRESH_MS`, `:97`).
+3. **`tai-cau-hinh` — 4xx chỉ khi cả hai nguồn lỗi.** `ConfigRepository.kt:78-89` thử Pages trước (`tai-pages`, `:76`), chỉ chuyển Worker (`tai-worker`, `:85`) khi Pages lỗi; `fetchText` ném ở `:107` (`check(response.isSuccessful)`). Vì vậy 4xx chỉ thành `op-fail` khi **cả Pages lẫn Worker** đều lỗi; `opSuspend` chỉ bỏ qua lỗi mạng. Một lần cả hai trả 403 là mỗi máy báo lại ở lần mở app sau 6 giờ (`MIN_REFRESH_MS`, `:115`).
 4. **`cai-goi-engine` — 4xx + hai đường cùng báo.** `PackManager.kt:173` báo ở lần thử cuối với bước `pack:<id> (sau N lần thử)`; `EnginePrepActivity` (github:145 / play:142) báo ngay với bước `pack:<id>`. Khoá chống spam gồm cả `bước` (`Diagnostics.kt:461`), nên cùng một sự cố có thể thành **2 báo cáo**. Ngoài ra 4xx khi tải gói (link cũ) vẫn báo.
 5. **`mo-game` — lỗi máy/ABI.** `AzaharActivity.kt:206` chỉ khai báo `isOffline`; `UnsatisfiedLinkError` khi native không khớp máy/ABI vào thẳng `op-fail`. Tương tự, `RetroActivity.kt:295` báo 404 lõi (config trỏ link cũ) thành “người dùng mở game lỗi”. Có ích để theo dõi, nhưng **không phải thao tác người dùng**.
 6. **`giai-nen` — file người dùng hỏng (cân nhắc).** `Importer.kt:33-38` đã bỏ qua “cần mật khẩu” và “cần gói 7-Zip”, nhưng `IOException("File nén không hợp lệ…")`/`ZipException` do file hỏng vẫn báo. Đây là nhiễu hợp lý nếu muốn biết codec hỏng; nếu không, hạ thành vệt.
@@ -77,7 +77,7 @@ Tên op nằm ở `Diagnostics.Op` (`Diagnostics.kt:403-411`); `op`/`opSuspend` 
 
 ## 7. Điểm đáng chú ý của #393 (issue lớn nhất)
 
-- 20 lượt / 14 báo cáo, +7 trong lần cập nhật 13/11 ⇒ **đang tái diễn**, không phải di sản như #305/#512 (đã đóng 11/11 bởi #603).
+- 20 lượt / 14 báo cáo; lần gộp cuối **05/11 16:32** (chính là `+7`). `updatedAt` 13/11 là do bình luận, không phải bot gộp. Vì bot chỉ PATCH khi `delta ≥ 5`, từ 05/11 có thể còn dưới 5 báo cáo mới chưa hiện ⇒ **không kết luận được đang tái diễn** — **[CHƯA KIỂM]**. Số 20 lượt cũng không phải di sản của #305/#512 (hai issue `op:tai-feed` đã đóng 11/11 bởi #603).
 - Không có `Thành phần`; cùng một chữ ký gồm 14 báo cáo nghĩa là **cùng stack, khác nguồn**. Cần `detail` mới biết là op nào.
 - Ứng viên theo mã (chưa kiểm): `mo-game` (`RetroActivity.kt:295`, `AzaharActivity.kt:206`) hoặc `cai-goi-engine` (`PackManager.kt:173`) vì đây là hai op có thể chạy trong phiên game; `tai-cau-hinh`/`tai-feed` khó hơn vì sẽ có `component` nếu bản app đủ mới.
 
