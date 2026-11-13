@@ -4,47 +4,59 @@ import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import vn.aow.monika.diag.Diagnostics
 import java.io.File
 
 class CoreSystemFilesTest {
     @get:Rule val tmp = TemporaryFolder()
 
-    private fun folder(vararg path: String): File = tmp.newFolder().let { File(it, path.joinToString("/")).apply { mkdirs() } }
+    private fun saveDir(root: File) = File(root, "saves/gba/Game/Tên game").apply { mkdirs() }
 
-    @Test fun citraBaoThieuKhiCaBaNoiDeuKhongCoTep() {
-        val systemDir = folder("system")
-        val saveDir = folder("saves")
+    @Test fun citraBaoThieuKhiHaiNoiDeuKhongCoTep() {
+        val filesDir = tmp.newFolder()
+        val systemDir = File(filesDir, "system").apply { mkdirs() }
+        val saveDir = saveDir(filesDir)
         assertEquals("shared_font.bin", CoreSystemFiles.missing("citra", systemDir, saveDir))
-        val crumb = CoreSystemFiles.crumb("citra", systemDir, saveDir)
+        val crumb = CoreSystemFiles.crumb("citra", filesDir, systemDir, saveDir)
         assertNotNull(crumb)
-        // Nêu tên tệp cần thêm, đường dẫn thư mục cần đặt, và nói rõ là không chặn.
+        // Nêu tên tệp, thư mục lõi đọc (tương đối), và nói rõ là không chặn.
         assertTrue(crumb!!.contains("shared_font.bin"))
-        assertTrue(crumb.contains(File(File(saveDir, "Citra"), "sysdata").absolutePath))
+        assertTrue(crumb.contains("Citra/sysdata"))
+        assertTrue(crumb.contains("thư mục dữ liệu app"))
         assertTrue(crumb.contains("không chặn"))
+        // Không lộ đường dẫn tuyệt đối, và phải sống sót Diagnostics.scrub (Breadcrumbs.add gọi scrub).
+        assertTrue(crumb.contains("saves/gba/Game/Tên game/Citra/sysdata"))
+        assertFalse(crumb.contains(filesDir.absolutePath))
+        assertNotEquals(filesDir.absolutePath, Diagnostics.scrub(null, "đặt vào: ${filesDir.absolutePath}"))
+        assertEquals(crumb, Diagnostics.scrub(null, crumb))
+        assertTrue("crumb bị Breadcrumbs cắt ở 200 ký tự: ${crumb.length}", crumb.length <= 200)
     }
 
     @Test fun khongBaoKhiTepNamTrongThuMucSaveCuaGame() {
-        val systemDir = folder("system")
-        val saveDir = folder("saves")
+        val filesDir = tmp.newFolder()
+        val systemDir = File(filesDir, "system").apply { mkdirs() }
+        val saveDir = saveDir(filesDir)
         File(File(saveDir, "Citra/sysdata"), "shared_font.bin").apply { parentFile!!.mkdirs() }.writeText("font")
         assertNull(CoreSystemFiles.missing("citra", systemDir, saveDir))
-        assertNull(CoreSystemFiles.crumb("citra", systemDir, saveDir))
+        assertNull(CoreSystemFiles.crumb("citra", filesDir, systemDir, saveDir))
     }
 
-    @Test fun khongBaoKhiTepNamTrongThuMucSystemCuaApp() {
-        // Bản lõi đặt user dir = system (save dir rỗng) hoặc bản cũ đọc thẳng `sysdata`.
-        for (relative in listOf("Citra/sysdata", "sysdata")) {
-            val systemDir = tmp.newFolder()
-            File(File(systemDir, relative), "shared_font.bin").apply { parentFile!!.mkdirs() }.writeText("font")
-            assertNull(relative, CoreSystemFiles.missing("citra", systemDir, null))
-        }
+    @Test fun khongBaoKhiTepNamTrongThuMucSystemDuPhong() {
+        // Nhánh "frontend không cấp save dir" của lõi: user dir = <system>/Citra.
+        val filesDir = tmp.newFolder()
+        val systemDir = File(filesDir, "system").apply { mkdirs() }
+        File(File(systemDir, "Citra/sysdata"), "shared_font.bin").apply { parentFile!!.mkdirs() }.writeText("font")
+        assertNull(CoreSystemFiles.missing("citra", systemDir, null))
+        assertNull(CoreSystemFiles.crumb("citra", filesDir, systemDir, null))
+        assertEquals(listOf(File(File(systemDir, "Citra"), "sysdata")), CoreSystemFiles.dirs(systemDir, null))
     }
 
     @Test fun loiKhacKhongBiChanOan() {
-        val systemDir = folder("system")
+        val filesDir = tmp.newFolder()
+        val systemDir = File(filesDir, "system").apply { mkdirs() }
         for (coreId in listOf("melondsds", "ppsspp", "desmume", "melonds")) {
-            assertNull(coreId, CoreSystemFiles.missing(coreId, systemDir, folder("saves")))
-            assertNull(coreId, CoreSystemFiles.crumb(coreId, systemDir, null))
+            assertNull(coreId, CoreSystemFiles.missing(coreId, systemDir, saveDir(filesDir)))
+            assertNull(coreId, CoreSystemFiles.crumb(coreId, filesDir, systemDir, null))
         }
     }
 }
