@@ -62,6 +62,8 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
     private var paused = false
     private var firstFrame = false
     private var clock: PlayClock? = null
+    /** V205: luồng giả lập — cần join trước khi killProcess để engine ghi xong Disk Shader Cache. */
+    private var emuThread: Thread? = null
     private lateinit var gamePath: String
     private lateinit var title: String
     private lateinit var systemName: String
@@ -80,6 +82,14 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         }
         clock = PlayClock(intent.getStringExtra(PlayClock.EXTRA_KEY))
         gamePath = intent.getStringExtra(EXTRA_GAME) ?: return finish()
+        // V205: `.cia` là gói cài vào NAND (game/cập nhật/DLC), không phải ROM để chạy trực tiếp. Đưa sang
+        // luồng cài riêng ([AzaharInstallActivity]) thay vì nạp engine rồi hỏng ở bước chạy.
+        if (AzaharFlow.isInstallerPackage(gamePath)) {
+            AzaharInstallActivity.launch(this, listOf(gamePath))
+            Diagnostics.stage(this, "cia-chuyen-luong-cai")
+            finish()
+            return
+        }
         systemName = intent.getStringExtra(EXTRA_SYSTEM).orEmpty()
         title = intent.getStringExtra(EXTRA_TITLE) ?: File(gamePath).nameWithoutExtension
         try {
@@ -301,11 +311,13 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         Diagnostics.stage(this, "surface")
         if (!started) {
             started = true
-            Thread({
+            val thread = Thread({
                 Diagnostics.stage(this, "run-started") // native chạy game từ đây; chết sau dòng này = lõi/game
                 NativeLibrary.run(gamePath)
                 runOnUiThread { finish() }
-            }, "NativeEmulation").start()
+            }, "NativeEmulation")
+            emuThread = thread
+            thread.start()
             Choreographer.getInstance().postFrameCallback(this)
             // Không có tín hiệu "nạp shader xong" (bộ đệm rỗng) → coi là có hình sau khi engine báo đang chạy.
             lifecycleScope.launch {
@@ -353,6 +365,9 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         if (isFinishing) {
             Diagnostics.end(this)
             if (started) runCatching { NativeLibrary.stopEmulation() }
+            // V205: engine ghi Disk Shader Cache lúc dừng; killProcess ngay sẽ bỏ dở/hỏng bộ đệm nên chờ tối đa 1,5s.
+            // diag: bỏ qua lỗi join — chỉ là chờ có giới hạn, không đổi kết quả thoát game
+            runCatching { emuThread?.join(1500) }
             android.os.Process.killProcess(android.os.Process.myPid())
         }
         } finally { saveTransferLease?.close(); saveTransferLease = null }
