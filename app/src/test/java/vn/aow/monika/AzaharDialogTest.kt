@@ -72,4 +72,17 @@ class AzaharDialogTest {
         main.idle()
         assertNull("hộp thoại phải được dọn sau khi trả lời", AzaharBridge.dialog)
     }
+
+    /** Lỗi nghiêm trọng của lõi (`canContinue = false`): không ai trả lời thì phải trả `false` = dừng game. */
+    @Test fun loiNghiemTrongHetHanChoTiepTucDungGame() {
+        AzaharBridge.dialogTimeoutMs = 50
+        val tiepTuc = AtomicBoolean(true)
+        val luong = Thread({
+            tiepTuc.set(AzaharBridge.onCoreError(org.citra.citra_emu.NativeLibrary.CoreError.ErrorCoreExceptionRaised, "thử"))
+        }, "test-dialog")
+        luong.isDaemon = true
+        luong.start()
+        luong.join(5_000)
+        assertFalse("lỗi nghiêm trọng phải dừng game khi không ai trả lời", tiepTuc.get())
+    }
 }
