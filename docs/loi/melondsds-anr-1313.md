@@ -1,13 +1,13 @@
 # Nhóm `melondsds / anr`: 9 chữ ký còn lại sau #606/#619
 
-Ngày 13/11/2026 — nhánh `chan-doan/melondsds-anr-1313` — nền `main` `f24ece45`.
+Ngày 13/11/2026 — nhánh `chan-doan/melondsds-anr-1313` — nền `main` `0e9ef5bd` (đã gộp #618, `5b94cbf6` chèn 11 dòng vào `Diagnostics.kt`; mọi dẫn chiếu `Diagnostics.kt` dưới đây tính theo `0e9ef5bd`).
 **Chỉ tài liệu, không sửa mã.** Không gộp, không đụng `config/`.
 
 Tài liệu này **không nhắc lại** ba giả thuyết (a)/(b)/(c) đã viết ở `docs/loi/melondsds-anr-1311.md` (PR #619, đã gộp). Ở đây chỉ thêm ba thứ chưa có: (1) bảng số của cả 9 issue, (2) **[đính chính]** cách chữ ký của bot được tính — hệ quả là nhóm này không thể là một nguyên nhân duy nhất, (3) bảng quyết định đọc `detail`/`stage` để tách nhánh.
 
 ## 1. Bảng nhóm (9 issue `crash-moi`, tổng 421 lượt)
 
-Số lấy từ khối `aow-crash-v100` trong thân từng issue. Cột **"số báo cáo"** = số khoá trong `seen`; theo `scripts/crash-issue-bot.py:76` mỗi khoá là `digest(id báo cáo)[:32]` và `id` chính là mốc thời gian của lần chết (`app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:866`), nên **mỗi khoá ≈ một lần gửi báo cáo**, còn giá trị của khoá là `count` mà máy đó đã cộng dồn trước khi gửi.
+Số lấy từ khối `aow-crash-v100` trong thân từng issue. Cột **"số báo cáo"** = số khoá trong `seen`; theo `scripts/crash-issue-bot.py:76` mỗi khoá là `digest(id báo cáo)[:32]` và `id` chính là mốc thời gian của lần chết (`app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:877`), nên **mỗi khoá ≈ một lần gửi báo cáo**, còn giá trị của khoá là `count` mà máy đó đã cộng dồn trước khi gửi.
 
 | Issue | Lượt (cộng dồn) | Số báo cáo | Lặp nhiều nhất trong 1 báo cáo | Máy | Phiên bản | Giai đoạn | Tái diễn? |
 |---|---:|---:|---:|---|---|---|---|
@@ -24,10 +24,10 @@ Số lấy từ khối `aow-crash-v100` trong thân từng issue. Cột **"số 
 
 Đọc bảng:
 
-- Hai chữ ký chiếm **93%** lượt (#350 + #318 = 393/421). Sáu issue còn lại cộng lại 11 lượt — **không đủ mẫu** để kết luận gì; đừng mở việc sửa riêng cho chúng.
+- Hai chữ ký chiếm **93%** lượt (#350 + #318 = 393/421). **Bảy issue còn lại 28 lượt** (421 − 393), trong đó #314 = 17 còn sáu issue ≤ 3 lượt chỉ 11 lượt — **không đủ mẫu** để kết luận gì; đừng mở việc sửa riêng cho chúng.
 - #350 và #318 khác nhau về *hình dạng phân bố*: #350 dồn vào ít báo cáo nhưng lặp rất nhiều trên cùng máy (33 lần) → giống một vòng lặp **tất định** theo máy/cấu hình; #318 trải trên 52 báo cáo → giống một điều kiện chung (mọi máy đều gặp khi làm đúng thao tác). Đây là suy luận từ phân bố, **không phải bằng chứng nguyên nhân** — `[CHƯA KIỂM]`.
 - Cột **máy / phiên bản / giai đoạn để trống** vì thân issue chỉ có `signature`, `count`, `seen` — bot cố tình không chép thiết bị, game, URL (`scripts/crash-issue-bot.py:4`). Ba trường này **có** trong báo cáo gốc trên Worker: `device`, `app`, và `session.stage` (riêng `stage` được ghi thêm cho `anr`/`lowmem` ở `cloudflare/crash-worker/worker.js:832-836`). Muốn điền cột thì phải đọc Worker (mục 5).
-- Số "lượt" là **cộng dồn lịch sử**, không phải mức tăng hiện tại (xem `docs/loi/lowmem-1311.md` §1) — đừng dùng để nói "đang tăng".
+- Số "lượt" là **cộng dồn lịch sử**, không phải mức tăng hiện tại (xem `docs/loi/lowmem-1311.md` §1, đã gộp qua PR #621) — đừng dùng để nói "đang tăng".
 
 ## 2. [Đính chính] chữ ký của bot không phải "3 frame Java đầu" — nó là **3 frame native đầu**
 
@@ -35,13 +35,13 @@ Chuỗi suy luận, đọc theo mã:
 
 1. Bot gộp nhóm bằng `signature = digest([core, kind, frames(report)])` — `scripts/crash-issue-bot.py:71`.
 2. `frames()` lấy **3 dòng đầu tiên** khớp hoặc frame Java `at x.y(Z)` hoặc frame native `#NN pc … <mod>.so (symbol)` — `scripts/crash-issue-bot.py:39-53`.
-3. Với `kind = anr`, `detail` **không** phải stack Java: nó là trace lấy từ `ApplicationExitInfo.traceInputStream` rồi **lọc theo `INTERESTING`** (`.so|libretro|SIG…|::|libGLES|libEGL|vulkan|…`) — `Diagnostics.kt:302-326`, dùng ở `:854`.
+3. Với `kind = anr`, `detail` **không** phải stack Java: nó là trace lấy từ `ApplicationExitInfo.traceInputStream` rồi **lọc theo `INTERESTING`** (`.so|libretro|SIG…|::|libGLES|libEGL|vulkan|…`) — `Diagnostics.kt:302-326` (không đổi sau #618), dùng ở `:865`.
 4. Hệ quả: một dòng Java như `at android.opengl.GLSurfaceView$GLThread.onPause(...)` **không khớp** `INTERESTING` nên bị loại khỏi `detail`; chỉ frame native còn lại. Vì vậy chữ ký ANR thực chất là **tổ hợp frame native** của trace.
 
 Ba hệ quả thực dụng:
 
 - **9 issue = 9 tổ hợp frame native khác nhau**, không phải 9 lần cùng một chỗ. Nhóm `melondsds / anr` là **hỗn hợp nhiều điểm chờ**, không phải một lỗi. Bất kỳ tài liệu nào (kể cả `melondsds-anr-1311.md`) nói "nguyên nhân là X" cho cả nhóm đều chưa đủ bằng chứng — `[CHƯA KIỂM]`.
-- **Không bao giờ thấy `GLSurfaceView.onPause` trong chữ ký.** Câu "nếu trace rơi vào `GLSurfaceView.onPause` thì…" ở `melondsds-anr-1311.md` §6.1 chỉ đúng nếu đọc `adb bugreport`/logcat ANR, **không** đúng nếu chỉ đọc `detail` của báo cáo. Cách đọc đúng: nhìn **frame native đầu tiên** rồi tra bảng ở mục 4.
+- **Không bao giờ thấy `GLSurfaceView.onPause` trong chữ ký.** Câu "nếu trace rơi vào `GLSurfaceView.onPause` thì…" ở `melondsds-anr-1311.md` (PR #619, đã gộp) **§3(c)**, hướng xử lý ở **§6 mục 2**, chỉ đúng nếu đọc `adb bugreport`/logcat ANR, **không** đúng nếu chỉ đọc `detail` của báo cáo. Cách đọc đúng: nhìn **frame native đầu tiên** rồi tra bảng ở mục 4.
 - Nếu trace ở dạng protobuf bị cắt vụn, `frames()` có thể trả rỗng → mọi ANR của một lõi **gộp thành một chữ ký**. Ở nhóm này ta thấy 9 chữ ký nên các báo cáo đang có frame đọc được; nhưng khi thấy một issue `anr` có `count` lớn bất thường mà `signature` lạ, nên kiểm `detail` trước khi tin — `[CHƯA KIỂM]` cho phần này.
 
 ## 3. Sau #606 và #619 còn lại những đường nào (để không sửa lại lần hai)
@@ -58,7 +58,7 @@ Ba hệ quả thực dụng:
 
 `#574` (giải phóng Coil/feed/AdBlock) **không liên quan** nhóm này: nó chạy ở **tiến trình chính**, còn ANR ở đây mang thành phần `engine:libretro:melondsds`, tức tiến trình `:game` (`app/src/github/AndroidManifest.xml:82`). Đừng tính #574 vào phần "đã xử lý" của nhóm.
 
-Vậy đường còn lại **không đi qua mã app** — đúng như kết luận của `docs/loi/ppsspp-anr-1311.md` §2, và vì vậy nhóm này chỉ còn 4 nghi phạm dưới đây.
+Vậy đường còn lại **không đi qua mã app** — đúng như kết luận của `docs/loi/ppsspp-anr-1311.md` **§2** (tài liệu đó **chưa lên `main`**, đang ở PR **#623**), và vì vậy nhóm này chỉ còn 4 nghi phạm dưới đây.
 
 ## 4. Bốn nghi phạm còn lại, kèm `tệp:dòng`
 
@@ -96,12 +96,12 @@ Vậy đường còn lại **không đi qua mã app** — đúng như kết lu�
 
 | Frame native đầu của `main` | Kết luận | Việc tiếp |
 |---|---|---|
-| `libart.so (art::Monitor::Wait)` / `libc.so (__epoll_pwait)` + `stage` = `playing`/`paused` | (a) — chờ GLThread ở `GLRetroView.kt:371` | hướng sửa ngoài repo (§6 của #619); chỉ còn giảm khung dài |
+| `libart.so (art::Monitor::Wait)` / `libc.so (__epoll_pwait)` + `stage` = `playing`/`paused` | (a) — chờ GLThread ở `GLRetroView.kt:371` | hướng sửa ngoài repo (§6 mục 2 của `melondsds-anr-1311.md`, PR #619 đã gộp); chỉ còn giảm khung dài |
 | `libc.so (__futex_wait_ex)` + có `libretrodroid.so` trong 3 frame đầu | chờ `coreLock` — **#606/#619 còn sót đường** | mở issue mới kèm trace, ghi rõ tên lời gọi |
 | `libart.so (art::Monitor::Wait)` + `stage` = lúc thoát game | (b) — `requestExitAndWait` / `retro_deinit` | đo `retro_deinit` của melondsds; xem lại 1,5 s ở `RetroActivity.kt:649` |
 | `libGLESv2.so` / `libEGL.so` (`eglSwapBuffers`, `glLinkProgram`) | khung đang dựng shader — (d) | tái hiện: đổi kiểu hiển thị rồi thoát ngay |
 | `libc.so (__ioctl)` / `libc.so (read)` trên luồng khác | nghi luồng I/O (SAF, firmware, savestate) | `[CHƯA KIỂM]` |
-4. **Đếm theo `stage`** (đã có sẵn cho `anr`): nếu phần lớn báo cáo là `first-frame`/`playing` thì là (a)/(d); nếu là stage mới `paused`/`playing` xen kẽ (sau khi #624 gộp) thì là ca **ở nền**, không phải lúc chơi.
+4. **Đếm theo `stage`** (đã có sẵn cho `anr`): nếu phần lớn báo cáo là `first-frame`/`playing` thì là (a)/(d); nếu là stage mới `paused`/`playing` xen kẽ (sau khi gộp #624 — PR đang mở, thêm `stage = paused`) thì là ca **ở nền**, không phải lúc chơi.
 5. **Thống kê tổng hợp:** `python scripts/crash-insight.py --out-dir <thư mục>` — mặc định **loại** báo cáo mang chứng thư khác bản phát hành (`partition_by_cert`); muốn gộp cả bản mod/dựng lại thì thêm `--all-certs`, và khi đó phải nói rõ trong kết luận.
 6. **Tái hiện có kiểm soát** (máy yếu, NDS): mở game → tua nhanh 4× → đổi kiểu hiển thị → thoát ngay; lặp 5 lần, ghi số lần `Davey!` > 2 000 ms trong logcat và số lần `stage` cuối là `first-frame`. Không cần `bugreport` nếu `detail` đã đủ frame native.
 
