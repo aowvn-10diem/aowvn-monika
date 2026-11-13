@@ -5,6 +5,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.text.TextStyle
@@ -78,6 +79,20 @@ class ReaderScreenTest {
         }
     }
 
+    /**
+     * Chờ một câu chỉ hiện **sau khi dựng trang** rồi mới kiểm.
+     *
+     * Trang dựng trên [PdfRenderThread] (luồng riêng), nên `waitForIdle` của Compose không chờ
+     * việc đó: ngay sau `performClick` màn còn đang Loading. Máy nhanh thì kịp, máy chậm (CI)
+     * thì chưa — đây là nguồn flake của #618. Đợi theo điều kiện thay vì ngủ một khoảng đoán mò.
+     */
+    private fun awaitText(text: String) {
+        rule.waitUntil(timeoutMillis = 5_000) {
+            rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+        }
+        rule.onNodeWithText(text).assertExists()
+    }
+
     @Test fun zeroPageBookShowsAnErrorInsteadOfAnEndlessSpinner() {
         var retried = 0
         composeScreen(FakeBook(pageCount = 0), onRetry = { retried++ })
@@ -98,10 +113,10 @@ class ReaderScreenTest {
         rule.onNodeWithText("Trang 1/3").assertExists()
 
         rule.onNodeWithText("Sau").performClick()
-        rule.onNodeWithText("Không dựng được trang 2").assertExists()
+        awaitText("Không dựng được trang 2")
         rule.onNodeWithText(ReaderError.CORRUPT.message).assertExists()
         rule.onNodeWithText("Thử lại").performClick() // thử lại vẫn lỗi nhưng không treo
-        rule.onNodeWithText("Không dựng được trang 2").assertExists()
+        awaitText("Không dựng được trang 2")
 
         rule.onNodeWithText("Sau").performClick()
         rule.onNodeWithText("Trang 3/3").assertExists()
@@ -112,7 +127,8 @@ class ReaderScreenTest {
         ReaderDiag.onError = { what, _ -> reports += what }
         try {
             composeScreen(FakeBook(pageCount = 2, failOnPage = 0))
-            rule.waitForIdle()
+            // Lỗi báo từ luồng dựng trang → chờ điều kiện, `waitForIdle` không chờ luồng đó.
+            rule.waitUntil(timeoutMillis = 5_000) { reports.any { it == "dung-trang-loi" } }
             assertTrue(
                 "Lỗi dựng trang phải được ghi nhận bằng mã (không kèm tên tệp), có: $reports",
                 reports.any { it == "dung-trang-loi" },
