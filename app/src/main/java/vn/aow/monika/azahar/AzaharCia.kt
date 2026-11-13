@@ -31,5 +31,6 @@ object AzaharCia {
     }
 
     /** Đường dẫn chuẩn hoá; không lấy được (quyền/IO) thì dùng đường dẫn tuyệt đối như trước. */
+    // diag: bỏ qua lỗi đọc đường dẫn chuẩn hoá — chỉ dùng để so tiền tố, đã có đường dẫn tuyệt đối thay thế.
     private fun resolve(file: File): String = runCatching { file.canonicalPath }.getOrElse { file.absolutePath }
 }
