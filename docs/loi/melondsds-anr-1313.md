@@ -3,7 +3,7 @@
 Ngày 13/11/2026 — nhánh `chan-doan/melondsds-anr-1313` — mã đọc trên `origin/main` **`fa88ddd0`** (dẫn chiếu `Diagnostics.kt` giữ nguyên từ `0e9ef5bd`; `5b94cbf6` của #618 là bản chèn 11 dòng cuối cùng vào tệp đó).
 **Chỉ tài liệu, không sửa mã.** Không gộp, không đụng `config/`.
 
-**Bản 2 (13/11, sau phân tích ~14:00Z ở #337):** giả thuyết **`coreLock` đã bị hạ** khỏi vị trí nghi phạm chính (lý do + `tệp:dòng` ở §4.4); nghi phạm còn đứng được là **độ dài một đơn vị việc của GLThread**, **`requestExitAndWait()` khi thoát** và **1 500 ms chờ SRAM** (§4.1–4.3), kèm phép đo trực tiếp bằng `Diagnostics.crumb` (§5.2).
+**Bản 2 (13/11, sau phân tích ~14:00Z ở #337):** giả thuyết **`coreLock` đã bị hạ** khỏi vị trí nghi phạm chính (lý do + `tệp:dòng` ở §4.4); nghi phạm còn đứng được là **độ dài một đơn vị việc của GLThread** (§4.1) và **1 500 ms chờ SRAM** (§4.3); `requestExitAndWait()` chỉ còn ở **nhánh huỷ không `isFinishing`** (§4.2). Cách kiểm: đọc `detail`/`stage` (§5.1) và phép đo bằng crumb có cầu nối `:libretrodroid` → app (§5.2).
 
 Tài liệu này **không nhắc lại** ba giả thuyết (a)/(b)/(c) đã viết ở `docs/loi/melondsds-anr-1311.md` (PR #619, đã gộp). Ở đây chỉ thêm: (1) bảng số của cả 9 issue, (2) **[đính chính]** cách chữ ký của bot được tính — hệ quả là nhóm này không thể là một nguyên nhân duy nhất, (3) bảng quyết định đọc `detail`/`stage` để tách nhánh, (4) **bản 2**: hạ giả thuyết `coreLock` và phép đo thay thế (§4, §5.2).
 
@@ -60,11 +60,11 @@ Ba hệ quả thực dụng:
 
 `#574` (giải phóng Coil/feed/AdBlock) **không liên quan** nhóm này: nó chạy ở **tiến trình chính**, còn ANR ở đây mang thành phần `engine:libretro:melondsds`, tức tiến trình `:game` (`app/src/github/AndroidManifest.xml:82`). Đừng tính #574 vào phần "đã xử lý" của nhóm.
 
-Vậy đường còn lại **không đi qua mã app** — đúng như kết luận của `docs/loi/ppsspp-anr-1311.md` **§2** (tài liệu đó **chưa lên `main`**, đang ở PR **#623**) — nên §4 chỉ còn ba nghi phạm và một giả thuyết đã hạ.
+Vậy đường còn lại **không đi qua mã app** — đúng như kết luận của `docs/loi/ppsspp-anr-1311.md` **§2** (tài liệu đó **chưa lên `main`**, đang ở PR **#623**) — nên §4 chỉ còn **hai nghi phạm chính** (§4.1, §4.3) và **một nhánh hiếm** (§4.2), bên cạnh giả thuyết đã hạ (§4.4).
 
 ## 4. Nghi phạm còn đứng được — sau khi **hạ** giả thuyết `coreLock`
 
-Bản 1 của tài liệu này (head `93255a3`) xếp (d) "khoá `coreLock` bị giữ quá lâu" là **nghi phạm chính**. **Sai.** Phân tích 13/11 ~14:00Z ở #337 (`[Trưởng nhóm OpenCode → PM] đề xuất xử lý coreLock`) đọc lại **từng** đường của Main Thread: Main Thread **không** chờ `coreLock` tới mức gây ANR — thứ nó chờ là **Java monitor của GLThread**. Bằng chứng ở §4.4. Từ đây còn ba nghi phạm, tất cả đều quy về **độ dài một đơn vị việc của GLThread** hoặc **thời gian chờ có sẵn trong vòng đời Activity**, và **chưa cái nào được đo** — mọi kết luận vẫn `[CHƯA KIỂM]`.
+Bản 1 của tài liệu này (head `93255a3`) xếp (d) "khoá `coreLock` bị giữ quá lâu" là **nghi phạm chính**. **Sai.** Phân tích 13/11 ~14:00Z ở #337 (`[Trưởng nhóm OpenCode → PM] đề xuất xử lý coreLock`) đọc lại **từng** đường của Main Thread: Main Thread **không** chờ `coreLock` tới mức gây ANR — thứ nó chờ là **Java monitor của GLThread**. Bằng chứng ở §4.4. Từ đây còn **hai nghi phạm chính** (#1 §4.1, #3 §4.3) và **một nhánh hiếm** (#2 §4.2), tất cả quy về **độ dài một đơn vị việc của GLThread** hoặc **thời gian chờ có sẵn trong vòng đời Activity**; **chưa cái nào được đo** — mọi kết luận vẫn `[CHƯA KIỂM]`.
 
 ### 4.1 `GLRetroView.kt:371` — chờ Java monitor của GLThread (nghi phạm số 1)
 
@@ -75,11 +75,12 @@ Bản 1 của tài liệu này (head `93255a3`) xếp (d) "khoá `coreLock` bị
 - Nghi phạm này chỉ "đứng" khi ca ANR rơi vào **~60 giây đầu** (`StartupProgress.kt:40`): người chơi bấm Quay lại / chuyển app đúng lúc lõi đang nạp. `[CHƯA KIỂM]` — chỉ `stage` của báo cáo mới phân biệt được, xem §5.2.
 - Frame native kỳ vọng: `libart.so (art::Monitor::Wait)` hoặc `libc.so (__epoll_pwait)` — dấu hiệu **Java wait**, tức đang đứng ở `:371`.
 
-### 4.2 `requestExitAndWait()` khi đóng game (nghi phạm số 2)
+### 4.2 `requestExitAndWait()` — chỉ còn ở nhánh huỷ **không** `isFinishing` (nghi phạm yếu)
 
-- `RetroActivity.kt:646-657` — `onDestroy()` chờ SRAM (§4.3) **trước** `super.onDestroy()` (`:651`); `super.onDestroy()` gỡ view khỏi cây → framework `GLSurfaceView.onDetachedFromWindow` → `requestExitAndWait()` (**không hạn**) chờ GLThread chạy hết hàng đợi.
-- Trong hàng đợi còn `destroy()` — `GLRetroView.kt:153` → `retro_unload_game` + `retro_deinit` (`libretrodroid.cpp:469-470`). `destroy()` lấy khoá **bên trong** hàng đợi GL (`libretrodroid.cpp:454`), nên đây **không** phải chờ `coreLock` từ Main Thread — vẫn là chờ Java monitor của GLThread.
-- Cộng dồn: 1 500 ms chờ SRAM (§4.3, chặng `t7→t8`) + `requestExitAndWait` (không hạn, chặng `t9→t10`) nằm trong **cùng** ngân sách 5 giây của một lần ANR. `[CHƯA KIỂM]` cho phần `retro_deinit` của melondsds dài bao lâu.
+- **Trên đường thoát bình thường, chặng này không tồn tại.** `RetroActivity.kt:646-657`: sau `super.onDestroy()` (`:651`), nhánh `isFinishing` gọi `killProcess` (`:656`) **trước khi** `ActivityThread.handleDestroyActivity` kịp `removeViewImmediate` ⇒ view chưa bị gỡ, `GLSurfaceView.onDetachedFromWindow`/`requestExitAndWait` **không bao giờ chạy**. Lưu ý: `super.onDestroy()` **không** gỡ view — nó chỉ chạy callback vòng đời; việc gỡ nằm ở `ActivityThread` **sau khi** `onDestroy()` trả về.
+- Nhánh còn lại: activity bị huỷ **không** do người dùng thoát (`isFinishing == false`) — ví dụ đổi `uiMode`/`density`, vì `RetroActivity` không khai hai cờ đó trong `configChanges` (`app/src/github/AndroidManifest.xml:83`). Khi đó view mới bị gỡ và `requestExitAndWait()` (**không hạn**) chờ GLThread chạy hết hàng đợi; hàng đợi có `destroy()` (`GLRetroView.kt:153` → `retro_unload_game` + `retro_deinit`, `libretrodroid.cpp:469-470`).
+- `destroy()` lấy khoá **bên trong** hàng đợi GL (`libretrodroid.cpp:454`) ⇒ không phải chờ `coreLock` từ Main Thread, mà chờ Java monitor của GLThread.
+- Vì hiếm và **không** nằm trên đường "thoát game", đây là **nghi phạm yếu**: chỉ đứng nếu trace cho thấy ca huỷ không-finishing. `[CHƯA KIỂM]`.
 - Frame native kỳ vọng: `libart.so (art::Monitor::Wait)`; nếu thấy `pthread_mutex_lock` của `libretrodroid.so` thì là ca khác (§4.4).
 
 ### 4.3 1 500 ms chờ ghi SRAM trước khi gỡ view (nghi phạm số 3)
@@ -87,7 +88,7 @@ Bản 1 của tài liệu này (head `93255a3`) xếp (d) "khoá `coreLock` bị
 - `RetroActivity.kt:646-650`: `runBlocking { withTimeoutOrNull(SRAM_WRITE_WAIT_MS) { sramJob?.join() } }`, hằng **1 500 ms** ở `:691`. Đứng **trước** `super.onDestroy()` nên cộng thẳng vào thời gian Main Thread bận — đo bằng chặng `t7→t8` (§5.2).
 - Chỉ có `sramJob` khi đã qua khung đầu: `saveSram()` thoát sớm nếu `!firstFrame` (`:667`), nên nghi phạm này chỉ đứng với ca **đã chơi rồi mới thoát**.
 - **Hệ quả cần kiểm:** `saveSram()` chạy **sau** khi view đã pause (§5.2), nên lời gọi `serializeSRAMOrNull` được xếp vào GLThread trong lúc GLThread đang đứng ⇒ có thể không được chạy tới khi resume, hết hạn 300 ms và **bỏ lượt lưu**. Nếu báo cáo thật có crumb `sram` "chụp quá hạn" ở mọi lần ra nền thì đó là lỗi mất SRAM, không chỉ là chuyện ANR — `[CHƯA KIỂM]`.
-- Nếu ANR xảy ra lúc thoát game trên máy ghi `.srm` chậm thì 1,5 s + `requestExitAndWait` là tổ hợp đáng ngờ nhất. `[CHƯA KIỂM]`.
+- Nếu ANR xảy ra lúc thoát game trên máy ghi `.srm` chậm thì **1,5 s chờ ghi SRAM** (`t7→t8`) cộng 300 ms `saveSram` là tổ hợp đáng ngờ nhất; **`requestExitAndWait` không nằm trên đường này** (§4.2). `[CHƯA KIỂM]`.
 
 ### 4.4 (đã hạ) `coreLock` / `step()` — **không** phải nghi phạm
 
@@ -98,7 +99,7 @@ Bảng rà từng đường Main Thread (đọc mã trên `origin/main` `fa88ddd
 | `GLRetroView.kt:371` `onPause()` (framework) | không | **Java monitor** của GLThread, không hạn |
 | `GLRetroView.kt:372` `LibretroDroid.pause()` | có (`libretrodroid.cpp:507`) | ≈ 0: đứng **sau** `:371`, GLThread đã dừng |
 | `GLRetroView.kt:361` `LibretroDroid.resume()` | có (`libretrodroid.cpp:485`) | ≈ 0: gọi **trước** `onResume()` (`:362`), GLThread còn pause |
-| `RetroActivity.kt:651` `super.onDestroy()` → `requestExitAndWait()` | không | **Java monitor** GLThread, không hạn |
+| `RetroActivity.kt:656` `killProcess` (nhánh `isFinishing`) | không | **không chờ gì** — tiến trình chết ngay, `requestExitAndWait` không chạy (§4.2) |
 | `GLRetroView.kt:71-80` `setViewport` | có, nhưng chạy **trong** `queueEvent` = GLThread (`libretrodroid.cpp:744`) | Main Thread không chờ |
 
 Vì sao giả thuyết cũ không đứng:
@@ -107,7 +108,7 @@ Vì sao giả thuyết cũ không đứng:
 - **Trần giữ khoá quá thấp**: `coreLock` là `std::mutex` thường (`libretrodroid.h:185`), mọi chỗ dùng `std::lock_guard`; bằng chứng không re-entrant: `resume()` đang giữ khoá phải gọi `refreshAspectRatioLocked()` (`libretrodroid.cpp:503`) chứ không được gọi `refreshAspectRatio()` (`:573` — bản sau khoá lại và **tự deadlock**). `step()` giữ khoá suốt `:520-566`, **nhưng** trên máy 60 Hz: NDS 59,83 fps ⇒ `|content − screen| < 5` ⇒ `useVSync = true` (`fpssync.cpp:41`) ⇒ `wait()` **return ngay** (`fpssync.cpp:59-61`) và `advanceFrames()` trả 1 ⇒ **trong khoá không có lúc nào ngủ**; trần = `frameSpeed` lần `retro_run`, tua 4× ⇒ ~67 ms.
 - **Xấu nhất vẫn không đủ**: màn 120 Hz ⇒ `useVSync = false` ⇒ ngủ trong khoá; tua 4× ⇒ 8 × 16,7 ms + `renderFrame` ≈ **150 ms**. Cách ngưỡng ANR 5 000 ms hơn 30 lần.
 - **Câu ở bản 1 phải rút lại**: "trên màn 90/120 Hz `coreLock` gần như không bao giờ rảnh" **chỉ đúng ở tần số đó**, và kể cả vậy mỗi lần giữ khoá chỉ ~150 ms; trên 60 Hz còn không ngủ trong khoá. Nó **không** chứng minh được ANR.
-- **Bỏ `fpsSync->wait()` ra ngoài khoá cũng không giúp**: `onPause()`/`requestExitAndWait()` chờ **cả hàm `onDrawFrame`**, không chờ khoá — ngủ ngoài khoá vẫn nằm trong khung, thời gian chờ **y nguyên**. Xem §6 để biết vì sao hướng đó còn nguy hiểm hơn.
+- **Bỏ `fpsSync->wait()` ra ngoài khoá cũng không giúp**: `onPause()` (và `requestExitAndWait()` ở nhánh hiếm §4.2) chờ **cả hàm `onDrawFrame`**, không chờ khoá — ngủ ngoài khoá vẫn nằm trong khung, thời gian chờ **y nguyên**. Xem §6 để biết vì sao hướng đó còn nguy hiểm hơn.
 - Nếu trace lại chỉ ra `pthread_mutex_lock` + `libretrodroid.so` trong 3 frame đầu của luồng `main` thì đó **không** phải `step()` — mọi đường vào khoá từ Main Thread đã rà ở bảng trên — mà là một đường JNI khác chưa rà; khi đó mở issue mới kèm trace.
 
 ### 4.5 Mở game lần đầu (nạp lõi trên GLThread) — **không tự gây ANR**, chỉ làm §4.1 nặng hơn
@@ -124,7 +125,7 @@ Vì sao giả thuyết cũ không đứng:
 
 | Frame native đầu của `main` | Kết luận | Việc tiếp |
 |---|---|---|
-| `libart.so (art::Monitor::Wait)` / `libc.so (__epoll_pwait)` | chờ **Java monitor** — §4.1 (lúc mở/pause) hoặc §4.2 (lúc thoát); phân biệt bằng `stage` | chạy phép đo §5.2 |
+| `libart.so (art::Monitor::Wait)` / `libc.so (__epoll_pwait)` | chờ **Java monitor** — §4.1 (lúc pause); nhánh huỷ không-finishing là §4.2; phân biệt bằng `stage` | chạy phép đo §5.2 |
 | `libc.so (__futex_wait_ex)` + `libretrodroid.so` trong 3 frame đầu | chờ `coreLock` từ một đường JNI **chưa rà** — **không** phải `step()` (§4.4) | mở issue mới kèm trace |
 | `libGLESv2.so` / `libEGL.so` (`glLinkProgram`, `eglSwapBuffers`) | khung đang dựng shader — §4.1 | tái hiện: đổi kiểu hiển thị rồi thoát ngay |
 | `libc.so (__ioctl)` / `libc.so (read)` trên luồng khác | nghi luồng I/O (SAF, firmware, savestate) | `[CHƯA KIỂM]` |
@@ -133,39 +134,48 @@ Vì sao giả thuyết cũ không đứng:
 
 ### 5.2 Phép đo trực tiếp — phương án A đã đề xuất cho PM (không đổi hành vi)
 
-**Cửa sổ đo phải bắt đầu TRƯỚC thân `onPause()`.** Với `lifecycle-runtime` 2.8.7 / `activity-compose` 1.9.3 (`gradle/libs.versions.toml:11-12`), `ON_PAUSE` được phát ở `Application.ActivityLifecycleCallbacks.onActivityPrePaused` (API 29+) — tức `ReportFragment.LifecycleCallbacks` chạy **trước** `RetroActivity.onPause():635`; với API 26–28 (`minSdk = 26`), AOSP `Activity.performPause` gọi `mFragments.dispatchPause()` **trước** `onPause()`. Nên chặng chờ GLThread ở `GLRetroView.kt:371` xảy ra **trước** dòng đầu `onPause()` của Activity. Đặt `t0` ở đầu `onPause()` sẽ bỏ mất đúng phần có thể là nguyên nhân: `super.onPause()` (`:640`) luôn ~0 và bảng kết luận sẽ **xoá oan nghi phạm #1**. Cùng lý do, `requestExitAndWait()` xảy ra khi view bị gỡ khỏi cửa sổ, **sau khi** `onDestroy()` trả về ⇒ `super.onDestroy()` (`:651`) cũng **không** bọc nó.
+**Bước 1 bắt buộc — cầu nối chẩn đoán từ `:libretrodroid` sang app.** `t1`, `t2`, `t3` nằm trong `GLRetroView` (module `:libretrodroid`), mà module này **không** thấy lớp app (`git grep vn.aow.monika -- libretrodroid` rỗng) nên **không** gọi được `Diagnostics.crumb`. Phải thêm một sink một dòng:
+
+```kotlin
+// libretrodroid/src/main/java/com/swordfish/libretrodroid/Diag.kt
+object Diag { @Volatile var sink: ((String) -> Unit)? = null }
+```
+
+app gán sink lúc tạo view (`RetroActivity.kt:343-346`): `Diag.sink = { msg -> Diagnostics.crumb(this, "pause", msg) }`; trong `RenderLifecycleObserver.pause()` gọi `Diag.sink?.invoke("t1 <elapsedRealtime>")`, `"t2 …"`, `"t3 …"`. (Tiền lệ cùng kiểu: `startupListener` của `GLRetroViewData` — app truyền callback vào module.) **Trước khi có cầu nối, `t1→t3` là `[CHƯA ĐO ĐƯỢC]`** — không được trình bày như đã đo được.
+
+**Cửa sổ đo phải bắt đầu TRƯỚC thân `onPause()`.** Với `lifecycle-runtime` 2.8.7 / `activity-compose` 1.9.3 (`gradle/libs.versions.toml:11-12`), `ON_PAUSE` được phát ở `Application.ActivityLifecycleCallbacks.onActivityPrePaused` (API 29+) — tức `ReportFragment.LifecycleCallbacks` chạy **trước** `RetroActivity.onPause():635`; với API 26–28 (`minSdk = 26`), AOSP `Activity.performPause` gọi `mFragments.dispatchPause()` **trước** `onPause()`. Nên chặng chờ GLThread ở `GLRetroView.kt:371` xảy ra **trước** dòng đầu `onPause()` của Activity. Đặt `t0` ở đầu `onPause()` sẽ bỏ mất đúng phần có thể là nguyên nhân: `super.onPause()` (`:640`) luôn ~0 và bảng kết luận sẽ **xoá oan nghi phạm #1**. Cùng lý do, `requestExitAndWait()` (nếu có) xảy ra **sau khi** `onDestroy()` trả về ⇒ `super.onDestroy()` (`:651`) cũng **không** bọc nó; và trên đường thoát bình thường nó không chạy (§4.2).
 
 **Mốc gốc `t0`:** `Application.ActivityLifecycleCallbacks.onActivityPrePaused` (API 29+; tiền lệ đăng ký callbacks trong repo: `loader/src/main/java/vn/aow/monika/loader/MonikaLoaderProvider.java:62`). API 26–28 **không có** callback này ⇒ `t0 ≈ t1` (bắt đầu observer) và chặng `t0→t1` **không đo được** — phải ghi rõ trong crumb.
 
-**Nguyên tắc ghi crumb:** ghi một crumb **trước** mỗi lời gọi có thể chặn (nếu tiến trình bị ANR-kill giữa chặng, crumb mở cuối cùng cho biết đang đứng ở đâu) và một crumb **sau khi** lời gọi trả về. Giá trị là `SystemClock.elapsedRealtime()`, nhờ vậy tính được hiệu giữa hai mốc bất kỳ, không phụ thuộc crumb nào tới trước. Tất cả dùng tag `pause` (`Diagnostics.crumb`, `Diagnostics.kt:178`).
+**Nguyên tắc ghi crumb:** ghi một crumb **trước** mỗi lời gọi có thể chặn (nếu tiến trình bị ANR-kill giữa chặng, crumb mở cuối cùng cho biết đang đứng ở đâu) và một crumb **sau khi** lời gọi trả về. Giá trị là `SystemClock.elapsedRealtime()`, nhờ vậy tính được hiệu giữa hai mốc bất kỳ. Trong app dùng `Diagnostics.crumb` tag `pause` (`Diagnostics.kt:178`); trong `:libretrodroid` dùng `Diag.sink` (bước 1).
 
-| Chặng | Crumb mở | Crumb đóng | Nghĩa |
-|---|---|---|---|
-| Hệ thống/framework trước khi vào view | `pause:t0` (`onActivityPrePaused`) | `pause:t1` (dòng đầu `RenderLifecycleObserver.pause()`, `GLRetroView.kt:367`) | thời gian Android/binder/SAF trước khi pause view — **không** phải chờ GL |
-| **Chờ GLThread — nghi phạm #1** | `pause:t1` | `pause:t2` (ngay sau `onPause()` của `GLSurfaceView`, `:371`, trả về) | đúng phần chờ Java monitor của GLThread |
-| `LibretroDroid.pause()` | `pause:t2` | `pause:t3` (sau `:372`) | chờ `coreLock` — kỳ vọng ≈ 0 (§4.4) |
-| Phần còn lại của dispatch | `pause:t3` | `pause:t4` (dòng đầu `RetroActivity.onPause():635`) | — |
-| `saveSram()` | `pause:t4` | `pause:t5` (sau `:639`) | 0–300 ms (`SRAM_CAPTURE_TIMEOUT_MS`, `:689`) |
-| `super.onPause()` | `pause:t5` | `pause:t6` (sau `:640`) | kỳ vọng ≈ 0: `ON_PAUSE` đã phát trước đó |
-| Chờ ghi SRAM | `pause:t7` (dòng đầu `onDestroy():646`) | `pause:t8` (sau `runBlocking { join }`, `:649`) | 0–1 500 ms (`:691`) — nghi phạm #3 |
-| `super.onDestroy()` | `pause:t8` | `pause:t9` (sau `:651`) | gỡ view — **không** gồm `requestExitAndWait` |
-| **`requestExitAndWait` — nghi phạm #2** | `pause:t9` | `pause:t10` (sau `onDetachedFromWindow` của view) | phần chờ GLThread khi thoát |
+| Chặng | Crumb mở | Crumb đóng | Module | Đo được ngay? |
+|---|---|---|---|---|
+| Hệ thống/framework trước khi vào view | `pause:t0` (`onActivityPrePaused`) | `pause:t1` (dòng đầu `RenderLifecycleObserver.pause()`, `GLRetroView.kt:367`) | app + `:libretrodroid` | **không** — cần bước 1 |
+| **Chờ GLThread — nghi phạm #1** | `pause:t1` | `pause:t2` (ngay sau `onPause()` của `GLSurfaceView`, `:371`, trả về) | `:libretrodroid` | **không** — cần bước 1 |
+| `LibretroDroid.pause()` | `pause:t2` | `pause:t3` (sau `:372`) | `:libretrodroid` | **không** — cần bước 1 |
+| Phần còn lại của dispatch | `pause:t3` | `pause:t4` (dòng đầu `RetroActivity.onPause():635`) | app | **không** (cần `t3`) |
+| `saveSram()` | `pause:t4` | `pause:t5` (sau `:639`) | app | có |
+| `super.onPause()` | `pause:t5` | `pause:t6` (sau `:640`) | app | có |
+| Chờ ghi SRAM | `pause:t7` (dòng đầu `onDestroy():646`) | `pause:t8` (sau `runBlocking { join }`, `:649`) | app | có |
+| `super.onDestroy()` | `pause:t8` | `pause:t9` (sau `:651`) | app | có — **không** gồm `requestExitAndWait` |
+| `requestExitAndWait` (tuỳ chọn, **không** phải đường thoát) | `pause:t10` (ngay trước `root.removeView(retroView)`) | `pause:t11` (sau khi trả về) | app | chỉ ở nhánh `!isFinishing` |
 
-- `t10` cần một override `onDetachedFromWindow` trong `GLRetroView` ghi crumb trước/sau `super.onDetachedFromWindow()` — chỉ để đo, cùng nhánh thử nghiệm với phép đo. Nếu không muốn đụng `libretrodroid`, lấy `t10` = `onStop()` của Activity làm mốc gần đúng và ghi `[CHƯA KIỂM]`.
+- **`t10/t11` không dùng cho đường thoát game.** Khi `isFinishing == true`, tiến trình bị `killProcess` ở `RetroActivity.kt:656` trước khi `ActivityThread` kịp `removeViewImmediate`, nên `onDetachedFromWindow` không chạy: chặng này **không xảy ra, không cần đo, và không đo được**. Chỉ nhánh huỷ không-finishing (ví dụ đổi `uiMode`/`density` — `AndroidManifest.xml:83`) mới có; muốn có số thì nhánh đo tự gỡ view (`root.removeView(retroView)`) và bọc crumb trước/sau. Nếu không thêm lời gọi đó ⇒ `[CHƯA KIỂM]`. **Không** lấy `onStop()` làm mốc: AOSP `performDestroyActivity` gọi `callActivityOnStop` **trước** `onDestroy` nên hiệu sẽ âm.
 - Vì sao đọc được: crumb của tiến trình chết được đọc lại cho báo cáo `anr` (`Diagnostics.kt:866`, `val crumbs = Breadcrumbs.read(c, e.pid)`), nên các mốc xuất hiện ngay trong báo cáo ANR kế tiếp của #350/#318/#314.
 - Cách đọc kết quả:
 
 | Số đo | Kết luận |
 |---|---|
-| `t1→t2` ≥ 2 000 ms | **nghi phạm #1 xác nhận** — chờ GLThread; `stage=first-frame` ⇒ lúc nạp lõi (§4.5), `stage=playing` ⇒ một khung chơi dài bất thường |
-| `t0→t1` ≥ 2 000 ms | hệ thống/framework chậm **trước** khi vào view — không phải GLThread, không phải `coreLock`; xét I/O/SAF/binder `[CHƯA KIỂM]` |
-| `t9→t10` ≥ 2 000 ms | **nghi phạm #2 xác nhận** — `requestExitAndWait` / `retro_deinit` |
+| `t1→t2` ≥ 2 000 ms *(sau bước 1)* | **nghi phạm #1 xác nhận** — chờ GLThread; `stage=first-frame` ⇒ lúc nạp lõi (§4.5), `stage=playing` ⇒ một khung chơi dài bất thường |
+| `t0→t1` ≥ 2 000 ms *(sau bước 1, API 29+)* | hệ thống/framework chậm **trước** khi vào view — không phải GLThread, không phải `coreLock`; xét I/O/SAF/binder `[CHƯA KIỂM]` |
+| `t10→t11` ≥ 2 000 ms *(chỉ nhánh `!isFinishing`)* | nghi phạm #2 — `requestExitAndWait`/`retro_deinit`; trên đường thoát game chặng này **không tồn tại** |
 | `t7→t8` ≈ 1 500 ms | **nghi phạm #3 xác nhận** — chờ ghi SRAM |
-| `t2→t3` ≥ 2 000 ms | chờ `coreLock` thật — quay lại §4.4 và tìm đường JNI chưa rà |
+| `t2→t3` ≥ 2 000 ms *(sau bước 1)* | chờ `coreLock` thật — quay lại §4.4 và tìm đường JNI chưa rà |
 | **`t5→t6` ≈ 0** | **KHÔNG** chứng minh nghi phạm #1 vô can: phần chờ GLThread nằm ở `t1→t2`, **trước** thân `onPause()`. Muốn kết luận vô can phải thấy cả `t0→t1` và `t1→t2` đều nhỏ |
-| mọi chặng < 200 ms mà vẫn ANR | cả ba nghi phạm sai → quay lại nhánh I/O/firmware/savestate (`[CHƯA KIỂM]`) |
+| mọi chặng < 200 ms mà vẫn ANR | không nghi phạm nào đứng → quay lại nhánh I/O/firmware/savestate (`[CHƯA KIỂM]`) |
 - Đối chiếu nhanh trên máy thật: `adb logcat -s MonikaGame | Select-String 'Davey!'` (khung > 2 s), rồi đọc crumb `pause` qua `scripts/crash-reports.sh <id>`.
-- **Chưa có số nào** trong phiên này (không có `CRASH_ADMIN_TOKEN`, chưa chạy máy thật) — toàn bộ bảng trên là kế hoạch, không phải kết quả.
+- **Chưa có số nào** trong phiên này (không có `CRASH_ADMIN_TOKEN`, chưa chạy máy thật, chưa có cầu nối bước 1) — toàn bộ bảng trên là kế hoạch, không phải kết quả.
 
 ## 6. Vì sao **không** sửa `step()` / thu hẹp `coreLock`
 
