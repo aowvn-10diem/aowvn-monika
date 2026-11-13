@@ -23,4 +23,58 @@ object OfficialCert {
         if (official.isEmpty() || actual.isEmpty()) return false
         return !official.equals(actual, ignoreCase = true)
     }
+
+    /**
+     * [A85/A78-2] Màn hỗ trợ dự án chỉ được vẽ mã QR/số tài khoản khi APK đúng chứng thư phát hành.
+     *
+     * Khác [isForeignBuild]: bản release mà **không đọc được** chứng thư (rỗng) hoặc chưa cấu hình
+     * chứng thư chính thức đều **không** được vẽ thông tin nhận tiền — đây là bề mặt bị giả mạo nhiều nhất.
+     * Bản debug vẫn hiện để dev kiểm giao diện.
+     */
+    fun donationAllowed(actualSha256: String, officialSha256: String, debugBuild: Boolean): Boolean {
+        if (debugBuild) return true
+        val official = officialSha256.trim()
+        val actual = actualSha256.trim()
+        if (official.isEmpty() || actual.isEmpty()) return false
+        return official.equals(actual, ignoreCase = true)
+    }
+
+    /** Kết luận về bản đang chạy; `UNKNOWN` khi flavor chưa có chứng thư phát hành (bản Play). */
+    enum class BuildTrust { OFFICIAL, FOREIGN, UNKNOWN }
+
+    /**
+     * [A85/A78-3] So chứng thư do `PackageManager` trả với chứng thư đọc trực tiếp từ khối ký của tệp APK.
+     *
+     * - `debugBuild` → `OFFICIAL` (dev ký bằng khoá debug).
+     * - Chưa cấu hình chứng thư phát hành (`official` rỗng, vd. bản Play chờ Play App Signing) → `UNKNOWN`.
+     * - Không đọc được chứng thư từ `PackageManager` → `FOREIGN` (release không có bằng chứng chính thức).
+     * - Đọc được cả hai nguồn mà lệch nhau → `FOREIGN` (dấu hiệu `PackageManager` bị hook).
+     * - Còn lại: khớp hằng phát hành → `OFFICIAL`, khác → `FOREIGN`.
+     */
+    fun trustOf(
+        pmSha256: String,
+        apkBlockSha256: String?,
+        officialSha256: String,
+        debugBuild: Boolean,
+    ): BuildTrust {
+        if (debugBuild) return BuildTrust.OFFICIAL
+        val official = officialSha256.trim()
+        if (official.isEmpty()) return BuildTrust.UNKNOWN
+        val pm = pmSha256.trim()
+        if (pm.isEmpty()) return BuildTrust.FOREIGN
+        if (apkBlockSha256 != null && !apkBlockSha256.equals(pm, ignoreCase = true)) return BuildTrust.FOREIGN
+        return if (pm.equals(official, ignoreCase = true)) BuildTrust.OFFICIAL else BuildTrust.FOREIGN
+    }
+
+    /** Đọc chứng thư từ `PackageManager` và từ khối chữ ký của APK trên đĩa rồi kết luận. */
+    fun verifyOfficialApk(
+        context: android.content.Context,
+        officialSha256: String = OfficialCertPin.OFFICIAL_APK_CERT_SHA256,
+        debugBuild: Boolean = vn.aow.monika.BuildConfig.DEBUG,
+    ): BuildTrust {
+        val pm = vn.aow.monika.diag.Diagnostics.certSha256(context)
+        val block = context.applicationInfo?.sourceDir
+            ?.let { ApkSigningBlockReader.signingCertSha256(java.io.File(it)) }
+        return trustOf(pm, block, officialSha256, debugBuild)
+    }
 }

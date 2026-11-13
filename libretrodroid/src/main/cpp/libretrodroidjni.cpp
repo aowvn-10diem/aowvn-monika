@@ -82,7 +82,8 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_updateVari
     jobject variable
 ) {
     Variable v = JavaUtils::variableFromJava(env, variable);
-    Environment::getInstance().updateVariable(v.key, v.value);
+    // V202 PR3: đi qua LibretroDroid để lấy coreLock (gọi thẳng Environment sẽ bỏ qua khoá).
+    LibretroDroid::getInstance().updateVariable(v);
 }
 
 JNIEXPORT jobjectArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_getVariables(
@@ -92,7 +93,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_ge
     jclass variableClass = env->FindClass("com/swordfish/libretrodroid/Variable");
     jmethodID variableMethodID = env->GetMethodID(variableClass, "<init>", "()V");
 
-    auto variables = Environment::getInstance().getVariables();
+    auto variables = LibretroDroid::getInstance().getVariables();
     jobjectArray result = env->NewObjectArray(variables.size(), variableClass, nullptr);
 
     for (int i = 0; i < variables.size(); i++) {
@@ -200,6 +201,8 @@ JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_seri
 
         jbyteArray result = env->NewByteArray(size);
         env->SetByteArrayRegion(result, 0, size, data);
+        // V202 PR3: serializeState cấp new int8_t[] — giải phóng sau khi copy sang mảng Java.
+        delete[] data;
 
         return result;
 
@@ -271,6 +274,8 @@ JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_seri
 
         jbyteArray result = env->NewByteArray(size);
         env->SetByteArrayRegion(result, 0, size, (jbyte *) data);
+        // V202 PR3: serializeSRAM cấp new int8_t[] — giải phóng sau khi copy sang mảng Java.
+        delete[] data;
 
         return result;
 

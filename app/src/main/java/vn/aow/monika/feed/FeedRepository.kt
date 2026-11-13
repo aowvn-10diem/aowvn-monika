@@ -30,6 +30,15 @@ data class Post(
     val contentHtml: String,
 )
 
+/**
+ * Blogger trả mã HTTP lỗi. 4xx (bài đã xoá, id cũ còn trong danh sách lưu đĩa) là chuyện thường;
+ * chỉ 5xx mới là lỗi thật (xem `fetchJson`).
+ */
+class FeedHttpException(val code: Int) : java.io.IOException("Không tải được bài viết (HTTP $code)")
+
+/** JSON feed lệch hình dạng: thiếu `feed`/`entry` (Blogger trả HTML, bài bị gỡ…) — thay cho `!!` cũ gây NPE. */
+class FeedShapeException(message: String) : java.io.IOException(message)
+
 /** Đọc feed JSON của Blogger (aow.vn). */
 class FeedRepository(
     private val http: OkHttpClient,
@@ -79,9 +88,9 @@ class FeedRepository(
         val base = feed.url.trimEnd('/') + (label?.let { "/-/" + Uri.encode(it) } ?: "")
         val q = query?.takeIf { it.isNotBlank() }?.let { "&q=" + Uri.encode(it) } ?: ""
         val url = "$base?alt=json&orderby=published&start-index=$startIndex&max-results=${max ?: feed.pageSize}$q"
-        val root = getJson(url).jsonObject["feed"]!!.jsonObject
-        val entries = root["entry"] as? JsonArray ?: return emptyList()
-        return entries.map { parseEntry(it.jsonObject) }.onEach { cache.put(it.id, it) }
+        // Sai URL feed trong config là lỗi thật → vẫn báo `op-fail` khi JSON lệch hình dạng.
+        val entries = fetchJson(STEP_LIST, url) { it.feedObject()["entry"] as? JsonArray }
+        return entries?.map { parseEntry(it.jsonObject) }.orEmpty().onEach { cache.put(it.id, it) }
     }
 
     /**
@@ -94,7 +103,8 @@ class FeedRepository(
         val out = mutableListOf<Post>()
         for (page in 0 until maxPages) {
             val url = "$base?alt=json&orderby=published&start-index=${page * INDEX_PAGE + 1}&max-results=$INDEX_PAGE"
-            val entries = getJson(url).jsonObject["feed"]!!.jsonObject["entry"] as? JsonArray ?: break
+            // Sai URL feed trong config là lỗi thật → không đánh dấu expected.
+            val entries = fetchJson(STEP_INDEX, url) { it.feedObject()["entry"] as? JsonArray } ?: break
             out += entries.map { parseEntry(it.jsonObject).copy(contentHtml = "") }
             if (entries.size < INDEX_PAGE) break
         }
@@ -105,7 +115,9 @@ class FeedRepository(
         cache.get(id)?.let { return it }
         requireEnabled()
         val url = configRepo.current.feed.url.trimEnd('/') + "/$id?alt=json"
-        return parseEntry(getJson(url).jsonObject["entry"]!!.jsonObject).also { cache.put(it.id, it) }
+        // Bài bị gỡ là chuyện thường (danh sách lưu đĩa còn id cũ): 404 và thiếu `entry` chỉ ghi vệt, không báo.
+        return fetchJson(STEP_POST, url, expected = { it is FeedShapeException }) { parseEntry(it.entryObject()) }
+            .also { cache.put(it.id, it) }
     }
 
     private var pagesCache: List<Post>? = null
@@ -137,28 +149,62 @@ class FeedRepository(
         val path = pageUrl.substringAfter("://").substringAfter('/').substringBefore('?')
         val pages = pagesCache.takeUnless { forceRefresh } ?: run {
             val url = configRepo.current.feed.url.replace("/posts/", "/pages/").trimEnd('/') + "?alt=json&max-results=500"
-            val root = getJson(url).jsonObject["feed"]!!.jsonObject
-            (root["entry"] as? JsonArray).orEmpty().map { parseEntry(it.jsonObject) }.also { pagesCache = it }
+            // Trang tĩnh bị xoá/đổi đường dẫn là chuyện thường → không báo; 5xx vẫn báo.
+            fetchJson(STEP_PAGE, url, expected = { it is FeedShapeException }) { el ->
+                (el.feedObject()["entry"] as? JsonArray).orEmpty().map { parseEntry(it.jsonObject) }
+            }.also { pagesCache = it }
         }
         return pages.firstOrNull { it.url.substringAfter("://").substringAfter('/') == path }
     }
 
-    private suspend fun getJson(url: String): JsonElement = withContext(Dispatchers.IO) {
-        val call = http.newCall(Request.Builder().url(url).build())
-        call.timeout().timeout(10, java.util.concurrent.TimeUnit.SECONDS)
+    /**
+     * Tải [url] rồi đọc bằng [read] trong cùng một khối, để lỗi hình dạng JSON cũng được phân loại như lỗi mạng.
+     * Chỉ lỗi thật mới thành báo cáo `op-fail` (xem [worthReporting]); [step] cho biết hỏng ở đường đọc nào.
+     */
+    private suspend fun <T> fetchJson(
+        step: String,
+        url: String,
+        expected: (Throwable) -> Boolean = { false },
+        read: (JsonElement) -> T,
+    ): T = withContext(Dispatchers.IO) {
         try {
-            call.execute().use { response ->
-                check(response.isSuccessful) { "Không tải được bài viết (HTTP ${response.code})" }
+            val call = http.newCall(Request.Builder().url(url).build())
+            call.timeout().timeout(FEED_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS)
+            val root = call.execute().use { response ->
+                if (!response.isSuccessful) throw FeedHttpException(response.code)
                 // V166: đọc body qua mạng → đứt luồng ở đây là chuyện mạng (đánh dấu nguồn).
                 vn.aow.monika.diag.Diagnostics.networkRead { Json.parseToJsonElement(response.body!!.string()) }
             }
+            read(root)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
-            // V112: tải feed lỗi (HTTP/parse) để lại op-fail; mất mạng/hủy thì không.
-            if (e !is kotlinx.coroutines.CancellationException && !vn.aow.monika.diag.Diagnostics.isOffline(e))
-                ctx?.let { vn.aow.monika.diag.Diagnostics.opFail(it, vn.aow.monika.diag.Diagnostics.Op.FETCH_FEED, "tai-bai", e) }
+            // V112: chỉ 5xx/IO/JSON sai ở đường không mong đợi mới là lỗi app. 4xx (bài đã xoá, id cũ trong danh
+            // sách lưu) và lỗi đã khai báo [expected] là luồng thường → chỉ để lại vệt, tránh dồn báo cáo như #305/#512.
+            ctx?.let { c ->
+                if (worthReporting(e, step, expected))
+                    vn.aow.monika.diag.Diagnostics.opFail(c, vn.aow.monika.diag.Diagnostics.Op.FETCH_FEED, step, e)
+                else
+                    vn.aow.monika.diag.Diagnostics.crumb(c, "tai-feed", "$step: ${e.javaClass.simpleName} (bình thường, không báo)")
+            }
             throw e
         }
     }
+
+    /** Lỗi đáng lập báo cáo: không phải lỗi đã khai báo, không phải 4xx, không phải lỗi mạng. */
+    private fun worthReporting(e: Throwable, step: String, expected: (Throwable) -> Boolean): Boolean =
+        !expected(e) && !(e is FeedHttpException && e.code < 500) &&
+            !vn.aow.monika.diag.Diagnostics.isOffline(step, e)
+
+    /** Object `feed` của Blogger; thiếu/sai kiểu → [FeedShapeException] thay cho `!!`. */
+    private fun JsonElement.feedObject(): JsonObject =
+        (this as? JsonObject)?.get("feed") as? JsonObject
+            ?: throw FeedShapeException("JSON feed thiếu \"feed\"")
+
+    /** Một bài trả về rời (`/posts/default/<id>?alt=json`) bọc `entry` ở gốc; thiếu → bài đã bị gỡ. */
+    private fun JsonElement.entryObject(): JsonObject =
+        (this as? JsonObject)?.get("entry") as? JsonObject
+            ?: throw FeedShapeException("JSON feed thiếu \"entry\"")
 
     private fun parseEntry(e: JsonObject): Post {
         fun JsonObject.text(key: String) = (this[key] as? JsonObject)?.get("\$t")?.jsonPrimitive?.content.orEmpty()
@@ -180,5 +226,11 @@ class FeedRepository(
 
     private companion object {
         const val INDEX_PAGE = 150
+        const val FEED_TIMEOUT_SECONDS = 10L
+        // Bước riêng cho từng đường đọc: trước đây cả 4 dùng chung "tai-bai" nên mọi kiểu hỏng dồn vào 1 issue.
+        const val STEP_LIST = "tai-danh-sach"
+        const val STEP_INDEX = "tai-chi-muc"
+        const val STEP_POST = "tai-bai"
+        const val STEP_PAGE = "tai-trang"
     }
 }

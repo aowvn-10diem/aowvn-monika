@@ -24,7 +24,11 @@ import urllib.request
 
 MAX_BYTES = 2 * 1024 * 1024   # danh sách 100 dòng metadata: dư sức trong 2 MB
 MAX_ROWS = 100                # Worker chặn 100 báo cáo mới nhất cho /reports
+ATTEMPTS = 3                  # V186: 5xx/lỗi mạng là tạm thời → thử lại tối đa 3 lần
+RETRY_DELAYS = (2, 4)         # giây giữa các lần thử (tổng chờ ≤ 6 s)
 DEFAULT_URL = "https://aowvn-monika-crash.aowvn-system.workers.dev"
+# A78-4: 12 hex đầu chứng thư ký APK phát hành (khớp scripts/verify-apk-cert.py).
+OFFICIAL_CERT_PREFIX = "c46902e97029"
 
 # Cột bảng (đúng thứ tự PM chốt) → trường nguồn, để ghi rõ trường nào thiếu.
 COLUMNS = ["chữ ký (băm ngắn)", "lõi", "loại", "số lượt", "bản app", "chứng thư", "đời máy", "màn", "giả thuyết"]
@@ -250,8 +254,13 @@ def render_csv(groups):
     return buffer.getvalue()
 
 
-def fetch_listing(base, token):
-    """Đúng một request, không theo redirect, có chặn dung lượng."""
+def fetch_listing(base, token, opener=None, sleep=None):
+    """Đúng một lần đọc Worker; 5xx/lỗi mạng là tạm thời nên thử lại có hạn (tổng 3 lần), 4xx thì dừng ngay.
+
+    [opener]/[sleep] để test offline không cần mạng và không phải chờ thật.
+    """
+    import time
+    sleep = sleep or time.sleep
     if not token or any(not 0x20 <= ord(ch) <= 0x7e for ch in token):
         raise ValueError("missing or invalid CRASH_ADMIN_TOKEN")
     request = urllib.request.Request(base + "/reports", headers={
@@ -262,13 +271,20 @@ def fetch_listing(base, token):
         def redirect_request(self, *args, **kwargs):
             raise ValueError("redirect blocked")
 
-    try:
-        with urllib.request.build_opener(NoRedirect).open(request, timeout=20) as response:
-            content = response.read(MAX_BYTES + 1)
-    except urllib.error.HTTPError as error:
-        raise ValueError("Worker returned HTTP %d" % error.code) from None
-    except (OSError, urllib.error.URLError):
-        raise ValueError("cannot reach Worker") from None
+    open_request = opener or urllib.request.build_opener(NoRedirect).open
+    for attempt in range(ATTEMPTS):
+        try:
+            with open_request(request, timeout=20) as response:
+                content = response.read(MAX_BYTES + 1)
+            break
+        except urllib.error.HTTPError as error:
+            # 5xx (Worker/KV lỗi tạm thời) → thử lại; 4xx (token/sai đường) → dừng ngay.
+            if error.code < 500 or attempt == ATTEMPTS - 1:
+                raise ValueError("Worker returned HTTP %d" % error.code) from None
+        except (OSError, urllib.error.URLError):
+            if attempt == ATTEMPTS - 1:
+                raise ValueError("cannot reach Worker") from None
+        sleep(RETRY_DELAYS[attempt])
     if len(content) > MAX_BYTES:
         raise ValueError("response exceeds %d bytes" % MAX_BYTES)
     try:
@@ -277,10 +293,14 @@ def fetch_listing(base, token):
         raise ValueError("response is not JSON") from None
 
 
-def build(payload):
+def build(payload, official_only=False):
     """payload → (markdown, csv, số dòng, số nhóm). Dùng chung cho mạng và tệp offline."""
     rows = rows_of(payload)
     groups = group_rows(rows)
+    if official_only:
+        # Giữ báo cáo không gửi chứng thư (bản cũ) và báo cáo khớp chứng thư phát hành;
+        # loại báo cáo mang chứng thư khác (bản mod/đóng gói lại).
+        groups = [g for g in groups if not g["cert"] or g["cert"] == OFFICIAL_CERT_PREFIX]
     return render_markdown(groups, len(rows)), render_csv(groups), len(rows), len(groups)
 
 
@@ -288,6 +308,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out-dir", default=".", help="thư mục ghi crash-insight.md/.csv")
     parser.add_argument("--file", help="đọc payload /reports từ tệp (offline, không gọi mạng)")
+    parser.add_argument("--official-only", action="store_true", help="chỉ giữ báo cáo khớp chứng thư phát hành (A78-4)")
     args = parser.parse_args()
     try:
         if args.file:
@@ -297,7 +318,7 @@ def main():
         else:
             base = validate_base(os.environ.get("CRASH_URL") or DEFAULT_URL)
             payload = fetch_listing(base, os.environ.get("CRASH_ADMIN_TOKEN", "").strip())
-        markdown, table, scanned, groups = build(payload)
+        markdown, table, scanned, groups = build(payload, args.official_only)
         os.makedirs(args.out_dir, exist_ok=True)
         with open(os.path.join(args.out_dir, "crash-insight.md"), "w", encoding="utf-8") as handle:
             handle.write(markdown)

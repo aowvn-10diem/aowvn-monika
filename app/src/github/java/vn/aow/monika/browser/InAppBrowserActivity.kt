@@ -270,6 +270,13 @@ class InAppBrowserActivity : ComponentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun createWebView(ctx: Context) = WebView(ctx).apply {
         settings.javaScriptEnabled = true
+        // V204: trang ngoài không được đọc tệp nội bộ của app qua file:// hoặc content://.
+        settings.allowFileAccess = false
+        settings.allowContentAccess = false
+        @Suppress("DEPRECATION")
+        settings.allowFileAccessFromFileURLs = false
+        @Suppress("DEPRECATION")
+        settings.allowUniversalAccessFromFileURLs = false
         settings.domStorageEnabled = true // Discord web cần localStorage để giữ đăng nhập.
         settings.databaseEnabled = true
         settings.mediaPlaybackRequiresUserGesture = true
@@ -325,10 +332,19 @@ class InAppBrowserActivity : ComponentActivity() {
                 return runCatching { pickFile.launch(params.createIntent()); true }.getOrElse { fileCallback = null; false }
             }
 
-            // Facebook / Discord xin camera, micro (gọi video, quay story): cho phép trên các trang đó.
+            // Facebook / Discord xin camera, micro (gọi video, quay story): chỉ đúng tên miền đó và phải xác nhận.
             override fun onPermissionRequest(request: android.webkit.PermissionRequest) {
-                val h = request.origin?.host.orEmpty()
-                if (isFacebookHost(h) || h.contains("discord")) runOnUiThread { request.grant(request.resources) } else request.deny()
+                val h = request.origin?.host.orEmpty().lowercase()
+                if (!(isFacebookHost(h) || isDiscordHost(h))) { request.deny(); return }
+                runOnUiThread {
+                    android.app.AlertDialog.Builder(this@InAppBrowserActivity)
+                        .setTitle("Cho phép camera/micro?")
+                        .setMessage("Trang $h xin dùng camera hoặc micro.")
+                        .setPositiveButton("Cho phép") { _, _ -> request.grant(request.resources) }
+                        .setNegativeButton("Từ chối") { _, _ -> request.deny() }
+                        .setOnCancelListener { request.deny() }
+                        .show()
+                }
             }
         }
         webViewClient = object : WebViewClient() {
@@ -353,11 +369,14 @@ class InAppBrowserActivity : ComponentActivity() {
                 val u = request.url
                 if (u.scheme == "http" || u.scheme == "https") return false
                 val intent = runCatching {
-                    if (u.scheme == "intent") Intent.parseUri(u.toString(), Intent.URI_INTENT_SCHEME) else Intent(Intent.ACTION_VIEW, u)
+                    val parsed = if (u.scheme == "intent") Intent.parseUri(u.toString(), Intent.URI_INTENT_SCHEME) else Intent(Intent.ACTION_VIEW, u)
+                    sanitizeExternalIntent(parsed)
                 }.getOrNull() ?: return true
                 // Facebook: KHÔNG bao giờ nhảy sang app FB (bấm Quay lại sẽ kẹt trong app FB) → ở lại trong trình duyệt nhúng.
                 if (isFacebookApp(u, intent)) {
-                    intent.getStringExtra("browser_fallback_url")?.let { view.loadUrl(it) }
+                    intent.getStringExtra("browser_fallback_url")
+                        ?.takeIf { it.startsWith("https://", ignoreCase = true) }
+                        ?.let { view.loadUrl(it) }
                     return true
                 }
                 // App khác (discord://, zalo…): mở app tương ứng nếu có.
@@ -419,6 +438,23 @@ class InAppBrowserActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * V204: intent do trang web tạo chỉ được mở app ngoài. Bỏ component/selector/clipData và mọi cờ
+     * cấp quyền URI; chặn tự gọi thành phần của Monika. `null` = không mở.
+     */
+    private fun sanitizeExternalIntent(intent: Intent): Intent? {
+        intent.component = null
+        intent.selector = null
+        intent.clipData = null
+        val grants = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+            Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
+        intent.flags = intent.flags and grants.inv()
+        if (intent.`package` == packageName) return null
+        val target = intent.resolveActivity(packageManager) ?: return null
+        if (target.packageName == packageName) return null
+        return intent
+    }
+
     companion object {
         private const val EXTRA_URL = "url"
         private const val EXTRA_ATTACH = "attach"
@@ -430,7 +466,18 @@ class InAppBrowserActivity : ComponentActivity() {
             else "https://www.google.com/search?q=" + Uri.encode(t)
         }
 
-        internal fun isFacebookHost(h: String) = h.contains("facebook.com") || h.contains("fb.com") || h.contains("messenger.com")
+        internal fun isFacebookHost(h: String): Boolean {
+            val host = h.lowercase().trimEnd('.')
+            return FACEBOOK_HOSTS.any { host == it || host.endsWith(".$it") }
+        }
+
+        internal fun isDiscordHost(h: String): Boolean {
+            val host = h.lowercase().trimEnd('.')
+            return DISCORD_HOSTS.any { host == it || host.endsWith(".$it") }
+        }
+
+        private val FACEBOOK_HOSTS = listOf("facebook.com", "fb.com", "messenger.com")
+        private val DISCORD_HOSTS = listOf("discord.com", "discordapp.com")
 
         internal fun isFacebookApp(u: Uri, i: Intent): Boolean {
             val scheme = u.scheme.orEmpty().lowercase()

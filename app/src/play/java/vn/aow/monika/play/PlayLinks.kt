@@ -5,7 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
 import java.io.File
-/** Chỉ mở liên kết trợ giúp/cộng đồng, không mở trang tải hoặc ủng hộ. */
+/** Chỉ mở liên kết trợ giúp/cộng đồng; không mở trang tải hay trang trả tiền ngoài cửa hàng. */
 object PlayLinks {
     fun open(context: Context, url: String, attachment: File? = null, message: String? = null) {
         val uri = Uri.parse(url)

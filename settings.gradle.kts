@@ -27,3 +27,5 @@ include(":renpy")
 include(":j2me", ":dexlib")
 // Bộ nạp data chạy trong game đã chỉnh (Java thuần → .dex nhúng vào assets của app).
 include(":loader")
+// Đọc PDF trong app: PdfRenderer có sẵn của Android (không thêm thư viện ngoài).
+include(":reader")

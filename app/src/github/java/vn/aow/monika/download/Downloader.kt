@@ -23,6 +23,7 @@ import vn.aow.monika.library.GameMeta
 import vn.aow.monika.library.ImportWorker
 import vn.aow.monika.notify.Notifier
 import vn.aow.monika.runner.Installer
+import vn.aow.monika.util.SafeZipPath
 import java.io.File
 import java.io.IOException
 
@@ -57,6 +58,8 @@ class Downloader(
             request.setDestinationInExternalFilesDir(context, GameStorage.FOLDER, sub)
         }
         return dm.enqueue(request).also { id ->
+            // V204: chỉ xử lý broadcast cho ID do app này đặt.
+            prefs.markDownload(id)
             if (isTool) prefs.markToolDownload(id)
             meta?.let { prefs.setDownloadMeta(id, it.toJson()) }
         }
@@ -91,15 +94,25 @@ class Downloader(
             val utf8Name = disposition?.let { Regex("""filename\*=(?:UTF-8|utf-8)''([^;]+)""").find(it)?.groupValues?.get(1) }
                 // URLDecoder coi "+" là dấu cách (ngữ nghĩa form); ở đây "+" là ký tự thật nên mã hóa trước khi giải.
                 ?.let { runCatching { java.net.URLDecoder.decode(it.replace("+", "%2B"), "UTF-8") }.getOrNull() }
-            return (utf8Name ?: URLUtil.guessFileName(url, disposition, null)).replace(Regex("""[\\/:*?"<>|]"""), "_")
+            val raw = utf8Name ?: URLUtil.guessFileName(url, disposition, null)
+            // V204: làm sạch tên tải về (bỏ đường dẫn/ký tự điều khiển) trước khi ghi ra đĩa.
+            return SafeZipPath.sanitizeSingleFileName(raw).orEmpty().ifEmpty { "tai-ve-${System.currentTimeMillis()}" }
         }
     }
 }
 
+/**
+ * Chỉ xử lý broadcast tải xong của ID do chính app này đặt. `exported=true` là bắt buộc vì
+ * `ACTION_DOWNLOAD_COMPLETE` do DownloadProvider (UID `android.media`) gửi; lớp chặn thật là
+ * danh sách ID đã đánh dấu khi `enqueue`.
+ */
+internal fun shouldHandleDownload(action: String?, id: Long, ownId: Boolean): Boolean =
+    action == DownloadManager.ACTION_DOWNLOAD_COMPLETE && id >= 0 && ownId
+
 class DownloadReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-        if (id < 0) return
+        if (!shouldHandleDownload(intent.action, id, id >= 0 && AppGraph.prefs.isOwnDownload(id))) return
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {

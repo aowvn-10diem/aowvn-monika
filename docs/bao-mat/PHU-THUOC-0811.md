@@ -145,3 +145,57 @@ Nguyên tắc: mỗi nhóm thư viện một PR; nâng phiên bản lớn (Kotli
   - `org.apache.commons:commons-compress` 1.21 — 2 moderate. Đây là bản AGP kéo vào classpath plugin, **chỉ công cụ build**, không vào APK; nâng được chỉ khi lên AGP 9 (#217).
   - `org.jetbrains.kotlin:kotlin-gradle-plugin` 2.0.21 — 1 moderate. Chỉ công cụ build; nếu PM không duyệt PR-4 (nâng Kotlin) thì đóng bằng lý do này.
 - **Chưa kiểm**: danh sách cảnh báo CodeQL — API trả 403 với token của phiên này.
+
+## 8. Sau khi gộp #471 (09/11, 10:14Z) — phạm vi hẹp hơn kế hoạch
+
+- PM gộp #471 lúc 10:14Z, `main` = `9112314`; workflow *Automatic Dependency Submission (Gradle)* chạy lại trên đúng head này (nộp SBOM 10:39Z). API Dependabot vẫn 403 nên số dưới đây là tự kiểm SBOM + OSV.
+- **48 cảnh báo / 12 tổ hợp — 1 critical, 21 high, 24 moderate, 2 low**; không có mã cảnh báo nào ngoài bảng mục 4; **0 cảnh báo trong APK**.
+- #471 đóng đúng phần `freemarker` 2.3.32 (1 critical) nhưng **không** chạm họ `netty` 4.1.93: SBOM sau gộp vẫn có đủ 41 cảnh báo netty, gồm critical `GHSA-c4c3-7fpv-j4q5` (`netty-handler`), cùng `guava` 32.0.1-jre, `protobuf-java` 3.22.3, `commons-io` 2.13.0, `commons-compress` 1.21, `sqlite-jdbc` 3.36.0 (`kotlin-gradle-plugin` 2.0.21 chờ #216/PR-4).
+- Nguyên nhân: `force` trong `buildscript` chỉ áp cho cấu hình tên `classpath` của build script; AGP nạp qua `plugins {}` → `pluginManagement` nên cây `com.android.tools` 31.7.3 → `grpc-netty` 1.57.0 / `room-compiler` 2.5.2 vẫn giữ bản cũ. Gradle không có API force bắc cầu cho classpath plugin (chỉ `eachPlugin` đổi toạ độ plugin), nên **không mở PR mã mới**: sửa được chỉ khi lên AGP 9 (#217) hoặc đóng kèm lý do khi có quyền.
+- Chỉ tiêu "hết họ netty" trong mục 5 dời sang #217; hạn 11/11 cho phần netty **không còn khả thi bằng ghim**, cần PM chốt hướng (AGP 9 hay đóng kèm lý do).
+
+## 9. Sau khi gộp #575 (10/11, 00:14Z) — hết `sqlite-jdbc`, còn 47 cảnh báo
+
+- PM gộp #575 (`0236007`): `:j2me` dùng Room 2.6.1, `org.xerial:sqlite-jdbc` lên 3.41.2.2 ngay tại nguồn (`room-compiler`), nên `GHSA-6phf-6h5g-97j2` (HIGH) **đã hết**; gói này không còn trong mục "đóng kèm lý do".
+- SBOM mới nhất (đã có `room-compiler` 2.6.1 / `sqlite-jdbc` 3.41.2.2) đối chiếu OSV: **47 cảnh báo / 11 tổ hợp** — 1 critical, 20 high, 24 moderate, 2 low; không có mã nào ngoài bảng mục 4; vẫn **0 cảnh báo trong APK**. API Dependabot vẫn 403 nên đây là số tự kiểm.
+- Phần còn lại không đổi: họ `netty` 4.1.93 (41 cảnh báo, 1 critical) cùng `guava` 32.0.1-jre, `protobuf-java` 3.22.3, `commons-io` 2.13.0, `commons-compress` 1.21, `kotlin-gradle-plugin` 2.0.21 — chỉ ở classpath công cụ build. Hướng xử lý vẫn là AGP 9 (#217, chờ PM chốt) hoặc đóng kèm lý do khi có quyền.
+
+## 10. Lượt 10/11 (sau 08:14Z) — số không đổi; chỉ AGP 9 gỡ được phần còn lại
+
+- API Dependabot vẫn 403 (thiếu `Dependabot alerts: read`); tự kiểm SBOM `main@9b55111` (đã có `room 2.6.1`) + OSV: **47 cảnh báo / 11 tổ hợp** — 1 critical, 20 high, 24 moderate, 2 low; **không mã mới**; **0 trong APK**. Không commit nào chạm `gradle/`, `*.gradle.kts`, `settings.gradle.kts` kể từ #575 (`0236007`), nên số trùng khớp lượt 00:58.
+- Cả 47 cảnh báo đều ở classpath plugin Gradle: họ `netty` 4.1.93 (grpc-netty 1.57.0 của AGP 8.7.3), `protobuf-java` 3.22.3, `commons-io` 2.13.0, `commons-compress` 1.21, `guava` 32.0.1-jre, `kotlin-gradle-plugin` 2.0.21. `force` của build script không chạm classpath `plugins {}` nên không còn đường ghim.
+- **Bằng chứng mới (POM Google Maven, 10/11)**: AGP **9.4.1 không còn phụ thuộc `io.grpc`/`io.netty`**; dùng `protobuf-java` 3.25.5, `commons-io` 2.16.1, `asm` 9.9. Còn AGP **8.13.2** chỉ lên grpc 1.69.1 → netty 4.1.110, vẫn dính cảnh báo cần 4.1.136, nên nâng trong dòng 8.x **không** đóng được critical. Vì vậy "PR kế tiếp" chỉ có nghĩa nếu là AGP 9.
+- Hạn 11/11 **không đạt được bằng ghim**. Cần PM chốt một trong hai: (a) duyệt nhánh `phuthuoc/agp9` (Gradle 9 + AGP 9.4.1 + Kotlin ≥ 2.2, rủi ro vỡ build, tách khỏi A85), hoặc (b) đóng kèm lý do "chỉ công cụ build, không đóng gói" khi có token `Code security: write`.
+- PR Dependabot đang mở (không có PR `phuthuoc/` nào): #216 (Kotlin) và #217 (AGP 9) đỏ CI từ 12/10; #215 (`actions/checkout`) đỏ `build`/`links`/`repeated-tests`; #290 (`actions/cache`) đỏ 1 job `build`.
+
+## 11. Lượt 11/11 — số không đổi; công cụ tự kiểm thay cách làm tay
+
+- API Dependabot vẫn **403** (thiếu `Dependabot alerts: read`). Tự kiểm SBOM `origin/main@266feabb` + OSV: **47 cảnh báo / 11 tổ hợp / 46 mã** — 1 critical, 20 high, 24 moderate, 2 low; **không mã mới**; **0 cảnh báo trong APK**. Trùng khớp lượt 02:50 vì 7 commit từ `d30bd47c` (gộp #586, #603, #604) **không chạm** `gradle/`, `*.gradle.kts`, `settings.gradle.kts`.
+- 6 mã đã hết đúng như đã vá: `GHSA-27j2-h3m2-8237` (freemarker, #471), `GHSA-xxph`/`GHSA-j288`/`GHSA-269g` (guava/commons-lang3/junit, #544), `GHSA-3677`/`GHSA-2363`/`GHSA-6phf` (jose4j/jdom2/sqlite-jdbc, #546/#575) — không có mã nào quay lại.
+- Thêm `scripts/kiem-phu-thuoc.py` (+ `scripts/test-kiem-phu-thuoc.py`, 27 test): đọc SBOM, hỏi OSV theo lô 1000, in bảng gói/phiên bản/mã/mức/bản vá và danh sách mã ngoài bảng; `--codes <tệp>` để so với mục 4. Lượt sau chỉ cần `gh api .../dependency-graph/sbom` rồi chạy một lệnh, không tự viết lại truy vấn OSV.
+- Lượt hai duyệt DeepSeek bắt 5 lỗi, đã sửa hết: OSV trả thiếu kết quả ⇒ dừng với mã thoát 3 thay vì in "0 cảnh báo"; bọc `URLError`/`HTTPError`, thử lại 3 lần khi 429 hoặc 5xx; tự tính điểm CVSS 3.0/3.1 từ vector trần (OSV không kèm điểm) và quy vector 4.0 về 3.1 khi thiếu nhãn; `--codes` trỏ tệp thiếu trả 2 như lỗi SBOM; thêm `sbom.json` vào `.gitignore`; thêm `test-kiem-phu-thuoc.py` vào danh sách V57 để 27 test chạy trên CI — **token phiên này thiếu scope `workflow` nên 1 dòng đó chưa đẩy được, xem diff dán trong #605 để sếp áp**. **Bản Play: không áp dụng (công cụ).**
+- PR Dependabot không đổi: #215 (4 đỏ: `build`, `links`, `repeated-tests`, `gate` huỷ), #216 (5 đỏ), #217 (4 đỏ), #290 (1 đỏ `build`); **0 review** cả bốn, head không đổi từ 09/11 (#215) và 12/10 (#216/#217) ⇒ **không mở PR ghim mới**.
+- Vẫn chờ PM chốt hướng cho phần còn lại: (a) nhánh `phuthuoc/agp9`, hay (b) đóng kèm lý do "chỉ công cụ build, không đóng gói" khi có token `Code security: write`.
+
+## 12. Lượt 12/11 — một tổ hợp mới ở classpath test của `:reader`, đã có PR ghim
+
+- API Dependabot vẫn **403**; tự kiểm bằng `scripts/kiem-phu-thuoc.py` trên SBOM `origin/main@8310cc17`: **53 cảnh báo / 13 tổ hợp / 51 mã** — 3 critical, 23 high, 25 moderate, 2 low. So với lượt 11/11 (47/11/46) tăng đúng **một tổ hợp**: `org.bouncycastle:bcprov-jdk18on` **1.81** (critical `GHSA-574f-3g2m-x479`, `GHSA-9pwp-9qqc-pr26`; high `GHSA-p93r-85wp-75v3`, `GHSA-qp49-qgx5-5m26`; moderate `GHSA-c3fc-8qff-9hwx`).
+- Nguồn: `:reader` (mô-đun mới của V142, gộp #457) khai `testImplementation(libs.robolectric)`; Robolectric 4.16.1 kéo `bcprov-jdk18on` 1.81 vào `debugUnitTestRuntimeClasspath`, còn `:reader` **không có** lệnh ghim BouncyCastle như `:app`. Đây là classpath **test**, không vào APK: `:app` ghim BouncyCastle 1.85 cho mọi cấu hình của nó và là nơi duy nhất đóng APK ⇒ vẫn **0 cảnh báo trong APK**.
+- PR `phuthuoc/bc-test-1211`: thêm khối `force` BouncyCastle (số lấy từ `libs.versions.bouncycastle`) vào `reader/build.gradle.kts`, cùng kiểu với `:app`. Trước: `bcprov-jdk18on:1.81`; sau: `1.81 -> 1.85` trên `debugUnitTestRuntimeClasspath`. Hết 5 cảnh báo của tổ hợp này ⇒ dự kiến **48 cảnh báo / 12 tổ hợp / 46 mã** sau khi gộp.
+- Bốn PR Dependabot vẫn **0 review**, head không đổi: #215 (3 đỏ `build`/`links`/`repeated-tests`), #216 (5 đỏ), #217 (5 đỏ), #290 (1 đỏ `build`). Vẫn chờ PM chốt (a) nhánh `phuthuoc/agp9` hay (b) đóng kèm lý do "chỉ công cụ build".
+- Dòng `test-kiem-phu-thuoc.py` vào `.github/workflows/script-tests.yml` **vẫn chưa áp** trên `main` (token phiên thiếu scope `workflow`) — mục 11 còn nguyên hiệu lực.
+
+### Việc còn lại cho sếp ở lượt này
+
+Token phiên Trưởng nhóm Phụ thuộc thiếu scope `workflow`, nên 1 dòng dưới đây không đẩy được. Áp vào `.github/workflows/script-tests.yml` rồi gộp #605:
+
+```diff
+-      - name: Chạy đủ 10 test N04, báo lỗi sau khi chạy hết
++      - name: Chạy đủ test N04, báo lỗi sau khi chạy hết
+             'test-crash-insight.py',
++            'test-kiem-phu-thuoc.py',
+         )
+```
+
+Chưa áp thì V57 xanh **không** phải bằng chứng cho 27 test mới; vẫn chạy được tại chỗ bằng `python -X utf8 scripts/test-kiem-phu-thuoc.py`.
+

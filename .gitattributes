@@ -1,0 +1,4 @@
+# V144 lô 1: hai fixture crash-worker là hợp đồng BYTE giữa app (Kotlin) và Worker (Node).
+# Không để git đổi CRLF/LF khi checkout: Linux CI từng đọc bản 796 B (LF) trong khi
+# Windows đọc 816 B (CRLF) làm hỏng khoá SHA. `-text` giữ nguyên byte đã lưu.
+app/src/test/resources/app-report.json -text

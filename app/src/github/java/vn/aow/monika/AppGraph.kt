@@ -80,7 +80,8 @@ object AppGraph {
 
     /** Trình duyệt nhúng: người dùng tự chọn link nên chỉ siết HTTPS ở mọi hop, không giới hạn host. */
     val browserHttp: OkHttpClient by lazy {
-        http.newBuilder().addNetworkInterceptor(DownloadGuard { true }).build()
+        // V206: luồng người dùng tự chọn link chỉ siết HTTPS ở mỗi hop, không áp tiền tố đường dẫn của gói.
+        http.newBuilder().addNetworkInterceptor(DownloadGuard({ true }, enforceArtifactPaths = false)).build()
     }
 
     val config by lazy { ConfigRepository(app, downloadHttp) }

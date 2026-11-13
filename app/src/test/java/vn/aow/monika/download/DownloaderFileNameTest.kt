@@ -27,7 +27,8 @@ class DownloaderFileNameTest {
     }
 
     @Test fun reservedCharsFromDispositionBecomeUnderscores() {
-        assertEquals("a_b_c.apk", Downloader.fileNameFrom("https://x.test/api/file/1", "attachment; filename*=UTF-8''a%2Fb%3Ac.apk"))
+        // V204: tên có "/" bị cắt về đoạn cuối (không còn đường dẫn), ký tự cấm đổi thành "_".
+        assertEquals("b_c.apk", Downloader.fileNameFrom("https://x.test/api/file/1", "attachment; filename*=UTF-8''a%2Fb%3Ac.apk"))
     }
 
     @Test fun noDispositionUsesUrlPathWithoutQuery() {
