@@ -1,14 +1,14 @@
 # Nhóm `unknown` / `native`: vì sao báo cáo không gắn được lõi
 
-Ngày 13/11/2026 · nhánh `deepseek1/unknown-native-1311` · nền `main` `c3a8a9c4` · nhãn `crash-moi`, chỉ đọc (không sửa mã trong lượt này)
+Ngày 13/11/2026 · nhánh `deepseek1/unknown-native-1311` · nền `main` `f24ece45` · nhãn `crash-moi`, chỉ đọc (không sửa mã trong lượt này)
 
 ## 1. Kết luận ngắn
 
 - Lọc đúng **lõi `unknown` + loại `native`** trong 75 issue `crash-moi` đang mở: **1 issue, 1 lượt, 1 máy** ([#387](https://github.com/aowvn-10diem/aowvn-monika/issues/387)). Một mẫu duy nhất nên **không thể nói máy nào / lõi nào**.
 - Cả họ `unknown` (mọi loại) là **22 issue · 296 lượt · 94 máy**. Trong đó `native` 1, `op-fail` 13, `anr` 7, `resource` 1.
 - `unknown` **không phải "app chết trước khi kịp ghi"** trong đa số trường hợp. Có **2 lỗi ghi nhận** đọc được từ mã (mục 3.2) và **1 nhóm đúng bản chất** (`op-fail` ngoài phiên game thì không có lõi để ghi).
-- Hai lỗi ghi nhận: (a) ở nhánh chết do Android báo (`ApplicationExitInfo`), app chỉ đọc "phiên chết" cho `anr`/`lowmem`, bỏ `native`/`resource` (nhánh `:game` do `collect()` xử lý vẫn có lõi); (b) bot chỉ lấy `lõi` trong `session.core`, bỏ qua `core` cấp ngoài mà Worker đã ghi. Đề xuất sửa cụ thể ở mục 4, **chưa sửa mã** trong lượt này.
-- `resource` #302 là ca riêng: game Java (`:midlet`) chưa từng có phiên nên **không** sửa được bằng (a) — cần thêm phiên cho J2ME (mục 4.4).
+- Hai lỗi ghi nhận: **(b)** ở nhánh chết do Android báo (`ApplicationExitInfo`), app chỉ đọc "phiên chết" cho `anr`/`lowmem`, bỏ `native`/`resource` (nhánh `:game` do `collect()` xử lý vẫn có lõi); **(c)** bot chỉ lấy `lõi` trong `session.core`, bỏ qua `core` cấp ngoài mà Worker đã ghi. Đề xuất sửa cụ thể ở mục 4, **chưa sửa mã** trong lượt này.
+- `resource` #302 là ca riêng: game Java (`:midlet`) chưa từng có phiên nên **không** sửa được bằng (b) — cần thêm phiên cho J2ME (mục 4.4, xem (d)).
 
 ## 2. Bảng issue
 
@@ -16,7 +16,7 @@ Số liệu lấy từ thân issue ngày 13/11/2026 (`Số lần quan sát đã 
 
 - `Lượt` = số lần bot đã cộng dồn (không phải số người).
 - `Máy` = số khoá máy **ẩn danh** trong trường `seen` — **không** phải tên/model máy.
-- `Tái diễn` = cùng chữ ký được cộng thêm lượt sau lần thông báo đầu (`lượt ≥ 2`); issue còn `updatedAt` mới hơn ngày mở là dấu hiệu còn tăng.
+- `Tái diễn` = cùng chữ ký được cộng thêm lượt sau lần thông báo đầu (`lượt ≥ 2`).
 
 ### 2.1 Đúng nhóm `unknown` + `native` (1 issue)
 
@@ -30,10 +30,10 @@ Thân issue **không có** dòng `Thành phần` (bản bot cũ) và không có 
 
 | Issue | Loại | Lượt | Máy | Mở ngày | Tái diễn? |
 |---|---|---:|---:|---|---|
-| [#302](https://github.com/aowvn-10diem/aowvn-monika/issues/302) | `resource` | 236 | 50 | 20/10 | Có (cập nhật 12/11) |
+| [#302](https://github.com/aowvn-10diem/aowvn-monika/issues/302) | `resource` | 236 | 50 | 20/10 | Có |
 | [#393](https://github.com/aowvn-10diem/aowvn-monika/issues/393) | `op-fail` | 20 | 14 | 31/10 | Có (bản sửa cuối 05/11) |
-| [#413](https://github.com/aowvn-10diem/aowvn-monika/issues/413) | `anr` | 15 | 5 | 01/11 | Không (1 đợt) |
-| [#534](https://github.com/aowvn-10diem/aowvn-monika/issues/534) | `anr` | 5 | 5 | 07/11 | Không (1 đợt) |
+| [#413](https://github.com/aowvn-10diem/aowvn-monika/issues/413) | `anr` | 15 | 5 | 01/11 | Có |
+| [#534](https://github.com/aowvn-10diem/aowvn-monika/issues/534) | `anr` | 5 | 5 | 07/11 | Có |
 | [#401](https://github.com/aowvn-10diem/aowvn-monika/issues/401) | `op-fail` | 2 | 2 | 31/10 | Có |
 | [#399](https://github.com/aowvn-10diem/aowvn-monika/issues/399) | `anr` | 2 | 2 | 31/10 | Có |
 | [#387](https://github.com/aowvn-10diem/aowvn-monika/issues/387) | `native` | 1 | 1 | 30/10 | Không |
@@ -63,7 +63,7 @@ Nhóm `op-fail` đã có bản chẩn đoán riêng (`docs/loi/op-fail-1311.md`,
 - Chết **trong tầm kiểm soát** (tiến trình game còn phiên): `Diagnostics.collect` đọc lại phiên và ghi báo cáo kèm `session` — `Diagnostics.kt:223-256`. Ca này **luôn có lõi** nếu nơi mở game truyền đúng.
 - Chết **ngoài tầm kiểm soát** (Android báo qua `ApplicationExitInfo`): `collectProcessDeaths` — `Diagnostics.kt:834-884`.
 
-### 3.2 Ba đường dẫn tới `unknown`
+### 3.2 Năm đường dẫn tới `unknown`
 
 **(a) Đúng bản chất — `op-fail` không thuộc phiên game.** `opFail` gắn `session = read(c)` nếu đúng tiến trình (`Diagnostics.kt:479`); thao tác ngoài lúc chơi (tải, giải nén, cập nhật cấu hình) không có phiên nên không có lõi. Đây là 13/22 issue — **không phải lỗi**, chỉ là thiếu ngữ cảnh "thao tác nào" (đã bàn ở #618).
 
