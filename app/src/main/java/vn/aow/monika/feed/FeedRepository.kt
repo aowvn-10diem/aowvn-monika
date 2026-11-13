@@ -14,6 +14,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import vn.aow.monika.config.ConfigRepository
 
+/** V202: số bài giữ trong RAM và số danh sách feed giữ lại sau khi nhả bộ đệm. */
+private const val CACHE_POSTS = 60
+private const val CACHE_LISTS = 3
+
 @kotlinx.serialization.Serializable
 data class Post(
     /** Mã bài của Blogger (phần sau ".post-"). */
@@ -44,7 +48,11 @@ class FeedRepository(
     /** V193 G1: false = không gọi mạng (bài viết đang tắt). */
     private val enabled: () -> Boolean = { true },
 ) {
-    private val cache = mutableMapOf<String, Post>()
+    /**
+     * V202: giới hạn RAM cho bài đã đọc. 60 bài gần nhất là đủ cho luồng đọc;
+     * LruCache tự đồng bộ luồng nên không cần khoá thêm.
+     */
+    private val cache = android.util.LruCache<String, Post>(CACHE_POSTS)
 
     /** Chốt duy nhất trước mọi request feed; tắt là không có request nào rời máy. */
     private fun requireEnabled() {
@@ -60,7 +68,7 @@ class FeedRepository(
     /** Bản đã lưu của danh sách [key] (RAM trước, rồi đĩa). Null nếu chưa từng tải. */
     fun cachedList(key: String): List<Post>? = lists[key] ?: runCatching {
         listFile(key)?.takeIf { it.exists() }?.readText()?.let { listJson.decodeFromString(kotlinx.serialization.builtins.ListSerializer(Post.serializer()), it) }
-    }.getOrNull()?.also { lists[key] = it; it.forEach { p -> cache[p.id] = p } }
+    }.getOrNull()?.also { lists[key] = it; it.forEach { p -> cache.put(p.id, p) } }
 
     /** Tải danh sách và cập nhật bản lưu. */
     suspend fun fetchList(key: String, label: String? = null, max: Int? = null): List<Post> =
@@ -71,7 +79,7 @@ class FeedRepository(
             }
         }
 
-    fun cached(id: String): Post? = cache[id]
+    fun cached(id: String): Post? = cache.get(id)
 
     /** @param query tìm kiếm toàn văn (tham số q của Blogger). */
     suspend fun fetch(label: String? = null, startIndex: Int = 1, max: Int? = null, query: String? = null): List<Post> {
@@ -82,7 +90,7 @@ class FeedRepository(
         val url = "$base?alt=json&orderby=published&start-index=$startIndex&max-results=${max ?: feed.pageSize}$q"
         // Sai URL feed trong config là lỗi thật → vẫn báo `op-fail` khi JSON lệch hình dạng.
         val entries = fetchJson(STEP_LIST, url) { it.feedObject()["entry"] as? JsonArray }
-        return entries?.map { parseEntry(it.jsonObject) }.orEmpty().onEach { cache[it.id] = it }
+        return entries?.map { parseEntry(it.jsonObject) }.orEmpty().onEach { cache.put(it.id, it) }
     }
 
     /**
@@ -104,15 +112,34 @@ class FeedRepository(
     }
 
     suspend fun fetchPost(id: String): Post {
-        cache[id]?.let { return it }
+        // V202 PR4: chỉ dùng cache khi còn nội dung. `trimMemory()` bỏ HTML của bài đã đọc, nên bản rỗng
+        // không được thành cache hit — nếu không, mở lại bài sau khi ra nền/mở game sẽ thấy thân bài trắng.
+        cache.get(id)?.takeIf { it.contentHtml.isNotEmpty() }?.let { return it }
         requireEnabled()
         val url = configRepo.current.feed.url.trimEnd('/') + "/$id?alt=json"
         // Bài bị gỡ là chuyện thường (danh sách lưu đĩa còn id cũ): 404 và thiếu `entry` chỉ ghi vệt, không báo.
         return fetchJson(STEP_POST, url, expected = { it is FeedShapeException }) { parseEntry(it.entryObject()) }
-            .also { cache[it.id] = it }
+            .also { cache.put(it.id, it) }
     }
 
     private var pagesCache: List<Post>? = null
+
+    /**
+     * V202: nhả bộ đệm khi app ra nền hoặc hệ thống báo thiếu RAM. Giữ tối đa [CACHE_LISTS]
+     * danh sách (đủ để mở lại tức thì) nhưng bỏ HTML của chúng; xoá hẳn cache bài đã đọc.
+     * Bài mở lại sẽ tải từ mạng ([fetchPost] chỉ dùng cache khi còn nội dung). Không đụng dữ liệu trên đĩa.
+     */
+    fun trimMemory() {
+        pagesCache = null
+        val keys = lists.keys.toList()
+        if (keys.size > CACHE_LISTS) keys.drop(CACHE_LISTS).forEach { lists.remove(it) }
+        for (key in lists.keys.toList()) {
+            lists[key] = lists[key]?.map { it.copy(contentHtml = "") } ?: continue
+        }
+        // V202 PR4: bản rỗng gần như không nhả được gì (tiêu đề/ảnh/nhãn vẫn nằm đó) mà lại thành
+        // cache hit rỗng ở [fetchPost] — xoá hẳn để mọi đường đọc thấy "chưa có" và tải lại.
+        cache.evictAll()
+    }
 
     /**
      * Đọc 1 trang tĩnh của blog (aow.vn/p/...) qua feed pages, không cần mở trình duyệt.

@@ -31,6 +31,20 @@ object AppGraph {
         }
     }
 
+    /**
+     * V202: nhả bộ đệm tiến trình chính khi Android báo thiếu RAM hoặc app vừa ra nền.
+     * Gọi từ `MonikaApp.onTrimMemory` và ngay trước khi mở tiến trình `:game`/`:midlet`.
+     */
+    fun trimMemory(level: Int) {
+        if (level < android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) return
+        // diag: bỏ qua lỗi nhả bộ đệm ảnh — đây chỉ là tối ưu RAM, không ảnh hưởng dữ liệu người chơi.
+        runCatching { coil.Coil.imageLoader(app).memoryCache?.clear() }
+        // diag: bỏ qua lỗi nhả cache feed — mở lại bài sẽ tải lại từ đĩa/mạng.
+        runCatching { feed.trimMemory() }
+        // diag: bỏ qua lỗi nhả bảng chặn — ensure() nạp lại từ đĩa khi mở trình duyệt.
+        runCatching { adblock.trimMemory() }
+    }
+
     val http: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(20, TimeUnit.SECONDS)

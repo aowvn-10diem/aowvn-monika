@@ -30,6 +30,15 @@ class AdBlock(private val context: Context, private val http: OkHttpClient) {
     val size get() = hashes.size + engine.networkRules
     val cosmeticRules get() = engine.cosmeticRules
 
+    /**
+     * V202: nhả bảng chặn khi app ra nền (giữ ~2 MB + engine). Lần mở trình duyệt sau
+     * [ensure] nạp lại từ `domains.bin`/`rules.txt` trên đĩa, không tốn mạng.
+     */
+    fun trimMemory() {
+        hashes = LongArray(0)
+        engine = FilterEngine()
+    }
+
     /** Nạp bộ lọc đã lưu; chưa có hoặc cũ quá hạn thì tải về. Trả về false nếu tải lỗi và chưa có bản nào. */
     suspend fun ensure(lists: List<String>, updateHours: Int): Boolean = lock.withLock {
         withContext(Dispatchers.IO) {
