@@ -49,6 +49,39 @@ class DeathContextTest {
         assertEquals(report("java"), Diagnostics.enrichDeathReport(report("java")))
     }
 
+    /** #625 mục 3.2(b): `native`/`resource` phải lấy lõi từ phiên như `anr`/`lowmem`, không bỏ trống. */
+    @Test fun nativeAndResourceKeepSessionCoreFromDeathSnapshot() {
+        val session = Diagnostics.Session(7, 10, "libretro", "melondsds", system = "NDS", stage = "playing", stageAt = 20, lastAlive = 30)
+        for (kind in listOf("native", "resource", "initfail")) {
+            assertTrue("phải đọc phiên chết cho $kind", Diagnostics.readsDeathSession(kind))
+            val r = Diagnostics.enrichDeathReport(report(kind, session))
+            assertEquals(session, r.session)
+            assertEquals("melondsds", r.core)
+            assertEquals("NDS", r.system)
+            assertEquals("playing", r.stage)
+        }
+    }
+
+    /** Không có phiên thì giữ ô trống như trước — không tự bịa "unknown" cho loại khác. */
+    @Test fun nativeWithoutSessionStaysEmptyLikeBefore() {
+        for (kind in listOf("native", "resource", "initfail", "java", "user")) {
+            val r = Diagnostics.enrichDeathReport(report(kind))
+            assertNull(r.session)
+            assertEquals(listOf("", "", ""), listOf(r.core, r.system, r.stage))
+            assertEquals(report(kind), r)
+        }
+    }
+
+    /** Chỉ các loại do Android báo mới đọc ảnh chụp phiên; loại khác không đụng đĩa. */
+    @Test fun onlyProcessExitKindsReadDeathSession() {
+        for (kind in listOf("anr", "lowmem", "native", "resource", "initfail")) {
+            assertTrue(kind, Diagnostics.readsDeathSession(kind))
+        }
+        for (kind in listOf("java", "user", "killed", "op-fail", "core-error", "")) {
+            assertFalse(kind, Diagnostics.readsDeathSession(kind))
+        }
+    }
+
     @Test fun pidReuseAndNewerSnapshotCannotBeAttributedToOlderDeath() {
         val s = Diagnostics.Session(7, 10, "libretro", "melondsds", stageAt = 20, lastAlive = 30)
         val snapshot = Diagnostics.DeathSnapshot(s, generation)
