@@ -1,6 +1,7 @@
 package vn.aow.monika.diag
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.Application
 import android.app.ApplicationExitInfo
 import android.content.Intent
@@ -104,40 +105,58 @@ class MidletDiagnosticsTest {
 
     @Test fun cleanupKeepsLiveSession() {
         writeSession(pid = android.os.Process.myPid(), kind = "midlet")
-        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_EXIT_SELF }
+        MidletDiagnostics.cleanupAfterCollect(app, 34, exitReasonOf = { ApplicationExitInfo.REASON_EXIT_SELF })
         assertTrue("tiến trình còn sống thì giữ phiên", session.exists())
     }
 
     @Test fun cleanupKeepsSessionOfOtherCores() {
         writeSession(pid = deadPid, kind = "libretro")
-        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_USER_REQUESTED }
+        MidletDiagnostics.cleanupAfterCollect(app, 34, exitReasonOf = { ApplicationExitInfo.REASON_USER_REQUESTED })
         assertTrue("phiên của lõi khác do Diagnostics.collect xử lý", session.exists())
     }
 
     @Test fun cleanupKeepsSessionWhenExitReasonIsUnproven() {
         writeSession(pid = deadPid)
-        MidletDiagnostics.cleanupAfterCollect(app, 34) { null } // không tìm thấy bản ghi
+        MidletDiagnostics.cleanupAfterCollect(app, 34, exitReasonOf = { null }) // không tìm thấy bản ghi
         assertTrue(session.exists())
-        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_ANR }
+        MidletDiagnostics.cleanupAfterCollect(app, 34, exitReasonOf = { ApplicationExitInfo.REASON_ANR })
         assertTrue(session.exists())
-        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_CRASH_NATIVE }
+        MidletDiagnostics.cleanupAfterCollect(app, 34, exitReasonOf = { ApplicationExitInfo.REASON_CRASH_NATIVE })
         assertTrue(session.exists())
-        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_OTHER }
+        MidletDiagnostics.cleanupAfterCollect(app, 34, exitReasonOf = { ApplicationExitInfo.REASON_OTHER })
         assertTrue(session.exists())
     }
 
     @Test fun cleanupDeletesOnlyProvenNormalExit() {
         writeSession(pid = deadPid)
         val snapshot = File(diag, "sessions/$deadPid.json").apply { parentFile!!.mkdirs(); writeText("{}") }
-        MidletDiagnostics.cleanupAfterCollect(app, 34) { ApplicationExitInfo.REASON_USER_REQUESTED }
+        MidletDiagnostics.cleanupAfterCollect(app, 34, exitReasonOf = { ApplicationExitInfo.REASON_USER_REQUESTED })
         assertFalse(session.exists())
         assertFalse("ảnh chụp của pid đã thoát bình thường không còn ý nghĩa", snapshot.exists())
     }
 
     @Test fun cleanupDoesNothingBelowApi30() {
         writeSession(pid = deadPid)
-        MidletDiagnostics.cleanupAfterCollect(app, 29) { ApplicationExitInfo.REASON_USER_REQUESTED }
+        MidletDiagnostics.cleanupAfterCollect(app, 29, exitReasonOf = { ApplicationExitInfo.REASON_USER_REQUESTED })
         assertTrue("API < 30 không xoá gì (đánh đổi có chủ ý)", session.exists())
+    }
+
+    @Test fun unreadableProcessListMeansAliveSoSessionIsKept() {
+        // Máy không trả danh sách tiến trình (null) → coi như CÒN SỐNG, không xoá phiên.
+        assertTrue(MidletDiagnostics.pidAlive(null, deadPid))
+        assertFalse(MidletDiagnostics.shouldClear("midlet", MidletDiagnostics.pidAlive(null, deadPid), ApplicationExitInfo.REASON_EXIT_SELF, 34))
+
+        writeSession(pid = deadPid)
+        MidletDiagnostics.cleanupAfterCollect(
+            app, 34,
+            exitReasonOf = { ApplicationExitInfo.REASON_USER_REQUESTED },
+            aliveOf = { pid -> MidletDiagnostics.pidAlive(null, pid) },
+        )
+        assertTrue("danh sách null → giữ phiên", session.exists())
+
+        // Đọc được danh sách: có pid → sống, không có → chết (nhánh cũ vẫn đúng).
+        assertTrue(MidletDiagnostics.pidAlive(listOf(ActivityManager.RunningAppProcessInfo().apply { pid = deadPid }), deadPid))
+        assertFalse(MidletDiagnostics.pidAlive(emptyList(), deadPid))
     }
 
     private fun writeSession(pid: Int, kind: String = "midlet") {

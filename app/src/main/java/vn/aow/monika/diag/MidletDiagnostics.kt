@@ -86,17 +86,22 @@ object MidletDiagnostics {
     fun cleanupAfterCollect(app: Application) {
         if (Build.VERSION.SDK_INT < 30) return
         // diag: không ghi báo cáo lỗi — chỉ dọn dấu vết lần thoát bình thường, không đụng dữ liệu người chơi.
-        runCatching { cleanupAfterCollect(app, Build.VERSION.SDK_INT) { exitReason(app, it) } }
+        runCatching { cleanupAfterCollect(app, Build.VERSION.SDK_INT, exitReasonOf = { exitReason(app, it) }) }
     }
 
-    /** Phần kiểm thử được: tách [sdk]/[exitReasonOf] để không cần dựng [ApplicationExitInfo] thật. */
-    internal fun cleanupAfterCollect(app: Application, sdk: Int, exitReasonOf: (Int) -> Int?) {
+    /** Phần kiểm thử được: tách [sdk]/[exitReasonOf]/[aliveOf] để không cần dựng [ApplicationExitInfo] thật. */
+    internal fun cleanupAfterCollect(
+        app: Application,
+        sdk: Int,
+        exitReasonOf: (Int) -> Int?,
+        aliveOf: (Int) -> Boolean = { isAlive(app, it) },
+    ) {
         val file = File(app.filesDir, SESSION_FILE)
         if (!file.isFile) return
         val session = runCatching {
             json.decodeFromString(Diagnostics.Session.serializer(), file.readText())
         }.getOrNull() ?: return
-        if (!shouldClear(session.kind, isAlive(app, session.pid), exitReasonOf(session.pid), sdk)) return
+        if (!shouldClear(session.kind, aliveOf(session.pid), exitReasonOf(session.pid), sdk)) return
         file.delete()
         // Ảnh chụp của pid đã thoát bình thường không còn ý nghĩa (không phải để lại cho lần quét sau).
         File(File(app.filesDir, DIAG_DIR), "sessions/${session.pid}.json").delete()
@@ -112,8 +117,15 @@ object MidletDiagnostics {
     }
 
     private fun isAlive(app: Application, pid: Int): Boolean = runCatching {
-        app.getSystemService(ActivityManager::class.java).runningAppProcesses?.any { it.pid == pid } == true
-    }.getOrDefault(true) // Không đọc được danh sách → coi như còn sống, không xoá phiên.
+        pidAlive(app.getSystemService(ActivityManager::class.java).runningAppProcesses, pid)
+    }.getOrDefault(true) // Ném khi đọc → coi như còn sống, không xoá phiên.
+
+    /**
+     * Tiến trình [pid] còn sống không. Danh sách không đọc được (`null`) → coi như **còn sống**
+     * (hướng an toàn: không xoá phiên, để lần chết thật sau đó vẫn có bằng chứng).
+     */
+    internal fun pidAlive(processes: List<ActivityManager.RunningAppProcessInfo>?, pid: Int): Boolean =
+        processes?.any { it.pid == pid } ?: true
 
     /** Mở phiên cho 1 lượt chơi Java; tách khỏi callback để kiểm thử được. */
     internal fun begin(activity: Activity) {
