@@ -1,20 +1,20 @@
 # Nhóm `ppsspp / native` — phân tích 4 nghi phạm (13/11/2026)
 
-Phạm vi: nhóm **B** (native crash trong `.so` của lõi) theo `docs/loi/TON-0811.md`, phần lõi `ppsspp`.
+Phạm vi: nhóm **B** (native crash trong `.so` của lõi) theo `docs/loi/TON-0811.md` (tệp này hiện còn ở **PR #542**, chưa có trên main), phần lõi `ppsspp`.
 Người lập: phiên **Lỗi 2**. Mọi kết luận chưa có khung đã giải mã đều ghi **[CHƯA KIỂM]**.
 
 ## 1. Số liệu và giới hạn
 
 | Issue | Chữ ký (12 hex) | Lượt | Thiết bị trong thân issue | Ghi chú |
 |---|---|---:|---:|---|
-| [#316](https://github.com/aowvn-10diem/aowvn-monika/issues/316) | `3f181942717a` | 114 | 52 | tái diễn (có) |
+| [#316](https://github.com/aowvn-10diem/aowvn-monika/issues/316) | `3f181942717a` | 114 | 51 | tái diễn (có) |
 | [#372](https://github.com/aowvn-10diem/aowvn-monika/issues/372) | `7af5e6657638` | 90 | 12 | tái diễn (chưa) |
-| [#478](https://github.com/aowvn-10diem/aowvn-monika/issues/478) | — | 1 | 1 | cùng loại |
+| [#478](https://github.com/aowvn-10diem/aowvn-monika/issues/478) | `4d2cb114a7aa` | 1 | 1 | cùng loại |
 | [#520](https://github.com/aowvn-10diem/aowvn-monika/issues/520) | `4e65d6ad0246` | 1 | 1 | cùng loại |
 | **Tổng** | | **206** | | |
 
 - Thân issue `crash-moi` chỉ có **hash chữ ký** (`lõi + loại + tối đa 3 frame đầu`), **không** có khung, build_id, hay tên tệp `.so`. Vì vậy mọi kết luận về nguyên nhân dưới đây là **đọc mã**, không phải từ dữ liệu crash. **[CHƯA KIỂM]**
-- 52 thiết bị khác nhau ở #316 ⇒ không phải lỗi của một máy/driver cụ thể, nhưng cũng không loại trừ được nhóm GPU. **[CHƯA KIỂM]**
+- 51 thiết bị khác nhau ở #316 ⇒ không phải lỗi của một máy/driver cụ thể, nhưng cũng không loại trừ được nhóm GPU. **[CHƯA KIỂM]**
 - Chưa có `CRASH_ADMIN_TOKEN` trong phiên này nên **không** đọc được báo cáo gốc trên Worker (không có khung/BuildId). Đây là chốt chặn của cả nhóm B.
 
 ## 2. Bốn nghi phạm
@@ -45,7 +45,7 @@ Người lập: phiên **Lỗi 2**. Mọi kết luận chưa có khung đã gi�
 
 - Lõi ppsspp không tải từ buildbot nữa: config trỏ `aowvn-monika-packs` release `cores-ppsspp-{abi}.zip` (`cores-ppsspp-1`) kèm `sha256` từng ABI.
 - Bản `cores-ppsspp-1` **có** `symbols-ppsspp-arm64-v8a.zip` (53,5 MB) và `symbols-ppsspp-armeabi-v7a.zip` (51,1 MB), cùng `sources-*.zip` và `manifest.json` (kiểm bằng `gh release view cores-ppsspp-1 --repo aowvn-10diem/aowvn-monika-packs`).
-- Đường dựng (`scripts/prepare-core-build.py`): `CMAKE_BUILD_TYPE=RelWithDebInfo`, `-Wl,--build-id=sha1` (`:343-360`), **bắt buộc** có debug info (`require_debug_symbols`, `:301-306`, `:396`), chỉ strip bản phát hành sau khi đã đóng gói symbols (`:406`, `:441-447`). Nguồn ppsspp ghim `9366aa7dc2d2fb1f49cde97ffbf5ab434d4d6ff9` (`engines/sources.lock.json`).
+- Đường dựng (`scripts/prepare-core-build.py`): `CMAKE_BUILD_TYPE=RelWithDebInfo`, `-Wl,--build-id=sha1` (`:343-360`), **bắt buộc** có debug info (`require_debug_symbols`, `:301-306`, `:396`). Bước dựng trả **hai** tệp (`:391`): bản phát hành (bị `llvm-strip --strip-unneeded` ở `:403-406`) và `symbol_library` **chưa strip**; gói `symbols-*.zip` đóng từ `symbol_library` (`:441-447`) nên debug info còn nguyên. Nguồn ppsspp ghim `9366aa7dc2d2fb1f49cde97ffbf5ab434d4d6ff9` (`engines/sources.lock.json`).
 - Kết luận: **đủ điều kiện retrace** cho ppsspp. Chốt chặn duy nhất là quyền đọc Worker.
 
 ## 3. Cách lấy khung (việc tiếp theo, cần `CRASH_ADMIN_TOKEN`)
