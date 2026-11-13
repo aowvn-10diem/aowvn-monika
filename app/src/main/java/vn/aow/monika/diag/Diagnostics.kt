@@ -450,12 +450,23 @@ object Diagnostics {
         Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: ${errorCode(e)} (mong đợi, không báo)")
     }
 
-    /** Ghi một lỗi thao tác đã tự bắt (nơi không bọc được bằng [op]). Trả null nếu trùng trong cửa sổ chống spam. */
-    fun opFail(c: Context, name: String, step: String, e: Throwable, target: String? = null): Report? = runCatching {
+    /**
+     * Ghi một lỗi thao tác đã tự bắt (nơi không bọc được bằng [op]). Trả null nếu trùng trong cửa sổ chống spam.
+     * [expected] đánh dấu lỗi thuộc luồng bình thường (vd. người chơi chọn nhầm bản vá): chỉ ghi vệt, không lập báo cáo
+     * — cùng quy ước với [op]/[opSuspend].
+     */
+    fun opFail(c: Context, name: String, step: String, e: Throwable, target: String? = null, expected: (Throwable) -> Boolean = { false }): Report? = runCatching {
         val code = errorCode(e)
-        // Hủy (Activity rời màn, Worker bị dừng) và lỗi mạng là chuyện thường: chỉ ghi vệt, không lập báo cáo.
-        if (isCancellation(e) || isOffline(step, e)) {
-            Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code (hủy/lỗi mạng, không báo)")
+        // Hủy (Activity rời màn, Worker bị dừng), lỗi mạng và lỗi đã khai báo [expected] là chuyện thường:
+        // chỉ ghi vệt, không lập báo cáo.
+        val skipReason = when {
+            isCancellation(e) -> "hủy"
+            isOffline(step, e) -> "lỗi mạng"
+            expected(e) -> "mong đợi"
+            else -> null
+        }
+        if (skipReason != null) {
+            Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code ($skipReason, không báo)")
             return@runCatching null
         }
         val key = "$name|$step|$code|${e.message.orEmpty().take(60).replace(Regex("""\d+"""), "")}"

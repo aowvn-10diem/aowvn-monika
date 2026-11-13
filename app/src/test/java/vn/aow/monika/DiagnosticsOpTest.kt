@@ -20,6 +20,8 @@ import org.robolectric.annotation.GraphicsMode
 import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.diag.Diagnostics.Op
 import vn.aow.monika.library.Importer
+import vn.aow.monika.patch.PatchException
+import vn.aow.monika.patch.RomPatcher
 import vn.aow.monika.ui.TestApp
 import java.io.File
 import java.io.IOException
@@ -172,6 +174,30 @@ class DiagnosticsOpTest {
         assertEquals(1, opFails().size)
     }
 
+    @Test fun opFailSkipsDeclaredExpectedErrorsButStillReportsRealOnes() {
+        // V202 (L1-opfail): lỗi do người chơi chọn nhầm bản vá là luồng bình thường → chỉ ghi vệt.
+        Diagnostics.opFail(app, Op.PATCH_ROM, "nhan-dang-ban-va", PatchException("không nhận ra định dạng bản vá"), "game.nds",
+            expected = { it is PatchException })
+        assertTrue(opFails().isEmpty())
+        assertTrue(sent.isEmpty())
+        assertTrue(
+            "lỗi mong đợi vẫn phải để lại vệt",
+            vn.aow.monika.diag.Breadcrumbs.read(app, android.os.Process.myPid()).any { it.contains("mong đợi") }
+        )
+        // Cùng op, lỗi môi trường (không tạo được thư mục) thì vẫn phải báo.
+        Diagnostics.opFail(app, Op.PATCH_ROM, "tao-thu-muc", IOException("mkdirs thất bại"), "game.nds",
+            expected = { it is PatchException })
+        assertEquals("op:va-rom", opFails().single().component)
+    }
+
+    @Test fun wrongOrCorruptPatchIsCoveredByTheExpectedPredicate() {
+        // PatchFlow dùng đúng vị từ này ở catch(PatchException) — ROM khác bản / bản vá cụt đều là PatchException.
+        val e = runCatching { RomPatcher.apply(ByteArray(16) { it.toByte() }, ByteArray(0)) }.exceptionOrNull()
+        assertTrue("bản vá rỗng phải là PatchException, thực tế: $e", e is PatchException)
+        Diagnostics.opFail(app, Op.PATCH_ROM, "ap-ban-va", e!!, "game.nds", expected = { it is PatchException })
+        assertTrue(opFails().isEmpty())
+    }
+
     @Test fun mixedDownloadAndExtractOpReportsEofFromLocalArchive() {
         // V166 lần 2 (Luna 3): op TRỘN tải + giải nén (mo-game / cai-goi-engine). EOF xảy ra khi ĐỌC ARCHIVE CỤC BỘ
         // là tệp cụt/hỏng → vẫn phải báo, dù cùng thao tác đó còn có bước tải qua mạng.
@@ -300,18 +326,21 @@ class DiagnosticsOpTest {
         assertTrue(r.detail.contains("bước: tao-thu-muc") && r.detail.contains("đối tượng: rom.nds"))
     }
 
-    @Test fun patchRejectedRomOrPatchAlsoLeavesOpFail() = runBlocking {
+    @Test fun patchRejectedRomOrPatchLeavesOnlyACrumb() = runBlocking {
+        // V202 (L1-opfail): chọn ROM quá lớn / bản vá sai định dạng là lựa chọn của người chơi, không phải lỗi app.
         val big = File(tmp.root, "big.nds").apply { java.io.RandomAccessFile(this, "rw").use { it.setLength(257L * 1024 * 1024) } }
         val patch = File(tmp.root, "vh.ips").apply { writeBytes(ips()) }
         val m1 = vn.aow.monika.patch.PatchFlow.run(app, big, android.net.Uri.fromFile(patch))
         assertTrue(m1.startsWith("File game quá lớn"))
-        assertTrue(opFails().single().detail.contains("bước: kiem-tra-rom"))
-        Diagnostics.resetOpThrottle()
         val rom = File(tmp.root, "rom2.nds").apply { writeBytes(ByteArray(8)) }
         val junk = File(tmp.root, "x.bin").apply { writeBytes(ByteArray(16) { 7 }) }
         val m2 = vn.aow.monika.patch.PatchFlow.run(app, rom, android.net.Uri.fromFile(junk))
         assertTrue(m2.startsWith("Không nhận ra định dạng"))
-        assertTrue(opFails().any { it.detail.contains("bước: nhan-dang-ban-va") })
+        assertTrue("chọn nhầm ROM/bản vá không được thành báo cáo op-fail", opFails().isEmpty())
+        assertTrue(sent.isEmpty())
+        val crumbs = vn.aow.monika.diag.Breadcrumbs.read(app, android.os.Process.myPid())
+        assertTrue("vẫn để lại vệt bước kiểm ROM", crumbs.any { it.contains("kiem-tra-rom") && it.contains("mong đợi") })
+        assertTrue("vẫn để lại vệt bước nhận dạng", crumbs.any { it.contains("nhan-dang-ban-va") && it.contains("mong đợi") })
     }
 
     @Test fun errorCodeShowsRootCause() {
