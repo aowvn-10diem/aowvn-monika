@@ -303,6 +303,10 @@ class RetroActivity : ComponentActivity() {
             }
             Diagnostics.coreInfo(this@RetroActivity, AppGraph.cores.info(coreId))
             Diagnostics.stage(this@RetroActivity, "core-ready")
+            // citra không khai `systemFiles` nên app không tải hộ `shared_font.bin`; lõi vẫn nạp game
+            // (tự tạo thư mục `sysdata` rỗng) → KHÔNG chặn, chỉ để lại một vệt đọc được khi lập báo cáo.
+            CoreSystemFiles.crumb(coreId, AppGraph.cores.systemDir(), sramFile.parentFile)
+                ?.let { Diagnostics.crumb(this@RetroActivity, "core-sysdata", it) }
             updateStartup("game-prepare", "Đang chuẩn bị ROM: ${megabytes(File(gamePath).length())}")
             val data = GLRetroViewData(this@RetroActivity).apply {
                 initializeOnGlThread = true
