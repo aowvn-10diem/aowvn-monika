@@ -36,6 +36,8 @@ class ComponentsTest {
         )
         assertEquals("engine:libretro", Components.of(null, null, "abort message: citra_libretro_android.so"))
         assertEquals("engine:libretro:citra", Components.of(null, null, "citra"))
+        // Luật lỗi mạng đứng trước fallback "citra": thông điệp mạng có chữ "citra" vẫn phải là `net`.
+        assertEquals("net", Components.of(null, null, "SocketTimeoutException: /citra/feed"))
     }
 
     /** Engine Azahar nhúng vẫn phải là `engine:azahar`, kể cả khi stack chỉ có lớp JNI của engine. */
