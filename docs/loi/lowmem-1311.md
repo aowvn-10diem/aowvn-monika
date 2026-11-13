@@ -43,7 +43,7 @@ Cơ chế (đọc mã, không suy đoán):
 **[CHƯA KIỂM]** Tỉ lệ lowmem **sau 0.8.10** (bản có V202): phiên này không có `CRASH_ADMIN_TOKEN` nên không đọc được `time` của 100 báo cáo gần nhất, cũng không tách được "máy yếu bị hệ thống dọn" với "app giữ RAM quá nhiều".
 
 Cách đo (khi có token):
-1. `scripts/crash-insight.py` — xem số báo cáo `lowmem` theo ngày và theo bản. Mặc định script **chỉ tính báo cáo khớp chứng thư bản phát hành** (`OFFICIAL_CERT_PREFIX`, `partition_by_cert` ở `:310,334`) và chỉ ghi tổng số báo cáo/lượt đã loại ở cuối bảng; truyền `--all-certs` (`:342`) khi cần xem cả bản mod/đóng gói lại.
+1. `scripts/crash-insight.py` — xem số báo cáo `lowmem` theo ngày và theo bản. Mặc định script **loại** báo cáo mang chứng thư **khác** bản phát hành (`partition_by_cert` ở `:310,334`) và chỉ ghi **tổng** số báo cáo/lượt đã loại ở cuối bảng; báo cáo **rỗng chứng thư (app cũ) vẫn được tính** và được cảnh báo riêng (`crash-insight.py:237-246`). Truyền `--all-certs` (`:342`) khi cần xem cả bản mod/đóng gói lại.
 2. `scripts/crash-reports.sh <id>` cho vài báo cáo `lowmem` mới nhất — đọc `env` (RAM trống/tổng, heap) để biết máy yếu hay rò rỉ.
 3. So hai cửa sổ: trước và sau mốc phát hành bản có #569. Nếu số báo cáo/ngày không giảm trên máy ≥ 6 GB thì mở issue **mới** (đừng mở lại #304) kèm `env` và phiên game tương ứng.
 
