@@ -69,6 +69,9 @@ object AzaharBridge {
         catch (e: Exception) {
             fallback
         } finally {
+            // Bỏ chờ (hết hạn/ngắt) thì đóng luôn future: việc vẽ chạy sau đó thấy `isDone` và không hiện
+            // hộp thoại mồ côi (không còn ai đợi câu trả lời). Future đã có đáp án thì `cancel` không đổi gì.
+            f.cancel(false)
             // Chỉ dọn hộp thoại của mình; hộp thoại của lần gọi khác đang chờ thì để nguyên.
             main.post { if (dialog != null && dialog === mine.get()) dialog = null }
         }

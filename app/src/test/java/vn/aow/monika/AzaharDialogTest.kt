@@ -43,14 +43,20 @@ class AzaharDialogTest {
         assertFalse("hết hạn chờ phải trả câu trả lời dự phòng", traLoi.get())
     }
 
-    @Test fun hopThoaiHetHanKhongHienMoCoi() {
+    /**
+     * Hộp thoại đã hết hạn chờ **trước khi** việc vẽ được chạy: không được vẽ ra hộp thoại mồ côi.
+     * Ca này phải quan sát **giữa** hai việc xếp lên luồng chính (vẽ → dọn): chạy đúng việc vẽ trước,
+     * chưa chạy việc dọn. Bỏ `if (!f.isDone)` ở `AzaharBridge.ask()` thì hộp thoại xuất hiện ngay ở đây.
+     */
+    @Test fun hopThoaiHetHanChuaKipVeThiKhongVe() {
         AzaharBridge.dialogTimeoutMs = 50
         val luong = Thread({ AzaharBridge.alert("Lỗi", "thử", false) }, "test-dialog")
         luong.isDaemon = true
         luong.start()
-        luong.join(5_000)
-        main.idle() // chạy các việc đã xếp lên luồng chính sau khi hết hạn
-        assertNull("không được hiện hộp thoại đã hết hạn chờ", AzaharBridge.dialog)
+        luong.join(5_000) // luồng đã hết hạn chờ; luồng chính đang xếp [việc vẽ, việc dọn]
+        main.runOneTask() // chỉ chạy việc vẽ
+        assertNull("không được vẽ hộp thoại đã hết hạn chờ", AzaharBridge.dialog)
+        main.idle() // dọn nốt phần còn lại
     }
 
     @Test fun traLoiBinhThuongTraVeDungKetQua() {
