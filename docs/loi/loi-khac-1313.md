@@ -36,8 +36,9 @@ Chỉ tài liệu — **không sửa mã**, không đụng `config/`. Mọi kế
 
 `Lượt` = "Số lần quan sát đã thông báo" trong thân issue (cộng dồn, **không phải số người**).
 `Máy` = số khoá trong `seen` (`crash-issue-bot.py:76`) — xấp xỉ số **lần gửi báo cáo khác nhau**, không phải số máy.
-`Tái diễn?` = thân issue bị bot PATCH sau lần tạo (bot chỉ PATCH khi `delta ≥ 5`, `crash-issue-bot.py:118`);
-`updatedAt` ở 3 issue tái diễn **không** do bình luận (cả 19 issue đều 0 bình luận), nên đọc được là tái diễn thật.
+`Tái diễn?` = thân issue bị bot PATCH sau lần tạo, đọc bằng `(+N)` trong thân (bot chỉ PATCH khi `delta ≥ 5`,
+`crash-issue-bot.py:118`). **Không** dùng `updatedAt`: bình luận cũng đổi mốc này (#322/#385/#567/#578 đã có bình
+luận chẩn đoán), nên chỉ `(+N)` mới là bằng chứng.
 
 | Issue | Lõi | Loại | Lượt | Máy | Mở ngày | Tái diễn? |
 |---|---|---|---:|---:|---|---|
@@ -142,7 +143,7 @@ Bằng chứng đọc từ `origin/main:config/monika-config.json` (configVersio
 | Lõi | `artifacts` + `sha256`? | Nguồn | Hệ quả |
 |---|---|---|---|
 | `mgba`, `gambatte` | **Có**, 4 ABI, pack `cores-gb-gba-nes-1` | GitHub Releases (bất biến) | Hai máy cùng nhãn chạy **cùng** `.so`; sửa được theo phiên bản |
-| `snes9x` | **Không**, `version = "1"` | `buildbot…/nightly/android/latest/{abi}` | `isReady` chỉ so chuỗi `"1"` (`CoreManager.kt:39-44`) ⇒ máy đã cài **không bao giờ** tải lại; máy mới cài nhận bản khác |
+| `snes9x` | **Không**, `version = "1"` | `buildbot…/nightly/android/latest/{abi}` | `isReady` chỉ so chuỗi `"1"` (`CoreManager.kt:53-58`) ⇒ máy đã cài **không bao giờ** tải lại; máy mới cài nhận bản khác |
 | `pcsx_rearmed` | **Không**, `version = "1"` | buildbot | như trên |
 | `melonds`, `melondsds` | **Không**, `version = "1"` | buildbot | như trên |
 | `kirikiroid2-yuri` | **Có** (`modules.kirikiri.version = 6e61ce3-aow3`, `sha256`) | packs `engines-kirikiri-16` | Ổn định, có ký hiệu (mục 7.6) |
@@ -158,8 +159,8 @@ Nghĩa là **hôm qua và hôm nay buildbot đã thay `.so`**, trong khi app v�
 cùng nhãn `1` có thể chạy hai binary khác nhau — đúng cơ chế #622 đã nêu cho `citra`, nay áp cho 4 lõi này.
 
 Nhánh tải **không ghim** cũng không kiểm gì: nó lấy entry `.so` đầu tiên trong ZIP rồi `renameTo`
-(`CoreManager.kt:161-171`); chỉ nhánh `artifacts` mới kiểm `sha256` + ELF/ABI (`CoreManager.kt:176-198`,
-`PackTransaction.validate`). Vì vậy một ZIP buildbot cắt cụt vẫn được nhận → `core-error` mã `0`.
+(`CoreManager.kt:107-141`); chỉ nhánh `artifacts` mới kiểm `sha256` (`CoreManager.kt:144-146`) và ELF/ABI
+(`PackTransaction.validate`, `CoreManager.kt:166`). Vì vậy một ZIP buildbot cắt cụt vẫn được nhận → `core-error` mã `0`.
 
 **Ký hiệu native**: ngoài 2 gói engine, repo **không có** gói symbols nào cho lõi libretro
 (`gh release list` 52 bản: chỉ `symbols-kirikiri-16-arm64-v8a`; `engines-rgss-6/7` chỉ có
@@ -172,8 +173,8 @@ triển khai cho 6 lõi trong nhóm (chưa có lõi nào do Monika tự dựng �
 ## 5. `unknown` (4 issue, 17 lượt): một nguyên nhân duy nhất, không phải lỗi lõi
 
 - `kind = "unknown"` chỉ sinh ở **một chỗ**: `exit == null` trong `Diagnostics.collect`
-  (`app/.../diag/Diagnostics.kt:233-239`).
-- `exitInfo` trả `null` khi `Build.VERSION.SDK_INT < 30` (`Diagnostics.kt:275-278`) hoặc Android không còn bản
+  (`app/.../diag/Diagnostics.kt:232-241`).
+- `exitInfo` trả `null` khi `Build.VERSION.SDK_INT < 30` (`Diagnostics.kt:277-282`) hoặc Android không còn bản
   ghi. `minSdk = 26` (`app/build.gradle.kts:40`) ⇒ **Android 8/9/10 nằm trong phạm vi hỗ trợ** và mọi lần chết
   của tiến trình game trên các máy đó đều thành `unknown`.
 - Vì sao vẫn có lõi: `collect()` đọc **một** tệp phiên dùng chung `diag/active-session.json`
@@ -243,7 +244,7 @@ mới cho lỗi ổn định theo *từng game*.
 `melonds` **không** phải lõi mặc định của NDS (`systems[nds].core = melondsds`, `config` hệ `nds`). Nó chỉ được
 dùng khi người chơi đổi tay, hoặc khi `onCoreFailure` mời đổi sang lõi dự phòng:
 `altCores` của NDS có `["melondsds","desmume","melonds"]` và nút "Đổi sang lõi …" gọi `start(...)` lại
-(`RetroActivity.kt:199-215`). Vì vậy **#563/#535 có thể là cùng những game của #567** — một lần thất bại của
+(`RetroActivity.kt:197-209`). Vì vậy **#563/#535 có thể là cùng những game của #567** — một lần thất bại của
 `melondsds` sinh ra `core-error`, người chơi bấm đổi lõi, rồi `melonds` sập. Đây là giả thuyết **liên nhóm**, không
 phải hai lỗi độc lập. [CHƯA KIỂM] (cần `device`/`game` của 3 báo cáo #563 để đối chiếu với #567).
 
@@ -258,7 +259,7 @@ chờ gói ghim bản + ký hiệu của V198.
 
 - `modules.rgss` **ghim** (`engines-rgss-6`, `sha256`) nên bản lõi ổn định.
 - Nhưng **không có gói ký hiệu**: release `engines-rgss-6` và `engines-rgss-7` chỉ có
-  `rgss-arm64-v8a.zip` + `.sha256`; `build-rgss.yml:174-194` tạo `symbols-rgss-*` dạng **nháp** (cổng giấy phép
+  `rgss-arm64-v8a.zip` + `.sha256`; `build-rgss.yml:174-196` tạo `symbols-rgss-*` dạng **nháp** (cổng giấy phép
   G8) và hiện **không** có bản nháp nào (`gh api …/releases?per_page=100` lọc `draft == true` → rỗng).
   ⇒ #613 **không** retrace được hôm nay.
 - Thêm một lệch nhỏ: `config` ghim `engines-rgss-6` trong khi repo đã có `engines-rgss-7` — khi bật ký hiệu phải
