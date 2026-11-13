@@ -59,7 +59,7 @@ Các đuôi bên dưới là những đuôi đang khai báo trong cấu hình ma
 | Sega Game Gear | .gg | Lõi libretro trong Monika |
 | PC Engine | .pce, .sgx | Lõi libretro trong Monika |
 | Nintendo 64 | .z64, .n64, .v64 | Lõi libretro trong Monika |
-| Nintendo 3DS | .3ds, .cci, .cxi, .3dsx, .cia | Azahar khi module phù hợp sẵn có; nếu không thì chọn lõi libretro theo cấu hình |
+| Nintendo 3DS | .3ds, .cci, .cxi, .3dsx, .cia | .3ds, .cci, .cxi, .3dsx: Azahar khi module phù hợp sẵn có, nếu không thì chọn lõi libretro theo cấu hình. .cia: phải cài trước, xem mục **Cài game 3DS dạng .cia** bên dưới |
 | Sega Dreamcast | .gdi, .cdi | Lõi libretro trong Monika |
 | Atari Lynx | .lnx | Lõi libretro trong Monika |
 | Atari 2600 | .a26 | Lõi libretro trong Monika |
@@ -82,7 +82,18 @@ Các đuôi bên dưới là những đuôi đang khai báo trong cấu hình ma
 
 Nếu game dùng lõi libretro, lõi mặc định lấy từ cấu hình. Với hệ có nhiều lõi, vào **Cài đặt → Lõi giả lập** để chọn lõi khác. Tên tệp chỉ giúp app phân loại ban đầu, không xác nhận ROM hợp lệ hay tương thích.
 
-Khi Azahar khả dụng, phần **Cài đặt → Nintendo 3DS** có nút **Chọn file .cia để cài**; phần mô tả trong app ghi rằng có thể cài game, bản cập nhật hoặc DLC vào bộ nhớ do Monika quản lý. Kết quả cài/chạy thực tế **[CHƯA KIỂM]**.
+### Cài game 3DS dạng .cia
+
+Tệp `.cia` là **gói cài đặt** (game, bản cập nhật hoặc DLC), không phải ROM nên không mở trực tiếp như `.3ds`. Nếu bạn chạm **Chơi** một tệp `.cia` trên máy chưa cài được `.cia`, Monika dừng lại và báo việc cần làm thay vì báo lỗi lõi.
+
+1. Mở **Cài đặt**.
+2. Chọn nhóm **Nintendo 3DS**.
+3. Chọn **Chọn file .cia để cài**, rồi chọn tệp trong bộ chọn tệp Android. Có thể chọn nhiều tệp một lúc.
+4. Chờ tới khi màn cài báo **Đã cài xong**, rồi mở game trong **Thư viện** như bình thường. Nếu chỉ cài bản cập nhật hoặc DLC thì mở game gốc. Tệp `.cia` của bạn vẫn còn trên máy, Monika không xoá.
+
+Trên máy có thành phần 3DS, chạm **Chơi** một tệp `.cia` trong Thư viện cũng đưa thẳng tới màn cài này.
+
+Nếu **không thấy nhóm "Nintendo 3DS"** trong Cài đặt, máy này chưa có thành phần 3DS (thường là máy 32-bit) nên chưa cài được `.cia`. Khi đó hãy dùng bản `.3ds`, `.cci` hoặc `.cxi`. Kết quả cài/chạy thực tế **[CHƯA KIỂM]**.
 
 ## Báo lỗi game
 
@@ -100,4 +111,5 @@ Nếu hiện **Đã gửi báo lỗi**, app xác nhận đã gửi. Nếu hiện
 - **Không thấy game**: thử chọn tệp trực tiếp bằng **Thêm game từ máy**. Nếu muốn tìm thêm ở thư mục khác, dùng **Quét cả máy** và cân nhắc quyền Android yêu cầu.
 - **Tệp nén chưa giải được**: xác nhận đã chọn đủ các phần; nếu cần mật khẩu, dùng mục **Giải nén** trong menu game.
 - **App báo chưa nhận diện được loại game**: kiểm tra đã giải nén gói và chọn đúng tệp game. Khả năng nhận diện gói không có đuôi riêng như thư mục MV/MZ, TyranoScript, Ren'Py hoặc RGSS **[CHƯA KIỂM]**.
+- **Tệp `.cia` không mở được**: `.cia` là gói cài đặt, không chạy trực tiếp. Cài ở **Cài đặt → Nintendo 3DS → Chọn file .cia để cài**; máy không thấy nhóm **Nintendo 3DS** thì dùng bản `.3ds`, `.cci` hoặc `.cxi`.
 - **Cần engine/app ngoài**: làm theo hộp thoại của Monika; nếu được chuyển sang app khác, hoàn tất thao tác trong app đó rồi quay lại Monika. Khả năng chạy thực tế phụ thuộc gói và thiết bị **[CHƯA KIỂM]**.
