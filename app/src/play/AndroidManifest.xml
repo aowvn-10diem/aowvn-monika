@@ -22,9 +22,12 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" tools:node="remove" />
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" tools:node="remove" />
     <uses-feature android:glEsVersion="0x00030000" android:required="false" />
+    <!-- V152 (targetSdk 36): Android 16 bỏ khoá xoay/tỉ lệ ở màn ≥600dp, có miễn trừ cho app khai
+         `appCategory="game"`. Giữ khai báo này (khớp bản github) để activity chơi game còn được tôn
+         trọng `screenOrientation` trên tablet. -->
     <application android:name=".MonikaApp" android:allowBackup="true"
         android:fullBackupContent="@xml/backup_rules"
-        android:dataExtractionRules="@xml/data_extraction_rules" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:label="@string/app_name" android:supportsRtl="true" android:theme="@style/Theme.Monika" android:enableOnBackInvokedCallback="true" tools:targetApi="36">
+        android:dataExtractionRules="@xml/data_extraction_rules" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:label="@string/app_name" android:supportsRtl="true" android:theme="@style/Theme.Monika" android:appCategory="game" android:enableOnBackInvokedCallback="true" tools:targetApi="36">
         <activity android:name="ru.playsoftware.j2meloader.MainActivity" android:exported="false" tools:node="merge" tools:replace="android:exported" />
         <activity android:name="ru.playsoftware.j2meloader.config.ConfigActivity" android:exported="false" tools:node="merge" tools:replace="android:exported" />
         <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="ocr,ocr_japanese" />

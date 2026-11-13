@@ -50,6 +50,10 @@ class TargetSdk36BackOptOutTest {
     private fun configChanges(block: String): List<String> =
         Regex("android:configChanges=\"([^\"]+)\"").find(block)?.groupValues?.get(1)?.split("|").orEmpty()
 
+    /** Toàn bộ thuộc tính `android:*` của một thẻ `<activity …>` (để so hai flavor từng thuộc tính). */
+    private fun activityAttributes(block: String): Map<String, String> =
+        Regex("android:(\\w+)=\"([^\"]*)\"").findAll(block).associate { it.groupValues[1] to it.groupValues[2] }
+
     /** Activity/`configChanges` mà mọi activity chạy game phải khai (API 36 bỏ khoá xoay ở màn lớn). */
     private val resizeSurvivingChanges = listOf(
         "orientation", "screenSize", "screenLayout", "smallestScreenSize",
@@ -103,7 +107,7 @@ class TargetSdk36BackOptOutTest {
         }
     }
 
-    /** Hai flavor phải khai cùng bộ activity với cùng `configChanges`/cờ back; khác chỉ ở allowlist. */
+    /** Hai flavor phải khai cùng bộ activity với cùng **mọi** thuộc tính; khác chỉ ở allowlist. */
     @Test fun bothFlavorsDeclareTheSameActivitiesWithTheSameConfigChanges() {
         val github = manifest("github")
         val play = manifest("play")
@@ -114,17 +118,32 @@ class TargetSdk36BackOptOutTest {
         assertEquals("Bản Play không được khai activity riêng ngoài bản github: $onlyPlay", emptySet<String>(), onlyPlay)
 
         for (name in activityNames(github) intersect activityNames(play)) {
-            val g = activityBlock(github, name)
-            val p = activityBlock(play, name)
+            val githubAttrs = activityAttributes(activityBlock(github, name))
+            val playAttrs = activityAttributes(activityBlock(play, name))
+            val differing = (githubAttrs.keys + playAttrs.keys).filter { githubAttrs[it] != playAttrs[it] }.sorted()
             assertEquals(
-                "$name: configChanges lệch giữa github và play",
-                configChanges(p).sorted(),
-                configChanges(g).sorted(),
+                "$name: thuộc tính lệch giữa github và play: " +
+                    differing.joinToString { "$it(github=${githubAttrs[it]}, play=${playAttrs[it]})" },
+                emptyList<String>(),
+                differing,
             )
-            assertEquals(
-                "$name: cờ predictive back lệch giữa github và play",
-                p.contains(optOut),
-                g.contains(optOut),
+        }
+    }
+
+    /**
+     * API 36 bỏ khoá xoay/tỉ lệ ở màn ≥600dp, **chỉ miễn trừ app khai `appCategory="game"`**
+     * (Android 16 → "Ignore orientation, resizability, and aspect ratio restrictions" → Exceptions).
+     * Thiếu khai báo này thì tablet xoay tự do giữa ván: `configChanges` chỉ chống tạo lại activity,
+     * không giữ được tỉ lệ/khung hình. Test đỏ ngay khi ai gỡ cờ này khỏi một flavor.
+     */
+    @Test fun bothFlavorsDeclareGameCategorySoTabletsKeepOrientationLock() {
+        for (flavor in listOf("github", "play")) {
+            val app = Regex("<application\\b[^>]*>").find(manifest(flavor))?.value
+            assertTrue("$flavor: không thấy thẻ <application>", app != null)
+            assertTrue(
+                "$flavor: thiếu android:appCategory=\"game\" → Android 16 bỏ khoá xoay ở màn ≥600dp, " +
+                    "activity game xoay tự do trên tablet",
+                app!!.contains("android:appCategory=\"game\""),
             )
         }
     }
