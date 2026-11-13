@@ -52,12 +52,18 @@ class GLRetroView(
         LibretroDroid.setAudioEnabled(value)
     }
 
+    /**
+     * Aow Monika (L1-anr): setter chạy trên UI Thread (nút tua nhanh) và JNI `setFrameSpeed` giữ `coreLock`
+     * suốt `retro_run` của melondsds → chỉ xếp việc, không chờ (xem [EmulationCall.post]).
+     */
     var frameSpeed: Int by Delegates.observable(1) { _, _, value ->
-        LibretroDroid.setFrameSpeed(value)
+        EmulationCall.post(deliverToGlThread) { LibretroDroid.setFrameSpeed(value) }
     }
 
+    /** Aow Monika (L1-anr): cùng lý do với [frameSpeed] — đổi kiểu hiển thị không được chờ lõi. */
     var shader: ShaderConfig by Delegates.observable(data.shader) { _, _, value ->
-        LibretroDroid.setShaderConfig(buildShader(value))
+        val config = buildShader(value)
+        EmulationCall.post(deliverToGlThread) { LibretroDroid.setShaderConfig(config) }
     }
 
     var viewport: RectF by Delegates.observable(RectF(0f, 0f, 1f, 1f)) { _, _, value ->
@@ -81,6 +87,9 @@ class GLRetroView(
     @Volatile private var hasRenderedFrame = false // Aow Monika: không xếp chạm trước khung đầu.
     @Volatile private var isAborted = false // Aow Monika: UI cũng bỏ chạm khi lõi đã lỗi.
     @Volatile private var isDestroyed = false // Aow Monika: không nhả vào JNI sau khi đóng lõi.
+
+    /** Aow Monika (L1-anr): đường duy nhất chuyển việc sang GLThread; `queueEvent` của GLSurfaceView. */
+    private val deliverToGlThread: (() -> Unit) -> Unit = { body -> queueEvent { body() } }
 
     // Aow Monika: snapshot tọa độ, JNI chỉ chạy trong queue GL; callback không chặn UI bằng latch.
     private val touchInput = EmulationTouchInput(
@@ -263,12 +272,15 @@ class GLRetroView(
     }
 
     fun getVariables(): Array<Variable> {
-        return LibretroDroid.getVariables()
+        // Aow Monika (L1-anr): JNI giữ `coreLock` khi lõi đang chạy → đọc qua đường có hạn, hết hạn trả rỗng
+        // (bảng tùy chọn lõi rỗng còn hơn treo UI Thread tới ANR).
+        return runOnEmulationThread(true, { emptyArray() }) { LibretroDroid.getVariables() }
     }
 
     fun updateVariables(vararg variables: Variable) {
-        variables.forEach {
-            LibretroDroid.updateVariable(it)
+        // Aow Monika (L1-anr): áp tùy chọn lõi là việc không cần kết quả — xếp vào GLThread, không chờ.
+        variables.forEach { variable ->
+            EmulationCall.post(deliverToGlThread) { LibretroDroid.updateVariable(variable) }
         }
     }
 
@@ -454,18 +466,12 @@ class GLRetroView(
             return block()
         }
 
-        val task = EmulationThreadTask<T>()
-        // Aow Monika: GLThread đã đóng thì task không bao giờ hoàn tất; chờ có hạn bên dưới sẽ trả fallback.
-        queueEvent { task.complete(block()) }
-
         // Aow Monika: chờ có hạn. GLThread đang biên dịch shader hoặc nạp state rất lâu thì trả giá trị
         // dự phòng thay vì treo Main Thread tới mức ANR (ffdfa861, #318, #529, #533, #535).
-        if (!task.await(EmulationThread.CALL_TIMEOUT_MS)) {
+        return EmulationCall.runBounded(deliverToGlThread, EmulationThread.CALL_TIMEOUT_MS, {
             Log.w(TAG_LOG, "GLThread không phản hồi sau ${EmulationThread.CALL_TIMEOUT_MS} ms, trả giá trị dự phòng")
-            return fallback()
-        }
-
-        return task.result()
+            fallback()
+        }) { block() }
     }
 
     private fun runOnEmulationThread(useEmulationThread: Boolean, block: () -> Unit) {
@@ -478,9 +484,7 @@ class GLRetroView(
             return block()
         }
         // Dùng chung cơ chế chờ của #606; hết hạn trả null để nơi gọi biết là chưa chụp được.
-        val task = EmulationThreadTask<T>()
-        queueEvent { task.complete(block()) }
-        return if (task.await(timeoutMs)) task.result() else null
+        return EmulationCall.runBounded(deliverToGlThread, timeoutMs, { null }) { block() }
     }
 
     private fun buildShader(config: ShaderConfig): GLRetroShader {

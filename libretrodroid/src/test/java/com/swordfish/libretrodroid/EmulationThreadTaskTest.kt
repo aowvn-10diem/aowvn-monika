@@ -92,4 +92,50 @@ class EmulationThreadTaskTest {
     fun callTimeoutIsWithinAnrBudget() {
         assertTrue("hạn chờ phải ≤ 2000 ms", EmulationThread.CALL_TIMEOUT_MS <= 2_000L)
     }
+
+    /** L1-anr: việc không cần kết quả (đổi biến lõi/shader/tốc độ) chỉ được xếp hàng, không chờ GLThread. */
+    @Test
+    fun postOnlyQueuesAndNeverWaitsForGlThread() {
+        val queued = mutableListOf<() -> Unit>()
+        var ran = false
+
+        val startedAt = System.nanoTime()
+        EmulationCall.post({ body -> queued += body }) { ran = true }
+        val elapsedMs = (System.nanoTime() - startedAt) / 1_000_000
+
+        assertFalse("post không được chạy việc trên thread gọi", ran)
+        assertEquals("post phải xếp đúng 1 việc", 1, queued.size)
+        assertTrue("post không được chờ GLThread ($elapsedMs ms)", elapsedMs < 100L)
+
+        queued.single()()
+        assertTrue("GLThread xử lý hàng đợi thì việc vẫn chạy", ran)
+    }
+
+    /** Việc cần kết quả mà GLThread trả lời ngay thì lấy đúng kết quả. */
+    @Test
+    fun runBoundedReturnsResultWhenGlThreadAnswers() {
+        val value = EmulationCall.runBounded({ body -> body() }, 500L, { "dự phòng" }) { "kết quả" }
+        assertEquals("kết quả", value)
+    }
+
+    /** L1-anr: GLThread kẹt (lõi đang giữ coreLock) thì hết hạn trả dự phòng, không chờ tới ANR. */
+    @Test
+    fun runBoundedFallsBackWhenGlThreadNeverRuns() {
+        val queued = mutableListOf<() -> Unit>()
+        var ran = false
+
+        val startedAt = System.nanoTime()
+        val value = EmulationCall.runBounded({ body -> queued += body }, 50L, { "dự phòng" }) {
+            ran = true
+            "kết quả"
+        }
+        val elapsedMs = (System.nanoTime() - startedAt) / 1_000_000
+
+        assertEquals("dự phòng", value)
+        assertFalse("việc không chạy trên thread gọi", ran)
+        assertTrue("không được chờ quá hạn ($elapsedMs ms)", elapsedMs < 1_000L)
+        assertEquals("việc vẫn nằm trong hàng đợi GLThread", 1, queued.size)
+        queued.single()()
+        assertTrue("GLThread xử lý muộn thì việc vẫn chạy", ran)
+    }
 }
