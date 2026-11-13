@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -98,6 +99,16 @@ class RetroActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // t0 của phép đo pause (#350/#318, docs/loi/melondsds-anr-1313.md §5.2): chỉ đọc đồng hồ khi
+        // chính activity này sắp pause. API < 29 không có callback ⇒ t1 tự là gốc, ghi rõ trong crumb.
+        pauseOriginCallbacks = PauseOrigin.register(this) { label, at ->
+            if (label == T0) {
+                runCatching { com.swordfish.libretrodroid.Diag.pauseOriginAt = at }
+                pauseProbe.origin(label, at) // mở chu kỳ mới, không nối mốc lần pause trước
+            } else {
+                pauseProbe.mark(label, at)
+            }
+        }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // Máy có hỗ trợ: giữ xung CPU/GPU ổn định khi chơi lâu (đỡ nóng rồi tụt xung đột ngột). Máy không hỗ trợ thì bỏ qua.
         runCatching { if (android.os.Build.VERSION.SDK_INT >= 24) window.setSustainedPerformanceMode(true) }
@@ -367,6 +378,10 @@ class RetroActivity : ComponentActivity() {
             updateStartup("surface-wait", "Đang chuẩn bị khung game…")
             Diagnostics.stage(this@RetroActivity, "loading-game") // lõi nạp file game ngay sau dòng này — chết ở đây = lõi hoặc file game hỏng
             val view = GLRetroView(this@RetroActivity, data)
+            // Nối cầu chẩn đoán của :libretrodroid vào vệt crumb của app (t1–t3, §5.2). Chỉ để đo.
+            runCatching {
+                com.swordfish.libretrodroid.Diag.sink = { msg -> Diagnostics.crumb(this@RetroActivity, "pause", msg) }
+            }
             lifecycle.addObserver(view)
             root.addView(view, 0, gameLayoutParams()) // Dưới màn chờ; màn chờ bỏ đi khi có khung hình đầu.
             retroView = view
@@ -664,6 +679,19 @@ class RetroActivity : ComponentActivity() {
 
     private var clock: PlayClock? = null
 
+    /**
+     * Vệt mốc pause/destroy để lượt ANR kế tiếp tự chỉ ra chặng chậm (#350/#318,
+     * `docs/loi/melondsds-anr-1313.md` §5.2). Chỉ ghi crumb, không đổi luồng.
+     *
+     * Đánh đổi đã biết: mỗi lần ra nền ~8 dòng, mỗi lần đóng ~9 dòng (append đồng bộ trên main
+     * thread, vài ms nằm trong chính chặng được đo); vệt `Breadcrumbs` giữ 40 dòng nên 2–3 chu kỳ
+     * là đẩy rơi crumb `stage`/`sram` cũ — crumb `pause` là thứ cần đọc khi ANR nên chấp nhận.
+     */
+    private val pauseProbe = PauseProbe { msg -> Diagnostics.crumb(this, "pause", msg) }
+
+    /** Callback `onActivityPrePaused` (t0) đã đăng ký; `null` khi API < 29 hoặc đăng ký lỗi. */
+    private var pauseOriginCallbacks: android.app.Application.ActivityLifecycleCallbacks? = null
+
     override fun onResume() {
         super.onResume()
         clock?.resume()
@@ -674,31 +702,49 @@ class RetroActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        // t4 mở chu kỳ mới khi không có t0 (API < 29); nếu t0 vừa phát thì nối tiếp cùng chu kỳ.
+        pauseProbe.begin("t4", SystemClock.elapsedRealtime())
         inputDevices.unregisterInputDeviceListener(deviceListener)
         releasePad()
         clock?.pause()
+        pauseProbe.mark("t4s", SystemClock.elapsedRealtime()) // hết releasePad/clock.pause, sắp vào saveSram
         saveSram()
         // L1 (lowmem/killed): ghi lại đang ở nền để báo cáo bị hệ thống tắt về sau không bị ghi là "đang chơi"
         // (Android hay thu hồi tiến trình nặng khi người chơi đã chuyển sang app khác).
         if (firstFrame) Diagnostics.stage(this, "paused")
+        pauseProbe.mark("t5", SystemClock.elapsedRealtime())
         super.onPause()
+        pauseProbe.mark("t6", SystemClock.elapsedRealtime())
     }
 
     private var firstFrame = false
     private var loadingGone = false
 
     override fun onDestroy() {
+        pauseProbe.mark("t7", SystemClock.elapsedRealtime())
         if (isFinishing) {
             // V202 PR3: chờ job ghi SRAM TRƯỚC khi super.onDestroy() huỷ lifecycleScope, tránh mất lượt ghi cuối.
             runBlocking { withTimeoutOrNull(SRAM_WRITE_WAIT_MS) { sramJob?.join() } }
+            pauseProbe.mark("t8", SystemClock.elapsedRealtime())
         }
-        try { super.onDestroy() } finally { saveTransferLease?.close(); saveTransferLease = null }
+        try { super.onDestroy() } finally {
+            saveTransferLease?.close()
+            saveTransferLease = null
+            // Gỡ cầu nối + callback đo: không giữ Activity sau khi view bị gỡ.
+            runCatching { com.swordfish.libretrodroid.Diag.sink = null }
+            PauseOrigin.unregister(this, pauseOriginCallbacks)
+            pauseOriginCallbacks = null
+        }
+        pauseProbe.mark("t9", SystemClock.elapsedRealtime())
         if (isFinishing) {
             // Thoát bình thường: xóa phiên (không báo lỗi) rồi TẮT tiến trình game → lõi native giải phóng sạch RAM,
             // lần chơi sau chạy tiến trình mới (không dính trạng thái/leak của lõi lần trước).
             Diagnostics.end(this)
             android.os.Process.killProcess(android.os.Process.myPid())
         }
+        // Nhánh còn lại (!isFinishing: đổi uiMode/density) giữ nguyên như main: view do
+        // ActivityThread.handleDestroyActivity gỡ SAU khi onDestroy() trả về, nên t10→t11 là
+        // [KHÔNG ĐO — cố ý] (docs/loi/melondsds-anr-1313.md §4.2, §5.2) — không tự gỡ view ở đây.
     }
 
     private var sramJob: Job? = null
@@ -729,6 +775,8 @@ class RetroActivity : ComponentActivity() {
 
     companion object {
         private const val LOG_TAG = "MonikaGame"
+        /** Nhãn crumb mốc `t0` (`onActivityPrePaused`) của phép đo pause (#350/#318). */
+        private const val T0 = "t0"
         /** V202 PR3: hạn chờ chụp SRAM (dưới ngưỡng pause timeout nhưng đủ cho khung nặng). */
         private const val SRAM_CAPTURE_TIMEOUT_MS = 300L
         /** V202 PR3: hạn chờ ghi SRAM xong trước khi killProcess. */
