@@ -1,0 +1,153 @@
+name: Promote release
+
+# V209 — Thăng cấp một bản phát hành ĐÃ CÓ từ prerelease thành bản chính thức.
+# Chỉ đổi đúng hai cờ của release: prerelease=false và make_latest=true.
+# KHÔNG build lại, KHÔNG tạo/xoá tag, KHÔNG thêm/xoá asset. Cổng nào sai → dừng, không sửa gì.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag cần thăng cấp, dạng vX.Y.Z (release phải đang là prerelease)"
+        required: true
+        type: string
+
+concurrency:
+  group: release-publication
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    # Chỉ main, chỉ chủ repo hoặc người có tên trong vars.RELEASE_PROMOTERS.
+    if: >-
+      github.repository == 'aowvn-10diem/aowvn-monika' &&
+      github.ref == 'refs/heads/main' &&
+      (github.actor == github.repository_owner ||
+      contains(format(',{0},', vars.RELEASE_PROMOTERS), format(',{0},', github.actor)))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Cổng tiền kiểm — người kích hoạt, tag, release, asset, tag thuộc main
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+          ACTOR: ${{ github.actor }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          ALLOWED_PROMOTERS: ${{ vars.RELEASE_PROMOTERS }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+
+
+          def fail(message):
+              print('::error::' + message)
+              sys.exit(1)
+
+
+          def api(path):
+              run = subprocess.run(['gh', 'api', path], text=True, capture_output=True)
+              return run.returncode, run.stdout, run.stderr
+
+
+          tag = os.environ['TAG']
+          actor = os.environ['ACTOR']
+          owner = os.environ['REPO_OWNER']
+          allowed = [name.strip().lstrip('@').lower()
+                     for name in re.split(r'[,\s]+', os.environ.get('ALLOWED_PROMOTERS') or '')
+                     if name.strip()]
+          if actor != owner and actor.lower() not in allowed:
+              fail('chỉ người trong vars.RELEASE_PROMOTERS hoặc chủ repo được thăng cấp: ' + actor)
+          if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', tag):
+              fail('tag phải dạng vX.Y.Z: ' + tag)
+
+          repo = 'repos/' + os.environ['REPO']
+          code, out, err = api(repo + '/releases/tags/' + tag)
+          if code != 0:
+              fail('không thấy release cho tag ' + tag + ' (' + err.strip() + ')')
+          release = json.loads(out)
+          if release.get('tag_name') != tag:
+              fail('release trả về tag khác: ' + str(release.get('tag_name')))
+          if release.get('draft'):
+              fail('release đang là draft; chỉ thăng cấp bản đã công khai')
+          if release.get('prerelease') is not True:
+              fail('release không ở trạng thái prerelease; không có gì để thăng cấp')
+
+          names = [asset.get('name', '') for asset in release.get('assets', [])]
+          apks = [name for name in names if name.lower().endswith('.apk')]
+          sums = [name for name in names if name.lower().endswith('.sha256') or 'SHA256' in name.upper()]
+          if not apks:
+              fail('release thiếu asset APK')
+          if not sums:
+              fail('release thiếu asset SHA-256')
+
+          # compare/main...<tag> trả status "behind"/"identical" khi commit của tag nằm trong main.
+          code, out, err = api(repo + '/compare/main...' + tag)
+          if code != 0:
+              fail('không so được tag với main (' + err.strip() + ')')
+          status = json.loads(out).get('status')
+          if status not in ('behind', 'identical'):
+              fail('tag ' + tag + ' không thuộc lịch sử main (status=' + str(status) + ')')
+
+          print('Tiền kiểm PASS: ' + tag + ' là prerelease, tag thuộc main, đủ APK + SHA-256')
+          print('APK: ' + ', '.join(apks))
+          print('SHA-256: ' + ', '.join(sums))
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write('release_id=' + str(release['id']) + '\n')
+          PY
+
+      - name: Chỉ PATCH hai cờ — prerelease=false, make_latest=true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RELEASE_ID: ${{ steps.gate.outputs.release_id }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+
+
+          repo = 'repos/' + os.environ['REPO']
+          payload = json.dumps({'prerelease': False, 'make_latest': 'true'})
+          subprocess.run(['gh', 'api', '--method', 'PATCH',
+                          repo + '/releases/' + os.environ['RELEASE_ID'], '--input', '-'],
+                         input=payload, text=True, check=True, stdout=subprocess.DEVNULL)
+          print('Đã PATCH ' + os.environ['TAG'] + ': prerelease=false, make_latest=true')
+          PY
+
+      - name: Đọc lại release xác nhận cờ (không sửa gì thêm)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          import sys
+
+
+          repo = 'repos/' + os.environ['REPO']
+          run = subprocess.run(['gh', 'api', repo + '/releases/tags/' + os.environ['TAG']],
+                               text=True, capture_output=True)
+          if run.returncode != 0:
+              print('::error::không đọc lại được release: ' + run.stderr.strip())
+              sys.exit(1)
+          release = json.loads(run.stdout)
+          if release.get('prerelease') is not False:
+              print('::error::release vẫn còn cờ prerelease')
+              sys.exit(1)
+          if str(release.get('make_latest')).lower() != 'true':
+              print('::error::release chưa được đánh dấu latest')
+              sys.exit(1)
+          print('Xong: ' + os.environ['TAG'] + ' là bản chính thức — ' + str(release.get('html_url')))
+          PY
