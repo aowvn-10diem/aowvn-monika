@@ -38,22 +38,26 @@ object AzaharConfig {
      * Máy mức LITE (RAM ≤ ~3,5 GB hoặc ít nhân) không gánh nổi chế độ New 3DS: engine cấp thêm bộ đệm,
      * game dựng hình nặng hơn → dễ sập/ANR. Mặc định tắt trên LITE, bật ở MID/FULL; người chơi vẫn bật
      * lại được trong tùy chọn (lựa chọn của người chơi luôn thắng mặc định này).
+     *
+     * Đây là quyết định theo **danh tính máy** nên phải nhận mức phần cứng ([EmuTier.detectHardware] /
+     * [EmuTier.classifyHardware], **không** xét tiết kiệm pin). Dùng mức hiệu năng ([EmuTier.detect]) thì
+     * máy MID bật tiết kiệm pin bị coi là LITE → tắt New 3DS → game chỉ chạy New 3DS không mở được.
      */
-    fun new3dsDefault(tier: EmuTier): String = if (tier == EmuTier.LITE) "0" else "1"
+    fun new3dsDefault(hardwareTier: EmuTier): String = if (hardwareTier == EmuTier.LITE) "0" else "1"
 
-    /** Giá trị đang dùng = mặc định của Monika (theo mức máy), đè bằng lựa chọn của người chơi. */
-    fun values(c: Context, tier: EmuTier): Map<String, String> =
+    /** Giá trị đang dùng = mặc định của Monika (theo mức phần cứng), đè bằng lựa chọn của người chơi. */
+    fun values(c: Context, hardwareTier: EmuTier): Map<String, String> =
         defs.associate { it.key to it.default } +
-            ("System/is_new_3ds" to new3dsDefault(tier)) +
+            ("System/is_new_3ds" to new3dsDefault(hardwareTier)) +
             CoreOptions.saved(c, CORE_ID)
 
-    fun options(c: Context, tier: EmuTier): List<CoreOption> {
-        val v = values(c, tier)
+    fun options(c: Context, hardwareTier: EmuTier): List<CoreOption> {
+        val v = values(c, hardwareTier)
         return defs.map { CoreOption(it.key, it.label, it.values, v[it.key] ?: it.default, it.text) }
     }
 
     /** Ghi các giá trị cố định của Monika + lựa chọn người chơi vào config.ini (giữ nguyên các khóa khác của engine). */
-    fun write(c: Context, tier: EmuTier) {
+    fun write(c: Context, hardwareTier: EmuTier) {
         val file = File(userDir(c), "config/config.ini")
         file.parentFile?.mkdirs()
         val fixed = mapOf(
@@ -64,7 +68,7 @@ object AzaharConfig {
             "Renderer/use_vsync" to "0",
             "Utility/use_custom_storage" to "0",
         )
-        patch(file, fixed + values(c, tier))
+        patch(file, fixed + values(c, hardwareTier))
     }
 
     fun patch(file: File, kv: Map<String, String>) {

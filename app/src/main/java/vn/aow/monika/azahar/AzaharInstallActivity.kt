@@ -83,7 +83,8 @@ class AzaharInstallActivity : ComponentActivity() {
                 NativeLibrary.setUserDirectory(dir.absolutePath)
                 NativeLibrary.createLogFile()
                 NativeLibrary.createConfigFile()
-                AzaharConfig.write(this@AzaharInstallActivity, EmuTier.detect(this@AzaharInstallActivity, AppGraph.prefs.emuPerf))
+                // Mức phần cứng (không xét tiết kiệm pin): quyết định `System/is_new_3ds` — xem AzaharConfig.
+                AzaharConfig.write(this@AzaharInstallActivity, EmuTier.detectHardware(this@AzaharInstallActivity, AppGraph.prefs.emuPerf))
                 NativeLibrary.reloadSettings()
             }
             if (ok.isFailure) {

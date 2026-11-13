@@ -22,11 +22,14 @@ object AzaharCia {
 
     /**
      * Tệp có nằm trong thư mục bộ đệm của Monika không (chỉ những tệp này mới được xoá sau khi cài).
-     * So sánh đường dẫn tuyệt đối; thư mục bộ đệm do Monika tạo nên không có đường dẫn lạ.
+     * So sánh đường dẫn **chuẩn hoá** để `..`/symlink không lọt qua rồi xoá nhầm tệp của người chơi.
      */
     fun isStagedCopy(stagingDir: File, file: File): Boolean {
-        val root = stagingDir.absolutePath.trimEnd(File.separatorChar) + File.separator
-        val path = file.absolutePath
+        val root = resolve(stagingDir).trimEnd(File.separatorChar) + File.separator
+        val path = resolve(file)
         return path.length > root.length && path.startsWith(root)
     }
+
+    /** Đường dẫn chuẩn hoá; không lấy được (quyền/IO) thì dùng đường dẫn tuyệt đối như trước. */
+    private fun resolve(file: File): String = runCatching { file.canonicalPath }.getOrElse { file.absolutePath }
 }

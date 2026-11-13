@@ -1,6 +1,7 @@
 package vn.aow.monika.azahar
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
@@ -71,8 +72,8 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
     private var emuThread: Thread? = null
     /** Thư mục người dùng của engine — nơi đặt dấu phiên chơi ([AzaharSession]). */
     private var sessionDir: File? = null
-    /** Mức máy: quyết định mặc định New 3DS và các tùy chọn nặng/nhẹ. */
-    private val tier by lazy { EmuTier.detect(this, AppGraph.prefs.emuPerf) }
+    /** Mức **phần cứng** của máy (RAM/nhân, không xét tiết kiệm pin) — quyết định mặc định `System/is_new_3ds`. */
+    private val hardwareTier by lazy { EmuTier.detectHardware(this, AppGraph.prefs.emuPerf) }
     /** Đã chuyển sang màn cài `.cia` → tiến trình phải sống tiếp cho màn đó. */
     private var handoffToInstall = false
 
@@ -162,7 +163,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
                                 prefs.setPadOffset("face", ui.faceOffset.x, ui.faceOffset.y)
                                 showToast("Đã lưu vị trí phím")
                             },
-                            onOptions = { ui.options = AzaharConfig.options(this@AzaharActivity, tier) },
+                            onOptions = { ui.options = AzaharConfig.options(this@AzaharActivity, hardwareTier) },
                             onAsk = { askGroup() },
                             extraActions = listOf(
                                 vn.aow.monika.ui.theme.SheetAction("Mã cheat", vn.aow.monika.R.drawable.ic_fluent_document_24_regular) { cheats.show() },
@@ -171,13 +172,13 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
                             onOptionChange = { o, v ->
                                 CoreOptions.save(this@AzaharActivity, AzaharConfig.CORE_ID, o.key, v)
                                 ui.options = ui.options?.map { if (it.key == o.key) it.copy(value = v) else it }
-                                AzaharConfig.write(this@AzaharActivity, tier)
+                                AzaharConfig.write(this@AzaharActivity, hardwareTier)
                                 runCatching { NativeLibrary.reloadSettings() }
                             },
                             onOptionsReset = {
                                 CoreOptions.reset(this@AzaharActivity, AzaharConfig.CORE_ID)
                                 ui.options = null
-                                AzaharConfig.write(this@AzaharActivity, tier)
+                                AzaharConfig.write(this@AzaharActivity, hardwareTier)
                                 runCatching { NativeLibrary.reloadSettings() }
                                 showToast("Đã về mặc định. Mở lại game để áp dụng hết.", 2600)
                             },
@@ -285,7 +286,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         Diagnostics.crumb(this, "azahar", "setUp: createConfigFile")
         NativeLibrary.createConfigFile()
         Diagnostics.crumb(this, "azahar", "setUp: AzaharConfig.write")
-        AzaharConfig.write(this, tier)
+        AzaharConfig.write(this, hardwareTier)
         Diagnostics.crumb(this, "azahar", "setUp: reloadSettings")
         NativeLibrary.reloadSettings()
         Diagnostics.crumb(this, "azahar", "setUp: xong phần nền")
@@ -304,7 +305,7 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
 
     /** Người chơi có bật bộ đệm shader trên đĩa không — tắt thì không có gì để dọn khi phiên trước sập. */
     private fun diskShaderCacheOn(): Boolean =
-        AzaharConfig.values(this, tier)["Renderer/use_disk_shader_cache"] != "0"
+        AzaharConfig.values(this, hardwareTier)["Renderer/use_disk_shader_cache"] != "0"
 
     private fun gameLayoutParams(): FrameLayout.LayoutParams {
         val dm = resources.displayMetrics
@@ -401,33 +402,47 @@ class AzaharActivity : ComponentActivity(), SurfaceHolder.Callback, Choreographe
         AzaharBridge.onExit = {}; AzaharBridge.onFirstFrame = {}; AzaharBridge.onError = {}
         if (isFinishing) {
             Diagnostics.end(this)
-            sessionDir?.let { AzaharSession.end(this, it) }
-            if (started) {
-                runCatching { NativeLibrary.stopEmulation() }
-                awaitEmuThread()
-            }
-            // V205: chuyển sang màn cài `.cia` thì tiến trình :game phải sống tiếp cho màn đó chạy.
-            if (!handoffToInstall) android.os.Process.killProcess(android.os.Process.myPid())
+            shutdownSession(started, emuThread, sessionDir, handoffToInstall)
         }
         } finally { saveTransferLease?.close(); saveTransferLease = null }
     }
 
     /**
-     * Chờ luồng giả lập thoát (tối đa 1500 ms) trước khi kill tiến trình. Kill ngay sau [NativeLibrary.stopEmulation]
-     * làm engine bị cắt cụt giữa lúc ghi bộ đệm shader/NAND → lần sau mở game đọc phải tệp dở (sập tiếp).
+     * Đóng phiên chơi ở **luồng nền**: giữ main thread không phải đứng chờ tới 1,5 s, và trả main looper
+     * về cho looper — teardown native có thể cần nó rảnh mới xong (chờ trên main thread thì luôn hết hạn
+     * rồi kill giữa lúc engine còn đang dọn). Thứ tự bắt buộc (xem [AzaharExit]):
+     * dừng engine → chờ luồng engine thoát → chỉ khi đã thoát mới xoá dấu phiên → kill tiến trình `:game`.
+     *
+     * Bị hệ thống kill trong khoảng vài ms này cũng an toàn: dấu phiên còn nguyên → lần mở sau dọn cache.
      */
-    private fun awaitEmuThread() {
-        val thread = emuThread ?: return
-        if (thread === Thread.currentThread()) return
-        Diagnostics.crumb(this, "azahar", "onDestroy: chờ NativeEmulation thoát (tối đa 1500 ms)")
+    private fun shutdownSession(ran: Boolean, engine: Thread?, dir: File?, handoff: Boolean) {
+        val app = applicationContext
+        Thread({
+            if (ran) {
+                runCatching { NativeLibrary.stopEmulation() }
+                awaitEmuThread(app, engine)
+            }
+            if (AzaharExit.canEndSession(engine)) dir?.let { AzaharSession.end(app, it) }
+            if (AzaharExit.shouldKillProcess(true, handoff)) android.os.Process.killProcess(android.os.Process.myPid())
+        }, "AzaharExit").start()
+    }
+
+    /**
+     * Chờ luồng giả lập thoát (tối đa [AzaharExit.JOIN_TIMEOUT_MS]) trước khi kill tiến trình. Kill ngay sau
+     * [NativeLibrary.stopEmulation] làm engine bị cắt cụt giữa lúc ghi bộ đệm shader/NAND → lần sau mở game
+     * đọc phải tệp dở (sập tiếp). Chỉ gọi từ luồng nền của [shutdownSession].
+     */
+    private fun awaitEmuThread(c: Context, engine: Thread?) {
+        if (engine == null || engine === Thread.currentThread()) return
+        Diagnostics.crumb(c, "azahar", "đóng phiên: chờ NativeEmulation thoát (tối đa ${AzaharExit.JOIN_TIMEOUT_MS} ms)")
         try {
-            thread.join(1500)
+            engine.join(AzaharExit.JOIN_TIMEOUT_MS)
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
-            Diagnostics.recordHandled(this, "app:azahar-exit", "Bị ngắt khi chờ luồng giả lập thoát", e)
+            Diagnostics.recordHandled(c, "app:azahar-exit", "Bị ngắt khi chờ luồng giả lập thoát", e)
             return
         }
-        if (thread.isAlive) Diagnostics.crumb(this, "azahar", "NativeEmulation còn sống sau 1500 ms")
+        if (engine.isAlive) Diagnostics.crumb(c, "azahar", "NativeEmulation còn sống sau ${AzaharExit.JOIN_TIMEOUT_MS} ms → giữ dấu phiên, lần sau dọn bộ đệm shader")
     }
 
     // ---- Nhập liệu ----

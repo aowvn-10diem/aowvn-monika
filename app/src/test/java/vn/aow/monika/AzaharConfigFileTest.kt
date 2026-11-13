@@ -91,4 +91,23 @@ class AzaharConfigFileTest {
         AzaharConfig.write(app, EmuTier.LITE)
         assertTrue(File(AzaharConfig.userDir(app), "config/config.ini").readText().contains("is_new_3ds = 1"))
     }
+
+    /**
+     * Tiết kiệm pin chỉ hạ **mức hiệu năng**, không đổi danh tính máy: máy MID bật tiết kiệm pin vẫn là
+     * New 3DS (`is_new_3ds = 1`) — trước đây dùng `EmuTier.detect` nên bị tắt và game New-3DS-only không mở được.
+     */
+    @Test fun powerSaveDoesNotTurnNew3dsOff() {
+        val gib = 1024L * 1024 * 1024
+        val midInPowerSave = EmuTier.classify((3.8 * gib).toLong(), 8, false, powerSave = true)
+        assertEquals(EmuTier.LITE, midInPowerSave) // mức hiệu năng vẫn hạ bậc
+        assertEquals(EmuTier.MID, EmuTier.classifyHardware((3.8 * gib).toLong(), 8, false))
+        assertEquals("1", AzaharConfig.new3dsDefault(EmuTier.classifyHardware((3.8 * gib).toLong(), 8, false)))
+        assertEquals("1", AzaharConfig.values(app, EmuTier.classifyHardware((3.8 * gib).toLong(), 8, false))["System/is_new_3ds"])
+
+        // Máy FULL cũng vậy; chỉ máy LITE thật (RAM/nhân yếu) mới mặc định máy 3DS thường.
+        assertEquals(EmuTier.FULL, EmuTier.classifyHardware((7.4 * gib).toLong(), 8, false))
+        assertEquals("1", AzaharConfig.new3dsDefault(EmuTier.classifyHardware((7.4 * gib).toLong(), 8, false)))
+        assertEquals(EmuTier.LITE, EmuTier.classifyHardware(3 * gib, 8, false))
+        assertEquals("0", AzaharConfig.new3dsDefault(EmuTier.classifyHardware(3 * gib, 8, false)))
+    }
 }

@@ -28,6 +28,16 @@ class EmuPerfTest {
         assertEquals(EmuTier.LITE, EmuTier.classify(2 * gib, 8, false, true))
     }
 
+    /** Tiết kiệm pin không đổi danh tính máy: `classifyHardware` bỏ qua cờ này (dùng cho `is_new_3ds`). */
+    @Test fun hardwareTierIgnoresPowerSave() {
+        assertEquals(EmuTier.MID, EmuTier.classifyHardware((3.8 * gib).toLong(), 8, false))
+        assertEquals(EmuTier.FULL, EmuTier.classifyHardware((7.4 * gib).toLong(), 8, false))
+        assertEquals(EmuTier.LITE, EmuTier.classifyHardware(3 * gib, 8, false))
+        // Cùng phần cứng: mức hiệu năng có thể hạ, mức phần cứng thì không.
+        assertEquals(EmuTier.LITE, EmuTier.classify(6 * gib, 8, false, true))
+        assertEquals(EmuTier.MID, EmuTier.classifyHardware(6 * gib, 8, false))
+    }
+
     @Test fun shippedConfigPerfIsWellFormed() {
         val text = File("../config/monika-config.json").takeIf { it.exists() }?.readText()
             ?: File("config/monika-config.json").readText()
