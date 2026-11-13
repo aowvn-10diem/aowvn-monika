@@ -31,6 +31,26 @@ Bộ đếm trong Worker chỉ là chặn mềm (mục trên). Khi bị spam th�
 
 Ghi chú: luật WAF tính theo IP ở biên nên **không phụ thuộc isolate/colo** — đây là lớp bù cho giới hạn của bộ đếm trong Worker. Ngưỡng WAF là cấu hình dashboard, không nằm trong repo.
 
+## Lưu trữ D1 (`CRASH_DB`) — V195
+Worker ghi báo cáo vào **D1** khi có binding `CRASH_DB`; **chưa gắn binding thì chạy đường KV như cũ** (không lỗi, không đổi định dạng trả về).
+
+- **Bảng cột → khoá ngắn** (giữ nguyên hợp đồng `/reports` của chế độ KV, xem `REPORT_SHORT_KEYS` trong `worker.js`):
+  `kind → k` · `core → c` · `system → y` · `game → g` · `app → a` · `stage → st` · `time → t` · `component` · `fingerprint → fp` · `count` · `cert` (16 hex đầu của `certSha256`).
+  `core = slim.core || slim.session.core`.
+- **Gộp trùng**: mỗi **fingerprint đúng 1 hàng** (`UNIQUE INDEX reports_fp`); báo cáo trùng thì `count = count + excluded.count` và cập nhật `detail`/`last_t`. Mỗi báo cáo vẫn **đúng 1 lượt ghi** (upsert) — gộp làm giảm số hàng **lưu** và kích thước `/reports`, **không** làm giảm số hàng ghi mỗi ngày (ngân sách D1 free: 100.000 hàng ghi/ngày). Báo cáo **không có fingerprint** dùng `id` làm khoá nên mỗi báo cáo là một hàng riêng. `count` do client gửi được **kẹp về 1..50** (ngoài khoảng/sai kiểu → 1) trước khi ghi, nên một báo cáo lỗi không thể làm phồng `total` vĩnh viễn.
+- **Cursor `/report-index` (nhánh D1)**: `base64url("<last_seen_ms>:<id>")`, trang 100 mục, mới nhất trước (`ORDER BY last_t DESC, id DESC`). Nhánh KV giữ nguyên hợp đồng cũ (503 `incomplete_index` khi trang chưa đủ mà thiếu cursor).
+- `/stats` (D1) giữ nghĩa như nhánh KV: `total` = **số báo cáo** (`SUM(count)`), thêm `groups` = số nhóm fingerprint; `byCoreKindStage: [{ k: "c | k | st", n, groups }]` với `n = SUM(count)`, `groups` = số nhóm trong nhóm đó. `/reports` cũng trả `total` (số báo cáo) + `groups`; nhánh KV không có `groups`.
+- **Cache 5 phút**: `/stats` và trang đầu `/reports` được cache bằng **Cache API của Worker** (`REPORTS_CACHE_TTL_SECONDS = 300`) để không quét bảng mỗi request; `/reports/<id>` không cache. Bản trả client luôn kèm `cache-control: no-store` (dữ liệu quản trị, không cho CDN cache); lỗi 503/404 không vào cache. Khi chưa có Cache API (môi trường test Node) Worker đọc thẳng nguồn.
+- **Hạn lưu 30 ngày**: hàng có `last_t` cũ hơn 30 ngày bị `DELETE` kèm lượt `POST` (tối đa **1 lần/giờ** mỗi isolate, không cần cron; lỗi dọn không làm hỏng báo cáo vừa ghi) và bị loại khỏi `/reports`, `/stats`, `/report-index`. Nhánh KV cũ tự hết hạn sau 60 ngày (`expirationTtl`). Không backfill báo cáo cũ từ KV (thống kê tính từ mốc bật D1).
+- **Lỗi D1**: nếu **bảng chưa tạo** (`no such table` — deploy trước khi chạy `d1-schema.sql`) thì request đó **tự lùi về KV**, không trả 503. Lỗi D1 khác (sập/timeout) vẫn trả `503 storage_unavailable` cho `/reports`, `/reports/<id>`, `/stats`, `/report-index`, không ném 500 thô.
+
+**Áp dụng — đúng thứ tự** (sai thứ tự vẫn chạy nhờ lùi KV, nhưng báo cáo sẽ nằm ở KV):
+```bash
+wrangler d1 create aowvn-monika-crash
+wrangler d1 execute aowvn-monika-crash --remote --file=cloudflare/crash-worker/d1-schema.sql
+```
+Rồi gắn binding `CRASH_DB` (trỏ database vừa tạo) cho Worker trong `wrangler.toml` hoặc dashboard → deploy. Muốn quay lại KV: bỏ binding `CRASH_DB` rồi deploy lại (không cần đổi mã).
+
 ## Hợp đồng JSON (V29)
 
 `Diagnostics.Report` được gửi tới `POST /report`; Worker chỉ bổ sung trường, vẫn nhận app cũ. `kind`, `title`, `app` bắt buộc là chuỗi; JSON sai trả 400. Báo cáo và giá trị KV đều tối đa 60.000 **byte UTF-8**; quá giới hạn trả 413, không ghi báo cáo. Body được đọc theo stream có chặn dung lượng, không dựa riêng Content-Length.
@@ -39,7 +59,7 @@ Ghi chú: luật WAF tính theo IP ở biên nên **không phụ thuộc isolate
 |---|---|
 | id, time | Số nguyên không âm an toàn JS; id mặc định 0, time mặc định thời điểm nhận |
 | kind / title / app / device | 32 / 300 / 80 / 300 đơn vị UTF-16 |
-| component / fingerprint / count | 160 / 128; count số nguyên an toàn ≥1, mặc định 1 |
+| component / fingerprint / count | 160 / 128; count số nguyên 1..50, ngoài khoảng hoặc sai kiểu → 1 |
 | env / reason / detail | 2.000 / 300 / 20.000 đơn vị UTF-16 |
 | crumbs / log | 40 / 250 dòng, mỗi dòng 300 đơn vị UTF-16 |
 | fromGame | boolean, mặc định false |

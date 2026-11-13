@@ -33,6 +33,8 @@ class GameLauncher(private val configRepo: ConfigRepository) {
 
     fun launch(activity: Activity, game: Game, experimentalConfirmed: Boolean = false): LaunchResult {
         if (vn.aow.monika.library.GameSaveTransfer.busy) return LaunchResult.Failed("Đang chuyển save. Hãy chờ xong rồi mở game.")
+        // V202: nhả bộ đệm tiến trình chính trước khi nhường RAM cho tiến trình game.
+        vn.aow.monika.AppGraph.trimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)
         val system = game.system ?: return LaunchResult.Failed(
             if (game.needsExtract) "Game chưa được giải nén. Bấm \"Giải nén\" (nhập mật khẩu nếu có)."
             else "Chưa nhận diện được loại game này."

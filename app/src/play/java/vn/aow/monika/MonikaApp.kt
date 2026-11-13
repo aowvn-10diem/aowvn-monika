@@ -7,6 +7,14 @@ import kotlinx.coroutines.*
 open class MonikaApp : Application(), coil.ImageLoaderFactory {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     override fun newImageLoader(): coil.ImageLoader = coil.ImageLoader.Builder(this).build()
+
+    /** V202: Android báo thiếu RAM hoặc app vừa bị ẩn → nhả bộ đệm ảnh/feed. */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        val process = if (Build.VERSION.SDK_INT >= 28) getProcessName() else ""
+        if (process.endsWith(":crash") || process.endsWith(":game")) return
+        AppGraph.trimMemory(level)
+    }
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)
         val process = if (Build.VERSION.SDK_INT >= 28) getProcessName() else ""

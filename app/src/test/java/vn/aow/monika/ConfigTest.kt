@@ -200,6 +200,18 @@ class ConfigTest {
     }
 
     @Test
+    fun `V205 ha cau hinh rui ro VRAM cho ppsspp va desmume`() {
+        val ppsspp = cfg.cores.getValue("ppsspp")
+        assertEquals("disabled", ppsspp.options["ppsspp_vertex_cache"])
+        assertEquals("480x272", ppsspp.perf.getValue("lite")["ppsspp_internal_resolution"])
+        assertEquals("960x544", ppsspp.perf.getValue("full")["ppsspp_internal_resolution"])
+        val desmume = cfg.cores.getValue("desmume")
+        assertEquals("256x192", desmume.options["desmume_internal_resolution"])
+        assertEquals("256x192", desmume.perf.getValue("lite")["desmume_internal_resolution"])
+        assertEquals("256x192", desmume.perf.getValue("full")["desmume_internal_resolution"])
+    }
+
+    @Test
     fun `rgss ghim goi cong khai va van giu Joiplay du phong`() {
         assertEquals(64, cfg.configVersion)
         val module = cfg.modules["rgss"] ?: error("modules.rgss thiếu")

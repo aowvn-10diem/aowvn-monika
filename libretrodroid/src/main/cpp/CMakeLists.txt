@@ -107,6 +107,9 @@ target_compile_definitions(libretrodroid PRIVATE RC_CLIENT_SUPPORTS_HASH)
 
 # Support 16k pages for Android 15
 target_link_options(libretrodroid PRIVATE "-Wl,-z,max-page-size=16384")
+# V205: BuildId sha1 để tombstone khớp đúng .so khi giải mã ký hiệu (scripts/crash-report-detail.py,
+# scripts/package-native-symbols.py). Không thêm -s ở bước link: giữ ký hiệu cho gói gỡ lỗi phát hành.
+target_link_options(libretrodroid PRIVATE "-Wl,--build-id=sha1")
 
 # add lib dependencies
 target_link_libraries(libretrodroid
