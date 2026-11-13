@@ -23,8 +23,8 @@ import java.io.File
 @Config(application = TestApp::class, sdk = [34])
 class CiaRouteTest {
 
-    private fun reason(path: String, azaharRoute: Boolean = false) =
-        GameLauncher.ciaBlockedReason(File(path), azaharRoute)
+    private fun reason(path: String, azaharRoute: Boolean = false, azaharInstall: Boolean = true) =
+        GameLauncher.ciaBlockedReason(File(path), azaharRoute, azaharInstall)
 
     @Test fun ciaBiChanKhiChayBangLoiLibretro() {
         val message = reason("/synthetic/Zelda.cia")
@@ -44,6 +44,21 @@ class CiaRouteTest {
 
     @Test fun ciaVanDuocCaiQuaAzahar() {
         assertNull(reason("/synthetic/Zelda.cia", azaharRoute = true))
+    }
+
+    /** Máy thấy nhóm "Nintendo 3DS" trong Cài đặt → chỉ đúng nhãn UI có thật. */
+    @Test fun thongDiepChiDungLoiCaiCoThat() {
+        val message = reason("/synthetic/Zelda.cia", azaharInstall = true).orEmpty()
+        assertTrue("Thiếu đường dẫn tới Cài đặt: $message", message.contains("Cài đặt"))
+        assertTrue("Thiếu nhóm Nintendo 3DS: $message", message.contains("Nintendo 3DS"))
+        assertTrue("Thiếu đúng nhãn nút cài: $message", message.contains("Chọn file .cia để cài"))
+    }
+
+    /** Máy KHÔNG có module Azahar ⇒ nhóm đó bị ẩn, không được chỉ vào chỗ người dùng không thấy. */
+    @Test fun thongDiepKhongChiVaoNhomBiAn() {
+        val message = reason("/synthetic/Zelda.cia", azaharInstall = false).orEmpty()
+        assertTrue("Không được chỉ vào Cài đặt khi nhóm 3DS bị ẩn: $message", !message.contains("Cài đặt"))
+        assertTrue("Phải nêu việc làm được: $message", message.contains(".3ds/.cci/.cxi"))
     }
 
     @Test fun launchChanCiaTruocKhiVaoLoiLibretro() {
