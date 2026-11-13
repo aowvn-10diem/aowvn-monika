@@ -7,7 +7,8 @@ Ngày 13/11/2026 · nhánh `deepseek1/unknown-native-1311` · nền `main` `c3a8
 - Lọc đúng **lõi `unknown` + loại `native`** trong 75 issue `crash-moi` đang mở: **1 issue, 1 lượt, 1 máy** ([#387](https://github.com/aowvn-10diem/aowvn-monika/issues/387)). Một mẫu duy nhất nên **không thể nói máy nào / lõi nào**.
 - Cả họ `unknown` (mọi loại) là **22 issue · 296 lượt · 94 máy**. Trong đó `native` 1, `op-fail` 13, `anr` 7, `resource` 1.
 - `unknown` **không phải "app chết trước khi kịp ghi"** trong đa số trường hợp. Có **2 lỗi ghi nhận** đọc được từ mã (mục 3.2) và **1 nhóm đúng bản chất** (`op-fail` ngoài phiên game thì không có lõi để ghi).
-- Hai lỗi ghi nhận: (a) app chỉ đọc "phiên chết" cho `anr`/`lowmem`, bỏ `native`/`resource`; (b) bot chỉ lấy `lõi` trong `session.core`, bỏ qua `core` cấp ngoài mà Worker đã ghi. Đề xuất sửa cụ thể ở mục 4, **chưa sửa mã** trong lượt này.
+- Hai lỗi ghi nhận: (a) ở nhánh chết do Android báo (`ApplicationExitInfo`), app chỉ đọc "phiên chết" cho `anr`/`lowmem`, bỏ `native`/`resource` (nhánh `:game` do `collect()` xử lý vẫn có lõi); (b) bot chỉ lấy `lõi` trong `session.core`, bỏ qua `core` cấp ngoài mà Worker đã ghi. Đề xuất sửa cụ thể ở mục 4, **chưa sửa mã** trong lượt này.
+- `resource` #302 là ca riêng: game Java (`:midlet`) chưa từng có phiên nên **không** sửa được bằng (a) — cần thêm phiên cho J2ME (mục 4.4).
 
 ## 2. Bảng issue
 
@@ -30,7 +31,7 @@ Thân issue **không có** dòng `Thành phần` (bản bot cũ) và không có 
 | Issue | Loại | Lượt | Máy | Mở ngày | Tái diễn? |
 |---|---|---:|---:|---|---|
 | [#302](https://github.com/aowvn-10diem/aowvn-monika/issues/302) | `resource` | 236 | 50 | 20/10 | Có (cập nhật 12/11) |
-| [#393](https://github.com/aowvn-10diem/aowvn-monika/issues/393) | `op-fail` | 20 | 14 | 31/10 | Có (cập nhật 13/11) |
+| [#393](https://github.com/aowvn-10diem/aowvn-monika/issues/393) | `op-fail` | 20 | 14 | 31/10 | Có (bản sửa cuối 05/11) |
 | [#413](https://github.com/aowvn-10diem/aowvn-monika/issues/413) | `anr` | 15 | 5 | 01/11 | Không (1 đợt) |
 | [#534](https://github.com/aowvn-10diem/aowvn-monika/issues/534) | `anr` | 5 | 5 | 07/11 | Không (1 đợt) |
 | [#401](https://github.com/aowvn-10diem/aowvn-monika/issues/401) | `op-fail` | 2 | 2 | 31/10 | Có |
@@ -66,12 +67,13 @@ Nhóm `op-fail` đã có bản chẩn đoán riêng (`docs/loi/op-fail-1311.md`,
 
 **(a) Đúng bản chất — `op-fail` không thuộc phiên game.** `opFail` gắn `session = read(c)` nếu đúng tiến trình (`Diagnostics.kt:479`); thao tác ngoài lúc chơi (tải, giải nén, cập nhật cấu hình) không có phiên nên không có lõi. Đây là 13/22 issue — **không phải lỗi**, chỉ là thiếu ngữ cảnh "thao tác nào" (đã bàn ở #618).
 
-**(b) Lỗi ghi nhận trong app — `native`/`resource` không bao giờ đọc phiên chết.**
-- `Diagnostics.kt:856`: `val deathSession = if (kind == "anr" || kind == "lowmem") readDeathSession(...) else null` ⇒ `native`, `resource`, `initfail` **luôn** có `session = null`.
+**(b) Lỗi ghi nhận trong app — `native`/`resource` không đọc phiên chết ở nhánh `ApplicationExitInfo`.**
+- `Diagnostics.kt:856`: `val deathSession = if (kind == "anr" || kind == "lowmem") readDeathSession(...) else null` ⇒ với các lần chết do `collectProcessDeaths` xử lý (tiến trình chính, hoặc `:game` **không** có báo cáo từ `collect`), `native`, `resource`, `initfail` **luôn** có `session = null`.
+- Riêng chết `native` của `:game` đi qua `Diagnostics.collect` (mục 3.1) vẫn **có** `session` và có lõi — lỗi (b) không áp cho nhánh đó.
 - `Diagnostics.kt:906-913` (`enrichDeathReport`): chỉ điền `core`/`system`/`stage` khi `kind` là `lowmem`/`anr`, các loại khác `return r` nguyên trạng.
 - Trong khi đó app **có** ghi sẵn ảnh chụp phiên cho mọi tiến trình đang chạy game (`Diagnostics.kt:201-216`, tệp `diag/sessions/<pid>.json`) và `matchingDeathSession` (`:887-894`) đã kiểm kỹ thế hệ tiến trình + PID + mốc thời gian, dùng được cho `native`.
 
-⇒ `unknown`/`native` (#387) và `unknown`/`resource` (#302) khớp đúng lỗi này; thông tin lõi **có thể đã nằm trên máy nhưng bị bỏ**.
+⇒ `unknown`/`native` (#387) khớp lỗi này **nếu** báo cáo của nó là lần chết do `collectProcessDeaths` xử lý (chưa kiểm được, xem mục 5). **#302 không khớp (b)**: tiến trình `:midlet` không có phiên nào để đọc, nên sửa (1) vẫn trả `null` — #302 cần fix riêng ở (d)/(4.4).
 
 **(c) Lỗi ghi nhận ở bot — bỏ `core` cấp ngoài.**
 - Worker ghi `c: slim.core || slim.session?.core || ""` (`cloudflare/crash-worker/worker.js:557`) và với `anr`/`lowmem` còn ghi hẳn `core` cấp ngoài, mặc định `"unknown"` (`worker.js:832-836`).
@@ -86,11 +88,12 @@ Nhóm `op-fail` đã có bản chẩn đoán riêng (`docs/loi/op-fail-1311.md`,
 
 1. **`app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:856`** — cho `native` (và `resource`, `initfail`) đọc phiên chết như `anr`:
    `val deathSession = if (kind in setOf("anr", "lowmem", "native", "resource")) readDeathSession(...) else null`.
+   Chỉ có tác dụng khi tiến trình **có** ảnh chụp phiên (`diag/sessions/<pid>.json`) — tức tiến trình đã chạy game; **không giúp #302** (`:midlet` không có phiên).
    Test cần thêm (Robolectric, cùng chỗ `DeathContextTest.kt`): `native` + ảnh chụp phiên khớp (PID, thế hệ, mốc) → báo cáo có `session.core`; ảnh chụp lệch thế hệ → vẫn `null` (giữ nguyên hành vi chống gán nhầm).
 2. **`Diagnostics.kt:907`** — mở `enrichDeathReport` cho `native`/`resource`/`initfail` để `core`/`system`/`stage` cấp ngoài cũng được điền (hiện chỉ `lowmem`/`anr`).
 3. **`scripts/crash-issue-bot.py:69`** — `core = token(session.get("core") or report.get("core") or "")`. Test trong `scripts/test-crash-issue-bot.py`: `session` rỗng + `core` cấp ngoài `"melondsds"` → nhóm theo `melondsds`; cả hai rỗng → `unknown` (không đổi hành vi cũ).
 4. **J2ME (#302)** — cần một phiên cho tiến trình `:midlet` để có lõi `j2me` + hệ `Java`. Module `j2me` không phụ thuộc `:app`, nên phải qua cầu (interface/callback do app đăng ký) hoặc app tự suy từ tên tiến trình; cả hai là thay đổi thiết kế, cần đặc tả riêng **[CHƯA KIỂM]** hiệu quả.
-5. Sau khi sửa (1)-(3): đo lại bằng `/stats` (`byCoreKindStage`) sau ~2 tuần; kỳ vọng `unknown` giảm ở `anr`/`native`, còn `unknown`/`op-fail` **không đổi** (đúng bản chất).
+5. Sau khi sửa (1)-(3): đo lại bằng `/stats` (`byCoreKindStage`) sau ~2 tuần; kỳ vọng `unknown` giảm ở `anr`/`native` (và ở `resource` **chỉ khi** tiến trình có phiên), còn `unknown`/`op-fail` **không đổi** (đúng bản chất).
 
 ## 5. Phần chưa kiểm
 
