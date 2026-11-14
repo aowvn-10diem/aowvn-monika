@@ -14,9 +14,9 @@ chữ A–H), và một phần lượt cũ thuộc các issue đã đóng.
 
 **Chỉ tài liệu.** Không sửa mã, không đụng `config/`, không đóng issue nào.
 
-**Quy công:** cột trạng thái phân biệt **sửa mã** và **chỉ tài liệu**, kiểm bằng `git show <merge-commit> --stat`
-ngày 14/11 — **tài liệu ≠ sửa**. Một PR chỉ thêm `.md` được ghi "0 dòng mã" dù tài liệu đó mô tả mã đã có sẵn
-từ PR khác; bảng quy công đầy đủ ở §4.
+**Quy công:** cột trạng thái phân biệt **sửa mã** / **chỉ tài liệu** / **script bot** / **đang mở**, kiểm bằng
+`git show <merge-commit> --numstat` ngày 14/11 — **tài liệu ≠ sửa**. Một PR chỉ thêm `.md` được ghi "0 dòng mã"
+dù tài liệu đó mô tả mã đã có sẵn từ PR khác; bảng quy công đầy đủ ở §4.
 
 ---
 
@@ -101,24 +101,26 @@ báo cáo do bản app **trước** #627 gửi lên vẫn mang nhãn cũ, nên k
 
 ---
 
-## 4. Quy công: **sửa mã** hay **chỉ tài liệu**
+## 4. Quy công: sửa mã / chỉ tài liệu / script bot / đang mở
 
-Kiểm ngày **14/11/2026** bằng `git show <merge-commit> --stat` cho từng PR. "Dòng mã" = dòng thêm/xoá trong tệp
-mã (`.kt`, `.java`, `.cpp`, `.h`, `.py`), **không** tính `.md`.
+Kiểm ngày **14/11/2026** bằng `git show <merge-commit> --numstat` (PR đang mở: `gh pr view <n> --json files`)
+cho từng PR. **"Dòng mã"** = dòng thêm/xoá trong `.kt`, `.java`, `.cpp`, `.h`, `.py`, `.sh` — **không** tính
+`.md`, `docs/**`, và **không** tính `build.gradle`; tài liệu đếm riêng ở cột "Tài liệu" nên không cộng hai lần.
+Ngoại lệ ghi ngay trên dòng: #606 còn **+3 dòng `libretrodroid/build.gradle`** không nằm trong cột mã.
 
 ### 4.1 Bảng quy công — đã gộp
 
-| PR | Merge | Dòng mã đổi (`--stat`) | Tài liệu | Loại |
-|---|---|---|---:|---|
-| **#606** | `833a4c0d` | +342/−63 · 10 tệp (`libretrodroid.cpp` 79, `EmulationThreadTask.kt` +77, `environment.cpp` 58, `GLRetroView.kt` 57, `RetroActivity.kt` 6) | — | **sửa mã** |
-| **#619** | `76492b6a` | +168/−17 (`EmulationCall.kt` +27, `GLRetroView.kt` 38, test +46) | `melondsds-anr-1311.md` +74 | **sửa mã** |
-| **#627** | `68405281` | +77/−3 (`Components.kt` 30, `ComponentsTest.kt` +50) | — | **sửa mã** |
-| **#637** | `bef0afed` | +91/−4 (`GameLauncher.kt` ×2, `CiaRouteTest.kt` +61) | — | **sửa mã** |
-| **#618** | `0e9ef5bd` | +120/−13 (`Diagnostics.kt` +21, `PatchFlow.kt` +17, `DiagnosticsOpTest` +37) | `op-fail-1311.md` +58 | **sửa mã** |
-| **#611** | `34725117` | +569/−29 · 12 tệp (engine Azahar) | — | **sửa mã**, ngoài 12 lõi |
-| **#617** | `fdb757c6` | +131/−2 (`AzaharBridge.kt` +39, `AzaharDialogTest` +94) | — | **sửa mã**, ngoài 12 lõi |
-| **#574** | `7282edd0` | +225/−6 · 11 tệp (`AppGraph`, `MonikaApp`, `FeedRepository`, `WebGameActivity`…) | — | **sửa mã**, tiến trình chính |
-| **#621** | `2f294d00` | +20 (`scripts/crash-issue-bot.py` +3, test +17) | `lowmem-1311.md` +64 | **sửa mã (script bot)** |
+| PR | Merge | Mã: dòng (+/−), số tệp mã | Tài liệu | Loại |
+|---|---|---|---|---|
+| **#606** | `833a4c0d` | **+339/−63**, 9 tệp (`EmulationThreadTask.kt` +77, `libretrodroid.cpp` +71/−8, `GLRetroView.kt` +36/−21, `environment.cpp` +43/−15, test +95); *+3 dòng `build.gradle` không tính* | — | **sửa mã** |
+| **#619** | `76492b6a` | **+94/−17**, 3 tệp (`EmulationCall.kt` +27, `GLRetroView.kt` +21/−17, test +46) | `melondsds-anr-1311.md` +74 | **sửa mã** |
+| **#627** | `68405281` | **+77/−3**, 2 tệp (`Components.kt` +27/−3, test +50) | — | **sửa mã** |
+| **#637** | `bef0afed` | **+91/−4**, 3 tệp (`GameLauncher.kt` github +15/−2, play +15/−2, `CiaRouteTest.kt` +61) | — | **sửa mã** |
+| **#618** | `0e9ef5bd` | **+62/−13**, 3 tệp (`Diagnostics.kt` +16/−5, `PatchFlow.kt` +13/−4, test +33/−4) | `op-fail-1311.md` +58 | **sửa mã** |
+| **#611** | `34725117` | **+569/−29**, 12 tệp (engine Azahar) | — | **sửa mã**, ngoài 12 lõi |
+| **#617** | `fdb757c6` | **+131/−2**, 2 tệp (`AzaharBridge.kt` +37/−2, test +94) | — | **sửa mã**, ngoài 12 lõi |
+| **#574** | `7282edd0` | **+225/−6**, 11 tệp (`AppGraph`, `MonikaApp`, `FeedRepository` +33/−6, `WebGameActivity`, test +108) | — | **sửa mã**, tiến trình chính |
+| **#621** | `2f294d00` | **+20/−0**, 2 tệp **script** (`crash-issue-bot.py` +3, `test-crash-issue-bot.py` +17) | `lowmem-1311.md` +64 | **script bot** |
 | **#616** | `2a1a8892` | **0** | `docs/ds/chan-doan-desmume-native.md` +102 | **chỉ tài liệu** |
 | **#620** | `1d65b95e` | **0** | `docs/loi/ppsspp-native-1311.md` +71 | **chỉ tài liệu** |
 | **#622** | `f266e090` | **0** | `docs/loi/citra-native-1311.md` +69 | **chỉ tài liệu** |
@@ -133,15 +135,15 @@ mã (`.kt`, `.java`, `.cpp`, `.h`, `.py`), **không** tính `.md`.
   vào GLThread, `getVariables` hết hạn 2 000 ms, `coreLock`, `variablesLock` — đã có trên `main` **trước** #620,
   do **#606** (`833a4c0d`, 11/11) và **#619** (`76492b6a`, 13/11). Quy công các thay đổi đó cho #620 là sai.
 - **#616** chỉ thêm `.md` (102 dòng, 0 mã) — chẩn đoán `desmume/native`, không có bản sửa.
-- **#621** không phải "chỉ tài liệu": nó đổi **script bot** (`crash-issue-bot.py` +3, test +17), **không** đụng
-  mã app. Đừng ghi #621 là "đã sửa lowmem".
+- **#621** là **script bot**: `crash-issue-bot.py` +3, test +17 — **không** đụng mã app. Đừng ghi #621 là
+  "đã sửa lowmem" hay "chỉ tài liệu"; nó là loại riêng.
 - **#625** mới là PR thêm `unknown-native-1311.md` (không phải #622 — #622 chỉ thêm `citra-native-1311.md`).
 
 ### 4.2 Ánh xạ "sửa mã" vào nhóm
 
 | Nhóm | Mã đã đổi ở đâu (`tệp:dòng` trên `f75b2e6d`) | PR |
 |---|---|---|
-| 1 `melondsds/anr` + lớp ANR mọi lõi `:libretrodroid` | `GLRetroView.kt:59-67` (`frameSpeed`/`shader` → `EmulationCall.post`), `:274-279` (`getVariables` → `runBounded`, hết hạn 2 000 ms), `:280-285` (`updateVariables` → `post`), `:471-487` (`runOnEmulationThread` → `runBounded`); `EmulationCall.kt` (+27); `environment.cpp` (`variablesLock`); `libretrodroid.cpp` (`coreLock`) | **#606 + #619** |
+| 1 `melondsds/anr` + lớp ANR mọi lõi `:libretrodroid` | `GLRetroView.kt:59-67` (`frameSpeed`/`shader` → `EmulationCall.post`), `:274-278` (`getVariables` → `runOnEmulationThread` → `runBounded`, hết hạn 2 000 ms), `:280-285` (`updateVariables` → `post`), `:463-478` + `:481-487` (`runOnEmulationThread`/`…OrNull` → `runBounded`); `EmulationCall.kt` (+27); `environment.cpp` (`variablesLock`); `libretrodroid.cpp` (`coreLock`) | **#606 + #619** |
 | 5 `citra/core-error` (một phần) | `GameLauncher.ciaBlockedReason` chặn `.cia` vào lõi libretro (github + play) | **#637** |
 | 7 `unknown/op-fail` (một phần) | `Diagnostics.opFail(expected = …)` + `PatchFlow` 4 chỗ chọn nhầm ROM/bản vá → chỉ ghi vệt | **#618** |
 | — (cách đếm) | `Components.kt`: dấu hiệu libretro thắng azahar ⇒ nhãn `engine:libretro:citra` | **#627** |
@@ -162,15 +164,18 @@ mã (`.kt`, `.java`, `.cpp`, `.h`, `.py`), **không** tính `.md`.
 | **#623** | Chẩn đoán `ppsspp/anr` (nhóm trống) | **Chưa có trên main** |
 | **#624** | `stage = "paused"` + chẩn đoán `melondsds/killed` | **Chưa có trên main**; là mốc chờ của mảnh (b) ở §5 |
 | **#638** | Gắn phiên `Diagnostics` cho tiến trình `:midlet` | Mảnh còn lại của #302 (§5b) |
-| **#639** | Thông điệp chặn `.cia` đúng lối cài | Nối tiếp #637, chưa gộp, **0 dòng mã** |
+| **#639** | Thông điệp chặn `.cia` đúng lối cài | **Đang mở** — **sửa mã +35/−8, 3 tệp `.kt`** (`GameLauncher.kt` github +9/−3, play +9/−3, `CiaRouteTest.kt` +17/−2). Không tính vào bảng §4.1 vì chưa gộp |
 
 ### 4.4 Tóm lại
 
-- **Đã sửa mã (đã gộp):** #606 + #619 (ANR), #637 (`.cia`), #618 (nhiễu `va-rom`), #627 (nhãn), #621 (script
-  bot). Chỉ **ba** nhóm trong bảng được hưởng: 1 (một phần), 5 (một phần) và 7 (một phần). Chưa nhóm nào có
-  **số đo sau bản phát hành**.
+- **Sửa mã (đã gộp):** #606 + #619 (ANR), #637 (`.cia`), #618 (nhiễu `va-rom`), #627 (nhãn). Chỉ **ba** nhóm
+  trong bảng được hưởng: 1 (một phần), 5 (một phần) và 7 (một phần). Chưa nhóm nào có **số đo sau bản phát
+  hành**.
+- **Script bot:** #621 (`crash-issue-bot.py` +3, test +17) — không đụng mã app, chỉ đổi cách ghi số trên issue
+  đã đóng.
 - **Chỉ tài liệu:** #616 (nhóm 4), #620 (nhóm 3), #622 (nhóm 8), #625 (nhóm 2 và `unknown/native` 1 lượt),
   #626 (nhóm 7), #633 (nhóm 1), #636 (nhóm 6, 10).
+- **Đang mở, có sửa mã:** #639 (+35/−8) — chưa gộp, chưa được tính ở đâu trong bảng §3.
 - **Bị chặn:** nhóm 2 (thiếu phiên J2ME), 3 (thiếu token), 8 (thiếu ghim bản + ký hiệu), 9 (thiếu #632),
   một phần 5 và 6 (thiếu mã lỗi trong báo cáo).
 
