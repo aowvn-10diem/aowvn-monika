@@ -60,7 +60,7 @@ jobs:
       - uses: actions/setup-java@v6
         if: github.event_name != 'workflow_dispatch' || !inputs.catalog_only
         with: {distribution: temurin, java-version: 17}
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
         if: github.event_name != 'workflow_dispatch' || !inputs.catalog_only
         with: {cache-provider: basic}
       - name: Cài SDK33 của Kirikiri và NDK trong catalog

@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   spike:
+    if: github.repository == 'aowvn-10diem/aowvn-monika' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-22.04
     timeout-minutes: 240
     env:
