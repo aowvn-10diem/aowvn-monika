@@ -13,12 +13,13 @@ import vn.aow.monika.ui.theme.*
 
 @Composable
 internal fun RetroStartup(title: String, status: String, slow: Boolean, onCopy: () -> Unit,
-    fallback: String? = null, onFallback: () -> Unit = {}) {
+    fallback: String? = null, onFallback: () -> Unit = {}, halted: Boolean = false) {
     Box(Modifier.fillMaxSize().background(Monika.colors.surfaceDark), contentAlignment = Alignment.Center) {
         Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(title, style = Monika.type.sectionTitle, color = Monika.colors.textOnDark, textAlign = TextAlign.Center)
-            CircularProgressIndicator(color = Monika.colors.accentOrange)
+            // Đã dừng chủ động (thiếu tệp đĩa…) thì không quay vòng chờ nữa: người chơi chỉ cần đọc và bấm Quay lại.
+            if (!halted) CircularProgressIndicator(color = Monika.colors.accentOrange)
             Text(status, style = Monika.type.body, color = Monika.colors.textOnDarkSecondary, textAlign = TextAlign.Center)
             if (slow) {
                 Text("Khởi động lâu hơn 60 giây. Game vẫn đang nạp.", style = Monika.type.caption,

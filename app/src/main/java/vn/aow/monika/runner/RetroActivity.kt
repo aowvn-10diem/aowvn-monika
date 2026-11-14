@@ -167,11 +167,12 @@ class RetroActivity : ComponentActivity() {
         }
         var startupText by mutableStateOf(startup.text())
         var slowStartup by mutableStateOf(false)
+        var halted by mutableStateOf(false) // đã dừng chủ động (thiếu tệp đĩa…) → không quay vòng chờ vô nghĩa
         var fallbackText by mutableStateOf<String?>(null)
         var fallbackAction: () -> Unit = {}
         val loading = ComposeView(this).apply {
             setContent { MonikaTheme {
-                RetroStartup(title, startupText, slowStartup, onCopy = {
+                RetroStartup(title, startupText, slowStartup, halted = halted, onCopy = {
                     val detail = "Lõi: $coreId\nROM: ${megabytes(File(gamePath).length())}\n" +
                         AppGraph.cores.info(coreId) + "\n" + startup.describe()
                     val text = Diagnostics.startupInfo(this@RetroActivity, detail)
@@ -291,6 +292,24 @@ class RetroActivity : ComponentActivity() {
             }
         }
         lifecycleScope.launch {
+            // Bộ đĩa thiếu tệp (.cue/.m3u trỏ tới tệp không có) thì lõi chắc chắn không nạp được game → báo rõ
+            // tên tệp còn thiếu rồi dừng, không nạp lõi. Không kiểm BIOS: các lõi đang dùng tự lo BIOS/firmware.
+            // Đọc tệp danh sách + dò tệp là I/O → chạy trên luồng IO, không chặn khung hình đầu.
+            val discSuspicion = withContext(Dispatchers.IO) {
+                vn.aow.monika.library.DiscSet.inspect(File(gamePath)) { discFolderLabel(gamePath) }
+            }
+            if (discSuspicion != null) {
+                Diagnostics.crumb(this@RetroActivity, "disc-set", "certain=${discSuspicion.certain}\n" + discSuspicion.message)
+                if (discSuspicion.certain) {
+                    startup.finish()
+                    halted = true
+                    startupText = discSuspicion.message
+                    fallbackText = "Quay lại"
+                    fallbackAction = { finish() }
+                    Diagnostics.stage(this@RetroActivity, "disc-set-incomplete")
+                    return@launch
+                }
+            }
             // V112: tải/chuẩn bị lõi là bước mở game → lỗi thật để lại op-fail; mất mạng chỉ ghi vệt.
             val core = Diagnostics.opSuspend(this@RetroActivity, Diagnostics.Op.OPEN_GAME, expected = Diagnostics::isOffline) {
                 step("tai-loi:$coreId")
@@ -375,12 +394,25 @@ class RetroActivity : ComponentActivity() {
                     Diagnostics.stage(this@RetroActivity, "core-error-$code")
                     android.util.Log.w(LOG_TAG, "error code=$code core=$coreId")
                     // Lỗi khi nạp game: ghi thẳng lên màn chờ (không chỉ thông báo nhanh) để người chơi biết vì sao không vào được.
-                    if (!loadingGone) startupText = "Không vào được game (mã lỗi $code).\nFile game hỏng hoặc lõi không hợp. Bấm Quay lại để thoát."
-                    showToast("Lỗi chạy game (mã $code). File game hỏng hoặc lõi không hợp.", 4000)
+                    if (!loadingGone) startupText = CoreLoadError.text(code, coreId)
+                    showToast(CoreLoadError.short(code, coreId), 4000)
                     onCoreFailure("lõi báo lỗi mã $code", "error code=$code core=$coreId")
                 }
             }
         }
+    }
+
+    /**
+     * Nhãn thư mục chứa game để hiện trong thông điệp: đường dẫn **tương đối** so với kho game của Monika
+     * (không in đường dẫn tuyệt đối của máy). Game quét ngoài kho thì chỉ hiện tên thư mục.
+     */
+    private fun discFolderLabel(gamePath: String): String {
+        val folder = File(gamePath).parentFile ?: return ""
+        val root = vn.aow.monika.library.GameStorage.root(this)
+        if (!folder.path.startsWith(root.path + File.separator)) return folder.name
+        val relative = folder.relativeTo(root).invariantSeparatorsPath
+        return if (relative.isEmpty()) vn.aow.monika.library.GameStorage.FOLDER
+        else "${vn.aow.monika.library.GameStorage.FOLDER}/$relative"
     }
 
     /**
