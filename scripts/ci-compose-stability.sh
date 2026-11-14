@@ -4,31 +4,49 @@
 # Không gọi thẳng :app:testDebugUnitTest: tác vụ đó chỉ gộp hai bản flavor
 # (app/build.gradle.kts: dependsOn testGithub/testPlay) nên không có action test,
 # không nhận --tests và không sinh test-results/testDebugUnitTest/.
-# Test thật nằm ở bản github (src/test/java chỉ gắn vào sourceSets["testGithub"]).
+# Test thật nằm ở bản flavor github (src/test/java chỉ gắn vào sourceSets["testGithub"]).
+# Vì vậy chỉ dò task Test thật của flavor; không bao giờ rơi về testDebugUnitTest.
 set -euo pipefail
 
 readonly PASSES=20
-readonly TASK_CANDIDATES=(testGithubDebugUnitTest testDebugUnitTest)
+readonly TASK_CANDIDATES=(testGithubDebugUnitTest testPlayDebugUnitTest)
 readonly RESULTS_ROOT='app/build/test-results'
 readonly OUTPUT_DIR='app/build/compose-stability'
 
 pick_test_task() {
   local tasks task
-  tasks=$(./gradlew -q :app:tasks --all --console=plain 2>/dev/null || true)
+  # Không nuốt lỗi Gradle: nếu lệnh dò hỏng thì báo rõ thay vì coi như "không có task".
+  if ! tasks=$(./gradlew -q :app:tasks --all --console=plain); then
+    echo "Không dò được danh sách task của :app (./gradlew :app:tasks thất bại)" >&2
+    return 1
+  fi
   for task in "${TASK_CANDIDATES[@]}"; do
     if grep -qE "^${task}([[:space:]]|$)" <<<"$tasks"; then
       printf '%s\n' "$task"
       return 0
     fi
   done
-  echo "Không thấy task unit test trong :app (đã dò: ${TASK_CANDIDATES[*]})" >&2
+  echo "Không tìm thấy task unit test thật của flavor (đã dò: ${TASK_CANDIDATES[*]})." >&2
+  echo "Không rơi về :app:testDebugUnitTest vì đó là task gộp (không có action test, không nhận --tests)." >&2
   return 1
+}
+
+# Workflow tải lên app/build/test-results/testDebugUnitTest/ (đường dẫn của task gộp).
+# Task thật không sinh thư mục đó, chép XML thô vào để artifact vẫn đầy đủ mà không phải sửa workflow.
+mirror_results() {
+  if [ "$TEST_TASK" != 'testDebugUnitTest' ] &&
+    compgen -G "${RESULTS_ROOT}/${TEST_TASK}/TEST-*.xml" > /dev/null; then
+    mkdir -p "${RESULTS_ROOT}/testDebugUnitTest"
+    cp -a "${RESULTS_ROOT}/${TEST_TASK}"/TEST-*.xml "${RESULTS_ROOT}/testDebugUnitTest/"
+  fi
 }
 
 TEST_TASK=$(pick_test_task)
 echo "V104: dùng :app:${TEST_TASK}; XML tự dò trong ${RESULTS_ROOT}/"
 
 mkdir -p "$OUTPUT_DIR"
+# Lượt đỏ thoát giữa vòng lặp, nên chép mirror ngay trong trap để artifact không thiếu XML.
+trap mirror_results EXIT
 for pass in $(seq 1 "$PASSES"); do
   ./gradlew ":app:${TEST_TASK}" --console=plain --rerun \
     --tests 'vn.aow.monika.ui.LibraryStorageAccessTest.revisitDoesNotExplainAgainButExplicitButtonRequestsAndGrantRemovesCard' \
@@ -75,11 +93,5 @@ with (output / 'results.txt').open('a') as log:
     log.write(f'{pass_no:02d}/20 PASS: 2 tests, 0 skipped (:app:{task})\n')
 print(f'V104 {pass_no}/20 PASS: 2 tests, 0 skipped (:app:{task})')
 PY
+  mirror_results
 done
-
-# Workflow tải lên app/build/test-results/testDebugUnitTest/ (đường dẫn của task gộp).
-# Task thật không sinh thư mục đó, chép XML thô vào để artifact vẫn đầy đủ mà không phải sửa workflow.
-if [ "$TEST_TASK" != 'testDebugUnitTest' ] && compgen -G "${RESULTS_ROOT}/${TEST_TASK}/TEST-*.xml" > /dev/null; then
-  mkdir -p "${RESULTS_ROOT}/testDebugUnitTest"
-  cp -a "${RESULTS_ROOT}/${TEST_TASK}"/TEST-*.xml "${RESULTS_ROOT}/testDebugUnitTest/"
-fi
