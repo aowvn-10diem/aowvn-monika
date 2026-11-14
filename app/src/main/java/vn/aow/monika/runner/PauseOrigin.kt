@@ -51,3 +51,26 @@ internal object PauseOrigin {
         runCatching { owner.application.unregisterActivityLifecycleCallbacks(callbacks) }
     }
 }
+
+/**
+ * Cặp đăng ký/gỡ của đo lường, gắn với `onStart`→`onStop`: mỗi quãng "started" đăng ký **một**
+ * lần, gỡ **một** lần — không nhân đôi callback khi `onStart` chạy lại, và không gỡ hai lần.
+ *
+ * Tách khỏi Android để test JUnit thuần. Lỗi của [install]/[remove] bị nuốt: đo lường không được
+ * làm chết vòng đời; nếu [install] ném thì cờ vẫn bật nên [stop] vẫn gỡ.
+ */
+internal class PauseOriginGate(private val install: () -> Unit, private val remove: () -> Unit) {
+    private var installed = false
+
+    fun start() {
+        if (installed) return
+        installed = true
+        runCatching(install)
+    }
+
+    fun stop() {
+        if (!installed) return
+        installed = false
+        runCatching(remove)
+    }
+}

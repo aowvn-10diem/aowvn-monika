@@ -99,16 +99,8 @@ class RetroActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // t0 của phép đo pause (#350/#318, docs/loi/melondsds-anr-1313.md §5.2): chỉ đọc đồng hồ khi
-        // chính activity này sắp pause. API < 29 không có callback ⇒ t1 tự là gốc, ghi rõ trong crumb.
-        pauseOriginCallbacks = PauseOrigin.register(this) { label, at ->
-            if (label == T0) {
-                runCatching { com.swordfish.libretrodroid.Diag.pauseOriginAt = at }
-                pauseProbe.origin(label, at) // mở chu kỳ mới, không nối mốc lần pause trước
-            } else {
-                pauseProbe.mark(label, at)
-            }
-        }
+        // t0 của phép đo pause (#350/#318, docs/loi/melondsds-anr-1313.md §5.2) đăng ký ở onStart —
+        // xem pauseOriginGate: onCreate ném giữa đường thì onDestroy không chạy, đăng ký ở đây sẽ rò rỉ.
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // Máy có hỗ trợ: giữ xung CPU/GPU ổn định khi chơi lâu (đỡ nóng rồi tụt xung đột ngột). Máy không hỗ trợ thì bỏ qua.
         runCatching { if (android.os.Build.VERSION.SDK_INT >= 24) window.setSustainedPerformanceMode(true) }
@@ -378,10 +370,7 @@ class RetroActivity : ComponentActivity() {
             updateStartup("surface-wait", "Đang chuẩn bị khung game…")
             Diagnostics.stage(this@RetroActivity, "loading-game") // lõi nạp file game ngay sau dòng này — chết ở đây = lõi hoặc file game hỏng
             val view = GLRetroView(this@RetroActivity, data)
-            // Nối cầu chẩn đoán của :libretrodroid vào vệt crumb của app (t1–t3, §5.2). Chỉ để đo.
-            runCatching {
-                com.swordfish.libretrodroid.Diag.sink = { msg -> Diagnostics.crumb(this@RetroActivity, "pause", msg) }
-            }
+            // Cầu nối chẩn đoán (t1–t3) đã gán sink trong onStart (pauseOriginGate); t0 cũng ở đó.
             lifecycle.addObserver(view)
             root.addView(view, 0, gameLayoutParams()) // Dưới màn chờ; màn chờ bỏ đi khi có khung hình đầu.
             retroView = view
@@ -692,6 +681,51 @@ class RetroActivity : ComponentActivity() {
     /** Callback `onActivityPrePaused` (t0) đã đăng ký; `null` khi API < 29 hoặc đăng ký lỗi. */
     private var pauseOriginCallbacks: android.app.Application.ActivityLifecycleCallbacks? = null
 
+    /** Sink hiện tại của riêng activity này, để chỉ gỡ đúng sink mình đã gán. */
+    private var pauseSink: ((String) -> Unit)? = null
+
+    /**
+     * Đăng ký/gỡ đo lường theo cặp `onStart`→`onStop`, **không** ở `onCreate`: nếu `onCreate` ném
+     * sau khi đăng ký thì `onDestroy` không chạy và `Application` giữ callback trỏ tới Activity đã
+     * chết. `t0` vẫn đo được: `onActivityPrePaused` phát trong `onPause`, tức sau `onStart` và
+     * trước `onStop` (xem docs/loi/melondsds-anr-1313.md §5.2).
+     */
+    private val pauseOriginGate = PauseOriginGate(
+        install = {
+            pauseOriginCallbacks = PauseOrigin.register(this) { label, at ->
+                if (label == T0) {
+                    runCatching { com.swordfish.libretrodroid.Diag.pauseOriginAt = at }
+                    pauseProbe.origin(label, at) // mở chu kỳ mới, không nối mốc lần pause trước
+                } else {
+                    pauseProbe.mark(label, at)
+                }
+            }
+            // Sink bám applicationContext (không bám Activity) để không giữ vòng đời; hai
+            // RetroActivity cùng sống chỉ gỡ sink của chính mình.
+            val sink: (String) -> Unit = { msg -> Diagnostics.crumb(applicationContext, "pause", msg) }
+            pauseSink = sink
+            runCatching { com.swordfish.libretrodroid.Diag.sink = sink }
+        },
+        remove = {
+            runCatching {
+                if (com.swordfish.libretrodroid.Diag.sink === pauseSink) com.swordfish.libretrodroid.Diag.sink = null
+            }
+            pauseSink = null
+            PauseOrigin.unregister(this, pauseOriginCallbacks)
+            pauseOriginCallbacks = null
+        },
+    )
+
+    override fun onStart() {
+        super.onStart()
+        pauseOriginGate.start()
+    }
+
+    override fun onStop() {
+        pauseOriginGate.stop()
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
         clock?.resume()
@@ -731,9 +765,7 @@ class RetroActivity : ComponentActivity() {
             saveTransferLease?.close()
             saveTransferLease = null
             // Gỡ cầu nối + callback đo: không giữ Activity sau khi view bị gỡ.
-            runCatching { com.swordfish.libretrodroid.Diag.sink = null }
-            PauseOrigin.unregister(this, pauseOriginCallbacks)
-            pauseOriginCallbacks = null
+            pauseOriginGate.stop()
         }
         pauseProbe.mark("t9", SystemClock.elapsedRealtime())
         if (isFinishing) {
