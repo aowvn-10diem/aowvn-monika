@@ -67,6 +67,15 @@ def make_rom():
 
 
 def prepare(out, root=ROOT):
+    # V196: APK test cần host `localhost` cho server fixture, nhưng KHÔNG sửa allowlist production trong mã.
+    # Ghi vào GITHUB_ENV để bước Gradle sau (assembleGithubDebug) nhận qua BuildConfig của bản debug.
+    # Kiểm NGAY ĐẦU prepare: thiếu biến thì thoát TRƯỚC khi vá cây làm việc (không để lại rác dở dang).
+    github_env = os.environ.get('GITHUB_ENV')
+    if not github_env:
+        raise SystemExit(
+            'Thiếu GITHUB_ENV: bước build APK debug sẽ không nhận MONIKA_EXTRA_DOWNLOAD_HOSTS=localhost.\n'
+            'Chạy trong GitHub Actions, hoặc export GITHUB_ENV trước khi gọi prepare.'
+        )
     out.mkdir(parents=True, exist_ok=True)
     (out / 'web').mkdir(exist_ok=True)
     (out / 'monika.nds').write_bytes(make_rom())
@@ -111,12 +120,7 @@ def prepare(out, root=ROOT):
     app.write_text(original.replace(needle, '// V106 generated debug build includes its x86_64 test bridge'))
     # V196: APK test cần host `localhost` cho server fixture, nhưng KHÔNG sửa allowlist production trong mã.
     # Ghi vào GITHUB_ENV để bước Gradle sau (assembleGithubDebug) nhận qua BuildConfig của bản debug.
-    github_env = os.environ.get('GITHUB_ENV')
-    if not github_env:
-        raise SystemExit(
-            'Thiếu GITHUB_ENV: bước build APK debug sẽ không nhận MONIKA_EXTRA_DOWNLOAD_HOSTS=localhost.\n'
-            'Chạy trong GitHub Actions, hoặc export GITHUB_ENV trước khi gọi prepare.'
-        )
+    # (Đã kiểm GITHUB_ENV ở đầu prepare, trước mọi write_text.)
     with open(github_env, 'a', encoding='utf-8') as handle:
         handle.write('MONIKA_EXTRA_DOWNLOAD_HOSTS=localhost\n')
     tls = out / 'tls'
