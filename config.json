@@ -1,13 +1,13 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 63,
+  "configVersion": 64,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
-    "latestVersionCode": 55,
-    "latestVersionName": "0.8.10",
+    "latestVersionCode": 58,
+    "latestVersionName": "0.8.13",
     "minVersionCode": 1,
-    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.10/AowVN-Monika-v0.8.10.apk",
-    "changelog": "Bản thử 0.8.10: Thư viện có trang chi tiết game, sao lưu trước khi xóa. Sửa phím ảo và phím Java; dễ xếp hai màn hình Nintendo DS hơn. Thêm nơi kiểm tra bản Monika chính thức."
+    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.13/AowVN-Monika-v0.8.13.apk",
+    "changelog": "Bản thử 0.8.13: Chơi game 3DS, NDS, PSP lâu không còn bị đứng, văng app; ra khỏi game đúng lúc đang lưu thì bản lưu cũ vẫn còn nguyên. Bản Play có Thư viện chia ba mục Chơi, Đọc, Tệp."
   },
   "security": {
     "officialCertSha256": "c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c"
