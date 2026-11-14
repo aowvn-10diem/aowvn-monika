@@ -178,6 +178,29 @@ class BotTest(unittest.TestCase):
         for core in ["azahar", "kirikiri", "mkxp-z"]:
             self.assertEqual(bot.plan([record(1, core=core)], [], OWNERS)[0]["assignees"], ["sonnet-fixture"])
 
+    def test_core_uses_outer_report_level_when_session_is_missing(self):
+        # L1 (bot-core): `anr`/`lowmem` có lõi ở cấp ngoài, không có `session` (xem #413/#534).
+        outer = {"id": "r:1700000000100:abcdef00",
+                 "report": {"kind": "anr", "core": "citra", "detail": "", "count": 1, "log": []}}
+        body = bot.plan([outer], [], OWNERS)[0]["body"]
+        self.assertIn("Lõi: `citra`", body)
+        self.assertNotIn("Lõi: `unknown`", body)
+
+    def test_core_prefers_session_and_falls_back_to_outer(self):
+        # Chỉ có phiên: giữ nguyên như trước.
+        self.assertIn("Lõi: `melondsds`", bot.plan([record(1, core="melondsds")], [], OWNERS)[0]["body"])
+        # Có cả hai: ưu tiên phiên, không lấy lõi ngoài.
+        both = {"id": "r:1700000000101:abcdef00",
+                "report": {"kind": "anr", "core": "citra", "session": {"core": "melondsds"},
+                           "detail": "", "count": 1, "log": []}}
+        body = bot.plan([both], [], OWNERS)[0]["body"]
+        self.assertIn("Lõi: `melondsds`", body)
+        self.assertNotIn("`citra`", body)
+        # Cả hai đều rỗng/không hợp lệ: vẫn là unknown.
+        empty = {"id": "r:1700000000102:abcdef00",
+                 "report": {"kind": "anr", "core": "", "session": {"core": ""}, "detail": "", "count": 1, "log": []}}
+        self.assertIn("Lõi: `unknown`", bot.plan([empty], [], OWNERS)[0]["body"])
+
     def test_closed_issue_body_marks_the_count_as_cumulative_history(self):
         # #304/#305: issue đã đóng nhưng bot vẫn cộng dồn ⇒ người đọc phải biết số đó không phải mức tăng hiện tại.
         first = bot.plan([record(1)], [], OWNERS)[0]
