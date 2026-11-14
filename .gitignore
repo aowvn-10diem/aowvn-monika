@@ -23,3 +23,6 @@ tools/ds/.work/
 
 # SBOM tự kiểm phụ thuộc (scripts/kiem-phu-thuoc.py)
 sbom.json
+
+# V206: tệp ký sinh ra lúc CI (không commit lên main)
+config.signed.json
