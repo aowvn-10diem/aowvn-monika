@@ -14,7 +14,7 @@ Liên quan: `docs/BAO-VE-REPO.md` (kế hoạch bảo vệ repo), `docs/dac-ta/V
 Thêm một workflow `gate` (check tên `gate`) luôn chạy trên mọi PR:
 - PR chỉ sửa tài liệu: xanh ngay.
 - PR có mã: đợi Build, Coverage, CodeQL (khi bộ lọc đường dẫn của CodeQL khớp) xanh **trên đúng SHA head của PR**; thiếu, đỏ, hủy thì đỏ.
-- Chỉ đọc, không secret, không action bên thứ ba. Mã: `.github/workflows/gate.yml`, `scripts/gate-expected.py` (có test `scripts/test-gate-expected.py`, gate tự chạy test này mỗi lượt).
+- Chỉ đọc, không secret, không action bên thứ ba. Mã: `.github/workflows/gate.yml`, `scripts/gate-expected.py` (có test `scripts/test-gate-expected.py`, gate tự chạy test này mỗi lượt). `gate` đối chiếu workflow theo **đường dẫn tệp** (không theo tên hiển thị), lấy danh sách tệp và lượt chạy có phân trang, đỏ khi số tệp nhận được khác số tệp của PR (PR trên 3000 tệp cần sếp xem tay), và chạy lại khi sửa mô tả PR (`edited`) hay chuyển từ nháp sang sẵn sàng. `gate` đã gộp 09/11 (PR #528).
 - Sếp chỉ cần bắt buộc đúng **một** check `gate` trong ruleset. Không bắt buộc Build/Coverage/CodeQL riêng lẻ.
 
 Phương án đã loại: (a) bỏ `paths-ignore` ở ba workflow (tốn thêm CI cho PR tài liệu, trái V11); (b) bắt buộc thẳng ba check rồi để sếp bỏ qua PR tài liệu (mất ý nghĩa bảo vệ); (c) `pull_request_target` để PR không sửa được gate (check gắn vào commit của `main`, không hiện trên PR; còn có rủi ro chạy mã không tin cậy).
@@ -52,9 +52,12 @@ Settings → Rules → Rulesets → `main-bao-ve` → **Enforcement status: Disa
 
 ## 3. Giới hạn thật (đừng hiểu nhầm là an toàn tuyệt đối)
 
-- PR sửa `gate.yml` hoặc `scripts/gate-expected.py` có thể làm yếu gate (workflow `pull_request` dùng bản trong chính PR). Quy tắc: mọi PR đụng `.github/workflows/**` hoặc hai tệp này cần duyệt hai lượt **và** sếp (CodeQL chạy ở các PR đó, nhưng không chặn việc làm yếu gate).
+- PR sửa `gate.yml`, `scripts/gate-expected.py` hoặc `scripts/test-gate-expected.py` (gate chạy trực tiếp tệp này từ nhánh PR) có thể làm yếu gate (workflow `pull_request` dùng bản trong chính PR). Quy tắc: mọi PR đụng `.github/workflows/**` hoặc ba tệp này cần duyệt hai lượt **và** sếp (CodeQL chạy ở các PR đó, nhưng không chặn việc làm yếu gate).
 - `gate-expected.py` phản chiếu bộ lọc đường dẫn của Build/Coverage/CodeQL. Đổi bộ lọc ở workflow nào phải đổi file này cùng PR; nếu lệch, gate có thể đợi workflow không bao giờ chạy (đỏ) hoặc bỏ sót workflow (lọt).
 - `gate` chỉ nhìn kết quả một lần: chạy lại Build/Coverage/CodeQL sau khi đỏ thì phải chạy lại cả `gate` (nút **Re-run** của `gate`), và Build chạy lại ra đỏ sau khi `gate` đã xanh thì `gate` vẫn xanh (lọt nhỏ, mỗi PR vẫn có CI hiển thị riêng). PR hơn 300 tệp: GitHub chỉ xét 300 tệp đầu khi lọc đường dẫn, `gate` xét hết nên có thể đỏ oan (không lọt).
+- `gate` chỉ bao Build, Coverage và CodeQL. Các cổng khác (kiểm web khi đổi config app, kiểm gói thật V37, dựng lõi V198, Test Lab ARM V56) **không** nằm trong `gate`, nên ruleset chỉ bắt `gate` sẽ không chặn gộp khi các cổng đó đỏ. `libretrodroid/` và `j2me/` chỉ kéo Build + Coverage vì CodeQL không quét hai thư mục này (khớp với CI hiện tại, không phải lỗ của gate).
+- Đổi tên hay bộ lọc của `build.yml`, `coverage.yml`, `codeql.yml` mà quên sửa `scripts/gate-expected.py` thì test chống lệch làm `gate` đỏ cho mọi PR có mã cho tới khi sửa (cố ý, để lệch lộ ra ngay).
+- CODEOWNERS cho `.github/workflows/**` và ba tệp trên **chưa tạo được người duyệt độc lập** khi mọi phiên dùng chung một tài khoản; chỉ có tác dụng sau V201 giai đoạn B (mỗi vai một danh tính). Đừng ghi là đã bảo vệ.
 - `gate` chỉ chứng minh CI xanh, **không** chứng minh có người duyệt (không có review bắt buộc, vì cùng một tài khoản). Phần "đủ hai lượt Đạt đúng SHA" vẫn dựa kỷ luật; V201 sẽ thêm bảng/kiểm tra bán tự động.
 - Gate không thay cho việc sếp xem PR đụng config/Cloudflare/khóa/phát hành: các PR đó vẫn cần sếp.
 
@@ -67,7 +70,7 @@ Settings → Rules → Rulesets → `main-bao-ve` → **Enforcement status: Disa
 |---|---|
 | Gộp #515, #518 (tài liệu, L3 Đạt, CI xanh) và #501 (G2, L3 + Ultra Đạt cùng head 1632a71, CI xanh, config 60→61) | đã gộp; Sync config lên Cloudflare chạy thành công; CI trên main chạy tiếp (kiểm ở lượt Nova 22:32 và 07:32) |
 | Phân việc Luna cho "DeepSeek Duyệt 2" (sếp tạo phiên) | đăng ở #337; phiên tự giới thiệu ở #119 khi lên |
-| Soạn gate (V200), cố vấn Opus phản biện độc lập (sửa các điểm "Nên sửa") | PR #528 (nháp, cần hai lượt duyệt + sếp, chưa bắt buộc) |
+| Soạn gate (V200), cố vấn Opus phản biện độc lập (sửa các điểm "Nên sửa"), sửa tiếp theo Argon và PM | PR #528 đã gộp 09/11; chưa bắt buộc trong ruleset, chờ 3 PR chạy đúng (Bước B) |
 | Soạn đặc tả V201 (phân biệt tác giả/người duyệt) | đặc tả trong PR #527, chưa có mã |
 
 **Việc còn dở, cần PM gốc nắm:**
