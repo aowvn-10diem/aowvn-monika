@@ -68,6 +68,15 @@ class GameDetailTest {
         rule.awaitComposeLayout(condition)
     }
 
+    /**
+     * Mục Save đọc danh sách save trên luồng IO, nên khung đầu còn "Đang đọc save…". Chờ đúng nó
+     * đọc xong rồi mới assert. Nhãn "Sắp có" của nút Bản vá thì có ngay từ khung đầu nên **không**
+     * dùng làm mốc chờ được — đó là lý do #572 đỏ trên CI Linux (máy nhanh kịp, máy chậm thì chưa).
+     */
+    private fun settleSaveSection() = settleUntil {
+        rule.onAllNodesWithText("Đang đọc save", substring = true).fetchSemanticsNodes().isEmpty()
+    }
+
     @Test fun tappingTheGameCardOpensItsDetailPage() {
         val g = game()
         rule.setContent { MonikaTheme { Column(Modifier.width(180.dp).padding(8.dp)) {
@@ -143,7 +152,7 @@ class GameDetailTest {
         var played = 0
         var deleted: Game? = null
         rule.setContent { MonikaTheme { GameDetailScreen(g, { played++ }, {}, onDelete = { deleted = it }) } }
-        settle("Sắp có")
+        settleSaveSection()
         rule.onAllNodesWithText("Sắp có").assertCountEquals(1)
         rule.onNodeWithText("Bản vá").assertExists().assertHasNoClickAction()
         // Hệ "test" chưa hỗ trợ chuyển save → mục Save nói rõ thay vì để trống.
