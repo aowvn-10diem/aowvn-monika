@@ -65,9 +65,8 @@ Tổng: **69 lượt / 23 issue**. Ba issue tái diễn (#385, #397, #416) chi�
 ### 2.1 `native` — 5 issue, 20 lượt (#385, #563, #448, #613, #387)
 
 Cùng lớp `docs/loi/loi-khac-1313.md` §4 (đã ở `main`) và `docs/loi/ppsspp-native-1311.md` (đã ở `main`, gộp từ
-PR #620): chết trong
-`.so` của lõi, chữ ký = `module:symbol` của ≤ 3 khung (`crash-issue-bot.py:44-50`), và muốn biết khung thì phải có
-gói ký hiệu **khớp BuildId**. Khác biệt của từng issue:
+PR #620): chết trong `.so` của lõi, chữ ký = `module:symbol` của ≤ 3 khung (`crash-issue-bot.py:44-50`), và muốn
+biết khung thì phải có gói ký hiệu **khớp BuildId**. Khác biệt của từng issue:
 
 - **#385 là ca giàu bằng chứng nhất của họ `native` ở đây**: lõi ghim
   (`modules.kirikiri.version = 6e61ce3-aow3` + `sha256`) và release `engines-kirikiri-16` **có**
