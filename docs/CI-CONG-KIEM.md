@@ -8,36 +8,53 @@ Tài liệu dành cho phiên làm việc mới: đọc mục 1 để biết cổ
 
 ## 0. Ba câu chốt
 
-1. **Hôm nay GitHub không bắt buộc cổng nào.** Ruleset `main-bao-ve` (id `26765417`, enforcement `active`)
-   chỉ có 3 luật: `deletion`, `non_fast_forward`, `pull_request` (0 approval) — **không** có
-   `required_status_checks`. `gate` là cổng *nên* bắt buộc (`.github/workflows/gate.yml:3-5`,
-   `docs/BAO-VE-MAIN.md:18`), nhưng việc bật nằm ở Bước B của `docs/BAO-VE-MAIN.md:35-42` và chưa làm.
+1. **Hôm nay GitHub không bắt buộc cổng nào — đã kiểm bằng API ngày 14/11/2026.** Hai nơi có thể bắt buộc,
+   cả hai đều trống:
+   - ruleset `main-bao-ve` (id `26765417`, `enforcement: active`) chỉ có 3 luật: `deletion`,
+     `non_fast_forward`, `pull_request` (0 approval) — **không** có `required_status_checks`;
+   - branch protection của `main`: `protection.enabled = false`,
+     `required_status_checks.enforcement_level = off`.
+
+   Hệ quả: gộp được dù cổng đỏ, và `preview` cancelled không chặn nút gộp (bẫy 1). `gate` là cổng *nên*
+   bắt buộc (`.github/workflows/gate.yml:3-5`, `docs/BAO-VE-MAIN.md:18`), việc bật nằm ở Bước B của
+   `docs/BAO-VE-MAIN.md:35-42` và chưa làm. Tự kiểm lại bằng hai lệnh ở mục "Đọc đúng bắt buộc".
 2. **`preview` / `digest` không phải cổng.** `gate` chỉ đợi Build, Coverage, CodeQL
    (`scripts/gate-expected.py:16-39`). `preview` bị hủy liên tục vì concurrency — chuyện bình thường.
 3. **Máy Windows có 19 ca test đỏ sẵn trên `main`** (mục 3). CI Linux vẫn xanh. Đừng quy chúng cho PR mới.
 
 ## 1. Bảng cổng
 
-Cột "bắt buộc để gộp?" trả lời đúng câu đó: cổng có làm `gate` đỏ (và do đó chặn gộp nếu sếp đã bật
-`gate`) hay không.
+Bảng có **10 dòng**, tương ứng **11 check** (dòng `analyze` là 2 check: `analyze (java-kotlin)` và
+`analyze (javascript-typescript)`). Cột "bắt buộc để gộp?" trả lời đúng câu đó: cổng có làm `gate` đỏ
+(và do đó chặn gộp nếu sếp đã bật `gate`) hay không.
 
 | Cổng (tên job) | Workflow | Chạy gì | Bắt buộc để gộp? | Khi nào không xuất hiện |
 |---|---|---|---|---|
-| `gate` | `gate.yml:34` | Đọc danh sách tệp PR qua API; chạy `scripts/test-gate-expected.py`; đợi Build/Coverage/CodeQL trên **đúng head SHA** (`gate.yml:44-103`) | **Có** (theo thiết kế; phải sếp bật trong ruleset) | Không bao giờ — chạy trên mọi PR (`gate.yml:17-22`). PR docs-only: xanh ngay (`gate.yml:70-73`) |
-| `build` | `build.yml:14` | V113 (`kiem-nuot-loi`), 6 test Ruby RGSS, `testDebugUnitTest`, `assembleDebug`, `check-play-apk` (`build.yml:21-76`) | **Có**, khi PR có tệp không phải tài liệu | `paths-ignore: ["docs/**","**/*.md"]` (`build.yml:5-8`) |
+| `gate` | `gate.yml:34` | Đọc danh sách tệp PR qua API; chạy `scripts/test-gate-expected.py`; đợi Build/Coverage/CodeQL trên **đúng head SHA** (`gate.yml:44-103`) | **Có** theo thiết kế — nhưng **chưa bật** trong ruleset (§0) | Không bao giờ — chạy trên mọi PR (`gate.yml:17-22`). PR docs-only: xanh ngay (`gate.yml:70-73`) |
+| `build` | `build.yml:14` | V113 (`kiem-nuot-loi`), **5 test Ruby RGSS + 1 test Python** (`build.yml:41-48`), `testDebugUnitTest`, `assembleDebug`, `check-play-apk` (`build.yml:21-76`) | **Có**, khi PR có tệp không phải tài liệu | `paths-ignore: ["docs/**","**/*.md"]` (`build.yml:5-8`) |
 | `coverage` | `coverage.yml:17` | `koverXmlReportDebug` + in % độ phủ (`coverage.yml:29-35`) | **Có**, cùng điều kiện `build` | `paths-ignore` (`coverage.yml:8,11`) |
 | `analyze (java-kotlin)` và `analyze (javascript-typescript)` | `codeql.yml:19` | CodeQL init/analyze 2 ngôn ngữ; java-kotlin build tay bằng `assembleDebug` (`codeql.yml:39-47`) | **Có**, khi PR đụng tiền tố CodeQL | `paths` whitelist (`codeql.yml:5-7`): `app/**`, `cloudflare/**`, `scripts/**`, `.github/workflows/**`, `.github/codeql-config.yml`, `gradle/libs.versions.toml` |
-| `submit-gradle` | **không có trong repo** — workflow động `dynamic/dependency-graph/auto-submission` ("Automatic Dependency Submission (Gradle)") do GitHub sinh | Nộp dependency graph | **Không** | Chỉ chạy trên push nhánh mặc định; không có trên PR |
+| `submit-gradle` | **Không có tệp workflow trong repo** — là workflow động `dynamic/dependency-graph/auto-submission`, tên hiển thị "Automatic Dependency Submission (Gradle)", GitHub sinh và đăng ký ở cấp repo | Nộp dependency graph Gradle | **Không** (`scripts/gate-expected.py` không liệt kê) | **Có** hiện trên PR: chạy mỗi lần push nhánh (event `dynamic`), không bị `paths` lọc — kể cả PR docs-only |
 | `n04-tests` | `script-tests.yml:18` | 10 test N04 + NDK/`truoc-khi-push`/core-build/PPSSPP/Telegram/workflow-security (`script-tests.yml:33-66`) | **Không** (`gate` không đợi) | `paths: scripts/**` (`script-tests.yml:5-12`) |
 | `repeated-tests` | `compose-stability.yml:14` | `scripts/ci-compose-stability.sh`: 2 test Compose × 20 lượt, không retry (`compose-stability.yml:27-28`) | **Không** | `paths`: đúng 5 tệp (`compose-stability.yml:5-10`) |
 | `preview` | `pm-digest.yml:18` | `test-pm-digest*.py` + `pm-digest-safe.py --out out/preview`, upload artifact | **Không** | Chỉ chạy khi event là `pull_request` (`pm-digest.yml:19`) — và hay bị **hủy** (bẫy 1) |
 | `digest` | `pm-digest.yml:34` | `pm-digest-safe.py --publish`, đẩy nhánh mồ côi `bot/trang-thai` | **Không** | PR: `skipped` (`pm-digest.yml:36`); chỉ chạy push `main`, cron, dispatch |
-| `links` | `periodic-check.yml:20` | `test-periodic-check.py` + `check-config-links.py --fail-on-error` (`periodic-check.yml:25-26`) | **Không** | `paths`: 7 tệp (`periodic-check.yml:7-13`); cron `43 20 * * *` |
+| `links` | `periodic-check.yml:20` | `test-periodic-check.py` + `check-config-links.py --fail-on-error` (`periodic-check.yml:25-26`) | **Không** | `paths`: **6** tệp (`periodic-check.yml:7-13`); cron `43 20 * * *` |
 
 Các cổng khác cũng có thể đỏ nhưng hẹp phạm vi hơn: `offline` (`stability-gate.yml:10`),
 `policy` (`testlab-policy.yml`), `contract` (`web-config-contract.yml`), `pre-push-windows`
 (`pre-push-windows.yml`), `real-packs` (`check-packs.yml`). Nguyên tắc giống nhau: `paths` hẹp thì PR
 không đụng tệp là workflow **không chạy**, nên đừng chờ nó.
+
+Hai chuyện dễ lẫn, đừng gộp:
+
+- **"Không có tệp workflow trong `.github/workflows/`" không đồng nghĩa "không có check trên PR".**
+  `submit-gradle` là ví dụ: không có tệp nào trong repo, nhưng hiện trên mọi PR đã kiểm (#640, #645,
+  #647, #650 — `gh pr checks <số> --json name,state` thấy `submit-gradle: SUCCESS`). Chỉ đừng bắt `gate`
+  đợi nó — `gate` đọc theo **đường dẫn workflow** (`gate.yml:86-90`, `gate-expected.py:19-23`) nên không
+  bao giờ thấy nó.
+- **"Không xuất hiện"** (bị `paths`/`paths-ignore` loại, workflow không được tạo) khác **"skipped"**
+  (workflow có chạy, job bị `if:` loại — ví dụ `digest` trên PR).
 
 ### Đọc đúng "bắt buộc"
 
@@ -46,7 +63,12 @@ không đụng tệp là workflow **không chạy**, nên đừng chờ nó.
 id=$(gh api repos/aowvn-10diem/aowvn-monika/rulesets --jq '.[0].id')
 gh api "repos/aowvn-10diem/aowvn-monika/rulesets/$id" --jq '.rules[].type'
 
-# Cổng nào thật sự đã chạy trên head của PR
+# Bảo vệ nhánh trực tiếp của main (kỳ vọng: enabled=false, enforcement_level=off)
+gh api repos/aowvn-10diem/aowvn-monika/branches/main \
+  --jq '[.protection.enabled, .protection.required_status_checks.enforcement_level] | @tsv'
+
+# Check nào thật sự hiện trên head của PR (gồm cả check không có tệp workflow)
+gh pr checks <số PR> --json name,state
 gh api "repos/aowvn-10diem/aowvn-monika/commits/<sha40>/check-runs?per_page=100" \
   --jq '.check_runs[] | [.name, .conclusion] | @tsv'
 ```
@@ -195,7 +217,11 @@ Mỗi bẫy: **triệu chứng → nguyên nhân (có dẫn chiếu) → cách x
 Đo trên Windows (14/11/2026) tại `main` `15f210a6`, chỉ thêm `local.properties` (không tính vào git):
 
 ```
-./gradlew :app:testGithubDebugUnitTest --continue --tests '<8 lớp dưới đây>'
+./gradlew :app:testGithubDebugUnitTest --continue \
+  --tests 'vn.aow.monika.RarTest' --tests 'vn.aow.monika.library.DeviceScannerTest' \
+  --tests 'vn.aow.monika.runner.CorePreparationCacheTest' --tests 'vn.aow.monika.ConsoleSaveTransferTest' \
+  --tests 'vn.aow.monika.GameSaveTransferTest' --tests 'vn.aow.monika.library.ImporterTest' \
+  --tests 'vn.aow.monika.library.LibraryDocumentsTest' --tests 'vn.aow.monika.diag.DeathContextTest'
 61 tests completed, 19 failed
 ```
 
@@ -207,15 +233,18 @@ ghi rõ trong mô tả PR.
 |---|---|---|
 | 6 | `RarTest.kt` (`:27,34,40,46,53,63`) | `UninitializedPropertyAccessException: lateinit property app has not been initialized`. `SevenZipNative.init()` gọi `System.loadLibrary("7-Zip-JBinding")` (`app/src/main/java/vn/aow/monika/library/SevenZipNative.kt:42`); trên JVM không có thư viện này nên rơi sang nhánh gói tải, đụng `AppGraph` (`:46-50`) — chỉ có trên máy thật |
 | 6 | `library/DeviceScannerTest.kt` (`:55,69,80,90,100,112`) | Đường dẫn Windows dùng `\` còn kỳ vọng và bộ lọc viết bằng `/`: `expected:<[Games/real.md]> but was:<[Games\real.md]>`; ca `:69` còn lọt `Android\data`, `DCIM`, `Music` vì bộ lọc thư mục hệ thống so khớp chuỗi `/` |
-| 2 | `runner/CorePreparationCacheTest.kt` (`:107` và ca BIOS) | `java.io.IOException: Không lưu được lõi melondsds` / `Không lưu được cache hệ thống`. Gốc: `File.renameTo` ở `runner/CoreManager.kt:134` và `runner/SystemFilesCache.kt:62` **không ghi đè** tệp đích đã tồn tại trên Windows |
+| 2 | `runner/CorePreparationCacheTest.kt` (`:93,107`) | `java.io.IOException: Không lưu được lõi melondsds` / `Không lưu được cache hệ thống`. Gốc: `File.renameTo` ở `runner/CoreManager.kt:134` và `runner/SystemFilesCache.kt:62` **không ghi đè** tệp đích đã tồn tại trên Windows |
 | 1 | `ConsoleSaveTransferTest.kt:153` | `FileSystemException: ... A required privilege is not held by the client` — `Files.createSymbolicLink` cần quyền tạo symlink (Windows cần Admin/Developer Mode) |
 | 1 | `GameSaveTransferTest.kt:253` | Cùng nguyên nhân symlink như trên |
 | 1 | `library/ImporterTest.kt:129` | `expected:<...\_TaiVe[/]_phan> but was:<...\_TaiVe[\]_phan>` — so `canonicalPath` với chuỗi nối bằng `/` |
 | 1 | `library/LibraryDocumentsTest.kt:61` | `IllegalArgumentException: Failed to find configured root that contains C:\...\files\v84-view\fixture.pdf` — `FileProvider` so khớp gốc theo đường dẫn kiểu Unix |
 | 1 | `diag/DeathContextTest.kt:96` | `expected:<[core-ready]> but was:<[start]>` — cập nhật `stage` của phiên chẩn đoán khác nhau trên JVM |
 
-Tổng: 6 + 6 + 2 + 1 + 1 + 1 + 1 + 1 = **19**. Bốn nhóm chiếm 15 ca chỉ vì dấu `\`, symlink và
-`renameTo` — đều là hạn chế của Windows, không phải lỗi logic.
+Tổng: 6 + 6 + 2 + 1 + 1 + 1 + 1 + 1 = **19**. Ba nguyên nhân thuần Windows chiếm **12/19** ca:
+dấu `\` (8 ca = 6 `DeviceScannerTest` + `ImporterTest` + `LibraryDocumentsTest`), symlink (2),
+`renameTo` (2). 7 ca còn lại là `RarTest` (6, thiếu `AppGraph`/thư viện native) và `DeathContextTest` (1).
+Con số 19 là số đo trên **một** máy Windows; máy đã bật Developer Mode có thể chỉ còn 17 (2 ca symlink
+chạy được), nên hãy đọc theo nhóm chứ đừng đối chiếu tuyệt đối.
 
 Cách kiểm lại nhanh trên máy Windows (đừng chạy cả bộ nếu chỉ cần biết lớp mình đụng):
 
@@ -251,7 +280,8 @@ nên "đỏ trên máy tôi" **không** phải bằng chứng PR hỏng.
 | Cần biết | Lệnh |
 |---|---|
 | Cổng đã chạy trên head | `gh api "repos/aowvn-10diem/aowvn-monika/commits/<sha40>/check-runs?per_page=100" --jq '.check_runs[] \| [.name, .conclusion] \| @tsv'` |
-| Ruleset đang bắt buộc gì | `gh api repos/aowvn-10diem/aowvn-monika/rulesets --jq '.[].name'` rồi xem `rules[].type` |
+| Ruleset + branch protection đang bắt buộc gì | `gh api repos/aowvn-10diem/aowvn-monika/rulesets --jq '.[].name'` rồi xem `rules[].type`; `gh api repos/aowvn-10diem/aowvn-monika/branches/main --jq '.protection'` |
+| Check có tệp workflow lẫn không có tệp | `gh pr checks <số> --json name,state` (thấy cả `submit-gradle`) |
 | Vì sao workflow không chạy | Đối chiếu `paths`/`paths-ignore` của workflow với danh sách tệp PR (`gh pr view <n> --json files`) |
 | Tệp nào khiến `gate` đợi CodeQL | `scripts/gate-expected.py:24-25` (tiền tố) — sửa bộ lọc workflow thì sửa cả tệp này (`docs/BAO-VE-MAIN.md:56`) |
 | Job đỏ của `repeated-tests` | `scripts/ci-compose-stability.sh:11` — task thật là `testGithubDebugUnitTest` |
