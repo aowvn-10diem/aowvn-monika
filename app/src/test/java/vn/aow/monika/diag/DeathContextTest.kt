@@ -72,6 +72,16 @@ class DeathContextTest {
         }
     }
 
+    /** Các loại không đi qua nhánh chết của Android (`java`, `killed`, …) phải nguyên vẹn, kể cả có phiên. */
+    @Test fun otherKindReportsAreNotRewrittenEvenWhenSessionExists() {
+        val session = Diagnostics.Session(7, 10, "libretro", "melondsds", system = "NDS", stage = "playing", stageAt = 20, lastAlive = 30)
+        for (kind in listOf("java", "killed", "op-fail", "handled", "user", "unknown")) {
+            val r = report(kind, session)
+            assertEquals(kind, r, Diagnostics.enrichDeathReport(r))
+            assertEquals("", r.core)
+        }
+    }
+
     /** Chỉ các loại do Android báo mới đọc ảnh chụp phiên; loại khác không đụng đĩa. */
     @Test fun onlyProcessExitKindsReadDeathSession() {
         for (kind in listOf("anr", "lowmem", "native", "resource", "initfail")) {

@@ -18,14 +18,18 @@ import java.io.File
 import vn.aow.monika.ui.TestApp
 
 /**
- * #302 + #638: chuỗi thật của một lần game Java chết vì dùng tài nguyên quá mức.
+ * #302: chuỗi đọc phiên của một lần chết do dùng tài nguyên quá mức.
  *
- * 1. Tiến trình `:midlet` mở phiên (`MidletDiagnostics.begin` → `Diagnostics.begin(kind="midlet", core="midlet")`)
- *    và app ghi ảnh chụp phiên `diag/sessions/<pid>.json` (cùng `Diagnostics.write`).
- * 2. Android ghi lại lần chết với `REASON_EXCESSIVE_RESOURCE_USAGE` và `processStateSummary` của phiên.
- * 3. Lần mở Monika kế tiếp, `Diagnostics.collectProcessDeaths` đọc lần chết đó. Trước bản sửa, nhánh
- *    `ApplicationExitInfo` chỉ đọc phiên cho `anr`/`lowmem` nên báo cáo `resource` mất lõi (`unknown`);
- *    sau bản sửa `native`/`resource`/`initfail` cũng đọc phiên nên có lõi `midlet`.
+ * Bối cảnh: `#638` (gắn phiên cho tiến trình `:midlet`) **đang mở**, chưa gộp. Test này **tự dựng**
+ * ảnh chụp phiên `diag/sessions/<pid>.json` đúng khuôn `Diagnostics.write` sẽ ghi khi có phiên — nó
+ * chứng minh **phần đọc phiên** của `collectProcessDeaths` hoạt động cho `native`/`resource`/`initfail`,
+ * **không** chứng minh tiến trình `:midlet` đã ghi phiên (việc đó thuộc #638).
+ *
+ * Chuỗi mô phỏng:
+ * 1. Có phiên (`kind="midlet"`, `core="midlet"`) + ảnh chụp `diag/sessions/<pid>.json` (PID khác PID test).
+ * 2. Android ghi lần chết `REASON_EXCESSIVE_RESOURCE_USAGE` kèm `processStateSummary` của thế hệ đó.
+ * 3. `Diagnostics.collectProcessDeaths` đọc lần chết: trước bản sửa chỉ `anr`/`lowmem` đọc phiên nên
+ *    báo cáo `resource` mất lõi; sau bản sửa thì có `core="midlet"`.
  *
  * Giả lập: `ApplicationExitInfo` không có API công khai để dựng, nên dùng `ShadowActivityManager`
  * của Robolectric. Bản 4.16.1 chỉ có `addApplicationExitInfo(processName, pid, reason, importance)`
@@ -90,7 +94,7 @@ class MidletDeathSessionTest {
         assertTrue(report.fromGame)
     }
 
-    @Test fun libretroSessionOnResourceExitStillReportsItsOwnCore() {
+    @Test fun nativeExitWithLibretroSnapshotStillReportsItsOwnCore() {
         val pid = 4343
         val diedAt = System.currentTimeMillis() - 5_000
         writeDeathSnapshot(pid, kind = "libretro", core = "melondsds", system = "NDS", diedAt = diedAt)

@@ -938,11 +938,14 @@ object Diagnostics {
     }
 
     /**
-     * Điền lõi/hệ/giai đoạn của lần chết từ phiên nếu có — cho **mọi loại** (phiên là nguồn duy nhất
-     * biết lõi; `native`/`resource` trước đây bị bỏ nên lõi rỗng dù phiên có sẵn). Riêng `lowmem`/`anr`
-     * giữ cách cũ: thiếu bằng chứng thì ghi rõ "unknown" thay vì để trống.
+     * Điền lõi/hệ/giai đoạn của lần chết từ phiên nếu có — **chỉ** cho các loại do Android báo
+     * (`readsDeathSession`: `anr`/`lowmem`/`native`/`resource`/`initfail`). `native`/`resource` trước đây
+     * bị bỏ nên lõi rỗng dù phiên có sẵn. Riêng `lowmem`/`anr` giữ cách cũ: thiếu bằng chứng thì ghi rõ
+     * "unknown" thay vì để trống. Mọi loại khác (`java`, `killed`, `op-fail`, `handled`, `user`…) trả
+     * nguyên báo cáo như trước.
      */
     internal fun enrichDeathReport(r: Report): Report {
+        if (!readsDeathSession(r.kind)) return r
         val sessionCore = r.session?.core?.takeIf { it.isNotBlank() }
         val sessionSystem = r.session?.system?.takeIf { it.isNotBlank() }
         val sessionStage = r.session?.stage?.takeIf { it.isNotBlank() }
