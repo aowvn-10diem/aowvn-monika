@@ -167,11 +167,12 @@ class RetroActivity : ComponentActivity() {
         }
         var startupText by mutableStateOf(startup.text())
         var slowStartup by mutableStateOf(false)
+        var halted by mutableStateOf(false) // đã dừng chủ động (thiếu tệp đĩa…) → không quay vòng chờ vô nghĩa
         var fallbackText by mutableStateOf<String?>(null)
         var fallbackAction: () -> Unit = {}
         val loading = ComposeView(this).apply {
             setContent { MonikaTheme {
-                RetroStartup(title, startupText, slowStartup, onCopy = {
+                RetroStartup(title, startupText, slowStartup, halted = halted, onCopy = {
                     val detail = "Lõi: $coreId\nROM: ${megabytes(File(gamePath).length())}\n" +
                         AppGraph.cores.info(coreId) + "\n" + startup.describe()
                     val text = Diagnostics.startupInfo(this@RetroActivity, detail)
@@ -293,13 +294,21 @@ class RetroActivity : ComponentActivity() {
         lifecycleScope.launch {
             // Bộ đĩa thiếu tệp (.cue/.m3u trỏ tới tệp không có) thì lõi chắc chắn không nạp được game → báo rõ
             // tên tệp còn thiếu rồi dừng, không nạp lõi. Không kiểm BIOS: các lõi đang dùng tự lo BIOS/firmware.
-            val discProblem = vn.aow.monika.library.DiscSet.problem(File(gamePath), discFolderLabel(gamePath))
-            if (discProblem != null) {
-                startup.finish()
-                startupText = discProblem
-                Diagnostics.stage(this@RetroActivity, "disc-set-incomplete")
-                Diagnostics.crumb(this@RetroActivity, "disc-set", discProblem)
-                return@launch
+            // Đọc tệp danh sách + dò tệp là I/O → chạy trên luồng IO, không chặn khung hình đầu.
+            val discSuspicion = withContext(Dispatchers.IO) {
+                vn.aow.monika.library.DiscSet.inspect(File(gamePath)) { discFolderLabel(gamePath) }
+            }
+            if (discSuspicion != null) {
+                Diagnostics.crumb(this@RetroActivity, "disc-set", "certain=${discSuspicion.certain}\n" + discSuspicion.message)
+                if (discSuspicion.certain) {
+                    startup.finish()
+                    halted = true
+                    startupText = discSuspicion.message
+                    fallbackText = "Quay lại"
+                    fallbackAction = { finish() }
+                    Diagnostics.stage(this@RetroActivity, "disc-set-incomplete")
+                    return@launch
+                }
             }
             // V112: tải/chuẩn bị lõi là bước mở game → lỗi thật để lại op-fail; mất mạng chỉ ghi vệt.
             val core = Diagnostics.opSuspend(this@RetroActivity, Diagnostics.Op.OPEN_GAME, expected = Diagnostics::isOffline) {
