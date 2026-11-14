@@ -158,6 +158,12 @@ void LibretroDroid::setControllerType(unsigned int port, unsigned int type) {
 bool LibretroDroid::unserializeState(int8_t *data, size_t size) {
     std::lock_guard<std::mutex> lock(coreLock);
 
+    // Aow Monika: UI còn nạp slot khi lõi đã destroy()/create() lỗi (core rỗng) hoặc file slot 0 byte — không gọi vào lõi.
+    if (!core || data == nullptr || size == 0) {
+        LOGE("Cannot unserialize state: core is empty or state data is empty");
+        return false;
+    }
+
     return core->retro_unserialize(data, size);
 }
 
@@ -185,9 +191,23 @@ JNIEXPORT jboolean JNICALL LibretroDroid::unserializeSRAM(int8_t* data, size_t s
 std::pair<int8_t*, size_t> LibretroDroid::serializeSRAM() {
     std::lock_guard<std::mutex> lock(coreLock);
 
+    // Aow Monika: lượt chụp SRAM lúc rời game (onPause) có thể tới khi lõi đã destroy() hoặc create() lỗi — core rỗng.
+    if (!core) {
+        LOGE("Cannot serialize SRAM: the core is not loaded");
+        return {nullptr, 0};
+    }
+
     size_t size = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+    auto* sramState = (int8_t*) core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+
+    // Aow Monika: lõi không dùng SAVE_RAM (hoặc đã unload) trả 0 byte / con trỏ rỗng — memcpy từ nullptr là lỗi.
+    if (size == 0 || sramState == nullptr) {
+        LOGE("Cannot serialize SRAM: the core exposes no save RAM");
+        return {nullptr, 0};
+    }
+
     auto* data = new int8_t[size];
-    memcpy(data, (int8_t*) core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM), size);
+    memcpy(data, sramState, size);
 
     return std::pair(data, size);
 }
@@ -661,7 +681,20 @@ void LibretroDroid::reset() {
 std::pair<int8_t*, size_t> LibretroDroid::serializeState() {
     std::lock_guard<std::mutex> lock(coreLock);
 
+    // Aow Monika: lưu slot có thể tới khi lõi đã destroy()/create() lỗi — không deref con trỏ rỗng.
+    if (!core) {
+        LOGE("Cannot serialize state: the core is not loaded");
+        return {nullptr, 0};
+    }
+
     size_t size = core->retro_serialize_size();
+
+    // Aow Monika: lõi báo state 0 byte (chưa nạp game hoặc sau unload) — gọi retro_serialize với size 0 là vô nghĩa.
+    if (size == 0) {
+        LOGE("Cannot serialize state: the core reports a zero-size state");
+        return {nullptr, 0};
+    }
+
     auto data = new int8_t[size];
 
     core->retro_serialize(data, size);
