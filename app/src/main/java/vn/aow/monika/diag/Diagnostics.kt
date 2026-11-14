@@ -849,6 +849,19 @@ object Diagnostics {
         if (trace.isNotBlank()) trace + "\n" + crumbs.joinToString("\n") else ""
 
     /**
+     * Các loại chết do Android báo (`ApplicationExitInfo`) có thể khớp ảnh chụp phiên của tiến trình
+     * đang chơi (`diag/sessions/<pid>.json`). Trước đây chỉ `anr`/`lowmem` đọc, nên `native`/`resource`
+     * mất lõi dù phiên có sẵn (xem `docs/loi/unknown-native-1311.md` mục 3.2(b)).
+     */
+    private val DEATH_SESSION_KINDS = setOf("anr", "lowmem", "native", "resource", "initfail")
+
+    /** Hai loại này giữ cách cũ: thiếu bằng chứng thì ghi rõ "unknown" thay vì để trống. */
+    private val EXPLICIT_UNKNOWN_KINDS = setOf("lowmem", "anr")
+
+    /** Có đọc ảnh chụp phiên cho loại chết này không. */
+    internal fun readsDeathSession(kind: String): Boolean = kind in DEATH_SESSION_KINDS
+
+    /**
      * Quét lý do chết của CHÍNH tiến trình chính (và ":midlet"/":crash") do Android ghi lại: native crash, ANR, hết RAM…
      * — những lần chết không có ngoại lệ Java để CrashReporter bắt. Gọi lúc mở app; chỉ tạo báo cáo cho lần chết mới.
      */
@@ -874,7 +887,7 @@ object Diagnostics {
             if (e.processName?.endsWith(":game") == true && File(reportsDir(c), "${e.timestamp}.json").exists()) continue
             val trace = scrub(c, traceStrings(e).joinToString("\n"))
             val crumbs = Breadcrumbs.read(c, e.pid)
-            val deathSession = if (kind == "anr" || kind == "lowmem") readDeathSession(c, e.pid, e.timestamp, e.processStateSummary) else null
+            val deathSession = if (readsDeathSession(kind)) readDeathSession(c, e.pid, e.timestamp, e.processStateSummary) else null
             // V202: bỏ ca Android dọn tiến trình nền bình thường; vẫn dọn trạng thái để không quét lại.
             if (kind == "lowmem" && !shouldReportLowMem(e.importance, e.processName, deathSession != null)) {
                 Breadcrumbs.drop(c, e.pid)
@@ -924,12 +937,31 @@ object Diagnostics {
         if (summary != null && summary.contentEquals(deathProcessSummary(snapshot.generation))) f.delete()
     }
 
+    /**
+     * Điền lõi/hệ/giai đoạn của lần chết từ phiên nếu có — **chỉ** cho các loại do Android báo
+     * (`readsDeathSession`: `anr`/`lowmem`/`native`/`resource`/`initfail`). `native`/`resource` trước đây
+     * bị bỏ nên lõi rỗng dù phiên có sẵn. Riêng `lowmem`/`anr` giữ cách cũ: thiếu bằng chứng thì ghi rõ
+     * "unknown" thay vì để trống. Mọi loại khác (`java`, `killed`, `op-fail`, `handled`, `user`…) trả
+     * nguyên báo cáo như trước.
+     */
     internal fun enrichDeathReport(r: Report): Report {
-        if (r.kind != "lowmem" && r.kind != "anr") return r
+        if (!readsDeathSession(r.kind)) return r
+        val sessionCore = r.session?.core?.takeIf { it.isNotBlank() }
+        val sessionSystem = r.session?.system?.takeIf { it.isNotBlank() }
+        val sessionStage = r.session?.stage?.takeIf { it.isNotBlank() }
+        if (r.kind !in EXPLICIT_UNKNOWN_KINDS) {
+            // Không tự thêm "unknown": loại khác giữ nguyên ô trống khi không có phiên (như trước).
+            if (sessionCore == null && sessionSystem == null && sessionStage == null) return r
+            return r.copy(
+                core = sessionCore ?: r.core,
+                system = sessionSystem ?: r.system,
+                stage = sessionStage ?: r.stage,
+            )
+        }
         return r.copy(
-            core = r.session?.core?.takeIf { it.isNotBlank() } ?: r.core.ifBlank { "unknown" },
-            system = r.session?.system?.takeIf { it.isNotBlank() } ?: r.system.ifBlank { "unknown" },
-            stage = r.session?.stage?.takeIf { it.isNotBlank() } ?: r.stage.ifBlank { "unknown" },
+            core = sessionCore ?: r.core.ifBlank { "unknown" },
+            system = sessionSystem ?: r.system.ifBlank { "unknown" },
+            stage = sessionStage ?: r.stage.ifBlank { "unknown" },
         )
     }
 
