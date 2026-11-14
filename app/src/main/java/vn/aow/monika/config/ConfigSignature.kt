@@ -32,19 +32,27 @@ object ConfigSignature {
     /**
      * true khi bản đang chạy **phải** có chữ ký hợp lệ.
      *
-     * Dùng [Diagnostics.certSha256] + [OfficialCert.isForeignBuild] (không có hàm `isOfficialBuild`):
-     * bản debug hoặc chứng thư lạ (tự build GPLv3) trả false để người chơi tự build vẫn dùng được.
+     * Dùng [OfficialCert.isForeignBuild] (không có hàm `isOfficialBuild`): bản debug hoặc chứng thư lạ
+     * (tự build GPLv3) trả false để người chơi tự build vẫn dùng được.
+     *
+     * Bản thuần (không đụng Android) để test được cả nhánh fail-closed: truyền chứng thư + cờ debug
+     * trực tiếp thay vì đọc từ máy đang chạy.
      */
+    fun signatureRequired(
+        certSha256: String,
+        publicKeyHex: String = OFFICIAL_CONFIG_ED25519_PUBKEY_HEX,
+        debugBuild: Boolean = BuildConfig.DEBUG,
+    ): Boolean {
+        if (!hasPublicKey(publicKeyHex)) return false
+        if (debugBuild) return false
+        return !OfficialCert.isForeignBuild(certSha256, SecurityConfig.OFFICIAL_CERT_SHA256, debugBuild = false)
+    }
+
+    /** Bản tiện dụng cho mã thật: lấy chứng thư của APK đang chạy. */
     fun signatureRequired(
         context: Context,
         publicKeyHex: String = OFFICIAL_CONFIG_ED25519_PUBKEY_HEX,
-    ): Boolean {
-        if (!hasPublicKey(publicKeyHex)) return false
-        if (BuildConfig.DEBUG) return false
-        val cert = Diagnostics.certSha256(context)
-        val foreign = OfficialCert.isForeignBuild(cert, SecurityConfig.OFFICIAL_CERT_SHA256, debugBuild = false)
-        return !foreign
-    }
+    ): Boolean = signatureRequired(Diagnostics.certSha256(context), publicKeyHex, BuildConfig.DEBUG)
 
     /**
      * Tách + xác thực tệp đã ký; trả về nguyên văn JSON khi chữ ký đúng, null khi sai/không đúng định dạng.

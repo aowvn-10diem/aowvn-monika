@@ -22,6 +22,8 @@ import org.robolectric.annotation.Config
 import vn.aow.monika.config.ConfigEndpoints
 import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.config.ConfigSignature
+import vn.aow.monika.config.SecurityConfig
+import vn.aow.monika.diag.Breadcrumbs
 import vn.aow.monika.diag.Diagnostics
 import vn.aow.monika.ui.TestApp
 import java.io.File
@@ -63,6 +65,7 @@ class ConfigSignatureTest {
             cache,
             File(cache.path + ".new"),
             File(cache.path + ".bak"),
+            File(app.filesDir, ConfigRepository.VERIFIED_MARKER),
             File(app.filesDir, "config.checked"),
             File(app.filesDir, "diag"),
         ).forEach { it.deleteRecursively() }
@@ -77,7 +80,11 @@ class ConfigSignatureTest {
         return "v1:" + hex(signer.generateSignature()) + "\n" + String(payload, Charsets.UTF_8)
     }
 
-    private fun repo(publicKeyHex: String, routes: Map<String, String?>): ConfigRepository =
+    private fun repo(
+        publicKeyHex: String,
+        routes: Map<String, String?>,
+        batBuocChuKy: Boolean? = null,
+    ): ConfigRepository =
         ConfigRepository(
             app,
             OkHttpClient.Builder().addInterceptor { chain ->
@@ -94,6 +101,10 @@ class ConfigSignatureTest {
                     .build()
             }.build(),
             publicKeyHex,
+            // null = chính sách thật (bản debug ⇒ không bắt buộc); true/false = giả lập bản chính thức/tự build.
+            { c, key ->
+                batBuocChuKy ?: ConfigSignature.signatureRequired(c, key)
+            },
         )
 
     private fun config(version: Int, marker: String = "") =
@@ -186,6 +197,106 @@ class ConfigSignatureTest {
             listOf(ConfigEndpoints.PAGES_SIGNED_CONFIG_URL, ConfigEndpoints.PAGES_CONFIG_URL),
             requests,
         )
+        assertTrue(
+            "bản debug: phải ghi vệt cảnh báo khi bỏ bản đã ký",
+            crumbs().any { it.contains("dùng bản chưa ký") },
+        )
+    }
+
+    /** Vệt breadcrumbs của tiến trình test hiện tại (dùng để khẳng định có ghi nhận, không im lặng). */
+    private fun crumbs(): List<String> = Breadcrumbs.read(app, android.os.Process.myPid())
+
+    @Test fun chinhSachBatBuocChiKhiCoKhoaVaBanChinhThuc() {
+        val official = SecurityConfig.OFFICIAL_CERT_SHA256
+        assertTrue(
+            "chính thức + có khoá ⇒ bắt buộc",
+            ConfigSignature.signatureRequired(official, publicKeyHex, debugBuild = false),
+        )
+        assertFalse(
+            "chưa có khoá công khai ⇒ không bắt buộc",
+            ConfigSignature.signatureRequired(official, "", debugBuild = false),
+        )
+        assertFalse(
+            "bản debug ⇒ không bắt buộc",
+            ConfigSignature.signatureRequired(official, publicKeyHex, debugBuild = true),
+        )
+        assertFalse(
+            "chứng thư lạ (tự build GPLv3) ⇒ không bắt buộc",
+            ConfigSignature.signatureRequired("00".repeat(32), publicKeyHex, debugBuild = false),
+        )
+    }
+
+    @Test fun chuKySaiOMBanChinhThucThiBaoLoiKhongTaiBanChuaKy() = runBlocking {
+        val repository = repo(
+            publicKeyHex,
+            mapOf(
+                ConfigEndpoints.PAGES_CONFIG_URL to config(bundled + 6, "chua-ky"),
+                ConfigEndpoints.PAGES_SIGNED_CONFIG_URL to sign(config(bundled + 6, "bi-sua").toByteArray())
+                    .replace("\"bi-sua\"", "\"bi-sua!\""),
+            ),
+            batBuocChuKy = true,
+        )
+        assertTrue("bản chính thức: chữ ký sai phải hỏng", repository.refresh(true).isFailure)
+        assertEquals("không được áp bản chưa ký", bundled, repository.current.configVersion)
+        assertTrue(
+            "không được tải config.json chưa ký: $requests",
+            requests.none { it == ConfigEndpoints.PAGES_CONFIG_URL },
+        )
+        assertFalse("cache không được ghi", cache.exists())
+        assertTrue(
+            "phải ghi vệt từ chối",
+            crumbs().any { it.contains("từ chối bản chưa ký") },
+        )
+    }
+
+    @Test fun chuKyDungOMBanChinhThucThiNhanVaCacheDocLaiDuoc() = runBlocking {
+        val version = bundled + 8
+        val repository = repo(
+            publicKeyHex,
+            mapOf(
+                ConfigEndpoints.PAGES_CONFIG_URL to config(bundled + 9, "khong-duoc-goi"),
+                ConfigEndpoints.PAGES_SIGNED_CONFIG_URL to sign(config(version, "da-ky").toByteArray()),
+            ),
+            batBuocChuKy = true,
+        )
+        assertTrue(repository.refresh(true).isSuccess)
+        assertEquals(version, repository.current.configVersion)
+        assertEquals(listOf(ConfigEndpoints.PAGES_SIGNED_CONFIG_URL), requests)
+
+        // Phiên sau: cache trên đĩa có dấu xác nhận ⇒ dùng lại được, không cần mạng.
+        requests.clear()
+        val after = repo(publicKeyHex, emptyMap(), batBuocChuKy = true)
+        assertEquals("cache có dấu phải đọc lại được", version, after.current.configVersion)
+        assertTrue("không gọi mạng khi đọc cache: $requests", requests.isEmpty())
+    }
+
+    @Test fun cacheCuKhongCoDauXacNhanThiBoQuaKhiDaCoKhoa() {
+        cache.writeText(config(bundled + 7, "cache-cu"))
+        assertEquals(
+            "cache không dấu bị bỏ, dùng bản trong APK",
+            bundled,
+            repo(publicKeyHex, emptyMap(), batBuocChuKy = true).current.configVersion,
+        )
+
+        // Chưa có khoá công khai: giữ nguyên hành vi trước V206 (vẫn dùng cache).
+        assertEquals(
+            bundled + 7,
+            repo("", emptyMap()).current.configVersion,
+        )
+    }
+
+    @Test fun chuKyDungNhungHaConfigVersionThiTuChoi() = runBlocking {
+        val lower = bundled - 1
+        val repository = repo(
+            publicKeyHex,
+            mapOf(
+                ConfigEndpoints.PAGES_CONFIG_URL to config(lower, "ha-cap"),
+                ConfigEndpoints.PAGES_SIGNED_CONFIG_URL to sign(config(lower, "ha-cap").toByteArray()),
+            ),
+            batBuocChuKy = true,
+        )
+        assertTrue("hạ configVersion phải bị từ chối", repository.refresh(true).isFailure)
+        assertEquals("giữ bản đang chạy", bundled, repository.current.configVersion)
     }
 
     @Test fun thieuConfigSignedThiFallbackBanThuong() = runBlocking {
