@@ -669,6 +669,8 @@ class RetroActivity : ComponentActivity() {
         clock?.resume()
         inputDevices.registerInputDeviceListener(deviceListener, null)
         syncPadDevices() // V162: mở game khi tay cầm đã cắm sẵn → ẩn phím ảo ngay
+        // L1 (lowmem/killed): trở lại từ nền thì phiên lại là "đang chơi", không phải "đang ở nền".
+        if (firstFrame) Diagnostics.stage(this, "playing")
     }
 
     override fun onPause() {
@@ -676,6 +678,9 @@ class RetroActivity : ComponentActivity() {
         releasePad()
         clock?.pause()
         saveSram()
+        // L1 (lowmem/killed): ghi lại đang ở nền để báo cáo bị hệ thống tắt về sau không bị ghi là "đang chơi"
+        // (Android hay thu hồi tiến trình nặng khi người chơi đã chuyển sang app khác).
+        if (firstFrame) Diagnostics.stage(this, "paused")
         super.onPause()
     }
 

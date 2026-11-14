@@ -258,9 +258,19 @@ object Diagnostics {
         return r
     }
 
+    /**
+     * Nhãn giai đoạn trong tiêu đề báo cáo. `paused` = app bị hệ thống tắt lúc đang ở nền
+     * (người chơi đã chuyển sang app khác), khác với "đang chơi" — để tách nhóm `killed`/`lowmem`.
+     */
+    internal fun phaseLabel(stage: String): String = when (stage) {
+        "first-frame", "playing" -> "khi đang chơi"
+        "paused" -> "khi đang ở nền"
+        else -> "lúc đang khởi động"
+    }
+
     private fun title(kind: String, s: Session): String {
         val what = "${s.game.ifBlank { "game" }} (${s.system.ifBlank { s.kind }}, lõi ${s.core.ifBlank { "?" }})"
-        val phase = if (s.stage == "first-frame" || s.stage == "playing") "khi đang chơi" else "lúc đang khởi động"
+        val phase = phaseLabel(s.stage)
         return when (kind) {
             "native" -> "Lõi giả lập bị sập $phase — $what"
             "java" -> "Lỗi chương trình $phase — $what"

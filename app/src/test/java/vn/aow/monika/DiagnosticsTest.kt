@@ -46,6 +46,21 @@ class DiagnosticsTest {
         assertNull(Diagnostics.collect(app))
     }
 
+    @Test fun deadSessionInBackgroundSaysOnBackground() {
+        fakeDeadSession("paused")
+        val r = Diagnostics.collect(app)
+        assertNotNull(r)
+        assertTrue("bị tắt khi đã chuyển sang app khác phải nói rõ", r!!.title.contains("ở nền"))
+        assertTrue(r.title.contains("Pokemon.nds"))
+    }
+
+    @Test fun phaseLabelDistinguishesPlayingPausedAndLoading() {
+        assertEquals("khi đang chơi", Diagnostics.phaseLabel("first-frame"))
+        assertEquals("khi đang chơi", Diagnostics.phaseLabel("playing"))
+        assertEquals("khi đang ở nền", Diagnostics.phaseLabel("paused"))
+        assertEquals("lúc đang khởi động", Diagnostics.phaseLabel("loading-game"))
+    }
+
     @Test fun crashWhileLoadingIsSaidSo() {
         fakeDeadSession("loading-game")
         assertTrue(Diagnostics.collect(app)!!.title.contains("khởi động"))
