@@ -1,5 +1,7 @@
 # Nhóm `unknown / op-fail`: hiện trạng và nghi phạm
 
+Số dòng dẫn chiếu cập nhật theo `main` `f75b2e6d`.
+
 Ngày 13/11/2026 · nhánh `loi/op-fail` · nền `main` `c3a8a9c4`
 Nguồn: `gh issue list --label crash-moi --state open` (75 issue) + `docs/CRASH-ISSUE-BOT.md` + thân/ bình luận issue.
 
@@ -39,7 +41,7 @@ Tổng 36 lượt còn mở nghĩa là nhóm **không còn sinh hàng loạt**; 
 | 1 | Di sản `op:tai-feed` | `app/src/main/java/vn/aow/monika/feed/FeedRepository.kt:159-160`, phân loại 4xx ở `:169-172` | #603 (gộp 11/11) đã đổi: 4xx và bài bị gỡ chỉ ghi vệt, chỉ 5xx mới báo, mỗi đường đọc có `bước` riêng | Nếu lượt còn tăng trên bản ≥ 0.8.13 thì là **5xx thật**; đọc `bước` (`tai-danh-sach`/`tai-bai`/`tai-chi-muc`/`tai-trang`) + `mã lỗi` HTTP. [CHƯA KIỂM] |
 | 2 | `op:va-rom` báo lỗi chọn nhầm | `app/src/main/java/vn/aow/monika/patch/PatchFlow.kt:25,30,34,59` | ROM quá lớn, không mở được bản vá, sai định dạng, sai ROM/bản vá cụt (= `PatchException` của `RomPatcher`) đều gọi `opFail` trực tiếp, không có `expected` như `Importer` (`Importer.kt:36-37`) → mỗi lần người chơi chọn nhầm thành 1 báo cáo `op:va-rom` | Đã sửa trong nhánh này (mục 4). Kiểm lại #614 sau bản có bản sửa. |
 | 3 | `op:cai-goi-engine` báo **hai lần** cho một lỗi | `app/src/main/java/vn/aow/monika/pack/PackManager.kt:173` và `app/src/{github,play}/java/vn/aow/monika/runner/EnginePrepActivity.kt:145,142` | Hai nơi cùng gọi `opFail` cho cùng một lần cài gói, `bước` khác nhau (`pack:<id>` vs `pack:<id> (sau N lần thử)`) nên khoá chống spam khác nhau → 2 báo cáo cho 1 sự cố | Đọc báo cáo: hai `op:cai-goi-engine` cùng `đối tượng` trong vài phút ⇒ xác nhận. [CHƯA KIỂM] |
-| 4 | `op:mo-game` | `app/src/main/java/vn/aow/monika/runner/RetroActivity.kt:295`, `app/src/main/java/vn/aow/monika/azahar/AzaharActivity.kt:193` | Chỉ khai báo `expected = isOffline`; lỗi nạp native/gói engine thành báo cáo (đúng), nhưng lỗi do ROM hỗ trợ kém cũng vào đây | Đọc `bước` trong detail; nếu là `nap-native`/`giai-nen-loi` thì là lỗi thật cần theo. |
+| 4 | `op:mo-game` | `app/src/main/java/vn/aow/monika/runner/RetroActivity.kt:295`, `app/src/main/java/vn/aow/monika/azahar/AzaharActivity.kt:206` | Chỉ khai báo `expected = isOffline`; lỗi nạp native/gói engine thành báo cáo (đúng), nhưng lỗi do ROM hỗ trợ kém cũng vào đây | Đọc `bước` trong detail; nếu là `nap-native`/`giai-nen-loi` thì là lỗi thật cần theo. |
 | 5 | Tên `op:` nằm ngoài `Op` | `app/src/play/java/vn/aow/monika/play/PlayLinks.kt:19,28`, `app/src/play/java/vn/aow/monika/ui/MainActivity.kt:74`, `app/src/play/java/vn/aow/monika/MonikaApp.kt:22` | Dùng chuỗi rời `"mo-lien-ket"`, `"chia-se-hoi-nhom"`, `"doc-bao-loi"`, `"doc-thu-vien"` → không có trong `Op`, không được `DiagnosticsOpTest` phủ, và mỗi tên mới tự sinh một nhóm đơn lẻ | `grep "Thành phần: op:"` trên báo cáo; nếu thấy 4 tên này thì đúng là chúng. Chỉ ảnh hưởng flavor `play`. |
 
 `#393` (20 lượt, +7) chưa quy được nghi phạm nào: issue không có `Thành phần`, và phiên này **không có `CRASH_ADMIN_TOKEN`** nên không đọc được `frames`/`detail`. Cần một lượt có token: `scripts/crash-reports.sh` cho từng báo cáo của chữ ký `5de0a80e6cb8…`, đọc `thao tác`/`bước`/`mã lỗi` rồi đối chiếu bảng trên. [CHƯA KIỂM]

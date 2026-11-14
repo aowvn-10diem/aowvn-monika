@@ -1,5 +1,7 @@
 # Nhóm `citra / native` — chẩn đoán (13/11/2026)
 
+Số dòng dẫn chiếu cập nhật theo `main` `f75b2e6d`.
+
 Phạm vi: các issue `crash-moi` đang mở có **lõi `citra` + loại `native`**, tức lõi 3DS chạy qua **`:libretrodroid`**, không phải engine Azahar.
 Người lập: phiên **Lỗi 2**. Lượt này **chỉ chẩn đoán, không sửa mã**. Mọi kết luận chưa có khung đã giải mã đều ghi **[CHƯA KIỂM]**.
 
@@ -46,7 +48,7 @@ Giới hạn: thân issue chỉ có **hash chữ ký**, không có khung, build_
 - `ppsspp` đã hạ (`ppsspp_vertex_cache = disabled`, `perf.lite`), `citra` **không** có `options`/`perf` ⇒ chạy mặc định của lõi. Cùng lớp rủi ro driver GPU (SIGSEGV trong `libcitra_libretro_android.so`, 3 khung đầu nằm trong thư viện) mà #601 đang xử lý cho ppsspp/desmume. **[CHƯA KIỂM]**
 
 ### (5) Nhãn thành phần gộp nhầm `engine:azahar` — **lỗi rõ ràng, đề xuất PR riêng**
-- `app/src/main/java/vn/aow/monika/diag/Components.kt:20` khớp `has(t, "azahar", "citra")` **trước** luật libretro ở `:27`, và `Components.kt:37` so khớp chuỗi con.
+- `app/src/main/java/vn/aow/monika/diag/Components.kt:25-26` khớp nhánh Azahar **trước** luật libretro ở `:33`, và `has` (`:47`) so khớp chuỗi con. **Dẫn chiếu cũ, nội dung đã đổi từ `f75b2e6d`**: bản đọc khi viết là `:20` / `:27` / `:37`; nay nhánh Azahar có thêm chốt `!libretro` và không còn khoá `"citra"` trong `has(...)`.
 - Vệt phiên của lõi libretro có chuỗi `citra` (`begin: libretro · citra · Nintendo 3DS`, tên tệp `citra_libretro_android.so`), nên **mọi** crash của lõi citra libretro bị gắn `engine:azahar` — thấy đúng như vậy ở #610 (`Thành phần: engine:azahar`, lõi `citra`).
 - Hệ quả: nhóm `native` này **có thể bị đếm thiếu**, và ngược lại báo cáo của engine Azahar có thể bị lẫn. `ComponentsTest` hiện **không** có ca nào cho `citra`/`azahar`/`libretro` (chỉ renpy/rgss/kirikiri/pack).
 - Đề xuất (ngoài lượt này): đưa luật `session?.kind == "libretro"` lên trước, hoặc chỉ khớp `"azahar"` khi `session?.kind != "libretro"`, kèm 2 ca test (`begin: libretro · citra …` → `engine:libretro:citra`; vệt Azahar → `engine:azahar`).

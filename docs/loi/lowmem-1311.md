@@ -1,5 +1,7 @@
 # Nhóm `unknown / lowmem`: dữ liệu cũ hay vẫn tăng?
 
+Số dòng dẫn chiếu cập nhật theo `main` `f75b2e6d`.
+
 Ngày 13/11/2026 · nhánh `loi/lowmem-1311` · nền `main` `c3a8a9c4`
 
 ## 1. Kết luận ngắn
@@ -30,13 +32,13 @@ Cơ chế (đọc mã, không suy đoán):
 
 ### 2.2 Lượt mới là báo cáo mới, không phải báo lại bản cũ
 
-- `Diagnostics.collectProcessDeaths` chỉ lấy `ApplicationExitInfo` **mới hơn** mốc `diag/last-scan.txt` (`app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:836,842`) và ghi mốc mới sau khi quét (`:882`) ⇒ không phát lại lần chết cũ mỗi lần mở app.
-- Từ V194: gộp theo `fingerprint`, mỗi báo cáo đúng 1 lần ghi KV (`45d756c1`, `51bc9005`); gửi lowmem tối đa **1 lần mỗi phiên** cho mỗi fingerprint (`Diagnostics.kt:634-639`, `SEND_DEDUPE_MS` cho loại khác ở `:667`).
-- Từ V202 (#569, `640a96c6`): chỉ báo `lowmem` khi tiến trình còn quan trọng hoặc có phiên chết khớp (`Diagnostics.kt:817-821`, dùng ở `:858`), nên việc Android dọn tiến trình nền bình thường không còn sinh báo cáo.
+- `Diagnostics.collectProcessDeaths` chỉ lấy `ApplicationExitInfo` **mới hơn** mốc `diag/last-scan.txt` (`app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:847,853`) và ghi mốc mới sau khi quét (`:893`) ⇒ không phát lại lần chết cũ mỗi lần mở app.
+- Từ V194: gộp theo `fingerprint`, mỗi báo cáo đúng 1 lần ghi KV (`45d756c1`, `51bc9005`); gửi lowmem tối đa **1 lần mỗi phiên** cho mỗi fingerprint (`Diagnostics.kt:645-650`, `SEND_DEDUPE_MS` cho loại khác ở `:678`).
+- Từ V202 (#569, `640a96c6`): chỉ báo `lowmem` khi tiến trình còn quan trọng hoặc có phiên chết khớp (`Diagnostics.kt:828-832`, dùng ở `:869`), nên việc Android dọn tiến trình nền bình thường không còn sinh báo cáo.
 
 ### 2.3 Không gộp `killed` vào `lowmem`
 
-`ApplicationExitInfo.REASON_LOW_MEMORY → "lowmem"` (`Diagnostics.kt:236,847`); `killed` là `kind` riêng do phiên game tự báo. Chữ ký bot băm `lõi + loại + ≤3 frame` (`crash-issue-bot.py:71`) nên hai loại không thể lẫn.
+`ApplicationExitInfo.REASON_LOW_MEMORY → "lowmem"` (`Diagnostics.kt:236,858`); `killed` là `kind` riêng do phiên game tự báo. Chữ ký bot băm `lõi + loại + ≤3 frame` (`crash-issue-bot.py:71`) nên hai loại không thể lẫn.
 
 ## 3. Phần chưa kiểm được
 

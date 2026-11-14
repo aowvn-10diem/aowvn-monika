@@ -1,5 +1,7 @@
 # `op-fail` còn lại: 16 issue, op nào báo sai, op nào báo thiếu
 
+Số dòng dẫn chiếu cập nhật theo `main` `f75b2e6d`.
+
 Ngày 13/11/2026 · nhánh `deepseek5/op-fail-triage` · nền `main` `f24ece45` (`c3a8a9c4` là tổ tiên; 5 commit docs/CI xen giữa)
 Nguồn: 75 issue mở nhãn `crash-moi` (GitHub API, 13/11), lọc tiêu đề `op-fail`; thân issue; mã tại `origin/main`; PR #603, #618.
 
@@ -37,12 +39,12 @@ Tổng 36 lượt. Ba issue có lõi thật (`gambatte`, `mgba`, `desmume`) ch�
 ## 3. Vì sao 14 issue không có `Thành phần`
 
 - Bot ghi dòng `Thành phần` từ `report.component` (`scripts/crash-issue-bot.py:35-36,77-79,126-131`); Worker lưu và trả `component` (`cloudflare/crash-worker/worker.js:502-503,563,823`). Không có dòng đó ⇒ **mọi báo cáo trong nhóm có `component` rỗng**.
-- `opFail` luôn đặt `component = "op:$name"` (`app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:485`). Vì sao báo cáo op-fail lại rỗng: **chưa biết** — khả năng là báo cáo do bản app cũ gửi trước khi trường này được lưu, hoặc hàng cũ trong Worker. **[CHƯA KIỂM]** (không có `CRASH_ADMIN_TOKEN` để đọc `/reports/<id>`).
-- Hệ quả cho triage: 14 issue chỉ quy được op **sau khi** đọc `detail` của báo cáo (`thao tác`, `bước`, `mã lỗi`). Đừng suy op chỉ từ tên lõi: `op-fail` mang `session` của phiên app lúc báo (`Diagnostics.kt:40-47,482`), nên lõi `gambatte`/`mgba`/`desmume` chỉ nói báo cáo phát sinh trong phiên game, không nói op nào.
+- `opFail` luôn đặt `component = "op:$name"` (`app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:496`). Vì sao báo cáo op-fail lại rỗng: **chưa biết** — khả năng là báo cáo do bản app cũ gửi trước khi trường này được lưu, hoặc hàng cũ trong Worker. **[CHƯA KIỂM]** (không có `CRASH_ADMIN_TOKEN` để đọc `/reports/<id>`).
+- Hệ quả cho triage: 14 issue chỉ quy được op **sau khi** đọc `detail` của báo cáo (`thao tác`, `bước`, `mã lỗi`). Đừng suy op chỉ từ tên lõi: `op-fail` mang `session` của phiên app lúc báo (`Diagnostics.kt:40-47,493`), nên lõi `gambatte`/`mgba`/`desmume` chỉ nói báo cáo phát sinh trong phiên game, không nói op nào.
 
 ## 4. Điểm phát báo của từng op
 
-Tên op nằm ở `Diagnostics.Op` (`Diagnostics.kt:403-411`); `op`/`opSuspend` lọc `expected` (`:435`, `:442`), `opFail` **không có** tham số `expected` trên main (`:454`).
+Tên op nằm ở `Diagnostics.Op` (`Diagnostics.kt:403-411`); `op`/`opSuspend` lọc `expected` (`:435`, `:442`), `opFail` **không có** tham số `expected` trên main (`:454` — **dẫn chiếu cũ, nội dung đã đổi từ `f75b2e6d`**: trên main hiện tại `opFail` đã nhận `expected` ở `:458`).
 
 | `op:` | Điểm phát (`tệp:dòng`) | `expected` hiện có | Đánh giá |
 |---|---|---|---|
@@ -62,7 +64,7 @@ Tên op nằm ở `Diagnostics.Op` (`Diagnostics.kt:403-411`); `op`/`opSuspend` 
 1. **`va-rom` — chọn nhầm ROM/bản vá (chắc chắn).** `PatchFlow.kt:17` ROM quá lớn, `:22` không mở được bản vá, `:26` sai định dạng, `:50` `PatchException` (ROM/bản vá cụt, sai cặp). Cả 4 gọi `opFail` trực tiếp; người chơi chỉ cần chọn nhầm là có báo cáo. #614 (12/11) nhiều khả năng là một trong 4 nhánh — **[CHƯA KIỂM]** vì không đọc được `bước`.
 2. **`tai-xuong` — 4xx và URL hỏng.** `BrowserDownloads.kt:145` ném `IOException("Máy chủ trả lỗi ${r.code}")` cho **mọi** mã không 2xx, rồi `:184` gọi `opFail`; link chết 404/403 (host xoá file, link hết hạn) thành “thao tác lỗi”. `IllegalArgumentException` do URL sai cũng vào đây. #608 (1 lượt) có thể thuộc nhóm này — **[CHƯA KIỂM]**.
 3. **`tai-cau-hinh` — 4xx chỉ khi cả hai nguồn lỗi.** `ConfigRepository.kt:78-89` thử Pages trước (`tai-pages`, `:76`), chỉ chuyển Worker (`tai-worker`, `:85`) khi Pages lỗi; `fetchText` ném ở `:107` (`check(response.isSuccessful)`). Vì vậy 4xx chỉ thành `op-fail` khi **cả Pages lẫn Worker** đều lỗi; `opSuspend` chỉ bỏ qua lỗi mạng. Ngưỡng 6 giờ chỉ áp khi lần trước **thành công**: `checkedFile` chỉ được ghi ở nhánh thành công (`:95`), nên sau một lần lỗi, mỗi lần mở app là thử lại **ngay** (chỉ `opFail` chặn trùng trong 10 phút, `Diagnostics.kt:415`).
-4. **`cai-goi-engine` — 4xx + hai đường cùng báo.** `PackManager.kt:173` báo ở lần thử cuối với bước `pack:<id> (sau N lần thử)`; `EnginePrepActivity` (github:145 / play:142) báo ngay với bước `pack:<id>`. Khoá chống spam gồm cả `bước` (`Diagnostics.kt:461`), nên cùng một sự cố có thể thành **2 báo cáo**. Ngoài ra 4xx khi tải gói (link cũ) vẫn báo.
+4. **`cai-goi-engine` — 4xx + hai đường cùng báo.** `PackManager.kt:173` báo ở lần thử cuối với bước `pack:<id> (sau N lần thử)`; `EnginePrepActivity` (github:145 / play:142) báo ngay với bước `pack:<id>`. Khoá chống spam gồm cả `bước` (`Diagnostics.kt:472`), nên cùng một sự cố có thể thành **2 báo cáo**. Ngoài ra 4xx khi tải gói (link cũ) vẫn báo.
 5. **`mo-game` — lỗi máy/ABI.** `AzaharActivity.kt:206` chỉ khai báo `isOffline`; `UnsatisfiedLinkError` khi native không khớp máy/ABI vào thẳng `op-fail`. Tương tự, `RetroActivity.kt:295` báo 404 lõi (config trỏ link cũ) thành “người dùng mở game lỗi”. Có ích để theo dõi, nhưng **không phải thao tác người dùng**.
 6. **`giai-nen` — file người dùng hỏng (cân nhắc).** `Importer.kt:33-38` đã bỏ qua “cần mật khẩu” và “cần gói 7-Zip”, nhưng `IOException("File nén không hợp lệ…")`/`ZipException` do file hỏng vẫn báo. Đây là nhiễu hợp lý nếu muốn biết codec hỏng; nếu không, hạ thành vệt.
 7. **Tên op play ngoài `Op`.** `PlayLinks.kt:19,28` và `MainActivity.kt` play:74 dùng chuỗi rời `"mo-lien-ket"`, `"chia-se-hoi-nhom"`, `"doc-bao-loi"` ⇒ không được `DiagnosticsOpTest` phủ, mỗi tên tự sinh nhóm riêng; `ActivityNotFoundException` (máy không có trình duyệt/app nhận) bị báo thành lỗi app. `doc-bao-loi` còn là việc nội bộ (đọc/gửi báo cáo), không phải thao tác người dùng.
