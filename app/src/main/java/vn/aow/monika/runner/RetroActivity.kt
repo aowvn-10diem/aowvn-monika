@@ -305,7 +305,10 @@ class RetroActivity : ComponentActivity() {
             Diagnostics.stage(this@RetroActivity, "core-ready")
             // citra không khai `systemFiles` nên app không tải hộ `shared_font.bin`; lõi vẫn nạp game
             // (tự tạo thư mục `sysdata` rỗng) → KHÔNG chặn, chỉ để lại một vệt đọc được khi lập báo cáo.
-            CoreSystemFiles.crumb(coreId, filesDir, AppGraph.cores.systemDir(), sramFile.parentFile)
+            // Chỉ báo khi lõi thật sự đặt user dir vào thư mục save; "Citra Default" thì app không biết chỗ → bỏ qua.
+            val citraSavePath = CoreOptions.saved(this@RetroActivity, coreId)["citra_use_libretro_save_path"]
+                ?: AppGraph.config.current.cores[coreId]?.options?.get("citra_use_libretro_save_path")
+            CoreSystemFiles.crumb(coreId, filesDir, AppGraph.cores.systemDir(), sramFile.parentFile, citraSavePath)
                 ?.let { Diagnostics.crumb(this@RetroActivity, "core-sysdata", it) }
             updateStartup("game-prepare", "Đang chuẩn bị ROM: ${megabytes(File(gamePath).length())}")
             val data = GLRetroViewData(this@RetroActivity).apply {

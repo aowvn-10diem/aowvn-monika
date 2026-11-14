@@ -16,8 +16,11 @@ class CoreSystemFilesTest {
         val filesDir = tmp.newFolder()
         val systemDir = File(filesDir, "system").apply { mkdirs() }
         val saveDir = saveDir(filesDir)
-        assertEquals("shared_font.bin", CoreSystemFiles.missing("citra", systemDir, saveDir))
-        val crumb = CoreSystemFiles.crumb("citra", filesDir, systemDir, saveDir)
+        // Không có khoá trong config, không người chơi chỉnh → lõi dùng mặc định "LibRetro Default".
+        for (option in listOf(null, CoreSystemFiles.LIBRETRO_SAVE_PATH)) {
+            assertEquals(option, "shared_font.bin", CoreSystemFiles.missing("citra", systemDir, saveDir, option))
+        }
+        val crumb = CoreSystemFiles.crumb("citra", filesDir, systemDir, saveDir, null)
         assertNotNull(crumb)
         // Nêu tên tệp, thư mục lõi đọc (tương đối), và nói rõ là không chặn.
         assertTrue(crumb!!.contains("shared_font.bin"))
@@ -37,17 +40,29 @@ class CoreSystemFilesTest {
         val systemDir = File(filesDir, "system").apply { mkdirs() }
         val saveDir = saveDir(filesDir)
         File(File(saveDir, "Citra/sysdata"), "shared_font.bin").apply { parentFile!!.mkdirs() }.writeText("font")
-        assertNull(CoreSystemFiles.missing("citra", systemDir, saveDir))
-        assertNull(CoreSystemFiles.crumb("citra", filesDir, systemDir, saveDir))
+        assertNull(CoreSystemFiles.missing("citra", systemDir, saveDir, null))
+        assertNull(CoreSystemFiles.crumb("citra", filesDir, systemDir, saveDir, null))
+    }
+
+    @Test fun khongBaoOanKhiLoiDungDuongSaveRiengCuaCitra() {
+        // "Citra Default" = lõi giữ user dir riêng, KHÔNG phải <save>/Citra → app không biết chỗ đọc,
+        // nên dù không thấy tệp cũng không được báo thiếu.
+        val filesDir = tmp.newFolder()
+        val systemDir = File(filesDir, "system").apply { mkdirs() }
+        assertFalse(CoreSystemFiles.usesGameSaveDir("Citra Default"))
+        assertTrue(CoreSystemFiles.usesGameSaveDir(null))
+        assertTrue(CoreSystemFiles.usesGameSaveDir(CoreSystemFiles.LIBRETRO_SAVE_PATH))
+        assertNull(CoreSystemFiles.missing("citra", systemDir, saveDir(filesDir), "Citra Default"))
+        assertNull(CoreSystemFiles.crumb("citra", filesDir, systemDir, saveDir(filesDir), "Citra Default"))
     }
 
     @Test fun khongBaoKhiTepNamTrongThuMucSystemDuPhong() {
-        // Nhánh "frontend không cấp save dir" của lõi: user dir = <system>/Citra.
+        // Nhánh "frontend không cấp save dir" của lõi (vẫn là "LibRetro Default"): user dir = <system>/Citra.
         val filesDir = tmp.newFolder()
         val systemDir = File(filesDir, "system").apply { mkdirs() }
         File(File(systemDir, "Citra/sysdata"), "shared_font.bin").apply { parentFile!!.mkdirs() }.writeText("font")
-        assertNull(CoreSystemFiles.missing("citra", systemDir, null))
-        assertNull(CoreSystemFiles.crumb("citra", filesDir, systemDir, null))
+        assertNull(CoreSystemFiles.missing("citra", systemDir, null, null))
+        assertNull(CoreSystemFiles.crumb("citra", filesDir, systemDir, null, null))
         assertEquals(listOf(File(File(systemDir, "Citra"), "sysdata")), CoreSystemFiles.dirs(systemDir, null))
     }
 
@@ -55,8 +70,8 @@ class CoreSystemFilesTest {
         val filesDir = tmp.newFolder()
         val systemDir = File(filesDir, "system").apply { mkdirs() }
         for (coreId in listOf("melondsds", "ppsspp", "desmume", "melonds")) {
-            assertNull(coreId, CoreSystemFiles.missing(coreId, systemDir, saveDir(filesDir)))
-            assertNull(coreId, CoreSystemFiles.crumb(coreId, filesDir, systemDir, null))
+            assertNull(coreId, CoreSystemFiles.missing(coreId, systemDir, saveDir(filesDir), null))
+            assertNull(coreId, CoreSystemFiles.crumb(coreId, filesDir, systemDir, null, null))
         }
     }
 }
