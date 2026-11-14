@@ -54,10 +54,11 @@ internal object CoreSystemFiles {
     }
 
     /** Nhãn tương đối trong [filesDir]; nằm ngoài thì chỉ nêu tên chuẩn, không lộ đường dẫn máy. */
-    private fun label(dir: File, filesDir: File): String =
-        runCatching { dir.relativeTo(filesDir).invariantSeparatorsPath }
-            .getOrNull()?.takeIf { it.isNotEmpty() && !it.startsWith("..") }
-            ?: "Citra/sysdata"
+    private fun label(dir: File, filesDir: File): String {
+        // diag: bỏ qua — nhãn chỉ để ghi vệt chẩn đoán; khác ổ đĩa/thư mục lạ thì rơi về tên chuẩn bên dưới
+        val relative = runCatching { dir.relativeTo(filesDir).invariantSeparatorsPath }.getOrNull()
+        return relative?.takeIf { it.isNotEmpty() && !it.startsWith("..") } ?: "Citra/sysdata"
+    }
 
     /** Mặc định của lõi, và cũng là giá trị duy nhất đặt user dir vào thư mục save của game. */
     const val LIBRETRO_SAVE_PATH = "LibRetro Default"
