@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import pathlib
 import tempfile
 import unittest
@@ -126,6 +127,86 @@ class PeriodicTest(unittest.TestCase):
                 self.assertEqual(1, report['errors']); self.assertEqual(1, report['skipped'])
                 rows[0]['status'] = 200
                 links.main()
+
+    # ---- V42: hai URL gốc VietQR phải kiểm bằng URL đầy đủ, không gọi thẳng URL gốc ----
+    DONATE = {
+        "account": {"donate": {
+            "bankId": "icb", "accountNo": "101867601261", "template": "compact2", "minAmount": 1000,
+            "memo": "MONIKA", "accountName": "NGUYEN VAN A",
+            "qrBaseUrl": "https://img.vietqr.io/image/", "payUrl": "https://dl.vietqr.io/pay",
+            "returnUrl": "https://monika.aow.vn/",
+        }}
+    }
+
+    def test_donate_base_urls_are_expanded_like_the_app(self):
+        urls = links.donate_derived_urls(self.DONATE)
+        qr = urls["account.donate.qrBaseUrl"]
+        pay = urls["account.donate.payUrl"]
+        self.assertTrue(qr.startswith("https://img.vietqr.io/image/icb-101867601261-compact2.png?"), qr)
+        self.assertIn("amount=1000", qr)
+        self.assertTrue(pay.startswith("https://dl.vietqr.io/pay?"), pay)
+        self.assertIn("ba=101867601261%40icb", pay)
+        self.assertIn("app=icb", pay)
+
+    def test_donate_base_urls_are_skipped_with_reason_when_config_is_invalid(self):
+        for donate in ({"bankId": "bad id", "accountNo": "12"},
+                       {"bankId": "icb", "accountNo": "101867601261", "minAmount": 0}):
+            with self.subTest(donate=donate):
+                self.assertEqual({}, links.donate_derived_urls({"account": {"donate": donate}}))
+
+    def test_main_probes_full_donate_urls_but_never_prints_account_number(self):
+        with tempfile.TemporaryDirectory() as d:
+            config = pathlib.Path(d, 'config.json'); config.write_text(json.dumps(self.DONATE))
+            rows = [dict(source='account.donate.qrBaseUrl', url='https://img.vietqr.io/image/'),
+                    dict(source='account.donate.payUrl', url='https://dl.vietqr.io/pay')]
+            seen = []
+
+            def fake_probe(row):
+                seen.append(row['url'])
+                return {**row, 'status': 200, 'method': 'HEAD', 'remote_size': None,
+                        'note': 'Đã nhận phản hồi HTTP', 'error': False, 'checked': True}
+
+            args = ['check', '--report', d + '/links.md', '--json-output', d + '/links.json']
+            with patch.object(links, 'CONFIG_PATH', config), patch.object(links, 'supported_abis', return_value=['arm64-v8a']), \
+                    patch.object(links, 'collect_urls', return_value=rows), patch.object(links, 'probe', side_effect=fake_probe), \
+                    patch('sys.argv', args):
+                links.main()
+            self.assertTrue(all('101867601261' in url for url in seen), seen)  # gửi URL đầy đủ
+            report = pathlib.Path(d, 'links.md').read_text()
+            artifact = pathlib.Path(d, 'links.json').read_text()
+            for text in (report, artifact):
+                self.assertNotIn('101867601261', text)  # không in số tài khoản
+                self.assertNotIn('NGUYEN%20VAN%20A', text)
+            self.assertIn('img.vietqr.io/image/…', report)
+
+    def test_head_rejected_falls_back_to_get_before_reporting_failure(self):
+        calls = []
+
+        class FakeResponse:
+            status = 200
+            headers = {'Content-Length': '12'}
+
+            def read(self, _n=-1):
+                return b'x'
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_exc):
+                return False
+
+        def fake_urlopen(request, timeout=None):
+            calls.append(request.get_method())
+            if request.get_method() == 'HEAD':
+                raise links.HTTPError(request.full_url, 404, 'Not Found', {}, None)
+            return FakeResponse()
+
+        with patch.object(links, 'urlopen', side_effect=fake_urlopen):
+            status, _headers, method, error = links.request_head('https://dl.vietqr.io/pay?x=1')
+        self.assertEqual(['HEAD', 'GET'], calls)
+        self.assertEqual(200, status)
+        self.assertIn('GET', method)
+        self.assertIsNone(error)
 
 
 if __name__ == '__main__':

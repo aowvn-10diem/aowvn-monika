@@ -26,6 +26,15 @@ class Prefs(private val context: Context) {
         get() = sp.getString("library_section", "play") ?: "play"
         set(value) = sp.edit().putString("library_section", value).apply()
 
+    /**
+     * Trang đang đọc dở của một tài liệu (0-based), khoá theo đường dẫn/tên tệp.
+     * Màn đọc PDF (module :reader) ghi qua đây để lần sau mở lại đúng trang [V142].
+     */
+    fun readingPage(key: String): Int = vn.aow.monika.reader.ReadingProgress(context).page(key)
+
+    fun setReadingPage(key: String, page: Int) =
+        vn.aow.monika.reader.ReadingProgress(context).setPage(key, page)
+
     /** Mã các bài đã thấy, để biết bài nào mới. Rỗng = chưa chạy lần nào. */
     var seenPostIds: Set<String>
         get() = sp.getStringSet("seen_post_ids", emptySet())!!.toSet()
@@ -89,7 +98,10 @@ class Prefs(private val context: Context) {
     /** Lượt tải là app/plugin (cài đặt ngay) chứ không phải game. */
     fun markToolDownload(id: Long) = sp.edit().putBoolean("tool_$id", true).apply()
     fun isToolDownload(id: Long) = sp.getBoolean("tool_$id", false)
-    fun clearDownload(id: Long) = sp.edit().remove("tool_$id").remove("meta_$id").apply()
+    /** V204: nhớ ID do chính app đặt vào DownloadManager để DownloadReceiver không xử lý ID lạ. */
+    fun markDownload(id: Long) = sp.edit().putBoolean("own_$id", true).apply()
+    fun isOwnDownload(id: Long) = sp.getBoolean("own_$id", false)
+    fun clearDownload(id: Long) = sp.edit().remove("tool_$id").remove("meta_$id").remove("own_$id").apply()
 
     /** Thông tin bài viết gắn với lượt tải (JSON của GameMeta), để game tải xong có ảnh bìa + tên đẹp. */
     fun setDownloadMeta(id: Long, json: String) = sp.edit().putString("meta_$id", json).apply()

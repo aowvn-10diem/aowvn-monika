@@ -4,6 +4,9 @@
 - `POST /report` — app gửi báo lỗi (JSON, tối đa 60.000 byte UTF-8, 20 báo cáo/giờ/IP, chỉ lưu băm IP). Lưu KV `aowvn-monika-crash-reports`, giữ 60 ngày.
 - Ngưỡng chống spam (V153) đổi bằng biến môi trường của Worker: `RATE_LIMIT_MAX` (mặc định `20`, tối đa `100000`) và `RATE_LIMIT_WINDOW_SECONDS` (mặc định `3600`, tối đa `604800`). Quá ngưỡng trả `429` kèm header `Retry-After` = số giây còn lại của cửa sổ. Env sai/thiếu thì dùng mặc định. **V194:** bộ đếm hạn mức nằm trong bộ nhớ của isolate (không ghi KV) và mỗi báo cáo chỉ **1 lần ghi KV** (bản ghi chính) — trước đây là 2 ghi/báo cáo (khoá `rl:` + bản ghi), đốt hạn mức 1000 ghi/ngày của gói miễn phí.
 - `GET /stats`, `GET /reports`, `GET /reports/<id>` — xem báo cáo, cần header `Authorization: Bearer <mã quản trị>`.
+- V186: `/reports` và `/stats` không còn trả `500` trắng khi KV lỗi. Lỗi tạm thời của KV trả `503 {"ok":false,"error":"kv_unavailable"}` (thử lại được); `scripts/crash-insight.py` tự thử lại tối đa 3 lần với 5xx/lỗi mạng, còn 4xx thì dừng ngay.
+- V190: dữ liệu listing hỏng (trang sai dạng, `keys` có phần tử `null`/rỗng/không phải chuỗi, hoặc id báo cáo percent-encoding sai) trả **400** với mã `bad_listing`/`malformed_keys`/`bad_id` thay vì 500; metadata sai kiểu được coi như rỗng nên `/reports` và `/stats` vẫn 200. Trang có **cả** khoá hỏng lẫn hợp lệ thì vẫn trả dữ liệu hợp lệ, kèm `meta.skippedInvalid = <số khoá bị bỏ>` và **một** dòng `console.warn` cho cả lượt (không log tên khoá) — không lọc âm thầm.
+- V190c: lỗi KV ở `/reports` và `/report-index` đều **bọc `try`** và ghi **một** dòng `console.error` (chỉ tên lớp + thông điệp, không token/khoá/nội dung) để thấy nguyên nhân gốc; `/report-index` trả `503 incomplete_index` như các nhánh khác. Vòng đọc danh sách có **chốt cursor lặp**: nếu KV trả lại cùng cursor (hoặc trang rỗng mà vẫn "chưa xong") thì dừng, không treo.
 - V155b: danh sách `/reports` trả thêm `cert` = 16 hex đầu SHA-256 chứng thư ký APK (rỗng với app cũ không gửi), để bảng `crash-insight` **đếm/nhóm theo chứng thư** và đối chiếu **thủ công** với chứng thư bản phát hành. Giá trị này do **client gửi lên** (app có thể bị sửa) nên **không phải bằng chứng xác thực** và không tự kết luận bản nào là chính thức/không chính thức; bản ghi đầy đủ vẫn giữ `certSha256` 64 hex.
 - Mã quản trị là secret `ADMIN_TOKEN` của Worker (không ghi trong repo). Mất mã thì nhờ dựng lại Worker với mã mới. **V195:** thiếu/để trống `ADMIN_TOKEN` → mọi endpoint quản trị trả `503` (đóng cửa, không so sánh gì); so sánh mã dựa trên SHA-256 hai vế thay vì so chuỗi thô.
 - **V193-G3 — cổng tải gói (lõi/engine/module):** `GET /pack/<tên-gói>` cấp một URL tải **có hạn dùng ngắn** rồi chuyển hướng; nội dung tệp do CDN/R2 trả trực tiếp, Worker **không truyền tệp**. Env của Worker: `PACKS_TOKEN` (secret ký, dùng chung với workflow của repo packs), `PACKS_ALLOW` (danh sách tên gói cho phép), `PACKS_HOSTS` (danh sách host tải cho phép), `PACKS_BASE` (URL gốc của CDN/R2 — **bắt buộc `https://` và host phải nằm trong `PACKS_HOSTS`**), `PACK_TTL_SECONDS` (hạn dùng; giá trị sai hoặc quá lớn thì dùng mặc định). Thiếu/sai cấu hình → `503`; tên gói không hợp lệ hoặc ngoài danh sách → bị từ chối.
@@ -28,6 +31,26 @@ Bộ đếm trong Worker chỉ là chặn mềm (mục trên). Khi bị spam th�
 
 Ghi chú: luật WAF tính theo IP ở biên nên **không phụ thuộc isolate/colo** — đây là lớp bù cho giới hạn của bộ đếm trong Worker. Ngưỡng WAF là cấu hình dashboard, không nằm trong repo.
 
+## Lưu trữ D1 (`CRASH_DB`) — V195
+Worker ghi báo cáo vào **D1** khi có binding `CRASH_DB`; **chưa gắn binding thì chạy đường KV như cũ** (không lỗi, không đổi định dạng trả về).
+
+- **Bảng cột → khoá ngắn** (giữ nguyên hợp đồng `/reports` của chế độ KV, xem `REPORT_SHORT_KEYS` trong `worker.js`):
+  `kind → k` · `core → c` · `system → y` · `game → g` · `app → a` · `stage → st` · `time → t` · `component` · `fingerprint → fp` · `count` · `cert` (16 hex đầu của `certSha256`).
+  `core = slim.core || slim.session.core`.
+- **Gộp trùng**: mỗi **fingerprint đúng 1 hàng** (`UNIQUE INDEX reports_fp`); báo cáo trùng thì `count = count + excluded.count` và cập nhật `detail`/`last_t`. Mỗi báo cáo vẫn **đúng 1 lượt ghi** (upsert) — gộp làm giảm số hàng **lưu** và kích thước `/reports`, **không** làm giảm số hàng ghi mỗi ngày (ngân sách D1 free: 100.000 hàng ghi/ngày). Báo cáo **không có fingerprint** dùng `id` làm khoá nên mỗi báo cáo là một hàng riêng. `count` do client gửi được **kẹp về 1..50** (ngoài khoảng/sai kiểu → 1) trước khi ghi, nên một báo cáo lỗi không thể làm phồng `total` vĩnh viễn.
+- **Cursor `/report-index` (nhánh D1)**: `base64url("<last_seen_ms>:<id>")`, trang 100 mục, mới nhất trước (`ORDER BY last_t DESC, id DESC`). Nhánh KV giữ nguyên hợp đồng cũ (503 `incomplete_index` khi trang chưa đủ mà thiếu cursor).
+- `/stats` (D1) giữ nghĩa như nhánh KV: `total` = **số báo cáo** (`SUM(count)`), thêm `groups` = số nhóm fingerprint; `byCoreKindStage: [{ k: "c | k | st", n, groups }]` với `n = SUM(count)`, `groups` = số nhóm trong nhóm đó. `/reports` cũng trả `total` (số báo cáo) + `groups`; nhánh KV không có `groups`.
+- **Cache 5 phút**: `/stats` và trang đầu `/reports` được cache bằng **Cache API của Worker** (`REPORTS_CACHE_TTL_SECONDS = 300`) để không quét bảng mỗi request; `/reports/<id>` không cache. Bản trả client luôn kèm `cache-control: no-store` (dữ liệu quản trị, không cho CDN cache); lỗi 503/404 không vào cache. Khi chưa có Cache API (môi trường test Node) Worker đọc thẳng nguồn.
+- **Hạn lưu 30 ngày**: hàng có `last_t` cũ hơn 30 ngày bị `DELETE` kèm lượt `POST` (tối đa **1 lần/giờ** mỗi isolate, không cần cron; lỗi dọn không làm hỏng báo cáo vừa ghi) và bị loại khỏi `/reports`, `/stats`, `/report-index`. Nhánh KV cũ tự hết hạn sau 60 ngày (`expirationTtl`). Không backfill báo cáo cũ từ KV (thống kê tính từ mốc bật D1).
+- **Lỗi D1**: nếu **bảng chưa tạo** (`no such table` — deploy trước khi chạy `d1-schema.sql`) thì request đó **tự lùi về KV**, không trả 503. Lỗi D1 khác (sập/timeout) vẫn trả `503 storage_unavailable` cho `/reports`, `/reports/<id>`, `/stats`, `/report-index`, không ném 500 thô.
+
+**Áp dụng — đúng thứ tự** (sai thứ tự vẫn chạy nhờ lùi KV, nhưng báo cáo sẽ nằm ở KV):
+```bash
+wrangler d1 create aowvn-monika-crash
+wrangler d1 execute aowvn-monika-crash --remote --file=cloudflare/crash-worker/d1-schema.sql
+```
+Rồi gắn binding `CRASH_DB` (trỏ database vừa tạo) cho Worker trong `wrangler.toml` hoặc dashboard → deploy. Muốn quay lại KV: bỏ binding `CRASH_DB` rồi deploy lại (không cần đổi mã).
+
 ## Hợp đồng JSON (V29)
 
 `Diagnostics.Report` được gửi tới `POST /report`; Worker chỉ bổ sung trường, vẫn nhận app cũ. `kind`, `title`, `app` bắt buộc là chuỗi; JSON sai trả 400. Báo cáo và giá trị KV đều tối đa 60.000 **byte UTF-8**; quá giới hạn trả 413, không ghi báo cáo. Body được đọc theo stream có chặn dung lượng, không dựa riêng Content-Length.
@@ -36,7 +59,7 @@ Ghi chú: luật WAF tính theo IP ở biên nên **không phụ thuộc isolate
 |---|---|
 | id, time | Số nguyên không âm an toàn JS; id mặc định 0, time mặc định thời điểm nhận |
 | kind / title / app / device | 32 / 300 / 80 / 300 đơn vị UTF-16 |
-| component / fingerprint / count | 160 / 128; count số nguyên an toàn ≥1, mặc định 1 |
+| component / fingerprint / count | 160 / 128; count số nguyên 1..50, ngoài khoảng hoặc sai kiểu → 1 |
 | env / reason / detail | 2.000 / 300 / 20.000 đơn vị UTF-16 |
 | crumbs / log | 40 / 250 dòng, mỗi dòng 300 đơn vị UTF-16 |
 | fromGame | boolean, mặc định false |
@@ -49,6 +72,6 @@ V101 giữ snapshot phiên theo PID ở app, cập nhật cùng stage; PID hoặ
 
 Các chuỗi/danh sách tùy chọn sai loại được thay bằng rỗng. `seen`/`sent` là cờ UI cục bộ, không lưu ở Worker. Trường lạ bỏ qua. KV giữ 60 ngày; metadata danh sách gồm `component`, `fp`, `count` để lọc lỗi. GET chi tiết trả cùng JSON đã lưu, không cắt thêm. Kho cũ giữ nguyên; báo cáo cũ có thể thiếu trường mới.
 
-Kiểm: `node --test cloudflare/crash-worker/worker.test.js` (KV giả trong bộ nhớ, không mạng). `CrashContractTest` dùng **cùng** `fixtures/app-report.json` để kiểm serializer Kotlin; Build chạy cả hai. Test Worker phủ gửi → lưu → danh sách → đọc, app cũ, loại sai, byte UTF-8, quyền đọc và giới hạn spam.
+Kiểm: `node --test cloudflare/crash-worker/worker.test.js` (KV giả trong bộ nhớ, không mạng). Hai fixture giả nằm ở resources công khai của app — `app/src/test/resources/app-report.json` và `app/src/test/resources/user-image.jpg` — dùng chung cho `CrashContractTest` (Kotlin) và test Worker, không còn bản sao trong `cloudflare/`; Build chạy cả hai. Test Worker phủ gửi → lưu → danh sách → đọc, app cũ, loại sai, byte UTF-8, quyền đọc và giới hạn spam.
 
 Triển khai: cần người có quyền sửa/deploy Worker `aowvn-monika-crash` và gắn namespace KV `REPORTS` hiện có; nếu dùng API cần quyền Cloudflare Workers Scripts:Edit và Workers KV Storage tương ứng tài khoản. Sonnet/chủ tài khoản triển khai sau PM duyệt, giữ binding và secret hiện tại. [CHƯA KIỂM] ai có quyền này và mã đang chạy. Sol không đổi secret, không triển khai, không chuyển giao thức/endpoint hay dữ liệu KV cũ.

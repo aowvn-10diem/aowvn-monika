@@ -294,7 +294,8 @@ object Diagnostics {
             ApplicationExitInfo.REASON_OTHER -> "OTHER"
             else -> "code ${e.reason}"
         }
-        return "$name (status ${e.status}) ${e.description.orEmpty()}".trim()
+        val detail = if (Build.VERSION.SDK_INT >= 30) " imp=${e.importance} pss=${e.pss shr 10}MB" else ""
+        return "$name (status ${e.status}) ${e.description.orEmpty()}$detail".trim()
     }
 
     /** Tombstone của Android (protobuf) — không parse đầy đủ, chỉ nhặt các chuỗi đọc được: tên .so, hàm, tín hiệu. */
@@ -428,27 +429,44 @@ object Diagnostics {
     /**
      * Chạy một thao tác người dùng; lỗi (trừ hủy coroutine) được ghi thành báo cáo `kind=op-fail` rồi trả về trong [Result]
      * — thay cho `runCatching` nuốt lỗi im lặng. [target] là tên file game (không đường dẫn, không link tải).
-     * [expected] đánh dấu lỗi nằm trong luồng bình thường (vd. cần mật khẩu): vẫn trả về trong [Result] nhưng không lập báo cáo.
+     * [expected] đánh dấu lỗi nằm trong luồng bình thường (vd. cần mật khẩu, thiếu gói giải nén mà mất mạng):
+     * vẫn trả về trong [Result] nhưng không lập báo cáo — chỉ ghi một vệt để đọc log là biết.
      */
     fun <T> op(c: Context, name: String, target: String? = null, expected: (Throwable) -> Boolean = { false }, block: OpScope.() -> T): Result<T> {
         val scope = OpScope(c, name)
         return try { Result.success(scope.block()) } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-        catch (e: Throwable) { if (!expected(e)) opFail(c, name, scope.stepName, e, target); Result.failure(e) }
+        catch (e: Throwable) { if (expected(e)) expectedCrumb(c, name, scope.stepName, e) else opFail(c, name, scope.stepName, e, target); Result.failure(e) }
     }
 
     /** Bản `suspend` của [op]. */
     suspend fun <T> opSuspend(c: Context, name: String, target: String? = null, expected: (Throwable) -> Boolean = { false }, block: suspend OpScope.() -> T): Result<T> {
         val scope = OpScope(c, name)
         return try { Result.success(scope.block()) } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-        catch (e: Throwable) { if (!expected(e)) opFail(c, name, scope.stepName, e, target); Result.failure(e) }
+        catch (e: Throwable) { if (expected(e)) expectedCrumb(c, name, scope.stepName, e) else opFail(c, name, scope.stepName, e, target); Result.failure(e) }
     }
 
-    /** Ghi một lỗi thao tác đã tự bắt (nơi không bọc được bằng [op]). Trả null nếu trùng trong cửa sổ chống spam. */
-    fun opFail(c: Context, name: String, step: String, e: Throwable, target: String? = null): Report? = runCatching {
+    /** Lỗi thuộc luồng bình thường: không lập báo cáo, chỉ để lại vệt (cùng nhóm [op-fail] như ca lỗi mạng/hủy). */
+    private fun expectedCrumb(c: Context, name: String, step: String, e: Throwable) {
+        Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: ${errorCode(e)} (mong đợi, không báo)")
+    }
+
+    /**
+     * Ghi một lỗi thao tác đã tự bắt (nơi không bọc được bằng [op]). Trả null nếu trùng trong cửa sổ chống spam.
+     * [expected] đánh dấu lỗi thuộc luồng bình thường (vd. người chơi chọn nhầm bản vá): chỉ ghi vệt, không lập báo cáo
+     * — cùng quy ước với [op]/[opSuspend].
+     */
+    fun opFail(c: Context, name: String, step: String, e: Throwable, target: String? = null, expected: (Throwable) -> Boolean = { false }): Report? = runCatching {
         val code = errorCode(e)
-        // Hủy (Activity rời màn, Worker bị dừng) và lỗi mạng là chuyện thường: chỉ ghi vệt, không lập báo cáo.
-        if (isCancellation(e) || isOffline(step, e)) {
-            Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code (hủy/lỗi mạng, không báo)")
+        // Hủy (Activity rời màn, Worker bị dừng), lỗi mạng và lỗi đã khai báo [expected] là chuyện thường:
+        // chỉ ghi vệt, không lập báo cáo.
+        val skipReason = when {
+            isCancellation(e) -> "hủy"
+            isOffline(step, e) -> "lỗi mạng"
+            expected(e) -> "mong đợi"
+            else -> null
+        }
+        if (skipReason != null) {
+            Breadcrumbs.add(c, "op-fail", "$name/${step.ifBlank { "-" }}: $code ($skipReason, không báo)")
             return@runCatching null
         }
         val key = "$name|$step|$code|${e.message.orEmpty().take(60).replace(Regex("""\d+"""), "")}"
@@ -515,7 +533,7 @@ object Diagnostics {
     }
 
     /** Bước chỉ đọc qua mạng (không đụng tệp cục bộ): luồng đứt ở đây là chuyện mạng. */
-    private val NETWORK_STEPS = setOf("tai", "tai-ve", "tai-bai")
+    private val NETWORK_STEPS = setOf("tai", "tai-ve", "tai-bai", "tai-danh-sach", "tai-chi-muc", "tai-trang")
 
     /**
      * V166 (Luna 3, lần 2): phân loại theo **nguồn đọc tại chỗ ném lỗi**, không theo tên thao tác — vì có thao tác
@@ -803,6 +821,24 @@ object Diagnostics {
     }.getOrDefault("")
 
     /**
+     * V202: Android thu hồi tiến trình nền `IMPORTANCE_CACHED` là cơ chế bình thường, không phải
+     * lỗi của app; chỉ báo `lowmem` khi tiến trình còn quan trọng hoặc có phiên chết khớp.
+     * Tiến trình sandbox của WebView cũng bỏ (không phải tiến trình app).
+     */
+    internal fun shouldReportLowMem(importance: Int, processName: String?, hasDeathSession: Boolean): Boolean {
+        if (processName?.contains("sandboxed_process") == true) return false
+        if (!hasDeathSession && importance >= ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED) return false
+        return true
+    }
+
+    /**
+     * V202: khi `trace` rỗng (lowmem), không trộn `crumbs` cũ vào phần đoán thành phần — crumb
+     * mạng cũ sẽ gán nhầm tiến trình chính thành `net`/`pack:*`. Có trace thì mới dùng crumbs.
+     */
+    internal fun componentHint(trace: String, crumbs: List<String>): String =
+        if (trace.isNotBlank()) trace + "\n" + crumbs.joinToString("\n") else ""
+
+    /**
      * Quét lý do chết của CHÍNH tiến trình chính (và ":midlet"/":crash") do Android ghi lại: native crash, ANR, hết RAM…
      * — những lần chết không có ngoại lệ Java để CrashReporter bắt. Gọi lúc mở app; chỉ tạo báo cáo cho lần chết mới.
      */
@@ -829,8 +865,14 @@ object Diagnostics {
             val trace = scrub(c, traceStrings(e).joinToString("\n"))
             val crumbs = Breadcrumbs.read(c, e.pid)
             val deathSession = if (kind == "anr" || kind == "lowmem") readDeathSession(c, e.pid, e.timestamp, e.processStateSummary) else null
+            // V202: bỏ ca Android dọn tiến trình nền bình thường; vẫn dọn trạng thái để không quét lại.
+            if (kind == "lowmem" && !shouldReportLowMem(e.importance, e.processName, deathSession != null)) {
+                Breadcrumbs.drop(c, e.pid)
+                clearDeathSession(c, e.pid, e.processStateSummary)
+                continue
+            }
             val proc = e.processName.orEmpty().substringAfter(':', "chính")
-            val comp = Components.of(c, deathSession, trace + "\n" + crumbs.joinToString("\n")).ifBlank { "app:$proc" }
+            val comp = Components.of(c, deathSession, componentHint(trace, crumbs)).ifBlank { "app:$proc" }
             out += record(c, Report(
                 id = e.timestamp, time = e.timestamp, kind = kind,
                 title = when (kind) {

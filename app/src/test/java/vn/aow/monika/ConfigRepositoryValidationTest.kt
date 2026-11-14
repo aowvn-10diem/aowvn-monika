@@ -66,24 +66,24 @@ class ConfigRepositoryValidationTest {
     }
 
     @Test fun oldCacheWithoutExperimentalFlagFallsBackToBundledWarning() {
-        assertEquals(62, bundled)
+        assertEquals(63, bundled)
         cache.writeText(valid(38))
         val current = repo().current
-        assertEquals(62, current.configVersion)
+        assertEquals(63, current.configVersion)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
 
-    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled62() {
+    @Test fun cache47WithoutConsoleSaveProfilesFallsBackToBundled63() {
         cache.writeText("""{"configVersion":47,"saveTransfer":{"systems":{}}}""")
         val current = repo().current
-        assertEquals(62, current.configVersion)
+        assertEquals(63, current.configVersion)
         assertEquals(setOf("java", "nds", "gba", "3ds", "psp", "ps1"), current.saveTransfer.systems.keys)
     }
 
     @Test fun cache39FallsBackToBundledDocumentConfiguration() {
         cache.writeText("""{"configVersion":39,"documentExtensions":[]}""")
         val current = repo().current
-        assertEquals(62, current.configVersion)
+        assertEquals(63, current.configVersion)
         assertEquals(listOf("pdf", "doc", "docx", "txt", "epub"), current.documentExtensions)
         assertTrue(current.systems.single { it.id == "kirikiri" }.experimental)
     }
@@ -91,7 +91,7 @@ class ConfigRepositoryValidationTest {
     @Test fun cache55WithStable088FallsBackToBundledTrial0810() {
         cache.writeText("""{"configVersion":55,"app":{"latestVersionCode":53,"latestVersionName":"0.8.8","minVersionCode":1,"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.8/AowVN-Monika-v0.8.8.apk"}}""")
         val current = repo().current
-        assertEquals(62, current.configVersion)
+        assertEquals(63, current.configVersion)
         assertEquals(55, current.app.latestVersionCode)
         assertEquals("0.8.10", current.app.latestVersionName)
         assertEquals(1, current.app.minVersionCode)
@@ -131,6 +131,34 @@ class ConfigRepositoryValidationTest {
         }
         reply = "{"; assertTrue(r.refresh(true).isFailure)
         assertEquals(before, cache.readText())
+    }
+
+    @Test fun artifactUrlsMustStayInsideOwnerPathPrefix() {
+        // V206: host đúng chưa đủ — URL mã/gói phải nằm trong tiền tố chủ sở hữu đã chốt.
+        val hash = "c".repeat(64)
+        fun config(url: String) = """{"configVersion":1,"modules":{"x":{"version":"1","url":"$url","sha256":"$hash"}}}"""
+        val allowed = listOf(
+            "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/v1/x.zip",
+            "https://raw.githubusercontent.com/aowvn-10diem/aowvn-monika/main/x.zip",
+            "https://codeload.github.com/aowvn-10diem/aowvn-monika/zip/refs/heads/main",
+            "https://cdn.jsdelivr.net/npm/@ruffle-rs/ruffle@0.1.0/dist/ruffle.js",
+        )
+        for (url in allowed) {
+            assertEquals(url, url, ConfigValidation.parse(config(url), 0).modules.getValue("x").url)
+        }
+        val rejected = listOf(
+            "https://github.com/evil/repo/releases/download/v1/core.zip",
+            "https://github.com/aowvn-10diem-khac/repo/x.zip",
+            "https://raw.githubusercontent.com/evil/repo/main/x.zip",
+            "https://codeload.github.com/evil/repo/zip/refs/heads/main",
+            "https://cdn.jsdelivr.net/gh/abpvn/abpvn@master/filter/x.txt",
+            "https://objects.githubusercontent.com/x.zip",
+            "https://release-assets.githubusercontent.com/x.zip",
+        )
+        for (url in rejected) {
+            val error = runCatching { ConfigValidation.parse(config(url), 0) }.exceptionOrNull()
+            assertTrue(url, error is IllegalArgumentException)
+        }
     }
 
     @Test fun enginePatternBoundariesAcceptDefaultAndMaximumLiteralValues() {
@@ -242,7 +270,7 @@ class ConfigRepositoryValidationTest {
         reply = """{"configVersion":$version,
             "cores":{"x":{"version":"1","url":"https://buildbot.libretro.com/nightly/android/latest/{abi}/x_libretro_android.so.zip"}},
             "modules":{"y":{"version":"1","url":"https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/e/y.zip","sha256":"${"b".repeat(64)}"},
-                       "z":{"version":"1","url":"https://release-assets.githubusercontent.com/github-production-release-asset/1/z.zip","sha256":"${"c".repeat(64)}"}},
+                       "w":{"version":"1","url":"https://raw.githubusercontent.com/aowvn-10diem/aowvn-monika/main/w.zip","sha256":"${"c".repeat(64)}"}},
             "app":{"apkUrl":"https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0/x.apk"}}"""
         assertTrue(r.refresh(true).isSuccess)
         assertEquals(version, r.current.configVersion)
@@ -314,5 +342,17 @@ class ConfigRepositoryValidationTest {
         val r = repo()
         assertEquals(bundled, r.current.configVersion)
         assertFalse(r.remoteApplied.value)
+    }
+
+    @Test fun loginUrlChiDuocThuocMienAow() {
+        // V204: chặn config từ xa trỏ phiên đăng nhập sang miền khác.
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigValidation.parse("""{"configVersion":0,"account":{"loginUrl":"https://evil.example/login"}}""", 0)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            ConfigValidation.parse("""{"configVersion":0,"account":{"loginUrl":"https://aow.vn.evil.example/login"}}""", 0)
+        }
+        val ok = ConfigValidation.parse("""{"configVersion":0,"account":{"loginUrl":"https://monika.aow.vn/login"}}""", 0)
+        assertEquals("https://monika.aow.vn/login", ok.account.loginUrl)
     }
 }

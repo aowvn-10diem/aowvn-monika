@@ -3,6 +3,7 @@ package vn.aow.monika.azahar
 import android.content.Context
 import vn.aow.monika.runner.CoreOption
 import vn.aow.monika.runner.CoreOptions
+import vn.aow.monika.runner.EmuTier
 import java.io.File
 
 /**
@@ -26,22 +27,37 @@ object AzaharConfig {
         Def("Renderer/texture_sampling", "Lọc kết cấu", listOf("0", "1", "2"), "0", mapOf("0" to "Theo game", "1" to "Điểm ảnh", "2" to "Mịn")),
         Def("Core/use_cpu_jit", "CPU JIT", listOf("1", "0"), "1", mapOf("1" to "Bật (nhanh)", "0" to "Tắt (chậm)")),
         Def("Core/cpu_clock_percentage", "Xung nhịp CPU", listOf("100", "75", "150", "200"), "100", mapOf("100" to "100%", "75" to "75% (nhẹ máy)", "150" to "150%", "200" to "200%")),
+        // Mức máy LITE hạ mặc định xuống "0" — xem [new3dsDefault].
         Def("System/is_new_3ds", "Máy New 3DS", listOf("1", "0"), "1", mapOf("1" to "Bật", "0" to "Tắt")),
         Def("Layout/layout_option", "Bố cục màn ngang", listOf("2", "3", "0"), "2", mapOf("2" to "Màn lớn", "3" to "Hai màn cạnh nhau", "0" to "Hai màn dọc")),
     )
 
     fun userDir(c: Context) = File(c.filesDir, "azahar").apply { mkdirs() }
 
-    /** Giá trị đang dùng = mặc định của Monika, đè bằng lựa chọn của người chơi. */
-    fun values(c: Context): Map<String, String> = defs.associate { it.key to it.default } + CoreOptions.saved(c, CORE_ID)
+    /**
+     * Máy mức LITE (RAM ≤ ~3,5 GB hoặc ít nhân) không gánh nổi chế độ New 3DS: engine cấp thêm bộ đệm,
+     * game dựng hình nặng hơn → dễ sập/ANR. Mặc định tắt trên LITE, bật ở MID/FULL; người chơi vẫn bật
+     * lại được trong tùy chọn (lựa chọn của người chơi luôn thắng mặc định này).
+     *
+     * Đây là quyết định theo **danh tính máy** nên phải nhận mức phần cứng ([EmuTier.detectHardware] /
+     * [EmuTier.classifyHardware], **không** xét tiết kiệm pin). Dùng mức hiệu năng ([EmuTier.detect]) thì
+     * máy MID bật tiết kiệm pin bị coi là LITE → tắt New 3DS → game chỉ chạy New 3DS không mở được.
+     */
+    fun new3dsDefault(hardwareTier: EmuTier): String = if (hardwareTier == EmuTier.LITE) "0" else "1"
 
-    fun options(c: Context): List<CoreOption> {
-        val v = values(c)
+    /** Giá trị đang dùng = mặc định của Monika (theo mức phần cứng), đè bằng lựa chọn của người chơi. */
+    fun values(c: Context, hardwareTier: EmuTier): Map<String, String> =
+        defs.associate { it.key to it.default } +
+            ("System/is_new_3ds" to new3dsDefault(hardwareTier)) +
+            CoreOptions.saved(c, CORE_ID)
+
+    fun options(c: Context, hardwareTier: EmuTier): List<CoreOption> {
+        val v = values(c, hardwareTier)
         return defs.map { CoreOption(it.key, it.label, it.values, v[it.key] ?: it.default, it.text) }
     }
 
     /** Ghi các giá trị cố định của Monika + lựa chọn người chơi vào config.ini (giữ nguyên các khóa khác của engine). */
-    fun write(c: Context) {
+    fun write(c: Context, hardwareTier: EmuTier) {
         val file = File(userDir(c), "config/config.ini")
         file.parentFile?.mkdirs()
         val fixed = mapOf(
@@ -52,7 +68,7 @@ object AzaharConfig {
             "Renderer/use_vsync" to "0",
             "Utility/use_custom_storage" to "0",
         )
-        patch(file, fixed + values(c))
+        patch(file, fixed + values(c, hardwareTier))
     }
 
     fun patch(file: File, kv: Map<String, String>) {

@@ -1,12 +1,14 @@
 package vn.aow.monika.library
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import vn.aow.monika.util.SafeZipPath
 
 class SafeZipPathTest {
     @get:Rule val tmp = TemporaryFolder()
@@ -47,5 +49,26 @@ class SafeZipPathTest {
 
     private fun assertEqualsFile(expectedRel: String, actual: java.io.File) {
         assertTrue(actual.path.replace('\\', '/').endsWith(expectedRel))
+    }
+
+    @Test fun sanitizeStripsPathAndControlCharacters() {
+        assertEquals("game.zip", SafeZipPath.sanitizeSingleFileName("../../etc/game.zip"))
+        assertEquals("game.zip", SafeZipPath.sanitizeSingleFileName("C:\\Users\\me\\game.zip"))
+        assertEquals("b game.zip", SafeZipPath.sanitizeSingleFileName("a/b\r\n game.zip "))
+        assertEquals("game.zip", SafeZipPath.sanitizeSingleFileName("game.zip\u0000"))
+        assertNull(SafeZipPath.sanitizeSingleFileName(""))
+        assertNull(SafeZipPath.sanitizeSingleFileName("   "))
+        assertNull(SafeZipPath.sanitizeSingleFileName(".."))
+        assertNull(SafeZipPath.sanitizeSingleFileName("\u0001\u0002"))
+    }
+
+    @Test fun sanitizeClampsLongNamesButKeepsExtension() {
+        val long = "a".repeat(300) + ".zip"
+        val name = SafeZipPath.sanitizeSingleFileName(long)!!
+        assertTrue(name.endsWith(".zip"))
+        assertTrue(name.toByteArray(Charsets.UTF_8).size <= SafeZipPath.MAX_NAME_BYTES)
+        // Tên không có phần mở rộng vẫn bị cắt.
+        val plain = SafeZipPath.sanitizeSingleFileName("b".repeat(300))!!
+        assertTrue(plain.toByteArray(Charsets.UTF_8).size <= SafeZipPath.MAX_NAME_BYTES)
     }
 }

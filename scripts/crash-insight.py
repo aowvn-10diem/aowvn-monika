@@ -5,6 +5,9 @@
   đường này không có tham số phân trang nên không thể lặp vô hạn). Không gọi `/reports/<id>`.
 - Gộp theo (lõi, loại, chữ ký, thành phần, chứng thư) rồi cộng `count`; chỉ dùng các trường Worker trả ở danh sách:
   `k` loại · `c` lõi · `a` bản app · `component` · `fp` chữ ký · `cert` chứng thư · `count` · `t` thời điểm.
+- V205: mặc định **chỉ tính báo cáo khớp chứng thư bản phát hành** (`OFFICIAL_CERT_PREFIX`) và báo cáo cũ
+  không gửi chứng thư; báo cáo mang chứng thư khác bị loại khỏi bảng và mọi con số thống kê, chỉ ghi lại
+  tổng số báo cáo/lượt đã loại ở cuối bảng. Dùng `--all-certs` khi cần xem cả bản mod/đóng gói lại.
 - KHÔNG đưa vào bảng: tên game (`g`), tiêu đề, chi tiết, log, vệt sự kiện, `device`, IP. Chỉ số liệu gộp.
 - Không in token, không ghi token ra tệp.
 
@@ -24,7 +27,11 @@ import urllib.request
 
 MAX_BYTES = 2 * 1024 * 1024   # danh sách 100 dòng metadata: dư sức trong 2 MB
 MAX_ROWS = 100                # Worker chặn 100 báo cáo mới nhất cho /reports
+ATTEMPTS = 3                  # V186: 5xx/lỗi mạng là tạm thời → thử lại tối đa 3 lần
+RETRY_DELAYS = (2, 4)         # giây giữa các lần thử (tổng chờ ≤ 6 s)
 DEFAULT_URL = "https://aowvn-monika-crash.aowvn-system.workers.dev"
+# A78-4: 12 hex đầu chứng thư ký APK phát hành (khớp scripts/verify-apk-cert.py).
+OFFICIAL_CERT_PREFIX = "c46902e97029"
 
 # Cột bảng (đúng thứ tự PM chốt) → trường nguồn, để ghi rõ trường nào thiếu.
 COLUMNS = ["chữ ký (băm ngắn)", "lõi", "loại", "số lượt", "bản app", "chứng thư", "đời máy", "màn", "giả thuyết"]
@@ -200,13 +207,13 @@ def missing_fields(rows):
     return missing
 
 
-def render_markdown(groups, scanned):
+def render_markdown(groups, scanned, excluded=None):
     rows = table_rows(groups)
     lines = [
         "# Bảng chẩn đoán crash (V174)",
         "",
         "Đọc **một lần** `GET /reports` của Worker (tối đa 100 báo cáo mới nhất); không gọi chi tiết từng báo cáo.",
-        "Số dòng nhận được: %d · số nhóm (lõi + loại + chữ ký + thành phần + chứng thư): %d." % (scanned, len(groups)),
+        "Số dòng nhận được (trước lọc): %d · số nhóm (sau lọc theo lõi + loại + chữ ký + thành phần + chứng thư): %d." % (scanned, len(groups)),
         "",
         "| " + " | ".join(COLUMNS) + " |",
         "|" + "|".join(["---"] * len(COLUMNS)) + "|",
@@ -227,13 +234,24 @@ def render_markdown(groups, scanned):
     distinct = len({cert for cert, _ in cert_totals(groups) if cert != MISSING})
     if distinct > 1:
         lines += ["", "⚠ Có **%d chứng thư khác nhau** trong cửa sổ này — đối chiếu **thủ công** với chứng thư bản phát hành chính thức. Giá trị do client gửi lên: chỉ là tín hiệu chẩn đoán, **không** kết luận đây là bản giả và **không** phải bằng chứng xác thực." % distinct]
+    if excluded:
+        dropped_reports = sum(group["reports"] for group in excluded)
+        dropped_counts = sum(group["count"] for group in excluded)
+        dropped_certs = len({group["cert"] for group in excluded})
+        lines.append(
+            "\nĐã loại khỏi thống kê (V205): **%d báo cáo** · **%d lượt** từ **%d chứng thư** không khớp chứng thư bản phát hành. "
+            "Bảng và số nhóm phía trên **không** gồm các báo cáo này, nhưng **vẫn có thể** gồm báo cáo không gửi chứng thư (app cũ) "
+            "hoặc báo cáo có trường chứng thư không phải hex (bị coi như rỗng) — đây là giới hạn vì chứng thư do client gửi lên, "
+            "nên không thể coi toàn bộ số liệu là bản phát hành chính thức. Dùng `--all-certs` để xem cả báo cáo bị loại."
+            % (dropped_reports, dropped_counts, dropped_certs)
+        )
     lines += [
         "",
         "Ghi chú:",
         "- `giả thuyết` suy từ `loại` + `component`, **không phải kết luận** — cần mở báo cáo chi tiết mới xác nhận.",
         "- `màn` lấy từ trường `component` (Worker không có trường màn hình riêng).",
         "- `số lượt` là tổng `count` của các báo cáo cùng nhóm trong cửa sổ đã đọc.",
-        "- `chứng thư` là băm SHA-256 chứng thư ký APK (chỉ hex, không kèm thông tin máy); `—` = app cũ không gửi trường này. Đây là **trường do client gửi lên** — chỉ dùng làm tín hiệu chẩn đoán, **không** phải bằng chứng xác thực (bản fork sửa app có thể gửi giá trị bất kỳ).",
+        "- `chứng thư` là băm SHA-256 chứng thư ký APK (chỉ hex, không kèm thông tin máy); `—` = app cũ không gửi trường này. Đây là **trường do client gửi lên** — chỉ dùng làm tín hiệu chẩn đoán, **không** phải bằng chứng xác thực (bản fork sửa app có thể gửi giá trị bất kỳ). Giá trị **không phải hex** bị coi như rỗng (không có chứng thư) nên **vẫn** nằm trong bảng.",
         "- Bảng không chứa tên game, đường dẫn, log hay mã máy.",
     ]
     missing = missing_fields(rows)
@@ -250,8 +268,13 @@ def render_csv(groups):
     return buffer.getvalue()
 
 
-def fetch_listing(base, token):
-    """Đúng một request, không theo redirect, có chặn dung lượng."""
+def fetch_listing(base, token, opener=None, sleep=None):
+    """Đúng một lần đọc Worker; 5xx/lỗi mạng là tạm thời nên thử lại có hạn (tổng 3 lần), 4xx thì dừng ngay.
+
+    [opener]/[sleep] để test offline không cần mạng và không phải chờ thật.
+    """
+    import time
+    sleep = sleep or time.sleep
     if not token or any(not 0x20 <= ord(ch) <= 0x7e for ch in token):
         raise ValueError("missing or invalid CRASH_ADMIN_TOKEN")
     request = urllib.request.Request(base + "/reports", headers={
@@ -262,13 +285,20 @@ def fetch_listing(base, token):
         def redirect_request(self, *args, **kwargs):
             raise ValueError("redirect blocked")
 
-    try:
-        with urllib.request.build_opener(NoRedirect).open(request, timeout=20) as response:
-            content = response.read(MAX_BYTES + 1)
-    except urllib.error.HTTPError as error:
-        raise ValueError("Worker returned HTTP %d" % error.code) from None
-    except (OSError, urllib.error.URLError):
-        raise ValueError("cannot reach Worker") from None
+    open_request = opener or urllib.request.build_opener(NoRedirect).open
+    for attempt in range(ATTEMPTS):
+        try:
+            with open_request(request, timeout=20) as response:
+                content = response.read(MAX_BYTES + 1)
+            break
+        except urllib.error.HTTPError as error:
+            # 5xx (Worker/KV lỗi tạm thời) → thử lại; 4xx (token/sai đường) → dừng ngay.
+            if error.code < 500 or attempt == ATTEMPTS - 1:
+                raise ValueError("Worker returned HTTP %d" % error.code) from None
+        except (OSError, urllib.error.URLError):
+            if attempt == ATTEMPTS - 1:
+                raise ValueError("cannot reach Worker") from None
+        sleep(RETRY_DELAYS[attempt])
     if len(content) > MAX_BYTES:
         raise ValueError("response exceeds %d bytes" % MAX_BYTES)
     try:
@@ -277,17 +307,39 @@ def fetch_listing(base, token):
         raise ValueError("response is not JSON") from None
 
 
-def build(payload):
-    """payload → (markdown, csv, số dòng, số nhóm). Dùng chung cho mạng và tệp offline."""
+def partition_by_cert(groups):
+    """V205: tách nhóm khớp chứng thư bản phát hành (và bản cũ không gửi chứng thư) khỏi nhóm lạ.
+
+    Chứng thư do client gửi lên: chỉ dùng để lọc nhiễu thống kê, không phải bằng chứng xác thực.
+    """
+    kept, foreign = [], []
+    for group in groups:
+        if group["cert"] and group["cert"] != OFFICIAL_CERT_PREFIX:
+            foreign.append(group)
+        else:
+            kept.append(group)
+    return kept, foreign
+
+
+def build(payload, include_foreign=False):
+    """payload → (markdown, csv, số dòng, số nhóm). Dùng chung cho mạng và tệp offline.
+
+    Mặc định loại báo cáo mang chứng thư khác bản phát hành (V205) để tỷ lệ lỗi không bị bản mod thổi lên;
+    `include_foreign=True` (cờ `--all-certs`) giữ tất cả để điều tra.
+    """
     rows = rows_of(payload)
     groups = group_rows(rows)
-    return render_markdown(groups, len(rows)), render_csv(groups), len(rows), len(groups)
+    excluded = []
+    if not include_foreign:
+        groups, excluded = partition_by_cert(groups)
+    return render_markdown(groups, len(rows), excluded), render_csv(groups), len(rows), len(groups)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out-dir", default=".", help="thư mục ghi crash-insight.md/.csv")
     parser.add_argument("--file", help="đọc payload /reports từ tệp (offline, không gọi mạng)")
+    parser.add_argument("--all-certs", action="store_true", help="gộp cả báo cáo mang chứng thư khác bản phát hành (mặc định: loại khỏi thống kê)")
     args = parser.parse_args()
     try:
         if args.file:
@@ -297,7 +349,7 @@ def main():
         else:
             base = validate_base(os.environ.get("CRASH_URL") or DEFAULT_URL)
             payload = fetch_listing(base, os.environ.get("CRASH_ADMIN_TOKEN", "").strip())
-        markdown, table, scanned, groups = build(payload)
+        markdown, table, scanned, groups = build(payload, args.all_certs)
         os.makedirs(args.out_dir, exist_ok=True)
         with open(os.path.join(args.out_dir, "crash-insight.md"), "w", encoding="utf-8") as handle:
             handle.write(markdown)

@@ -33,6 +33,8 @@ class GameLauncher(private val configRepo: ConfigRepository) {
 
     fun launch(activity: Activity, game: Game, experimentalConfirmed: Boolean = false): LaunchResult {
         if (vn.aow.monika.library.GameSaveTransfer.busy) return LaunchResult.Failed("Đang chuyển save. Hãy chờ xong rồi mở game.")
+        // V202: nhả bộ đệm tiến trình chính trước khi nhường RAM cho tiến trình game.
+        vn.aow.monika.AppGraph.trimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)
         val system = game.system ?: return LaunchResult.Failed(
             if (game.needsExtract) "Game chưa được giải nén. Bấm \"Giải nén\" (nhập mật khẩu nếu có)."
             else "Chưa nhận diện được loại game này."
@@ -45,8 +47,11 @@ class GameLauncher(private val configRepo: ConfigRepository) {
         return when (system.runner) {
             "libretro" -> {
                 // Engine nhúng (vd. Azahar cho 3DS) khi module có sẵn cho máy này; không thì lõi libretro như cũ.
-                if (system.engine == vn.aow.monika.azahar.AzaharModule.ID && vn.aow.monika.AppGraph.azahar.available() &&
-                    vn.aow.monika.AppGraph.prefs.coreOverride(system.id) == null) {
+                val azaharRoute = system.engine == vn.aow.monika.azahar.AzaharModule.ID &&
+                    vn.aow.monika.AppGraph.azahar.available() && vn.aow.monika.AppGraph.prefs.coreOverride(system.id) == null
+                // `.cia` là gói cài đặt: chỉ đường Azahar cài được, đưa vào lõi libretro là `core-error` (#301, #610).
+                ciaBlockedReason(entry, azaharRoute)?.let { return LaunchResult.Failed(it) }
+                if (azaharRoute) {
                     vn.aow.monika.azahar.AzaharActivity.start(activity, entry, system.name, game.name, game.key)
                     return LaunchResult.Started
                 }
@@ -126,6 +131,16 @@ class GameLauncher(private val configRepo: ConfigRepository) {
     }
 
     companion object {
+        /**
+         * Tệp `.cia` là **gói cài đặt** (game, bản cập nhật, DLC), không phải ROM — chỉ đường Azahar cài được.
+         * Đưa thẳng vào lõi libretro (citra) thì `retro_load_game` thất bại → `core-error` (#301, #610).
+         * Trả về thông điệp cho người dùng; null = được chạy.
+         */
+        internal fun ciaBlockedReason(entry: File, azaharRoute: Boolean): String? =
+            if (!azaharRoute && vn.aow.monika.azahar.AzaharCia.isCia(entry.path))
+                "Tệp .cia là gói cài đặt, không phải ROM nên lõi giả lập không mở được. Hãy cài .cia qua Azahar (3DS) hoặc dùng bản .3ds/.cci/.cxi."
+            else null
+
         /**
          * Chọn lõi libretro: lõi user chọn trong Cài đặt (nếu còn trong cấu hình) → lõi mặc định của hệ.
          * Lõi đã chọn không chạy được trên máy này (vd. melondsds chỉ arm64) → lấy lõi thay thế đầu tiên chạy được.

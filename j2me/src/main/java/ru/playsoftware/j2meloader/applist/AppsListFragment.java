@@ -306,8 +306,6 @@ public class AppsListFragment extends Fragment implements MenuProvider, AppsList
 		} else if (itemId == R.id.action_help) {
 			HelpDialogFragment helpDialogFragment = new HelpDialogFragment();
 			helpDialogFragment.show(getChildFragmentManager(), "help");
-		} else if (itemId == R.id.action_donate) {
-			// Aow Monika: bỏ màn ủng hộ của J2ME Loader/JL-Mod (kéo theo thư viện thanh toán); Monika có nút ủng hộ AowVN riêng.
 		} else if (itemId == R.id.action_save_log) {
 			try {
 				LogUtils.writeLog();

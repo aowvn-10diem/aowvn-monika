@@ -8,6 +8,7 @@ import json
 import os
 import sys
 import unittest
+import urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("crash_insight", os.path.join(HERE, "crash-insight.py"))
@@ -27,6 +28,24 @@ def row(**kw):
 
 
 class Grouping(unittest.TestCase):
+    def test_foreign_cert_rows_are_excluded_from_statistics_by_default(self):
+        payload = {"reports": [
+            row(cert="c46902e97029a965"),          # chứng thư phát hành
+            row(cert="1e08a903aef90000"),          # bản khác chứng thư → loại
+            row(cert=""),                          # bản cũ không gửi chứng thư → giữ
+        ]}
+        markdown, table, scanned, groups = insight.build(payload)
+        self.assertEqual(3, scanned)
+        self.assertEqual(2, groups)
+        self.assertIn("Đã loại khỏi thống kê", markdown)
+        self.assertIn("**1 báo cáo**", markdown)
+        # Chứng thư lạ không xuất hiện trong bảng, phần đếm chứng thư hay CSV.
+        for output in (markdown, table):
+            self.assertNotIn("1e08a903aef9", output)
+        all_markdown, _, _, all_groups = insight.build(payload, include_foreign=True)
+        self.assertEqual(3, all_groups)
+        self.assertNotIn("Đã loại khỏi thống kê", all_markdown)
+
     def test_same_core_kind_signature_is_one_group_and_counts_add_up(self):
         groups = insight.group_rows([row(count=2), row(count=3), row(t=1_700_000_000_100)])
         self.assertEqual(1, len(groups))
@@ -111,6 +130,75 @@ class Rendering(unittest.TestCase):
         self.assertEqual(1, len(table.splitlines()))
 
 
+class Response:
+    def __init__(self, body):
+        import io
+        self.body = io.BytesIO(body)
+
+    def read(self, _n=-1):
+        return self.body.read()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_exc):
+        return False
+
+
+class Flaky:
+    """Giả lập Worker: n lần đầu trả 500 rồi trả JSON."""
+
+    def __init__(self, failures, payload=b'{"reports":[]}'):
+        self.failures = failures
+        self.payload = payload
+        self.calls = 0
+
+    def __call__(self, _request, timeout=None):
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise urllib.error.HTTPError("https://x.workers.dev/reports", 500, "Internal", {}, None)
+        return Response(self.payload)
+
+
+class Retry(unittest.TestCase):
+    def fetch(self, opener):
+        return insight.fetch_listing("https://x.workers.dev", "token", opener=opener, sleep=lambda _s: None)
+
+    def test_server_error_is_retried_until_it_succeeds(self):
+        flaky = Flaky(failures=2)
+        self.assertEqual({"reports": []}, self.fetch(flaky))
+        self.assertEqual(3, flaky.calls)
+
+    def test_permanent_server_error_stops_after_three_attempts(self):
+        flaky = Flaky(failures=99)
+        with self.assertRaises(ValueError) as error:
+            self.fetch(flaky)
+        self.assertIn("HTTP 500", str(error.exception))
+        self.assertEqual(insight.ATTEMPTS, flaky.calls)
+
+    def test_client_error_is_not_retried(self):
+        calls = []
+
+        def unauthorized(_request, timeout=None):
+            calls.append(1)
+            raise urllib.error.HTTPError("https://x.workers.dev/reports", 401, "Unauthorized", {}, None)
+
+        with self.assertRaises(ValueError) as error:
+            self.fetch(unauthorized)
+        self.assertIn("HTTP 401", str(error.exception))
+        self.assertEqual(1, len(calls))
+
+    def test_network_failure_is_retried_then_reported(self):
+        calls = []
+
+        def offline(_request, timeout=None):
+            calls.append(1)
+            raise urllib.error.URLError("down")
+
+        with self.assertRaises(ValueError) as error:
+            self.fetch(offline)
+        self.assertIn("cannot reach Worker", str(error.exception))
+        self.assertEqual(insight.ATTEMPTS, len(calls))
 class Certificate(unittest.TestCase):
     """V155b: cột + bảng đếm theo chứng thư để nhóm và đối chiếu thủ công với chứng thư bản phát hành."""
 
@@ -154,6 +242,15 @@ class Certificate(unittest.TestCase):
         self.assertIn("| %s | 2 | 7 |" % self.CERT_A[:12], markdown)
         self.assertIn("| %s | 1 | 1 |" % self.CERT_B[:12], markdown)
         self.assertIn("2 chứng thư khác nhau", markdown)
+
+    def test_foreign_certificate_is_summarised_not_counted(self):
+        # V205: báo cáo chứng thư lạ chỉ còn dòng tổng "đã loại", không vào bảng đếm chứng thư.
+        payload = {"reports": [row(cert="c46902e97029a965", count=2), row(cert=self.CERT_B, count=5)]}
+        markdown, _, _, group_count = insight.build(payload)
+        self.assertEqual(1, group_count)
+        self.assertIn("**1 báo cáo** · **5 lượt**", markdown)
+        self.assertIn("| c46902e97029 | 1 | 2 |", markdown)
+        self.assertNotIn(self.CERT_B[:12], markdown)
 
     def test_single_certificate_has_no_warning(self):
         markdown = insight.render_markdown(insight.group_rows([row(cert=self.CERT_A)]), 1)

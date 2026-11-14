@@ -19,7 +19,11 @@
 -keep class net.sf.sevenzipjbinding.** { *; }
 
 # Báo lỗi game (kotlinx.serialization) + thông tin game tự nhận diện
--keep class vn.aow.monika.diag.** { *; }
+# A78-3: chỉ giữ các lớp @Serializable cần cho JSON, không giữ cả package để R8 đổi tên hàm kiểm chứng thư.
+-keep class vn.aow.monika.diag.Diagnostics$Report* { *; }
+-keep class vn.aow.monika.diag.Diagnostics$Session* { *; }
+-keep class vn.aow.monika.diag.Diagnostics$DeathSnapshot* { *; }
+-keep class vn.aow.monika.diag.Diagnostics$ReportImage* { *; }
 -keep class vn.aow.monika.library.GameInfoResolver* { *; }
 
 # Engine 3DS nhúng (Azahar): thư viện native gọi ngược lớp Kotlin theo tên/chữ ký

@@ -22,6 +22,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <memory>
 #include <unordered_set>
 
 #include "libretrodroid.h"
@@ -129,10 +130,13 @@ void LibretroDroid::changeDisk(unsigned int index) {
 }
 
 void LibretroDroid::updateVariable(const Variable& variable) {
+    // V202 PR3: biến lõi đọc/ghi từ UI thread phải cùng khoá với vòng retro_run của GLThread.
+    std::lock_guard<std::mutex> lock(coreLock);
     Environment::getInstance().updateVariable(variable.key, variable.value);
 }
 
 std::vector<Variable> LibretroDroid::getVariables() {
+    std::lock_guard<std::mutex> lock(coreLock);
     return Environment::getInstance().getVariables();
 }
 
@@ -141,11 +145,24 @@ std::vector<std::vector<struct Controller>> LibretroDroid::getControllers() {
 }
 
 void LibretroDroid::setControllerType(unsigned int port, unsigned int type) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
+    if (!core) {
+        LOGE("Cannot set controller type without a core");
+        return;
+    }
+
     core->retro_set_controller_port_device(port, type);
 }
 
 bool LibretroDroid::unserializeState(int8_t *data, size_t size) {
     std::lock_guard<std::mutex> lock(coreLock);
+
+    // Aow Monika: UI còn nạp slot khi lõi đã destroy()/create() lỗi (core rỗng) hoặc file slot 0 byte — không gọi vào lõi.
+    if (!core || data == nullptr || size == 0) {
+        LOGE("Cannot unserialize state: core is empty or state data is empty");
+        return false;
+    }
 
     return core->retro_unserialize(data, size);
 }
@@ -174,23 +191,54 @@ JNIEXPORT jboolean JNICALL LibretroDroid::unserializeSRAM(int8_t* data, size_t s
 std::pair<int8_t*, size_t> LibretroDroid::serializeSRAM() {
     std::lock_guard<std::mutex> lock(coreLock);
 
+    // Aow Monika: lượt chụp SRAM lúc rời game (onPause) có thể tới khi lõi đã destroy() hoặc create() lỗi — core rỗng.
+    if (!core) {
+        LOGE("Cannot serialize SRAM: the core is not loaded");
+        return {nullptr, 0};
+    }
+
     size_t size = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+    auto* sramState = (int8_t*) core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+
+    // Aow Monika: lõi không dùng SAVE_RAM (hoặc đã unload) trả 0 byte / con trỏ rỗng — memcpy từ nullptr là lỗi.
+    if (size == 0 || sramState == nullptr) {
+        LOGE("Cannot serialize SRAM: the core exposes no save RAM");
+        return {nullptr, 0};
+    }
+
     auto* data = new int8_t[size];
-    memcpy(data, (int8_t*) core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM), size);
+    memcpy(data, sramState, size);
 
     return std::pair(data, size);
 }
 
 void LibretroDroid::onSurfaceChanged(unsigned int width, unsigned int height) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     LOGD("Performing libretrodroid onSurfaceChanged");
-    video->updateScreenSize(width, height);
+    if (video) {
+        video->updateScreenSize(width, height);
+    }
 }
 
 void LibretroDroid::onSurfaceCreated() {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     LOGD("Performing libretrodroid onSurfaceCreated");
+
+    if (!core) {
+        LOGE("Cannot create the video surface without a core");
+        return;
+    }
 
     struct retro_system_av_info system_av_info {};
     core->retro_get_system_av_info(&system_av_info);
+
+    // Aow Monika: EGL context mới thì phải huỷ context HW của lõi trước khi dựng Video mới,
+    // nếu không lõi giữ FBO/texture của context đã chết sau khi xoay màn hình hoặc khóa/mở máy.
+    if (video != nullptr && Environment::getInstance().getHwContextDestroy() != nullptr) {
+        Environment::getInstance().getHwContextDestroy()();
+    }
 
     video = nullptr;
 
@@ -316,20 +364,28 @@ void LibretroDroid::loadGameFromPath(const std::string& gamePath, const std::fun
     core->retro_get_system_info(&system_info);
 
     struct retro_game_info game_info {};
-    game_info.path = Utils::cloneToCString(gamePath);
+    // V202: chuỗi đường dẫn do cloneToCString cấp bằng new[] — phải có chủ sở hữu để giải phóng.
+    std::unique_ptr<const char[]> pathHolder(Utils::cloneToCString(gamePath));
+    game_info.path = pathHolder.get();
     game_info.meta = nullptr;
 
+    std::unique_ptr<char[]> dataHolder;
     if (system_info.need_fullpath) {
         game_info.data = nullptr;
         game_info.size = 0;
     } else {
         struct Utils::ReadResult file = Utils::readFileAsBytes(gamePath);
-        game_info.data = file.data;
+        // V202: lõi need_fullpath=false tự sao chép dữ liệu trong retro_load_game, nên bản sao
+        // ROM 128–512 MB này chỉ sống tới hết lời gọi; giải phóng ngay sau đó.
+        dataHolder.reset(file.data);
+        game_info.data = dataHolder.get();
         game_info.size = file.size;
     }
 
     if (progress) progress("core-load-game");
     bool result = core->retro_load_game(&game_info);
+    dataHolder.reset();
+    pathHolder.reset();
     if (!result) {
         LOGE("Cannot load game. Leaving.");
         throw std::runtime_error("Cannot load game");
@@ -383,8 +439,11 @@ void LibretroDroid::loadGameFromVirtualFiles(std::vector<VFSFile> virtualFiles) 
     bool loadUsingVFS = system_info.need_fullpath || virtualFiles.size() > 1;
 
     struct retro_game_info game_info {};
-    game_info.path = Utils::cloneToCString(firstFilePath);
+    std::unique_ptr<const char[]> pathHolder(Utils::cloneToCString(firstFilePath));
+    game_info.path = pathHolder.get();
     game_info.meta = nullptr;
+
+    std::unique_ptr<char[]> dataHolder;
 
     if (loadUsingVFS) {
         VFS::getInstance().initialize(std::move(virtualFiles));
@@ -395,11 +454,14 @@ void LibretroDroid::loadGameFromVirtualFiles(std::vector<VFSFile> virtualFiles) 
         game_info.size = 0;
     } else {
         struct Utils::ReadResult file = Utils::readFileAsBytes(firstFileFD);
-        game_info.data = file.data;
+        dataHolder.reset(file.data);
+        game_info.data = dataHolder.get();
         game_info.size = file.size;
     }
 
     bool result = core->retro_load_game(&game_info);
+    dataHolder.reset();
+    pathHolder.reset();
     if (!result) {
         LOGE("Cannot load game. Leaving.");
         throw std::runtime_error("Cannot load game");
@@ -422,32 +484,54 @@ void LibretroDroid::destroy() {
     achievementsConfig.reset();
     currentGamePath.clear();
 
-    core->retro_unload_game();
-    core->retro_deinit();
+    // Aow Monika: destroy() có thể tới sau khi lõi đã lỗi/đã gỡ — không được gọi vào con trỏ rỗng.
+    if (core) {
+        core->retro_unload_game();
+        core->retro_deinit();
+    }
 
     video = nullptr;
     core = nullptr;
     rumble = nullptr;
     fpsSync = nullptr;
     audio = nullptr;
+    input = nullptr;
 
     Environment::getInstance().deinitialize();
     VFS::getInstance().deinitialize();
 }
 
 void LibretroDroid::resume() {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     LOGD("Performing libretrodroid resume");
+
+    if (!core) {
+        LOGE("Cannot resume: the core is not loaded");
+        return;
+    }
 
     input = std::make_unique<Input>();
 
-    fpsSync->reset();
-    audio->start();
-    refreshAspectRatio();
+    if (fpsSync) {
+        fpsSync->reset();
+    }
+    if (audio) {
+        audio->start();
+    }
+
+    refreshAspectRatioLocked();
 }
 
 void LibretroDroid::pause() {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     LOGD("Performing libretrodroid pause");
-    audio->stop();
+
+    // Aow Monika: pause() có thể tới sau destroy() hoặc trước afterGameLoad() — audio/fpsSync có thể rỗng.
+    if (audio) {
+        audio->stop();
+    }
 
     input = nullptr;
 }
@@ -507,7 +591,16 @@ float LibretroDroid::getAspectRatio() {
 }
 
 void LibretroDroid::refreshAspectRatio() {
-    video->updateAspectRatio(getAspectRatio());
+    std::lock_guard<std::mutex> lock(coreLock);
+
+    refreshAspectRatioLocked();
+}
+
+void LibretroDroid::refreshAspectRatioLocked() {
+    // Aow Monika: gọi từ resume()/UI khi video chưa dựng xong là bình thường — bỏ qua, không deref rỗng.
+    if (video) {
+        video->updateAspectRatio(getAspectRatio());
+    }
 }
 
 void LibretroDroid::setRumbleEnabled(bool enabled) {
@@ -519,6 +612,8 @@ bool LibretroDroid::isRumbleEnabled() const {
 }
 
 void LibretroDroid::setFrameSpeed(unsigned int speed) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     frameSpeed = speed;
     updateAudioSampleRateMultiplier();
 }
@@ -528,6 +623,8 @@ void LibretroDroid::setAudioEnabled(bool enabled) {
 }
 
 void LibretroDroid::setShaderConfig(ShaderManager::Config shaderConfig) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     fragmentShaderConfig = std::move(shaderConfig);
     if (video) {
         video->updateShaderType(fragmentShaderConfig);
@@ -584,7 +681,20 @@ void LibretroDroid::reset() {
 std::pair<int8_t*, size_t> LibretroDroid::serializeState() {
     std::lock_guard<std::mutex> lock(coreLock);
 
+    // Aow Monika: lưu slot có thể tới khi lõi đã destroy()/create() lỗi — không deref con trỏ rỗng.
+    if (!core) {
+        LOGE("Cannot serialize state: the core is not loaded");
+        return {nullptr, 0};
+    }
+
     size_t size = core->retro_serialize_size();
+
+    // Aow Monika: lõi báo state 0 byte (chưa nạp game hoặc sau unload) — gọi retro_serialize với size 0 là vô nghĩa.
+    if (size == 0) {
+        LOGE("Cannot serialize state: the core reports a zero-size state");
+        return {nullptr, 0};
+    }
+
     auto data = new int8_t[size];
 
     core->retro_serialize(data, size);
@@ -601,7 +711,9 @@ void LibretroDroid::resetCheat() {
 void LibretroDroid::setCheat(unsigned index, bool enabled, const std::string& code) {
     std::lock_guard<std::mutex> lock(coreLock);
 
-    core->retro_cheat_set(index, enabled, Utils::cloneToCString(code));
+    // V202: cùng kiểu rò rỉ new[] như đường nạp game — giữ chủ sở hữu và giải phóng sau lời gọi.
+    std::unique_ptr<const char[]> codeHolder(Utils::cloneToCString(code));
+    core->retro_cheat_set(index, enabled, codeHolder.get());
 }
 
 bool LibretroDroid::requiresVideoRefresh() const {
@@ -662,6 +774,8 @@ void LibretroDroid::handleRumbleUpdates(const std::function<void(int, float, flo
 }
 
 void LibretroDroid::setViewport(Rect viewportRect) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     this->viewportRect = viewportRect;
 
     if (video != nullptr) {
@@ -670,6 +784,8 @@ void LibretroDroid::setViewport(Rect viewportRect) {
 }
 
 void LibretroDroid::setViewportAlignment(unsigned int viewportAlignment) {
+    std::lock_guard<std::mutex> lock(coreLock);
+
     this-> viewportAlignment = viewportAlignment;
 
     if (video) {

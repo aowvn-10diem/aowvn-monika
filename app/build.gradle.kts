@@ -10,9 +10,9 @@ plugins {
 // V192: BouncyCastle đi vào APK qua `libadb-android` (kéo bản cũ). Ghim bản trong
 // `gradle/libs.versions.toml` cho MỌI cấu hình của app (mọi `*Classpath`, cả 2 flavor).
 val bcVersion = libs.versions.bouncycastle.get()
-// V0811: `org.xerial:sqlite-jdbc` 3.36.0 chỉ nằm ở classpath plugin (SBOM: `androidx.room:room-compiler` 2.5.2),
-// không vào APK. `force` dưới đây chỉ áp cho cấu hình của `:app`, KHÔNG chạm classpath plugin; giữ dòng này
-// để nếu gói lọt vào cấu hình app thì đã là bản vá — cảnh báo chỉ đóng khi cây plugin hết bản lỗi.
+// V0911: `org.xerial:sqlite-jdbc` từng ở classpath trình biên dịch qua `androidx.room:room-compiler` 2.5.2 của
+// `:j2me` (3.36.0, GHSA-6phf-6h5g-97j2). `:j2me` nay dùng Room 2.6.1 nên cây đó là 3.41.2.2 (bản vá); `force`
+// dưới đây vẫn áp cho mọi cấu hình của `:app` như chốt chặn nếu bản lỗi lọt vào cây.
 val sqliteJdbcVersion = libs.versions.sqliteJdbc.get()
 // V0811: hai thư viện dưới đây nằm trong APK nhưng không do app gọi trực tiếp (xem docs/bao-mat/PHU-THUOC-0811.md).
 val guavaVersion = libs.versions.guava.get()
@@ -43,8 +43,8 @@ android {
         // App thuần Việt: chỉ giữ tài nguyên tiếng Việt (J2ME Loader và thư viện kèm theo cũng hiện tiếng Việt
         // kể cả khi máy đặt ngôn ngữ khác). Bỏ ~40 ngôn ngữ thừa → APK nhẹ hơn.
         resourceConfigurations += listOf("vi")
-        versionCode = 56
-        versionName = "0.8.11"
+        versionCode = 58
+        versionName = "0.8.13"
         // V56: runner chỉ nằm trong APK instrumentation, không thêm lối vào app phát hành.
         testInstrumentationRunner = "vn.aow.monika.testlab.KirikiriArmRunner"
         // Link file cấu hình từ xa (Cloudflare Worker, repo giữ private).
@@ -134,7 +134,7 @@ android {
     // Bản cấu hình dự phòng đóng gói trong APK = đúng file config/ ở gốc repo (1 nguồn duy nhất).
     sourceSets["test"].java.setSrcDirs(emptyList<String>())
     sourceSets["testGithub"].java.srcDir("src/test/java")
-    sourceSets["testGithub"].resources.srcDirs("src/test/resources", "../cloudflare/crash-worker/fixtures")
+    sourceSets["testGithub"].resources.srcDirs("src/test/resources")
     // Ghi công, cheat và script RGSS dùng chung; chỉ catalog gốc dành cho GitHub.
     sourceSets["main"].assets.srcDir("src/main/assets")
     sourceSets["github"].assets.srcDir("../config")
@@ -261,6 +261,8 @@ dependencies {
     "githubImplementation"(libs.apksig)
     sevenZipTestNatives(libs.sevenzip.jvm.natives)
     implementation(project(":j2me")) // Giả lập Java J2ME (J2ME Loader nhúng sẵn)
+    // V142: màn đọc PDF (PdfRenderer có sẵn của Android, không thêm thư viện ngoài).
+    implementation(project(":reader"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     // V196: kiểm redirect 302 thật ở mỗi hop mà không cần mạng (máy chủ HTTPS cục bộ trong test)
