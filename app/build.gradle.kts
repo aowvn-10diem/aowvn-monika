@@ -93,10 +93,11 @@ android {
         debug {
             // V196/A85: host tải bổ sung CHỈ cho bản test/CI. CI đặt biến môi trường
             // `MONIKA_EXTRA_DOWNLOAD_HOSTS` trước khi build; allowlist production trong mã không bị sửa.
+            // Lọc về đúng ký tự host: newline/backslash/nháy trong env sẽ làm vỡ mã Kotlin sinh ra.
             // Bản release không bao giờ đọc biến này (xem `release` ở trên).
             buildConfigField(
                 "String", "EXTRA_DOWNLOAD_HOSTS",
-                "\"${System.getenv("MONIKA_EXTRA_DOWNLOAD_HOSTS").orEmpty().replace("\"", "")}\""
+                "\"${System.getenv("MONIKA_EXTRA_DOWNLOAD_HOSTS").orEmpty().replace(Regex("[^A-Za-z0-9.,;-]"), "")}\""
             )
         }
     }

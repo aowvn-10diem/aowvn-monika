@@ -15,9 +15,25 @@ except ImportError:  # pragma: no cover - môi trường thiếu thư viện ph�
     raise SystemExit(2)
 
 WORKFLOWS_DIR = Path(__file__).resolve().parents[1] / ".github/workflows"
+APP_GRADLE = Path(__file__).resolve().parents[1] / "app/build.gradle.kts"
 
 # Ngưỡng bền: không phải "số chính xác hiện tại" mà là sàn để phát hiện quét hụt cả thư mục.
-MIN_WORKFLOWS = 30
+# 48 = đúng số tệp `.yml` trên nhánh này; sàn cũ trên `main` là 40 nên KHÔNG BAO GIỜ hạ dưới mức đó
+# (xem `test_workflow_floor_never_below_main_baseline`).
+MIN_WORKFLOWS = 48
+MIN_WORKFLOWS_FLOOR = 40
+
+# A85/V196: allowlist tải của bản phát hành phải RỖNG, biến môi trường chỉ được dùng cho bản debug.
+ENV_EXTRA_HOSTS = 'System.getenv("MONIKA_EXTRA_DOWNLOAD_HOSTS")'
+RELEASE_EMPTY_ALLOWLIST = 'buildConfigField("String", "EXTRA_DOWNLOAD_HOSTS", "\\"\\"")'
+EMPTY_ALLOWLIST_LINE = RELEASE_EMPTY_ALLOWLIST
+# Dòng sinh allowlist cho bản debug, dùng chung cho tệp thật lẫn tệp giả trong ca âm.
+DEBUG_ALLOWLIST_LINES = [
+    "buildConfigField(",
+    '"String", "EXTRA_DOWNLOAD_HOSTS",',
+    '"\\"${' + ENV_EXTRA_HOSTS + '.orEmpty().replace(Regex("[^A-Za-z0-9.,;-]"), "")}\\""',
+    ")",
+]
 
 # Hành động chính thức của GitHub / đường dẫn nội bộ được phép dùng tag major.
 # Mọi `uses:` khác BẮT BUỘC ghim SHA 40 ký tự (deny-by-default: action thêm sau này cũng bị phủ).
@@ -146,6 +162,204 @@ def job_has_repository_guard(job: dict) -> bool:
     return isinstance(condition, str) and "github.repository" in condition
 
 
+def kotlin_scan(text: str) -> tuple[str, str]:
+    """Tách mã Kotlin khỏi chú thích/chuỗi: trả (bản giữ chuỗi, bản chỉ còn mã).
+
+    Bản 1 bỏ chú thích nhưng GIỮ nguyên chuỗi, để so khớp đúng nguyên văn
+    `System.getenv("...")`. Bản 2 bỏ cả ruột chuỗi, để đếm ngoặc `{}` — dấu ngoặc
+    nằm trong chuỗi hay chú thích không phải cú pháp khối nên không được tính.
+    Cả hai bản giữ nguyên độ dài và vị trí ký tự của tệp gốc.
+    """
+    keep = list(text)
+    code = list(text)
+    states: list[str] = []
+    braces: list[int] = []  # độ sâu `{}` cho mục "template" (`${...}`)
+
+    def blank(buf: list[str], index: int) -> None:
+        if buf[index] != "\n":
+            buf[index] = " "
+
+    def blank_both(index: int) -> None:
+        blank(keep, index)
+        blank(code, index)
+
+    def push(state: str) -> None:
+        states.append(state)
+        braces.append(0)
+
+    def pop() -> None:
+        states.pop()
+        braces.pop()
+
+    i, n = 0, len(text)
+    while i < n:
+        ch = text[i]
+        state = states[-1] if states else "code"
+        if state == "line":
+            blank_both(i)
+            if ch == "\n":
+                pop()
+            i += 1
+        elif state == "block":
+            blank_both(i)
+            if text.startswith("*/", i):
+                blank_both(i + 1)
+                pop()
+                i += 2
+            else:
+                i += 1
+        elif state == "raw":
+            blank(code, i)
+            if text.startswith('"""', i):
+                for offset in range(3):
+                    blank(code, i + offset)
+                pop()
+                i += 3
+            else:
+                i += 1
+        elif state == "string":
+            blank(code, i)
+            if ch == "\\" and i + 1 < n:
+                blank(code, i + 1)
+                i += 2
+            elif ch == '"':
+                pop()
+                i += 1
+            elif text.startswith("${", i):
+                push("template")
+                i += 2
+            elif ch == "\n":  # chuỗi chưa đóng: đừng nuốt phần còn lại của tệp
+                pop()
+                i += 1
+            else:
+                i += 1
+        elif state == "template":
+            # Trong `${...}` là mã thật: vẫn đếm ngoặc để biết `}` nào đóng template.
+            if ch == "{":
+                braces[-1] += 1
+                i += 1
+            elif ch == "}":
+                if braces[-1]:
+                    braces[-1] -= 1
+                    i += 1
+                else:
+                    pop()
+                    i += 1
+            elif ch == '"':
+                push("string")
+                blank(code, i)
+                i += 1
+            elif text.startswith("//", i):
+                push("line")
+                blank_both(i)
+                blank_both(i + 1)
+                i += 2
+            elif ch == "\n":
+                pop()
+                i += 1
+            else:
+                i += 1
+        else:  # code
+            if text.startswith("//", i):
+                blank_both(i)
+                blank_both(i + 1)
+                push("line")
+                i += 2
+            elif text.startswith("/*", i):
+                blank_both(i)
+                blank_both(i + 1)
+                push("block")
+                i += 2
+            elif text.startswith('"""', i):
+                for offset in range(3):
+                    blank(code, i + offset)
+                push("raw")
+                i += 3
+            elif ch == '"':
+                push("string")
+                blank(code, i)
+                i += 1
+            else:
+                i += 1
+    return "".join(keep), "".join(code)
+
+
+def kotlin_block_bounds(code: str, header: str) -> tuple[int, int] | None:
+    """Vị trí (sau `{` của header, trước `}` đóng) của khối `header {` đầu tiên.
+
+    `code` là bản chỉ-còn-mã từ `kotlin_scan`; nhờ vậy `{`/`}` trong chuỗi, chú thích
+    hay `${...}` không làm lệch độ sâu. Trả None nếu không có khối.
+    """
+    match = re.search(rf"\b{re.escape(header)}\s*\{{", code)
+    if not match:
+        return None
+    start = match.end() - 1
+    depth = 0
+    for index in range(start, len(code)):
+        if code[index] == "{":
+            depth += 1
+        elif code[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return start + 1, index
+    return None
+
+
+def allowlist_problems(text: str) -> list[str]:
+    """Lỗi cấu hình allowlist tải trong `buildTypes` của `app/build.gradle.kts` (rỗng = đạt)."""
+    keep, code = kotlin_scan(text)
+    problems: list[str] = []
+    build_types = kotlin_block_bounds(code, "buildTypes")
+    if build_types is None:
+        return ["không thấy khối `buildTypes`"]
+    keep_types = keep[build_types[0]:build_types[1]]
+    code_types = code[build_types[0]:build_types[1]]
+
+    def body(header: str) -> str | None:
+        bounds = kotlin_block_bounds(code_types, header)
+        return None if bounds is None else keep_types[bounds[0]:bounds[1]]
+
+    release = body("release")
+    if release is None:
+        problems.append("không thấy khối `release`")
+    else:
+        if RELEASE_EMPTY_ALLOWLIST not in release:
+            problems.append("release: thiếu " + RELEASE_EMPTY_ALLOWLIST)
+        if release.count("buildConfigField") != 1:
+            problems.append("release: phải có đúng 1 buildConfigField (allowlist rỗng)")
+        if ENV_EXTRA_HOSTS in release:
+            problems.append("release: không được đọc " + ENV_EXTRA_HOSTS)
+
+    debug = body("debug")
+    if debug is None:
+        problems.append("không thấy khối `debug`")
+    elif ENV_EXTRA_HOSTS not in debug:
+        problems.append("debug: phải đọc " + ENV_EXTRA_HOSTS)
+    else:
+        # Đếm trên toàn tệp: mọi lần đọc biến đều phải nằm trong khối debug.
+        if keep.count(ENV_EXTRA_HOSTS) != debug.count(ENV_EXTRA_HOSTS):
+            problems.append("còn chỗ đọc " + ENV_EXTRA_HOSTS + " ngoài khối `debug`")
+        if debug_filter_pattern(debug) is None:
+            problems.append("debug: thiếu bộ lọc ký tự cho giá trị env")
+    return problems
+
+
+def debug_filter_pattern(debug_body: str) -> str | None:
+    """Chuỗi regex lọc ký tự trong khối `debug` (dùng để chặn newline/backslash phá mã sinh ra)."""
+    match = re.search(r'Regex\(\s*"((?:[^"\\]|\\.)+)"\s*\)', debug_body)
+    return None if match is None else match.group(1)
+
+
+def fake_gradle(release_body: list[str], debug_body: list[str]) -> str:
+    """Dựng đoạn Kotlin giả cùng hình dạng `buildTypes { release {} debug {} }` để thử detector."""
+    lines = ["android {", "    buildTypes {", "        release {"]
+    lines += ["            " + line for line in release_body]
+    lines += ["        }", "        debug {"]
+    lines += ["            " + line for line in debug_body]
+    lines += ["        }", "    }", "}"]
+    return "\n".join(lines) + "\n"
+
+
 class WorkflowSecurityTest(unittest.TestCase):
     def iter_workflows(self):
         files = sorted(WORKFLOWS_DIR.glob("*.yml"))
@@ -252,6 +466,87 @@ class WorkflowSecurityTest(unittest.TestCase):
                     SHA_PINNED.pattern,
                     f"{path.name}: action ngoài actions/github/./ chưa ghim SHA 40 ký tự: {uses}",
                 )
+
+    def test_workflow_floor_never_below_main_baseline(self):
+        """Sàn quét không được hạ: main từng dùng 40, hạ nữa là tự bịt mắt trước workflow mới."""
+        self.assertGreaterEqual(
+            MIN_WORKFLOWS, MIN_WORKFLOWS_FLOOR,
+            f"MIN_WORKFLOWS={MIN_WORKFLOWS} thấp hơn sàn cũ trên main ({MIN_WORKFLOWS_FLOOR})",
+        )
+
+    def test_release_build_has_empty_download_allowlist(self):
+        """A85: `release {` sinh đúng allowlist rỗng; biến môi trường chỉ được đọc trong `debug {`."""
+        text = APP_GRADLE.read_text(encoding="utf-8")
+        self.assertEqual(allowlist_problems(text), [], "allowlist tải của bản phát hành không còn rỗng")
+
+        # Chứng minh đã parse đúng khối thật trong tệp, không phải so khớp một chuỗi mô tả.
+        keep, code = kotlin_scan(text)
+        bounds = kotlin_block_bounds(code, "release")
+        self.assertIsNotNone(bounds, "không tìm thấy khối `release` trong app/build.gradle.kts")
+        release = keep[bounds[0]:bounds[1]]
+        self.assertIn("isMinifyEnabled = true", release, "khối `release` parse được phải là khối R8 thật")
+        self.assertNotIn(ENV_EXTRA_HOSTS, release)
+        self.assertIn(RELEASE_EMPTY_ALLOWLIST, release)
+
+    def test_allowlist_detector_catches_synthetic_violations(self):
+        """Ca âm: dựng tệp giả rồi bắt buộc detector phải báo lỗi, tránh test chỉ đọc mô tả."""
+        good = fake_gradle([EMPTY_ALLOWLIST_LINE], DEBUG_ALLOWLIST_LINES)
+        self.assertEqual(allowlist_problems(good), [], "detector báo lỗi trên tệp giả HỢP LỆ")
+
+        # 1) release đọc biến môi trường → phải bị bắt.
+        env_in_release = fake_gradle([EMPTY_ALLOWLIST_LINE] + DEBUG_ALLOWLIST_LINES, DEBUG_ALLOWLIST_LINES)
+        self.assertTrue(
+            any("release: không được đọc" in problem for problem in allowlist_problems(env_in_release)),
+            "detector bỏ lọt env trong release",
+        )
+
+        # 2) release mất allowlist rỗng / có thêm field thứ hai → phải bị bắt.
+        missing_field = fake_gradle(["// không có buildConfigField"], DEBUG_ALLOWLIST_LINES)
+        self.assertTrue(any("release: thiếu" in p for p in allowlist_problems(missing_field)))
+        duplicate_field = fake_gradle([EMPTY_ALLOWLIST_LINE, EMPTY_ALLOWLIST_LINE], DEBUG_ALLOWLIST_LINES)
+        self.assertTrue(any("đúng 1 buildConfigField" in p for p in allowlist_problems(duplicate_field)))
+
+        # 3) debug không lọc ký tự → phải bị bắt.
+        no_filter = fake_gradle(
+            [EMPTY_ALLOWLIST_LINE],
+            [
+                'buildConfigField(',
+                '"String", "EXTRA_DOWNLOAD_HOSTS",',
+                '"\\"${System.getenv("MONIKA_EXTRA_DOWNLOAD_HOSTS").orEmpty()}\\""',
+                ')',
+            ],
+        )
+        self.assertTrue(
+            any("debug: thiếu bộ lọc" in problem for problem in allowlist_problems(no_filter)),
+            "detector bỏ lọt debug thiếu bộ lọc",
+        )
+
+        # 4) env nằm ngoài cả release lẫn debug → phải bị bắt.
+        stray = "\n".join(
+            ["android {", "    buildTypes {", "        " + ENV_EXTRA_HOSTS, "    }", "}"]
+        ) + "\n"
+        self.assertTrue(allowlist_problems(stray), "detector bỏ lọt env ngoài buildTypes")
+
+    def test_debug_download_host_filter_strips_unsafe_characters(self):
+        """Bộ lọc ký tự của bản debug: chỉ giữ ký tự host, chặn newline/backslash phá mã Kotlin sinh ra."""
+        text = APP_GRADLE.read_text(encoding="utf-8")
+        keep, code = kotlin_scan(text)
+        debug_bounds = kotlin_block_bounds(code, "debug")
+        self.assertIsNotNone(debug_bounds, "không tìm thấy khối `debug` trong app/build.gradle.kts")
+        pattern = debug_filter_pattern(keep[debug_bounds[0]:debug_bounds[1]])
+        self.assertIsNotNone(pattern, "khối `debug` thiếu bộ lọc Regex cho env")
+        allowed = re.compile(pattern)
+
+        raw = 'localhost,example.com;host-1\n"\\${System.exit(1)}\r\t'
+        filtered = allowed.sub("", raw)
+        self.assertEqual(filtered, "localhost,example.com;host-1System.exit1")
+        for char in ("\n", "\r", "\t", '"', "\\", "$", "{", "}", " "):
+            self.assertEqual(allowed.sub("", char), "", f"bộ lọc để lọt ký tự nguy hiểm {char!r}")
+        for char in "abcXYZ019.,;-":
+            self.assertEqual(allowed.sub("", char), char, f"bộ lọc xoá nhầm ký tự hợp lệ {char!r}")
+
+        # Ca âm: bộ lọc cũ (chỉ bỏ dấu nháy) phải bị coi là thiếu.
+        self.assertIsNone(debug_filter_pattern('replace("\\"", "")'))
 
     def test_detector_catches_synthetic_violations(self):
         bad_run = "jobs:\n  x:\n    steps:\n      - run: |\n          echo ${{ inputs.tag }}\n"
