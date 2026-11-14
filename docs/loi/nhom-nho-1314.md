@@ -167,8 +167,9 @@ bản, (ii) nói một bản sửa có tác dụng, (iii) biết báo cáo cũ t
 
 ## 4. Mới so với các tài liệu trước (không đọc lại phần đã có)
 
-1. **`ppsspp` đã ghim và có symbols** (`cores-ppsspp-1`, phát hành 05/11 15:44Z) — thay đổi kết luận cũ "ppsspp
-   không ghim bản" trong `docs/loi/ppsspp-native-1311.md` §2(d) và mở đường giải mã #416/#316/#372.
+1. **`ppsspp` đã ghim và có symbols** (`cores-ppsspp-1`, phát hành 05/11 15:44Z) — bảng ghim bản của
+   `loi-khac-1313.md` §4 chỉ xét 6 lõi và **không** có `ppsspp`, nên đây là bổ sung mới; hệ quả là #416/#316/#372
+   **không còn** thuộc diện "lõi trôi bản" và có symbols để ghép khung.
 2. **`cores-gb-gba-nes-1` không có symbols** ⇒ `mgba`/`gambatte` "ghim bản" **không** đồng nghĩa "retrace được"
    (#403 chỉ cần mã lỗi, không cần symbols).
 3. **`desmume/anr` lần đầu có tài liệu** (4 issue, 7 lượt) và **#522 chưa từng xuất hiện** trong `docs/`.
