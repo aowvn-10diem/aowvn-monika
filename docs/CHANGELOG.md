@@ -4,7 +4,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 ## v0.8.13 (Bản thử)
 <!-- bien-tap: v0.8.13 -->
-> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+> Phát hành ngày 13/11/2026 (UTC), bản thử nghiệm.
 
 - **Sửa lỗi:** Chơi game 3DS, NDS, PSP lâu hoặc chuyển sang app khác rồi quay lại không còn bị đứng, văng app. ([#602](https://github.com/aowvn-10diem/aowvn-monika/pull/602), [#606](https://github.com/aowvn-10diem/aowvn-monika/pull/606))
 - **Sửa lỗi:** Ra khỏi game đúng lúc app đang lưu tiến trình thì bản lưu cũ vẫn còn nguyên, không bị ghi dở. ([#602](https://github.com/aowvn-10diem/aowvn-monika/pull/602))
