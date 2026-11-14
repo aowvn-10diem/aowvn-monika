@@ -365,11 +365,20 @@ class GLRetroView(
 
         @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         private fun pause() = catchExceptions {
+            // Aow Monika: mốc đo t0→t1→t2→t3 cho ANR khi đóng/mở game (#350/#318,
+            // docs/loi/melondsds-anr-1313.md §5.2). Chỉ ghi crumb qua Diag.sink, đúng thứ tự cũ.
+            val t1 = android.os.SystemClock.elapsedRealtime()
+            val origin = Diag.pauseOriginAt
+            Diag.pauseOriginAt = 0L // mốc t0 dùng một lần
+            Diag.mark(DiagTimeline.formatFirst(origin, DiagTimeline.Mark("t1", t1)))
             isEmulationReady = false
             hasRenderedFrame = false // Aow Monika: đợi khung đầu sau khi tiếp tục.
             touchInput.pause(TOUCH_EVENT_OUTSIDE.x, TOUCH_EVENT_OUTSIDE.y) // Aow Monika: queue nhả trước khi GLSurfaceView pause.
             onPause()
+            val t2 = android.os.SystemClock.elapsedRealtime()
+            Diag.mark(DiagTimeline.format(DiagTimeline.Mark("t1", t1), DiagTimeline.Mark("t2", t2)))
             LibretroDroid.pause()
+            Diag.mark(DiagTimeline.format(DiagTimeline.Mark("t2", t2), DiagTimeline.Mark("t3", android.os.SystemClock.elapsedRealtime())))
         }
     }
 
