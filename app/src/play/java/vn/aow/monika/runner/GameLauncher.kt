@@ -50,7 +50,7 @@ class GameLauncher(private val configRepo: ConfigRepository) {
                 val azaharRoute = system.engine == vn.aow.monika.azahar.AzaharModule.ID &&
                     vn.aow.monika.AppGraph.azahar.available() && vn.aow.monika.AppGraph.prefs.coreOverride(system.id) == null
                 // `.cia` là gói cài đặt: chỉ đường Azahar cài được, đưa vào lõi libretro là `core-error` (#301, #610).
-                ciaBlockedReason(entry, azaharRoute)?.let { return LaunchResult.Failed(it) }
+                ciaBlockedReason(entry, azaharRoute, vn.aow.monika.AppGraph.azahar.available())?.let { return LaunchResult.Failed(it) }
                 if (azaharRoute) {
                     vn.aow.monika.azahar.AzaharActivity.start(activity, entry, system.name, game.name, game.key)
                     return LaunchResult.Started
@@ -106,9 +106,15 @@ class GameLauncher(private val configRepo: ConfigRepository) {
          * Đưa thẳng vào lõi libretro (citra) thì `retro_load_game` thất bại → `core-error` (#301, #610).
          * Trả về thông điệp cho người dùng; null = được chạy.
          */
-        internal fun ciaBlockedReason(entry: File, azaharRoute: Boolean): String? =
+        internal fun ciaBlockedReason(entry: File, azaharRoute: Boolean, azaharInstall: Boolean): String? =
             if (!azaharRoute && vn.aow.monika.azahar.AzaharCia.isCia(entry.path))
-                "Tệp .cia là gói cài đặt, không phải ROM nên lõi giả lập không mở được. Hãy cài .cia qua Azahar (3DS) hoặc dùng bản .3ds/.cci/.cxi."
+                // Lối cài thật: Cài đặt → nhóm "Nintendo 3DS" → "Chọn file .cia để cài".
+                // Nhóm đó bị gate bởi AppGraph.azahar.available() (`if (... ) SettingGroup("n3ds"...)`) nên chỉ
+                // được chỉ vào khi máy thật sự thấy nhóm; máy thiếu module Azahar thì chỉ nêu việc làm được.
+                if (azaharInstall)
+                    "Tệp .cia là gói cài đặt, không phải ROM nên không chạy trực tiếp được. Hãy cài ở Cài đặt → Nintendo 3DS → \"Chọn file .cia để cài\"."
+                else
+                    "Tệp .cia là gói cài đặt, không phải ROM nên không chạy trực tiếp được. Máy này chưa cài được .cia — hãy dùng bản .3ds/.cci/.cxi."
             else null
 
         /**
