@@ -21,6 +21,15 @@ chiếu phần còn lại.
 - `Thành phần` = dòng `Thành phần:` trong thân issue. **22/23 issue không có** ⇒ không quy được thành phần từ dữ
   liệu công khai (cùng giới hạn `docs/loi/op-fail-con-lai-1311.md` §3).
 
+**Trạng thái các tài liệu được dẫn** (kiểm bằng `git ls-tree origin/main -- docs/loi docs/ds` hôm nay):
+
+| Tài liệu | Trạng thái |
+|---|---|
+| `docs/loi/lowmem-1311.md`, `op-fail-1311.md`, `op-fail-con-lai-1311.md` (PR #626), `unknown-native-1311.md`, `melondsds-anr-1311.md` (PR #619), `melondsds-anr-1313.md` (PR #633), `citra-native-1311.md` (PR #622), `loi-khac-1313.md`, `ppsspp-native-1311.md` (PR #620), `docs/ds/chan-doan-desmume-native.md` | **đã ở `main`** |
+| `docs/loi/ppsspp-anr-1311.md` | **chưa gộp** — PR **#623** đang mở |
+| `docs/loi/citra-con-lai-1313.md` | **chưa gộp** — PR **#635** đang mở |
+| `docs/loi/unknown-anr-1313.md` | **chưa gộp** — PR **#634** đang mở |
+
 ## 1. Bảng duy nhất (23 issue, 69 lượt)
 
 | Issue | Lõi / loại | Lượt | Máy | Thành phần | Tái diễn? |
@@ -55,7 +64,8 @@ Tổng: **69 lượt / 23 issue**. Ba issue tái diễn (#385, #397, #416) chi�
 
 ### 2.1 `native` — 5 issue, 20 lượt (#385, #563, #448, #613, #387)
 
-Cùng lớp `docs/loi/loi-khac-1313.md` §4 + `docs/loi/ppsspp-native-1311.md` (PR #623, **chưa gộp**): chết trong
+Cùng lớp `docs/loi/loi-khac-1313.md` §4 (đã ở `main`) và `docs/loi/ppsspp-native-1311.md` (đã ở `main`, gộp từ
+PR #620): chết trong
 `.so` của lõi, chữ ký = `module:symbol` của ≤ 3 khung (`crash-issue-bot.py:44-50`), và muốn biết khung thì phải có
 gói ký hiệu **khớp BuildId**. Khác biệt của từng issue:
 
@@ -78,13 +88,14 @@ gói ký hiệu **khớp BuildId**. Khác biệt của từng issue:
 
 ### 2.2 `anr` — 8 issue, 16 lượt
 
-Bảy issue `anr` của nhóm nhỏ **cùng lớp** `docs/loi/melondsds-anr-1313.md` §4 (Main Thread chờ **Java monitor của
-GLThread**) và `docs/loi/ppsspp-anr-1311.md` §2 (PR #623): tất cả chạy `RetroActivity` trong `:game` trên cùng
-`GLRetroView`. Điểm **mới** — nhóm `desmume/anr` (4 issue, 7 lượt) **chưa từng có tài liệu**:
+Bốn issue `anr` còn lại của nhóm nhỏ (#459 `snes9x`, #402 `gambatte`, #516 `mgba`, #535 `melonds`) **cùng lớp** `docs/loi/melondsds-anr-1313.md` §4 (đã ở `main`; Main Thread chờ **Java monitor của
+GLThread**) và `docs/loi/ppsspp-anr-1311.md` §2 (PR #623, **chưa gộp**): tất cả chạy `RetroActivity` trong `:game`
+trên cùng `GLRetroView`. Điểm **mới** — nhóm `desmume/anr` (4 issue, 7 lượt) **chưa từng có tài liệu**:
 
 - `docs/ds/chan-doan-desmume-native.md` §1 chỉ đếm "`desmume`/`anr` 4 issue / 7 lượt — chưa có gì"; **#522 chưa
   xuất hiện ở bất kỳ tệp nào** trong `docs/` (đối chiếu bằng grep số issue trên `origin/main`).
-- Cơ chế **không** có gì riêng so với #623/#633: ANR là Main Thread bị chặn, còn `desmume_num_cores`
+- Cơ chế **không** có gì riêng so với các tài liệu ANR đã dẫn (`ppsspp-anr-1311.md` §2 — PR #623 **chưa gộp**;
+  `melondsds-anr-1313.md` §4 — đã ở `main`): ANR là Main Thread bị chặn, còn `desmume_num_cores`
   (`config:826` mặc định `2`, `:831` lite `1`, `:834` full `4`) là **luồng native bên trong lõi**, không giữ Java
   monitor. Nó chỉ có thể **làm dài** đơn vị việc của GLThread (nhiều luồng dựng hình 3D tranh CPU) — tức làm nặng
   nhánh §4.1 của `melondsds-anr-1313.md`, không phải một nguyên nhân mới. **[CHƯA KIỂM]**
@@ -92,8 +103,8 @@ GLThread**) và `docs/loi/ppsspp-anr-1311.md` §2 (PR #623): tất cả chạy `
   ≤ 4 lượt, dưới ngưỡng PATCH 5 ⇒ **không được** nói "đã hết" (khác #350/#318 có 216/177 lượt nên im lặng là
   bằng chứng mạnh hơn).
 - Việc đúng: **không sửa mã** cho 4 issue này; xếp chung hàng đợi "chờ v0.8.13 qua 2 bản" như §6 `loi-khac-1313.md`,
-  và chỉ khi đó mới cần `adb bugreport` (cách đọc: #623 mục 5). Riêng **#522** (1 lượt, 06/11) dưới mọi ngưỡng kết
-  luận — ghi nhận, không hành động.
+  và chỉ khi đó mới cần `adb bugreport` (cách đọc: `docs/loi/ppsspp-anr-1311.md` mục 5 — PR #623 **chưa gộp**). Riêng
+  **#522** (1 lượt, 06/11) dưới mọi ngưỡng kết luận — ghi nhận, không hành động.
 
 ### 2.3 `core-error` — 2 issue, 5 lượt (#403 `mgba`, #418 `snes9x`)
 
@@ -138,21 +149,27 @@ Riêng nhóm này, token là điều kiện **đủ** cho: mã lỗi `core-error
 SDK/`reason` của `unknown` (#397, #482, #416, #513, #378), và `trace`/`stage` của `anr` (#315, #333, #400, #522,
 #459, #402, #516, #535).
 
-**B. Gói ký hiệu khớp BuildId** — hiện chỉ có cho **kirikiri** (`engines-kirikiri-16`) và **ppsspp**
-(`cores-ppsspp-1`); `cores-gb-gba-nes-1` (`mgba`, `gambatte`) **không** có; `snes9x`/`desmume`/`melonds`/
-`melondsds` không có gói nào (buildbot). Thêm rào chắn: `libretrodroid.so` của APK đã phát hành **không** mang
-BuildId (cờ `-Wl,--build-id=sha1` còn ở PR #601) nên khung trong `libretrodroid.so` không ghép được kể cả khi có
-symbols. Thiếu B thì **không thể** kết luận khung cho: #385 (nếu tải symbols), #448, #563, #613. `crash-reports.sh`
-chỉ ghép khung **có PC + BuildId** — symbols có mà BuildId lệch thì vẫn rỗng, phải kiểm lúc chạy.
+**B. Gói ký hiệu khớp BuildId** — phần **BuildId đã xong**: `-Wl,--build-id=sha1` được gộp trong PR **#601**
+(13/11 08:15Z), có trên `main` tại `libretrodroid/src/main/cpp/CMakeLists.txt:112` **và** trong tag `v0.8.13`
+⇒ APK **từ v0.8.13 trở đi** mang BuildId cho `libretrodroid.so`; rào chắn "không có BuildId" chỉ còn đúng với báo
+cáo từ APK **≤ v0.8.12**. Phần **còn thiếu là gói symbols**: hiện **chỉ có** cho `kirikiri`
+(`symbols-kirikiri-16-arm64-v8a.zip`, đính ở release `engines-kirikiri-16`) và `ppsspp`
+(`symbols-ppsspp-{arm64-v8a,armeabi-v7a}.zip` trong `cores-ppsspp-1`); **không có** cho `mgba`/`gambatte`
+(`cores-gb-gba-nes-1` không kèm symbols), cho `mkxp-z` (`symbols-rgss-*` mới chỉ là bản nháp theo cổng G8), cho
+`snes9x`/`desmume`/`melonds`/`melondsds` (lấy từ buildbot nightly, không có pack nào), và cho `azahar` (workflow
+`build-engines.yml:217-231` có bước phát hành `symbols-azahar-*` nhưng hiện **không** có release nào như vậy).
+Thiếu B thì **không thể** kết luận khung cho: #385 (nếu chưa tải symbols), #448, #563, #613. `crash-reports.sh`
+chỉ ghép khung **có PC + BuildId** — symbols có mà BuildId lệch (báo cáo cũ trước v0.8.13, hoặc lõi trôi bản) thì
+vẫn rỗng, phải kiểm lúc chạy.
 
 **C. Lõi ghim bản** — `desmume` (`config:821`), `snes9x` (`:996`), `melonds` (`:839`), `melondsds` (`:1129`) đều
 `version = "1"` ⇒ hai máy cùng nhãn có thể chạy hai `.so` khác nhau. Thiếu C thì **không thể** (i) tái hiện đúng
 bản, (ii) nói một bản sửa có tác dụng, (iii) biết báo cáo cũ thuộc bản nào: #448, #459, #418, #535, #563, #368,
 #397, #482, và 4 issue `desmume/anr` (#315, #333, #400, #522).
 
-| Issue | Thiếu A | Thiếu B | Thiếu C | Kết luận tối đa khi thiếu cả ba |
+| Issue | A chưa thoả | B chưa thoả | C chưa thoả | Kết luận tối đa khi cả ba chưa thoả |
 |---|---|---|---|---|
-| #385 | ✗ | ✗ | — | "có symbols, chưa giải mã" (không nêu khung) |
+| #385 | ✗ | ✗ (symbols có, chưa chạy) | — | "có symbols, chưa giải mã" (không nêu khung) |
 | #397, #482 | ✗ | ✗ | ✗ | "chưa biết loại chết" |
 | #416 | ✗ | ✗ | — (đã ghim) | "unknown, không rõ native hay ANR" |
 | #513, #378 | ✗ | ✗ | — (đã ghim) | "chưa biết loại chết" |
@@ -175,6 +192,9 @@ bản, (ii) nói một bản sửa có tác dụng, (iii) biết báo cáo cũ t
 3. **`desmume/anr` lần đầu có tài liệu** (4 issue, 7 lượt) và **#522 chưa từng xuất hiện** trong `docs/`.
 4. **#416 chưa từng có trong bảng nào**; giả thuyết "native mất nhãn trên Android ≤ 10" là mới, kiểm bằng `device.sdk`.
 5. Xác nhận lại bằng dữ liệu hôm nay: 22/23 issue không có `Thành phần`; `engine:rgss` (#613) là ca duy nhất có.
+6. **[Đính chính điều kiện B]** `-Wl,--build-id=sha1` (PR **#601**, gộp 13/11 08:15Z) **đã có trong v0.8.13**
+   (`CMakeLists.txt:112` ở cả `main` và tag) ⇒ APK hiện hành **đã** mang BuildId; rào chắn còn lại **chỉ** là
+   **gói symbols** cho `mgba`/`gambatte`, `mkxp-z`, và 4 lõi buildbot (`snes9x`/`desmume`/`melonds`/`melondsds`).
 
 ## 5. Việc tiếp theo (rẻ → đắt)
 
@@ -199,11 +219,13 @@ bản, (ii) nói một bản sửa có tác dụng, (iii) biết báo cáo cũ t
 
 ## 6. Đối chiếu phủ 74/74 issue `crash-moi` đang mở
 
-Mỗi issue mở có **đúng một** tài liệu chẩn đoán (chia không trùng, không thiếu — kiểm bằng danh sách số issue):
+Mỗi issue mở được **gán chủ sở hữu** cho một tài liệu (chia không trùng, không thiếu — kiểm bằng danh sách số
+issue). Nhiều issue còn được **nhắc** ở tài liệu khác (ví dụ #464/#465 ở cả `loi-khac-1313.md` và
+`op-fail-con-lai-1311.md`, #614 ở 4 tệp) — cột dưới đây là nơi chẩn đoán sâu nhất, không phải nơi duy nhất có tên.
 
 | Tài liệu | Issue | Số |
 |---|---|---:|
-| `docs/loi/citra-native-1311.md` (+ `citra-con-lai-1313.md`, PR #635) | 301, 328, 336, 373, 404, 458, 460, 607, 610 | 9 |
+| `docs/loi/citra-native-1311.md` (đã ở `main`; + `citra-con-lai-1313.md` — PR #635 **chưa gộp**) | 301, 328, 336, 373, 404, 458, 460, 607, 610 | 9 |
 | `docs/loi/melondsds-anr-1313.md` | 314, 318, 350, 439, 440, 529, 530, 533, 597 | 9 |
 | `docs/ds/chan-doan-desmume-native.md` | 331, 369, 377, 562, 591 | 5 |
 | `docs/loi/ppsspp-native-1311.md` | 316, 372, 478, 520 | 4 |
