@@ -1,7 +1,10 @@
 # Cổng kiểm CI và bẫy đã gặp thật
 
-Mốc dẫn chiếu: `main` `15f210a6` (14/11/2026). Mọi `tệp:dòng` trong tài liệu này tính theo mốc đó;
-đọc lại bằng `git show 15f210a6:<tệp>`. Số dòng ở nhánh khác có thể lệch.
+Mốc dẫn chiếu: `main` `e965084e` (16/11/2026). Mọi `tệp:dòng` trong tài liệu này tính theo mốc đó;
+đọc lại bằng `git show e965084e:<tệp>`. Số dòng ở nhánh khác có thể lệch. Bản 14/11/2026 lấy mốc
+`15f210a6`: so với mốc cũ, chỉ `scripts/ci-compose-stability.sh` (#653) đổi số dòng đã dẫn, còn
+`app/build.gradle.kts` thêm 1 dòng ở phần `dependencies` (nằm sau các dòng được dẫn) — mọi dẫn chiếu
+đã được đối chiếu lại từng dòng trên `e965084e`.
 
 Tài liệu dành cho phiên làm việc mới: đọc mục 1 để biết cổng nào thật sự chặn gộp, mục 2 để không
 đoán sai khi một check đỏ, mục 3 để không nhận oan 19 ca test đỏ có sẵn, mục 4 để tự kiểm trước khi push.
@@ -20,7 +23,8 @@ Tài liệu dành cho phiên làm việc mới: đọc mục 1 để biết cổ
    `docs/BAO-VE-MAIN.md:35-42` và chưa làm. Tự kiểm lại bằng hai lệnh ở mục "Đọc đúng bắt buộc".
 2. **`preview` / `digest` không phải cổng.** `gate` chỉ đợi Build, Coverage, CodeQL
    (`scripts/gate-expected.py:16-39`). `preview` bị hủy liên tục vì concurrency — chuyện bình thường.
-3. **Máy Windows có 19 ca test đỏ sẵn trên `main`** (mục 3). CI Linux vẫn xanh. Đừng quy chúng cho PR mới.
+3. **Máy Windows có 19 ca test đỏ sẵn trên `main`** (mục 3; đo lại 16/11/2026: 1256 test / 19 đỏ /
+   3 skip). CI Linux vẫn xanh. Đừng quy chúng cho PR mới.
 
 ## 1. Bảng cổng
 
@@ -196,9 +200,10 @@ Mỗi bẫy: **triệu chứng → nguyên nhân (có dẫn chiếu) → cách x
   Task gộp không có action test ⇒ không nhận `--tests`, cũng không sinh
   `app/build/test-results/testDebugUnitTest/`. Test thật gắn vào `sourceSets["testGithub"]`
   (`app/build.gradle.kts:124-126`).
-- **Đã sửa.** #642 (merge `0e2c38f`): `scripts/ci-compose-stability.sh` tự dò task thật
-  (`:11,15-29`), tự dò thư mục XML (`:63-70`), chép XML thô về đường dẫn workflow đang tải lên
-  (`:80-85`).
+- **Đã sửa.** #642 (merge `0e2c38f`) rồi #653 (`75076609`) viết lại `scripts/ci-compose-stability.sh`:
+  tự dò task thật (`pick_test_task`, `:16-32`; danh sách task ứng viên `:12`), chép XML thô về đúng
+  thư mục workflow đang tải lên (`mirror_results`, `:36-42`), đọc XML qua `collect()` (`:67-78`) sau khi
+  xếp thư mục kết quả thật lên trước (`:81-85`). Số dòng ở đây theo bản **sau #653**; bản #642 cũ đã lệch.
 - **Cách xử lý khi gặp lại.** Chạy tay đúng task thật:
   `./gradlew :app:testGithubDebugUnitTest --tests '<lớp>.<ca>'`. Đừng bao giờ truyền `--tests` cho
   `testDebugUnitTest`.
@@ -214,37 +219,37 @@ Mỗi bẫy: **triệu chứng → nguyên nhân (có dẫn chiếu) → cách x
 
 ## 3. 19 ca test đỏ có sẵn trên `main` (máy Windows/JVM)
 
-Đo trên Windows (14/11/2026) tại `main` `15f210a6`, chỉ thêm `local.properties` (không tính vào git):
+Đo lại ngày **16/11/2026** trên Windows, tại `main` `e965084e`, chỉ thêm `local.properties` (không tính
+vào git). Chạy **cả** task thật của flavor github, không lọc `--tests`:
 
 ```
-./gradlew :app:testGithubDebugUnitTest --continue \
-  --tests 'vn.aow.monika.RarTest' --tests 'vn.aow.monika.library.DeviceScannerTest' \
-  --tests 'vn.aow.monika.runner.CorePreparationCacheTest' --tests 'vn.aow.monika.ConsoleSaveTransferTest' \
-  --tests 'vn.aow.monika.GameSaveTransferTest' --tests 'vn.aow.monika.library.ImporterTest' \
-  --tests 'vn.aow.monika.library.LibraryDocumentsTest' --tests 'vn.aow.monika.diag.DeathContextTest'
-61 tests completed, 19 failed
+./gradlew :app:testGithubDebugUnitTest --continue
+1256 tests completed, 19 failed, 3 skipped
 ```
 
-CI Linux (`ubuntu-latest`, `build.yml:52`) vẫn xanh với cùng mã. Đây là **khác biệt môi trường**,
-không phải PR của bạn làm hỏng. Đừng "sửa" bằng cách đổi kỳ vọng của test; nếu PR đụng đúng lớp đó thì
-ghi rõ trong mô tả PR.
+Đúng **19 ca** đỏ, cùng bộ với lần đo 14/11/2026 (3 ca `skipped` là ca bị bỏ qua sẵn, không nằm trong 19):
 
-| Số ca | Lớp test (đường dẫn trong `app/src/test/java/vn/aow/monika/`) | Nguyên nhân thật (đọc từ thông điệp lỗi) |
-|---|---|---|
-| 6 | `RarTest.kt` (`:27,34,40,46,53,63`) | `UninitializedPropertyAccessException: lateinit property app has not been initialized`. `SevenZipNative.init()` gọi `System.loadLibrary("7-Zip-JBinding")` (`app/src/main/java/vn/aow/monika/library/SevenZipNative.kt:42`); trên JVM không có thư viện này nên rơi sang nhánh gói tải, đụng `AppGraph` (`:46-50`) — chỉ có trên máy thật |
-| 6 | `library/DeviceScannerTest.kt` (`:55,69,80,90,100,112`) | Đường dẫn Windows dùng `\` còn kỳ vọng và bộ lọc viết bằng `/`: `expected:<[Games/real.md]> but was:<[Games\real.md]>`; ca `:69` còn lọt `Android\data`, `DCIM`, `Music` vì bộ lọc thư mục hệ thống so khớp chuỗi `/` |
-| 2 | `runner/CorePreparationCacheTest.kt` (`:93,107`) | `java.io.IOException: Không lưu được lõi melondsds` / `Không lưu được cache hệ thống`. Gốc: `File.renameTo` ở `runner/CoreManager.kt:134` và `runner/SystemFilesCache.kt:62` **không ghi đè** tệp đích đã tồn tại trên Windows |
-| 1 | `ConsoleSaveTransferTest.kt:153` | `FileSystemException: ... A required privilege is not held by the client` — `Files.createSymbolicLink` cần quyền tạo symlink (Windows cần Admin/Developer Mode) |
-| 1 | `GameSaveTransferTest.kt:253` | Cùng nguyên nhân symlink như trên |
-| 1 | `library/ImporterTest.kt:129` | `expected:<...\_TaiVe[/]_phan> but was:<...\_TaiVe[\]_phan>` — so `canonicalPath` với chuỗi nối bằng `/` |
-| 1 | `library/LibraryDocumentsTest.kt:61` | `IllegalArgumentException: Failed to find configured root that contains C:\...\files\v84-view\fixture.pdf` — `FileProvider` so khớp gốc theo đường dẫn kiểu Unix |
-| 1 | `diag/DeathContextTest.kt:96` | `expected:<[core-ready]> but was:<[start]>` — cập nhật `stage` của phiên chẩn đoán khác nhau trên JVM |
+| Số ca | Lớp test (trong `app/src/test/java/vn/aow/monika/`) | Ca đỏ (tên hàm) | Nguyên nhân thật (đọc từ thông điệp lỗi) |
+|---|---|---|---|
+| 6 | `RarTest.kt` (`:27,34,40,46,53,63`) | `rar5Password`, `encryptedHeaders`, `multiVolume`, `plain`, `wrongPassword`, `headerWithoutPassword` | `UninitializedPropertyAccessException: lateinit property app has not been initialized`. `SevenZipNative.init()` gọi `System.loadLibrary("7-Zip-JBinding")` (`app/src/main/java/vn/aow/monika/library/SevenZipNative.kt:42`); trên JVM không có thư viện này nên rơi sang nhánh gói tải, đụng `AppGraph` (`:46-50`) — chỉ có trên máy thật |
+| 6 | `library/DeviceScannerTest.kt` (`:55,69,80,90,100,112`) | `scanKeepsOnlyConfiguredExtensionsAboveMinimumSize`, `scanSkipsHiddenAndSystemFoldersAndMonikaOwnLibrary`, `scanStopsBelowEightLevelsDeep`, `ambiguousMdFilesNeedTheSegaHeader`, `sniffedExeCountsOnlyNextToAnXp3`, `hiddenPathsAndDeletedFilesDisappearFromFoundButFilesAreNeverRemoved` | Đường dẫn Windows dùng `\` còn kỳ vọng và bộ lọc viết bằng `/`: `expected:<[Games/real.md]> but was:<[Games\real.md]>`; ca `:69` còn lọt `Android\data`, `DCIM`, `Music` vì bộ lọc thư mục hệ thống so khớp chuỗi `/` |
+| 2 | `runner/CorePreparationCacheTest.kt` (`:93,107`) | `missingBiosOrChangedSystemUrlRebuildsOnlySystemCache`, `emptyCachedCoreCannotBeReportedReady` | `java.io.IOException: Không lưu được lõi melondsds` / `Không lưu được cache hệ thống`. Gốc: `File.renameTo` ở `runner/CoreManager.kt:134` và `runner/SystemFilesCache.kt:62` **không ghi đè** tệp đích đã tồn tại trên Windows |
+| 1 | `ConsoleSaveTransferTest.kt:153` | `treeSnapshotRejectsSymlinkAndEmptyBackupCanRestoreAnEmptyGameScope` | `FileSystemException: ... A required privilege is not held by the client` — `Files.createSymbolicLink` cần quyền tạo symlink (Windows cần Admin/Developer Mode) |
+| 1 | `GameSaveTransferTest.kt:253` | `pathsMatchLegacyKeysRespectConfigAndBlockTraversalSymlink` | Cùng nguyên nhân symlink như trên |
+| 1 | `library/ImporterTest.kt:129` | `incompleteMultiPartSetStaysPendingInStagingFolder` | `expected:<...\_TaiVe[/]_phan> but was:<...\_TaiVe[\]_phan>` — so `canonicalPath` với chuỗi nối bằng `/` |
+| 1 | `library/LibraryDocumentsTest.kt:61` | `externalViewerGetsContentUriReadGrantAndCorrectMime` | `IllegalArgumentException: Failed to find configured root that contains C:\...\files\v84-view\fixture.pdf` — `FileProvider` so khớp gốc theo đường dẫn kiểu Unix |
+| 1 | `diag/DeathContextTest.kt:96` | `perPidSnapshotSurvivesActivePointerLossUpdatesStageAndNormalExitClearsIt` | `expected:<[core-ready]> but was:<[start]>` — cập nhật `stage` của phiên chẩn đoán khác nhau trên JVM |
 
 Tổng: 6 + 6 + 2 + 1 + 1 + 1 + 1 + 1 = **19**. Ba nguyên nhân thuần Windows chiếm **12/19** ca:
 dấu `\` (8 ca = 6 `DeviceScannerTest` + `ImporterTest` + `LibraryDocumentsTest`), symlink (2),
 `renameTo` (2). 7 ca còn lại là `RarTest` (6, thiếu `AppGraph`/thư viện native) và `DeathContextTest` (1).
 Con số 19 là số đo trên **một** máy Windows; máy đã bật Developer Mode có thể chỉ còn 17 (2 ca symlink
 chạy được), nên hãy đọc theo nhóm chứ đừng đối chiếu tuyệt đối.
+
+**Bộ này không phải cổng CI.** Cổng thật là job `build` trên `ubuntu-latest` (`build.yml:52`): cùng mã,
+cùng task, và xanh — 19 ca đỏ chỉ là khác biệt môi trường Windows, không phải PR của bạn làm hỏng và
+không chặn gộp. Đừng "sửa" bằng cách đổi kỳ vọng của test; nếu PR đụng đúng lớp đó thì ghi rõ trong mô
+tả PR.
 
 Cách kiểm lại nhanh trên máy Windows (đừng chạy cả bộ nếu chỉ cần biết lớp mình đụng):
 
@@ -284,7 +289,7 @@ nên "đỏ trên máy tôi" **không** phải bằng chứng PR hỏng.
 | Check có tệp workflow lẫn không có tệp | `gh pr checks <số> --json name,state` (thấy cả `submit-gradle`) |
 | Vì sao workflow không chạy | Đối chiếu `paths`/`paths-ignore` của workflow với danh sách tệp PR (`gh pr view <n> --json files`) |
 | Tệp nào khiến `gate` đợi CodeQL | `scripts/gate-expected.py:24-25` (tiền tố) — sửa bộ lọc workflow thì sửa cả tệp này (`docs/BAO-VE-MAIN.md:56`) |
-| Job đỏ của `repeated-tests` | `scripts/ci-compose-stability.sh:11` — task thật là `testGithubDebugUnitTest` |
+| Job đỏ của `repeated-tests` | `scripts/ci-compose-stability.sh:12` (task ứng viên thật, `testGithubDebugUnitTest`) và `:16-32` (hàm dò) |
 
 ### Đừng làm
 
