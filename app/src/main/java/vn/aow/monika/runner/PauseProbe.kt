@@ -49,7 +49,7 @@ internal class PauseProbe(private val emit: (String) -> Unit) {
         prev = cur
         try {
             emit(line)
-        } catch (_: Throwable) {
+        } catch (_: Throwable) { // diag: bỏ qua crumb đo lường lỗi, không được làm chết luồng vòng đời
             // Đo lường không được phép làm chết luồng vòng đời.
         }
     }

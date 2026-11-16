@@ -694,6 +694,7 @@ class RetroActivity : ComponentActivity() {
         install = {
             pauseOriginCallbacks = PauseOrigin.register(this) { label, at ->
                 if (label == T0) {
+                    // diag: bỏ qua đặt mốc t0 lỗi, không đổi luồng pause
                     runCatching { com.swordfish.libretrodroid.Diag.pauseOriginAt = at }
                     pauseProbe.origin(label, at) // mở chu kỳ mới, không nối mốc lần pause trước
                 } else {
@@ -704,9 +705,11 @@ class RetroActivity : ComponentActivity() {
             // RetroActivity cùng sống chỉ gỡ sink của chính mình.
             val sink: (String) -> Unit = { msg -> Diagnostics.crumb(applicationContext, "pause", msg) }
             pauseSink = sink
+            // diag: bỏ qua gán sink lỗi, chỉ mất số đo t1-t3
             runCatching { com.swordfish.libretrodroid.Diag.sink = sink }
         },
         remove = {
+            // diag: bỏ qua gỡ sink lỗi, chỉ mất số đo t1-t3
             runCatching {
                 if (com.swordfish.libretrodroid.Diag.sink === pauseSink) com.swordfish.libretrodroid.Diag.sink = null
             }

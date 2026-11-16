@@ -29,6 +29,7 @@ internal object PauseOrigin {
         val callbacks = object : Application.ActivityLifecycleCallbacks {
             override fun onActivityPrePaused(activity: Activity) {
                 if (activity !== owner) return
+                // diag: bỏ qua mốc t0 lỗi không được làm chết vòng đời game
                 runCatching { onMark("t0", SystemClock.elapsedRealtime()) }
             }
 
@@ -40,6 +41,7 @@ internal object PauseOrigin {
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
             override fun onActivityDestroyed(activity: Activity) = Unit
         }
+        // diag: bỏ qua máy từ chối callback thì thôi đo t0, không chặn chạy game
         return runCatching {
             owner.application.registerActivityLifecycleCallbacks(callbacks)
             callbacks
@@ -48,6 +50,7 @@ internal object PauseOrigin {
 
     fun unregister(owner: Activity, callbacks: Application.ActivityLifecycleCallbacks?) {
         if (callbacks == null) return
+        // diag: bỏ qua gỡ callback lỗi, tiến trình game vẫn chạy bình thường
         runCatching { owner.application.unregisterActivityLifecycleCallbacks(callbacks) }
     }
 }
@@ -65,12 +68,14 @@ internal class PauseOriginGate(private val install: () -> Unit, private val remo
     fun start() {
         if (installed) return
         installed = true
+        // diag: bỏ qua cài đo lường lỗi, vòng đời vẫn đi tiếp
         runCatching(install)
     }
 
     fun stop() {
         if (!installed) return
         installed = false
+        // diag: bỏ qua gỡ đo lường lỗi, vòng đời vẫn đi tiếp
         runCatching(remove)
     }
 }
