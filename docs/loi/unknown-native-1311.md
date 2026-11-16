@@ -1,6 +1,6 @@
 # Nhóm `unknown` / `native`: vì sao báo cáo không gắn được lõi
 
-Số dòng dẫn chiếu cập nhật theo `main` `f75b2e6d`.
+Số dòng dẫn chiếu cập nhật theo `main` `e965084e`.
 
 Ngày 13/11/2026 · nhánh `deepseek1/unknown-native-1311` · nền `main` `f24ece45` · nhãn `crash-moi`, chỉ đọc (không sửa mã trong lượt này)
 
@@ -63,23 +63,23 @@ Nhóm `op-fail` đã có bản chẩn đoán riêng (`docs/loi/op-fail-1311.md`,
 
 - Lõi nằm trong **phiên** (`Session.core`), do nơi mở game truyền vào lúc bắt đầu: `Diagnostics.begin(...)` ghi `Session(... core ...)` — `app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:152-162`. Nơi gọi: `RetroActivity.kt:128` (`coreId`), `AzaharActivity.kt:107`, `RenpyGameActivity.kt:60`, `RgssGameActivity.kt:82`, `KirikiriGameActivity.kt:46`, `AzaharInstallActivity.kt:54`.
 - Chết **trong tầm kiểm soát** (tiến trình game còn phiên): `Diagnostics.collect` đọc lại phiên và ghi báo cáo kèm `session` — `Diagnostics.kt:223-256`. Ca này **luôn có lõi** nếu nơi mở game truyền đúng.
-- Chết **ngoài tầm kiểm soát** (Android báo qua `ApplicationExitInfo`): `collectProcessDeaths` — `Diagnostics.kt:845-895`.
+- Chết **ngoài tầm kiểm soát** (Android báo qua `ApplicationExitInfo`): `collectProcessDeaths` — `Diagnostics.kt:855-905`.
 
 ### 3.2 Năm đường dẫn tới `unknown`
 
-**(a) Đúng bản chất — `op-fail` không thuộc phiên game.** `opFail` gắn `session = read(c)` nếu đúng tiến trình (`Diagnostics.kt:490`); thao tác ngoài lúc chơi (tải, giải nén, cập nhật cấu hình) không có phiên nên không có lõi. Đây là 13/22 issue — **không phải lỗi**, chỉ là thiếu ngữ cảnh "thao tác nào" (đã bàn ở #618).
+**(a) Đúng bản chất — `op-fail` không thuộc phiên game.** `opFail` gắn `session = read(c)` nếu đúng tiến trình (`Diagnostics.kt:500`); thao tác ngoài lúc chơi (tải, giải nén, cập nhật cấu hình) không có phiên nên không có lõi. Đây là 13/22 issue — **không phải lỗi**, chỉ là thiếu ngữ cảnh "thao tác nào" (đã bàn ở #618).
 
 **(b) Lỗi ghi nhận trong app — `native`/`resource` không đọc phiên chết ở nhánh `ApplicationExitInfo`.**
-- `Diagnostics.kt:867`: `val deathSession = if (kind == "anr" || kind == "lowmem") readDeathSession(...) else null` ⇒ với các lần chết do `collectProcessDeaths` xử lý (tiến trình chính, hoặc `:game` **không** có báo cáo từ `collect`), `native`, `resource`, `initfail` **luôn** có `session = null`.
+- `Diagnostics.kt:877`: `val deathSession = if (kind == "anr" || kind == "lowmem") readDeathSession(...) else null` ⇒ với các lần chết do `collectProcessDeaths` xử lý (tiến trình chính, hoặc `:game` **không** có báo cáo từ `collect`), `native`, `resource`, `initfail` **luôn** có `session = null`.
 - Riêng chết `native` của `:game` đi qua `Diagnostics.collect` (mục 3.1) vẫn **có** `session` và có lõi — lỗi (b) không áp cho nhánh đó.
-- `Diagnostics.kt:917-924` (`enrichDeathReport`): chỉ điền `core`/`system`/`stage` khi `kind` là `lowmem`/`anr`, các loại khác `return r` nguyên trạng.
-- Trong khi đó app **có** ghi sẵn ảnh chụp phiên cho mọi tiến trình đang chạy game (`Diagnostics.kt:201-216`, tệp `diag/sessions/<pid>.json`) và `matchingDeathSession` (`:898-905`) đã kiểm kỹ thế hệ tiến trình + PID + mốc thời gian, dùng được cho `native`.
+- `Diagnostics.kt:927-934` (`enrichDeathReport`): chỉ điền `core`/`system`/`stage` khi `kind` là `lowmem`/`anr`, các loại khác `return r` nguyên trạng.
+- Trong khi đó app **có** ghi sẵn ảnh chụp phiên cho mọi tiến trình đang chạy game (`Diagnostics.kt:201-216`, tệp `diag/sessions/<pid>.json`) và `matchingDeathSession` (`:908-915`) đã kiểm kỹ thế hệ tiến trình + PID + mốc thời gian, dùng được cho `native`.
 
 ⇒ `unknown`/`native` (#387) khớp lỗi này **nếu** báo cáo của nó là lần chết do `collectProcessDeaths` xử lý (chưa kiểm được, xem mục 5). **#302 không khớp (b)**: tiến trình `:midlet` không có phiên nào để đọc, nên sửa (1) vẫn trả `null` — #302 cần fix riêng ở (d)/(4.4).
 
 **(c) Lỗi ghi nhận ở bot — bỏ `core` cấp ngoài.**
 - Worker ghi `c: slim.core || slim.session?.core || ""` (`cloudflare/crash-worker/worker.js:557`) và với `anr`/`lowmem` còn ghi hẳn `core` cấp ngoài, mặc định `"unknown"` (`worker.js:832-836`).
-- Bot chỉ đọc `session.core`: `scripts/crash-issue-bot.py:69` — `core = token(session.get("core", ""))`; `token()` trả `"unknown"` khi rỗng/không hợp lệ (`:26-27`). `core` cấp ngoài **không được dùng**, dù chữ ký nhóm cũng chỉ băm `lõi + loại + ≤3 frame` (`:71`).
+- Bot chỉ đọc `session.core`: `scripts/crash-issue-bot.py:72` — `core = token(session.get("core", ""))`; `token()` trả `"unknown"` khi rỗng/không hợp lệ (`:26-27`). `core` cấp ngoài **không được dùng**, dù chữ ký nhóm cũng chỉ băm `lõi + loại + ≤3 frame` (`:76`).
 - Hệ quả: báo cáo `anr`/`lowmem` có `core` thật ở cấp ngoài nhưng `session` rỗng vẫn bị gom vào `unknown` — khớp #413 (5 máy) và #534 (5 máy).
 
 **(d) Đúng bản chất — chưa từng có phiên.** Game Java (J2ME) **không** gọi `Diagnostics.begin` (không có trong `j2me/`), nên tiến trình `:midlet` không có phiên, không có lõi. #302 (`app:midlet`, 236 lượt, 50 máy) vì thế `unknown` **theo thiết kế hiện tại**, không phải bot gán nhầm. Muốn có lõi phải thêm phiên cho J2ME (mục 4.4).
@@ -88,12 +88,12 @@ Nhóm `op-fail` đã có bản chẩn đoán riêng (`docs/loi/op-fail-1311.md`,
 
 ## 4. Đề xuất sửa (chưa sửa mã trong lượt này)
 
-1. **`app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:867`** — cho `native` (và `resource`, `initfail`) đọc phiên chết như `anr`:
+1. **`app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:877`** — cho `native` (và `resource`, `initfail`) đọc phiên chết như `anr`:
    `val deathSession = if (kind in setOf("anr", "lowmem", "native", "resource")) readDeathSession(...) else null`.
    Chỉ có tác dụng khi tiến trình **có** ảnh chụp phiên (`diag/sessions/<pid>.json`) — tức tiến trình đã chạy game; **không giúp #302** (`:midlet` không có phiên).
    Test cần thêm (Robolectric, cùng chỗ `DeathContextTest.kt`): `native` + ảnh chụp phiên khớp (PID, thế hệ, mốc) → báo cáo có `session.core`; ảnh chụp lệch thế hệ → vẫn `null` (giữ nguyên hành vi chống gán nhầm).
-2. **`Diagnostics.kt:918`** — mở `enrichDeathReport` cho `native`/`resource`/`initfail` để `core`/`system`/`stage` cấp ngoài cũng được điền (hiện chỉ `lowmem`/`anr`).
-3. **`scripts/crash-issue-bot.py:69`** — `core = token(session.get("core") or report.get("core") or "")`. Test trong `scripts/test-crash-issue-bot.py`: `session` rỗng + `core` cấp ngoài `"melondsds"` → nhóm theo `melondsds`; cả hai rỗng → `unknown` (không đổi hành vi cũ).
+2. **`Diagnostics.kt:928`** — mở `enrichDeathReport` cho `native`/`resource`/`initfail` để `core`/`system`/`stage` cấp ngoài cũng được điền (hiện chỉ `lowmem`/`anr`).
+3. **`scripts/crash-issue-bot.py:72`** — `core = token(session.get("core") or report.get("core") or "")`. Test trong `scripts/test-crash-issue-bot.py`: `session` rỗng + `core` cấp ngoài `"melondsds"` → nhóm theo `melondsds`; cả hai rỗng → `unknown` (không đổi hành vi cũ).
 4. **J2ME (#302)** — cần một phiên cho tiến trình `:midlet` để có lõi `j2me` + hệ `Java`. Module `j2me` không phụ thuộc `:app`, nên phải qua cầu (interface/callback do app đăng ký) hoặc app tự suy từ tên tiến trình; cả hai là thay đổi thiết kế, cần đặc tả riêng **[CHƯA KIỂM]** hiệu quả.
 5. Sau khi sửa (1)-(3): đo lại bằng `/stats` (`byCoreKindStage`) sau ~2 tuần; kỳ vọng `unknown` giảm ở `anr`/`native` (và ở `resource` **chỉ khi** tiến trình có phiên), còn `unknown`/`op-fail` **không đổi** (đúng bản chất).
 

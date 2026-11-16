@@ -1,6 +1,6 @@
 # Nhóm `unknown / lowmem`: dữ liệu cũ hay vẫn tăng?
 
-Số dòng dẫn chiếu cập nhật theo `main` `f75b2e6d`.
+Số dòng dẫn chiếu cập nhật theo `main` `e965084e`.
 
 Ngày 13/11/2026 · nhánh `loi/lowmem-1311` · nền `main` `c3a8a9c4`
 
@@ -24,21 +24,21 @@ Không thấy lỗi phân loại hay lỗi dedupe trong `cloudflare/crash-worker
 `state: CLOSED` từ 10/11 (bình luận "gộp theo dõi tại #549"), nhưng `updatedAt` = 12/11 ⇒ bot vẫn ghi vào issue **đã đóng**.
 
 Cơ chế (đọc mã, không suy đoán):
-- `scripts/crash-issue-bot.py:124` — `saved["count"] = state["count"] + delta`: **cộng dồn vĩnh viễn**, không có cửa sổ thời gian, không reset.
-- `scripts/crash-issue-bot.py:117-118` — `delta` = số lượt mới (theo `seen` hash báo cáo) so với lần thông báo trước; chỉ ghi khi `delta ≥ 5`.
-- `scripts/crash-issue-bot.py:187-220` (hàm `live`) — đọc issue bằng `state=all` (`:197`) và PATCH **mọi** issue có chữ ký khớp (`:220`), kể cả issue đã đóng (chỉ cố ý không đổi `state`, xem test `test_all_reads_before_writes_and_existing_closed_issue_not_reopened`).
+- `scripts/crash-issue-bot.py:129` — `saved["count"] = state["count"] + delta`: **cộng dồn vĩnh viễn**, không có cửa sổ thời gian, không reset.
+- `scripts/crash-issue-bot.py:122-123` — `delta` = số lượt mới (theo `seen` hash báo cáo) so với lần thông báo trước; chỉ ghi khi `delta ≥ 5`.
+- `scripts/crash-issue-bot.py:192-225` (hàm `live`) — đọc issue bằng `state=all` (`:202`) và PATCH **mọi** issue có chữ ký khớp (`:225`), kể cả issue đã đóng (chỉ cố ý không đổi `state`, xem test `test_all_reads_before_writes_and_existing_closed_issue_not_reopened`).
 
 ⇒ Với một issue đã đóng, "Số lần quan sát đã thông báo" **chỉ có thể tăng**, và `(+N)` là lượt mới kể từ lần thông báo trước — không phải "nhóm còn tái diễn mạnh".
 
 ### 2.2 Lượt mới là báo cáo mới, không phải báo lại bản cũ
 
-- `Diagnostics.collectProcessDeaths` chỉ lấy `ApplicationExitInfo` **mới hơn** mốc `diag/last-scan.txt` (`app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:847,853`) và ghi mốc mới sau khi quét (`:893`) ⇒ không phát lại lần chết cũ mỗi lần mở app.
-- Từ V194: gộp theo `fingerprint`, mỗi báo cáo đúng 1 lần ghi KV (`45d756c1`, `51bc9005`); gửi lowmem tối đa **1 lần mỗi phiên** cho mỗi fingerprint (`Diagnostics.kt:645-650`, `SEND_DEDUPE_MS` cho loại khác ở `:678`).
-- Từ V202 (#569, `640a96c6`): chỉ báo `lowmem` khi tiến trình còn quan trọng hoặc có phiên chết khớp (`Diagnostics.kt:828-832`, dùng ở `:869`), nên việc Android dọn tiến trình nền bình thường không còn sinh báo cáo.
+- `Diagnostics.collectProcessDeaths` chỉ lấy `ApplicationExitInfo` **mới hơn** mốc `diag/last-scan.txt` (`app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:857,863`) và ghi mốc mới sau khi quét (`:903`) ⇒ không phát lại lần chết cũ mỗi lần mở app.
+- Từ V194: gộp theo `fingerprint`, mỗi báo cáo đúng 1 lần ghi KV (`45d756c1`, `51bc9005`); gửi lowmem tối đa **1 lần mỗi phiên** cho mỗi fingerprint (`Diagnostics.kt:655-660`, `SEND_DEDUPE_MS` cho loại khác ở `:688`).
+- Từ V202 (#569, `640a96c6`): chỉ báo `lowmem` khi tiến trình còn quan trọng hoặc có phiên chết khớp (`Diagnostics.kt:838-842`, dùng ở `:879`), nên việc Android dọn tiến trình nền bình thường không còn sinh báo cáo.
 
 ### 2.3 Không gộp `killed` vào `lowmem`
 
-`ApplicationExitInfo.REASON_LOW_MEMORY → "lowmem"` (`Diagnostics.kt:236,858`); `killed` là `kind` riêng do phiên game tự báo. Chữ ký bot băm `lõi + loại + ≤3 frame` (`crash-issue-bot.py:71`) nên hai loại không thể lẫn.
+`ApplicationExitInfo.REASON_LOW_MEMORY → "lowmem"` (`Diagnostics.kt:236,868`); `killed` là `kind` riêng do phiên game tự báo. Chữ ký bot băm `lõi + loại + ≤3 frame` (`crash-issue-bot.py:76`) nên hai loại không thể lẫn.
 
 ## 3. Phần chưa kiểm được
 

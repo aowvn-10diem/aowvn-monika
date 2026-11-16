@@ -1,6 +1,6 @@
 # Nhóm `citra / native` — chẩn đoán (13/11/2026)
 
-Số dòng dẫn chiếu cập nhật theo `main` `f75b2e6d`.
+Số dòng dẫn chiếu cập nhật theo `main` `e965084e`.
 
 Phạm vi: các issue `crash-moi` đang mở có **lõi `citra` + loại `native`**, tức lõi 3DS chạy qua **`:libretrodroid`**, không phải engine Azahar.
 Người lập: phiên **Lỗi 2**. Lượt này **chỉ chẩn đoán, không sửa mã**. Mọi kết luận chưa có khung đã giải mã đều ghi **[CHƯA KIỂM]**.
@@ -25,7 +25,7 @@ Giới hạn: thân issue chỉ có **hash chữ ký**, không có khung, build_
 | Nguồn lõi | packs release `cores-ppsspp-1`, `sha256` từng ABI | `https://buildbot.libretro.com/nightly/android/latest/{abi}/citra_libretro_android.so.zip`, `version = "1"` | **không ghim bản, không kiểm hash** |
 | Symbols | `symbols-ppsspp-{abi}.zip` (RelWithDebInfo, `--build-id=sha1`) | **không có** | **không retrace được** nhóm này |
 | ABI | arm64-v8a + armeabi-v7a | **chỉ arm64-v8a** | máy 32-bit bị `supportsAbi()` chặn (`CoreManager.kt:44-51`) → chỉ báo lỗi, không crash |
-| `systemFiles` | buildbot `PPSSPP.zip` | **không khai** | `isReady()` bỏ qua kiểm sysdata (`CoreManager.kt:53-58`); core nhận `filesDir/system` (`RetroActivity.kt:326`) có thể **rỗng** |
+| `systemFiles` | buildbot `PPSSPP.zip` | **không khai** | `isReady()` bỏ qua kiểm sysdata (`CoreManager.kt:53-58`); core nhận `filesDir/system` (`RetroActivity.kt:352`) có thể **rỗng** |
 | `options` / `perf` | `ppsspp_vertex_cache = disabled`, `perf.lite` 480x272 | **không khai** | dùng mặc định của lõi (hardware renderer, độ phân giải mặc định) |
 
 ## 3. Nghi phạm (có tệp:dòng)
@@ -38,7 +38,7 @@ Giới hạn: thân issue chỉ có **hash chữ ký**, không có khung, build_
 
 ### (2) `.cia` lọt vào lõi libretro citra
 - `config/monika-config.json` → `systems[3ds].extensions` có **`cia`**, `core = "citra"`.
-- `app/src/github/java/vn/aow/monika/runner/GameLauncher.kt:48-59`: nhánh `libretro` **không** kiểm đuôi tệp — chỉ chọn lõi rồi `RetroActivity.start(...)`.
+- `app/src/github/java/vn/aow/monika/runner/GameLauncher.kt:48-63`: **dẫn chiếu cũ** — main `e965084e` đã chặn `.cia` ở `:53` (`ciaBlockedReason`, định nghĩa `:139-142`); bản đọc khi viết chưa có bước chặn này.
 - Đường engine Azahar mới chặn `.cia` (`AzaharActivity` → `AzaharInstallActivity`, xem #611); máy **không** có engine Azahar (hoặc người chơi đặt `coreOverride`) vẫn mở `.cia` bằng `citra_libretro` — mà `.cia` là **gói cài**, không phải ROM. Kỳ vọng: lõi trả `retro_load_game = false` → `RetroException` (báo lỗi), nhưng không loại trừ được việc lõi đọc header `.cia` rồi sập. **[CHƯA KIỂM]**
 
 ### (3) Thiếu `systemFiles` cho citra
