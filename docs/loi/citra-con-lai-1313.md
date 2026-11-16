@@ -1,22 +1,22 @@
 # Nhóm `citra` còn lại (`core-error` / `anr` / `killed` / `unknown`) — chẩn đoán 13/11/2026
 
 Phạm vi: 7 issue `crash-moi` đang mở có **lõi `citra`**, trừ nhóm `citra/native` (#458, #404) đã có `docs/loi/citra-native-1311.md` (PR #622).
-Nền: `origin/main` `0e9ef5bd`. **Mọi số dòng trong tài liệu tính theo `0e9ef5bd`.** Lượt này **chỉ tài liệu** — không sửa mã, không đụng `config/`.
+Nền: `origin/main` `e965084e` (**tính lại toàn bộ số dòng 16/11**; bản 13/11 tính theo `0e9ef5bd`). **Mọi số dòng trong tài liệu tính theo `e965084e`.** Lượt này **chỉ tài liệu** — không sửa mã, không đụng `config/`.
 Mọi suy luận nguyên nhân chưa có khung/log đã giải mã: **[CHƯA KIỂM]**.
 
 ## 0. Phần đã được phủ (không lặp lại)
 
 | Nguồn | Đã chốt | Áp cho nhóm này thế nào |
 |---|---|---|
-| PR #622 `docs/loi/citra-native-1311.md` (đã gộp) | Lõi citra **không ghim bản** (`nightly/latest`, `version = "1"`, không `sha256`, không gói symbols), `.cia` lọt vào lõi libretro, thiếu `systemFiles`, chưa hạ cấu hình đồ hoạ; phát hiện lỗi nhãn `engine:azahar` | Dùng nguyên: cùng một lõi `citra_libretro_android.so`, cùng `CoreManager`/`RetroActivity` |
+| PR #622 `docs/loi/citra-native-1311.md` (đã gộp) | Lõi citra **không ghim bản** (`nightly/latest`, `version = "1"`, không `sha256`, không gói symbols), `.cia` lọt vào lõi libretro (**chỉ đúng tới #637 — nay đã chặn, xem 3.2**), thiếu `systemFiles`, chưa hạ cấu hình đồ hoạ; phát hiện lỗi nhãn `engine:azahar` | Dùng nguyên: cùng một lõi `citra_libretro_android.so`, cùng `CoreManager`/`RetroActivity` |
 | PR #627 (đã gộp 13/11 10:16) | `Components.kt`: dấu hiệu lõi libretro **thắng** dấu hiệu Azahar; `citra` đơn độc → `engine:libretro:citra`; `ComponentsTest` 9/9 | Xác nhận #610/#607 mang nhãn sai; nhãn **báo cáo mới** sẽ đúng (mục 2) |
-| PR #623 `docs/loi/ppsspp-anr-1311.md` (đang mở) | Nghi phạm ANR chung của `:libretrodroid`: `onPause()` trên Main Thread khi GLThread đang trong khung dài; `onDetachedFromWindow → requestExitAndWait` + `RetroActivity.onDestroy` chờ SRAM 1,5 s | Dùng nguyên cho 3 issue `citra/anr` (mục 4) — không lặp lại phân tích |
+| PR #623 `docs/loi/ppsspp-anr-1311.md` (đã gộp 14/11, `4d276fa8`) | Nghi phạm ANR chung của `:libretrodroid`: `onPause()` trên Main Thread khi GLThread đang trong khung dài; `onDetachedFromWindow → requestExitAndWait` + `RetroActivity.onDestroy` chờ SRAM 1,5 s | Dùng nguyên cho 3 issue `citra/anr` (mục 4) — không lặp lại phân tích |
 | PR #611 (đã gộp), PR #600 (đang mở) | Vòng đời **engine Azahar** và `.cia` ở `AzaharActivity`/`AzaharInstallActivity` | **Không** phủ được nhóm này: 3DS hiện không đi đường Azahar (mục 2.4) |
 
 ## 1. Số liệu
 
 Nguồn: thân issue `crash-moi` (13/11). `Lượt` = số lần bot đã thông báo (app cộng dồn, **không phải số người**).
-`Máy` = số **báo cáo khác nhau** trong `seen` (`crash-issue-bot.py:76`, khóa = `sha256(report id)`), tức xấp xỉ **số lần cài/máy** đã gửi, không phải số người.
+`Máy` = số **báo cáo khác nhau** trong `seen` (`crash-issue-bot.py:81`, khóa = `sha256(report id)` rút 32 hex; chữ ký nhóm ở `:76`), tức xấp xỉ **số lần cài/máy** đã gửi, không phải số người.
 
 | Issue | Lượt | Máy | Phiên bản | Thành phần (issue ghi) | Tái diễn? |
 |---|---:|---:|---|---|---|
@@ -43,7 +43,7 @@ Nguồn: thân issue `crash-moi` (13/11). `Lượt` = số lần bot đã thông
 Hai giới hạn phải nhớ khi đọc bảng:
 
 - **Không có phiên bản, đời máy, mã lỗi** trong thân issue (bot chỉ ghi lõi/loại/chữ ký/số lượt). Suy theo ngày tạo so với lịch phát hành chỉ là phỏng đoán → **[CHƯA KIỂM]**.
-- Bot **chỉ cộng lượt khi có ≥ 5 quan sát mới** (`crash-issue-bot.py:118`), nên "không tăng" **không** đồng nghĩa "đã hết". "Tái diễn" ở bảng trên chỉ là "còn lượt mới sau mốc v0.8.10 (04/11)".
+- Bot **chỉ cộng lượt khi có ≥ 5 quan sát mới** (`crash-issue-bot.py:123`, `delta < 5`), nên "không tăng" **không** đồng nghĩa "đã hết". "Tái diễn" ở bảng trên chỉ là "còn lượt mới sau mốc v0.8.10 (04/11)".
 
 **Bối cảnh `killed` của citra** (để không đọc sai #607): 3 issue `killed` **đã đóng** `not_planned` ngày 08/11 — số **đọc lại ngày 13/11** (bot cộng dồn cả sau khi đóng): #308 **195** lượt, #485 **31**, #511 **3** = **229 lượt** (`TON-0811.md` chốt 08/11 ghi 155/12/3 = 170 — số cũ). #607 (18 lượt, 11/11) là **chữ ký mới** sau khi đóng ⇒ đóng theo chữ ký không làm hết nhóm.
 
@@ -55,8 +55,8 @@ Hai giới hạn phải nhớ khi đọc bảng:
 
 ### 2.2 Vì sao sai
 
-- `Components.kt:20` (**bản trước #627**; bản hiện tại `0e9ef5bd`: luật libretro ở `:19`, chặn Azahar bằng `!libretro` ở `:25-26`, `has(t, "citra")` → `engine:libretro:citra` ở `:41`) khớp `has(t, "azahar", "citra")` **trước** luật libretro ở `:27` (bản trước #627).
-- Báo cáo `core-error` dựng `component = Components.of(c, session, detail)` với `detail = "error code=$code core=$coreId"` (`RetroActivity.kt:373`, `Diagnostics.kt:613`). Chuỗi đó **có chữ `citra`** (tên lõi) ⇒ rơi vào nhánh Azahar, dù không có một dấu hiệu Azahar nào.
+- `Components.kt` **bản trước #627** khớp `has(t, "azahar", "citra")` **trước** luật libretro ⇒ chữ `citra` bị bắt sang nhánh Azahar. Bản hiện tại `e965084e` đã đúng thứ tự: luật libretro ở `:19`, chặn Azahar bằng `!libretro` ở `:25-26`, `has(t, "citra")` → `engine:libretro:citra` ở `:41`.
+- Báo cáo `core-error` dựng `component = Components.of(c, session, detail)` với `detail = "error code=$code core=$coreId"` (`RetroActivity.kt:399`, `Diagnostics.kt:623`). Chuỗi đó **có chữ `citra`** (tên lõi) ⇒ rơi vào nhánh Azahar, dù không có một dấu hiệu Azahar nào.
 - Vệt phiên cũng góp phần: `Diagnostics.begin(..., "libretro", "citra", ...)` ghi crumb `begin · libretro · citra · Nintendo 3DS` (`Diagnostics.kt:160`, `RetroActivity.kt:128`).
 
 ### 2.3 Sau #627 thì #610 vào nhóm nào
@@ -65,14 +65,14 @@ Hai giới hạn phải nhớ khi đọc bảng:
 
 Hai lưu ý:
 
-- #627 chỉ đổi **báo cáo mới**. Thân #610 hiện tại vẫn ghi `engine:azahar` cho tới lần bot ghi đè kế tiếp (bot dựng lại mục `Thành phần` từ thành phần của cửa sổ hiện tại, `crash-issue-bot.py:126-131`).
+- #627 chỉ đổi **báo cáo mới**. Thân #610 hiện tại vẫn ghi `engine:azahar` cho tới lần bot ghi đè kế tiếp (bot dựng lại mục `Thành phần` từ thành phần gom ở `crash-issue-bot.py:82-84`, in ở `:131-135`).
 - Số liệu **theo bảng thành phần** (như bảng trong `docs/loi/TON-0811.md`, dòng `engine:azahar | citra / killed | 1`) vì thế **đếm thiếu** nhóm citra libretro; số liệu **theo `Lõi:` trong tiêu đề** (bảng mục 1) không bị ảnh hưởng.
 
 ### 2.4 Không chỉ #610: hiện **không có đường nào** tới engine Azahar cho 3DS
 
 - `config/monika-config.json:200-210`: hệ `3ds` chỉ có `runner: libretro` (`:202`), `core: citra` (`:203`); **không có** trường `engine`.
-- `GameLauncher` (cả `github` và `play`, `:50-53`) chỉ mở `AzaharActivity` khi `system.engine == "azahar"` ⇒ điều kiện không bao giờ đúng với cấu hình hiện tại.
-- Trường `engine: azahar` của 3DS đã bị **bỏ ở configVersion 44** (commit `7bf4d1c8` "3DS tạm chạy lõi libretro Citra thay Azahar"); config hiện tại là **63**.
+- `GameLauncher` (cả `github` và `play`) chỉ mở `AzaharActivity` khi `system.engine == "azahar"` (`GameLauncher.kt:50-51`; mở ở `:54-57`) ⇒ điều kiện không bao giờ đúng với cấu hình hiện tại.
+- Trường `engine: azahar` của 3DS đã bị **bỏ ở configVersion 44** (commit `7bf4d1c8` "3DS tạm chạy lõi libretro Citra thay Azahar"); config hiện tại là **64**.
 
 Hệ quả: mọi báo cáo `citra` từ bản app ≥ v0.8.5 (18/10, lúc bỏ engine Azahar) là **lõi libretro**, không phải engine Azahar. #617 (gộp 13/11) lại nhận #607 là "chữ ký Azahar lớn nhất" — xem mục 5.
 Không loại trừ được máy còn chạy bản app **< v0.8.5** (khi đó Azahar còn bật): issue không có trường phiên bản → **[CHƯA KIỂM]**.
@@ -82,24 +82,25 @@ Không loại trừ được máy còn chạy bản app **< v0.8.5** (khi đó A
 ### 3.1 Đường phát, có `tệp:dòng`
 
 1. Lõi trả lỗi → `GLRetroView.catchExceptions` bắt `RetroException` và phát `e.errorCode` (lỗi khác → `ERROR_GENERIC`) — `libretrodroid/.../GLRetroView.kt:451-459`.
-2. `RetroActivity` thu mã lỗi: `Diagnostics.stage("core-error-$code")` rồi `onCoreFailure("lõi báo lỗi mã $code", "error code=$code core=$coreId")` — `RetroActivity.kt:366-374`.
-3. `Diagnostics.recordCoreFailure` tạo báo cáo `kind = "core-error"` — `Diagnostics.kt:605-617`.
+2. `RetroActivity` thu mã lỗi: `Diagnostics.stage("core-error-$code")` rồi `onCoreFailure("lõi báo lỗi mã $code", "error code=$code core=$coreId")` — `RetroActivity.kt:394-399`.
+3. `Diagnostics.recordCoreFailure` tạo báo cáo `kind = "core-error"` — `Diagnostics.kt:615-627` (`kind` ở `:619`).
 
-**Chỉ lỗi trước khung đầu mới thành `core-error`**: `onCoreFailure` thoát ngay nếu `failureHandled || loadingGone` (`RetroActivity.kt:190`). Sau khung đầu, lỗi lõi không sinh `core-error`.
+**Chỉ lỗi trước khung đầu mới thành `core-error`**: `onCoreFailure` thoát ngay nếu `failureHandled || loadingGone` (`RetroActivity.kt:190-191`). Sau khung đầu, lỗi lõi không sinh `core-error`.
 
 Mã lỗi (`LibretroDroid.java:74-79`): `0` load library · `1` load game · `2` GLES < 3 · `3` serialization · `4` cheat · `-1` generic.
-`1` = `retro_load_game()` trả `false` (`libretrodroid.cpp:366-371`) → JNI ném `ERROR_LOAD_GAME` (`libretrodroidjni.cpp:441-443`). `0` = `create()` lỗi, thường do `.so` thiếu/hỏng (`libretrodroidjni.cpp:415-420`). `2` = bật HW mà GLES < 3 (`libretrodroid.cpp:331-332`).
+`1` = `retro_load_game()` trả `false` (`libretrodroid.cpp:386-392`) → JNI ném `ERROR_LOAD_GAME` (`libretrodroidjni.cpp:441-443`). `0` = `create()` lỗi, thường do `.so` thiếu/hỏng (`libretrodroidjni.cpp:415-421`). `2` = bật HW mà GLES < 3 (`libretrodroid.cpp:350-352`).
 
 ### 3.2 citra có gì đặc thù
 
-- **`.cia` vẫn vào lõi**: `systems[3ds].extensions` có `cia` (`config:204-210`); nhánh `libretro` của `GameLauncher` **không** kiểm đuôi tệp (`GameLauncher.kt:48-59`); #611 chỉ chặn `.cia` ở `AzaharActivity` — đường hiện không dùng (mục 2.4). `.cia` là gói cài, không phải ROM ⇒ kỳ vọng `retro_load_game = false` ⇒ `core-error` mã 1. **Chưa có bằng chứng** đây là nguyên nhân của #301/#610: **[CHƯA KIỂM]**.
-- **Thiếu `systemFiles`**: `cores.citra` không khai `systemFiles`; `CoreManager.isReady` bỏ qua kiểm sysdata (`CoreManager.kt:53-58`); `RetroActivity` truyền `filesDir/system` (`RetroActivity.kt:326`) có thể **rỗng** ⇒ lõi thiếu sysdata. **[CHƯA KIỂM]** đây có làm `retro_load_game` thất bại hay không.
+- **`.cia` đã bị chặn ở cả hai flavor** — bản 13/11 của tài liệu này ghi "`.cia` vẫn vào lõi", điều đó **không còn đúng**. `systems[3ds].extensions` vẫn có `cia` (`config:204-210`, dòng `cia` ở `config:209`) nên app **vẫn nhận diện** tệp là game 3DS, nhưng nhánh `libretro` của `GameLauncher` gọi `ciaBlockedReason` **trước** khi mở `RetroActivity`: `GameLauncher.kt:53` ở **cả** `github` và `play`, định nghĩa ở `:139-148` (bản `play`: `:109-118`). Vào từ **#637** (`e969652e`, gộp `bef0afed` 13/11), câu thông điệp siết lại ở **#639** (`80983d2b`, gộp `369c1b05` 14/11). Người chơi thấy lời nhắn "Tệp .cia là gói cài đặt, không phải ROM…" (máy có module Azahar thì chỉ sang `Cài đặt → Nintendo 3DS → "Chọn file .cia để cài"`, máy không có thì bảo dùng `.3ds/.cci/.cxi`) ⇒ **không còn** `retro_load_game = false` vì `.cia`.
+  Hệ quả cho phần chẩn đoán còn lại: các ca `.cia` **cũ** (máy chạy bản app trước #637) không còn tái diễn; lượt mới của nhóm `citra/core-error`, nếu có, là **ca khác** (thiếu sysdata, lõi trôi bản, hoặc lỗi lõi thật) chứ không phải `.cia`. Với #301/#610 thì chỉ còn đọc lại `crumbs`/`a` (bản app) của báo cáo cũ: **[CHƯA KIỂM]**.
+- **Thiếu `systemFiles`**: `cores.citra` không khai `systemFiles` (`config:1120-1128`); `CoreManager.isReady` bỏ qua kiểm sysdata khi `systemFiles == null` (`CoreManager.kt:53-58`, điều kiện ở `CoreManager.kt:57`); `RetroActivity` truyền thư mục hệ thống lấy từ `CoreManager.systemDir()` = `filesDir/system` (`RetroActivity.kt:352`), thư mục này có thể **rỗng** ⇒ lõi thiếu sysdata. Từ #646 (`98930314`) app **ghi vệt** `core-sysdata` chứ không chặn (`RetroActivity.kt:330`, `CoreSystemFiles.kt`) — vẫn **[CHƯA KIỂM]** đây có làm `retro_load_game` thất bại hay không.
 - **Lõi trôi bản**: `version = "1"` + URL `nightly/latest`, không `sha256` (`config:1120-1128`) ⇒ hai máy cùng nhãn `1` có thể chạy hai `.so` khác nhau; lỗi `0`/`2` có thể xuất hiện rồi tự hết sau một lần tải. **[CHƯA KIỂM]** về tương quan với #301/#610.
-- **Không phân biệt được mã lỗi từ issue**: #301 (56 lượt/13 báo cáo, dừng cộng từ 25/10) và #610 (1/1, 11/11) có thể là hai mã lỗi khác nhau. Cách đọc đúng: xem `crumbs` của báo cáo — app đã ghi sẵn `core-error-<mã>` (`RetroActivity.kt:368`); `reason` của báo cáo là `what` (`Diagnostics.kt:611`), tức chuỗi `"lõi báo lỗi mã <mã>"` dựng ở `RetroActivity.kt:373`.
+- **Không phân biệt được mã lỗi từ issue**: #301 (56 lượt/13 báo cáo, dừng cộng từ 25/10) và #610 (1/1, 11/11) có thể là hai mã lỗi khác nhau. Cách đọc đúng: xem `crumbs` của báo cáo — app đã ghi sẵn `core-error-<mã>` (`RetroActivity.kt:394`); `reason` của báo cáo là `what` (`Diagnostics.kt:621`), tức chuỗi `"lõi báo lỗi mã <mã>"` dựng ở `RetroActivity.kt:399`.
 
 ## 4. `anr` (#336 9, #460 2, #328 2)
 
-- Cơ chế chung đã phân tích ở **PR #623** (mục 3a/3b): `onPause()` của `GLSurfaceView` trên Main Thread (`GLRetroView.kt:366-373`) chờ GLThread, trong khi `step()` giữ `coreLock` suốt khung (`libretrodroid.cpp:519-542`, gồm `retro_run()` `:533`, `renderFrame()` `:538`, `fpsSync->wait()` `:542`); `LibretroDroid.pause()` lại chờ đúng khóa đó (`:506-507`). Đóng game: `onDetachedFromWindow → requestExitAndWait` + `RetroActivity.onDestroy` chờ SRAM 1,5 s. Không lặp lại ở đây.
+- Cơ chế chung đã phân tích ở **PR #623** (đã gộp 14/11, mục 3a/3b): `onPause()` của `GLSurfaceView` trên Main Thread (`GLRetroView.kt:366-373`) chờ GLThread, trong khi `step()` giữ `coreLock` suốt khung (`libretrodroid.cpp:539-563`, gồm `retro_run()` `:553`, `renderFrame()` `:558`, `fpsSync->wait()` `:562`); `LibretroDroid.pause()` lại chờ đúng khóa đó (`:526-527`). Đóng game: `onDetachedFromWindow → requestExitAndWait` + `RetroActivity.onDestroy` chờ SRAM 1,5 s. Không lặp lại ở đây.
 - **Thêm cho citra**: đây là lõi nặng nhất trong nhóm `:libretrodroid` và **không có `options`/`perf`** (`config:1120-1128`) ⇒ chạy mặc định độ phân giải/đồ hoạ của lõi; khung đầu (JIT + dựng shader) dài hơn ⇒ xác suất rơi vào cửa sổ `onPause`/`onDestroy` cao hơn. **[CHƯA KIỂM]** — không có số đo khung.
 - `anr` chỉ được ghi **lần mở app kế tiếp** từ `ApplicationExitInfo.REASON_ANR` (`Diagnostics.kt:232-241`), và chỉ trên API ≥ 30. Muốn chỉ đúng khung phải có `adb bugreport` của người chơi (như #623 mục 5); hiện **không có**. #336 đã có bình luận PM (07/11) kết luận đúng điểm này.
 
@@ -132,7 +133,7 @@ Thân issue **không** có chứng thư; chỉ Worker trả (`/reports`, trườ
 
 1. **Đọc đúng báo cáo trước khi sửa** (cần `CRASH_ADMIN_TOKEN`, phiên này không có): `crash-insight.py` + `--all-certs` cho chứng thư/bản app; `scripts/crash-reports.sh <id> --symbols-dir …` cho `reason` và `crumbs` — xác nhận `core-error-<mã>` (#301/#610) và lý do tắt thật của #607.
 2. **Đo lại sau #627**: nhãn `engine:libretro:citra` đã đúng từ bản có #627; số nhóm citra sau 1–2 bản mới là số dùng được để so.
-3. **A/B `.cia`** (cần PM duyệt vì đụng `config/` hoặc `GameLauncher`): chặn `.cia` ở nhánh `libretro` (cả 2 flavor) hoặc tạm bỏ `cia` khỏi `systems[3ds].extensions` ở bản thử → so `citra/core-error`. Nếu #301 giảm mạnh thì nghi phạm `.cia` đúng.
+3. **A/B `.cia` — phần chặn đã xong**: #637 chặn `.cia` ở nhánh `libretro` cả hai flavor (#639 siết thông điệp), xem 3.2 ⇒ không cần xin duyệt `config/` nữa. Việc còn lại là **đo**: lọc báo cáo `citra/core-error` theo `a` (bản app) ≥ bản chứa #637 rồi so với #301/#610 — không còn mã 1 thì nghi phạm `.cia` được xác nhận theo chiều ngược; vẫn còn thì đó là ca khác (nhiều khả năng sysdata/lõi). Chưa có số ⇒ **[CHƯA KIỂM]**.
 4. **A/B `systemFiles`** cho citra (bộ sysdata chuẩn) → xem `core-error` có đổi (**[CHƯA KIỂM]**).
 5. **ANR**: chờ `adb bugreport` của #336/#460/#328 (không có bugreport thì mọi kết luận chỉ là đọc mã). Có thể đối chiếu vệt `sram` và `libretro-startup soft-timeout` cùng lượt.
 6. **Không đóng** #607 bằng #617; chỉ xét đóng khi v0.8.13 (13/11) qua 2 bản mà không cộng lượt **và** đã kiểm chứng thư/bản app.
@@ -143,4 +144,4 @@ Thân issue **không** có chứng thư; chỉ Worker trả (`/reports`, trườ
 - Thân issue **không** có phiên bản, đời máy, mã lỗi hay tên tệp game; cột "Phiên bản" vì thế để "không có trong issue", không suy từ ngày tạo.
 - `Máy` = số báo cáo khác nhau, **xấp xỉ** số máy/lần cài; một máy có thể gửi nhiều báo cáo.
 - Bot chỉ cộng lượt khi ≥ 5 quan sát mới ⇒ "không tái diễn" trong bảng chỉ là "chưa thấy lượt mới đủ ngưỡng".
-- Mọi nhận định nguyên nhân (`retro_load_game` false vì `.cia`, thiếu sysdata, khung dài gây ANR, #607 là lõi bị tắt) đều **chưa có khung đã giải mã** → **[CHƯA KIỂM]**.
+- Mọi nhận định nguyên nhân (`retro_load_game` false vì `.cia` — **chỉ còn với báo cáo cũ, trước #637**, thiếu sysdata, khung dài gây ANR, #607 là lõi bị tắt) đều **chưa có khung đã giải mã** → **[CHƯA KIỂM]**.
