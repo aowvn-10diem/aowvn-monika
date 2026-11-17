@@ -2,13 +2,28 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.14 (Bản thử)
+<!-- bien-tap: v0.8.14 -->
+> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+
+- **Sửa lỗi:** Tệp cài `.cia` của 3DS không còn bị mở như game rồi văng; app báo rõ và chỉ đúng nơi cài. ([#637](https://github.com/aowvn-10diem/aowvn-monika/pull/637), [#639](https://github.com/aowvn-10diem/aowvn-monika/pull/639))
+- **Sửa lỗi:** Rời game Nintendo DS đúng lúc app đang lưu thì app không còn văng. ([#644](https://github.com/aowvn-10diem/aowvn-monika/pull/644))
+- **Sửa lỗi:** Game thiếu tệp đĩa hoặc bị lõi từ chối thì app nói rõ lỗi và việc cần làm, không còn câu chung "tệp hỏng". ([#649](https://github.com/aowvn-10diem/aowvn-monika/pull/649))
+- **Sửa lỗi:** Máy thiếu tệp hệ thống của 3DS thì app báo đúng tệp còn thiếu. ([#646](https://github.com/aowvn-10diem/aowvn-monika/pull/646))
+- Nội bộ: siết kiểm tra cấu hình tải từ xa bằng chữ ký số ([#652](https://github.com/aowvn-10diem/aowvn-monika/pull/652)); sửa kiểm thử chập chờn ([#629](https://github.com/aowvn-10diem/aowvn-monika/pull/629), [#647](https://github.com/aowvn-10diem/aowvn-monika/pull/647), [#654](https://github.com/aowvn-10diem/aowvn-monika/pull/654)); ổn định quy trình kiểm tự động ([#642](https://github.com/aowvn-10diem/aowvn-monika/pull/642), [#653](https://github.com/aowvn-10diem/aowvn-monika/pull/653)); thêm dấu vết chẩn đoán cho game Java và báo cáo lỗi ([#618](https://github.com/aowvn-10diem/aowvn-monika/pull/618), [#624](https://github.com/aowvn-10diem/aowvn-monika/pull/624), [#627](https://github.com/aowvn-10diem/aowvn-monika/pull/627), [#632](https://github.com/aowvn-10diem/aowvn-monika/pull/632), [#638](https://github.com/aowvn-10diem/aowvn-monika/pull/638)); cập nhật tài liệu chẩn đoán ([#620](https://github.com/aowvn-10diem/aowvn-monika/pull/620), [#621](https://github.com/aowvn-10diem/aowvn-monika/pull/621), [#622](https://github.com/aowvn-10diem/aowvn-monika/pull/622), [#623](https://github.com/aowvn-10diem/aowvn-monika/pull/623), [#625](https://github.com/aowvn-10diem/aowvn-monika/pull/625), [#626](https://github.com/aowvn-10diem/aowvn-monika/pull/626), [#633](https://github.com/aowvn-10diem/aowvn-monika/pull/633), [#636](https://github.com/aowvn-10diem/aowvn-monika/pull/636), [#640](https://github.com/aowvn-10diem/aowvn-monika/pull/640), [#641](https://github.com/aowvn-10diem/aowvn-monika/pull/641), [#651](https://github.com/aowvn-10diem/aowvn-monika/pull/651)).
+
 ## v0.8.13 (Bản thử)
 <!-- bien-tap: v0.8.13 -->
-> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+> Phát hành ngày 13/11/2026 (UTC), bản thử nghiệm.
 
 - **Sửa lỗi:** Chơi game 3DS, NDS, PSP lâu hoặc chuyển sang app khác rồi quay lại không còn bị đứng, văng app. ([#602](https://github.com/aowvn-10diem/aowvn-monika/pull/602), [#606](https://github.com/aowvn-10diem/aowvn-monika/pull/606))
 - **Sửa lỗi:** Ra khỏi game đúng lúc app đang lưu tiến trình thì bản lưu cũ vẫn còn nguyên, không bị ghi dở. ([#602](https://github.com/aowvn-10diem/aowvn-monika/pull/602))
 - **Mới:** Bản Play: Thư viện chia ba mục Chơi, Đọc, Tệp và mở lại đúng mục bạn xem lần trước. ([#469](https://github.com/aowvn-10diem/aowvn-monika/pull/469))
+- **Sửa lỗi:** 3DS: thoát game đúng lúc app đang ghi dữ liệu thì dữ liệu vẫn nguyên, mở lại không phải dựng lại. ([#611](https://github.com/aowvn-10diem/aowvn-monika/pull/611))
+- **Sửa lỗi:** 3DS: hộp thoại của game không còn làm game đứng mãi. ([#617](https://github.com/aowvn-10diem/aowvn-monika/pull/617))
+- **Sửa lỗi:** NDS: tua nhanh hoặc đổi kiểu hiển thị khi đang chơi không còn làm app đứng. ([#619](https://github.com/aowvn-10diem/aowvn-monika/pull/619))
+- **Sửa lỗi:** Chuyển sang app khác hoặc máy sắp hết RAM thì app nhả bớt bộ nhớ, đỡ bị Android tắt. ([#574](https://github.com/aowvn-10diem/aowvn-monika/pull/574))
+- **Sửa lỗi:** PSP và NDS: máy yếu đỡ văng vì app dựng hình nhẹ hơn. ([#601](https://github.com/aowvn-10diem/aowvn-monika/pull/601))
 - Nội bộ: bớt báo lỗi gửi về khi bài viết đã bị gỡ hoặc khi mất mạng lúc nhập tệp nén ([#603](https://github.com/aowvn-10diem/aowvn-monika/pull/603), [#604](https://github.com/aowvn-10diem/aowvn-monika/pull/604)); khung đọc PDF chưa nối vào mục Đọc, người chơi vẫn mở tài liệu bằng ứng dụng có sẵn ([#457](https://github.com/aowvn-10diem/aowvn-monika/pull/457)).
 
 ## v0.8.12 (Bản thử)
