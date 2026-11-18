@@ -178,7 +178,13 @@ class EnginePrepActivity : ComponentActivity() {
     }
 
     private fun open(entry: File?) {
-        route?.open?.invoke(this, entry, title, intent.getStringExtra(EXTRA_KEY))
+        // Bọc bước mở engine: lỗi ở đây (máy không có activity nhận, sai quyền) trước kia biến mất không dấu vết
+        // nên nhóm `op-fail` thiếu hẳn ca "mở engine hỏng". `op:mo-game` + `bước` để báo cáo không rơi vào unknown.
+        Diagnostics.op(this, Diagnostics.Op.OPEN_GAME, target = title) {
+            step("mo-engine")
+            route?.open?.invoke(this@EnginePrepActivity, entry, title, intent.getStringExtra(EXTRA_KEY))
+                ?: Diagnostics.crumb(this@EnginePrepActivity, "engine", "không có route cho $engine")
+        }.onFailure { Toast.makeText(this, "Không mở được game. Hãy cập nhật app rồi thử lại.", Toast.LENGTH_LONG).show() }
         finish()
     }
 
