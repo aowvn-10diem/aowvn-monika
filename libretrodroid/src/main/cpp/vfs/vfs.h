@@ -27,6 +27,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <mutex>
 #include <optional>
 
 namespace libretrodroid {
@@ -71,6 +72,11 @@ public:
 
 private:
     std::vector<VFSFile> virtualFiles;
+
+    // Aow Monika: thread nền của lõi (ppsspp/desmume) có thể mở file bằng VFS đúng lúc destroy()
+    // gọi deinitialize() → clear() một vector mà luồng kia đang duyệt = đọc vùng nhớ đã giải phóng.
+    // Mọi truy cập virtualFiles phải giữ khoá này.
+    mutable std::mutex virtualFilesLock;
 
 };
 
