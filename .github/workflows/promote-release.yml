@@ -146,8 +146,17 @@ jobs:
           if release.get('prerelease') is not False:
               print('::error::release vẫn còn cờ prerelease')
               sys.exit(1)
-          if str(release.get('make_latest')).lower() != 'true':
-              print('::error::release chưa được đánh dấu latest')
+          # REST API không trả trường make_latest trong object release (luôn null),
+          # nên xác nhận "latest" bằng chính endpoint /releases/latest rồi so id.
+          latest = subprocess.run(['gh', 'api', repo + '/releases/latest'],
+                                  text=True, capture_output=True)
+          if latest.returncode != 0:
+              print('::error::không đọc được release latest: ' + latest.stderr.strip())
+              sys.exit(1)
+          latest_id = json.loads(latest.stdout).get('id')
+          if latest_id != release.get('id'):
+              print('::error::release chưa được đánh dấu latest (latest id=' + str(latest_id)
+                    + ', release id=' + str(release.get('id')) + ')')
               sys.exit(1)
           print('Xong: ' + os.environ['TAG'] + ' là bản chính thức — ' + str(release.get('html_url')))
           PY
