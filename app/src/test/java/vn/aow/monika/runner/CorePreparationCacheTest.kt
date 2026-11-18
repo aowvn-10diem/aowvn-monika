@@ -16,6 +16,7 @@ import vn.aow.monika.config.ConfigRepository
 import vn.aow.monika.library.GameDetector
 import vn.aow.monika.library.GameStorage
 import vn.aow.monika.library.Importer
+import vn.aow.monika.pack.ElfFixture
 import vn.aow.monika.ui.TestApp
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -36,12 +37,7 @@ class CorePreparationCacheTest {
     }.toByteArray()
 
     /** `.so` giả có 20 byte đầu của một ELF arm64 thật — app kiểm định dạng/ABI trước khi cài lõi. */
-    private fun coreElf() = ByteArray(64).also { elf ->
-        elf[0] = 127; elf[1] = 'E'.code.toByte(); elf[2] = 'L'.code.toByte(); elf[3] = 'F'.code.toByte()
-        elf[4] = 2 // ELFCLASS64
-        elf[5] = 1 // little-endian
-        elf[18] = (183 and 255).toByte(); elf[19] = ((183 shr 8) and 255).toByte() // EM_AARCH64
-    }
+    private fun coreElf() = ElfFixture.arm64()
 
     private fun client(corePayload: ByteArray = coreElf()) = OkHttpClient.Builder().addInterceptor { chain ->
         requests += chain.request().url.encodedPath
@@ -134,5 +130,35 @@ class CorePreparationCacheTest {
         assertTrue(error!!.message.orEmpty().contains("sai ABI"))
         assertFalse(manager.isReady("melondsds"))
         assertFalse(File(app.filesDir, "cores/melondsds/melondsds_libretro_android.so").exists())
+    }
+
+    /** `.so` còn note GNU ⇒ `info.txt` mang thêm dòng `build_id=` để báo cáo `native` ghép được gói ký hiệu. */
+    @Test fun installedCoreWritesBuildIdLineToInfoTxt() = onMain {
+        val manager = CoreManager(app, client(ElfFixture.arm64WithBuildId()), config())
+        manager.ensureCore("melondsds")
+        val info = File(app.filesDir, "cores/melondsds/info.txt").readText()
+        assertTrue("thiếu dòng build_id, gặp:\n$info", info.lines().contains("build_id=" + ElfFixture.BUILD_ID))
+        assertTrue("dòng cũ phải giữ nguyên dạng: $info", info.lines().first().startsWith("cfg vone · arm64-v8a · "))
+    }
+
+    /** Lõi đã strip: không có note ⇒ không ghi dòng rỗng, không ném, `info.txt` vẫn đúng một dòng như trước. */
+    @Test fun strippedCoreWritesNoBuildIdLine() = onMain {
+        val manager = CoreManager(app, client(ElfFixture.arm64()), config())
+        manager.ensureCore("melondsds")
+        val info = File(app.filesDir, "cores/melondsds/info.txt").readText()
+        assertFalse("không được có build_id khi .so không có note: $info", info.contains("build_id"))
+        assertEquals(1, info.lines().size)
+    }
+
+    /** `info.txt` bản cũ (chỉ một dòng `cfg v…`) vẫn đọc được và không bị ghi đè khi lõi đã sẵn. */
+    @Test fun legacyInfoFileWithoutBuildIdStillReads() = onMain {
+        val manager = CoreManager(app, client(), config())
+        manager.ensureCore("melondsds")
+        val legacy = "cfg vone · arm64-v8a · 64KB · tải 01/01/2026"
+        File(app.filesDir, "cores/melondsds/info.txt").writeText(legacy)
+        assertEquals(legacy, manager.info("melondsds"))
+        assertTrue(manager.isReady("melondsds"))
+        manager.ensureCore("melondsds") // lõi đã sẵn: không tải lại, không đụng info.txt
+        assertEquals(legacy, manager.info("melondsds"))
     }
 }

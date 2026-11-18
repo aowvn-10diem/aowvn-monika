@@ -202,4 +202,16 @@ class PackTransactionTest {
         } finally { work.deleteRecursively() }
     }
 
+    @Test fun buildIdReadsGnuNoteAndIsNullWhenStripped() {
+        val work = Files.createTempDirectory("core-build-id").toFile()
+        try {
+            val withNote = File(work, "with-note.so").apply { writeBytes(ElfFixture.arm64WithBuildId()) }
+            assertEquals(ElfFixture.BUILD_ID, PackTransaction.buildId(withNote))
+            // Lõi buildbot đã strip: không có PT_NOTE ⇒ null, không ném, không trả chuỗi rỗng.
+            assertNull(PackTransaction.buildId(File(work, "stripped.so").apply { writeBytes(ElfFixture.arm64()) }))
+            assertNull(PackTransaction.buildId(File(work, "empty.so").apply { createNewFile() }))
+            assertNull(PackTransaction.buildId(File(work, "missing.so")))
+        } finally { work.deleteRecursively() }
+    }
+
 }
