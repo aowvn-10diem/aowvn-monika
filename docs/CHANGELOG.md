@@ -4,7 +4,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 ## v0.8.14 (Bản thử)
 <!-- bien-tap: v0.8.14 -->
-> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+> Phát hành ngày 17/11/2026 (UTC), bản thử nghiệm.
 
 - **Sửa lỗi:** Tệp cài `.cia` của 3DS không còn bị mở như game rồi văng; app báo rõ và chỉ đúng nơi cài. ([#637](https://github.com/aowvn-10diem/aowvn-monika/pull/637), [#639](https://github.com/aowvn-10diem/aowvn-monika/pull/639))
 - **Sửa lỗi:** Rời game Nintendo DS đúng lúc app đang lưu thì app không còn văng. ([#644](https://github.com/aowvn-10diem/aowvn-monika/pull/644))
