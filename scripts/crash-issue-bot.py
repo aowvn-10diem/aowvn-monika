@@ -2,8 +2,14 @@
 """V100: plan offline; scheduled apply reads only the Worker's latest 100 records.
 
 Only safe core/kind/signature/counts leave this process. Never copy a report to GitHub.
+
+V206: thân issue tự đủ để dọn issue mà không cần `CRASH_ADMIN_TOKEN`:
+`Bản app`, `Chứng thư` (12 hex đầu + cờ `Chính thức`), `Lần đầu / lần cuối`.
+Ba dòng này chỉ dùng trường Worker đã trả sẵn trong `/reports/<id>` (`app`, `certSha256`, `time`);
+không thêm tầng dữ liệu, không đổi chữ ký nhóm, không in chứng thư đầy đủ, URL, tên game hay thiết bị.
 """
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -34,6 +40,60 @@ COMPONENT_RE = re.compile(r"(?:op|pack|engine|app|net|ra)(?::[A-Za-z0-9_.-]{1,40
 
 def component(value):
     return value if isinstance(value, str) and COMPONENT_RE.fullmatch(value) else ""
+
+
+# Chứng thư ký APK phát hành — khớp `MonikaConfig.OFFICIAL_CERT_SHA256`
+# (`app/src/main/java/vn/aow/monika/config/MonikaConfig.kt:182`), `officialCertSha256` trong
+# `config/monika-config.json` và `scripts/verify-apk-cert.py`. Chỉ in 12 hex đầu.
+OFFICIAL_CERT = "c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c"
+OFFICIAL_PREFIX = OFFICIAL_CERT[:12]
+# `Diagnostics.appLine()` = "<versionName> (<versionCode>) release|debug" → chỉ nhận đúng dạng này.
+APP_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]{0,31} \(\d{1,9}\)(?: (?:release|debug))?")
+CERT_RE = re.compile(r"[0-9a-f]{64}")
+
+
+def app_label(value):
+    """`0.8.14 (814) release` → `0.8.14 (814)`; thiếu hoặc sai dạng → "" (bỏ dòng)."""
+    return re.sub(r" (?:release|debug)$", "", value) if isinstance(value, str) and APP_RE.fullmatch(value) else ""
+
+
+def cert_prefix(value):
+    """SHA-256 (64 hex) → 12 hex đầu; thiếu hoặc sai dạng → "". Không bao giờ trả chứng thư đầy đủ."""
+    return value[:12] if isinstance(value, str) and CERT_RE.fullmatch(value) else ""
+
+
+def day(value):
+    """Mốc ms → `dd/mm/yyyy` (UTC); ngoài khoảng hợp lệ → "" để bỏ mốc rác."""
+    if type(value) is not int or not 946684800000 <= value <= 4102444800000:  # 2000-01-01 … 2100-01-01
+        return ""
+    return datetime.datetime.fromtimestamp(value / 1000, datetime.timezone.utc).strftime("%d/%m/%Y")
+
+
+def describe(views):
+    """Ba dòng dữ liệu dọn issue cho một chữ ký; dòng nào thiếu dữ liệu thì bỏ dòng đó.
+
+    `views` = [(time, app_label, cert_prefix)] của các bản ghi cùng chữ ký trong cửa sổ Worker.
+    """
+    lines = []
+    app = max((v for v in views if v[1]), default=None, key=lambda v: v[0])
+    if app:
+        others = len({v[1] for v in views if v[1]}) - 1
+        lines.append(f"Bản app: `{app[1]}`" + (f" (+{others} bản khác)" if others else ""))
+    certs = {v[2] for v in views if v[2]}
+    if certs:
+        shown = max((v for v in views if v[2]), key=lambda v: v[0])[2]
+        official = "có" if certs == {OFFICIAL_PREFIX} else "không"
+        others = len(certs) - 1
+        lines.append(f"Chứng thư: `{shown}/…`" + (f" (+{others} chứng thư khác)" if others else "")
+                     + f" · Chính thức: {official}")
+    else:
+        # App cũ không gửi `certSha256`: thiếu bằng chứng thì ghi rõ, không đoán "có".
+        lines.append("Chính thức: không rõ (báo cáo không kèm chứng thư)")
+    times = sorted(v[0] for v in views if day(v[0]))
+    if times:
+        first, last = day(times[0]), day(times[-1])
+        lines.append(f"Lần đầu / lần cuối: {first}" + ("" if first == last else f" / {last}"))
+    return lines
 
 
 def frames(report):
@@ -77,8 +137,10 @@ def group_reports(records):
         count = report.get("count", 1)
         if type(count) is not int or not 1 <= count <= 1000000:
             raise ValueError("invalid report count")
-        group = groups.setdefault(signature, {"signature": signature, "core": core, "kind": kind, "seen": {}, "components": set()})
+        group = groups.setdefault(signature, {"signature": signature, "core": core, "kind": kind, "seen": {}, "components": set(), "views": []})
         group["seen"][digest(row["id"])[:32]] = count
+        # Chỉ số liệu an toàn để dọn issue: bản app, 12 hex đầu chứng thư, mốc thời gian.
+        group["views"].append((report.get("time"), app_label(report.get("app")), cert_prefix(report.get("certSha256"))))
         label = component(report.get("component", ""))
         if label:
             group["components"].add(label)
@@ -132,12 +194,14 @@ def plan(records, issues, owners):
         label = (f"`{labels[0]}`" + (f" (+{len(labels) - 1})" if len(labels) > 1 else "")) if labels else ""
         section = ("<!-- " + MARKER + json.dumps(saved, separators=(",", ":")) + " -->\n"
                    + f"Lõi: `{group['core']}` · Loại: `{group['kind']}` · Chữ ký: `{signature}`\n"
+                   + "".join(line + "\n" for line in describe(group["views"]))
                    + (f"Thành phần: {label}\n" if label else "")
                    + f"Số lần quan sát đã thông báo: {saved['count']} (+{delta}). Phụ trách: {role}.\n"
                    + ("Issue này đã đóng: số trên là **cộng dồn lịch sử**, \"(+N)\" là lượt mới kể từ lần thông báo "
                       "trước — không phải mức tăng hiện tại. Bot vẫn cộng dồn để thấy tái diễn; mở lại issue nếu "
                       "cần theo dõi tiếp.\n" if previous and str(previous.get("state", "")).lower() != "open" else "")
                    + "Phạm vi: tối đa 100 bản ghi mới nhất Worker trả về; không suy toàn bộ lịch sử. "
+                   + "Mốc ngày theo giờ máy gửi báo cáo, tính trong chính cửa sổ đó. "
                    + "Chữ ký băm lõi + loại + tối đa 3 frame đầu; không chép stack, game, ảnh, URL hoặc thiết bị.\n")
         old_body = previous.get("body") or "" if previous else ""
         if previous:

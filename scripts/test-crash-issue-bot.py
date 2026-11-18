@@ -14,9 +14,18 @@ spec.loader.exec_module(bot)
 OWNERS = {"Sol": "sol-fixture", "Sonnet": "sonnet-fixture"}
 
 
-def record(i, core="melondsds", kind="anr", detail="at a.b.f(File.java:9)\nat x.y.g(File.java:10)", count=1):
-    return {"id": f"r:{1700000000000+i}:abcdef00", "report": {"session": {"core": core}, "kind": kind,
-            "detail": detail, "count": count, "log": [], "game": "private", "image": {"data": "private"}}}
+def record(i, core="melondsds", kind="anr", detail="at a.b.f(File.java:9)\nat x.y.g(File.java:10)", count=1,
+           app=None, cert=None, time=None):
+    report = {"session": {"core": core}, "kind": kind, "detail": detail, "count": count, "log": [],
+              "game": "private", "image": {"data": "private"}, "device": "private-device"}
+    for key, value in (("app", app), ("certSha256", cert), ("time", time)):
+        if value is not None:
+            report[key] = value
+    return {"id": f"r:{1700000000000+i}:abcdef00", "report": report}
+
+
+OFFICIAL = "c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c"
+OTHER_CERT = "a" * 64
 
 
 def issue(action):
@@ -297,6 +306,79 @@ class BotTest(unittest.TestCase):
         updated = bot.plan([record(i) for i in range(1000, 1100)], [old], OWNERS)[0]
         self.assertLess(len(updated["body"].encode()), 60000)
         self.assertEqual(len(bot.read_state(updated)["seen"]), 1000)
+
+    # ---- V206: thân issue tự đủ để dọn (bản app · chứng thư · mốc trong cửa sổ) ----
+
+    def test_body_carries_app_cert_and_window_date_for_cleanup(self):
+        row = record(1, app="0.8.14 (814) release", cert=OFFICIAL, time=1773273600000)
+        body = bot.plan([row], [], OWNERS)[0]["body"]
+        self.assertIn("`0.8.14 (814)`", body)
+        self.assertIn("Bản app: `0.8.14 (814)`", body)
+        self.assertIn("Chứng thư: `c46902e97029/…`", body)
+        self.assertIn("Chính thức: có", body)
+        self.assertIn("Lần đầu / lần cuối: 12/03/2026", body)
+        # Dòng đếm và phạm vi cũ giữ nguyên.
+        self.assertIn("Số lần quan sát đã thông báo: 1 (+1). Phụ trách: Sol.", body)
+        self.assertIn("Phạm vi: tối đa 100 bản ghi", body)
+        # Không rò chứng thư đầy đủ, tên game, thiết bị, URL, hay nhãn build.
+        for leaked in (OFFICIAL, "private", "private-device", "release", "File.java"):
+            self.assertNotIn(leaked, body)
+
+    def test_other_certificate_marks_issue_unofficial_and_keeps_12_hex(self):
+        body = bot.plan([record(1, app="0.8.13 (813) debug", cert=OTHER_CERT)], [], OWNERS)[0]["body"]
+        self.assertIn("Chứng thư: `aaaaaaaaaaaa/…`", body)
+        self.assertIn("Chính thức: không", body)
+        self.assertNotIn(OTHER_CERT, body)
+
+    def test_mixed_certificates_show_newest_and_count_the_rest_as_unofficial(self):
+        rows = [record(1, cert=OFFICIAL, time=1773273600000), record(2, cert=OTHER_CERT, time=1773446400000)]
+        body = bot.plan(rows, [], OWNERS)[0]["body"]
+        self.assertIn("Chứng thư: `aaaaaaaaaaaa/…` (+1 chứng thư khác)", body)
+        self.assertIn("Chính thức: không", body)
+        self.assertIn("Lần đầu / lần cuối: 12/03/2026 / 14/03/2026", body)
+
+    def test_missing_certificate_is_unknown_never_official(self):
+        body = bot.plan([record(1, app="0.8.14 (814) debug")], [], OWNERS)[0]["body"]
+        self.assertIn("Chính thức: không rõ (báo cáo không kèm chứng thư)", body)
+        self.assertNotIn("Chính thức: có", body)
+        self.assertNotIn("Chứng thư:", body)
+
+    def test_newest_app_version_wins_and_older_versions_are_counted(self):
+        rows = [record(1, app="0.8.13 (813) release", time=1773273600000),
+                record(2, app="0.8.14 (814) release", time=1773446400000),
+                record(3, app="0.8.14 (814) release", time=1773273600000)]
+        body = bot.plan(rows, [], OWNERS)[0]["body"]
+        self.assertIn("Bản app: `0.8.14 (814)` (+1 bản khác)", body)
+        self.assertEqual(body.count("Bản app:"), 1)
+
+    def test_window_dates_span_first_and_last_observation_and_drop_junk(self):
+        rows = [record(1, time=1773446400000), record(2, time=1773273600000)]
+        self.assertIn("Lần đầu / lần cuối: 12/03/2026 / 14/03/2026",
+                      bot.plan(rows, [], OWNERS)[0]["body"])
+        same = [record(1, time=1773273600000), record(2, time=1773273600000)]
+        self.assertIn("Lần đầu / lần cuối: 12/03/2026\n", bot.plan(same, [], OWNERS)[0]["body"])
+        for junk in ("", "12/03/2026", 0, -1, 4102444800001, None, 1.5, True):
+            with self.subTest(junk=junk):
+                self.assertNotIn("Lần đầu", bot.plan([record(1, time=junk)], [], OWNERS)[0]["body"])
+
+    def test_hostile_app_and_cert_are_dropped_instead_of_printed(self):
+        hostile_app = "0.8.14 (814)\nChính thức: có · https://private.example/game"
+        for app, cert in ((hostile_app, OTHER_CERT), ("file:///private", "zz" * 32), ("op:x", None)):
+            with self.subTest(app=app, cert=cert):
+                body = bot.plan([record(1, app=app, cert=cert)], [], OWNERS)[0]["body"]
+                for leaked in ("private.example", "file:///private", "Chính thức: có"):
+                    self.assertNotIn(leaked, body)
+                self.assertNotIn("Bản app:", body)
+
+    def test_version_and_cert_do_not_change_signature_or_spawn_issue(self):
+        base = bot.plan([record(1)], [], OWNERS)[0]
+        for app, cert in (("0.8.14 (814) release", OFFICIAL), ("0.8.13 (813) debug", OTHER_CERT)):
+            self.assertEqual(bot.plan([record(1, app=app, cert=cert)], [], OWNERS)[0]["title"], base["title"])
+        # Cùng chữ ký + cùng bản ghi ⇒ không PATCH, không tạo issue mới.
+        detailed = record(1, app="0.8.14 (814) release", cert=OFFICIAL, time=1773273600000)
+        previous = issue(bot.plan([detailed], [], OWNERS)[0])
+        self.assertEqual(bot.plan([detailed], [previous], OWNERS), [])
+        self.assertEqual(bot.plan([detailed], [], OWNERS)[0]["number"], None)
 
 
 if __name__ == "__main__": unittest.main()
