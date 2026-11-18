@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
 """V174: bảng chẩn đoán crash đọc từ Worker, xuất `crash-insight.md` + `crash-insight.csv`.
 
-- Đọc Worker **đúng một request**: `GET {CRASH_URL}/reports` (Worker tự chặn 100 báo cáo mới nhất;
-  đường này không có tham số phân trang nên không thể lặp vô hạn). Không gọi `/reports/<id>`.
+- Đọc Worker **đúng một request danh sách**: `GET {CRASH_URL}/reports` (Worker tự chặn 100 báo cáo mới nhất;
+  đường này không có tham số phân trang nên không thể lặp vô hạn).
+- `--details N` (mặc định 12, `0` = tắt): sau khi gộp bảng, đọc thêm `GET /reports/<id>` **tuần tự** cho N nhóm
+  đầu (ưu tiên `native`/`anr`) để lấy **khung** của báo cáo mới nhất trong nhóm. Chỉ giữ tên hàm + tên tệp `.so`,
+  `build_id`, tín hiệu; mọi đường dẫn tuyệt đối bị cắt. Nhóm không đọc được thì ghi `lỗi đọc chi tiết` và đi tiếp;
+  không có khung thì ghi `không có khung trong báo cáo` (không suy diễn).
 - Gộp theo (lõi, loại, chữ ký, thành phần, chứng thư) rồi cộng `count`; chỉ dùng các trường Worker trả ở danh sách:
   `k` loại · `c` lõi · `a` bản app · `component` · `fp` chữ ký · `cert` chứng thư · `count` · `t` thời điểm.
 - V205: mặc định **chỉ tính báo cáo khớp chứng thư bản phát hành** (`OFFICIAL_CERT_PREFIX`) và báo cáo cũ
   không gửi chứng thư; báo cáo mang chứng thư khác bị loại khỏi bảng và mọi con số thống kê, chỉ ghi lại
   tổng số báo cáo/lượt đã loại ở cuối bảng. Dùng `--all-certs` khi cần xem cả bản mod/đóng gói lại.
 - KHÔNG đưa vào bảng: tên game (`g`), tiêu đề, chi tiết, log, vệt sự kiện, `device`, IP. Chỉ số liệu gộp.
+  Mục khung cũng chỉ giữ dòng `#NN <tệp .so> <hàm>` — không giữ log, không giữ đường dẫn, không giữ tiêu đề.
 - Không in token, không ghi token ra tệp.
 
 Chạy: `CRASH_ADMIN_TOKEN=<mã> python3 scripts/crash-insight.py --out-dir .`
-Offline: `python3 scripts/crash-insight.py --file listing.json --out-dir out`
+Tắt đọc chi tiết (hành vi cũ, đúng một request): `python3 scripts/crash-insight.py --details 0 --out-dir .`
+Offline: `python3 scripts/crash-insight.py --file listing.json --out-dir out` (không gọi mạng, không đọc chi tiết)
 """
 import argparse
 import csv
@@ -32,6 +38,13 @@ RETRY_DELAYS = (2, 4)         # giây giữa các lần thử (tổng chờ ≤ 
 DEFAULT_URL = "https://aowvn-monika-crash.aowvn-system.workers.dev"
 # A78-4: 12 hex đầu chứng thư ký APK phát hành (khớp scripts/verify-apk-cert.py).
 OFFICIAL_CERT_PREFIX = "c46902e97029"
+
+# V174+: mục "Khung đầu của top nhóm" — đọc chi tiết N nhóm, mỗi nhóm giữ tối đa 8 dòng khung.
+DETAIL_LIMIT = 12             # mặc định; `--details 0` = tắt, hành vi y như trước
+DETAIL_FRAMES = 8             # khung quanh khung lỗi (từ #00 của luồng gây lỗi)
+DETAIL_CHARS = 160            # trần ký tự một dòng khung
+DETAIL_CELL = 1400            # trần ký tự một ô `khung` (8 dòng × 160 ký tự + dấu ngăn vẫn dưới ngưỡng này)
+PRIORITY_KINDS = ("native", "anr")   # loại được đọc chi tiết trước, vì mới có khung native thật
 
 # Cột bảng (đúng thứ tự PM chốt) → trường nguồn, để ghi rõ trường nào thiếu.
 COLUMNS = ["chữ ký (băm ngắn)", "lõi", "loại", "số lượt", "bản app", "chứng thư", "đời máy", "màn", "giả thuyết"]
@@ -142,14 +155,19 @@ def group_rows(rows):
         key = (core or "", kind or "", signature or "", component or "", cert or "")
         group = groups.setdefault(key, {
             "signature": signature, "core": core, "kind": kind, "component": component, "cert": cert,
-            "count": 0, "apps": set(), "newest": 0, "reports": 0,
+            "count": 0, "apps": set(), "newest": 0, "reports": 0, "detail_id": None,
         })
         group["count"] += number(row.get("count")) or 1
         group["reports"] += 1
         app = text(row.get("a") or row.get("app"), 40)
         if app:
             group["apps"].add(app)
-        group["newest"] = max(group["newest"], number(row.get("t") or row.get("time")) or 0)
+        stamp = number(row.get("t") or row.get("time")) or 0
+        # `/reports/<id>` trả báo cáo **mới nhất** của nhóm: giữ id của báo cáo mới nhất trong danh sách.
+        report_id = text(row.get("id"), 120)
+        if report_id and stamp >= group["newest"]:
+            group["detail_id"] = report_id
+        group["newest"] = max(group["newest"], stamp)
     return sorted(groups.values(), key=lambda g: (-g["count"], g["kind"] or "", g["signature"] or "", g["component"] or "", g["cert"] or ""))
 
 
@@ -207,12 +225,14 @@ def missing_fields(rows):
     return missing
 
 
-def render_markdown(groups, scanned, excluded=None):
+def render_markdown(groups, scanned, excluded=None, details=None):
     rows = table_rows(groups)
     lines = [
         "# Bảng chẩn đoán crash (V174)",
         "",
-        "Đọc **một lần** `GET /reports` của Worker (tối đa 100 báo cáo mới nhất); không gọi chi tiết từng báo cáo.",
+        "Đọc **một lần** `GET /reports` của Worker (tối đa 100 báo cáo mới nhất)"
+        + ("; sau đó đọc chi tiết **%d nhóm** ưu tiên `native`/`anr` để lấy khung." % len(details)
+           if details else "; không gọi chi tiết từng báo cáo."),
         "Số dòng nhận được (trước lọc): %d · số nhóm (sau lọc theo lõi + loại + chữ ký + thành phần + chứng thư): %d." % (scanned, len(groups)),
         "",
         "| " + " | ".join(COLUMNS) + " |",
@@ -257,6 +277,7 @@ def render_markdown(groups, scanned, excluded=None):
     missing = missing_fields(rows)
     if missing:
         lines.append("- **Thiếu trường:** " + "; ".join(missing) + " — đã ghi `%s`." % MISSING)
+    lines += render_details(details or [])
     return "\n".join(lines) + "\n"
 
 
@@ -268,8 +289,166 @@ def render_csv(groups):
     return buffer.getvalue()
 
 
-def fetch_listing(base, token, opener=None, sleep=None):
-    """Đúng một lần đọc Worker; 5xx/lỗi mạng là tạm thời nên thử lại có hạn (tổng 3 lần), 4xx thì dừng ngay.
+# ---- V174+: khung của báo cáo chi tiết (`GET /reports/<id>`) ----
+# Dạng khung do app ghi (TombstoneParser, xem app/src/main/java/vn/aow/monika/diag/TombstoneParser.kt):
+#   #00 libppsspp.so+0x1a2b3 SomeFunction+42 [build_id 8f3c…]
+# Dạng tombstone thô của Android (khi app không parse được protobuf):
+#   #00 pc 00000000001a2b3c /data/app/…/lib/arm64/libppsspp.so (BuildId: 8f3c…)
+FRAME_LINE = re.compile(r"^\s*(?:native:\s*)?#(\d{1,3})\b(.*)$")
+SO_NAME = re.compile(r"[A-Za-z0-9_.+-]+\.so", re.I)
+SIGNAL_NAME = re.compile(r"\bSIG[A-Z]{2,12}\b")
+BUILD_ID_TOKEN = re.compile(r"(?:build_id|BuildId)\s*:?\s*([0-9a-fA-F]{8,64})")
+# Đường dẫn tuyệt đối (POSIX có/không ổ đĩa Windows): khung chỉ giữ tên hàm + tên tệp `.so`.
+PATH_TOKEN = re.compile(r"(?:[A-Za-z]:)?[\\/][^\s()\[\]|<>`]*")
+PC_TOKEN = re.compile(r"\bpc\s+[0-9a-fA-F]+\b")
+DETAIL_COLUMNS = ["nhóm", "chữ ký", "build_id", ".so", "tín hiệu", "khung"]
+NO_FRAMES = "không có khung trong báo cáo"
+DETAIL_ERROR = "lỗi đọc chi tiết"
+
+
+def parse_frame(line):
+    """Một dòng khung native → {index, lib, build_id, text}; không phải khung → None.
+
+    Chỉ giữ tên tệp `.so` (bỏ mọi đường dẫn), tên hàm và `build_id`; địa chỉ thô/`pc` bị bỏ.
+    """
+    head = FRAME_LINE.match(line)
+    if not head:
+        return None
+    index = int(head.group(1))
+    rest = head.group(2)
+    name = SO_NAME.search(rest)
+    if not name:
+        return None
+    build = BUILD_ID_TOKEN.search(rest)
+    tail = rest[name.end():]
+    tail = PC_TOKEN.sub(" ", tail)
+    tail = BUILD_ID_TOKEN.sub(" ", tail)
+    tail = PATH_TOKEN.sub(" … ", tail)
+    tail = re.sub(r"^\+0x[0-9a-fA-F]+", "", tail.strip())
+    # Dấu `|`/backtick phá bảng Markdown; ngoặc của khối build_id đã tách riêng nên bỏ.
+    tail = " ".join(re.sub(r"[()\[\]`|]", " ", tail).split())
+    pieces = ["#%02d" % index, name.group(0)]
+    if tail:
+        pieces.append(tail)
+    if build:
+        pieces.append("[build_id %s]" % build.group(1).lower())
+    text = " ".join(pieces)[:DETAIL_CHARS]
+    return {"index": index, "lib": name.group(0), "build_id": build.group(1).lower() if build else None, "text": text}
+
+
+def frames_of(body):
+    """Tối đa `DETAIL_FRAMES` khung của **khối khung đầu tiên** (luồng gây lỗi) trong chi tiết."""
+    frames = []
+    for line in body.splitlines():
+        frame = parse_frame(line)
+        if frame is None:
+            if frames:
+                break            # đã hết khối khung liền mạch đầu tiên
+            continue
+        if frames and frame["index"] == 0:
+            break                # khối khung của luồng khác → dừng, không trộn luồng
+        frames.append(frame)
+        if len(frames) >= DETAIL_FRAMES:
+            break
+    return frames
+
+
+def parse_detail(payload):
+    """`/reports/<id>` → thông tin khung để đưa vào bảng (không giữ nội dung báo cáo).
+
+    Chỉ đọc trường `detail` (chuỗi tombstone/backtrace). Thiếu khung thì trả danh sách rỗng —
+    nơi gọi ghi `không có khung trong báo cáo`, không bịa.
+    """
+    if not isinstance(payload, dict):
+        raise ValueError("detail is not an object")
+    body = payload.get("detail")
+    body = body if isinstance(body, str) else ""
+    frames = frames_of(body)
+    # Tín hiệu do app ghi ở đầu chuỗi tombstone (TombstoneParser); chỉ tìm trong 60 dòng đầu để
+    # không nhặt `SIG*` của tiến trình khác lẫn trong logcat.
+    head = "\n".join(body.splitlines()[:60])
+    signal = SIGNAL_NAME.search(head)
+    build_id = next((frame["build_id"] for frame in frames if frame["build_id"]), None)
+    lib = frames[0]["lib"] if frames else None
+    if not lib:
+        # Báo cáo không khung nhưng có nhắc tên thư viện: chỉ nhận tên tệp, không nhận đường dẫn.
+        found = SO_NAME.search(body)
+        lib = found.group(0) if found else None
+    return {
+        "build_id": build_id or MISSING,
+        "lib": lib or MISSING,
+        "signal": signal.group(0) if signal else MISSING,
+        "frames": frames,
+        "error": False,
+    }
+
+
+def detail_targets(groups, limit):
+    """N nhóm cần đọc chi tiết: `native`/`anr` trước, trong mỗi nhóm giữ thứ tự bảng (số lượt giảm dần)."""
+    if limit <= 0:
+        return []
+    priority = [group for group in groups if group["kind"] in PRIORITY_KINDS]
+    rest = [group for group in groups if group["kind"] not in PRIORITY_KINDS]
+    return (priority + rest)[:limit]
+
+
+def collect_details(groups, limit, base, token, opener=None, sleep=None):
+    """Đọc chi tiết **tuần tự** từng nhóm; lỗi một nhóm (403/5xx/timeout) không làm hỏng bảng chính."""
+    entries = []
+    for group in detail_targets(groups, limit):
+        entry = {
+            "label": "%s/%s" % (group["core"] or "?", group["kind"] or "?"),
+            "signature": group["signature"] or MISSING,
+            "build_id": MISSING, "lib": MISSING, "signal": MISSING, "frames": [], "error": False,
+        }
+        try:
+            if not group["detail_id"]:
+                raise ValueError("missing report id")
+            payload = fetch_json(
+                base + "/reports/" + urllib.parse.quote(group["detail_id"], safe=""),
+                token, opener=opener, sleep=sleep,
+            )
+            entry.update(parse_detail(payload))
+        except Exception:
+            # Lỗi/timeout/403/dữ liệu lạ của **một** nhóm → ghi nhãn và đi tiếp; mục khung không được
+            # làm hỏng bảng chính. Không in token, không in nội dung báo cáo.
+            entry.update({"build_id": MISSING, "lib": MISSING, "signal": MISSING, "frames": [], "error": True})
+        entries.append(entry)
+    return entries
+
+
+def render_details(entries):
+    """Mục `## Khung đầu của top nhóm (N)`; rỗng → không thêm gì (giữ nguyên đầu ra cũ)."""
+    if not entries:
+        return []
+    lines = [
+        "",
+        "## Khung đầu của top nhóm (%d)" % len(entries),
+        "",
+        "Tối đa **%d khung** đầu của luồng gây lỗi trong báo cáo **mới nhất** của mỗi nhóm; chỉ giữ tên hàm và "
+        "tên tệp `.so`, mọi đường dẫn tuyệt đối đã cắt thành `…`. Đây là khung **nguyên văn trong báo cáo**, "
+        "chưa giải ký hiệu — cần `build_id` + gói ký hiệu để có tên hàm/dòng." % DETAIL_FRAMES,
+        "",
+        "| " + " | ".join(DETAIL_COLUMNS) + " |",
+        "|" + "|".join(["---"] * len(DETAIL_COLUMNS)) + "|",
+    ]
+    for entry in entries:
+        if entry["frames"]:
+            cell = "<br>".join("`%s`" % frame["text"] for frame in entry["frames"])
+        else:
+            cell = DETAIL_ERROR if entry["error"] else NO_FRAMES
+        row = [entry["label"], entry["signature"], entry["build_id"], entry["lib"], entry["signal"], cell[:DETAIL_CELL]]
+        lines.append("| " + " | ".join(item.replace("|", "\\|") for item in row) + " |")
+    lines += [
+        "",
+        "Ghi chú: `%s` = Worker trả báo cáo nhưng chuỗi không có khung (ANR thường chỉ có log); "
+        "`%s` = không đọc được báo cáo của nhóm đó (HTTP/timeout) — các nhóm khác vẫn đọc bình thường." % (NO_FRAMES, DETAIL_ERROR),
+    ]
+    return lines
+
+
+def fetch_json(url, token, opener=None, sleep=None):
+    """Đọc **một** đường JSON của Worker; 5xx/lỗi mạng là tạm thời nên thử lại có hạn, 4xx thì dừng ngay.
 
     [opener]/[sleep] để test offline không cần mạng và không phải chờ thật.
     """
@@ -277,7 +456,7 @@ def fetch_listing(base, token, opener=None, sleep=None):
     sleep = sleep or time.sleep
     if not token or any(not 0x20 <= ord(ch) <= 0x7e for ch in token):
         raise ValueError("missing or invalid CRASH_ADMIN_TOKEN")
-    request = urllib.request.Request(base + "/reports", headers={
+    request = urllib.request.Request(url, headers={
         "Authorization": "Bearer " + token, "User-Agent": "aow-crash-insight-v174",
     })
 
@@ -307,6 +486,11 @@ def fetch_listing(base, token, opener=None, sleep=None):
         raise ValueError("response is not JSON") from None
 
 
+def fetch_listing(base, token, opener=None, sleep=None):
+    """Đọc danh sách `/reports` (một đường, tối đa 100 dòng); lỗi → ValueError không kèm token."""
+    return fetch_json(base + "/reports", token, opener=opener, sleep=sleep)
+
+
 def partition_by_cert(groups):
     """V205: tách nhóm khớp chứng thư bản phát hành (và bản cũ không gửi chứng thư) khỏi nhóm lạ.
 
@@ -321,18 +505,23 @@ def partition_by_cert(groups):
     return kept, foreign
 
 
-def build(payload, include_foreign=False):
+def build(payload, include_foreign=False, details=0, base=None, token=None, opener=None, sleep=None):
     """payload → (markdown, csv, số dòng, số nhóm). Dùng chung cho mạng và tệp offline.
 
     Mặc định loại báo cáo mang chứng thư khác bản phát hành (V205) để tỷ lệ lỗi không bị bản mod thổi lên;
     `include_foreign=True` (cờ `--all-certs`) giữ tất cả để điều tra.
+    `details>0` + `base`/`token`: đọc chi tiết N nhóm đầu để thêm mục khung; thiếu base/token (chế độ `--file`)
+    thì **không** gọi mạng và mục khung không xuất hiện.
     """
     rows = rows_of(payload)
     groups = group_rows(rows)
     excluded = []
     if not include_foreign:
         groups, excluded = partition_by_cert(groups)
-    return render_markdown(groups, len(rows), excluded), render_csv(groups), len(rows), len(groups)
+    entries = []
+    if details > 0 and base and token:
+        entries = collect_details(groups, details, base, token, opener=opener, sleep=sleep)
+    return render_markdown(groups, len(rows), excluded, entries), render_csv(groups), len(rows), len(groups)
 
 
 def main():
@@ -340,16 +529,24 @@ def main():
     parser.add_argument("--out-dir", default=".", help="thư mục ghi crash-insight.md/.csv")
     parser.add_argument("--file", help="đọc payload /reports từ tệp (offline, không gọi mạng)")
     parser.add_argument("--all-certs", action="store_true", help="gộp cả báo cáo mang chứng thư khác bản phát hành (mặc định: loại khỏi thống kê)")
+    parser.add_argument("--details", type=int, default=DETAIL_LIMIT,
+                        help="số nhóm đọc chi tiết để lấy khung (mặc định %d; 0 = tắt, hành vi y như trước)" % DETAIL_LIMIT)
     args = parser.parse_args()
     try:
+        if args.details < 0:
+            raise ValueError("--details must be >= 0")
+        base = token = None
         if args.file:
             # utf-8-sig: chấp nhận tệp có BOM (Windows) lẫn không BOM.
             with open(args.file, encoding="utf-8-sig") as handle:
                 payload = json.load(handle)
         else:
             base = validate_base(os.environ.get("CRASH_URL") or DEFAULT_URL)
-            payload = fetch_listing(base, os.environ.get("CRASH_ADMIN_TOKEN", "").strip())
-        markdown, table, scanned, groups = build(payload, args.all_certs)
+            token = os.environ.get("CRASH_ADMIN_TOKEN", "").strip()
+            payload = fetch_listing(base, token)
+        markdown, table, scanned, groups = build(
+            payload, args.all_certs, details=args.details, base=base, token=token,
+        )
         os.makedirs(args.out_dir, exist_ok=True)
         with open(os.path.join(args.out_dir, "crash-insight.md"), "w", encoding="utf-8") as handle:
             handle.write(markdown)

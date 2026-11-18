@@ -9,6 +9,7 @@ import os
 import sys
 import unittest
 import urllib.error
+import urllib.parse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location("crash_insight", os.path.join(HERE, "crash-insight.py"))
@@ -274,6 +275,158 @@ class Certificate(unittest.TestCase):
         for output in (markdown, table):
             self.assertNotIn("script", output)
             self.assertNotIn("alert", output)
+
+
+BUILD_ID = "8f3c2d1e0a9b7c6d5e4f30211223344556677889"
+
+
+def detail_body(*lines, kind="native"):
+    """Body `/reports/<id>`: đúng dạng app gửi (`detail` là chuỗi tombstone/backtrace)."""
+    return json.dumps({"kind": kind, "app": "0.8.8 (128)", "detail": "\n".join(lines)}).encode("utf-8")
+
+
+class Router:
+    """Giả lập Worker cho `/reports/<id>`: trả body theo id, hoặc ném HTTPError theo mã lỗi."""
+
+    def __init__(self, bodies):
+        self.bodies = bodies
+        self.calls = []
+
+    def __call__(self, request, timeout=None):
+        url = request.full_url
+        self.calls.append(url)
+        report_id = urllib.parse.unquote(url.rsplit("/", 1)[-1])
+        value = self.bodies[report_id]
+        if isinstance(value, int):
+            raise urllib.error.HTTPError(url, value, "error", {}, None)
+        if isinstance(value, Exception):
+            raise value
+        return Response(value)
+
+
+class Details(unittest.TestCase):
+    """V174+: mục `## Khung đầu của top nhóm` đọc `/reports/<id>` — offline, không gọi mạng."""
+
+    BASE = "https://x.workers.dev"
+    TOKEN = "token-bi-mat-khong-duoc-lo"
+
+    def listing(self):
+        return {"reports": [
+            row(id="r:1:aaa1", k="anr", c="melondsds", fp="bbbbbbbbbbbb2222", count=421),
+            row(id="r:2:aaa2", k="resource", c="unknown", fp="cccccccccccc3333", count=236),
+            row(id="r:3:aaa3", k="native", c="ppsspp", fp="aaaaaaaaaaaa1111", count=206),
+        ]}
+
+    def app_frames(self, count=10):
+        lines = ["SIGSEGV (SEGV_MAPERR) địa chỉ lỗi 0x0", "luồng gây lỗi: RenderThread (tid 4242)"]
+        lines += ["#%02d libppsspp.so+0x%x Core_Run+%d [build_id %s]" % (i, 0x1a2b3 + i, i, BUILD_ID)
+                  for i in range(count)]
+        return lines
+
+    def collect(self, bodies, limit=3):
+        groups = insight.group_rows(self.listing()["reports"])
+        router = Router(bodies)
+        entries = insight.collect_details(groups, limit, self.BASE, self.TOKEN, opener=router, sleep=lambda _s: None)
+        return entries, router
+
+    def test_frames_are_trimmed_to_eight_and_carry_lib_build_id_signal(self):
+        entries, router = self.collect({"r:1:aaa1": detail_body(*self.app_frames(10))}, limit=1)
+        entry = entries[0]
+        self.assertEqual(insight.DETAIL_FRAMES, len(entry["frames"]))
+        self.assertEqual("libppsspp.so", entry["lib"])
+        self.assertEqual(BUILD_ID, entry["build_id"])
+        self.assertEqual("SIGSEGV", entry["signal"])
+        self.assertEqual(1, len(router.calls))
+        self.assertIn("r%3A1%3Aaaa1", router.calls[0])
+
+        markdown = insight.render_markdown(
+            insight.group_rows(self.listing()["reports"]), 3, details=entries)
+        self.assertIn("## Khung đầu của top nhóm (1)", markdown)
+        self.assertIn(BUILD_ID, markdown)
+        self.assertIn("libppsspp.so", markdown)
+        self.assertIn("Core_Run", markdown)
+        self.assertEqual(insight.DETAIL_FRAMES, markdown.count("[build_id %s]" % BUILD_ID))
+        self.assertNotIn(self.TOKEN, markdown)
+
+    def test_raw_tombstone_paths_are_cut_to_file_names(self):
+        entries, _ = self.collect({"r:1:aaa1": detail_body(
+            "#00 pc 00000000001a2b3c /data/app/~~xyz==/vn.aow.monika-1/lib/arm64/libmelondsds.so (BuildId: %s)" % BUILD_ID,
+            "#01 pc 00000000001a2b3d /storage/emulated/0/Android/data/%s/files/libfoo.so (BuildId: 0011223344556677)" % GAME_NAME,
+            kind="anr",
+        )}, limit=1)
+        markdown = insight.render_markdown(insight.group_rows(self.listing()["reports"]), 3, details=entries)
+        self.assertIn("libmelondsds.so", markdown)
+        self.assertIn("libfoo.so", markdown)
+        for leak in ("/data/app", "emulated", "Android/data", "~~", GAME_NAME, "vn.aow.monika-1/lib"):
+            self.assertNotIn(leak, markdown)
+
+    def test_anr_trace_native_prefix_is_understood(self):
+        # ANR của Android 12+ ghi khung native kèm tiền tố `native:`; phải nhận, không bỏ cả khối.
+        entries, _ = self.collect({"r:1:aaa1": detail_body(
+            "----- pid 4321 at 2026-11-16 10:00:00 -----",
+            "Cmd line: vn.aow.monika",
+            "  native: #00 pc 0000000000055d1c  /apex/com.android.runtime/lib64/bionic/libc.so (abort+164) (BuildId: %s)" % BUILD_ID,
+            "  native: #01 pc 0000000000055d20  /data/app/~~Q1z9==/vn.aow.monika-1/lib/arm64/libmelondsds.so (EmuThreadMain+88) (BuildId: 00112233445566778899aabbccddeeff00112233)",
+            kind="anr",
+        )}, limit=1)
+        entry = entries[0]
+        self.assertEqual("libc.so", entry["lib"])
+        self.assertEqual(BUILD_ID, entry["build_id"])
+        self.assertEqual(["#00", "#01"], [frame["text"][:3] for frame in entry["frames"]])
+        self.assertIn("libmelondsds.so", entry["frames"][1]["text"])
+        self.assertNotIn("/data/app", entry["frames"][1]["text"])
+
+    def test_report_without_frames_says_so_instead_of_inventing(self):
+        entries, _ = self.collect({"r:1:aaa1": detail_body("ANR in vn.aow.monika (chưa có ngăn xếp)", kind="anr")}, limit=1)
+        self.assertEqual([], entries[0]["frames"])
+        self.assertFalse(entries[0]["error"])
+        markdown = insight.render_markdown(insight.group_rows(self.listing()["reports"]), 3, details=entries)
+        self.assertIn("không có khung trong báo cáo", markdown)
+
+    def test_one_group_failing_does_not_stop_the_others(self):
+        entries, _ = self.collect({
+            "r:1:aaa1": 403,                      # token thiếu quyền cho báo cáo này
+            "r:2:aaa2": 500,                      # Worker lỗi tạm thời (có thử lại, vẫn hỏng)
+            "r:3:aaa3": detail_body(*self.app_frames(3)),
+        })
+        self.assertEqual(3, len(entries))
+        # Thứ tự đọc: anr (403) → native (có khung) → resource (500).
+        self.assertEqual([True, False, True], [entry["error"] for entry in entries])
+        markdown = insight.render_markdown(insight.group_rows(self.listing()["reports"]), 3, details=entries)
+        rows_with_error = [line for line in markdown.splitlines()
+                           if line.startswith("| ") and "lỗi đọc chi tiết" in line]
+        self.assertEqual(2, len(rows_with_error))
+        self.assertIn("libppsspp.so", markdown)       # nhóm thứ ba vẫn có khung
+        self.assertIn("## Khung đầu của top nhóm (3)", markdown)
+
+    def test_details_zero_never_calls_network_and_output_is_unchanged(self):
+        payload = self.listing()
+        expected = insight.build(payload)[0]
+        calls = []
+
+        def boom(_request, timeout=None):
+            calls.append(1)
+            raise AssertionError("không được gọi mạng khi --details 0")
+
+        markdown, table, scanned, groups = insight.build(
+            payload, False, details=0, base=self.BASE, token=self.TOKEN, opener=boom)
+        self.assertEqual(expected, markdown)
+        self.assertEqual([], calls)
+        self.assertNotIn("Khung đầu của top nhóm", markdown)
+        self.assertIn("không gọi chi tiết từng báo cáo", markdown)
+        self.assertEqual(12, insight.DETAIL_LIMIT)     # workflow không truyền cờ → mặc định 12
+
+    def test_native_and_anr_groups_are_read_first(self):
+        groups = insight.group_rows(self.listing()["reports"])   # đã xếp theo số lượt: anr 421, resource 236, native 206
+        labels = [group["kind"] for group in insight.detail_targets(groups, 2)]
+        self.assertEqual(["anr", "native"], labels)
+        self.assertEqual([], insight.detail_targets(groups, 0))
+
+    def test_missing_report_id_is_an_error_not_a_crash(self):
+        groups = insight.group_rows([row(id="", k="native", c="ppsspp")])
+        entries = insight.collect_details(groups, 1, self.BASE, self.TOKEN,
+                                          opener=lambda *_a, **_k: self.fail("không có id thì không gọi"), sleep=lambda _s: None)
+        self.assertTrue(entries[0]["error"])
 
 
 class Endpoint(unittest.TestCase):
