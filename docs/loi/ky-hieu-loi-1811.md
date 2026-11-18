@@ -304,3 +304,5 @@ python scripts/kiem-ky-hieu.py citra_libretro_android.so.zip        # → THIEU_
 python scripts/kiem-ky-hieu.py --json citra_libretro_android.so.zip  # → build_id + cờ từng mục
 python scripts/test-kiem-ky-hieu.py                                  # → 13 ca, OK
 ```
+
+Bảng quyết định cho **toàn bộ 22 lõi** (kèm lượt issue phụ thuộc và thứ tự 3 việc rẻ nhất): `docs/loi/ky-hieu-toan-bo-1811.md`.
