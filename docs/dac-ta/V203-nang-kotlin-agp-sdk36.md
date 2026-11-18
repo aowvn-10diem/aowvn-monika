@@ -102,3 +102,39 @@
 - **Rủi ro 1 — Lệch `android.jar` giữa `:app` và `:loader` sau khi gộp `#643`:** `#643` đã đổi `app/build.gradle.kts:187` sang `android-36/android.jar` nhưng quên `loader/build.gradle.kts:16` (`android-35/android.jar`). Giải quyết ngay ở **PR 2** bằng cách đổi `loader/build.gradle.kts:16` sang `android-36/android.jar`.
 - **Rủi ro 2 — Xung đột Built-in Kotlin trên AGP 9 với module mới `:reader`:** `:reader` mới thêm ngày 11/11 có `alias(libs.plugins.kotlin.android)` ở dòng 8. Đã đưa `:reader` vào danh sách bắt buộc của **PR 2 & PR 3**.
 - **Rủi ro 3 — Vỡ R8 minify hoặc Kover khi lên AGP `9.4.1` / Kotlin `2.4.21`:** Vì đã tách **PR 3 (AGP 9.4.1)** và **PR 4 (Kotlin 2.4.21)** thành 2 PR riêng và chỉ chạy **sau khi đóng xong A85**, nếu bất kỳ PR nào gặp lỗi tương thích plugin, chỉ cần revert đúng PR đó trên `main` mà không ảnh hưởng tới `targetSdk 36` (đã lên từ PR 1 & PR 2) hay tiến độ bảo mật A85.
+
+---
+
+## Phụ lục D2 (Cập nhật Đợt 2 — 18/11/2026) — Quy trình thử nhánh an toàn, phát hiện vỡ sớm trên CI & Ma trận quay lại cho Giai đoạn B (AGP 9.4.1 / Kotlin 2.4.21 / Gradle 9.6.0)
+
+### 1. Quy trình thử nhánh an toàn (Safe Branch Trial — 5 bước tuần tự)
+Trước khi mở PR chính thức cho **PR 3 (Gradle 9.6.0 + AGP 9.4.1)** và **PR 4 (Kotlin 2.4.21 + R8 9.x)**, phiên Thi công phải tạo nhánh thử nghiệm cô lập `deepseek/v203-stage-b-spike` từ `main` (sau khi PR 1 `#643` và PR 2 `compilerOptions` đã gộp) và chạy qua **5 tầng kiểm định theo thứ tự từ nhẹ đến nặng**:
+
+| Tầng | Lệnh chạy trên nhánh thử | Điểm gãy cần bắt | Điều kiện qua tầng |
+|---:|---|---|---|
+| **1. Configuration & Built-in Kotlin** | `./gradlew help --warning-mode=fail` | Xung đột plugin `org.jetbrains.kotlin.android` với Built-in Kotlin của AGP 9 trên 5 module Kotlin (`:app`, `:reader`, `:j2me`, `:libretrodroid`, `:loader`) và rò `kotlin-stdlib` vào 4 module thuần Java (`:dexlib`, `:kirikiri`, `:rgss`, `:renpy`). | Cấu hình xong 9 module với `0` deprecation/configuration error. |
+| **2. Custom Task Graph & Asset Providers** | `./gradlew loaderAsset arscStripped playConfig unpackSevenZipNatives` | AGP 9 siết `TaskConfigurationAvoidance` và `Provider<Directory>` trên các task tùy biến trong `app/build.gradle.kts:139-215` (`playConfig`, `unpackSevenZipNatives`, `loaderDex`, `loaderAsset`, `arscStripped`). | Sinh đủ 4 đầu ra: `monika-loader.dex`, `ARSCLib-stripped.jar` (không sót `org/xmlpull/**` hay `android/**`), `play-assets/monika-config.json`, `sevenzip-natives/lib7-Zip-JBinding.so`. |
+| **3. JVM + Robolectric + JNI Test Suite** | `./gradlew testDebugUnitTest :tools:pack-check:check` | Tương thích Robolectric `4.16.1` với bytecode Kotlin `2.4` / AGP `9.4.1` resource merging (`isIncludeAndroidResources = true` ở `:app` và `:reader`) và nạp `lib7-Zip-JBinding.so` qua `java.library.path`. | 100% test của `:app` (`testGithubDebugUnitTest`, `testPlayDebugUnitTest`), `:reader` và `:tools:pack-check` xanh. |
+| **4. R8 Full Mode & Metadata Kotlin 2.4** | `./gradlew assembleGithubRelease assemblePlayRelease` | R8 đi kèm AGP 9 nén/rút gọn `@Serializable` (`MonikaConfig`, `Diagnostics$Report`), reflection JNI (`LibretroDroid`, `Kirikiroid2`, `SDLActivity`, `PythonSDLActivity`), và `d8Tool` biên dịch `:loader`. | Dựng thành công cả 2 APK release (minified), `python3 scripts/check-play-apk.py` đạt `V150`. |
+| **5. Coverage & SBOM Security Audit** | `./gradlew koverXmlReportGithubDebug`<br>`python3 scripts/kiem-phu-thuoc.py sbom.json` | Tương thích Kover `0.9.8` với AGP `9.4.1` variant API và xác nhận 47 cảnh báo Dependabot của classpath AGP (`io.netty`, `protobuf-java`, `commons-io`, `jose4j`, `bcpkix`) đã về `0`. | `koverXmlReportGithubDebug` sinh XML hợp lệ; `kiem-phu-thuoc.py` báo `0` lỗ hổng trên APK và giảm ≥ 47 cảnh báo buildscript. |
+
+---
+
+### 2. Cách phát hiện vỡ sớm trên CI (Early Breakage Detection trên `pull_request`)
+- **Điểm mù hiện tại của CI**: `.github/workflows/build.yml` khi chạy trên `pull_request` chỉ gọi `./gradlew testDebugUnitTest` và `./gradlew assembleDebug`. Bản `Debug` **không chạy R8 (`isMinifyEnabled = false`)**, nên mọi lỗi R8 không đọc được `@kotlin.Metadata` `2.4.0`, lỗi R8 cắt nhầm lớp JNI/Serialization hoặc lỗi `ARSCLib` trùng lớp Android chỉ nổ khi cắt bản `Release`!
+- **Cổng phát hiện vỡ sớm bắt buộc cho Giai đoạn B**:
+  1. Trong PR 3 (AGP 9.4.1): thêm điều kiện trong `.github/workflows/build.yml` (hoặc bước bắt buộc khi PR sửa `gradle/libs.versions.toml` / `gradle-wrapper.properties` / `*build.gradle*`): chạy luôn **`./gradlew assembleGithubRelease assemblePlayRelease`** và **`python3 scripts/check-play-apk.py`** ngay trên `pull_request`!
+  2. Kiểm tra nhị phân APK release tự động sau bước build:
+     - Xác nhận `assets/monika-loader.dex` tồn tại và `> 1 KB` trong APK `githubRelease`.
+     - Dùng `apkanalyzer dex packages` (hoặc script Python đọc `classes*.dex`) xác nhận không có gói `org/xmlpull/v1` trong DEX của APK release (chứng tỏ `arscStripped` không bị AGP 9 làm rỗng `exclude`).
+     - Chạy `python3 scripts/test-crash-symbols.py` để đảm bảo cấu trúc đóng gói native `.so` không bị AGP 9 thay đổi đường dẫn strip/unstripped.
+
+---
+
+### 3. Ma trận phương án quay lại (Rollback / Fallback Matrix)
+
+| Kịch bản vỡ | Dấu hiệu phát hiện | Phương án quay lại / Hạ cấp an toàn (Thời gian khôi phục < 5 phút) |
+|---|---|---|
+| **Kịch bản B-1**: AGP `9.4.1` xung đột với plugin `org.jetbrains.kotlinx.kover` (`0.9.8`) ở Tầng 5 | `./gradlew koverXmlReportGithubDebug` ném `NoSuchMethodError` trên Variant API của AGP 9 | 1. Thử nâng `kover` lên bản mới nhất tương thích AGP 9.<br>2. Nếu upstream Kover chưa kịp ra bản cho AGP `9.4.1`: dùng cờ `-PskipKover=true` tách tạm Kover khỏi PR 3 để lấy bản vá 47 CVE của AGP trước, hoặc lùi AGP về mốc ổn định `8.13.0` + `force` các thư viện transitive (`netty`, `protobuf`, `bcpkix`) trong `build.gradle.kts:18-45`. |
+| **Kịch bản B-2**: PR 3 (AGP `9.4.1` + Gradle `9.6.0`) đã xanh, nhưng PR 4 (Kotlin `2.4.21`) làm vỡ R8 hoặc Compose Compiler | Tầng 3 (`Compose UI test`) hoặc Tầng 4 (`assembleGithubRelease`) đỏ trên PR 4 | **Giữ nguyên PR 3 trên `main`** (đã đóng 47/48 cảnh báo Dependabot!) và chỉ đóng/hoãn PR 4, giữ `kotlin` ở phiên bản Built-in Kotlin mặc định đi kèm AGP `9.4.1` (`2.1.20` / `2.2.x`). Hai PR 3 và PR 4 độc lập 100%. |
+| **Kịch bản B-3**: Lỗi runtime chỉ xuất hiện trên thiết bị thật sau khi gộp PR 3 hoặc PR 4 vào `main` | Báo cáo `crash-moi` (`java` / `ClassNotFoundException` / `IncompatibleClassChangeError`) tăng đột biến trên bản thử nghiệm | Vì PR 3 và PR 4 **chỉ sửa tệp cấu hình build** (`gradle-wrapper.properties`, `gradle/libs.versions.toml`, `*build.gradle*`) và **không thay đổi schema dữ liệu hay `versionCode`**, chỉ cần chạy đúng 1 lệnh `git revert <commit-sha>` để đưa chuỗi build về trạng thái trước đó mà không mất dữ liệu người chơi. |
