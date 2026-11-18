@@ -94,6 +94,43 @@ class MidletDeathSessionTest {
         assertTrue(report.fromGame)
     }
 
+    /**
+     * #655: `collect` xu ly phien `:midlet` chet vi REASON_EXCESSIVE_RESOURCE_USAGE thanh bao cao
+     * `killed` (CO phien) roi xoa `diag/sessions/<pid>.json`. Truoc ban sua, cua chan trung trong
+     * `collectProcessDeaths` chi ap cho `:game`, nen no van tao bao cao `resource` cung `id` (moc
+     * thoi gian) va ghi de tep -> mat ban co phien, nhom #302 lai "unknown". Test chay dung chuoi do.
+     */
+    @Test fun collectThenScanKeepsMidletSessionReportInsteadOfOverwriting() {
+        val pid = 4545
+        val diedAt = System.currentTimeMillis() - 5_000
+        writeLiveSession(pid, core = "midlet", system = "J2ME", diedAt = diedAt)
+        writeDeathSnapshot(pid, kind = "midlet", core = "midlet", system = "J2ME", diedAt = diedAt)
+        addProcessExit(pid, "${context.packageName}:midlet", ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE,
+            diedAt, Diagnostics.deathProcessSummary(generation))
+
+        val fromCollect = Diagnostics.collect(context)
+        assertEquals("killed", fromCollect?.kind)
+        assertEquals("midlet", fromCollect?.session?.core)
+
+        // Quet lai lich su chet: khong duoc tao bao cao thu hai cung moc (se ghi de ban co phien).
+        assertTrue(Diagnostics.collectProcessDeaths(context).none { it.id == diedAt })
+
+        val saved = Diagnostics.list(context).single { it.id == diedAt }
+        assertEquals("killed", saved.kind)
+        assertEquals("midlet", saved.session?.core)
+        assertEquals("J2ME", saved.session?.system)
+    }
+
+    /** Phien dang mo o `diag/active-session.json` — dung khuon `Diagnostics.write` ghi (PID tien trinh game). */
+    private fun writeLiveSession(pid: Int, core: String, system: String, diedAt: Long) {
+        val session = Diagnostics.Session(
+            pid, diedAt - 60_000, "midlet", core, "kiem thu",
+            system = system, stage = "playing", stageAt = diedAt - 1_000, lastAlive = diedAt - 10,
+        )
+        File(diag, "active-session.json").apply { parentFile!!.mkdirs() }
+            .writeText(Json.encodeToString(Diagnostics.Session.serializer(), session))
+    }
+
     @Test fun nativeExitWithLibretroSnapshotStillReportsItsOwnCore() {
         val pid = 4343
         val diedAt = System.currentTimeMillis() - 5_000

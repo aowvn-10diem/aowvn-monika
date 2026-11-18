@@ -883,8 +883,10 @@ object Diagnostics {
                 ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE -> "resource"
                 else -> continue // CRASH (Java) đã có CrashReporter; thoát bình thường / người dùng vuốt tắt thì bỏ qua
             }
-            // Tiến trình game đã được [collect] xử lý (có phiên) → tránh báo hai lần.
-            if (e.processName?.endsWith(":game") == true && File(reportsDir(c), "${e.timestamp}.json").exists()) continue
+            // Đã có báo cáo ở đúng mốc này — thường là [collect] vừa xử lý phiên của `:game`/`:midlet`
+            // (nó ghi báo cáo rồi xoá ảnh chụp phiên). Áp cho MỌI tiến trình, không chỉ `:game`: nếu chỉ
+            // chặn `:game` thì bản quét sau ghi đè tệp cùng `id` bằng bản không có phiên → mất lõi (#655).
+            if (File(reportsDir(c), "${e.timestamp}.json").exists()) continue
             val trace = scrub(c, traceStrings(e).joinToString("\n"))
             val crumbs = Breadcrumbs.read(c, e.pid)
             val deathSession = if (readsDeathSession(kind)) readDeathSession(c, e.pid, e.timestamp, e.processStateSummary) else null
