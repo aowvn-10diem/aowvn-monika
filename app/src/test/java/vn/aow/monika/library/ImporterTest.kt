@@ -192,4 +192,64 @@ class ImporterTest {
         assertArrayEquals(src.readBytes(), copied.readBytes())
         assertNotNull(result.dir.parentFile)
     }
+
+    // ---- Bộ đĩa PS1: nhập .cue và .bin rời phải vào CÙNG thư mục (issue #322, #578) ----
+
+    private fun discard(): File = File(tmp.root, "nguon").apply { mkdirs() }
+
+    @Test fun cueThenBinFromPickerEndUpInSameFolderAndSetIsComplete() {
+        val cue = File(discard(), "Game.cue").apply { writeText("FILE \"Game.bin\" BINARY\n  TRACK 01 MODE1/2352\n") }
+        val bin = File(discard(), "Game.bin").apply { writeBytes(ByteArray(2_048) { 7 }) }
+
+        val first = Importer.importFile(context, cue, deleteSource = false, passwords = emptyList())
+        val second = Importer.importFile(context, bin, deleteSource = false, passwords = emptyList())
+
+        assertEquals(first.dir, second.dir)
+        assertEquals(setOf("Game.cue", "Game.bin"), second.dir.listFiles().orEmpty().map { it.name }.toSet())
+        assertNull(DiscSet.inspect(File(second.dir, "Game.cue"))) // đủ tệp → lõi nạp được
+    }
+
+    @Test fun binThenCueEndUpInSameFolder() {
+        val bin = File(discard(), "Game (Disc 1).bin").apply { writeBytes(ByteArray(1_024) { 1 }) }
+        val cue = File(discard(), "Game (Disc 1).cue").apply { writeText("FILE \"Game (Disc 1).bin\" BINARY\n") }
+
+        Importer.importFile(context, bin, deleteSource = false, passwords = emptyList())
+        val second = Importer.importFile(context, cue, deleteSource = false, passwords = emptyList())
+
+        assertEquals(setOf("Game (Disc 1).bin", "Game (Disc 1).cue"), second.dir.listFiles().orEmpty().map { it.name }.toSet())
+        assertNull(DiscSet.inspect(File(second.dir, "Game (Disc 1).cue")))
+    }
+
+    @Test fun trackNameDifferentFromCueStemStillJoinsTheSet() {
+        val cue = File(discard(), "Game.cue").apply { writeText("FILE \"Game (Track 1).bin\" BINARY\n") }
+        val track = File(discard(), "Game (Track 1).bin").apply { writeBytes(ByteArray(512) { 2 }) }
+
+        val first = Importer.importFile(context, cue, deleteSource = false, passwords = emptyList())
+        val second = Importer.importFile(context, track, deleteSource = false, passwords = emptyList())
+
+        assertEquals(first.dir, second.dir)
+        assertNull(DiscSet.inspect(File(second.dir, "Game.cue")))
+    }
+
+    @Test fun unrelatedFilesKeepTheirOwnFolders() {
+        val notes = File(discard(), "notes.txt").apply { writeText("ghi chú") }
+        val data = File(discard(), "notes.bin").apply { writeBytes(ByteArray(64) { 3 }) }
+
+        val first = Importer.importFile(context, notes, deleteSource = false, passwords = emptyList())
+        val second = Importer.importFile(context, data, deleteSource = false, passwords = emptyList())
+
+        assertTrue(first.dir != second.dir) // không gom oan: chỉ gom khi có tệp danh sách đĩa
+    }
+
+    @Test fun sameFileNameIsNotOverwrittenInAnExistingSet() {
+        val cue = File(discard(), "Game.cue").apply { writeText("FILE \"Game.bin\" BINARY\n") }
+        val first = Importer.importFile(context, cue, deleteSource = false, passwords = emptyList())
+        val bin1 = File(first.dir, "Game.bin").apply { writeBytes(ByteArray(32) { 9 }) }
+
+        val again = File(discard(), "Game.bin").apply { writeBytes(ByteArray(48) { 5 }) }
+        val second = Importer.importFile(context, again, deleteSource = false, passwords = emptyList())
+
+        assertTrue(second.dir != first.dir) // tệp trùng tên → thư mục mới, không ghi đè
+        assertEquals(32, bin1.length().toInt()) // tệp cũ còn nguyên
+    }
 }

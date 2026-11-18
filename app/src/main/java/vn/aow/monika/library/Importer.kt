@@ -50,8 +50,9 @@ object Importer {
         if (src.extension.equals("rar", true) && src.parentFile?.listFiles().orEmpty().any { MultiPart.parse(it.name)?.base == src.name.lowercase() }) {
             return importPart(context, src, MultiPart.Piece(src.name.lowercase(), 0), passwords, progress)
         }
-        val dir = newGameDir(context, src.name)
-        if (!ArchiveExtractor.isArchive(src)) {
+        val archive = ArchiveExtractor.isArchive(src)
+        val dir = gameDirFor(context, src.name, archive)
+        if (!archive) {
             val dest = File(dir, src.name)
             if (!(deleteSource && src.renameTo(dest))) {
                 src.inputStream().use { input -> dest.outputStream().use { input.copyTo(it) } }
@@ -106,7 +107,7 @@ object Importer {
             copyUri(context, uri, tmp, name)
             return importFile(context, tmp, deleteSource = true, passwords = passwords, progress = progress)
         }
-        val dir = newGameDir(context, name)
+        val dir = gameDirFor(context, name, ArchiveExtractor.isArchiveName(name))
         val tmp = File(dir, name)
         copyUri(context, uri, tmp, name)
         if (!ArchiveExtractor.isArchive(tmp)) return ImportResult(dir)
@@ -157,6 +158,14 @@ object Importer {
             }
         }
     }
+
+    /**
+     * Thư mục đích cho một tệp rời. Nhập riêng `.cue` rồi `.bin` (chọn từng tệp, hoặc chọn nhiều tệp) thì tệp thứ
+     * hai phải vào **cùng** thư mục với tệp danh sách — mỗi tệp một thư mục thì lõi PS1 không nạp được game
+     * (issue #322, #578). Gói nén luôn có thư mục riêng: giải nén ra nhiều tệp nên không gộp vào bộ đĩa đang có.
+     */
+    private fun gameDirFor(context: Context, name: String, archive: Boolean): File =
+        (if (archive) null else DiscSet.companionFolder(GameStorage.games(context), name)) ?: newGameDir(context, name)
 
     private fun newGameDir(context: Context, fileName: String): File {
         val base = fileName.substringBeforeLast('.').ifBlank { fileName }

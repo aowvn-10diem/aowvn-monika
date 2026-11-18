@@ -24,7 +24,10 @@ object ArchiveExtractor {
      */
     class NeedsExtractorPackException(message: String, cause: Throwable? = null) : IOException(message, cause)
 
-    fun isArchive(file: File) = file.extension.lowercase() in EXTENSIONS || MultiPart.parse(file.name) != null
+    fun isArchive(file: File) = isArchiveName(file.name)
+
+    /** Như [isArchive] nhưng chỉ theo tên: dùng khi chưa có tệp (chọn từ máy) mà vẫn phải biết là gói nén. */
+    fun isArchiveName(name: String) = name.substringAfterLast('.', "").lowercase() in EXTENSIONS || MultiPart.parse(name) != null
 
     fun extract(source: File, target: File, passwords: List<String>, progress: ExtractProgress? = null) =
         extractParts(listOf(source), target, passwords, progress)

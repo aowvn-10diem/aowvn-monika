@@ -38,6 +38,52 @@ class DiscSetTest {
         assertNull(DiscSet.inspect(cue))
     }
 
+    // ---- companionFolder: tệp rời của cùng bộ đĩa phải vào đúng thư mục game đã có ----
+
+    @Test fun companionFolderFindsFolderWhoseCueHasSameStem() {
+        val root = dir()
+        val game = File(root, "Game").apply { mkdirs() }
+        write(game, "Game.cue", "FILE \"Game.bin\" BINARY\n")
+
+        assertEquals(game, DiscSet.companionFolder(root, "Game.bin"))
+        assertEquals(game, DiscSet.companionFolder(root, "game.BIN")) // thẻ nhớ FAT: không phân biệt hoa/thường
+    }
+
+    @Test fun companionFolderNullWhenNoDiscSet() {
+        val root = dir()
+        File(root, "Notes").apply { mkdirs() }
+        write(File(root, "Notes"), "Notes.txt", "ghi chú")
+
+        assertNull(DiscSet.companionFolder(root, "Notes.bin")) // không có tệp danh sách → không gom
+        assertNull(DiscSet.companionFolder(root, "Game.nds")) // không phải đuôi của bộ đĩa
+    }
+
+    @Test fun companionFolderKeepsAwayWhenNameAlreadyExists() {
+        val root = dir()
+        val game = File(root, "Game").apply { mkdirs() }
+        write(game, "Game.cue", "FILE \"Game.bin\" BINARY\n")
+        write(game, "Game.bin", "ban cu")
+
+        assertNull(DiscSet.companionFolder(root, "Game.bin")) // tránh ghi đè tệp đang có
+    }
+
+    @Test fun companionFolderMatchesTrackListedInsideCue() {
+        val root = dir()
+        val game = File(root, "Dia 1").apply { mkdirs() }
+        write(game, "Dia 1.cue", "FILE \"Dia 1 (Track 1).bin\" BINARY\n")
+
+        assertEquals(game, DiscSet.companionFolder(root, "Dia 1 (Track 1).bin"))
+    }
+
+    @Test fun companionFolderMatchesSecondDiscOfM3uSet() {
+        val root = dir()
+        val game = File(root, "Bo dia").apply { mkdirs() }
+        write(game, "Bo dia.m3u", "#EXTM3U\nDia 1.cue\nDia 2.cue\n")
+
+        assertEquals(game, DiscSet.companionFolder(root, "Dia 2.cue"))
+        assertEquals(game, DiscSet.companionFolder(root, "Dia 1.cue"))
+    }
+
     @Test fun cueWithMissingTrackIsCertainAndNamesFileAndFolder() {
         val folder = dir()
         val cue = write(folder, "Game (Disc 1).cue", "FILE \"Game (Disc 1).bin\" BINARY\n")
