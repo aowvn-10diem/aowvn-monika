@@ -49,6 +49,8 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
         super.onCreate()
         if (isCrashProcess()) return
         AppGraph.init(this)
+        // #302: game Java chạy ở tiến trình ":midlet" → gắn phiên chẩn đoán ngay tại tiến trình đó.
+        vn.aow.monika.diag.MidletDiagnostics.install(this)
         // Tiến trình ":midlet" chỉ để chạy game Java → không đặt lịch/tải cấu hình ở đó.
         if (isGameProcess()) return
         // Quét sẵn thư viện ở nền → mở tab Thư viện / "Đang chơi dở" hiện ngay.

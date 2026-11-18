@@ -66,7 +66,12 @@ def group_reports(records):
         session = report.get("session") or {}
         if not isinstance(session, dict):
             raise ValueError("invalid session")
+        # L1 (bot-core): báo cáo `anr`/`lowmem` có lõi ở cấp ngoài — Worker gán `core` lúc dựng bản ghi
+        # (`cloudflare/crash-worker/worker.js:832-836`, dòng `core` là `:833`) và ghi kèm metadata D1 (`:557`);
+        # báo cáo từ phiên game có `session.core`. Ưu tiên phiên, thiếu/không hợp lệ mới lấy cấp ngoài.
         core = token(session.get("core", ""))
+        if core == "unknown":
+            core = token(report.get("core", ""))
         kind = token(report.get("kind", ""))
         signature = digest(json.dumps([core, kind, frames(report)], separators=(",", ":")))
         count = report.get("count", 1)

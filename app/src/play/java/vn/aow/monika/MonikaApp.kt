@@ -25,6 +25,8 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
         super.onCreate()
         if (Build.VERSION.SDK_INT >= 28 && getProcessName().endsWith(":crash")) return
         AppGraph.init(this)
+        // #302: game Java chạy ở tiến trình ":midlet" → gắn phiên chẩn đoán ngay tại tiến trình đó.
+        vn.aow.monika.diag.MidletDiagnostics.install(this)
         vn.aow.monika.notify.Notifier.createChannels(this)
         scope.launch(Dispatchers.IO) {
             vn.aow.monika.diag.Diagnostics.op(this@MonikaApp, "doc-thu-vien") { AppGraph.library.list() }
