@@ -1,0 +1,30 @@
+# A85 C14 / noibo#9 — Chủ sở hữu mã cho các bề mặt nhạy cảm trên main.
+# Khi Ruleset `main-bao-ve` bật `Require review from Code Owners` với `Required approvals = 0`:
+# - PR thường (Kotlin/C++, test, tài liệu) không khớp tệp này → cần 0 approval GitHub, PM tự gộp sau khi gate xanh.
+# - PR đụng tệp trong danh sách này → khóa nút Merge cho tới khi @vudoanbinhminh (tài khoản cá nhân của sếp) bấm Approve.
+
+# 1. Quy tắc chủ sở hữu, workflow CI/CD, phát hành và cấu hình CodeQL
+/.github/CODEOWNERS @vudoanbinhminh
+/.github/workflows/ @vudoanbinhminh
+/.github/codeql-config.yml @vudoanbinhminh
+
+# 2. Cấu hình build gốc và khóa phiên bản phụ thuộc (A85 C14)
+/build.gradle.kts @vudoanbinhminh
+/settings.gradle.kts @vudoanbinhminh
+/app/build.gradle.kts @vudoanbinhminh
+/libretrodroid/build.gradle.kts @vudoanbinhminh
+/gradle/libs.versions.toml @vudoanbinhminh
+/gradle/wrapper/ @vudoanbinhminh
+
+# 3. Các tệp điều khiển cổng kiểm tra bắt buộc trên main (Gate V200, Guard V113, Play scanner, Ký config V206)
+/scripts/gate-expected.py @vudoanbinhminh
+/scripts/test-gate-expected.py @vudoanbinhminh
+/scripts/kiem-nuot-loi.sh @vudoanbinhminh
+/scripts/kiem-nuot-loi.py @vudoanbinhminh
+/scripts/play-config.py @vudoanbinhminh
+/scripts/check-play-apk.py @vudoanbinhminh
+/scripts/test-play-distribution.py @vudoanbinhminh
+/scripts/sign-config.py @vudoanbinhminh
+
+# 4. Worker điều khiển từ xa và cổng G3/crash
+/cloudflare/ @vudoanbinhminh
