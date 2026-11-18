@@ -154,6 +154,13 @@ class WorkflowSecurityTest(unittest.TestCase):
         self.assertFalse(has_explicit_permissions("on: push\njobs:\n  a:\n    runs-on: ubuntu-latest\n"))
         self.assertTrue(has_explicit_permissions("on: push\npermissions: {}\njobs:\n  a:\n    runs-on: ubuntu-latest\n"))
 
+    def test_v113_push_on_feature_branch_compares_against_main_merge_base(self):
+        build_yml = (WORKFLOWS_DIR / "build.yml").read_text(encoding="utf-8")
+        self.assertIn(
+            "(github.ref == 'refs/heads/main' && github.event.before) || '0000000000000000000000000000000000000000'",
+            build_yml,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
