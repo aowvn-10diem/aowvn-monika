@@ -315,11 +315,13 @@ object Diagnostics {
             val bytes = e.traceInputStream?.use { it.readNBytesCompat(400_000) } ?: return emptyList()
             // Android 12+: tombstone protobuf → đọc đúng trường (tín hiệu, luồng gây lỗi, ngăn xếp có build_id); không được thì nhặt chuỗi như trước.
             if (e.reason == ApplicationExitInfo.REASON_CRASH_NATIVE) TombstoneParser.parse(bytes)?.let { return TombstoneParser.toLines(it) }
+            val runs = ArrayList<String>()
             val out = LinkedHashSet<String>()
             val run = StringBuilder()
             fun flush() {
                 if (run.length >= 6) {
                     val s = run.toString()
+                    runs += s
                     if (INTERESTING.containsMatchIn(s)) out += s.take(200)
                 }
                 run.setLength(0)
@@ -329,7 +331,11 @@ object Diagnostics {
                 if (ch in 32..126) run.append(ch.toChar()) else flush()
             }
             flush()
-            out.take(80).toList()
+            val lines = out.take(80).toList()
+            // ANR: bộ lọc INTERESTING ở trên bỏ dòng tiêu đề luồng ("main" prio=…) và khung Java
+            // (at …) nên trace chỉ còn khung native, không biết Main Thread chờ ở chặng nào.
+            // Nối khối main vào CUỐI (chỉ khi đã đủ 3 khung) để không đổi chữ ký bot.
+            if (e.reason == ApplicationExitInfo.REASON_ANR) AnrTrace.appendMainThread(lines, runs) else lines
         }.getOrDefault(emptyList())
     }
 
