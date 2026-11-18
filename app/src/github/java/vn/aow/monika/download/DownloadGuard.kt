@@ -56,13 +56,15 @@ class DownloadGuard(
                 if (hopCount > 1) {
                     throw IOException("Chặn tải: vượt quá 1 bước chuyển hướng cho phép")
                 }
-                if (!isRedirectOnlyDownloadHost(host) ||
-                    !isAllowedRedirectHop(originHost, origin.encodedPath, host, url.encodedPath)
-                ) {
-                    throw IOException("Chặn tải: đích chuyển hướng không khớp nguồn gốc hợp lệ")
-                }
-                if (isR2RedirectDownloadHost(host) && url.queryParameter("X-Amz-Signature").isNullOrBlank()) {
-                    throw IOException("Chặn tải: URL R2 thiếu chữ ký SigV4")
+                if (isRedirectOnlyDownloadHost(host)) {
+                    if (!isAllowedRedirectHop(originHost, origin.encodedPath, host, url.encodedPath)) {
+                        throw IOException("Chặn tải: đích chuyển hướng không khớp nguồn gốc hợp lệ")
+                    }
+                    if (isR2RedirectDownloadHost(host) && url.queryParameter("X-Amz-Signature").isNullOrBlank()) {
+                        throw IOException("Chặn tải: URL R2 thiếu chữ ký SigV4")
+                    }
+                } else if (!isAllowedDownloadPath(host, url.encodedPath)) {
+                    throw IOException("Chặn tải: đường dẫn không nằm trong tiền tố cho phép của host")
                 }
             } else {
                 if (isRedirectOnlyDownloadHost(host)) {
