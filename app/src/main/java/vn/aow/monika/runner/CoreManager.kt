@@ -135,7 +135,7 @@ class CoreManager(
                 // nếu không nó được cài rồi `dlopen` lỗi → người chơi chỉ thấy `core-error` mã 0.
                 try {
                     PackTransaction.validateElf(tmp, abi)
-                } catch (e: IOException) {
+                } catch (e: IOException) { // diag: bỏ qua lỗi không bị nuốt — ném lại kèm nguyên nhân, op mo-game đã ghi báo cáo
                     // Giữ nguyên nhân gốc cho chẩn đoán, nhưng câu người chơi đọc phải nói đúng chuyện gì xảy ra.
                     throw IOException("Gói lõi $id tải về hỏng hoặc sai ABI $abi — thử lại sau.", e)
                 }
