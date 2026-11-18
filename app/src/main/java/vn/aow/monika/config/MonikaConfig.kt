@@ -16,19 +16,31 @@ val ALLOWED_DOWNLOAD_HOSTS: Set<String> = setOf(
     "buildbot.libretro.com",            // lõi libretro nightly (đường tải cũ)
     "cdn.jsdelivr.net",                 // script web player (ruffle)
     "monika.aow.vn",                    // CDN/trang chính thức
+    "api.monika.aow.vn",                // A85-C06: cổng G3 /pack/<tên> ký 1-hop R2 SigV4
     "aow.vn",                           // link mời cài app/plugin (externalApps, plugins)
     "www.aow.vn",
 )
 
+/**
+ * A85-C06: Endpoint S3 của Cloudflare R2 (`<32-hex-account-id>.r2.cloudflarestorage.com`) chỉ được
+ * dùng làm đích redirect 302 từ cổng `/pack/<tên>`, không được đặt trực tiếp làm URL gốc trong config.
+ */
+private val R2_STORAGE_HOST_REGEX = Regex("^[0-9a-f]{32}\\.r2\\.cloudflarestorage\\.com$")
+internal const val R2_PACKS_BUCKET_PREFIX = "/monika-packs/"
+
 /** [host] đã hạ chữ thường trước khi truyền vào. */
-internal fun isAllowedDownloadHost(host: String): Boolean = host in ALLOWED_DOWNLOAD_HOSTS
+internal fun isR2RedirectDownloadHost(host: String): Boolean = R2_STORAGE_HOST_REGEX.matches(host)
+
+/** [host] đã hạ chữ thường trước khi truyền vào. */
+internal fun isAllowedDownloadHost(host: String): Boolean =
+    host in ALLOWED_DOWNLOAD_HOSTS || isR2RedirectDownloadHost(host)
 
 /**
- * V206: tiền tố đường dẫn **bắt buộc** trên host dùng chung nhiều chủ sở hữu.
+ * V206: tiền tố đường dẫn **bắt buộc** trên host dùng chung nhiều chủ sở hữu hoặc cổng chuyên biệt.
  *
  * `github.com`, `raw.githubusercontent.com`, `codeload.github.com` phục vụ mọi tài khoản, nên chỉ kiểm
  * tên miền là không đủ. Ghim tiền tố chủ sở hữu để URL tải mã/gói luôn nằm trong kho chính thức.
- * Host không có trong map thì không ràng buộc đường dẫn.
+ * `api.monika.aow.vn` chỉ phục vụ tải gói qua tiền tố `/pack/`.
  */
 val REQUIRED_DOWNLOAD_PATH_PREFIXES: Map<String, String> = mapOf(
     "github.com" to "/aowvn-10diem/",
@@ -36,6 +48,8 @@ val REQUIRED_DOWNLOAD_PATH_PREFIXES: Map<String, String> = mapOf(
     "codeload.github.com" to "/aowvn-10diem/",
     // Script web player (ruffle): chỉ đúng gói đã chốt, không nhận gói khác trên cùng CDN.
     "cdn.jsdelivr.net" to "/npm/@ruffle-rs/ruffle",
+    // A85-C06: trên miền API của Worker, URL tải gói chỉ được đi qua cổng /pack/.
+    "api.monika.aow.vn" to "/pack/",
 )
 
 /**
@@ -48,7 +62,8 @@ val REDIRECT_ONLY_DOWNLOAD_HOSTS: Set<String> = setOf(
 )
 
 /** [host] đã hạ chữ thường trước khi truyền vào. */
-internal fun isRedirectOnlyDownloadHost(host: String): Boolean = host in REDIRECT_ONLY_DOWNLOAD_HOSTS
+internal fun isRedirectOnlyDownloadHost(host: String): Boolean =
+    host in REDIRECT_ONLY_DOWNLOAD_HOSTS || isR2RedirectDownloadHost(host)
 
 /**
  * V206 (CFG-01): [path] (đường dẫn đã chuẩn hoá, không gồm query) phải bắt đầu bằng tiền tố của [host].
@@ -57,8 +72,37 @@ internal fun isRedirectOnlyDownloadHost(host: String): Boolean = host in REDIREC
 internal fun isAllowedDownloadPath(host: String, path: String): Boolean {
     val prefix = REQUIRED_DOWNLOAD_PATH_PREFIXES[host] ?: return true
     if (!path.startsWith(prefix)) return false
-    if (prefix.endsWith("/") || path.length == prefix.length) return true
+    if (prefix.endsWith("/")) return path.length > prefix.length && !path.contains("..")
+    if (path.length == prefix.length) return true
     return path[prefix.length] == '/' || path[prefix.length] == '@'
+}
+
+/**
+ * A85-C06: Kiểm tra cặp nguồn gốc [originHost]/[originPath] → đích redirect [targetHost]/[targetPath].
+ * - CDN GitHub Releases (`objects.githubusercontent.com`, `release-assets.githubusercontent.com`)
+ *   chỉ nhận redirect từ `github.com/aowvn-10diem/...`.
+ * - Cloudflare R2 (`<32-hex>.r2.cloudflarestorage.com/monika-packs/...`) chỉ nhận redirect từ
+ *   cổng G3 (`api.monika.aow.vn/pack/<tên>` hoặc `monika.aow.vn/pack/<tên>`).
+ */
+internal fun isAllowedRedirectHop(
+    originHost: String,
+    originPath: String,
+    targetHost: String,
+    targetPath: String,
+): Boolean {
+    if (targetHost in REDIRECT_ONLY_DOWNLOAD_HOSTS) {
+        return originHost == "github.com" && isAllowedDownloadPath(originHost, originPath)
+    }
+    if (isR2RedirectDownloadHost(targetHost)) {
+        val fromPackGate = (originHost == "api.monika.aow.vn" || originHost == "monika.aow.vn") &&
+            originPath.startsWith("/pack/") && originPath.length > "/pack/".length &&
+            !originPath.contains("..")
+        val validR2Path = targetPath.startsWith(R2_PACKS_BUCKET_PREFIX) &&
+            targetPath.length > R2_PACKS_BUCKET_PREFIX.length &&
+            !targetPath.contains("..")
+        return fromPackGate && validR2Path
+    }
+    return false
 }
 
 
