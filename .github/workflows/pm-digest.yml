@@ -12,7 +12,10 @@ permissions:
   actions: read
   security-events: read
 concurrency:
-  group: pm-digest
+  # Nhóm riêng cho từng PR khi chạy ở sự kiện pull_request: lượt đẩy của PR khác không huỷ
+  # `preview` của PR này (sự cố 16-18/11: nhiều PR đẩy cùng lúc -> preview cancelled, PR đỏ oan).
+  # Lịch và push lên main vẫn dùng nhóm `pm-digest` như cũ.
+  group: pm-digest-${{ github.event.pull_request.number || 'main' }}
   cancel-in-progress: true
 jobs:
   preview:
