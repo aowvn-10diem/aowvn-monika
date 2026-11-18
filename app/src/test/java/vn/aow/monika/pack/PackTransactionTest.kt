@@ -174,4 +174,32 @@ class PackTransactionTest {
         } finally { work.deleteRecursively() }
     }
 
+    /** 20 byte đầu đủ để [PackTransaction.validateElf] đọc magic/lớp/machine. */
+    private fun elfFile(dir: File, name: String, bits: Int, machine: Int, size: Int = 4 * 1024): File {
+        val header = ByteArray(20)
+        header[0] = 127; header[1] = 'E'.code.toByte(); header[2] = 'L'.code.toByte(); header[3] = 'F'.code.toByte()
+        header[4] = bits.toByte(); header[5] = 1 // lớp ELF và little-endian
+        header[18] = (machine and 255).toByte(); header[19] = ((machine shr 8) and 255).toByte()
+        val file = File(dir, name)
+        file.outputStream().use { it.write(header); if (size > header.size) it.write(ByteArray(size - header.size)) }
+        return file
+    }
+
+    @Test fun validateElfAcceptsMatchingAbiAndRejectsWrongOnes() {
+        val work = Files.createTempDirectory("core-elf").toFile()
+        try {
+            PackTransaction.validateElf(elfFile(work, "ok-arm64.so", 2, 183), "arm64-v8a")
+            PackTransaction.validateElf(elfFile(work, "ok-v7a.so", 1, 40), "armeabi-v7a")
+            // .so 32-bit lọt vào máy arm64 (buildbot trả nhầm thư mục) — phải chặn, không để dlopen lỗi sau.
+            assertThrows(IOException::class.java) { PackTransaction.validateElf(elfFile(work, "v7a-on-arm64.so", 1, 40), "arm64-v8a") }
+            assertThrows(IOException::class.java) { PackTransaction.validateElf(elfFile(work, "x86-on-arm64.so", 1, 3), "arm64-v8a") }
+            // Trang lỗi HTML / ZIP cắt cụt: không có magic ELF.
+            val html = File(work, "page.so").apply { writeText("<html><body>502 Bad Gateway</body></html>") }
+            assertThrows(IOException::class.java) { PackTransaction.validateElf(html, "arm64-v8a") }
+            val cut = elfFile(work, "cut.so", 2, 183).apply { writeBytes(readBytes().copyOf(12)) }
+            assertThrows(IOException::class.java) { PackTransaction.validateElf(cut, "arm64-v8a") }
+            assertThrows(IOException::class.java) { PackTransaction.validateElf(File(work, "empty.so").apply { createNewFile() }, "arm64-v8a") }
+        } finally { work.deleteRecursively() }
+    }
+
 }

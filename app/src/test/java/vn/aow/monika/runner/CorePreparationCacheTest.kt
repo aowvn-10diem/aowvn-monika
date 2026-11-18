@@ -35,11 +35,19 @@ class CorePreparationCacheTest {
         ZipOutputStream(output).use { z -> z.putNextEntry(ZipEntry(name)); z.write(bytes); z.closeEntry() }
     }.toByteArray()
 
-    private fun client() = OkHttpClient.Builder().addInterceptor { chain ->
+    /** `.so` giả có 20 byte đầu của một ELF arm64 thật — app kiểm định dạng/ABI trước khi cài lõi. */
+    private fun coreElf() = ByteArray(64).also { elf ->
+        elf[0] = 127; elf[1] = 'E'.code.toByte(); elf[2] = 'L'.code.toByte(); elf[3] = 'F'.code.toByte()
+        elf[4] = 2 // ELFCLASS64
+        elf[5] = 1 // little-endian
+        elf[18] = (183 and 255).toByte(); elf[19] = ((183 shr 8) and 255).toByte() // EM_AARCH64
+    }
+
+    private fun client(corePayload: ByteArray = coreElf()) = OkHttpClient.Builder().addInterceptor { chain ->
         requests += chain.request().url.encodedPath
         if (offline) throw IOException("offline fixture")
         val payload = if (chain.request().url.encodedPath.startsWith("/system")) zip("nds/bios.bin", rom)
-            else zip("melondsds_libretro_android.so", ByteArray(64) { 1 })
+            else zip("melondsds_libretro_android.so", corePayload)
         Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
             .body(payload.toResponseBody()).build()
     }.build()
@@ -113,5 +121,18 @@ class CorePreparationCacheTest {
         assertTrue(manager.isReady("melondsds"))
         assertEquals(2, requests.count { it.startsWith("/core-") })
         assertEquals(1, requests.count { it.startsWith("/system") })
+    }
+
+    /**
+     * Lõi buildbot nightly không có sha256: nếu máy chủ trả trang lỗi hoặc `.so` sai ABI thì phải hỏng ngay ở bước
+     * cài lõi (op `mo-game`, thấy được thông báo), không được cài rồi để `dlopen` lỗi → `core-error` mã 0.
+     */
+    @Test fun nonElfCorePayloadIsRejectedInsteadOfInstalled() = onMain {
+        val manager = CoreManager(app, client(ByteArray(64) { 2 }), config())
+        val error = runCatching { manager.ensureCore("melondsds") }.exceptionOrNull()
+        assertTrue("phải là IOException, gặp: $error", error is IOException)
+        assertTrue(error!!.message.orEmpty().contains("sai ABI"))
+        assertFalse(manager.isReady("melondsds"))
+        assertFalse(File(app.filesDir, "cores/melondsds/melondsds_libretro_android.so").exists())
     }
 }

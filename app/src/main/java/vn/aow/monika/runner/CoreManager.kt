@@ -131,6 +131,14 @@ class CoreManager(
                 } finally {
                     archive.delete()
                 }
+                // Nhánh buildbot nightly không có sha256: vẫn phải chặn ZIP cắt cụt / .so sai ABI ở đây,
+                // nếu không nó được cài rồi `dlopen` lỗi → người chơi chỉ thấy `core-error` mã 0.
+                try {
+                    PackTransaction.validateElf(tmp, abi)
+                } catch (e: IOException) {
+                    // Giữ nguyên nhân gốc cho chẩn đoán, nhưng câu người chơi đọc phải nói đúng chuyện gì xảy ra.
+                    throw IOException("Gói lõi $id tải về hỏng hoặc sai ABI $abi — thử lại sau.", e)
+                }
                 if (!tmp.renameTo(so)) throw IOException("Không lưu được lõi $id")
                 versionFile(id).writeText(def.version)
                 runCatching {

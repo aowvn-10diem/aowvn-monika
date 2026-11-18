@@ -161,15 +161,30 @@ internal object PackTransaction {
             "libsync.so", "libneuralnetworks.so", "libOpenMAXAL.so", "libamidi.so", "libbinder_ndk.so")
         if (needed.isFile) needed.readLines().map { it.trim() }.filter { it.isNotEmpty() && it !in systemLibraries }
             .forEach { requiredFile(dir, File(dir, it)) }
-        dir.walkTopDown().filter { it.isFile && it.name.endsWith(".so") }.forEach { lib ->
-            val header = ByteArray(20)
-            val read = lib.inputStream().use { it.read(header) }
-            val machine = (header[18].toInt() and 255) or ((header[19].toInt() and 255) shl 8)
-            val expected = when (abi) { "arm64-v8a" -> 183; "armeabi-v7a" -> 40; "x86" -> 3; "x86_64" -> 62; else -> -1 }
-            val elfClass = if (abi in setOf("arm64-v8a", "x86_64")) 2 else 1
-            if (read != 20 || !header.copyOfRange(0, 4).contentEquals(byteArrayOf(127, 69, 76, 70)) ||
-                header[4].toInt() != elfClass || header[5].toInt() != 1 || machine != expected)
-                throw IOException("Thư viện ${lib.name} sai định dạng/ABI $abi")
+        dir.walkTopDown().filter { it.isFile && it.name.endsWith(".so") }.forEach { validateElf(it, abi) }
+    }
+
+    /**
+     * Kiểm một thư viện .so: magic ELF, lớp 32/64 bit và `e_machine` phải khớp [abi].
+     * Dùng cho cả nhánh gói ghim hash (kiểm trong [validate]) và nhánh tải buildbot nightly không có hash —
+     * để một ZIP cắt cụt hoặc một `.so` sai ABI bị chặn ngay lúc cài, thay vì cài xong rồi mới `dlopen` lỗi.
+     */
+    fun validateElf(lib: File, abi: String) {
+        val header = ByteArray(20)
+        val read = lib.inputStream().use { input ->
+            var n = 0
+            while (n < header.size) {
+                val r = input.read(header, n, header.size - n)
+                if (r < 0) break
+                n += r
+            }
+            n
         }
+        val machine = (header[18].toInt() and 255) or ((header[19].toInt() and 255) shl 8)
+        val expected = when (abi) { "arm64-v8a" -> 183; "armeabi-v7a" -> 40; "x86" -> 3; "x86_64" -> 62; else -> -1 }
+        val elfClass = if (abi in setOf("arm64-v8a", "x86_64")) 2 else 1
+        if (read != 20 || !header.copyOfRange(0, 4).contentEquals(byteArrayOf(127, 69, 76, 70)) ||
+            header[4].toInt() != elfClass || header[5].toInt() != 1 || machine != expected)
+            throw IOException("Thư viện ${lib.name} sai định dạng/ABI $abi")
     }
 }
