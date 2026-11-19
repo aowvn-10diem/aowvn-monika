@@ -54,10 +54,16 @@ object Importer {
         val dir = gameDirFor(context, src.name, archive)
         if (!archive) {
             val dest = File(dir, src.name)
-            if (!(deleteSource && src.renameTo(dest))) {
-                src.inputStream().use { input -> dest.outputStream().use { input.copyTo(it) } }
-                if (deleteSource) src.delete()
-            }
+            // Tệp thường (không phải file nén): chép thẳng vào thư mục game. Trước đây nhánh này không có báo cáo
+            // nên tệp không chép được (hết dung lượng, quyền, tệp nguồn biến mất) chỉ hiện lỗi chung chung.
+            vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.IMPORT, src.name) {
+                step("nhap-tep-thuong")
+                if (!(deleteSource && src.renameTo(dest))) {
+                    step("chep-file")
+                    src.inputStream().use { input -> dest.outputStream().use { input.copyTo(it) } }
+                    if (deleteSource) src.delete()
+                }
+            }.getOrThrow()
             return ImportResult(dir)
         }
         val error = extractOp(context, src.name) { ArchiveExtractor.extract(src, dir, passwords, progress) }
