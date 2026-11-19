@@ -1,0 +1,1027 @@
+{
+  "schema": "aowvn-monika/ton-issue@1",
+  "repo": "aowvn-10diem/aowvn-monika",
+  "nhanh": "loi/bang-ton-1811",
+  "nen": "origin/main 5f3a67b6",
+  "chot": "2026-11-18",
+  "gio_utc": "16:17Z",
+  "nguon": "gh issue list --state open --limit 200 --json number,title,body,labels,createdAt",
+  "nguon_trang_thai": "gh pr list --state open|merged; gh issue view --json comments; config/monika-config.json@5f3a67b6",
+  "thay_the": "docs/loi/TON-0811.md (chưa lên main, PR #542 mở)",
+  "tong": {
+    "issue_mo": 82,
+    "nhan_crash": 74,
+    "khong_nhan": 8,
+    "co_khoi": 73,
+    "tong_luot": 1300,
+    "so_nhom": 31
+  },
+  "theo_loi": [
+    {
+      "loi": "melondsds",
+      "issue": 12,
+      "luot": 456
+    },
+    {
+      "loi": "unknown",
+      "issue": 22,
+      "luot": 321
+    },
+    {
+      "loi": "ppsspp",
+      "issue": 5,
+      "luot": 214
+    },
+    {
+      "loi": "citra",
+      "issue": 8,
+      "luot": 111
+    },
+    {
+      "loi": "desmume",
+      "issue": 10,
+      "luot": 105
+    },
+    {
+      "loi": "pcsx_rearmed",
+      "issue": 2,
+      "luot": 55
+    },
+    {
+      "loi": "kirikiroid2-yuri",
+      "issue": 1,
+      "luot": 13
+    },
+    {
+      "loi": "snes9x",
+      "issue": 3,
+      "luot": 8
+    },
+    {
+      "loi": "mgba",
+      "issue": 4,
+      "luot": 7
+    },
+    {
+      "loi": "gambatte",
+      "issue": 3,
+      "luot": 5
+    },
+    {
+      "loi": "melonds",
+      "issue": 2,
+      "luot": 4
+    },
+    {
+      "loi": "mkxp-z",
+      "issue": 1,
+      "luot": 1
+    }
+  ],
+  "nhom": [
+    {
+      "loi": "melondsds",
+      "loai": "anr",
+      "issue": 9,
+      "luot": 421,
+      "issue_lau_nhat": {
+        "number": 314,
+        "createdAt": "2026-10-20"
+      },
+      "issues": [
+        314,
+        318,
+        350,
+        439,
+        440,
+        529,
+        530,
+        533,
+        597
+      ],
+      "pr_mo": "#666 (chẩn đoán, `AnrTrace.kt`; **không** đóng issue)",
+      "pr_da_gop": "#656 (crumb pause/destroy, 18/11) · #624 (`stage` khi ở nền, 14/11) · #619 (13/11) + #606 (11/11) (mã ANR) · #633 (tài liệu)",
+      "bi_chan": "Chưa đo được chặng chờ: `PauseProbe` mới gộp 18/11, chưa bản phát hành nào chứa nó; cần bản kế + log crumb máy thật",
+      "can_cu": "title/#666 files; #656 merged 18/11; TONG-HOP-1311 §5(a)"
+    },
+    {
+      "loi": "unknown",
+      "loai": "resource",
+      "issue": 1,
+      "luot": 261,
+      "issue_lau_nhat": {
+        "number": 302,
+        "createdAt": "2026-10-20"
+      },
+      "issues": [
+        302
+      ],
+      "pr_mo": "#655 (gắn lõi từ phiên chết) · #665 (chẩn đoán #302, tự ghi “chờ #655”)",
+      "pr_da_gop": "#638 (phiên `:midlet`, 14/11) · #632 (bot lấy lõi cấp ngoài, 14/11)",
+      "bi_chan": "Chờ **#655** gộp + một bản phát hành; #302 là tiến trình `:midlet`, báo cáo chết chỉ có lõi sau #655",
+      "can_cu": "title #665 nêu “chờ #655”; #638/#632 merged 14/11; thân #302 ghi `Thành phần: app:midlet`"
+    },
+    {
+      "loi": "ppsspp",
+      "loai": "native",
+      "issue": 4,
+      "luot": 206,
+      "issue_lau_nhat": {
+        "number": 316,
+        "createdAt": "2026-10-20"
+      },
+      "issues": [
+        316,
+        372,
+        478,
+        520
+      ],
+      "pr_mo": "#663 (vá con trỏ lõi rỗng + 2 race `libretrodroid`)",
+      "pr_da_gop": "#644 (chặn con trỏ rỗng khi rời game, 14/11) · #647 (test hồi quy, 14/11) · #620 (tài liệu)",
+      "bi_chan": "Thiếu `CRASH_ADMIN_TOKEN` để đọc `reason`/khung; #663 chưa gộp",
+      "can_cu": "title #663; #644/#647 merged 14/11; lượt này `CRASH_ADMIN_TOKEN` **không có**; TONG-HOP §3 nhóm 3"
+    },
+    {
+      "loi": "desmume",
+      "loai": "native",
+      "issue": 5,
+      "luot": 97,
+      "issue_lau_nhat": {
+        "number": 331,
+        "createdAt": "2026-10-22"
+      },
+      "issues": [
+        331,
+        369,
+        377,
+        562,
+        591
+      ],
+      "pr_mo": "#663 (cùng bản vá native)",
+      "pr_da_gop": "#644 (14/11) · #616 (tài liệu `docs/ds/chan-doan-desmume-native.md`, 13/11)",
+      "bi_chan": "Lõi `desmume` trong config 65 vẫn `version=1` → buildbot `nightly/latest`, **không** `sha256` ⇒ bản lõi trôi; gói ký hiệu [CHƯA KIỂM]; chờ V210 (#664)",
+      "can_cu": "`config/monika-config.json` configVersion 65 kiểm 18/11; title #664"
+    },
+    {
+      "loi": "citra",
+      "loai": "core-error",
+      "issue": 2,
+      "luot": 57,
+      "issue_lau_nhat": {
+        "number": 301,
+        "createdAt": "2026-10-20"
+      },
+      "issues": [
+        301,
+        610
+      ],
+      "pr_mo": "#662 (giải ký hiệu đúng dạng tombstone + hiện trường citra)",
+      "pr_da_gop": "#637 (chặn `.cia` vào lõi libretro, 13/11) · #639 (thông điệp `.cia`, 14/11) · #646 (báo thiếu `shared_font.bin`, 14/11) · #627 (nhãn)",
+      "bi_chan": "#662 chưa gộp; lõi `citra` vẫn `version=1` nightly, không `sha256`/ký hiệu trong config 65",
+      "can_cu": "title #662; config 65; #637/#639/#646 merged"
+    },
+    {
+      "loi": "pcsx_rearmed",
+      "loai": "core-error",
+      "issue": 2,
+      "luot": 55,
+      "issue_lau_nhat": {
+        "number": 322,
+        "createdAt": "2026-10-20"
+      },
+      "issues": [
+        322,
+        578
+      ],
+      "pr_mo": "#664 (đặc tả V210: ghim lõi + ký hiệu)",
+      "pr_da_gop": "#649 (báo lỗi nạp theo mã + thiếu `.cue`/`.m3u`, 14/11)",
+      "bi_chan": "Thân issue **không mang mã lỗi** (`0/1/-1`) nên chưa quy được nguyên nhân; lõi `pcsx_rearmed` nightly `version=1`, không ký hiệu",
+      "can_cu": "`loi-khac-1313.md` §3, §7.1; config 65; #649 merged 14/11"
+    },
+    {
+      "loi": "citra",
+      "loai": "native",
+      "issue": 2,
+      "luot": 40,
+      "issue_lau_nhat": {
+        "number": 404,
+        "createdAt": "2026-10-31"
+      },
+      "issues": [
+        404,
+        458
+      ],
+      "pr_mo": "#662",
+      "pr_da_gop": "#622 (tài liệu `citra-native-1311.md`, 13/11) · #627 (nhãn)",
+      "bi_chan": "Lõi `citra` nightly `version=1` (config 65): không `sha256`, không gói ký hiệu ⇒ không retrace; chờ #664 + #662",
+      "can_cu": "config 65; title #662; #622 merged 13/11"
+    },
+    {
+      "loi": "unknown",
+      "loai": "op-fail",
+      "issue": 13,
+      "luot": 33,
+      "issue_lau_nhat": {
+        "number": 319,
+        "createdAt": "2026-10-20"
+      },
+      "issues": [
+        319,
+        366,
+        371,
+        376,
+        393,
+        395,
+        401,
+        407,
+        525,
+        531,
+        564,
+        608,
+        614
+      ],
+      "pr_mo": "#665 (mở engine hỏng thành báo cáo, bớt báo sai)",
+      "pr_da_gop": "#618 (va-rom thành vệt, 13/11) · #649 (mã lỗi nạp, 14/11) · #603/#604 (feed/7-Zip, 11/11 — đóng #305/#512/#595)",
+      "bi_chan": "13 issue cũ phần lớn **thiếu dòng `Thành phần`** nên không quy được bước; #665 chưa gộp",
+      "can_cu": "title #665; #618/#649 merged; comment đóng #305/#512/#595; `op-fail-con-lai-1311.md`"
+    },
+    {
+      "loi": "unknown",
+      "loai": "anr",
+      "issue": 7,
+      "luot": 26,
+      "issue_lau_nhat": {
+        "number": 398,
+        "createdAt": "2026-10-31"
+      },
+      "issues": [
+        398,
+        399,
+        413,
+        414,
+        415,
+        419,
+        534
+      ],
+      "pr_mo": "— (không PR nào mở riêng cho nhóm)",
+      "pr_da_gop": "#634 (tài liệu `unknown-anr-1313.md`, 18/11) · #632 (bot lấy lõi cấp ngoài, 14/11)",
+      "bi_chan": "Báo cáo cũ không có phiên nên **không cứu lại được** lõi; chỉ báo cáo tạo sau bản có #632 mới có lõi — chưa có báo cáo nào tạo sau 12/11",
+      "can_cu": "#634/#632 merged; `createdAt` lớn nhất trong 82 issue = 12/11"
+    },
+    {
+      "loi": "melondsds",
+      "loai": "core-error",
+      "issue": 1,
+      "luot": 21,
+      "issue_lau_nhat": {
+        "number": 567,
+        "createdAt": "2026-11-09"
+      },
+      "issues": [
+        567
+      ],
+      "pr_mo": "#664 (đặc tả ghim + ký hiệu)",
+      "pr_da_gop": "#636 (tài liệu `loi-khac-1313.md` §7.2)",
+      "bi_chan": "Mã lỗi `0/1/-1` chưa tách được; burst 09/11 không tái diễn; lõi `melondsds` nightly `version=1`, không ký hiệu",
+      "can_cu": "`loi-khac-1313.md` §3.2, §7.2; config 65"
+    },
+    {
+      "loi": "melondsds",
+      "loai": "unknown",
+      "issue": 2,
+      "luot": 14,
+      "issue_lau_nhat": {
+        "number": 397,
+        "createdAt": "2026-10-31"
+      },
+      "issues": [
+        397,
+        482
+      ],
+      "pr_mo": "—",
+      "pr_da_gop": "#636 (tài liệu §5)",
+      "bi_chan": "Báo cáo `unknown` không có `reason` (API < 30) ⇒ không có dữ liệu để chẩn đoán tiếp",
+      "can_cu": "`loi-khac-1313.md` §5"
+    },
+    {
+      "loi": "citra",
+      "loai": "anr",
+      "issue": 3,
+      "luot": 13,
+      "issue_lau_nhat": {
+        "number": 328,
+        "createdAt": "2026-10-22"
+      },
+      "issues": [
+        328,
+        336,
+        460
+      ],
+      "pr_mo": "#666 (chỉ nhắm melondsds — **chưa** phủ citra)",
+      "pr_da_gop": "#648 (tài liệu `citra-anr-killed-1313.md`, 18/11) · #656 (crumb pause/destroy, 18/11)",
+      "bi_chan": "Cùng lớp ANR với nhóm 1: cần đo crumb trên bản có #656; chưa có báo cáo mới",
+      "can_cu": "#648/#656 merged 18/11"
+    },
+    {
+      "loi": "kirikiroid2-yuri",
+      "loai": "native",
+      "issue": 1,
+      "luot": 13,
+      "issue_lau_nhat": {
+        "number": 385,
+        "createdAt": "2026-10-30"
+      },
+      "issues": [
+        385
+      ],
+      "pr_mo": "—",
+      "pr_da_gop": "#651 (tài liệu `nhom-nho-1314.md`, 14/11) · #636",
+      "bi_chan": "Thiếu `CRASH_ADMIN_TOKEN` để giải mã khung; lõi đã ghim + có gói ký hiệu nên giải được ngay khi có token",
+      "can_cu": "TONG-HOP §3 nhóm 13; #651 merged; lượt này không có token"
+    },
+    {
+      "loi": "ppsspp",
+      "loai": "unknown",
+      "issue": 1,
+      "luot": 8,
+      "issue_lau_nhat": {
+        "number": 416,
+        "createdAt": "2026-11-01"
+      },
+      "issues": [
+        416
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Không có `reason` trong báo cáo ⇒ không quy được lớp lỗi; tài liệu `nhom-nho-1314.md` §2.4",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "desmume",
+      "loai": "anr",
+      "issue": 4,
+      "luot": 7,
+      "issue_lau_nhat": {
+        "number": 315,
+        "createdAt": "2026-10-20"
+      },
+      "issues": [
+        315,
+        333,
+        400,
+        522
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Thiếu mã chặng; chờ crumb ANR (#656) — tài liệu `nhom-nho-1314.md` §2.2",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "snes9x",
+      "loai": "anr",
+      "issue": 1,
+      "luot": 5,
+      "issue_lau_nhat": {
+        "number": 459,
+        "createdAt": "2026-11-02"
+      },
+      "issues": [
+        459
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "1 chữ ký, 5 lượt ngay lần tạo; lõi `snes9x` nightly `version=1`, không ký hiệu",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "mgba",
+      "loai": "core-error",
+      "issue": 1,
+      "luot": 4,
+      "issue_lau_nhat": {
+        "number": 403,
+        "createdAt": "2026-10-31"
+      },
+      "issues": [
+        403
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Lõi ghim (`artifacts`), nhưng 4 lượt / 3 khoá — chưa đủ mẫu",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "melonds",
+      "loai": "native",
+      "issue": 1,
+      "luot": 3,
+      "issue_lau_nhat": {
+        "number": 563,
+        "createdAt": "2026-11-09"
+      },
+      "issues": [
+        563
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Lõi `melonds` nightly `version=1`, không ký hiệu; 3 lượt / 2 khoá",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "gambatte",
+      "loai": "unknown",
+      "issue": 1,
+      "luot": 2,
+      "issue_lau_nhat": {
+        "number": 513,
+        "createdAt": "2026-11-05"
+      },
+      "issues": [
+        513
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Lõi ghim (`artifacts`); `unknown` không có `reason`",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "snes9x",
+      "loai": "native",
+      "issue": 1,
+      "luot": 2,
+      "issue_lau_nhat": {
+        "number": 448,
+        "createdAt": "2026-11-02"
+      },
+      "issues": [
+        448
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Lõi nightly `version=1`, không ký hiệu ⇒ không retrace",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "gambatte",
+      "loai": "anr",
+      "issue": 1,
+      "luot": 2,
+      "issue_lau_nhat": {
+        "number": 402,
+        "createdAt": "2026-10-31"
+      },
+      "issues": [
+        402
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Lõi ghim; 2 lượt — chưa đủ mẫu",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "mkxp-z",
+      "loai": "native",
+      "issue": 1,
+      "luot": 1,
+      "issue_lau_nhat": {
+        "number": 613,
+        "createdAt": "2026-11-12"
+      },
+      "issues": [
+        613
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Engine RGSS (`engine:rgss`); không thấy khoá `mkxp-z` trong `cores` của config 65 — [CHƯA KIỂM] cách ghim",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "melonds",
+      "loai": "anr",
+      "issue": 1,
+      "luot": 1,
+      "issue_lau_nhat": {
+        "number": 535,
+        "createdAt": "2026-11-08"
+      },
+      "issues": [
+        535
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Lõi `melonds` nightly `version=1`; 1 lượt",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "mgba",
+      "loai": "anr",
+      "issue": 1,
+      "luot": 1,
+      "issue_lau_nhat": {
+        "number": 516,
+        "createdAt": "2026-11-05"
+      },
+      "issues": [
+        516
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Lõi ghim; 1 lượt",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "gambatte",
+      "loai": "op-fail",
+      "issue": 1,
+      "luot": 1,
+      "issue_lau_nhat": {
+        "number": 465,
+        "createdAt": "2026-11-03"
+      },
+      "issues": [
+        465
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "`op-fail` 1 lượt, không có `Thành phần`",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "mgba",
+      "loai": "op-fail",
+      "issue": 1,
+      "luot": 1,
+      "issue_lau_nhat": {
+        "number": 464,
+        "createdAt": "2026-11-03"
+      },
+      "issues": [
+        464
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "`op-fail` 1 lượt, không có `Thành phần`",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "snes9x",
+      "loai": "core-error",
+      "issue": 1,
+      "luot": 1,
+      "issue_lau_nhat": {
+        "number": 418,
+        "createdAt": "2026-11-01"
+      },
+      "issues": [
+        418
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Lõi nightly `version=1`, không ký hiệu; 1 lượt",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "unknown",
+      "loai": "native",
+      "issue": 1,
+      "luot": 1,
+      "issue_lau_nhat": {
+        "number": 387,
+        "createdAt": "2026-10-30"
+      },
+      "issues": [
+        387
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Chờ **#655** (đúng phạm vi `native/resource/initfail`); tài liệu `unknown-native-1311.md`",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "mgba",
+      "loai": "unknown",
+      "issue": 1,
+      "luot": 1,
+      "issue_lau_nhat": {
+        "number": 378,
+        "createdAt": "2026-10-28"
+      },
+      "issues": [
+        378
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "`unknown` không có `reason`; 1 lượt",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "citra",
+      "loai": "unknown",
+      "issue": 1,
+      "luot": 1,
+      "issue_lau_nhat": {
+        "number": 373,
+        "createdAt": "2026-10-27"
+      },
+      "issues": [
+        373
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "Chờ #662; lõi citra nightly `version=1`",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    },
+    {
+      "loi": "desmume",
+      "loai": "op-fail",
+      "issue": 1,
+      "luot": 1,
+      "issue_lau_nhat": {
+        "number": 368,
+        "createdAt": "2026-10-26"
+      },
+      "issues": [
+        368
+      ],
+      "pr_mo": null,
+      "pr_da_gop": null,
+      "bi_chan": "`op-fail` 1 lượt; tài liệu `op-fail-con-lai-1311.md`",
+      "can_cu": "nhom-nho-1314.md / loi-khac-1313.md"
+    }
+  ],
+  "phu_luc_a": {
+    "dieu_kien": "createdAt < 2026-11-10 va luot <= 3",
+    "so_issue": 45,
+    "tong_luot": 65,
+    "issues": [
+      {
+        "number": 319,
+        "createdAt": "2026-10-20",
+        "loi": "unknown",
+        "loai": "op-fail",
+        "luot": 1
+      },
+      {
+        "number": 328,
+        "createdAt": "2026-10-22",
+        "loi": "citra",
+        "loai": "anr",
+        "luot": 2
+      },
+      {
+        "number": 331,
+        "createdAt": "2026-10-22",
+        "loi": "desmume",
+        "loai": "native",
+        "luot": 3
+      },
+      {
+        "number": 333,
+        "createdAt": "2026-10-23",
+        "loi": "desmume",
+        "loai": "anr",
+        "luot": 1
+      },
+      {
+        "number": 366,
+        "createdAt": "2026-10-26",
+        "loi": "unknown",
+        "loai": "op-fail",
+        "luot": 1
+      },
+      {
+        "number": 368,
+        "createdAt": "2026-10-26",
+        "loi": "desmume",
+        "loai": "op-fail",
+        "luot": 1
+      },
+      {
+        "number": 371,
+        "createdAt": "2026-10-27",
+        "loi": "unknown",
+        "loai": "op-fail",
+        "luot": 1
+      },
+      {
+        "number": 373,
+        "createdAt": "2026-10-27",
+        "loi": "citra",
+        "loai": "unknown",
+        "luot": 1
+      },
+      {
+        "number": 376,
+        "createdAt": "2026-10-27",
+        "loi": "unknown",
+        "loai": "op-fail",
+        "luot": 1
+      },
+      {
+        "number": 377,
+        "createdAt": "2026-10-27",
+        "loi": "desmume",
+        "loai": "native",
+        "luot": 3
+      },
+      {
+        "number": 378,
+        "createdAt": "2026-10-28",
+        "loi": "mgba",
+        "loai": "unknown",
+        "luot": 1
+      },
+      {
+        "number": 387,
+        "createdAt": "2026-10-30",
+        "loi": "unknown",
+        "loai": "native",
+        "luot": 1
+      },
+      {
+        "number": 395,
+        "createdAt": "2026-10-31",
+        "loi": "unknown",
+        "loai": "op-fail",
+        "luot": 1
+      },
+      {
+        "number": 398,
+        "createdAt": "2026-10-31",
+        "loi": "unknown",
+        "loai": "anr",
+        "luot": 1
+      },
+      {
+        "number": 399,
+        "createdAt": "2026-10-31",
+        "loi": "unknown",
+        "loai": "anr",
+        "luot": 2
+      },
+      {
+        "number": 400,
+        "createdAt": "2026-10-31",
+        "loi": "desmume",
+        "loai": "anr",
+        "luot": 1
+      },
+      {
+        "number": 401,
+        "createdAt": "2026-10-31",
+        "loi": "unknown",
+        "loai": "op-fail",
+        "luot": 2
+      },
+      {
+        "number": 402,
+        "createdAt": "2026-10-31",
+        "loi": "gambatte",
+        "loai": "anr",
+        "luot": 2
+      },
+      {
+        "number": 404,
+        "createdAt": "2026-10-31",
+        "loi": "citra",
+        "loai": "native",
+        "luot": 3
+      },
+      {
+        "number": 407,
+        "createdAt": "2026-11-01",
+        "loi": "unknown",
+        "loai": "op-fail",
+        "luot": 1
+      },
+      {
+        "number": 414,
+        "createdAt": "2026-11-01",
+        "loi": "unknown",
+        "loai": "anr",
+        "luot": 1
+      },
+      {
+        "number": 415,
+        "createdAt": "2026-11-01",
+        "loi": "unknown",
+        "loai": "anr",
+        "luot": 1
+      },
+      {
+        "number": 418,
+        "createdAt": "2026-11-01",
+        "loi": "snes9x",
+        "loai": "core-error",
+        "luot": 1
+      },
+      {
+        "number": 419,
+        "createdAt": "2026-11-01",
+        "loi": "unknown",
+        "loai": "anr",
+        "luot": 1
+      },
+      {
+        "number": 439,
+        "createdAt": "2026-11-02",
+        "loi": "melondsds",
+        "loai": "anr",
+        "luot": 2
+      },
+      {
+        "number": 440,
+        "createdAt": "2026-11-02",
+        "loi": "melondsds",
+        "loai": "anr",
+        "luot": 1
+      },
+      {
+        "number": 448,
+        "createdAt": "2026-11-02",
+        "loi": "snes9x",
+        "loai": "native",
+        "luot": 2
+      },
+      {
+        "number": 460,
+        "createdAt": "2026-11-02",
+        "loi": "citra",
+        "loai": "anr",
+        "luot": 2
+      },
+      {
+        "number": 464,
+        "createdAt": "2026-11-03",
+        "loi": "mgba",
+        "loai": "op-fail",
+        "luot": 1
+      },
+      {
+        "number": 465,
+        "createdAt": "2026-11-03",
+        "loi": "gambatte",
+        "loai": "op-fail",
+        "luot": 1
+      },
+      {
+        "number": 478,
+        "createdAt": "2026-11-03",
+        "loi": "ppsspp",
+        "loai": "native",
+        "luot": 1
+      },
+      {
+        "number": 482,
+        "createdAt": "2026-11-03",
+        "loi": "melondsds",
+        "loai": "unknown",
+        "luot": 1
+      },
+      {
+        "number": 513,
+        "createdAt": "2026-11-05",
+        "loi": "gambatte",
+        "loai": "unknown",
+        "luot": 2
+      },
+      {
+        "number": 516,
+        "createdAt": "2026-11-05",
+        "loi": "mgba",
+        "loai": "anr",
+        "luot": 1
+      },
+      {
+        "number": 520,
+        "createdAt": "2026-11-06",
+        "loi": "ppsspp",
+        "loai": "native",
+        "luot": 1
+      },
+      {
+        "number": 522,
+        "createdAt": "2026-11-06",
+        "loi": "desmume",
+        "loai": "anr",
+        "luot": 1
+      },
+      {
+        "number": 525,
+        "createdAt": "2026-11-06",
+        "loi": "unknown",
+        "loai": "op-fail",
+        "luot": 1
+      },
+      {
+        "number": 529,
+        "createdAt": "2026-11-07",
+        "loi": "melondsds",
+        "loai": "anr",
+        "luot": 3
+      },
+      {
+        "number": 530,
+        "createdAt": "2026-11-07",
+        "loi": "melondsds",
+        "loai": "anr",
+        "luot": 1
+      },
+      {
+        "number": 531,
+        "createdAt": "2026-11-07",
+        "loi": "unknown",
+        "loai": "op-fail",
+        "luot": 1
+      },
+      {
+        "number": 533,
+        "createdAt": "2026-11-07",
+        "loi": "melondsds",
+        "loai": "anr",
+        "luot": 3
+      },
+      {
+        "number": 535,
+        "createdAt": "2026-11-08",
+        "loi": "melonds",
+        "loai": "anr",
+        "luot": 1
+      },
+      {
+        "number": 562,
+        "createdAt": "2026-11-09",
+        "loi": "desmume",
+        "loai": "native",
+        "luot": 1
+      },
+      {
+        "number": 563,
+        "createdAt": "2026-11-09",
+        "loi": "melonds",
+        "loai": "native",
+        "luot": 3
+      },
+      {
+        "number": 564,
+        "createdAt": "2026-11-09",
+        "loi": "unknown",
+        "loai": "op-fail",
+        "luot": 1
+      }
+    ]
+  },
+  "phu_luc_b": {
+    "tu_ngay": "2026-11-11",
+    "den_ngay": "2026-11-18",
+    "so_issue": 5,
+    "issues": [
+      {
+        "number": 607,
+        "closedAt": "2026-11-18",
+        "stateReason": "NOT_PLANNED",
+        "nhom": "citra/killed",
+        "luot": 18,
+        "ly_do": "Luật gom nhóm 08/11: báo cáo lẻ `lowmem`/`killed` quy về #549, đóng `not_planned`; comment ghi rõ **không** kết luận nguyên nhân, giữ phản biện của Sol"
+      },
+      {
+        "number": 463,
+        "closedAt": "2026-11-12",
+        "stateReason": "COMPLETED",
+        "nhom": "kiem-dinh-ky",
+        "luot": null,
+        "ly_do": "Issue kiểm định kỳ, **không có bình luận đóng** — lý do cụ thể [CHƯA KIỂM]"
+      },
+      {
+        "number": 595,
+        "closedAt": "2026-11-11",
+        "stateReason": "COMPLETED",
+        "nhom": "unknown/op-fail",
+        "luot": 1,
+        "ly_do": "Đã sửa ở #604 (thiếu gói 7-Zip khi mất mạng → chỉ ghi vệt), bản v0.8.13"
+      },
+      {
+        "number": 512,
+        "closedAt": "2026-11-11",
+        "stateReason": "COMPLETED",
+        "nhom": "unknown/op-fail",
+        "luot": 1,
+        "ly_do": "Đã sửa ở #603: 4xx/bài bị gỡ không còn tạo `op-fail`, bản v0.8.13"
+      },
+      {
+        "number": 305,
+        "closedAt": "2026-11-11",
+        "stateReason": "COMPLETED",
+        "nhom": "unknown/op-fail",
+        "luot": 1,
+        "ly_do": "Đã sửa ở #603 (mã HTTP 4xx và NPE khi Blogger trả HTML), bản v0.8.13"
+      }
+    ]
+  },
+  "canh_bao": [
+    "Luot la cong don lich su, khong phai ti le hien tai",
+    "Khong so truc tiep hai anh chup khac ngay",
+    "Khong co CRASH_ADMIN_TOKEN trong luot lap: reason/frames/detail/component [CHUA KIEM]",
+    "Cac con so chi tu 100 ban ghi moi nhat Worker tra ve"
+  ]
+}
