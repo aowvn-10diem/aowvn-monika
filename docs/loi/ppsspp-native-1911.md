@@ -8,7 +8,7 @@ Người lập: phiên **LB2** (nhóm Lỗi B), 19/11/2026. Mọi kết luận �
 
 | Issue | Chữ ký (12 hex) | Loại | Lượt | Khoá `seen` | Lượt lớn nhất / một khoá | Báo cáo đầu | Báo cáo mới nhất | Im lặng (19/11) |
 |---|---|---|---:|---:|---:|---|---|---:|
-| [#316](https://github.com/aowvn-10diem/aowvn-monika/issues/316) | `3f181942717a` | native | 114 | 100 | 6 | 20/10 07:43 | 20/10 | **30 ngày** |
+| [#316](https://github.com/aowvn-10diem/aowvn-monika/issues/316) | `3f181942717a` | native | 114 | 51 | 6 | 20/10 07:43 | 20/10 | **30 ngày** |
 | [#372](https://github.com/aowvn-10diem/aowvn-monika/issues/372) | `7af5e6657638` | native | 90 | 12 | 13 | 27/10 06:24 | 27/10 | **23 ngày** |
 | [#478](https://github.com/aowvn-10diem/aowvn-monika/issues/478) | `4d2cb114a7aa` | native | 1 | 1 | 1 | 03/11 15:18 | 03/11 | **16 ngày** |
 | [#520](https://github.com/aowvn-10diem/aowvn-monika/issues/520) | `4e65d6ad0246` | native | 1 | 1 | 1 | 06/11 03:29 | 06/11 | **13 ngày** |
@@ -19,7 +19,7 @@ Cột "lượt" là `count` trong khối `aow-crash-v100` của thân issue; ở
 
 ## 2. "Số đứng" là tín hiệu thật, nhưng có hai giới hạn
 
-**Tín hiệu thật:** bot `scripts/crash-issue-bot.py` chạy mỗi giờ trên `main`, và cùng ngày 19/11 các chữ ký khác vẫn được cập nhật: #322 `pcsx_rearmed/core-error` và #302 `unknown/resource` (tạo 20/10) cập nhật 19/11 06:48, #578 cập nhật 19/11 06:48. Worker và bot còn sống ⇒ 5 chữ ký `ppsspp` đứng số vì **không còn báo cáo mới**, không phải mất đường gửi.
+**Tín hiệu thật:** bot `scripts/crash-issue-bot.py` chạy mỗi giờ trên `main`, và cùng ngày 19/11 các chữ ký khác vẫn được cập nhật: #322 `pcsx_rearmed/core-error` và #578 `pcsx_rearmed/core-error` cập nhật 19/11 **10:43**, #302 `unknown/resource` (tạo 20/10) cập nhật 19/11 06:48. Worker và bot còn sống ⇒ 5 chữ ký `ppsspp` đứng số vì **không còn báo cáo mới**, không phải mất đường gửi.
 
 **Giới hạn 1 — ngưỡng bot:** `scripts/crash-issue-bot.py:217` bỏ qua khi `delta < 5` (`elif delta < 5 and not rewrite: continue`). "Số không tăng" nghĩa là **dưới 5 lượt mới kể từ lần thông báo trước**, không chắc là 0. Với #316 (114) và #372 (90) mức nhiễu này không đổi kết luận; với #478/#520 (1 lượt) thì đó là giới hạn thật.
 
@@ -43,9 +43,11 @@ Ngoài ra 11/11 `a0387ae4` (#601, trong **0.8.13** chính thức) hạ cấu hì
 
 #663 (gộp 19/11, **chỉ có trong 0.8.15 Pre-release**; bản chính thức sớm nhất 20/11) bịt:
 
-- 7 lời gọi JNI deref `core` mà không kiểm (`unserializeSRAM`, `loadGameFromPath/Bytes/VirtualFiles`, `step`, `reset`, `resetCheat`/`setCheat`) — `libretrodroid.cpp:173-178`, `:369-375`, `:415-419`, `:446-451`, `:566-571`, `:708-713`, `:744-760`.
-- Race `VFS::virtualFiles` (`virtualFilesLock`, `vfs/vfs.h:78-79`, `vfs/vfs.cpp:114-129`).
-- Race `variableValueBuffer` → `static thread_local` (`environment.h`, `environment.cpp:34-36`).
+> Mốc số dòng trong tệp này: **head `02bd03cc`**. Chỗ nào lấy theo mốc `61413abd` (bản #663 gộp) thì ghi rõ ngay cạnh, vì #684 đã làm dòng trôi.
+
+- 7 chỗ kiểm `core` trước khi gọi JNI (8 khối, vì `resetCheat` và `setCheat` tách hai khối): `unserializeSRAM`, `loadGameFromPath/Bytes/VirtualFiles`, `step`, `reset`, `resetCheat`/`setCheat` — theo head `libretrodroid.cpp:202`, `:372`, `:416`, `:448`, `:577`, `:719`, `:755`, `:766`; theo mốc `61413abd` là `:173-178`, `:369-375`, `:415-419`, `:446-451`, `:566-571`, `:708-713`, `:744-760` (hai mốc cuối trên head đã trôi thành cuối `pause()` `:566-571` và `handleGetCurrentFrameBuffer` `:708-713`).
+- Race `VFS::virtualFiles` (`virtualFilesLock` `vfs/vfs.h:79`, chú thích `:76-78`; `vfs/vfs.cpp:114-129`).
+- Race `variableValueBuffer` → `static thread_local` (`environment.h:164`, `environment.cpp:34-36`).
 
 Ba đường đó **có thể** là đường chết của `ppsspp/native` (báo cáo tới sau khi rời game / đổi game), nhưng **không** có khung nào để nối chữ ký `3f181942717a` hay `7af5e6657638` với một dòng cụ thể. Kết luận trung thực: **cùng nhóm, chưa cùng gốc**; #663 là bịt các đường *có thể*, không phải chứng minh nguyên nhân.
 
@@ -53,7 +55,7 @@ Ba đường đó **có thể** là đường chết của `ppsspp/native` (báo
 
 | Vùng | Trạng thái sau #663 / #684 | Ghi chú |
 |---|---|---|
-| `LibretroDroid::destroy()` → `core = nullptr` → `Core::~Core()` → `dlclose` (`libretrodroid.cpp:498-536`, `core.cpp:69-78`) | **còn hở** | `dlclose` chạy **ngay** sau `retro_deinit()`; `Environment::deinitialize()` / `VFS::deinitialize()` chạy **sau** đó (`:534-535`). Lõi còn thread nền (ppsspp: `Emu`/`GPU`/`Audio`) thì thread chạy mã đã unmap → SIGSEGV trong `.so`. Đây là nghi phạm số một còn lại, và **chỉ đo được** bằng vệt #684 (`dlclose-before` + tên thread). Chưa vá: mọi cách vá (giữ handle, join, sleep) đều đổi hành vi bộ nhớ/thời gian mà chưa có bằng chứng. |
+| `LibretroDroid::destroy()` → `core = nullptr` → `Core::~Core()` → `dlclose` (`libretrodroid.cpp:498-536`; `core.cpp:74-83` và `dlclose` `:79` theo head, mốc `61413abd` là `:69-78`) | **còn hở** | `dlclose` chạy **ngay** sau `retro_deinit()`; `Environment::deinitialize()` / `VFS::deinitialize()` chạy **sau** đó (`:534-535`). Lõi còn thread nền (ppsspp: `Emu`/`GPU`/`Audio`) thì thread chạy mã đã unmap → SIGSEGV trong `.so`. Đây là nghi phạm số một còn lại, và **chỉ đo được** bằng vệt #684 (`dlclose-before` + tên thread). Chưa vá: mọi cách vá (giữ handle, join, sleep) đều đổi hành vi bộ nhớ/thời gian mà chưa có bằng chứng. |
 | Dựng lại surface/EGL (`GLRetroView.kt:412-419` → `libretrodroid.cpp:231-279`) | **đã vá ở 0.8.13** (`25ca0688`): huỷ HW context cũ trước khi dựng `Video` mới, không nạp lại game | Đường "khoá/mở máy, đổi độ phân giải" — ứng viên cũ cho #316/#372/#520 — đã được phủ. |
 | `GLRetroView.kt:391` (`onDrawFrame` → `lifecycle?.coroutineScope?.launch { emit(FrameRendered) }` mỗi khung) | **không liên quan crash native** | `lifecycle = null` ở `onDestroy()` (`:155`) nên sau destroy không còn emit; đây là cấp phát mỗi khung (rác GC), không phải đường SIGSEGV. Không sửa trong lượt này. |
 | VFS: handle đã cấp (`retro_vfs_file_handle*`) sau `deinitialize` | **đủ** | #663 khoá vector + giữ khoá suốt `virtualOpen`; handle do lõi giữ, `deinitialize` không free handle nên `read`/`close` sau đó không đọc bộ nhớ đã giải phóng. |
