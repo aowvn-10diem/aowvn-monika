@@ -437,12 +437,13 @@ class RetroActivity : ComponentActivity() {
         val system = cfg.systems.firstOrNull { s -> s.extensions.any { it.equals(ext, true) } }
         val biosMode = CoreOptions.saved(this, coreId)[CoreLoadError.BIOS_MODE_OPTION]
             ?: cfg.cores[coreId]?.options?.get(CoreLoadError.BIOS_MODE_OPTION).orEmpty()
+        // diag: bỏ qua lỗi đọc tên tệp chỉ để đoán thiếu BIOS — hỏng thì ghi rõ vào chính báo cáo core-error là "không đọc được" rồi bỏ phần BIOS, không lập báo cáo riêng
         val present = runCatching {
             val dir = AppGraph.cores.systemDir()
             // Lõi đọc tệp hệ thống ở thư mục gốc hoặc thư mục con riêng — thiếu kiểm thư mục con là báo thiếu oan.
             (dir.list()?.toList().orEmpty() + CoreLoadError.BIOS_SUBDIRS.flatMap { File(dir, it).list()?.toList().orEmpty() })
                 .map { it.lowercase(java.util.Locale.ROOT) }.toSet()
-        }.getOrNull().orEmpty()
+        }.getOrNull()
         return CoreLoadError.Facts(
             code = code,
             coreId = coreId,
@@ -454,7 +455,11 @@ class RetroActivity : ComponentActivity() {
             coreExtensions = cfg.systems.filter { it.core == coreId || coreId in it.altCores }
                 .flatMap { it.extensions }.distinct(),
             coreInstalled = AppGraph.cores.installedVersion(coreId) != null,
-            missingBios = CoreLoadError.missingExternalBios(coreId, biosMode, system?.id.orEmpty(), present),
+            missingBios = present?.let {
+                CoreLoadError.missingExternalBios(coreId, biosMode, system?.id.orEmpty(), it)
+            }.orEmpty(),
+            // null = không đọc được thư mục hệ thống ⇒ không kết luận thiếu BIOS, nhưng báo cáo phải nói rõ.
+            systemFilesUnreadable = present == null,
             biosMode = biosMode,
         )
     }

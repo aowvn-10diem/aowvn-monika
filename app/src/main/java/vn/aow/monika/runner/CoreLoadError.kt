@@ -58,6 +58,8 @@ object CoreLoadError {
         val coreInstalled: Boolean = false,
         /** Tệp BIOS/Firmware lõi đang đặt dùng mà thư mục hệ thống không có; trống = không áp dụng. */
         val missingBios: List<String> = emptyList(),
+        /** Không đọc được tên tệp trong thư mục hệ thống ⇒ bỏ phần BIOS, KHÔNG kết luận thiếu (tránh báo oan). */
+        val systemFilesUnreadable: Boolean = false,
         /** Nguồn BIOS/Firmware người chơi đang chọn ("builtin"/"external"); trống = lõi không có lựa chọn này. */
         val biosMode: String = "",
     )
@@ -247,6 +249,9 @@ object CoreLoadError {
             appendLine("đuôi lõi ${f.coreId} nhận: ${f.coreExtensions.joinToString(", ") { ".$it" }}")
         }
         if (f.biosMode.isNotBlank()) appendLine("nguồn BIOS/Firmware đang chọn: ${biosModeLabel(f.biosMode)}")
+        if (f.systemFilesUnreadable) {
+            appendLine("tệp hệ thống: không đọc được thư mục hệ thống — bỏ qua phần BIOS, không kết luận thiếu")
+        }
         if (f.missingBios.isNotEmpty()) appendLine("thiếu BIOS/Firmware: ${f.missingBios.joinToString(", ")}")
         append("nguyên nhân đọc được: $cause")
     }

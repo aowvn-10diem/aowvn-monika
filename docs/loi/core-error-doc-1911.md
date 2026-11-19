@@ -54,6 +54,8 @@ nguyên nhân đọc được: chưa rõ nguyên nhân — tệp game có thể 
 - Hệ máy suy từ **đuôi ROM** theo `config.systems[].extensions` (cùng luật `PrefetchPlanner`), không tin nhãn trong Intent.
 - "Bước" lấy từ `StartupProgress.stage()` — thêm accessor, không đổi luồng chạy.
 - Thiếu BIOS: đọc tên tệp trong `system/` **và** `system/melonDS DS/` (README melonDS DS) để không báo thiếu oan.
+  Không đọc được thư mục hệ thống thì **bỏ** phần BIOS và ghi rõ vào báo cáo ("không đọc được thư mục hệ thống") —
+  không kết luận thiếu, cũng không lập báo cáo riêng.
 - Không đưa đường dẫn tuyệt đối vào báo cáo; `Diagnostics.scrub` vẫn chạy như cũ.
 
 ## 4. Còn chưa biết

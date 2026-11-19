@@ -21,10 +21,12 @@ class CoreLoadErrorDiagTest {
         extensions: List<String> = emptyList(),
         step: String = "",
         biosMode: String = "",
+        unreadable: Boolean = false,
     ) = CoreLoadError.Facts(
         code = code, coreId = "melondsds", step = step, romName = rom, romSizeBytes = 8_000_000,
         systemId = systemId, systemName = systemName, coreExtensions = extensions,
-        coreInstalled = coreInstalled, missingBios = missingBios, biosMode = biosMode,
+        coreInstalled = coreInstalled, missingBios = missingBios,
+        systemFilesUnreadable = unreadable, biosMode = biosMode,
     )
 
     /** (a) Mã 1 + thiếu BIOS/Firmware ⇒ thông điệp nêu đúng hệ và đúng tệp còn thiếu. */
@@ -104,6 +106,22 @@ class CoreLoadErrorDiagTest {
             assertTrue("mã $code", d.short.isNotBlank() && !d.short.contains('\n'))
             assertTrue("mã $code", d.summary.contains("melondsds") && d.summary.length <= 200)
         }
+    }
+
+    /**
+     * Không đọc được thư mục hệ thống ⇒ KHÔNG kết luận thiếu BIOS (tránh báo oan), nhưng báo cáo phải
+     * nói rõ là không đọc được — đây là lý do `// diag: bỏ qua` ở `coreErrorFacts` không làm mất thông tin.
+     */
+    @Test fun unreadableSystemDirDoesNotClaimMissingBios() {
+        val d = CoreLoadError.diagnose(facts(
+            code = 1, systemId = "nds", systemName = "Nintendo DS", rom = "game.nds",
+            extensions = listOf("nds"), step = "core-load-game", biosMode = "external", unreadable = true,
+        ))
+        assertTrue(d.text, d.text.contains("Chưa rõ nguyên nhân"))
+        assertFalse(d.text, d.text.contains("thiếu: "))
+        assertTrue(d.report, d.report.contains("không đọc được thư mục hệ thống"))
+        assertFalse(d.report, d.report.contains("thiếu BIOS/Firmware:"))
+        assertFalse("không mời bấm nút BIOS khi chưa kiểm được", d.resetBiosMode)
     }
 
     /** Hệ máy lạ (đuôi không có trong config) vẫn ghi rõ trong báo cáo là chưa xác định. */
