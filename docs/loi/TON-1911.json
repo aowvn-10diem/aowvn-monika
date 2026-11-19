@@ -485,7 +485,6 @@
     "config_da_tro": "configVersion 66: app.latestVersionCode 60, apkUrl .../download/v0.8.15/",
     "ban_va_chi_trong_0815": [
       "#655",
-      "#656",
       "#662",
       "#663",
       "#665",
@@ -652,7 +651,9 @@
         "luot": 1,
         "ly_do": "bản vá #665 chỉ có trong 0.8.15"
       }
-    ]
+    ],
+    "ghi_chu_656": "#656 là crumb đo chặng pause/destroy (đo, không vá), có trong 0.8.15",
+    "ban_va_chi_trong_0815_ghi_chu": "#672 (công cụ kiểm ký hiệu + đặc tả symbols) và #667 (bot) không phải bản vá"
   },
   "dong_1911": {
     "tu_ngay": "2026-11-19",
@@ -661,8 +662,8 @@
     "so_issue": 23,
     "tong_luot": 508,
     "nhan_xet": [
-      "Không issue nào trong 23 issue có bình luận đóng (gh issue view 301|314|614 --json comments rỗng) ⇒ lý do từng issue [CHƯA KIỂM]",
-      "Ba issue #314 #318 #350 đóng completed 6 giờ sau khi PR #666 ghi “chưa đóng được #350 #318 #314”",
+      "23/23 issue có comment đóng, bổ sung 19/11 07:35Z (kiểm qua gh api)",
+      "#314 #318 #350: đã được PM duyệt (7001163935 tại #337, 06:01Z) với điều kiện lượt không tăng; comment nêu mở lại nếu còn ANR trên 0.8.13+; chặng ANR vẫn đang đo ở #656/#666",
       "8 nhóm biến mất: melondsds/anr, citra/core-error, citra/anr, desmume/anr, snes9x/anr, gambatte/anr, melonds/anr, mgba/anr"
     ],
     "issues": [
@@ -672,9 +673,10 @@
         "stateReason": "COMPLETED",
         "nhom": "citra/core-error",
         "luot": 56,
-        "ban_va": "#637 · #639 · #646 · #662",
-        "ban_phat_hanh": "v0.8.14 + v0.8.15",
-        "ghi_chu": "issue lâu nhất 20/10"
+        "ban_va": "#637 · #639",
+        "ban_phat_hanh": "v0.8.14",
+        "ghi_chu": "issue lâu nhất 20/10",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 314,
@@ -682,9 +684,10 @@
         "stateReason": "COMPLETED",
         "nhom": "melondsds/anr",
         "luot": 17,
-        "ban_va": "#606 · #619 · #656 (crumb pause/destroy)",
-        "ban_phat_hanh": "v0.8.13 + v0.8.15",
-        "ghi_chu": "#666 ghi “chưa đóng được #350 #318 #314”"
+        "ban_va": "#606 · #619",
+        "ban_phat_hanh": "v0.8.13",
+        "ghi_chu": "comment nêu chặng ANR vẫn đo ở #656/#666",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 315,
@@ -694,7 +697,8 @@
         "luot": 4,
         "ban_va": "#606 · #619",
         "ban_phat_hanh": "v0.8.13",
-        "ghi_chu": ""
+        "ghi_chu": "",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 318,
@@ -702,9 +706,10 @@
         "stateReason": "COMPLETED",
         "nhom": "melondsds/anr",
         "luot": 177,
-        "ban_va": "#606 · #619 · #656 (crumb pause/destroy)",
-        "ban_phat_hanh": "v0.8.13 + v0.8.15",
-        "ghi_chu": "cùng #666"
+        "ban_va": "#606 · #619",
+        "ban_phat_hanh": "v0.8.13",
+        "ghi_chu": "cùng điều kiện mở lại như #314",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 328,
@@ -712,9 +717,10 @@
         "stateReason": "COMPLETED",
         "nhom": "citra/anr",
         "luot": 2,
-        "ban_va": "#619 · #648 (tài liệu)",
+        "ban_va": "#606 · #619",
         "ban_phat_hanh": "v0.8.13",
-        "ghi_chu": "≤ 3 lượt"
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 333,
@@ -724,7 +730,8 @@
         "luot": 1,
         "ban_va": "#606 · #619",
         "ban_phat_hanh": "v0.8.13",
-        "ghi_chu": "≤ 3 lượt"
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 336,
@@ -732,9 +739,10 @@
         "stateReason": "COMPLETED",
         "nhom": "citra/anr",
         "luot": 9,
-        "ban_va": "#619 · #648 (tài liệu)",
+        "ban_va": "#606 · #619",
         "ban_phat_hanh": "v0.8.13",
-        "ghi_chu": "dưới ngưỡng delta ≥ 5 của bot nên không có (+N)"
+        "ghi_chu": "dưới ngưỡng delta ≥ 5 của bot nên không có (+N)",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 350,
@@ -742,9 +750,10 @@
         "stateReason": "COMPLETED",
         "nhom": "melondsds/anr",
         "luot": 216,
-        "ban_va": "#606 · #619 · #656 (crumb pause/destroy)",
-        "ban_phat_hanh": "v0.8.13 + v0.8.15",
-        "ghi_chu": "cùng #666"
+        "ban_va": "#606 · #619",
+        "ban_phat_hanh": "v0.8.13",
+        "ghi_chu": "cùng điều kiện mở lại như #314",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 400,
@@ -754,7 +763,8 @@
         "luot": 1,
         "ban_va": "#606 · #619",
         "ban_phat_hanh": "v0.8.13",
-        "ghi_chu": "≤ 3 lượt"
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 402,
@@ -762,9 +772,10 @@
         "stateReason": "COMPLETED",
         "nhom": "gambatte/anr",
         "luot": 2,
-        "ban_va": "#619",
+        "ban_va": "#606 · #619",
         "ban_phat_hanh": "v0.8.13",
-        "ghi_chu": "≤ 3 lượt"
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 439,
@@ -772,9 +783,10 @@
         "stateReason": "COMPLETED",
         "nhom": "melondsds/anr",
         "luot": 2,
-        "ban_va": "#606 · #619 · #656 (crumb pause/destroy)",
-        "ban_phat_hanh": "v0.8.13 + v0.8.15",
-        "ghi_chu": "≤ 3 lượt"
+        "ban_va": "#606 · #619",
+        "ban_phat_hanh": "v0.8.13",
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 440,
@@ -782,9 +794,10 @@
         "stateReason": "COMPLETED",
         "nhom": "melondsds/anr",
         "luot": 1,
-        "ban_va": "#606 · #619 · #656 (crumb pause/destroy)",
-        "ban_phat_hanh": "v0.8.13 + v0.8.15",
-        "ghi_chu": "≤ 3 lượt"
+        "ban_va": "#606 · #619",
+        "ban_phat_hanh": "v0.8.13",
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 459,
@@ -794,7 +807,8 @@
         "luot": 5,
         "ban_va": "#606 · #619",
         "ban_phat_hanh": "v0.8.13",
-        "ghi_chu": ""
+        "ghi_chu": "",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 460,
@@ -802,9 +816,10 @@
         "stateReason": "COMPLETED",
         "nhom": "citra/anr",
         "luot": 2,
-        "ban_va": "#619 · #648 (tài liệu)",
+        "ban_va": "#606 · #619",
         "ban_phat_hanh": "v0.8.13",
-        "ghi_chu": "≤ 3 lượt"
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 516,
@@ -812,9 +827,10 @@
         "stateReason": "COMPLETED",
         "nhom": "mgba/anr",
         "luot": 1,
-        "ban_va": "#619",
+        "ban_va": "#606 · #619",
         "ban_phat_hanh": "v0.8.13",
-        "ghi_chu": "≤ 3 lượt"
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 522,
@@ -824,7 +840,8 @@
         "luot": 1,
         "ban_va": "#606 · #619",
         "ban_phat_hanh": "v0.8.13",
-        "ghi_chu": "≤ 3 lượt"
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 529,
@@ -832,9 +849,10 @@
         "stateReason": "COMPLETED",
         "nhom": "melondsds/anr",
         "luot": 3,
-        "ban_va": "#606 · #619 · #656 (crumb pause/destroy)",
-        "ban_phat_hanh": "v0.8.13 + v0.8.15",
-        "ghi_chu": "≤ 3 lượt"
+        "ban_va": "#606 · #619",
+        "ban_phat_hanh": "v0.8.13",
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 530,
@@ -842,9 +860,10 @@
         "stateReason": "COMPLETED",
         "nhom": "melondsds/anr",
         "luot": 1,
-        "ban_va": "#606 · #619 · #656 (crumb pause/destroy)",
-        "ban_phat_hanh": "v0.8.13 + v0.8.15",
-        "ghi_chu": "≤ 3 lượt"
+        "ban_va": "#606 · #619",
+        "ban_phat_hanh": "v0.8.13",
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 533,
@@ -852,9 +871,10 @@
         "stateReason": "COMPLETED",
         "nhom": "melondsds/anr",
         "luot": 3,
-        "ban_va": "#606 · #619 · #656 (crumb pause/destroy)",
-        "ban_phat_hanh": "v0.8.13 + v0.8.15",
-        "ghi_chu": "≤ 3 lượt"
+        "ban_va": "#606 · #619",
+        "ban_phat_hanh": "v0.8.13",
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 535,
@@ -862,9 +882,10 @@
         "stateReason": "COMPLETED",
         "nhom": "melonds/anr",
         "luot": 1,
-        "ban_va": "#619 (chú thích GLRetroView nêu đích danh #535)",
+        "ban_va": "#606 · #619",
         "ban_phat_hanh": "v0.8.13",
-        "ghi_chu": "≤ 3 lượt"
+        "ghi_chu": "chú thích GLRetroView nêu đích danh #535",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 597,
@@ -872,9 +893,10 @@
         "stateReason": "COMPLETED",
         "nhom": "melondsds/anr",
         "luot": 1,
-        "ban_va": "#606 · #619 · #656 (crumb pause/destroy)",
-        "ban_phat_hanh": "v0.8.13 + v0.8.15",
-        "ghi_chu": "≤ 3 lượt"
+        "ban_va": "#606 · #619",
+        "ban_phat_hanh": "v0.8.13",
+        "ghi_chu": "≤ 3 lượt",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 610,
@@ -882,9 +904,10 @@
         "stateReason": "COMPLETED",
         "nhom": "citra/core-error",
         "luot": 1,
-        "ban_va": "#637 · #639 · #646 · #662",
-        "ban_phat_hanh": "v0.8.14 + v0.8.15",
-        "ghi_chu": "Thành phần: engine:azahar"
+        "ban_va": "#637 · #639",
+        "ban_phat_hanh": "v0.8.14",
+        "ghi_chu": "Thành phần: engine:azahar",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       },
       {
         "number": 614,
@@ -892,24 +915,32 @@
         "stateReason": "COMPLETED",
         "nhom": "unknown/op-fail",
         "luot": 1,
-        "ban_va": "#665",
-        "ban_phat_hanh": "v0.8.15",
-        "ghi_chu": "Thành phần: op:va-rom"
+        "ban_va": "#618",
+        "ban_phat_hanh": "v0.8.14",
+        "ghi_chu": "Thành phần: op:va-rom",
+        "nguon_ban_va": "comment đóng 2026-11-19T07:35Z"
       }
     ],
     "ban_va_theo_nhom_moc": {
       "#606": "v0.8.13",
       "#619": "v0.8.13",
-      "#626": "v0.8.14",
+      "#618": "v0.8.14",
       "#637": "v0.8.14",
-      "#639": "v0.8.14",
-      "#646": "v0.8.14",
-      "#648": "v0.8.15",
-      "#656": "v0.8.15",
-      "#662": "v0.8.15",
-      "#663": "v0.8.15",
-      "#665": "v0.8.15",
-      "#668": "v0.8.15"
+      "#639": "v0.8.14"
+    },
+    "comment_dong": {
+      "so_issue": 23,
+      "tong_issue": 23,
+      "luc": "2026-11-19T07:35Z",
+      "noi_dung": "mỗi issue một comment: PR vá, bản phát hành, điều kiện mở lại nếu tái diễn trên bản >= bản vá; nhóm ANR ghi thêm chặng ANR vẫn đang đo ở #656/#666",
+      "cach_kiem": "gh api issues/<n>/comments cho cả 23 issue, lọc created_at >= 2026-11-19T07:30 ⇒ 23/23; đọc 4 mẫu #350 #314 #301 #614"
+    },
+    "pm_duyet": {
+      "comment_id": 7001163935,
+      "issue": 337,
+      "luc": "2026-11-19T06:01:13Z",
+      "noi_dung": "đóng issue đã có bản vá trong bản chính thức (0.8.13/0.8.14), điều kiện lượt không tăng sau bản vá, kèm comment mở lại; không đóng issue mà bản vá chỉ có ở 0.8.15",
+      "moc_on_dinh_0815": "12:40 VN 20/11 (theo comment)"
     }
   },
   "phu_luc_a": {
