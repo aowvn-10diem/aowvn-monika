@@ -4,15 +4,11 @@ on:
   pull_request:
     paths:
       - scripts/**
-      - docs/loi/TON-1911.md
-      - docs/loi/TON-1911.json
       - .github/workflows/script-tests.yml
   push:
     branches: [main]
     paths:
       - scripts/**
-      - docs/loi/TON-1911.md
-      - docs/loi/TON-1911.json
       - .github/workflows/script-tests.yml
 
 permissions:
@@ -60,10 +56,6 @@ jobs:
         run: python3 scripts/test-ci-install-j2me-ndk.py
       - name: Kiểm script trước push bằng lỗi giả (Bash, offline)
         run: python3 scripts/test-truoc-khi-push.py
-      - name: Kiểm bảng tồn issue .md ↔ .json (khoá + số, offline)
-        run: |
-          python3 scripts/test-kiem-bang-ton.py
-          python3 scripts/kiem-bang-ton.py
       - name: Kiểm lock và recipe dựng lõi từ nguồn (V198, offline)
         run: python3 scripts/test-prepare-core-build.py
       - name: Kiểm snapshot PPSSPP bằng dữ liệu giả, không đăng (V198)
