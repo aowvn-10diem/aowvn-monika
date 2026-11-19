@@ -4,7 +4,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 ## v0.8.15 (Bản thử)
 <!-- bien-tap: v0.8.15 -->
-> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+> Phát hành ngày 19/11/2026 (UTC), bản thử nghiệm.
 
 - **Sửa lỗi:** Nhập game PlayStation 1 gồm hai tệp rời nhau thì app xếp đúng vào cùng một thư mục, game chạy được thay vì báo lỗi. ([#668](https://github.com/aowvn-10diem/aowvn-monika/pull/668))
 - **Sửa lỗi:** Một số game PSP và Nintendo DS không còn bị văng giữa lúc chơi. ([#663](https://github.com/aowvn-10diem/aowvn-monika/pull/663))
