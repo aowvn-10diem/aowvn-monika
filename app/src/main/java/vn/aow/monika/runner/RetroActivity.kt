@@ -190,7 +190,7 @@ class RetroActivity : ComponentActivity() {
             lifecycleScope.launch { if (!loadingGone) startupText = startup.text() }
         }
         var failureHandled = false
-        fun onCoreFailure(what: String, detail: String) {
+        fun onCoreFailure(what: String, detail: String, biosReset: Boolean = false) {
             if (failureHandled || loadingGone) return
             failureHandled = true
             startup.finish()
@@ -199,11 +199,24 @@ class RetroActivity : ComponentActivity() {
             val rep = Diagnostics.recordCoreFailure(this@RetroActivity, what, detail)
             Diagnostics.autoSend(this@RetroActivity, AppGraph.http, rep, cr.endpoint, cr.autoSend, AppGraph.prefs.autoSendCrash)
             val sid = intent.getStringExtra(EXTRA_SYSTEM_ID).orEmpty()
+            val sentNote = if (cr.autoSend && AppGraph.prefs.autoSendCrash) "\n(Đã tự gửi báo lỗi về AowVN, có thể tắt trong Cài đặt.)" else ""
+            if (biosReset) {
+                // Lỗi xảy ra trước khung hình đầu nên menu "Tùy chọn giả lập" trong game không mở được:
+                // nút dưới là lối thoát duy nhất, và chỉ bỏ đúng khoá BIOS của lõi (không xoá lựa chọn khác).
+                startupText = startupText + "\n\nBấm nút dưới để lõi dùng lại BIOS/Firmware có sẵn rồi mở lại game." + sentNote
+                fallbackText = "Dùng BIOS có sẵn trong lõi và mở lại"
+                fallbackAction = {
+                    CoreOptions.remove(this@RetroActivity, coreId, listOf(CoreLoadError.BIOS_MODE_OPTION))
+                    start(this@RetroActivity, coreId, File(gamePath), systemName, title,
+                        intent.getStringExtra(EXTRA_PAD), intent.getStringExtra(PlayClock.EXTRA_KEY), sid)
+                    finish()
+                }
+                return
+            }
             val alt = AppGraph.config.current.systems.firstOrNull { it.id == sid }?.altCores
                 ?.firstOrNull { it != coreId && it in AppGraph.config.current.cores && AppGraph.cores.supports(it) }
             if (alt != null) {
-                startupText = startupText + "\n\nLõi $coreId chưa chạy được game này. Bạn có muốn thử lõi $alt không?" +
-                    if (cr.autoSend && AppGraph.prefs.autoSendCrash) "\n(Đã tự gửi báo lỗi về AowVN, có thể tắt trong Cài đặt.)" else ""
+                startupText = startupText + "\n\nLõi $coreId chưa chạy được game này. Bạn có muốn thử lõi $alt không?" + sentNote
                 fallbackText = "Đổi sang lõi $alt và mở lại"
                 fallbackAction = {
                     AppGraph.prefs.setCoreOverride(sid, alt)
@@ -397,13 +410,58 @@ class RetroActivity : ComponentActivity() {
                 view.getGLRetroErrors().collect { code ->
                     Diagnostics.stage(this@RetroActivity, "core-error-$code")
                     android.util.Log.w(LOG_TAG, "error code=$code core=$coreId")
+                    // Báo cáo phải trả lời được "vì sao": mã + nghĩa, lõi, hệ suy từ đuôi ROM, bước đang chạy.
+                    // Trước bản này báo cáo chỉ có câu "lõi báo lỗi mã N" nên không ai đọc được nguyên nhân.
+                    val diag = CoreLoadError.diagnose(coreErrorFacts(code, coreId, gamePath, startup.stage()))
+                    // Vệt chỉ giữ 200 ký tự/dòng → ghi bản tóm tắt; khối đầy đủ đi vào detail của báo cáo.
+                    Diagnostics.crumb(this@RetroActivity, "core-error", diag.summary)
                     // Lỗi khi nạp game: ghi thẳng lên màn chờ (không chỉ thông báo nhanh) để người chơi biết vì sao không vào được.
-                    if (!loadingGone) startupText = CoreLoadError.text(code, coreId)
-                    showToast(CoreLoadError.short(code, coreId), 4000)
-                    onCoreFailure("lõi báo lỗi mã $code", "error code=$code core=$coreId")
+                    if (!loadingGone) startupText = diag.text
+                    showToast(diag.short, 4000)
+                    onCoreFailure("lõi báo lỗi mã $code: ${diag.cause}",
+                        "error code=$code core=$coreId\n" + diag.report, biosReset = diag.resetBiosMode)
                 }
             }
         }
+    }
+
+    /**
+     * Dữ kiện để [CoreLoadError] đọc được lỗi nạp game: chỉ lấy từ config, tên tệp và danh sách tên trong thư mục
+     * hệ thống — không đọc nội dung ROM, không đưa đường dẫn tuyệt đối vào báo cáo.
+     */
+    private fun coreErrorFacts(code: Int, coreId: String, gamePath: String, step: String): CoreLoadError.Facts {
+        val rom = File(gamePath)
+        val ext = rom.extension.lowercase(java.util.Locale.ROOT)
+        val cfg = AppGraph.config.current
+        // Hệ máy suy từ đuôi ROM (cùng luật với PrefetchPlanner/GameLibrary), không tin nhãn trong Intent.
+        val system = cfg.systems.firstOrNull { s -> s.extensions.any { it.equals(ext, true) } }
+        val biosMode = CoreOptions.saved(this, coreId)[CoreLoadError.BIOS_MODE_OPTION]
+            ?: cfg.cores[coreId]?.options?.get(CoreLoadError.BIOS_MODE_OPTION).orEmpty()
+        // diag: bỏ qua lỗi đọc tên tệp chỉ để đoán thiếu BIOS — hỏng thì ghi rõ vào chính báo cáo core-error là "không đọc được" rồi bỏ phần BIOS, không lập báo cáo riêng
+        val present = runCatching {
+            val dir = AppGraph.cores.systemDir()
+            // Lõi đọc tệp hệ thống ở thư mục gốc hoặc thư mục con riêng — thiếu kiểm thư mục con là báo thiếu oan.
+            (dir.list()?.toList().orEmpty() + CoreLoadError.BIOS_SUBDIRS.flatMap { File(dir, it).list()?.toList().orEmpty() })
+                .map { it.lowercase(java.util.Locale.ROOT) }.toSet()
+        }.getOrNull()
+        return CoreLoadError.Facts(
+            code = code,
+            coreId = coreId,
+            step = step,
+            romName = rom.name,
+            romSizeBytes = rom.length(),
+            systemId = system?.id.orEmpty(),
+            systemName = system?.name.orEmpty(),
+            coreExtensions = cfg.systems.filter { it.core == coreId || coreId in it.altCores }
+                .flatMap { it.extensions }.distinct(),
+            coreInstalled = AppGraph.cores.installedVersion(coreId) != null,
+            missingBios = present?.let {
+                CoreLoadError.missingExternalBios(coreId, biosMode, system?.id.orEmpty(), it)
+            }.orEmpty(),
+            // null = không đọc được thư mục hệ thống ⇒ không kết luận thiếu BIOS, nhưng báo cáo phải nói rõ.
+            systemFilesUnreadable = present == null,
+            biosMode = biosMode,
+        )
     }
 
     /**
