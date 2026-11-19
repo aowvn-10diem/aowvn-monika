@@ -19,6 +19,7 @@
 #include "core.h"
 
 #include "log.h"
+#include "diag.h"
 
 namespace libretrodroid {
 
@@ -41,6 +42,10 @@ void Core::open(const std::string& soCorePath) {
         LOGE("Cannot dlopen library, closing");
         throw std::runtime_error("Cannot dlopen library");
     }
+    // Aow Monika: mốc "dlopen-done" = danh sách thread TRƯỚC khi lõi tạo thread nào.
+    // Dùng làm mốc gốc để so với danh sách thread lúc dlclose (xem diag.h).
+    diag::setCore(soCorePath, libHandle);
+    diag::mark("dlopen-done");
     retro_cheat_reset = (void (*)()) get_symbol(libHandle, "retro_cheat_reset");
     retro_cheat_set = (void (*)(unsigned, bool, const char*)) get_symbol(libHandle, "retro_cheat_set");
     retro_init = (void (*)()) get_symbol(libHandle, "retro_init");
@@ -68,7 +73,11 @@ void Core::open(const std::string& soCorePath) {
 
 void Core::close() {
     if (libHandle) {
+        // Aow Monika: đo cửa sổ unload. Nếu thread nền của lõi còn sống ở đây,
+        // dlclose() munmap segment ⇒ thread đó nhảy vào mã đã unmap (xem diag.h).
+        diag::mark("dlclose-before");
         dlclose(libHandle);
+        diag::mark("dlclose-done");
         libHandle = nullptr;
     }
 }
