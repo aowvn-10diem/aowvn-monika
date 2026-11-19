@@ -158,8 +158,10 @@ private:
     std::unordered_map<std::string, struct Variable> variables;
     bool dirtyVariables = false;
 
-    // Aow Monika: vùng đệm cho con trỏ trả về RETRO_ENVIRONMENT_GET_VARIABLE, chỉ ghi khi đang giữ variablesLock.
-    std::string variableValueBuffer;
+    // Aow Monika: vùng đệm cho con trỏ trả về RETRO_ENVIRONMENT_GET_VARIABLE. Lõi có thể gọi callback này từ
+    // nhiều luồng nền (ppsspp: luồng audio + luồng GPU) và còn giữ con trỏ sau khi ta nhả variablesLock — mỗi
+    // luồng phải có vùng đệm riêng, nếu không luồng sau ghi đè/giải phóng chuỗi mà luồng trước đang đọc.
+    static thread_local std::string variableValueBuffer;
 
     std::vector<std::vector<struct Controller>> controllers;
 
