@@ -143,10 +143,29 @@ object Importer {
             work.deleteRecursively()
             return ImportResult(dir, error.message)
         }
+        // Chuyển ra thư mục game TRƯỚC khi xoá bất cứ thứ gì: `renameTo` hỏng (thiếu quyền, tên đích đã bị chiếm)
+        // mà vẫn xoá thư mục tạm thì tệp vừa giải nén của người chơi mất luôn, không có đường lấy lại.
+        val moveError = moveOut(context, work, dir, archive.name)
+        if (moveError != null) {
+            return ImportResult(dir, moveError.message ?: "Không chuyển được tệp giải nén ra thư mục game")
+        }
         archive.delete()
-        work.listFiles().orEmpty().forEach { it.renameTo(File(dir, it.name)) }
         work.deleteRecursively()
         return ImportResult(dir)
+    }
+
+    /** Chuyển tệp đã giải nén từ thư mục tạm ra [dir]; dừng ở tệp lỗi đầu tiên và để nguyên phần còn lại trong tạm. */
+    private fun moveOut(context: Context?, work: File, dir: File, archiveName: String): Throwable? {
+        val move = {
+            work.listFiles().orEmpty().forEach { f ->
+                if (!f.renameTo(File(dir, f.name))) throw IOException("Không chuyển được \"${f.name}\" ra thư mục game")
+            }
+        }
+        if (context == null) return runCatching { move() }.exceptionOrNull() // diag: gọi từ nơi không có Context (test/tiện ích)
+        return vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.EXTRACT, archiveName) {
+            step("chuyen-ra-thu-muc-game")
+            move()
+        }.exceptionOrNull()
     }
 
     /** Giải nén zip từ luồng mạng (dùng cho file hệ thống của lõi giả lập). */
