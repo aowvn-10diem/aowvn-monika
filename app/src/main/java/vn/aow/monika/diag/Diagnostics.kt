@@ -229,16 +229,7 @@ object Diagnostics {
 
         val exit = exitInfo(c, s.pid)
         val reason = exit?.let { describeReason(it) }.orEmpty()
-        val kind = when (exit?.reason) {
-            ApplicationExitInfo.REASON_CRASH_NATIVE -> "native"
-            ApplicationExitInfo.REASON_CRASH -> "java"
-            ApplicationExitInfo.REASON_ANR -> "anr"
-            ApplicationExitInfo.REASON_LOW_MEMORY -> "lowmem"
-            ApplicationExitInfo.REASON_USER_REQUESTED, ApplicationExitInfo.REASON_USER_STOPPED -> return null // người dùng vuốt tắt
-            ApplicationExitInfo.REASON_EXIT_SELF -> return null
-            null -> if (s.stage == "first-frame" || s.stage == "playing") "unknown" else "unknown"
-            else -> "killed"
-        }
+        val kind = collectKind(exit?.reason) ?: return null // người dùng vuốt tắt / tự thoát: không báo
         val trace = exit?.let { traceStrings(it) }.orEmpty()
         val whenDied = exit?.timestamp ?: s.lastAlive.takeIf { it > 0 } ?: System.currentTimeMillis()
         val log = logcat(s.pid, nativeDeathAt = whenDied.takeIf { kind == "native" })
@@ -266,6 +257,28 @@ object Diagnostics {
         "first-frame", "playing" -> "khi đang chơi"
         "paused" -> "khi đang ở nền"
         else -> "lúc đang khởi động"
+    }
+
+    /**
+     * Lý do chết Android → `kind` của báo cáo; `null` = người dùng tự thoát nên **không** lập báo cáo.
+     *
+     * Phải trùng nhãn với [collectProcessDeaths] (`kind` trong vòng lặp `ApplicationExitInfo`): trước đây hai lý do
+     * `EXCESSIVE_RESOURCE_USAGE`/`INITIALIZATION_FAILURE` rơi vào `else -> "killed"`, nên cùng một lần chết
+     * của tiến trình `:midlet` mang hai nhãn khác nhau tuỳ đường ghi — `resource` (#302) thành `killed`.
+     * Hàm thuần để kiểm được bằng unit test, không cần `ApplicationExitInfo` thật.
+     */
+    internal fun collectKind(reason: Int?): String? = when (reason) {
+        ApplicationExitInfo.REASON_CRASH_NATIVE -> "native"
+        ApplicationExitInfo.REASON_CRASH -> "java"
+        ApplicationExitInfo.REASON_ANR -> "anr"
+        ApplicationExitInfo.REASON_LOW_MEMORY -> "lowmem"
+        ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE -> "resource"
+        ApplicationExitInfo.REASON_INITIALIZATION_FAILURE -> "initfail"
+        ApplicationExitInfo.REASON_USER_REQUESTED,
+        ApplicationExitInfo.REASON_USER_STOPPED,
+        ApplicationExitInfo.REASON_EXIT_SELF -> null
+        null -> "unknown" // API < 30: không có ApplicationExitInfo, giữ nguyên nhóm cũ
+        else -> "killed"
     }
 
     private fun title(kind: String, s: Session): String {
@@ -728,15 +741,47 @@ object Diagnostics {
 
     // ---------- Gộp trùng, che thông tin riêng, chụp tình trạng máy ----------
 
-    /** Lưu báo cáo mới; nếu cùng dấu vân tay với báo cáo trước (trong 30 báo cáo gần nhất) thì gộp: tăng đếm, giữ bản mới nhất. */
-    private fun record(c: Context, r0: Report): Report {
-        val safe = sanitized(c, enrichDeathReport(r0))
+    /**
+     * Lưu báo cáo mới; nếu cùng dấu vân tay với báo cáo trước (trong 30 báo cáo gần nhất) thì gộp: tăng đếm, giữ bản mới nhất.
+     * `internal` để test gọi thẳng được đường ghi duy nhất này (xem `DeathKindAndSessionCarryTest`).
+     */
+    internal fun record(c: Context, r0: Report): Report {
+        val existing = list(c)
+        val safe = sanitized(c, enrichDeathReport(carrySession(r0, existing.firstOrNull { it.id == r0.id })))
         val fp = fingerprint(safe)
-        val prev = list(c).firstOrNull { it.fingerprint == fp }
+        val prev = existing.firstOrNull { it.fingerprint == fp }
         val r = safe.copy(fingerprint = fp, count = (prev?.count ?: 0) + 1, sent = false, seen = prev?.seen == true && prev.count >= 3)
         prev?.let { File(reportsDir(c), "${it.id}.json").delete() }
         save(c, r)
         return r
+    }
+
+    /** Loại báo cáo do một lần chết tiến trình sinh ra (mọi nguồn: [collect], [collectProcessDeaths], CrashReporter). */
+    private val deathKinds = setOf("native", "java", "anr", "lowmem", "killed", "unknown", "resource", "initfail")
+
+    /**
+     * Một lần chết có thể bị ghi **hai lần với cùng `id`** (id là mốc chết): [collect] đọc phiên nên có lõi, còn
+     * [collectProcessDeaths] đọc `ApplicationExitInfo` thường không có phiên. `save` ghi `<id>.json` nên lần sau
+     * **ghi đè** lần trước và xoá lõi vừa có (đường làm `resource` của `:midlet` thành `unknown` — #302, 261 lượt).
+     * #655 đã chặn đường chính bằng cách bỏ qua mốc đã có báo cáo; hàm này là chốt thứ hai ngay tại điểm ghi:
+     * bản ghi mới **thiếu phiên** thì giữ phiên (và `core`/`system`/`stage`/`thành phần`) của bản trước.
+     * Không bịa phiên mới, không đụng loại báo cáo khác (vd. `op-fail` trùng mili-giây).
+     */
+    internal fun carrySession(next: Report, prev: Report?): Report {
+        if (next.session != null || prev?.session == null) return next
+        if (next.kind !in deathKinds || prev.kind !in deathKinds) return next
+        val s = prev.session
+        val comp = if (next.component.isBlank() || next.component.startsWith("app:")) {
+            prev.component.ifBlank { next.component }
+        } else next.component
+        return next.copy(
+            session = s,
+            core = next.core.ifBlank { s.core },
+            system = next.system.ifBlank { s.system },
+            stage = next.stage.ifBlank { s.stage },
+            component = comp,
+            fromGame = prev.fromGame || next.fromGame,
+        )
     }
 
     /** Cùng loại + cùng thành phần + cùng 3 dòng stack đầu (bỏ số dòng/địa chỉ) → cùng lỗi. */

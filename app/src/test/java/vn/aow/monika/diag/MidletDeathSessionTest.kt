@@ -109,14 +109,16 @@ class MidletDeathSessionTest {
             diedAt, Diagnostics.deathProcessSummary(generation))
 
         val fromCollect = Diagnostics.collect(context)
-        assertEquals("killed", fromCollect?.kind)
+        // #302: cùng một lần chết, `collect()` phải mang nhãn `resource` như `collectProcessDeaths`
+        // (trước đây là `killed`), nếu không lõi và nhóm bị lệch tuỳ đường ghi.
+        assertEquals("resource", fromCollect?.kind)
         assertEquals("midlet", fromCollect?.session?.core)
 
         // Quet lai lich su chet: khong duoc tao bao cao thu hai cung moc (se ghi de ban co phien).
         assertTrue(Diagnostics.collectProcessDeaths(context).none { it.id == diedAt })
 
         val saved = Diagnostics.list(context).single { it.id == diedAt }
-        assertEquals("killed", saved.kind)
+        assertEquals("resource", saved.kind)
         assertEquals("midlet", saved.session?.core)
         assertEquals("J2ME", saved.session?.system)
     }
