@@ -45,6 +45,7 @@
 #include "utils/rect.h"
 #include "errorcodes.h"
 #include "vfs/vfs.h"
+#include "diag.h"
 
 namespace libretrodroid {
 
@@ -499,6 +500,9 @@ void LibretroDroid::destroy() {
 
     LOGD("Performing libretrodroid destroy");
 
+    // Aow Monika: vệt đo cửa sổ unload (không đổi thứ tự gọi của lõi).
+    diag::mark("destroy-enter");
+
     if (Environment::getInstance().getHwContextDestroy() != nullptr) {
         Environment::getInstance().getHwContextDestroy()();
     }
@@ -511,7 +515,13 @@ void LibretroDroid::destroy() {
     // Aow Monika: destroy() có thể tới sau khi lõi đã lỗi/đã gỡ — không được gọi vào con trỏ rỗng.
     if (core) {
         core->retro_unload_game();
+        // Aow Monika: mốc ngay trước/sau retro_deinit() — nếu thread của lõi còn sống
+        // ở "deinit-done" thì dlclose ngay sau đó là vùng nguy hiểm (xem diag.h).
+        diag::mark("deinit-before");
         core->retro_deinit();
+        diag::mark("deinit-done");
+    } else {
+        diag::mark("core-null");
     }
 
     video = nullptr;
