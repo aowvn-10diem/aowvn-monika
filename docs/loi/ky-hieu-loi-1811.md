@@ -10,7 +10,7 @@ Quy ước: suy luận chưa có lệnh chạy kèm thì ghi **[CHƯA KIỂM]**.
 |---|---|---|
 | Lõi tải từ buildbot **không có ký hiệu** | Đã chứng minh bằng công cụ mới, trên ZIP thật | mục 1.1 |
 | App **không biết** máy đang chạy bản lõi nào | Đã chứng minh bằng `tệp:dòng` | mục 1.2 |
-| Công cụ kiểm ký hiệu dùng được, không cần `readelf` | Đạt: 13/13 ca test + 4 tệp thật | mục 2 |
+| Công cụ kiểm ký hiệu dùng được, không cần `readelf` | Đạt: 15/15 ca test + 4 tệp thật | mục 2 |
 | Đóng gói `symbols-<lõi>-<build_id>.zip` + `manifest.json` | **Đề xuất YAML**, chưa áp dụng (đang có PR mở chạm `build-cores.yml`) | mục 3 |
 | Ghim lõi + `sha256` + `version` thật trong config | **Đề xuất**, tệp khoá → PM/Thi công quyết | mục 4 |
 
@@ -61,7 +61,7 @@ Kết luận 1.1: không phải app "không biết giải ký hiệu", mà **kh�
 | `config/monika-config.json:1129-1131` | `"melondsds": { "version": "1", ... latest ... }` | như trên |
 | `config/monika-config.json:958-960` | `"ppsspp": { "version": "cores-ppsspp-1", "url": ".../releases/download/cores-ppsspp-1/ppsspp-{abi}.zip" }` | mẫu đúng: đã ghim |
 | `app/src/main/java/vn/aow/monika/runner/CoreManager.kt:135-140` | `versionFile(id).writeText(def.version)` · `info.txt` = `"cfg v${def.version} · $abi · …KB · tải <ngày> · bản dựng <Last-Modified>"` | chuỗi máy nhận được chỉ là `cfg v1 · arm64-v8a · …` |
-| `app/src/main/java/vn/aow/monika/runner/RetroActivity.kt:326` | `Diagnostics.coreInfo(this@RetroActivity, AppGraph.cores.info(coreId))` | đính nguyên chuỗi trên vào phiên chạy |
+| `app/src/main/java/vn/aow/monika/runner/RetroActivity.kt:326` | `Diagnostics.coreInfo(this@RetroActivity, AppGraph.cores.info(coreId))` (dòng 323 là `Diagnostics.stage(..., "core-download-failed")`, không phải lệnh này) | đính nguyên chuỗi trên vào phiên chạy |
 | `app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:115` | `appendLine("Lõi tải: ${it.coreInfo}")` | chuỗi đó vào thẳng báo cáo gửi lên |
 | `app/src/main/java/vn/aow/monika/config/MonikaConfig.kt:311` | `data class CoreArtifact(val url: String, val sha256: String, val version: String)` | chỗ chứa `sha256` đã có sẵn, chỉ chưa dùng cho 3 lõi này |
 | `app/src/main/java/vn/aow/monika/runner/CoreManager.kt:145-146` | `throw IOException("Ảnh chụp lõi thiếu hash/version")` | app **đã bắt buộc** hash khi đi đường `artifacts` — nên chỉ cần khai báo là dùng được |
@@ -106,10 +106,13 @@ python scripts/kiem-ky-hieu.py core.zip --json        # JSON cho CI
 | 0 | mọi `.so` đều `DAT` |
 | 1 | có ít nhất một `.so` `THIEU_KY_HIEU` (thiếu `build_id` hoặc thiếu `.symtab`) |
 | 2 | sai cách dùng, tệp không đọc được, không phải ELF, ZIP không có `.so` |
+| 3 | **lỗi nội bộ của công cụ** — không phải kết luận về ký hiệu |
+
+Console Windows mặc định (cp437/cp1252) từng làm `print("thiếu")` ném `UnicodeEncodeError` và tiến trình thoát **1**, trùng mã `THIEU_KY_HIEU` — tức một lỗi môi trường bị đọc thành kết luận nghiệp vụ. Từ bản này `main()` gọi `chuan_hoa_console()` (`sys.stdout.reconfigure(encoding="utf-8", errors="replace")`, tương tự cho `stderr`) và mọi lỗi ngoài dự kiến trả **3**. Đã kiểm trên console **cp437, không đặt `chcp 65001`**: bản cũ thoát 1 với stdout 0 byte + `UnicodeEncodeError`; bản mới in đủ bảng, `citra` → `THIEU_KY_HIEU` (1), `easyrpg` → `DAT` (0), thiếu tệp → 2.
 
 Vì sao không dùng `readelf`: `scripts/package-native-symbols.py:12-24` gọi `readelf` ngoài tiến trình — máy Windows của đội không có, nên không kiểm được gói tải về trước khi mở issue. Công cụ mới chạy được ở cả Windows và runner Ubuntu, không thêm phụ thuộc.
 
-### 2.1. Test: `scripts/test-kiem-ky-hieu.py` — 13/13 đạt
+### 2.1. Test: `scripts/test-kiem-ky-hieu.py` — 15/15 đạt
 
 ELF giả lập dựng bằng byte (không tải mạng), mỗi ca chạy đúng dòng lệnh để kiểm cả bảng in ra lẫn mã thoát:
 
@@ -128,10 +131,12 @@ ELF giả lập dựng bằng byte (không tải mạng), mỗi ca chạy đúng
 | 11 | nhiều tệp `.so` cùng lúc | thoát 0, tổng 2 |
 | 12 | đủ 8 cột bảng + `--json` đúng `build_id`/`ket_luan`/`loi` | khớp |
 | 13 | `.zdebug_info` được tính là `debug_info` | `DAT` |
+| 14 | console Windows **cp1252** (`PYTHONIOENCODING=cp1252`, không `chcp`): in tiếng Việt | `DAT`, thoát **0**, không `UnicodeEncodeError` |
+| 15 | lỗi nội bộ (`doc_tep` ném `RuntimeError`) | thoát **3** + `LỖI NỘI BỘ`, **không** phải 1 |
 
 ```
 python scripts/test-kiem-ky-hieu.py
-→ Ran 13 tests … OK   (máy Windows in ResourceWarning của tempfile → chạy thêm `python -W ignore scripts/test-kiem-ky-hieu.py`)
+→ Ran 15 tests … OK   (máy Windows in ResourceWarning của tempfile → chạy thêm `python -W ignore scripts/test-kiem-ky-hieu.py`)
 ```
 
 **Chưa vào CI:** `.github/workflows/script-tests.yml:33-44` liệt kê tên test **thủ công**, nên `test-kiem-ky-hieu.py` chỉ chạy trên máy cho tới khi Thi công thêm một dòng vào danh sách đó — việc này chạm workflow nên để chung đợt với mục 3 (xem mục 3.4 về thứ tự PR).
@@ -142,7 +147,8 @@ python scripts/test-kiem-ky-hieu.py
 
 | Dòng | Nội dung | Vấn đề |
 |---|---|---|
-| `.github/workflows/build-cores.yml:75-84` | chạy `prepare-core-build.py --core … --abi … --out out/core` | đã dựng từ nguồn, đã sinh ký hiệu |
+| `.github/workflows/build-cores.yml:75-84` | chạy `prepare-core-build.py --core … --abi … --out out/core` | đã dựng từ nguồn, đã sinh ký hiệu — **nhưng chỉ cho lõi có mục trong `cores`** |
+| `engines/sources.lock.json:48` | `cores` chỉ có `fceumm`, `gambatte`, `mgba`, `ppsspp` | `melondsds`, `desmume`, `pcsx_rearmed`, `snes9x`, `citra`, `melonds` chỉ nằm ở `inventory.cores` (`:10-34`, danh sách tên) → **phải viết recipe trước** khi dựng (xem `docs/loi/ky-hieu-toan-bo-1811.md` mục 2) |
 | `scripts/prepare-core-build.py:441` | `symbols = stage / f"symbols-{core_id}-{abi}.zip"` | tên gói **theo ABI, không theo `build_id`** → hai bản dựng khác `build_id` trùng tên |
 | `scripts/prepare-core-build.py:295-298` | đọc `Build ID:` bằng `llvm-readelf`, lưu `buildId` vào `provenance.json` | có `build_id` nhưng không đưa vào tên gói/artifact |
 | `.github/workflows/build-cores.yml:85-89` | `upload-artifact` tên `source-build-<core>-<abi>`, `retention-days: 3` | gói symbols chết sau 3 ngày, không có job đăng release, không có `manifest.json` riêng để tra `build_id` ↔ `sha256` |
@@ -289,10 +295,11 @@ Kèm một đề xuất nhỏ cho Thi công (1 dòng, không nằm trong PR này
 |---:|---|---|---|
 | 1 | Gộp #215, #290 | PM | — |
 | 2 | PR YAML mục 3.2/3.3 (thêm output `tag` cho job `plan`) | Thi công | 1, và PM xếp #572 |
-| 3 | Dựng + đăng `cores-{citra,desmume,melondsds}-1` kèm `symbols-…-<build_id>.zip` + `manifest.json` | Thi công | 2 |
-| 4 | Ghim `version`/`sha256` trong config, tăng `configVersion`, ký lại, đồng bộ Cloudflare | PM | 3 |
-| 5 | Chạy `scripts/kiem-ky-hieu.py` trên gói đã đăng trước khi đóng issue native | Trưởng nhóm Lỗi | 3 |
-| 6 | Thêm `test-kiem-ky-hieu.py` vào danh sách `.github/workflows/script-tests.yml:33-44` (thêm 1 dòng) | Thi công | cùng đợt với mục 2 |
+| 3 | Thêm **recipe** cho `melondsds`, `desmume`, `pcsx_rearmed`, `snes9x`, `citra`, `melonds` vào `engines/sources.lock.json` (hiện `cores` chỉ có 4 lõi) | Thi công | PM duyệt commit ghim |
+| 4 | Dựng + đăng `cores-{citra,desmume,melondsds}-1` kèm `symbols-…-<build_id>.zip` + `manifest.json` | Thi công | 2, 3 |
+| 5 | Ghim `version`/`sha256` trong config, tăng `configVersion`, ký lại, đồng bộ Cloudflare | PM | 4 |
+| 6 | Chạy `scripts/kiem-ky-hieu.py` trên gói đã đăng trước khi đóng issue native | Trưởng nhóm Lỗi | 4 |
+| 7 | Thêm `test-kiem-ky-hieu.py` vào danh sách `.github/workflows/script-tests.yml:33-44` (thêm 1 dòng) | Thi công | cùng đợt với mục 2 |
 
 Tiêu chí xong: với một báo cáo `native` bất kỳ của 3 nhóm trên, tìm được đúng `symbols-<lõi>-<build_id>.zip`, `llvm-symbolizer` ra được `tệp.cpp:dòng`, và `scripts/kiem-ky-hieu.py` trên gói đó trả `DAT` (thoát 0).
 

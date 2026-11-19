@@ -74,9 +74,21 @@ Ba nhận xét quyết định:
 
 | # | Việc | Công sức | Phủ | Lõi |
 |---:|---|---|---:|---|
-| 1 | **Ghi `build_id` vào `info.txt`** (`CoreManager.kt:137-140`, ~1 dòng): đọc `manifest.json` trong gói lõi (đã có `buildId`) hoặc ghi sha256 của `.so` | 1 dòng + 1 test | **214** | `ppsspp` (gói symbols đã có sẵn) |
-| 2 | **Dựng + đăng `symbols-*` cho 4 lõi đã có trong `engines/sources.lock.json`** (`melondsds`, `desmume`, `pcsx_rearmed`, `snes9x`) bằng recipe hiện có + bước YAML ở `ky-hieu-loi-1811.md` mục 3.2 | dùng lại recipe, 0 lõi mới | **624** | 4 lõi Đợt 1 của V210 |
-| 3 | **`citra` (111) + `melonds` (4) + thêm `symbols-*` cho `cores-gb-gba-nes-1`** (`mgba` 7, `gambatte` 5, `fceumm` 0) | 2 lõi mới vào lock + dựng lại 1 release | **127** | 5 lõi còn lại |
+| 1 | **Ghi `build_id` vào `info.txt`** (`CoreManager.kt:137-140`, ~1 dòng): đọc `manifest.json` trong gói lõi (đã có `buildId`) hoặc ghi sha256 của `.so` | 1 dòng + 1 test (~1 giờ) | **214** | `ppsspp` (gói symbols đã có sẵn) |
+| 2 | **Viết 4 recipe mới vào `engines/sources.lock.json`** rồi dựng + đăng `symbols-*` cho `melondsds`, `desmume`, `pcsx_rearmed`, `snes9x` | **4 recipe mới** + 4 lần dựng + 1 release — ước lượng **3–4 ngày Thi công** *(ước lượng, chưa đo bằng lần dựng thật)* | **624** | 4 lõi Đợt 1 của V210 |
+| 3 | **2 recipe mới** cho `citra` (111) và `melonds` (4) + dựng lại `cores-gb-gba-nes-1` kèm `symbols-*` (`mgba` 7, `gambatte` 5, `fceumm` 0) | 2 recipe mới + 3 lần dựng + 1 release — ước lượng **2 ngày Thi công** | **127** | 5 lõi còn lại |
+
+**Đính chính so với bản trước của tài liệu này:** việc 2 **không** phải "dùng lại recipe, 0 lõi mới". Tại `5f3a67b6`, `engines/sources.lock.json:48` chỉ có `cores` = `fceumm`, `gambatte`, `mgba`, `ppsspp` — 4 lõi này mới có `repository`/`commit`/`recipe`; `melondsds`, `desmume`, `pcsx_rearmed`, `snes9x`, `citra`, `melonds` chỉ nằm trong `inventory.cores` (`sources.lock.json:10-34`), mà `inventory` chỉ là **danh sách tên**, không có `repository`/`commit`/`recipe`. `scripts/prepare-core-build.py` chỉ dựng được lõi có mục trong `cores`, nên **phải viết recipe trước**:
+
+| Lõi cần thêm recipe | Hệ dựng (theo `inventory` + V210) | Việc phải làm trước khi dựng |
+|---|---|---|
+| `melondsds` | CMake, `arm64-v8a` | `commit` ghim + `submodules` (melonDS/teakra…) + `licenseFiles` GPLv3 + cờ `RelWithDebInfo` |
+| `desmume` | `ndk-build`, 2 ABI | `commit` ghim + `licenseFiles` GPLv2+ |
+| `pcsx_rearmed` | `ndk-build`, 2 ABI | `commit` ghim + `licenseFiles` GPLv2 |
+| `snes9x` | `ndk-build`, 2 ABI | `commit` ghim + `licenseFiles` Snes9x Non-Commercial |
+| `citra`, `melonds` (việc 3) | CMake | như trên, `citra` chỉ `arm64-v8a` |
+
+Việc này thuộc **Thi công** (viết recipe + chạy `prepare-core-build.py` tới khi `ĐẠT`), **PM** duyệt thứ tự và đồng ý commit ghim + `configVersion`; tài liệu này không sửa `sources.lock.json`.
 
 Cộng 214 + 624 + 127 = **965 lượt** — tức phủ 100% số lượt gắn được với lõi libretro, không cần chạm 13 lõi 0 lượt (`fceumm` đã nằm trong việc 3 vì cùng release; 12 lõi 0 lượt còn lại để sau, không cấp bách).
 
@@ -90,6 +102,8 @@ Cộng 214 + 624 + 127 = **965 lượt** — tức phủ 100% số lượt gắn
 | `build_id`/kích thước của 18 lõi buildbot | Chỉ đúng cho bản 18/11, đổi mỗi đêm — dùng để chứng minh "bị strip", không dùng làm giá trị ghim |
 | `easyrpg` còn `.debug_info` (bản chạy 30,4 MB) | Không phải lỗi, nhưng nếu muốn giảm dung lượng tải thì đó là ứng viên strip — ngoài phạm vi tài liệu này |
 | Gói symbols của `cores-gb-gba-nes-1` | Không có trong release (đã kiểm danh sách asset: chỉ có 12 ZIP lõi + `manifest.json`, **không** `symbols-*`, **không** `sources-*`) |
+| Công của việc 2 và 3 (3–4 ngày / 2 ngày) | **Ước lượng**, chưa đo bằng lần dựng thật — 6 lõi đó hiện chưa có recipe trong `sources.lock.json`, nên chưa ai biết thời gian dựng thực tế |
+| `engines/sources.lock.json` | Chỉ 4 lõi có `repository`/`commit`/`recipe` (`fceumm`, `gambatte`, `mgba`, `ppsspp`); 18 lõi còn lại nằm ở `inventory.cores` dạng tên, **không dựng được** cho tới khi có recipe |
 
 ## 4. Chạy lại
 

@@ -8,6 +8,7 @@ Mã thoát:
   0 — mọi `.so` có build_id VÀ có `.symtab` (giải được ký hiệu)
   1 — có `.so` thiếu build_id hoặc thiếu `.symtab` (không chẩn đoán được)
   2 — sai cách dùng / không đọc được tệp / không phải ELF
+  3 — lỗi nội bộ của công cụ (không phải kết luận về ký hiệu)
 
 Dùng:
   python scripts/kiem-ky-hieu.py out/core/*.so
@@ -225,13 +226,21 @@ def in_bang(hang) -> None:
         print(dong(r))
 
 
-def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Kiểm ký hiệu giải lỗi trong .so/.zip lõi native (chỉ thư viện chuẩn).")
-    parser.add_argument("tep", nargs="+", type=Path, help="tệp .so hoặc .zip chứa .so")
-    parser.add_argument("--json", action="store_true", help="in JSON thay cho bảng")
-    args = parser.parse_args(argv)
+def chuan_hoa_console() -> None:
+    """Ép UTF-8 để console Windows mặc định (cp1252/cp437) không làm chết lệnh.
 
+    Không ép thì `print("thiếu")` ném UnicodeEncodeError, tiến trình thoát 1 —
+    trùng mã 1 = THIEU_KY_HIEU nên CI/tay người đọc sẽ hiểu sai kết luận.
+    `errors="replace"` để console lạ vẫn in được thay vì chết.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass  # stdout bị thay bằng đối tượng không hỗ trợ (IDE, pytest capture)
+
+
+def chay(args) -> int:
     hang, loi = [], []
     for path in args.tep:
         try:
@@ -259,6 +268,24 @@ def main(argv=None) -> int:
     if loi or not hang:
         return 2
     return 0 if all(h["ket_luan"] == DAT for h in hang) else 1
+
+
+def main(argv=None) -> int:
+    chuan_hoa_console()
+    parser = argparse.ArgumentParser(
+        description="Kiểm ký hiệu giải lỗi trong .so/.zip lõi native (chỉ thư viện chuẩn).")
+    parser.add_argument("tep", nargs="+", type=Path, help="tệp .so hoặc .zip chứa .so")
+    parser.add_argument("--json", action="store_true", help="in JSON thay cho bảng")
+    args = parser.parse_args(argv)
+    try:
+        return chay(args)
+    except Exception as error:  # noqa: BLE001 — lỗi nội bộ phải khác mã 1
+        import traceback
+
+        traceback.print_exc()
+        print(f"LỖI NỘI BỘ (không phải kết luận ký hiệu): {type(error).__name__}: {error}",
+              file=sys.stderr)
+        return 3
 
 
 if __name__ == "__main__":

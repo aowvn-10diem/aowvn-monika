@@ -6,6 +6,7 @@ Mỗi ca chạy đúng tiến trình dòng lệnh để kiểm cả bảng in ra
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 import struct
@@ -241,6 +242,36 @@ class KiemKyHieuTest(unittest.TestCase):
         self.assertTrue(thong_tin["debug_info"])
         self.assertTrue(thong_tin["symtab"])
         self.assertEqual(module.ket_luan(thong_tin), "DAT")
+
+    def test_console_cp1252_van_in_duoc_tieng_viet(self):
+        """Windows mặc định cp1252: không được chết với mã 1 (trùng THIEU_KY_HIEU)."""
+        path = self.tep("libcp.so", make_elf())
+        lenh = [sys.executable, "-W", "ignore", str(SCRIPT), str(path)]
+        moi_truong = {**os.environ, "PYTHONIOENCODING": "cp1252"}
+        kq = subprocess.run(lenh, capture_output=True, text=True, encoding="utf-8",
+                            env=moi_truong)
+        self.assertEqual(kq.returncode, 0, kq.stdout + kq.stderr)
+        self.assertNotIn("UnicodeEncodeError", kq.stderr)
+        self.assertIn("DAT", kq.stdout)
+        self.assertIn("Tổng: 1 tệp .so", kq.stdout)
+
+    def test_loi_noi_bo_tra_ma_3(self):
+        """Lỗi nội bộ phải khác mã 1, nếu không sẽ bị đọc thành THIEU_KY_HIEU."""
+        goc = module.doc_tep
+
+        def no(*_a, **_k):
+            raise RuntimeError("hỏng giả lập")
+
+        module.doc_tep = no
+        cu_out, cu_err = sys.stdout, sys.stderr
+        sys.stdout, sys.stderr = io.StringIO(), io.StringIO()
+        try:
+            ma = module.main(["--json", "bat-ky.so"])
+            self.assertEqual(ma, 3)
+            self.assertIn("LỖI NỘI BỘ", sys.stderr.getvalue())
+        finally:
+            module.doc_tep = goc
+            sys.stdout, sys.stderr = cu_out, cu_err
 
 
 if __name__ == "__main__":
