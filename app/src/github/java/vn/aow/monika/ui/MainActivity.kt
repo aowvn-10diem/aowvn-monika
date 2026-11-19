@@ -82,6 +82,8 @@ class MainActivity : ComponentActivity() {
         AppGraph.prefs.endSession()
         // Phiên game trước chết bất thường? (lõi native sập, hết RAM, treo…) → tạo báo cáo + hỏi người chơi.
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) { runCatching {
+            // Chặng hiện tại của phiên mức tiến trình, để ANR ở màn chính báo "app-foreground".
+            vn.aow.monika.diag.Diagnostics.processStage(applicationContext, "app-foreground")
             val cr = AppGraph.config.current.crash
             val fresh = listOfNotNull(vn.aow.monika.diag.Diagnostics.collect(applicationContext)) + vn.aow.monika.diag.Diagnostics.collectProcessDeaths(applicationContext)
             fresh.forEach { r -> vn.aow.monika.diag.Diagnostics.autoSend(applicationContext, AppGraph.http, r, cr.endpoint, cr.autoSend, AppGraph.prefs.autoSendCrash) }

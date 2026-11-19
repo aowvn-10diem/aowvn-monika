@@ -1,6 +1,7 @@
 package vn.aow.monika.diag
 
 import android.app.ActivityManager
+import android.app.Application
 import android.app.ApplicationExitInfo
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -140,12 +141,76 @@ object Diagnostics {
     private fun reportsDir(c: Context) = File(dir(c), "reports").apply { mkdirs() }
 
     /** Riêng từng lần khởi động tiến trình; Android lưu cùng ApplicationExitInfo. Không gửi token này. */
-    private val processGeneration = UUID.randomUUID().toString()
+    internal val processGeneration = UUID.randomUUID().toString()
     @Volatile private var startedSession: Long? = null
     @Serializable
     internal data class DeathSnapshot(val session: Session, val generation: String)
     internal fun deathProcessSummary(generation: String): ByteArray =
         "monika-death-context:$generation".toByteArray(Charsets.UTF_8)
+
+    // ---------- Phiên mức tiến trình (ANR không có phiên chơi) ----------
+
+    /**
+     * Nhãn `kind` của phiên mức tiến trình. Không phải phiên chơi: `core` là nhãn tiến trình
+     * (`app`, `midlet`, `game`…) chứ không phải tên lõi giả lập.
+     */
+    internal const val PROCESS_KIND = "app"
+
+    /**
+     * Ghi ngữ cảnh tiến trình **ngay khi app khởi động**, ở mọi tiến trình và mọi API — để ANR xảy ra
+     * trước khi có phiên chơi (MainActivity, `:game` trước `begin`) vẫn có `core`/`stage` thay vì `unknown`.
+     *
+     * Chỉ ghi ảnh chụp chết `diag/sessions/<pid>.json`, **không** đụng `diag/active-session.json`
+     * (đường [collect] đọc tệp đó; ghi vào sẽ sinh báo cáo giả mỗi lần mở app).
+     * Phiên chơi vẫn thắng: [begin] ghi đè ảnh chụp của cùng PID sau đó.
+     *
+     * `Application.getProcessName()` chỉ có từ API 28; máy cũ đọc `/proc/self/cmdline` (có bắt lỗi).
+     */
+    fun startProcess(c: Context) {
+        val label = runCatching {
+            processLabel(
+                sdk = Build.VERSION.SDK_INT,
+                apiName = if (Build.VERSION.SDK_INT >= 28) Application.getProcessName() else null,
+                cmdline = if (Build.VERSION.SDK_INT >= 28) null else readCmdline(),
+                packageName = c.packageName,
+            )
+        }.getOrDefault("app")
+        val now = System.currentTimeMillis()
+        startedSession = now
+        if (Build.VERSION.SDK_INT >= 30) runCatching {
+            c.getSystemService(ActivityManager::class.java).setProcessStateSummary(deathProcessSummary(processGeneration))
+        }
+        writeDeath(c, Session(Process.myPid(), now, PROCESS_KIND, label, "", "", "", "app-start", now, now))
+    }
+
+    /**
+     * Tên tiến trình → nhãn lõi của phiên mức tiến trình. Hàm thuần để kiểm bằng unit test:
+     * tiến trình chính (trùng `packageName`) → `"app"`, tiến trình phụ → phần sau dấu `:` (`midlet`, `game`…).
+     */
+    internal fun processLabel(sdk: Int, apiName: String?, cmdline: String?, packageName: String?): String {
+        val name = (if (sdk >= 28) apiName else cmdline)?.trim().orEmpty()
+        if (name.isEmpty() || name == packageName) return "app"
+        return name.substringAfter(':').ifBlank { "app" }
+    }
+
+    /** API < 28: `/proc/self/cmdline` (argv[0], kết thúc bằng NUL). Đọc lỗi → `null`, không ném. */
+    private fun readCmdline(): String? = runCatching {
+        java.io.FileInputStream("/proc/self/cmdline").use { it.readBytes().toString(Charsets.UTF_8) }
+            .trimEnd('\u0000').trim().ifBlank { null }
+    }.getOrNull()
+
+    /**
+     * Cập nhật chặng hiện tại của phiên mức tiến trình (gọi khi màn chính hiện lên), để ANR báo đúng
+     * "app-foreground" thay vì "app-start". Chỉ sửa khi ảnh chụp đúng là phiên mức tiến trình —
+     * phiên chơi có ưu tiên tuyệt đối, không bị đụng.
+     */
+    fun processStage(c: Context, stage: String) {
+        val f = deathSessionFile(c, Process.myPid())
+        val snapshot = runCatching { json.decodeFromString(DeathSnapshot.serializer(), f.readText()) }.getOrNull() ?: return
+        if (snapshot.session.kind != PROCESS_KIND) return
+        val now = System.currentTimeMillis()
+        writeDeath(c, snapshot.session.copy(stage = stage, stageAt = now, lastAlive = now))
+    }
 
     // ---------- Phiên chơi (chạy trong tiến trình game) ----------
 
@@ -202,16 +267,34 @@ object Diagnostics {
         runCatching {
             val tmp = File(dir(c), "active-session.tmp")
             tmp.writeText(scrubJson(c, json.encodeToJsonElement(Session.serializer(), s)).toString())
-            tmp.renameTo(sessionFile(c))
+            replaceFile(tmp, sessionFile(c))
             // V101: riêng từng PID, không dùng phiên game khác để giải thích chết của main/midlet.
             if (s.pid != Process.myPid() || s.startedAt != startedSession) return@runCatching
+            writeDeath(c, s)
             val target = deathSessionFile(c, s.pid)
-            val snapshot = File(target.parentFile, "${s.pid}.tmp")
-            snapshot.writeText(scrubJson(c, json.encodeToJsonElement(DeathSnapshot.serializer(), DeathSnapshot(s, processGeneration))).toString())
-            snapshot.renameTo(target)
             target.parentFile?.listFiles()?.filter { it.extension == "json" }
                 ?.sortedByDescending { it.lastModified() }?.drop(30)?.forEach { it.delete() }
         }
+    }
+
+    /** Ghi ảnh chụp chết của tiến trình hiện tại kèm token thế hệ; không đụng `active-session.json`. */
+    private fun writeDeath(c: Context, s: Session) {
+        runCatching {
+            val target = deathSessionFile(c, s.pid)
+            val snapshot = File(target.parentFile, "${s.pid}.tmp")
+            snapshot.writeText(scrubJson(c, json.encodeToJsonElement(DeathSnapshot.serializer(), DeathSnapshot(s, processGeneration))).toString())
+            replaceFile(snapshot, target)
+        }
+    }
+
+    /**
+     * Đổi tên đè tệp đích. `File.renameTo` đè được trên Android/Linux nhưng **không** trên Windows
+     * (nơi bộ test chạy) → xoá đích rồi đổi tên lần nữa. Chỉ dùng cho tệp chẩn đoán.
+     */
+    private fun replaceFile(tmp: File, target: File): Boolean {
+        if (tmp.renameTo(target)) return true
+        target.delete()
+        return tmp.renameTo(target)
     }
 
     // ---------- Thu báo cáo (chạy trong tiến trình chính) ----------
@@ -941,8 +1024,12 @@ object Diagnostics {
             val trace = scrub(c, traceStrings(e).joinToString("\n"))
             val crumbs = Breadcrumbs.read(c, e.pid)
             val deathSession = if (readsDeathSession(kind)) readDeathSession(c, e.pid, e.timestamp, e.processStateSummary) else null
+            // V202 chỉ nới luật cho **phiên chơi** (tiến trình `:game`/`:midlet` còn quan trọng dù đang cached).
+            // Phiên mức tiến trình ([PROCESS_KIND]) có mặt ở MỌI tiến trình, kể cả tiến trình chính đang
+            // `IMPORTANCE_CACHED` — nếu tính nó là "có phiên" thì luật V202 mất tác dụng và lowmem nền bị gửi.
+            val playSession = deathSession?.takeIf { it.kind != PROCESS_KIND }
             // V202: bỏ ca Android dọn tiến trình nền bình thường; vẫn dọn trạng thái để không quét lại.
-            if (kind == "lowmem" && !shouldReportLowMem(e.importance, e.processName, deathSession != null)) {
+            if (kind == "lowmem" && !shouldReportLowMem(e.importance, e.processName, playSession != null)) {
                 Breadcrumbs.drop(c, e.pid)
                 clearDeathSession(c, e.pid, e.processStateSummary)
                 continue
@@ -961,7 +1048,10 @@ object Diagnostics {
                 log = if (kind == "native" && Build.VERSION.SDK_INT == 30)
                     logcat(e.pid, nativeDeathAt = e.timestamp).map { scrub(c, it) } else emptyList(),
                 component = comp, env = envLine(c), crumbs = crumbs,
-                session = deathSession, fromGame = deathSession != null,
+                session = deathSession,
+                // Phiên mức tiến trình ([PROCESS_KIND]) chỉ để báo có ngữ cảnh, không phải một lượt chơi
+                // → không mở hộp thoại "game chết" ở màn chính.
+                fromGame = playSession != null,
             ))
             Breadcrumbs.drop(c, e.pid)
             clearDeathSession(c, e.pid, e.processStateSummary)
