@@ -9,7 +9,7 @@ Người lập: phiên con **Trưởng nhóm Lỗi**. Mọi kết luận chưa c
 | | |
 |---|---|
 | Nhóm đang nhắm | `ppsspp/native` — #316 (114 lượt), #372 (90), #520 (1), #478 (1) = **206 lượt**; kèm `ppsspp/unknown` #416 (8) |
-| Lượt này làm gì | **Đo**, không vá: 5 mốc vệt quanh `destroy()` → `retro_deinit` → `dlclose`, mỗi mốc ghi số thread + **tên từng thread** + core + handle + BuildId |
+| Lượt này làm gì | **Đo**, không vá: **6** mốc vệt quanh `dlopen`/`destroy()` → `retro_deinit` → `dlclose`, mỗi mốc ghi số thread + **tên từng thread** + core + handle + BuildId |
 | Vì sao đo được | Vệt ghi vào **file `diag/crumbs/<pid>.log`** (sống sót native crash) **và** logcat tag `MonikaUnload` (`Diagnostics.logcat(pid)` đã lấy vào trường `log` của báo cáo) |
 | Đóng issue | **Không** — chưa có báo cáo nào trên bản có vệt. Cần **một báo cáo mới** (§5) |
 | Đã kiểm | biên dịch `arm64-v8a` + `armeabi-v7a` `exit=0` (§6); `testDebugUnitTest` (§6) |
@@ -47,17 +47,24 @@ API: `diag::setCore(path, handle)` khi `dlopen` xong; `diag::mark("<mốc>")` �
 Mỗi dòng vệt (một dòng, không xuống dòng giữa):
 
 ```
-HH:MM:SS.mmm [unload] deinit-done thr=17 [1234:main,1250:GLThread,...,1310:Emu,...] t=812345 core=libppsspp_libretro.so dl=0x7f0a1c2d30 bid=e865a46584af57b8f08e3d8f7209d39947c86e9b
+HH:MM:SS.mmm [unload] deinit-done core=libppsspp_libretro.so bid=e865a46584af57b8f08e3d8f7209d39947c86e9b dl=0x7f0a1c2d30 t=812345 thr=17 [*1310:Emu,*1312:GPU,1234:main,1250:GLThread,1320:Audio (+6)]
 ```
 
 | Trường | Nguồn | Ghi chú |
 |---|---|---|
-| `thr=N` | đếm mục trong `/proc/self/task` | lỗi mở thư mục ⇒ `thr=?` (không ném) |
-| `[tid:tên,…]` | `/proc/self/task/<tid>/comm`, tối đa **16** thread, tên ≤12 ký tự | đây là phần **quyết định** — xem §4 |
-| `t=<ms>` | `CLOCK_MONOTONIC` | đo độ dài từng đoạn (unload / deinit / dlclose) |
 | `core=` | tên tệp `.so` của lõi (không ghi đường dẫn đầy đủ) | |
-| `dl=` | handle `dlopen` | |
 | `bid=` | GNU BuildId đọc từ note `NT_GNU_BUILD_ID` của `.so` | khớp `build_id` trong tombstone ⇒ biết đúng gói ký hiệu cần tải |
+| `dl=` | handle `dlopen` | |
+| `t=<ms>` | `CLOCK_MONOTONIC` | đo độ dài từng đoạn (unload / deinit / dlclose) |
+| `thr=N` | đếm mục trong `/proc/self/task` | lỗi mở thư mục ⇒ `thr=?` (không ném) |
+| `[tid:tên,…]` | `/proc/self/task/<tid>/comm`; trần **48** thread, tên ≤12 ký tự | `*` = thread sinh **sau** `dlopen-done` (nhóm quyết định — xem §4); `(+N)` = số thread bị cắt khỏi danh sách |
+
+**Thứ tự và độ dài dòng có chủ đích** (`diag.cpp:37`, `:45`, `:239-271`, `:349-395`): `core=` và `bid=` đứng
+**đầu**, trước danh sách thread; dòng tự giới hạn **≤ 290 ký tự** (`kMaxLineChars`), dưới mức `Diagnostics.logcat`
+cắt mỗi dòng logcat còn **300** ký tự (`Diagnostics.kt:380`). Khi danh sách thread dài, phần bị cắt là **đuôi**,
+và thứ tự ưu tiên là: thread `*` (sinh sau `dlopen-done`) → tên đặc trưng của lõi (`Emu`/`GPU`/`Audio`/`Render`,
+`core N`) → còn lại. Vì vậy không bao giờ mất `core=`/`bid=` hay thread của lõi, kể cả khi tiến trình `:game`
+có 40 thread.
 
 Ghi ở 2 nơi, **best-effort**, không ném lỗi:
 
@@ -86,13 +93,14 @@ Ghi ở 2 nơi, **best-effort**, không ném lỗi:
 > chính app (`main`, `GLThread`, thread oboe/audio, `JavaBinder`, `Signal Catcher`, `RenderThread`…). Vì vậy
 > `thr > 1` **không** phân biệt được gì. Vệt vì thế ghi thêm **tên thread**, và mốc gốc `dlopen-done`
 > (trước `retro_init`) cho biết tập thread "không phải của lõi". Quyết định dựa trên **hiệu tập**, không dựa
-> trên con số.
+> trên con số. Thread có dấu `*` là thread sinh **sau** `dlopen-done` — đúng nhóm cần nhìn; `(+N)` chỉ là số
+> thread bị cắt khỏi danh sách (danh sách dài quá ngân sách 48 mục/290 ký tự), **không** phải thread đã chết.
 
 | Dấu hiệu trong vệt | Cách đọc | Kết luận |
 |---|---|---|
 | Có `dlclose-before`, **không** có `dlclose-done` | chết đúng bên trong lời gọi `dlclose` | **Xác nhận chết trong cửa sổ unload.** Nếu thêm thread lạ ở hàng dưới ⇒ đúng giả thuyết §1 |
-| Ở `dlclose-before`/`deinit-done` có thread **không** xuất hiện ở `dlopen-done` (tên kiểu `Emu`, `GPU`, `Audio`, `Render`, `core N`…) | thread sinh ra trong lúc lõi chạy, còn sống sau `retro_deinit` | **Xác nhận giả thuyết**: còn thread lõi khi `dlclose`. Sang bước A/B `dlclose` (thí nghiệm 3, `native-cpp-hien-truong-1811.md` §5) trước khi sửa |
-| Tập thread ở `dlclose-before` **chỉ là** tập ở `dlopen-done` (cộng thread chết đi) | không có thread lõi sống sót | **Loại giả thuyết `dlclose`**; chuyển sang nghi phạm khác: chết trong `retro_run` (lõi/GPU), cấu hình `ppsspp_vertex_cache`, hoặc file game |
+| Ở `dlclose-before`/`deinit-done` có thread **`*`** hoặc tên đặc trưng của lõi (`Emu`, `GPU`, `Audio`, `Render`, `core N`…) | thread sinh ra trong lúc lõi chạy, còn sống sau `retro_deinit` | **Xác nhận giả thuyết**: còn thread lõi khi `dlclose`. Sang bước A/B `dlclose` (thí nghiệm 3, `native-cpp-hien-truong-1811.md` §5) trước khi sửa |
+| Tập thread ở `dlclose-before` **chỉ là** tập ở `dlopen-done` (không có `*`, cộng thread chết đi) | không có thread lõi sống sót | **Loại giả thuyết `dlclose`**; chuyển sang nghi phạm khác: chết trong `retro_run` (lõi/GPU), cấu hình `ppsspp_vertex_cache`, hoặc file game |
 | Có `dlclose-done` nhưng tiến trình chết **< 1 s** sau dòng đó, và tên thread chết **không** có ở `dlopen-done` | thread lõi tỉnh dậy sau khi bị munmap (đang kẹt trong syscall) | Vẫn tính là **xác nhận**; phải so tên thread chết trong tombstone với danh sách ở `dlclose-done` |
 | Chỉ có `thr=N` với `N>1`, không có tên thread lõi | thread của app | **Không** kết luận |
 | Không có dòng `[unload]` nào | bản chưa có vệt, hoặc crumbs bị cắt (>24 KB), hoặc chết trước khi vào `destroy()` | Chưa kết luận — xem mốc cuối cùng có được (`playing` ⇒ chết giữa màn chơi) |
@@ -125,8 +133,8 @@ ninja -C <build>
 
 | ABI | Kết quả | `liblibretrodroid.so` | Ghi chú |
 |---|---|---:|---|
-| `arm64-v8a` | `exit=0`, 136/136 bước | 14.720.408 B | không cảnh báo mới ở `diag.cpp`/`core.cpp`/`libretrodroid.cpp` (chỉ cảnh báo cũ `initializeGLESLogCallbackIfNeeded` của `log.h`) |
-| `armeabi-v7a` | `exit=0`, 136/136 bước | 10.545.392 B | nhánh ELF32 của bộ đọc BuildId biên dịch được |
+| `arm64-v8a` | `exit=0`, 136/136 bước | 14.941.656 B | không cảnh báo ở `diag.cpp`/`core.cpp`/`libretrodroid.cpp` (chỉ cảnh báo cũ `initializeGLESLogCallbackIfNeeded` của `log.h`) |
+| `armeabi-v7a` | `exit=0`, 136/136 bước | 10.716.212 B | nhánh ELF32 của bộ đọc BuildId biên dịch được |
 
 Kiểm BuildId: `llvm-readelf -n liblibretrodroid.so` → `Displaying notes found in: .note.gnu.build-id`,
 `GNU 0x00000014 NT_GNU_BUILD_ID` (desc 20 B) ⇒ đúng định dạng bộ đọc trong `diag.cpp:80-160` mong đợi.
@@ -134,12 +142,13 @@ Dựng lại thuật toán đó bằng một đoạn đọc ELF độc lập (Po
 trên chính tệp vừa dựng: ra `cb9f14894ab06a4128ea252d7732b985f5ec3eab`, **trùng** `llvm-readelf` ⇒ cách đọc
 note đúng (đây là kiểm thuật toán, không phải kiểm mã C++ đã chạy trên máy thật).
 
-`./gradlew testDebugUnitTest --continue` (Windows, `ANDROID_HOME` trỏ SDK của máy; `BUILD FAILED` sau 6m10s):
+`./gradlew testDebugUnitTest --continue` (Windows, `ANDROID_HOME` trỏ SDK của máy; `BUILD FAILED` sau 5m56s):
 
 | Bộ test | Kết quả | Ghi chú |
 |---|---|---|
-| `:app:testGithubDebugUnitTest` | **1306 test, 19 hỏng, 3 bỏ qua** | đúng bộ hỏng môi trường Windows đã biết |
+| `:app:testGithubDebugUnitTest` | **1309 test, 19 hỏng, 3 bỏ qua** | 1306 test cũ + 3 test mới của `UnloadLineTest`; 19 ca hỏng đúng bộ môi trường Windows đã biết |
 | `:app:testPlayDebugUnitTest` | **28 test, 1 hỏng** | `PlayAskGroupTest > configuredGroupReceivesReadableImageAndQuestionThroughChooser` — ca đã biết |
+| `UnloadLineTest` (mới) | **3/3 đạt, 0 bỏ qua** | chạy riêng `--tests "vn.aow.monika.diag.UnloadLineTest"` cũng `BUILD SUCCESSFUL` |
 | các module khác (`libretrodroid`, `j2me`, `reader`, …) | không hỏng | |
 
 19 ca hỏng của `github` đều do môi trường, không liên quan mã: `FileSystemException` trên thư mục tạm
@@ -149,15 +158,22 @@ property app` của Robolectric (`RarTest` ×6), `IOException: Không lưu đư�
 Windows (`CorePreparationCacheTest` ×2), và `DeathContextTest` (thứ tự stage `start` thay `core-ready` trên
 Windows).
 
-**Không có ca hỏng mới**: PR này **không sửa tệp nào dưới `app/src/**`** (chỉ `libretrodroid/src/main/cpp/**`
-+ `docs/loi/**`), nên không thể đổi kết quả test JVM; danh sách hỏng trùng đúng bộ đã biết.
+**Không có ca hỏng mới**: lượt này chỉ **thêm** một test JVM (`UnloadLineTest`) và sửa mã native; không sửa
+mã sản phẩm Kotlin/Java nào (`app/src/main/**` không đổi), nên 19 ca hỏng giữ nguyên đúng danh sách cũ.
+
+`UnloadLineTest` gồm 3 ca: (1) đọc `diag.cpp` để khoá hằng số `kMaxThreads = 48`, `kMaxLineChars = 290` và
+thứ tự `core=`/`bid=` trước `t=`; (2) dòng 40 thread (thread lõi ở cuối dãy tid) vẫn giữ `core=`, `bid=`,
+`*…:Emu`, `*…:GPU` và có `(+N)`; (3) dòng dài quá 300 ký tự sau khi bị `take(300)` vẫn còn `core=`/`bid=`.
 
 **[CHƯA KIỂM]**: chạy trong game thật, sự có mặt của dòng `[unload]` trong báo cáo thật, và hành vi khi
 `filesDir` không suy được (chỉ còn logcat).
 
 ## 7. Việc không làm trong lượt này
 
-- Không sửa `diag/Diagnostics.kt` (PR #683 đang mở), không sửa `GLRetroView.kt` / `RetroActivity.kt`.
+- Không sửa `diag/Diagnostics.kt` (PR #683 đang mở trên chính tệp đó): chỗ cắt 300 ký tự
+  (`Diagnostics.kt:380`) được xử lý **từ phía native** — đặt `core=`/`bid=` lên đầu dòng và tự giới hạn
+  290 ký tự, nên dòng bị cắt không bao giờ mất trường quyết định.
+- Không sửa `GLRetroView.kt` / `RetroActivity.kt`.
 - Không sửa `config/`, không đổi `configVersion`, không đụng tệp khoá/chữ ký.
 - Không bỏ `dlclose`, không thêm join/sleep, không đổi thứ tự gọi.
 - Không đóng issue, không hứa bản sửa.

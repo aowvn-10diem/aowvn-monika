@@ -13,6 +13,7 @@
 #include <cstring>
 #include <ctime>
 #include <mutex>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -30,12 +31,18 @@ namespace {
 
 const char* const kTag = "MonikaUnload";
 
-// Đủ để thấy thread của lõi (ppsspp: "Emu", "GPU", "Audio"; desmume: "core N")
-// mà dòng vệt vẫn ngắn.
-constexpr size_t kMaxThreads = 16;
+// Trần danh sách thread: tiến trình :game có thể có 30–40 thread (main, GLThread,
+// oboe, JavaBinder, RenderThread, GPU…), nên phải đủ chỗ cho ~48. Phần vượt trần
+// (nếu có) được ghi thành "(+N)" và thread của lõi luôn được ưu tiên (xem diag::mark).
+constexpr size_t kMaxThreads = 48;
 constexpr size_t kMaxThreadName = 12;
 constexpr size_t kMaxBuildIdDesc = 64;
 constexpr size_t kMaxNotes = 65536;
+
+// Ngân sách một dòng vệt. Diagnostics.logcat cắt mỗi dòng logcat còn 300 ký tự
+// (app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:380), nên tự cắt ở 290 ký tự
+// để phần bị cắt không bao giờ là core=/bid= (đặt ở đầu dòng) hay tên thread lõi.
+constexpr size_t kMaxLineChars = 290;
 
 std::mutex g_lock;
 std::string g_corePath;
@@ -46,6 +53,10 @@ void* g_handle = nullptr;
 bool g_dirResolved = false;
 std::string g_crumbDir;
 bool g_missingDirLogged = false;
+
+// Tập tid lúc dlopen-done (trước retro_init) = mốc gốc "thread không phải của lõi".
+std::set<std::string> g_baselineTids;
+bool g_captureBaseline = false;
 
 uint16_t le16(const unsigned char* p) { return (uint16_t) (p[0] | (p[1] << 8)); }
 
@@ -155,16 +166,21 @@ std::string readBuildId(const std::string& path) {
     return "";
 }
 
-/**
- * Đếm thread còn sống của tiến trình và lấy tên từng thread.
- * Lỗi mở thư mục ⇒ count = -1 (ghi "thr=?"), không ném.
- */
-std::string threadSummary(int* count) {
-    *count = -1;
-    DIR* dir = opendir("/proc/self/task");
-    if (dir == nullptr) return "thr=? ";
+struct ThreadInfo {
+    std::string tid;
+    std::string name;
+    bool isNew = false;
+};
 
-    std::vector<std::string> items;
+/**
+ * Đọc thread còn sống của tiến trình: tid + tên (/proc/self/task/<tid>/comm).
+ * Trả false khi không mở được thư mục (ghi "thr=?"), không ném.
+ */
+bool collectThreads(std::vector<ThreadInfo>* out) {
+    out->clear();
+    DIR* dir = opendir("/proc/self/task");
+    if (dir == nullptr) return false;
+
     errno = 0;
     while (struct dirent* entry = readdir(dir)) {
         if (entry->d_name[0] == '.') continue;
@@ -186,22 +202,71 @@ std::string threadSummary(int* count) {
         for (size_t i = 0; i < name.size(); ++i) {
             if (name[i] == ' ' || name[i] == ',' || name[i] == '[' || name[i] == ']') name[i] = '_';
         }
-        items.push_back(std::string(entry->d_name) + ":" + name);
+
+        ThreadInfo info;
+        info.tid = entry->d_name;
+        info.name = name;
+        out->push_back(info);
     }
     int readErr = errno;
     closedir(dir);
 
-    if (items.empty() && readErr != 0) return "thr=? ";
-    *count = (int) items.size();
+    return !(out->empty() && readErr != 0);
+}
 
-    std::sort(items.begin(), items.end());
-    std::string out = "thr=" + std::to_string(*count) + " [";
-    for (size_t i = 0; i < items.size() && i < kMaxThreads; ++i) {
-        if (i != 0) out.push_back(',');
-        out += items[i];
+/**
+ * Tên thread đặc trưng của lõi libretro: ppsspp dùng "Emu"/"GPU"/"Audio"/"Render",
+ * DeSmuME và vài lõi khác dùng "core N". So khớp CHÍNH XÁC để không nhận nhầm
+ * thread của app ("GLThread", "RenderThread", "AudioTrack", "AudioRecord"…).
+ */
+bool looksLikeCoreThread(const std::string& name) {
+    static const char* const kExact[] = { "Emu", "GPU", "Audio", "Render", "PPSSPP", "video", "Video" };
+    for (const char* candidate : kExact) {
+        if (name == candidate) return true;
     }
-    if (items.size() > kMaxThreads) out += ",...";
-    out += "] ";
+    return name.rfind("core", 0) == 0 || name.rfind("Core", 0) == 0;
+}
+
+/**
+ * Dựng phần "thr=N [...]" của dòng vệt, tôn trọng ngân sách [budget] ký tự.
+ *
+ * Thứ tự ưu tiên (mất phần đuôi trước, không bao giờ mất phần đầu):
+ *   0. thread sinh SAU dlopen-done — nhóm quyết định của bảng §4.2 (đánh dấu '*');
+ *   1. tên đặc trưng của lõi (lưới an toàn khi mốc gốc không chụp được);
+ *   2. phần còn lại.
+ * Phần bị cắt ghi rõ "(+N)".
+ */
+std::string threadField(std::vector<ThreadInfo>& threads, size_t budget) {
+    const size_t total = threads.size();
+    std::string out = "thr=" + std::to_string(total);
+    if (total == 0) return out + " []";
+
+    std::sort(threads.begin(), threads.end(), [](const ThreadInfo& a, const ThreadInfo& b) {
+        int pa = a.isNew ? 0 : (looksLikeCoreThread(a.name) ? 1 : 2);
+        int pb = b.isNew ? 0 : (looksLikeCoreThread(b.name) ? 1 : 2);
+        if (pa != pb) return pa < pb;
+        if (a.tid.size() != b.tid.size()) return a.tid.size() < b.tid.size();
+        return a.tid < b.tid;
+    });
+
+    // Không đủ chỗ cho cả danh sách: chỉ giữ con số + số bị cắt.
+    if (budget < 16) return out + " (+" + std::to_string(total) + ")";
+
+    out += " [";
+    size_t used = out.size();
+    size_t included = 0;
+    for (size_t i = 0; i < total && included < kMaxThreads; ++i) {
+        std::string item = (threads[i].isNew ? "*" : "") + threads[i].tid + ":" + threads[i].name;
+        size_t reserve = (i + 1 < total) ? 10 : 0;              // " (+12345)]"
+        size_t extra = (included > 0 ? 1 : 0) + item.size();
+        if (used + extra + reserve > budget) break;
+        if (included > 0) out.push_back(',');
+        out += item;
+        used += extra;
+        ++included;
+    }
+    if (included < total) out += " (+" + std::to_string(total - included) + ")";
+    out += ']';
     return out;
 }
 
@@ -276,13 +341,25 @@ void setCore(const std::string& soCorePath, void* handle) {
     g_coreName = baseName(soCorePath);
     g_handle = handle;
     g_buildId = soCorePath.empty() ? "" : readBuildId(soCorePath);
+    // Mốc kế tiếp (dlopen-done) chụp tập thread trước khi lõi chạy retro_init.
+    g_baselineTids.clear();
+    g_captureBaseline = true;
 }
 
 void mark(const char* stage) {
     if (stage == nullptr) return;
 
-    int threads = -1;
-    std::string thr = threadSummary(&threads);
+    std::lock_guard<std::mutex> lock(g_lock);
+
+    std::vector<ThreadInfo> threads;
+    bool threadsOk = collectThreads(&threads);
+
+    if (g_captureBaseline) {
+        for (const ThreadInfo& thread : threads) g_baselineTids.insert(thread.tid);
+        g_captureBaseline = false;
+    } else if (!g_baselineTids.empty()) {
+        for (ThreadInfo& thread : threads) thread.isNew = g_baselineTids.count(thread.tid) == 0;
+    }
 
     struct timeval tv;
     gettimeofday(&tv, nullptr);
@@ -297,21 +374,22 @@ void mark(const char* stage) {
     clock_gettime(CLOCK_MONOTONIC, &mono);
     long long monoMs = (long long) mono.tv_sec * 1000 + mono.tv_nsec / 1000000;
 
-    std::lock_guard<std::mutex> lock(g_lock);
-
-    char tail[192];
-    snprintf(tail, sizeof tail, "t=%lld core=%s dl=%p bid=%s",
-             monoMs,
+    // core= và bid= đứng đầu dòng: nếu báo cáo cắt dòng (logcat 300 ký tự) thì
+    // hai trường quyết định vẫn còn, chỉ danh sách thread bị cắt bớt.
+    char head[256];
+    snprintf(head, sizeof head, "%s [unload] %s core=%s bid=%s dl=%p t=%lld ",
+             stamp,
+             stage,
              g_coreName.empty() ? "-" : g_coreName.c_str(),
+             g_buildId.empty() ? "-" : g_buildId.c_str(),
              g_handle,
-             g_buildId.empty() ? "-" : g_buildId.c_str());
+             monoMs);
 
-    std::string line(stamp);
-    line += " [unload] ";
-    line += stage;
-    line += ' ';
-    line += thr;
-    line += tail;
+    size_t headLen = strlen(head);
+    size_t budget = (headLen + 1 < kMaxLineChars) ? kMaxLineChars - headLen - 1 : 0;
+
+    std::string line(head);
+    line += threadsOk ? threadField(threads, budget) : "thr=? ";
 
     // 1) logcat: Diagnostics.logcat(pid) lấy vào trường log của báo cáo.
     __android_log_print(ANDROID_LOG_INFO, kTag, "%s", line.c_str());

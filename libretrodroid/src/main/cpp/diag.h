@@ -23,8 +23,12 @@ namespace diag {
 void setCore(const std::string& soCorePath, void* handle);
 
 /**
- * Ghi một mốc: giờ, số thread còn sống của tiến trình (/proc/self/task),
- * tên thread, core, handle, BuildId, đồng hồ monotonic.
+ * Ghi một mốc: giờ, tên lõi, BuildId, handle, đồng hồ monotonic, số thread còn sống
+ * của tiến trình (/proc/self/task) và danh sách tên thread.
+ *
+ * Dòng vệt: `HH:MM:SS.mmm [unload] <mốc> core=<.so> bid=<hex> dl=<handle> t=<ms>
+ * thr=N [tid:tên,…(+N)]`. `core=`/`bid=` đứng đầu để không bị cắt mất khi báo cáo
+ * cắt dòng; thread sinh sau `dlopen-done` đánh dấu '*' và được xếp trước.
  * Không chặn, không ném, không đổi luồng.
  */
 void mark(const char* stage);
