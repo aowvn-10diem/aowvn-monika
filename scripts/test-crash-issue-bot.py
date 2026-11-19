@@ -316,7 +316,7 @@ class BotTest(unittest.TestCase):
         self.assertIn("Bản app: `0.8.14 (814)`", body)
         self.assertIn("Chứng thư: `c46902e97029/…`", body)
         self.assertIn("Chính thức: có", body)
-        self.assertIn("Lần đầu / lần cuối: 12/03/2026", body)
+        self.assertIn("Lần đầu / lần cuối (UTC): 12/03/2026", body)
         # Dòng đếm và phạm vi cũ giữ nguyên.
         self.assertIn("Số lần quan sát đã thông báo: 1 (+1). Phụ trách: Sol.", body)
         self.assertIn("Phạm vi: tối đa 100 bản ghi", body)
@@ -335,13 +335,41 @@ class BotTest(unittest.TestCase):
         body = bot.plan(rows, [], OWNERS)[0]["body"]
         self.assertIn("Chứng thư: `aaaaaaaaaaaa/…` (+1 chứng thư khác)", body)
         self.assertIn("Chính thức: không", body)
-        self.assertIn("Lần đầu / lần cuối: 12/03/2026 / 14/03/2026", body)
+        self.assertIn("Lần đầu / lần cuối (UTC): 12/03/2026 / 14/03/2026", body)
 
     def test_missing_certificate_is_unknown_never_official(self):
         body = bot.plan([record(1, app="0.8.14 (814) debug")], [], OWNERS)[0]["body"]
         self.assertIn("Chính thức: không rõ (báo cáo không kèm chứng thư)", body)
         self.assertNotIn("Chính thức: có", body)
         self.assertNotIn("Chứng thư:", body)
+
+    def test_official_plus_report_without_cert_is_never_official(self):
+        # Nhóm có 1 bản ghi đúng chứng thư phát hành + 1 bản ghi THIẾU chứng thư ⇒ không được coi là "có".
+        rows = [record(1, app="0.8.14 (814) release", cert=OFFICIAL, time=1773273600000),
+                record(2, app="0.8.14 (814) release", time=1773446400000)]
+        body = bot.plan(rows, [], OWNERS)[0]["body"]
+        self.assertIn("Chứng thư: `c46902e97029/…` · Chính thức: không", body)
+        self.assertNotIn("Chính thức: có", body)
+        self.assertIn("(1/2 bản ghi có chứng thư)", body)
+        # Cùng chứng thư nhưng chỉ 1 bản ghi thiếu ⇒ vẫn "không", không phải "có".
+        self.assertEqual(bot.describe([(1, "0.8.14 (814)", OFFICIAL)]),
+                         ["Bản app: `0.8.14 (814)`", "Chứng thư: `c46902e97029/…` · Chính thức: có"])
+        self.assertEqual(bot.describe([(1, "", OFFICIAL), (2, "", "")])[0],
+                         "Chứng thư: `c46902e97029/…` · Chính thức: không (1/2 bản ghi có chứng thư)")
+
+    def test_junk_timestamps_never_raise_and_keep_app_and_cert(self):
+        for junk in (None, "1773446400000", 1.5, True, [1773446400000], {"t": 1}):
+            with self.subTest(junk=junk):
+                rows = [record(1, app="0.8.14 (814) release", cert=OFFICIAL, time=junk),
+                        record(2, app="0.8.14 (814) release", cert=OFFICIAL, time=1773273600000)]
+                body = bot.plan(rows, [], OWNERS)[0]["body"]
+                self.assertIn("Lần đầu / lần cuối (UTC): 12/03/2026", body)
+                self.assertIn("Chứng thư: `c46902e97029/…` · Chính thức: có", body)
+                self.assertIn("Bản app: `0.8.14 (814)`", body)
+        # Toàn mốc rác: chỉ bỏ dòng ngày, không ném TypeError.
+        body = bot.plan([record(1, app="0.8.14 (814) release", cert=OFFICIAL, time="x")], [], OWNERS)[0]["body"]
+        self.assertNotIn("Lần đầu", body)
+        self.assertIn("Chứng thư: `c46902e97029/…` · Chính thức: có", body)
 
     def test_newest_app_version_wins_and_older_versions_are_counted(self):
         rows = [record(1, app="0.8.13 (813) release", time=1773273600000),
@@ -353,10 +381,10 @@ class BotTest(unittest.TestCase):
 
     def test_window_dates_span_first_and_last_observation_and_drop_junk(self):
         rows = [record(1, time=1773446400000), record(2, time=1773273600000)]
-        self.assertIn("Lần đầu / lần cuối: 12/03/2026 / 14/03/2026",
+        self.assertIn("Lần đầu / lần cuối (UTC): 12/03/2026 / 14/03/2026",
                       bot.plan(rows, [], OWNERS)[0]["body"])
         same = [record(1, time=1773273600000), record(2, time=1773273600000)]
-        self.assertIn("Lần đầu / lần cuối: 12/03/2026\n", bot.plan(same, [], OWNERS)[0]["body"])
+        self.assertIn("Lần đầu / lần cuối (UTC): 12/03/2026\n", bot.plan(same, [], OWNERS)[0]["body"])
         for junk in ("", "12/03/2026", 0, -1, 4102444800001, None, 1.5, True):
             with self.subTest(junk=junk):
                 self.assertNotIn("Lần đầu", bot.plan([record(1, time=junk)], [], OWNERS)[0]["body"])
@@ -379,6 +407,51 @@ class BotTest(unittest.TestCase):
         previous = issue(bot.plan([detailed], [], OWNERS)[0])
         self.assertEqual(bot.plan([detailed], [previous], OWNERS), [])
         self.assertEqual(bot.plan([detailed], [], OWNERS)[0]["number"], None)
+
+    # ---- V206: --rewrite-body lấp thân cho issue cũ (74 issue đang thiếu dữ liệu dọn) ----
+
+    @staticmethod
+    def _legacy_body(row, note="Human note"):
+        """Thân kiểu V100: cùng marker/chữ ký nhưng chưa có ba dòng dọn."""
+        body = bot.plan([row], [], OWNERS)[0]["body"]
+        stripped = "\n".join(line for line in body.splitlines()
+                             if not line.startswith(("Bản app:", "Chứng thư:", "Lần đầu")))
+        return stripped + "\n" + note
+
+    def test_rewrite_body_fills_old_issue_without_new_issue_or_signature_change(self):
+        detailed = record(1, app="0.8.14 (814) release", cert=OFFICIAL, time=1773273600000)
+        legacy = {"number": 20, "state": "closed", "body": self._legacy_body(detailed)}
+        self.assertNotIn("Bản app:", legacy["body"])
+        # Mặc định: không có lượt mới ⇒ không ghi (giữ nguyên hành vi cũ).
+        self.assertEqual(bot.plan([detailed], [legacy], OWNERS), [])
+        updated = bot.plan([detailed], [legacy], OWNERS, rewrite=True)[0]
+        self.assertEqual(updated["number"], 20)  # PATCH thân issue cũ
+        self.assertIn("Bản app: `0.8.14 (814)`", updated["body"])
+        self.assertIn("Chính thức: có", updated["body"])
+        self.assertIn("Lần đầu / lần cuối (UTC): 12/03/2026", updated["body"])
+        self.assertTrue(updated["body"].endswith("Human note"))
+        self.assertEqual(bot.read_state(updated)["signature"], bot.read_state(legacy)["signature"])
+        self.assertEqual(bot.read_state(updated)["count"], bot.read_state(legacy)["count"])
+        # Lượt thứ hai: thân đã đúng ⇒ không tốn lượt ghi.
+        self.assertEqual(bot.plan([detailed], [dict(legacy, body=updated["body"])], OWNERS, rewrite=True), [])
+        # Không có issue cũ ⇒ --rewrite-body không tạo issue mới.
+        self.assertEqual(bot.plan([detailed], [], OWNERS, rewrite=True), [])
+
+    def test_rewrite_body_still_respects_mutation_budget(self):
+        rows, legacy = [], []
+        for i in range(bot.MAX_WRITES + 1):
+            row = record(i, core=f"core{i}", app="0.8.14 (814) release", cert=OFFICIAL)
+            legacy.append({"number": 100 + i, "state": "open", "body": self._legacy_body(row)})
+            rows.append(row)
+        with self.assertRaises(ValueError):
+            bot.plan(rows, legacy, OWNERS, rewrite=True)
+
+    def test_official_cert_matches_published_config(self):
+        # Chỉ ĐỌC config (nguồn chuẩn `security.officialCertSha256`), không sửa — chặn lệch giữa bot và config.
+        path = pathlib.Path(__file__).resolve().parents[1] / "config" / "monika-config.json"
+        config = json.loads(path.read_text(encoding="utf-8-sig"))
+        self.assertEqual(bot.OFFICIAL_CERT, config["security"]["officialCertSha256"])
+        self.assertRegex(bot.OFFICIAL_CERT, r"^[0-9a-f]{64}$")
 
 
 if __name__ == "__main__": unittest.main()

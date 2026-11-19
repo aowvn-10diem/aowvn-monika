@@ -4,9 +4,12 @@
 Only safe core/kind/signature/counts leave this process. Never copy a report to GitHub.
 
 V206: thân issue tự đủ để dọn issue mà không cần `CRASH_ADMIN_TOKEN`:
-`Bản app`, `Chứng thư` (12 hex đầu + cờ `Chính thức`), `Lần đầu / lần cuối`.
+`Bản app`, `Chứng thư` (12 hex đầu + cờ `Chính thức`), `Lần đầu / lần cuối` (UTC).
 Ba dòng này chỉ dùng trường Worker đã trả sẵn trong `/reports/<id>` (`app`, `certSha256`, `time`);
 không thêm tầng dữ liệu, không đổi chữ ký nhóm, không in chứng thư đầy đủ, URL, tên game hay thiết bị.
+`--rewrite-body` ghi lại thân các issue **cũ** (ví dụ 74 issue đang thiếu ba dòng trên) mà không tạo
+issue mới; vẫn đi qua `plan()` và ngân sách `MAX_WRITES`, chạy lặp tới khi hết issue cần lấp. Chỉ lấp được
+issue còn chữ ký trong cửa sổ 100 bản ghi Worker trả về — issue đã rơi khỏi cửa sổ thì không có dữ liệu để ghi.
 """
 import argparse
 import datetime
@@ -42,11 +45,11 @@ def component(value):
     return value if isinstance(value, str) and COMPONENT_RE.fullmatch(value) else ""
 
 
-# Chứng thư ký APK phát hành — khớp `MonikaConfig.OFFICIAL_CERT_SHA256`
-# (`app/src/main/java/vn/aow/monika/config/MonikaConfig.kt:182`), `officialCertSha256` trong
-# `config/monika-config.json` và `scripts/verify-apk-cert.py`. Chỉ in 12 hex đầu.
+# Chứng thư ký APK phát hành — một nguồn duy nhất trong bot, khớp
+# `officialCertSha256` trong `config/monika-config.json` (nguồn chuẩn; test chặn lệch),
+# `MonikaConfig.OFFICIAL_CERT_SHA256` (`app/src/main/java/vn/aow/monika/config/MonikaConfig.kt:182`)
+# và `scripts/verify-apk-cert.py`. Chỉ in 12 hex đầu khi hiển thị.
 OFFICIAL_CERT = "c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c"
-OFFICIAL_PREFIX = OFFICIAL_CERT[:12]
 # `Diagnostics.appLine()` = "<versionName> (<versionCode>) release|debug" → chỉ nhận đúng dạng này.
 APP_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]{0,31} \(\d{1,9}\)(?: (?:release|debug))?")
 CERT_RE = re.compile(r"[0-9a-f]{64}")
@@ -57,9 +60,9 @@ def app_label(value):
     return re.sub(r" (?:release|debug)$", "", value) if isinstance(value, str) and APP_RE.fullmatch(value) else ""
 
 
-def cert_prefix(value):
-    """SHA-256 (64 hex) → 12 hex đầu; thiếu hoặc sai dạng → "". Không bao giờ trả chứng thư đầy đủ."""
-    return value[:12] if isinstance(value, str) and CERT_RE.fullmatch(value) else ""
+def cert_hash(value):
+    """SHA-256 (64 hex thường) hoặc "" — **giữ đủ 64 hex** để quyết "chính thức"; chỉ cắt 12 hex lúc hiển thị."""
+    return value if isinstance(value, str) and CERT_RE.fullmatch(value) else ""
 
 
 def day(value):
@@ -69,30 +72,43 @@ def day(value):
     return datetime.datetime.fromtimestamp(value / 1000, datetime.timezone.utc).strftime("%d/%m/%Y")
 
 
+def newest(view):
+    """Mốc thời gian để chọn bản mới nhất; mốc rác (None/str/float) coi là cũ nhất, không ném TypeError."""
+    return view[0] if type(view[0]) is int else -1
+
+
 def describe(views):
     """Ba dòng dữ liệu dọn issue cho một chữ ký; dòng nào thiếu dữ liệu thì bỏ dòng đó.
 
-    `views` = [(time, app_label, cert_prefix)] của các bản ghi cùng chữ ký trong cửa sổ Worker.
+    `views` = [(time, nhãn bản app, chứng thư 64 hex hoặc "")] của các bản ghi cùng chữ ký trong cửa sổ.
+    `Chính thức: có` **chỉ khi mọi bản ghi** (kể cả bản ghi thiếu chứng thư) mang đúng `OFFICIAL_CERT`,
+    so đủ 64 hex; chỉ cắt 12 hex khi in.
     """
     lines = []
-    app = max((v for v in views if v[1]), default=None, key=lambda v: v[0])
+    app = max((v for v in views if v[1]), default=None, key=newest)
     if app:
         others = len({v[1] for v in views if v[1]}) - 1
         lines.append(f"Bản app: `{app[1]}`" + (f" (+{others} bản khác)" if others else ""))
-    certs = {v[2] for v in views if v[2]}
-    if certs:
-        shown = max((v for v in views if v[2]), key=lambda v: v[0])[2]
-        official = "có" if certs == {OFFICIAL_PREFIX} else "không"
-        others = len(certs) - 1
-        lines.append(f"Chứng thư: `{shown}/…`" + (f" (+{others} chứng thư khác)" if others else "")
-                     + f" · Chính thức: {official}")
-    else:
+    if not any(v[2] for v in views):
         # App cũ không gửi `certSha256`: thiếu bằng chứng thì ghi rõ, không đoán "có".
         lines.append("Chính thức: không rõ (báo cáo không kèm chứng thư)")
+    else:
+        shown = max((v for v in views if v[2]), key=newest)[2][:12]
+        official = "có" if all(v[2] == OFFICIAL_CERT for v in views) else "không"
+        certs = {v[2] for v in views if v[2]}
+        others = len(certs) - 1
+        line = (f"Chứng thư: `{shown}/…`" + (f" (+{others} chứng thư khác)" if others else "")
+                + f" · Chính thức: {official}")
+        if official == "không":
+            known = sum(1 for v in views if v[2])
+            if known < len(views):
+                # Nói rõ vì sao "không": có bản ghi không kèm chứng thư thì không thể coi là chính thức.
+                line += f" ({known}/{len(views)} bản ghi có chứng thư)"
+        lines.append(line)
     times = sorted(v[0] for v in views if day(v[0]))
     if times:
         first, last = day(times[0]), day(times[-1])
-        lines.append(f"Lần đầu / lần cuối: {first}" + ("" if first == last else f" / {last}"))
+        lines.append(f"Lần đầu / lần cuối (UTC): {first}" + ("" if first == last else f" / {last}"))
     return lines
 
 
@@ -139,8 +155,8 @@ def group_reports(records):
             raise ValueError("invalid report count")
         group = groups.setdefault(signature, {"signature": signature, "core": core, "kind": kind, "seen": {}, "components": set(), "views": []})
         group["seen"][digest(row["id"])[:32]] = count
-        # Chỉ số liệu an toàn để dọn issue: bản app, 12 hex đầu chứng thư, mốc thời gian.
-        group["views"].append((report.get("time"), app_label(report.get("app")), cert_prefix(report.get("certSha256"))))
+        # Chỉ số liệu an toàn để dọn issue: bản app, chứng thư (đủ 64 hex để so), mốc thời gian.
+        group["views"].append((report.get("time"), app_label(report.get("app")), cert_hash(report.get("certSha256"))))
         label = component(report.get("component", ""))
         if label:
             group["components"].add(label)
@@ -165,7 +181,7 @@ def read_state(issue):
     return state
 
 
-def plan(records, issues, owners):
+def plan(records, issues, owners, rewrite=False):
     for role in ("Sol", "Sonnet"):
         if not re.fullmatch(r"[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,38})", owners.get(role, "")):
             raise ValueError("configure GitHub assignee for " + role)
@@ -182,7 +198,11 @@ def plan(records, issues, owners):
     for signature, group in sorted(group_reports(records).items()):
         previous, state = existing.get(signature, (None, {"count": 0, "seen": {}}))
         delta = sum(max(0, value - state["seen"].get(key, 0)) for key, value in group["seen"].items())
-        if previous and delta < 5:
+        if previous is None:
+            # `--rewrite-body` chỉ ghi lại thân issue cũ: không tạo issue mới, không đổi chữ ký.
+            if rewrite:
+                continue
+        elif delta < 5 and not rewrite:
             continue
         seen = {**state["seen"], **group["seen"]}
         # Keep current window first, then recent saved insertion order, capped at 1000.
@@ -215,6 +235,9 @@ def plan(records, issues, owners):
             body = section + "<!-- /aow-crash-v100 -->"
         if len(body.encode()) > 60000:
             raise ValueError("issue state too large")
+        if previous and body == old_body:
+            # Thân đã đúng (lượt `--rewrite-body` thứ hai): không tốn lượt ghi.
+            continue
         actions.append({"number": previous["number"] if previous else None,
                         "title": f"[Crash] {group['core']} / {group['kind']} / {signature[:12]}",
                         "body": body, "labels": [LABEL], "assignees": [owners[role]]})
@@ -253,7 +276,7 @@ class Client:
         return json.loads(content)
 
 
-def live(worker, github, repo, owners):
+def live(worker, github, repo, owners, rewrite=False):
     # Validate mapping before reading private reports, not after creating an issue.
     plan([], [], owners)
     for owner in set(owners.values()):
@@ -281,7 +304,7 @@ def live(worker, github, repo, owners):
         if not re.fullmatch(r"r:\d{13}:[a-f0-9-]{1,36}", report_id):
             raise ValueError("invalid Worker report ID")
         records.append({"id": report_id, "report": worker.call("/reports/" + urllib.parse.quote(report_id, safe=""))})
-    actions = plan(records, issues, owners)  # All reads/validation finish before first mutation.
+    actions = plan(records, issues, owners, rewrite)  # All reads/validation finish before first mutation.
     for action in actions:
         number = action.pop("number")
         if number:
@@ -296,13 +319,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--fixture", help="offline JSON {records, issues, owners}; no network/writes")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--rewrite-body", action="store_true",
+                        help="ghi lại thân các issue cũ (lấp dữ liệu dọn); không tạo issue mới, vẫn qua plan + MAX_WRITES")
     args = parser.parse_args()
     try:
         if args.fixture:
             if args.apply:
                 raise ValueError("fixture cannot apply")
             data = json.load(open(args.fixture, encoding="utf-8"))
-            print(json.dumps(plan(data["records"], data.get("issues", []), data["owners"]), ensure_ascii=False))
+            print(json.dumps(plan(data["records"], data.get("issues", []), data["owners"], args.rewrite_body), ensure_ascii=False))
             return
         if not args.apply:
             raise ValueError("choose offline fixture or explicitly authorized apply")
@@ -318,7 +343,8 @@ def main():
         if url.scheme != "https" or not (url.hostname or "").endswith(".workers.dev") or url.username or url.password or url.query or url.fragment or url.path not in ("", "/"):
             raise ValueError("invalid Worker endpoint")
         count = live(Client(base.rstrip("/"), auth), Client("https://api.github.com", gh_auth), repo,
-                     {"Sol": os.environ.get("CRASH_ASSIGNEE_SOL", ""), "Sonnet": os.environ.get("CRASH_ASSIGNEE_SONNET", "")})
+                     {"Sol": os.environ.get("CRASH_ASSIGNEE_SOL", ""), "Sonnet": os.environ.get("CRASH_ASSIGNEE_SONNET", "")},
+                     args.rewrite_body)
         print("Issue mutations:", count)  # Never print reports, headers, credentials or signed URLs.
     except (ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
         # Exact ValueError messages are controlled by this script; subclasses may contain private input.
