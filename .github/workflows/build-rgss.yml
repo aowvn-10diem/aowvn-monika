@@ -35,7 +35,7 @@ jobs:
       PORT_REF: ${{ inputs.port_ref }}
       TARGET_ABI: ${{ inputs.abi }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { path: self, persist-credentials: false }
 
       - name: Lấy mã nguồn bản port (ghim commit)

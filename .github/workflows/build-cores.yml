@@ -28,7 +28,7 @@ jobs:
       ndk: ${{ steps.plan.outputs.ndk }}
       cmake: ${{ steps.plan.outputs.cmake }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
@@ -55,7 +55,7 @@ jobs:
       max-parallel: 2
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false

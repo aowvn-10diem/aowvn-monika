@@ -39,7 +39,7 @@ jobs:
       EMSDK_HOME: /opt/emsdk
       ONSYURI_REF: ${{ inputs.onsyuri_ref }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -253,7 +253,7 @@ jobs:
     env:
       EKA_REF: ${{ inputs.eka2l1_ref }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Lấy EKA2L1 đúng ref và submodule

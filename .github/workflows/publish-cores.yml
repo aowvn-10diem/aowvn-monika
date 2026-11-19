@@ -19,7 +19,7 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Kiểm script và chuẩn bị ZIP/hash/commit nguồn thật

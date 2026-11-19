@@ -10,6 +10,6 @@ jobs:
   policy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: {persist-credentials: false}
       - run: python3 scripts/test-testlab-preflight.py && python3 scripts/test-testlab-evidence.py && python3 scripts/test-testlab-device.py
