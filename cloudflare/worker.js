@@ -9,8 +9,9 @@ const CONFIG_KEYS = {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const key = CONFIG_KEYS[url.pathname];
-    if (key) {
+    // Object.hasOwn: đường dẫn lạ như /toString, /constructor không lấy được hàm của prototype.
+    if (Object.hasOwn(CONFIG_KEYS, url.pathname)) {
+      const key = CONFIG_KEYS[url.pathname];
       const body = await env.MONIKA.get(key);
       if (!body) return new Response("not found", { status: 404 });
       const type = key === "config.json" ? "application/json" : "text/plain";
