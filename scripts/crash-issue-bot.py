@@ -2,8 +2,19 @@
 """V100: plan offline; scheduled apply reads only the Worker's latest 100 records.
 
 Only safe core/kind/signature/counts leave this process. Never copy a report to GitHub.
+
+V206: thân issue tự đủ để dọn issue mà không cần `CRASH_ADMIN_TOKEN`:
+`Bản app`, `Chứng thư` (12 hex đầu + cờ `Chính thức`), `Lần đầu / lần cuối` (UTC).
+Ba dòng này chỉ dùng trường Worker đã trả sẵn trong `/reports/<id>` (`app`, `certSha256`, `time`);
+không thêm tầng dữ liệu, không đổi chữ ký nhóm, không in chứng thư đầy đủ, URL, tên game hay thiết bị.
+`--rewrite-body` ghi lại thân các issue **cũ** (ví dụ 74 issue đang thiếu ba dòng trên) mà không tạo
+issue mới, không đổi chữ ký. Ngân sách ghi là **chia lô**: mỗi lượt tối đa `MAX_WRITES` mục (mặc định 20,
+đổi bằng `--max-writes N`) theo thứ tự ưu tiên — issue cũ nhất trước, rồi nhóm nhiều lượt nhất — ghi xong
+in số còn lại và thoát 0; lượt sau làm tiếp (74 issue ⇒ 4 lượt 20+20+20+14). Chỉ lấp được issue còn chữ ký
+trong cửa sổ 100 bản ghi Worker trả về — issue đã rơi khỏi cửa sổ thì không có dữ liệu để ghi.
 """
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -16,7 +27,9 @@ import urllib.request
 MARKER = "aow-crash-v100:"
 LABEL = "crash-moi"
 MAX_BYTES = 1024 * 1024
-MAX_WRITES = 20
+MAX_WRITES = 20      # số mục ghi tối đa mỗi lượt (chia lô); 74 issue ⇒ 4 lượt 20+20+20+14
+MAX_LIMIT = 1000     # trần cho `--max-writes`
+PLAN_ALERT = 200     # kế hoạch lớn hơn mức này chỉ cảnh báo, không huỷ lượt
 
 
 def digest(value):
@@ -34,6 +47,73 @@ COMPONENT_RE = re.compile(r"(?:op|pack|engine|app|net|ra)(?::[A-Za-z0-9_.-]{1,40
 
 def component(value):
     return value if isinstance(value, str) and COMPONENT_RE.fullmatch(value) else ""
+
+
+# Chứng thư ký APK phát hành — một nguồn duy nhất trong bot, khớp
+# `officialCertSha256` trong `config/monika-config.json` (nguồn chuẩn; test chặn lệch),
+# `MonikaConfig.OFFICIAL_CERT_SHA256` (`app/src/main/java/vn/aow/monika/config/MonikaConfig.kt:182`)
+# và `scripts/verify-apk-cert.py`. Chỉ in 12 hex đầu khi hiển thị.
+OFFICIAL_CERT = "c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c"
+# `Diagnostics.appLine()` = "<versionName> (<versionCode>) release|debug" → chỉ nhận đúng dạng này.
+APP_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._+-]{0,31} \(\d{1,9}\)(?: (?:release|debug))?")
+CERT_RE = re.compile(r"[0-9a-f]{64}")
+
+
+def app_label(value):
+    """`0.8.14 (814) release` → `0.8.14 (814)`; thiếu hoặc sai dạng → "" (bỏ dòng)."""
+    return re.sub(r" (?:release|debug)$", "", value) if isinstance(value, str) and APP_RE.fullmatch(value) else ""
+
+
+def cert_hash(value):
+    """SHA-256 (64 hex thường) hoặc "" — **giữ đủ 64 hex** để quyết "chính thức"; chỉ cắt 12 hex lúc hiển thị."""
+    return value if isinstance(value, str) and CERT_RE.fullmatch(value) else ""
+
+
+def day(value):
+    """Mốc ms → `dd/mm/yyyy` (UTC); ngoài khoảng hợp lệ → "" để bỏ mốc rác."""
+    if type(value) is not int or not 946684800000 <= value <= 4102444800000:  # 2000-01-01 … 2100-01-01
+        return ""
+    return datetime.datetime.fromtimestamp(value / 1000, datetime.timezone.utc).strftime("%d/%m/%Y")
+
+
+def newest(view):
+    """Mốc thời gian để chọn bản mới nhất; mốc rác (None/str/float) coi là cũ nhất, không ném TypeError."""
+    return view[0] if type(view[0]) is int else -1
+
+
+def describe(views):
+    """Ba dòng dữ liệu dọn issue cho một chữ ký; dòng nào thiếu dữ liệu thì bỏ dòng đó.
+
+    `views` = [(time, nhãn bản app, chứng thư 64 hex hoặc "")] của các bản ghi cùng chữ ký trong cửa sổ.
+    `Chính thức: có` **chỉ khi mọi bản ghi** (kể cả bản ghi thiếu chứng thư) mang đúng `OFFICIAL_CERT`,
+    so đủ 64 hex; chỉ cắt 12 hex khi in.
+    """
+    lines = []
+    app = max((v for v in views if v[1]), default=None, key=newest)
+    if app:
+        others = len({v[1] for v in views if v[1]}) - 1
+        lines.append(f"Bản app: `{app[1]}`" + (f" (+{others} bản khác)" if others else ""))
+    if not any(v[2] for v in views):
+        # App cũ không gửi `certSha256`: thiếu bằng chứng thì ghi rõ, không đoán "có".
+        lines.append("Chính thức: không rõ (báo cáo không kèm chứng thư)")
+    else:
+        shown = max((v for v in views if v[2]), key=newest)[2][:12]
+        official = "có" if all(v[2] == OFFICIAL_CERT for v in views) else "không"
+        certs = {v[2] for v in views if v[2]}
+        others = len(certs) - 1
+        line = (f"Chứng thư: `{shown}/…`" + (f" (+{others} chứng thư khác)" if others else "")
+                + f" · Chính thức: {official}")
+        if official == "không":
+            known = sum(1 for v in views if v[2])
+            if known < len(views):
+                # Nói rõ vì sao "không": có bản ghi không kèm chứng thư thì không thể coi là chính thức.
+                line += f" ({known}/{len(views)} bản ghi có chứng thư)"
+        lines.append(line)
+    times = sorted(v[0] for v in views if day(v[0]))
+    if times:
+        first, last = day(times[0]), day(times[-1])
+        lines.append(f"Lần đầu / lần cuối (UTC): {first}" + ("" if first == last else f" / {last}"))
+    return lines
 
 
 def frames(report):
@@ -77,8 +157,10 @@ def group_reports(records):
         count = report.get("count", 1)
         if type(count) is not int or not 1 <= count <= 1000000:
             raise ValueError("invalid report count")
-        group = groups.setdefault(signature, {"signature": signature, "core": core, "kind": kind, "seen": {}, "components": set()})
+        group = groups.setdefault(signature, {"signature": signature, "core": core, "kind": kind, "seen": {}, "components": set(), "views": []})
         group["seen"][digest(row["id"])[:32]] = count
+        # Chỉ số liệu an toàn để dọn issue: bản app, chứng thư (đủ 64 hex để so), mốc thời gian.
+        group["views"].append((report.get("time"), app_label(report.get("app")), cert_hash(report.get("certSha256"))))
         label = component(report.get("component", ""))
         if label:
             group["components"].add(label)
@@ -103,7 +185,15 @@ def read_state(issue):
     return state
 
 
-def plan(records, issues, owners):
+def plan(records, issues, owners, rewrite=False, limit=MAX_WRITES):
+    """Kế hoạch ghi của **một lượt**: tối đa `limit` mục, phần dư để lượt sau (`_plan` giữ đủ danh sách)."""
+    if type(limit) is not int or not 1 <= limit <= MAX_LIMIT:
+        raise ValueError(f"max writes must be 1..{MAX_LIMIT}")
+    return _plan(records, issues, owners, rewrite)[:limit]
+
+
+def _plan(records, issues, owners, rewrite):
+    """Toàn bộ mục cần ghi, đã sắp theo ưu tiên; ngân sách chỉ cắt bớt khi ghi, không huỷ lượt."""
     for role in ("Sol", "Sonnet"):
         if not re.fullmatch(r"[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,38})", owners.get(role, "")):
             raise ValueError("configure GitHub assignee for " + role)
@@ -120,7 +210,11 @@ def plan(records, issues, owners):
     for signature, group in sorted(group_reports(records).items()):
         previous, state = existing.get(signature, (None, {"count": 0, "seen": {}}))
         delta = sum(max(0, value - state["seen"].get(key, 0)) for key, value in group["seen"].items())
-        if previous and delta < 5:
+        if previous is None:
+            # `--rewrite-body` chỉ ghi lại thân issue cũ: không tạo issue mới, không đổi chữ ký.
+            if rewrite:
+                continue
+        elif delta < 5 and not rewrite:
             continue
         seen = {**state["seen"], **group["seen"]}
         # Keep current window first, then recent saved insertion order, capped at 1000.
@@ -132,12 +226,14 @@ def plan(records, issues, owners):
         label = (f"`{labels[0]}`" + (f" (+{len(labels) - 1})" if len(labels) > 1 else "")) if labels else ""
         section = ("<!-- " + MARKER + json.dumps(saved, separators=(",", ":")) + " -->\n"
                    + f"Lõi: `{group['core']}` · Loại: `{group['kind']}` · Chữ ký: `{signature}`\n"
+                   + "".join(line + "\n" for line in describe(group["views"]))
                    + (f"Thành phần: {label}\n" if label else "")
                    + f"Số lần quan sát đã thông báo: {saved['count']} (+{delta}). Phụ trách: {role}.\n"
                    + ("Issue này đã đóng: số trên là **cộng dồn lịch sử**, \"(+N)\" là lượt mới kể từ lần thông báo "
                       "trước — không phải mức tăng hiện tại. Bot vẫn cộng dồn để thấy tái diễn; mở lại issue nếu "
                       "cần theo dõi tiếp.\n" if previous and str(previous.get("state", "")).lower() != "open" else "")
                    + "Phạm vi: tối đa 100 bản ghi mới nhất Worker trả về; không suy toàn bộ lịch sử. "
+                   + "Mốc ngày theo giờ máy gửi báo cáo, tính trong chính cửa sổ đó. "
                    + "Chữ ký băm lõi + loại + tối đa 3 frame đầu; không chép stack, game, ảnh, URL hoặc thiết bị.\n")
         old_body = previous.get("body") or "" if previous else ""
         if previous:
@@ -151,12 +247,16 @@ def plan(records, issues, owners):
             body = section + "<!-- /aow-crash-v100 -->"
         if len(body.encode()) > 60000:
             raise ValueError("issue state too large")
-        actions.append({"number": previous["number"] if previous else None,
-                        "title": f"[Crash] {group['core']} / {group['kind']} / {signature[:12]}",
-                        "body": body, "labels": [LABEL], "assignees": [owners[role]]})
-    if len(actions) > MAX_WRITES:
-        raise ValueError("mutation budget exceeded; no writes")
-    return actions
+        if previous and body == old_body:
+            # Thân đã đúng (lượt `--rewrite-body` thứ hai): không tốn lượt ghi.
+            continue
+        actions.append(((0, previous["number"]) if previous else (1, -saved["count"]),
+                        {"number": previous["number"] if previous else None,
+                         "title": f"[Crash] {group['core']} / {group['kind']} / {signature[:12]}",
+                         "body": body, "labels": [LABEL], "assignees": [owners[role]]}))
+    # Ưu tiên issue cũ nhất (số nhỏ trước) rồi tới nhóm nhiều lượt nhất, để lượt sau làm tiếp phần còn lại.
+    actions.sort(key=lambda pair: pair[0])
+    return [action for _, action in actions]
 
 
 class Client:
@@ -189,9 +289,11 @@ class Client:
         return json.loads(content)
 
 
-def live(worker, github, repo, owners):
+def live(worker, github, repo, owners, rewrite=False, limit=MAX_WRITES):
     # Validate mapping before reading private reports, not after creating an issue.
     plan([], [], owners)
+    if type(limit) is not int or not 1 <= limit <= MAX_LIMIT:
+        raise ValueError(f"max writes must be 1..{MAX_LIMIT}")
     for owner in set(owners.values()):
         github.call(f"/repos/{repo}/assignees/{owner}")
     label = github.call(f"/repos/{repo}/labels/{LABEL}")
@@ -217,28 +319,38 @@ def live(worker, github, repo, owners):
         if not re.fullmatch(r"r:\d{13}:[a-f0-9-]{1,36}", report_id):
             raise ValueError("invalid Worker report ID")
         records.append({"id": report_id, "report": worker.call("/reports/" + urllib.parse.quote(report_id, safe=""))})
-    actions = plan(records, issues, owners)  # All reads/validation finish before first mutation.
+    planned = _plan(records, issues, owners, rewrite)  # All reads/validation finish before first mutation.
+    if len(planned) > PLAN_ALERT:
+        # Kế hoạch lớn ngoài dự kiến: cảnh báo, không huỷ lượt (lượt sau làm tiếp).
+        print(f"WARNING: kế hoạch ghi {len(planned)} mục, hơn dự kiến {PLAN_ALERT}; "
+              f"mỗi lượt chỉ ghi {limit}.", file=sys.stderr)
+    actions = planned[:limit]
     for action in actions:
-        number = action.pop("number")
+        number = action["number"]
         if number:
             # Preserve title, labels, assignee and closed/open state chosen by maintainers.
             github.call(f"/repos/{repo}/issues/{number}", "PATCH", {"body": action["body"]})
         else:
-            github.call(f"/repos/{repo}/issues", "POST", action)
-    return len(actions)
+            github.call(f"/repos/{repo}/issues", "POST", {key: value for key, value in action.items() if key != "number"})
+    return len(actions), len(planned) - len(actions)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--fixture", help="offline JSON {records, issues, owners}; no network/writes")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--rewrite-body", action="store_true",
+                        help="ghi lại thân các issue cũ (lấp dữ liệu dọn); không tạo issue mới, chia lô theo --max-writes")
+    parser.add_argument("--max-writes", type=int, default=MAX_WRITES,
+                        help=f"số mục ghi tối đa mỗi lượt (1..{MAX_LIMIT}, mặc định {MAX_WRITES})")
     args = parser.parse_args()
     try:
         if args.fixture:
             if args.apply:
                 raise ValueError("fixture cannot apply")
             data = json.load(open(args.fixture, encoding="utf-8"))
-            print(json.dumps(plan(data["records"], data.get("issues", []), data["owners"]), ensure_ascii=False))
+            print(json.dumps(plan(data["records"], data.get("issues", []), data["owners"], args.rewrite_body,
+                                  args.max_writes), ensure_ascii=False))
             return
         if not args.apply:
             raise ValueError("choose offline fixture or explicitly authorized apply")
@@ -253,9 +365,13 @@ def main():
             raise ValueError("missing runtime credentials/repository")
         if url.scheme != "https" or not (url.hostname or "").endswith(".workers.dev") or url.username or url.password or url.query or url.fragment or url.path not in ("", "/"):
             raise ValueError("invalid Worker endpoint")
-        count = live(Client(base.rstrip("/"), auth), Client("https://api.github.com", gh_auth), repo,
-                     {"Sol": os.environ.get("CRASH_ASSIGNEE_SOL", ""), "Sonnet": os.environ.get("CRASH_ASSIGNEE_SONNET", "")})
-        print("Issue mutations:", count)  # Never print reports, headers, credentials or signed URLs.
+        written, remaining = live(Client(base.rstrip("/"), auth), Client("https://api.github.com", gh_auth), repo,
+                                  {"Sol": os.environ.get("CRASH_ASSIGNEE_SOL", ""), "Sonnet": os.environ.get("CRASH_ASSIGNEE_SONNET", "")},
+                                  args.rewrite_body, args.max_writes)
+        # Chia lô: hết ngân sách lượt này là chuyện bình thường (exit 0), lượt sau làm tiếp.
+        print(f"Issue mutations: {written}; còn lại: {remaining}."
+              + (" Chạy lại lượt sau để làm tiếp." if remaining else ""))
+
     except (ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
         # Exact ValueError messages are controlled by this script; subclasses may contain private input.
         reason = str(error) if type(error) is ValueError else type(error).__name__
