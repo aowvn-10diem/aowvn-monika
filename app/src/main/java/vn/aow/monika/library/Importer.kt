@@ -161,7 +161,9 @@ object Importer {
                 if (!f.renameTo(File(dir, f.name))) throw IOException("Không chuyển được \"${f.name}\" ra thư mục game")
             }
         }
-        if (context == null) return runCatching { move() }.exceptionOrNull() // diag: gọi từ nơi không có Context (test/tiện ích)
+        // Không có Context thì không lập được báo cáo (Breadcrumbs/op-fail đều cần Context); mọi đường gọi thật
+        // (LibraryScreen, importFile → importFromUri) đều truyền Context nên ca chuyển hỏng vẫn thành op-fail.
+        if (context == null) return runCatching { move() }.exceptionOrNull() // diag: bỏ qua — thiếu Context, không có đường báo cáo
         return vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.EXTRACT, archiveName) {
             step("chuyen-ra-thu-muc-game")
             move()
