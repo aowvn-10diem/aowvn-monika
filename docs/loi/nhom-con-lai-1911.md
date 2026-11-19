@@ -1,7 +1,7 @@
 # Nhóm con còn lại — 20 issue (19/11/2026)
 
 Phạm vi: `unknown/anr` (7), `unknown/native` (1), lõi lẻ `mgba`/`gambatte`/`snes9x`/`pcsx_rearmed`/`mkxp-z`/`kirikiroid2-yuri`/`melonds` (12).
-Tổng **110 lượt**. Không issue nào trong nhóm được tạo sau 12/11 (issue crash mới nhất toàn repo: #613).
+Tổng **111 lượt** (26 `unknown/anr` + 1 `unknown/native` + 84 lõi lẻ). Không issue nào trong nhóm được tạo sau 12/11 (issue crash mới nhất toàn repo: #613).
 Lượt của cả 20 issue **không tăng** so với `TON-1811.md` (18/11) và `TONG-HOP-1311.md` (13/11).
 
 ## 0. Mốc phát hành dùng để đóng issue
