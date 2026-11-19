@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import http.server
 import json
+import os
 from pathlib import Path
 import shutil
 import ssl
@@ -66,6 +67,15 @@ def make_rom():
 
 
 def prepare(out, root=ROOT):
+    # V196: APK test cần host `localhost` cho server fixture, nhưng KHÔNG sửa allowlist production trong mã.
+    # Ghi vào GITHUB_ENV để bước Gradle sau (assembleGithubDebug) nhận qua BuildConfig của bản debug.
+    # Kiểm NGAY ĐẦU prepare: thiếu biến thì thoát TRƯỚC khi vá cây làm việc (không để lại rác dở dang).
+    github_env = os.environ.get('GITHUB_ENV')
+    if not github_env:
+        raise SystemExit(
+            'Thiếu GITHUB_ENV: bước build APK debug sẽ không nhận MONIKA_EXTRA_DOWNLOAD_HOSTS=localhost.\n'
+            'Chạy trong GitHub Actions, hoặc export GITHUB_ENV trước khi gọi prepare.'
+        )
     out.mkdir(parents=True, exist_ok=True)
     (out / 'web').mkdir(exist_ok=True)
     (out / 'monika.nds').write_bytes(make_rom())
@@ -108,12 +118,11 @@ def prepare(out, root=ROOT):
     needle = 'excludes += listOf("lib/x86/**", "lib/x86_64/**")'
     assert needle in original, 'packaging declaration changed'
     app.write_text(original.replace(needle, '// V106 generated debug build includes its x86_64 test bridge'))
-    # V196: CoreManager routes through DownloadGuard (HTTPS + ALLOWED_DOWNLOAD_HOSTS); allow localhost only in CI fixture APK.
-    monika_cfg = root / 'app/src/main/java/vn/aow/monika/config/MonikaConfig.kt'
-    original = monika_cfg.read_text()
-    needle = '"monika.aow.vn",'
-    assert needle in original, 'ALLOWED_DOWNLOAD_HOSTS declaration changed'
-    monika_cfg.write_text(original.replace(needle, '"monika.aow.vn",\n    "localhost", // V106 CI fixture HTTPS server only'))
+    # V196: APK test cần host `localhost` cho server fixture, nhưng KHÔNG sửa allowlist production trong mã.
+    # Ghi vào GITHUB_ENV để bước Gradle sau (assembleGithubDebug) nhận qua BuildConfig của bản debug.
+    # (Đã kiểm GITHUB_ENV ở đầu prepare, trước mọi write_text.)
+    with open(github_env, 'a', encoding='utf-8') as handle:
+        handle.write('MONIKA_EXTRA_DOWNLOAD_HOSTS=localhost\n')
     tls = out / 'tls'
     tls.mkdir(exist_ok=True)
     subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
