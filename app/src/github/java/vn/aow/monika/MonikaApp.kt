@@ -48,6 +48,8 @@ open class MonikaApp : Application(), coil.ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         if (isCrashProcess()) return
+        // ANR xảy ra trước khi mở game vẫn phải có ngữ cảnh tiến trình (#534 #419 #415 #414 #413 #399 #398).
+        vn.aow.monika.diag.Diagnostics.startProcess(this)
         AppGraph.init(this)
         // #302: game Java chạy ở tiến trình ":midlet" → gắn phiên chẩn đoán ngay tại tiến trình đó.
         vn.aow.monika.diag.MidletDiagnostics.install(this)
