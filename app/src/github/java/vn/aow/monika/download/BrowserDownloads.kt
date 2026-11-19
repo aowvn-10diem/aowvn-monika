@@ -38,6 +38,18 @@ import java.util.concurrent.atomic.AtomicInteger
 
 enum class DlState { RUNNING, READY, SAVING, SAVED, FAILED, CANCELED }
 
+/**
+ * Máy chủ trả mã lỗi HTTP (không phải 2xx/3xx). Phân biệt để báo cáo đúng chỗ:
+ * 4xx là link chết / tệp đã bị xoá / máy chủ chặn — chuyện của nguồn tải, người chơi chỉ cần link khác;
+ * 5xx mới là sự cố phía máy chủ cần biết (có thể do app gửi sai).
+ */
+class HttpStatusException(val code: Int) : IOException(
+    if (code in 400..499) "Máy chủ trả lỗi $code — liên kết có thể đã hỏng hoặc tệp đã bị xoá"
+    else "Máy chủ trả lỗi $code"
+) {
+    val serverSide: Boolean get() = code >= 500
+}
+
 /** Nơi lưu file đã tải. */
 sealed interface SaveDest {
     /** Thư viện game của Monika (thư mục _TaiVe → tự đưa vào Thư viện, giải nén nếu cần). */
@@ -142,7 +154,7 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
                         nextUrl = next.toString()
                         return@use
                     }
-                    if (!r.isSuccessful) throw IOException("Máy chủ trả lỗi ${r.code}")
+                    if (!r.isSuccessful) throw HttpStatusException(r.code)
                     // Kiểm "đã xác nhận" LẠI trên luồng chính lúc áp tên: nếu người dùng đặt tên đúng lúc tiêu đề máy chủ về (race), tên người dùng đặt không được bị đè.
                     r.header("Content-Disposition")?.let { cd -> main.post { if (!job.confirmed) job.name = suggestName(job.url, cd, job.mime) } }
                     val len = r.body!!.contentLength()
@@ -181,7 +193,11 @@ class BrowserDownloads(private val context: Context, private val http: OkHttpCli
         } catch (e: Exception) {
             runCatching { job.part.delete() }
             if (job.state == DlState.CANCELED) return
-            vn.aow.monika.diag.Diagnostics.opFail(context, vn.aow.monika.diag.Diagnostics.Op.DOWNLOAD, "tai-ve", e, job.name)
+            vn.aow.monika.diag.Diagnostics.opFail(
+                context, vn.aow.monika.diag.Diagnostics.Op.DOWNLOAD, "tai-ve", e, job.name,
+                // 4xx = link chết/nguồn chặn (người chơi đổi link là xong) → chỉ ghi vệt; 5xx mới lập báo cáo.
+                expected = { it is HttpStatusException && !it.serverSide },
+            )
             main.post { job.error = e.message ?: "Lỗi mạng"; job.state = DlState.FAILED }
             Notifier.downloadDone(context, "Tải thất bại", "${job.name}: ${e.message ?: "lỗi mạng"}", Intent(context, MainActivity::class.java))
         } finally {
