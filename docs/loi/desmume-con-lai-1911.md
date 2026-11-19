@@ -1,6 +1,6 @@
 # `desmume`: phần còn lại sau #644/#663 (19/11/2026)
 
-Nhánh `loi2/desmume`, nền `origin/main` `45e1c754` (configVersion 66, app 0.8.14; 0.8.15 là Pre-release).
+Nhánh `loi2/desmume`, nền `origin/main` `45e1c754` (configVersion 66; tại mốc này `app/build.gradle.kts:47` là `versionName = "0.8.15"`, versionCode 60, và `config/monika-config.json:7` là `"latestVersionName": "0.8.15"`). Bản **chính thức đang phát hành** là 0.8.14; 0.8.15 mới ở mức Pre-release.
 Chỉ **tài liệu**: không sửa mã, không đóng issue, không đụng tệp khoá.
 
 Tài liệu này **không làm lại** hai kết luận đã có, chỉ trích dẫn và đi tiếp phần còn thiếu:
@@ -20,7 +20,7 @@ Tài liệu này **không làm lại** hai kết luận đã có, chỉ trích d
 | [#368](https://github.com/aowvn-10diem/aowvn-monika/issues/368) `751363ed54f2` | op-fail | 1 (1 máy) | **Không** — ngoài `libretrodroid` | Chờ #671 + cần `op`/`bước` từ token |
 
 `desmume/native` = 5 issue · 97 lượt · tách 5 chữ ký; `desmume/op-fail` = 1 issue · 1 lượt.
-Tổng `desmume` = 98 lượt, khớp bảng tồn 19/11 (`docs/loi/TON-1911.md` dòng 53: `desmume | 6 | 98`).
+Tổng `desmume` = 98 lượt, khớp bảng tồn 18/11 `docs/loi/TON-1811.md` (đã ở `main`: `desmume/native` 97 + `desmume/op-fail` 1) và bảng tồn 19/11 ở **PR #685 (chưa gộp)**, `docs/loi/TON-1911.md` dòng 53: `desmume | 6 | 98`.
 
 ## 2. Vì sao hôm nay không đóng issue nào
 
@@ -56,7 +56,7 @@ Ba phần vá (`reset`, `resetCheat`/`setCheat`, `step`, `loadGame*`, `unseriali
 | #368 | 1 | 2026-10-26T20:38Z = `createdAt` | như trên |
 
 **Giới hạn phải nói rõ:** `scripts/crash-issue-bot.py:123` bỏ qua lần chạy có `delta < 5`, nên "thân issue không đổi" chỉ chứng minh **dưới 5 lượt mới mỗi lần chạy bot**, không chứng minh tuyệt đối 0 lượt.
-Bằng chứng mạnh hơn là phép trừ của `TON-1911.md` §2: 23 issue đã đóng (508 lượt) + 792 lượt còn mở = **1 300**, trùng khít tổng bản 18/11 ⇒ trong cửa sổ 18/11 16:17Z → 19/11 07:40Z **không lượt nào được cộng**. Cửa sổ đó phủ trọn `v0.8.14` (17/11).
+Bằng chứng mạnh hơn là phép trừ ở §2 của bảng tồn 19/11 — **PR #685 (chưa gộp)**, `docs/loi/TON-1911.md`: 23 issue đã đóng (508 lượt) + 792 lượt còn mở = **1 300**, trùng khít tổng bản 18/11 ⇒ trong cửa sổ 18/11 16:17Z → 19/11 07:40Z **không lượt nào được cộng**. Cửa sổ đó phủ trọn `v0.8.14` (17/11).
 **[CHƯA KIỂM]** Không có `CRASH_ADMIN_TOKEN` trong phiên này nên không đọc được `app` (bản app của từng báo cáo), `frames`, `signal`, `fault_addr`, `BuildId` — không biết lượt cuối của #369/#591 đến từ bản nào.
 
 ## 4. #369 (71 lượt): đã chẩn đoán tới hàm, còn thiếu gì
@@ -132,4 +132,4 @@ Ghi chú riêng cho #562 (1 lượt, 1 máy): cùng câu trên; nếu mở lại
 
 - Docs-only: theo `CLAUDE.md`, bỏ `testDebugUnitTest` (CI cũng bỏ qua `docs/**`).
 - Mọi `tệp:dòng` đọc từ `origin/main` `45e1c754`; mọi kết luận mốc phát hành kiểm bằng `git merge-base --is-ancestor` (§2), không suy từ tên tag.
-- Số lượt đọc từ khối `<!-- aow-crash-v100:… -->` trong thân 6 issue, đối chiếu `TON-1911.md` (98 lượt) và `TON-1811.md` (97 lượt native).
+- Số lượt đọc từ khối `<!-- aow-crash-v100:… -->` trong thân 6 issue, đối chiếu `docs/loi/TON-1811.md` (đã ở `main`: 97 lượt `desmume/native` + 1 `op-fail`) và bảng tồn 19/11 ở PR #685 (**chưa gộp**, 98 lượt).
