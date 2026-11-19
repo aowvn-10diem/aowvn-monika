@@ -6,6 +6,7 @@ import io
 import json
 import pathlib
 import unittest
+import urllib.parse
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("bot", pathlib.Path(__file__).with_name("crash-issue-bot.py"))
@@ -30,6 +31,39 @@ OTHER_CERT = "a" * 64
 
 def issue(action):
     return {"number": 20, "body": action["body"], "state": "closed"}
+
+
+class BatchGitHub:
+    """GitHub + Worker giả cho ca chia lô: GET trả trạng thái hiện tại, PATCH sửa thân, POST thêm issue."""
+
+    def __init__(self, rows, issues):
+        self.rows, self.issues, self.writes = rows, issues, []
+
+    def call(self, path, method="GET", data=None):
+        if method == "GET":
+            if path == "/reports":
+                return {"reports": [{"id": row["id"]} for row in self.rows]}
+            if path.startswith("/reports/"):
+                report_id = urllib.parse.unquote(path[len("/reports/"):])
+                return next(row["report"] for row in self.rows if row["id"] == report_id)
+            if "/assignees/" in path:
+                return {}
+            if "/labels/" in path:
+                return {"name": "crash-moi"}
+            if "/issues?" in path:
+                return [dict(item) for item in self.issues]
+        else:
+            self.writes.append((method, path, data))
+            if method == "PATCH":
+                number = int(path.rsplit("/", 1)[1])
+                for item in self.issues:
+                    if item["number"] == number:
+                        item["body"] = data["body"]
+            else:
+                self.issues.append({"number": 900 + len(self.issues), "state": "open",
+                                    "title": data["title"], "body": data["body"]})
+            return {}
+        raise AssertionError("unexpected request: " + path)
 
 
 class BotTest(unittest.TestCase):
@@ -74,13 +108,13 @@ class BotTest(unittest.TestCase):
                 with patch.object(bot.sys, "argv", ["crash-issue-bot.py", "--apply"]), \
                      patch.dict(bot.os.environ, {"CRASH_ADMIN_TOKEN": supplied, "GITHUB_TOKEN": "fake-github",
                                                 "GITHUB_REPOSITORY": "o/r"}, clear=True), \
-                     patch.object(bot, "Client") as client, patch.object(bot, "live", return_value=0) as live, \
+                     patch.object(bot, "Client") as client, patch.object(bot, "live", return_value=(0, 0)) as live, \
                      contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                     bot.main()
                 self.assertEqual(client.call_args_list[0].args[1], supplied.strip())
                 self.assertEqual(client.call_args_list[1].args[1], "fake-github")
                 live.assert_called_once()
-                self.assertEqual(stdout.getvalue(), "Issue mutations: 0\n")
+                self.assertEqual(stdout.getvalue(), "Issue mutations: 0; còn lại: 0.\n")
                 self.assertEqual(stderr.getvalue(), "")
 
     def test_main_rejects_non_printable_or_non_ascii_token_before_clients(self):
@@ -238,9 +272,16 @@ class BotTest(unittest.TestCase):
                                     ([record(1)], [], {}), ([record(1, count=-1)], [], OWNERS)]:
             with self.assertRaises(ValueError): bot.plan(rows, issues, owners)
 
-    def test_mutation_budget_has_no_partial_plan(self):
+    def test_mutation_budget_trims_instead_of_blocking_the_run(self):
+        # Ngân sách là chia lô: 21 nhóm mới ⇒ lượt này lập 20 issue, phần dư để lượt sau (không ném, không huỷ lượt).
+        actions = bot.plan([record(i, core=f"core{i}") for i in range(21)], [], OWNERS)
+        self.assertEqual(len(actions), bot.MAX_WRITES)
+        self.assertTrue(all(action["number"] is None for action in actions))
+        self.assertEqual(len(bot.plan([record(i, core=f"core{i}") for i in range(21)], [], OWNERS, limit=3)), 3)
         with self.assertRaises(ValueError):
-            bot.plan([record(i, core=f"core{i}") for i in range(21)], [], OWNERS)
+            bot.plan([record(1)], [], OWNERS, limit=0)
+        with self.assertRaises(ValueError):
+            bot.plan([record(1)], [], OWNERS, limit=bot.MAX_LIMIT + 1)
 
     def test_all_reads_before_writes_and_existing_closed_issue_not_reopened(self):
         first = bot.plan([record(1)], [], OWNERS)[0]
@@ -255,7 +296,7 @@ class BotTest(unittest.TestCase):
                 if "/labels/" in path: return {"name": "crash-moi"}
                 return [issue(first)]
         worker, github = Fake(True), Fake()
-        self.assertEqual(bot.live(worker, github, "o/r", OWNERS), 1)
+        self.assertEqual(bot.live(worker, github, "o/r", OWNERS), (1, 0))
         self.assertEqual(github.writes[0][0], "PATCH")
         self.assertEqual(set(github.writes[0][1]), {"body"})
 
@@ -437,14 +478,64 @@ class BotTest(unittest.TestCase):
         # Không có issue cũ ⇒ --rewrite-body không tạo issue mới.
         self.assertEqual(bot.plan([detailed], [], OWNERS, rewrite=True), [])
 
-    def test_rewrite_body_still_respects_mutation_budget(self):
+    def test_rewrite_body_trims_to_one_batch_instead_of_blocking(self):
         rows, legacy = [], []
         for i in range(bot.MAX_WRITES + 1):
             row = record(i, core=f"core{i}", app="0.8.14 (814) release", cert=OFFICIAL)
             legacy.append({"number": 100 + i, "state": "open", "body": self._legacy_body(row)})
             rows.append(row)
-        with self.assertRaises(ValueError):
-            bot.plan(rows, legacy, OWNERS, rewrite=True)
+        # Chia lô: 21 mục ⇒ lượt này 20, không ném; `--max-writes` đổi cỡ lô.
+        self.assertEqual(len(bot.plan(rows, legacy, OWNERS, rewrite=True)), bot.MAX_WRITES)
+        self.assertEqual(len(bot.plan(rows, legacy, OWNERS, rewrite=True, limit=5)), 5)
+
+    # ---- V206b: ngân sách ghi chia lô, chạy lặp tới khi hết (74 issue ⇒ 4 lượt 20+20+20+14) ----
+
+    def _legacy_scene(self, count):
+        """`count` issue cũ + bản ghi tương ứng, cùng dữ liệu — mô phỏng 74 issue đang thiếu dữ liệu dọn."""
+        rows, issues = [], []
+        for i in range(count):
+            row = record(i, core=f"core{i}", app="0.8.14 (814) release", cert=OFFICIAL)
+            rows.append(row)
+            issues.append({"number": 10 + i, "state": "open", "body": self._legacy_body(row)})
+        return rows, issues
+
+    def test_budget_batch_one_writes_twenty_and_reports_twentyfive_left(self):
+        rows, issues = self._legacy_scene(45)
+        gh = BatchGitHub(rows, issues)
+        self.assertEqual(bot.live(gh, gh, "o/r", OWNERS, rewrite=True), (20, 25))
+        self.assertEqual(len([1 for method, _, _ in gh.writes if method == "PATCH"]), 20)
+        # `main` chạy hết rồi thoát 0 (không SystemExit) và in rõ đã ghi / còn lại.
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with patch.object(bot.sys, "argv", ["crash-issue-bot.py", "--apply", "--rewrite-body"]), \
+             patch.dict(bot.os.environ, {"CRASH_ADMIN_TOKEN": "fixture-token", "GITHUB_TOKEN": "fake-github",
+                                        "GITHUB_REPOSITORY": "o/r"}, clear=True), \
+             patch.object(bot, "Client"), patch.object(bot, "live", return_value=(20, 25)), \
+             contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            bot.main()
+        self.assertEqual(stdout.getvalue(), "Issue mutations: 20; còn lại: 25. Chạy lại lượt sau để làm tiếp.\n")
+        self.assertEqual(stderr.getvalue(), "")
+
+    def test_budget_batch_two_writes_next_twenty_without_rewriting_finished_issues(self):
+        rows, issues = self._legacy_scene(45)
+        gh = BatchGitHub(rows, issues)
+        self.assertEqual(bot.live(gh, gh, "o/r", OWNERS, rewrite=True), (20, 25))
+        first = [path for method, path, _ in gh.writes if method == "PATCH"]
+        self.assertEqual(bot.live(gh, gh, "o/r", OWNERS, rewrite=True), (20, 5))
+        second = [path for method, path, _ in gh.writes if method == "PATCH"][len(first):]
+        self.assertEqual(len(second), 20)
+        self.assertEqual(set(first) & set(second), set())  # 20 mục đã đúng không bị ghi lại
+
+    def test_budget_batch_three_writes_five_and_every_issue_is_written_once(self):
+        rows, issues = self._legacy_scene(45)
+        gh = BatchGitHub(rows, issues)
+        rounds = [bot.live(gh, gh, "o/r", OWNERS, rewrite=True) for _ in range(3)]
+        self.assertEqual(rounds, [(20, 25), (20, 5), (5, 0)])
+        self.assertEqual(bot.live(gh, gh, "o/r", OWNERS, rewrite=True), (0, 0))  # hết việc ⇒ không ghi
+        patched = [path for method, path, _ in gh.writes if method == "PATCH"]
+        self.assertEqual(len(patched), 45)
+        self.assertEqual(len(set(patched)), 45)  # không mục nào bị ghi hai lần
+        self.assertEqual(len(gh.issues), 45)     # không tạo issue mới
+        self.assertTrue(all("Bản app: `0.8.14 (814)`" in item["body"] for item in gh.issues))
 
     def test_official_cert_matches_published_config(self):
         # Chỉ ĐỌC config (nguồn chuẩn `security.officialCertSha256`), không sửa — chặn lệch giữa bot và config.

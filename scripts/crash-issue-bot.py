@@ -8,8 +8,10 @@ V206: thân issue tự đủ để dọn issue mà không cần `CRASH_ADMIN_TOK
 Ba dòng này chỉ dùng trường Worker đã trả sẵn trong `/reports/<id>` (`app`, `certSha256`, `time`);
 không thêm tầng dữ liệu, không đổi chữ ký nhóm, không in chứng thư đầy đủ, URL, tên game hay thiết bị.
 `--rewrite-body` ghi lại thân các issue **cũ** (ví dụ 74 issue đang thiếu ba dòng trên) mà không tạo
-issue mới; vẫn đi qua `plan()` và ngân sách `MAX_WRITES`, chạy lặp tới khi hết issue cần lấp. Chỉ lấp được
-issue còn chữ ký trong cửa sổ 100 bản ghi Worker trả về — issue đã rơi khỏi cửa sổ thì không có dữ liệu để ghi.
+issue mới, không đổi chữ ký. Ngân sách ghi là **chia lô**: mỗi lượt tối đa `MAX_WRITES` mục (mặc định 20,
+đổi bằng `--max-writes N`) theo thứ tự ưu tiên — issue cũ nhất trước, rồi nhóm nhiều lượt nhất — ghi xong
+in số còn lại và thoát 0; lượt sau làm tiếp (74 issue ⇒ 4 lượt 20+20+20+14). Chỉ lấp được issue còn chữ ký
+trong cửa sổ 100 bản ghi Worker trả về — issue đã rơi khỏi cửa sổ thì không có dữ liệu để ghi.
 """
 import argparse
 import datetime
@@ -25,7 +27,9 @@ import urllib.request
 MARKER = "aow-crash-v100:"
 LABEL = "crash-moi"
 MAX_BYTES = 1024 * 1024
-MAX_WRITES = 20
+MAX_WRITES = 20      # số mục ghi tối đa mỗi lượt (chia lô); 74 issue ⇒ 4 lượt 20+20+20+14
+MAX_LIMIT = 1000     # trần cho `--max-writes`
+PLAN_ALERT = 200     # kế hoạch lớn hơn mức này chỉ cảnh báo, không huỷ lượt
 
 
 def digest(value):
@@ -181,7 +185,15 @@ def read_state(issue):
     return state
 
 
-def plan(records, issues, owners, rewrite=False):
+def plan(records, issues, owners, rewrite=False, limit=MAX_WRITES):
+    """Kế hoạch ghi của **một lượt**: tối đa `limit` mục, phần dư để lượt sau (`_plan` giữ đủ danh sách)."""
+    if type(limit) is not int or not 1 <= limit <= MAX_LIMIT:
+        raise ValueError(f"max writes must be 1..{MAX_LIMIT}")
+    return _plan(records, issues, owners, rewrite)[:limit]
+
+
+def _plan(records, issues, owners, rewrite):
+    """Toàn bộ mục cần ghi, đã sắp theo ưu tiên; ngân sách chỉ cắt bớt khi ghi, không huỷ lượt."""
     for role in ("Sol", "Sonnet"):
         if not re.fullmatch(r"[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,38})", owners.get(role, "")):
             raise ValueError("configure GitHub assignee for " + role)
@@ -238,12 +250,13 @@ def plan(records, issues, owners, rewrite=False):
         if previous and body == old_body:
             # Thân đã đúng (lượt `--rewrite-body` thứ hai): không tốn lượt ghi.
             continue
-        actions.append({"number": previous["number"] if previous else None,
-                        "title": f"[Crash] {group['core']} / {group['kind']} / {signature[:12]}",
-                        "body": body, "labels": [LABEL], "assignees": [owners[role]]})
-    if len(actions) > MAX_WRITES:
-        raise ValueError("mutation budget exceeded; no writes")
-    return actions
+        actions.append(((0, previous["number"]) if previous else (1, -saved["count"]),
+                        {"number": previous["number"] if previous else None,
+                         "title": f"[Crash] {group['core']} / {group['kind']} / {signature[:12]}",
+                         "body": body, "labels": [LABEL], "assignees": [owners[role]]}))
+    # Ưu tiên issue cũ nhất (số nhỏ trước) rồi tới nhóm nhiều lượt nhất, để lượt sau làm tiếp phần còn lại.
+    actions.sort(key=lambda pair: pair[0])
+    return [action for _, action in actions]
 
 
 class Client:
@@ -276,9 +289,11 @@ class Client:
         return json.loads(content)
 
 
-def live(worker, github, repo, owners, rewrite=False):
+def live(worker, github, repo, owners, rewrite=False, limit=MAX_WRITES):
     # Validate mapping before reading private reports, not after creating an issue.
     plan([], [], owners)
+    if type(limit) is not int or not 1 <= limit <= MAX_LIMIT:
+        raise ValueError(f"max writes must be 1..{MAX_LIMIT}")
     for owner in set(owners.values()):
         github.call(f"/repos/{repo}/assignees/{owner}")
     label = github.call(f"/repos/{repo}/labels/{LABEL}")
@@ -304,15 +319,20 @@ def live(worker, github, repo, owners, rewrite=False):
         if not re.fullmatch(r"r:\d{13}:[a-f0-9-]{1,36}", report_id):
             raise ValueError("invalid Worker report ID")
         records.append({"id": report_id, "report": worker.call("/reports/" + urllib.parse.quote(report_id, safe=""))})
-    actions = plan(records, issues, owners, rewrite)  # All reads/validation finish before first mutation.
+    planned = _plan(records, issues, owners, rewrite)  # All reads/validation finish before first mutation.
+    if len(planned) > PLAN_ALERT:
+        # Kế hoạch lớn ngoài dự kiến: cảnh báo, không huỷ lượt (lượt sau làm tiếp).
+        print(f"WARNING: kế hoạch ghi {len(planned)} mục, hơn dự kiến {PLAN_ALERT}; "
+              f"mỗi lượt chỉ ghi {limit}.", file=sys.stderr)
+    actions = planned[:limit]
     for action in actions:
-        number = action.pop("number")
+        number = action["number"]
         if number:
             # Preserve title, labels, assignee and closed/open state chosen by maintainers.
             github.call(f"/repos/{repo}/issues/{number}", "PATCH", {"body": action["body"]})
         else:
-            github.call(f"/repos/{repo}/issues", "POST", action)
-    return len(actions)
+            github.call(f"/repos/{repo}/issues", "POST", {key: value for key, value in action.items() if key != "number"})
+    return len(actions), len(planned) - len(actions)
 
 
 def main():
@@ -320,14 +340,17 @@ def main():
     parser.add_argument("--fixture", help="offline JSON {records, issues, owners}; no network/writes")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--rewrite-body", action="store_true",
-                        help="ghi lại thân các issue cũ (lấp dữ liệu dọn); không tạo issue mới, vẫn qua plan + MAX_WRITES")
+                        help="ghi lại thân các issue cũ (lấp dữ liệu dọn); không tạo issue mới, chia lô theo --max-writes")
+    parser.add_argument("--max-writes", type=int, default=MAX_WRITES,
+                        help=f"số mục ghi tối đa mỗi lượt (1..{MAX_LIMIT}, mặc định {MAX_WRITES})")
     args = parser.parse_args()
     try:
         if args.fixture:
             if args.apply:
                 raise ValueError("fixture cannot apply")
             data = json.load(open(args.fixture, encoding="utf-8"))
-            print(json.dumps(plan(data["records"], data.get("issues", []), data["owners"], args.rewrite_body), ensure_ascii=False))
+            print(json.dumps(plan(data["records"], data.get("issues", []), data["owners"], args.rewrite_body,
+                                  args.max_writes), ensure_ascii=False))
             return
         if not args.apply:
             raise ValueError("choose offline fixture or explicitly authorized apply")
@@ -342,10 +365,13 @@ def main():
             raise ValueError("missing runtime credentials/repository")
         if url.scheme != "https" or not (url.hostname or "").endswith(".workers.dev") or url.username or url.password or url.query or url.fragment or url.path not in ("", "/"):
             raise ValueError("invalid Worker endpoint")
-        count = live(Client(base.rstrip("/"), auth), Client("https://api.github.com", gh_auth), repo,
-                     {"Sol": os.environ.get("CRASH_ASSIGNEE_SOL", ""), "Sonnet": os.environ.get("CRASH_ASSIGNEE_SONNET", "")},
-                     args.rewrite_body)
-        print("Issue mutations:", count)  # Never print reports, headers, credentials or signed URLs.
+        written, remaining = live(Client(base.rstrip("/"), auth), Client("https://api.github.com", gh_auth), repo,
+                                  {"Sol": os.environ.get("CRASH_ASSIGNEE_SOL", ""), "Sonnet": os.environ.get("CRASH_ASSIGNEE_SONNET", "")},
+                                  args.rewrite_body, args.max_writes)
+        # Chia lô: hết ngân sách lượt này là chuyện bình thường (exit 0), lượt sau làm tiếp.
+        print(f"Issue mutations: {written}; còn lại: {remaining}."
+              + (" Chạy lại lượt sau để làm tiếp." if remaining else ""))
+
     except (ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
         # Exact ValueError messages are controlled by this script; subclasses may contain private input.
         reason = str(error) if type(error) is ValueError else type(error).__name__
