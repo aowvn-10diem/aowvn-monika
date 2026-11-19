@@ -1024,8 +1024,12 @@ object Diagnostics {
             val trace = scrub(c, traceStrings(e).joinToString("\n"))
             val crumbs = Breadcrumbs.read(c, e.pid)
             val deathSession = if (readsDeathSession(kind)) readDeathSession(c, e.pid, e.timestamp, e.processStateSummary) else null
+            // V202 chỉ nới luật cho **phiên chơi** (tiến trình `:game`/`:midlet` còn quan trọng dù đang cached).
+            // Phiên mức tiến trình ([PROCESS_KIND]) có mặt ở MỌI tiến trình, kể cả tiến trình chính đang
+            // `IMPORTANCE_CACHED` — nếu tính nó là "có phiên" thì luật V202 mất tác dụng và lowmem nền bị gửi.
+            val playSession = deathSession?.takeIf { it.kind != PROCESS_KIND }
             // V202: bỏ ca Android dọn tiến trình nền bình thường; vẫn dọn trạng thái để không quét lại.
-            if (kind == "lowmem" && !shouldReportLowMem(e.importance, e.processName, deathSession != null)) {
+            if (kind == "lowmem" && !shouldReportLowMem(e.importance, e.processName, playSession != null)) {
                 Breadcrumbs.drop(c, e.pid)
                 clearDeathSession(c, e.pid, e.processStateSummary)
                 continue
@@ -1047,7 +1051,7 @@ object Diagnostics {
                 session = deathSession,
                 // Phiên mức tiến trình ([PROCESS_KIND]) chỉ để báo có ngữ cảnh, không phải một lượt chơi
                 // → không mở hộp thoại "game chết" ở màn chính.
-                fromGame = deathSession != null && deathSession.kind != PROCESS_KIND,
+                fromGame = playSession != null,
             ))
             Breadcrumbs.drop(c, e.pid)
             clearDeathSession(c, e.pid, e.processStateSummary)

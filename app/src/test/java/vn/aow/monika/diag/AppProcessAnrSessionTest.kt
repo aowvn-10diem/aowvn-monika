@@ -44,15 +44,21 @@ class AppProcessAnrSessionTest {
         Diagnostics.resetSendDedupe()
     }
 
-    private fun addProcessExit(pid: Int, processName: String, reason: Int, diedAt: Long, summary: ByteArray?) {
+    private fun addProcessExit(
+        pid: Int,
+        processName: String,
+        reason: Int,
+        diedAt: Long,
+        summary: ByteArray?,
+        importance: Int = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND,
+    ) {
         val type = Class.forName("android.app.ApplicationExitInfo")
         val info = type.getDeclaredConstructor().newInstance()
         type.getMethod("setPid", Int::class.javaPrimitiveType).invoke(info, pid)
         type.getMethod("setProcessName", String::class.java).invoke(info, processName)
         type.getMethod("setReason", Int::class.javaPrimitiveType).invoke(info, reason)
         type.getMethod("setTimestamp", Long::class.javaPrimitiveType).invoke(info, diedAt)
-        type.getMethod("setImportance", Int::class.javaPrimitiveType)
-            .invoke(info, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
+        type.getMethod("setImportance", Int::class.javaPrimitiveType).invoke(info, importance)
         if (summary != null) type.getMethod("setProcessStateSummary", ByteArray::class.java).invoke(info, summary)
         shadowOf(context.getSystemService(ActivityManager::class.java)).addApplicationExitInfo(info)
     }
@@ -98,6 +104,39 @@ class AppProcessAnrSessionTest {
         assertEquals("snes9x", report.core)
         assertNotEquals("app", report.core)
         assertTrue(report.fromGame)
+    }
+
+    /**
+     * (d) `lowmem` ở tiến trình chính đang `IMPORTANCE_CACHED`: V202 **vẫn lọc** như trước.
+     * Phiên mức tiến trình không được nới luật gửi của lowmem nền — nếu nới, mỗi lần Android dọn
+     * tiến trình nền sẽ `autoSend` một báo cáo nhiễu.
+     */
+    @Test fun cachedBackgroundLowmemIsStillFiltered() {
+        val pid = Process.myPid()
+        Diagnostics.startProcess(context)
+        val diedAt = System.currentTimeMillis() + 1_000
+        addProcessExit(
+            pid, context.packageName, ApplicationExitInfo.REASON_LOW_MEMORY, diedAt, summaryOf(pid),
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED,
+        )
+
+        val reports = Diagnostics.collectProcessDeaths(context)
+
+        assertTrue("lowmem nền không được báo: ${reports.map { it.kind }}", reports.none { it.kind == "lowmem" })
+        assertFalse("ảnh chụp phiên phải được dọn", File(diag, "sessions/$pid.json").exists())
+    }
+
+    /** (d2) `lowmem` tiến trình chính còn quan trọng (foreground): vẫn báo, kèm ngữ cảnh tiến trình. */
+    @Test fun foregroundLowmemStillReportsWithAppContext() {
+        val pid = Process.myPid()
+        Diagnostics.startProcess(context)
+        val diedAt = System.currentTimeMillis() + 1_000
+        addProcessExit(pid, context.packageName, ApplicationExitInfo.REASON_LOW_MEMORY, diedAt, summaryOf(pid))
+
+        val report = Diagnostics.collectProcessDeaths(context).single { it.kind == "lowmem" }
+
+        assertEquals("app", report.core)
+        assertNotEquals("unknown", report.core)
     }
 
     /** (c) Máy API < 28 (`MidletDiagnostics` bỏ qua): vẫn lấy được tên tiến trình từ `/proc/self/cmdline`. */
