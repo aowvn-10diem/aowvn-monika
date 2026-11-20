@@ -755,6 +755,10 @@ object Diagnostics {
     fun autoSend(c: Context, http: OkHttpClient, r: Report, endpoint: String, enabledByConfig: Boolean, enabledByUser: Boolean) {
         if (!enabledByConfig || !enabledByUser || endpoint.isBlank() || r.sent) return
         if (!autoSendAllowedHere()) return
+        // Bản tạm `unknown` chỉ giữ chỗ cho tới khi lượt quét tìm ra đúng `kind`: lúc đó bản đầy đủ thay thế
+        // nó và `record` xoá `reports/<id>.json`. Gửi/ghi lại bản đã bị thay thế sẽ dựng lại tệp vừa xoá và
+        // đẩy thêm một bản ghi ở Worker cho **cùng một lần chết** (#302) — nên bỏ qua khi tệp không còn.
+        if (replacedOrDeleted(c, r)) return
         // V194: hạn mức ghi KV của Worker chỉ 1000/ngày ↔ mỗi báo cáo là 1 lần ghi.
         // Cùng một dấu vân tay chỉ gửi 1 lần/giờ (nhớ qua lần mở app); lowmem chặt hơn: 1 lần mỗi phiên.
         // Bản gộp vẫn tăng `count` ở máy nhưng KHÔNG gửi lại — tránh kiểu mỗi lần mở app lại đẩy 1 lowmem y hệt.
@@ -780,7 +784,8 @@ object Diagnostics {
                 if (ok) {
                     markSent(c, fingerprint, sendClock())
                     sentThisSession.add(fingerprint)
-                    save(c, r.copy(sent = true))
+                    // Bản `unknown` có thể vừa bị bản đầy đủ thay thế trong lúc gửi: đừng dựng lại tệp đã xoá.
+                    if (!replacedOrDeleted(c, r)) save(c, r.copy(sent = true))
                 }
             } finally {
                 sendingInFlight.remove(fingerprint)
@@ -867,6 +872,14 @@ object Diagnostics {
                 it.session?.pid == s.pid && it.session?.startedAt == s.startedAt
         }
     }
+
+    /**
+     * Bản tạm `unknown` này đã bị bản đầy đủ cùng phiên thay thế (nên `record` đã xoá tệp) — hoặc người chơi
+     * đã xoá nó. Chỉ áp cho `unknown`: đây là loại **duy nhất** bị chính mã này xoá để nhường chỗ, nên tệp
+     * vắng mặt là dấu hiệu "đã thay thế"; loại khác chỉ mất tệp khi người chơi xoá tay.
+     */
+    private fun replacedOrDeleted(c: Context, r: Report): Boolean =
+        r.kind == "unknown" && !File(reportsDir(c), "${r.id}.json").isFile
 
     /**
      * Một lần chết có thể bị ghi **hai lần với cùng `id`** (id là mốc chết): [collect] đọc phiên nên có lõi, còn
