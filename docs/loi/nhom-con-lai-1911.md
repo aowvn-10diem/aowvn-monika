@@ -34,8 +34,8 @@ Phiên này **không có `CRASH_ADMIN_TOKEN`** ⇒ không đọc được `reaso
 | #387 | unknown / native | 1 | `ecdccd33` (lõi từ phiên chết) | **Không** (chỉ `v0.8.15` thử) | Giữ mở, chờ 0.8.15 chính thức |
 | #322 | pcsx_rearmed / core-error | 37 | `#668` (PS1 hai tệp rời) + `#649` (báo thiếu tệp đĩa) | `#649` ở 0.8.14; `#668` ở **0.8.15 thử** | Giữ mở, chờ 0.8.15 chính thức |
 | #578 | pcsx_rearmed / core-error | 18 | như #322 | như trên | Giữ mở, chờ |
-| #403 | mgba / core-error | 4 | `#686` (mã lỗi/lõi/hệ) | **Chưa gộp** (PR mở) | Giữ mở, chờ #686 |
-| #418 | snes9x / core-error | 1 | `#686` | **Chưa gộp** | Giữ mở, chờ #686 |
+| #403 | mgba / core-error | 4 | `#686` (mã lỗi/lõi/hệ) | **Đã gộp** vào `main` 19/11 12:14Z (`fafd13fe`), **chưa vào tag nào** | Giữ mở, chờ 0.8.16 vì `#686` vào sau mốc cắt tag |
+| #418 | snes9x / core-error | 1 | `#686` | **Đã gộp** vào `main` 19/11 12:14Z (`fafd13fe`), **chưa vào tag nào** | Giữ mở, chờ 0.8.16 vì `#686` vào sau mốc cắt tag |
 | #448 | snes9x / native | 2 | không (thiếu gói ký hiệu, lõi `version=1`) | — | Giữ mở |
 | #563 | melonds / native | 3 | `#644` (chặn con trỏ rỗng khi lưu SRAM, 0.8.14) là **ứng viên**, chưa chứng minh khớp chữ ký | Có ở 0.8.14 | Giữ mở, chờ thêm dữ liệu |
 | #385 | kirikiroid2-yuri / native | 13 | không (cần giải mã khung) | — | Giữ mở, bế tắc token |
@@ -65,5 +65,5 @@ Phiên này **không có `CRASH_ADMIN_TOKEN`** ⇒ không đọc được `reaso
 ## 4. Việc cần PM
 
 1. **Cắt lại `v0.8.15`** (hoặc chấp nhận 0.8.16) để `#683` vào bản chính thức — nếu không, cả 7 issue `unknown/anr` phải chờ thêm một bản.
-2. Gộp `#686` (core-error đọc được mã lỗi/lõi/hệ) — điều kiện để đóng #403/#418 và tách mã cho #322/#578.
+2. Duyệt và đăng giúp comment soạn sẵn trong `docs/loi/comment-cho-duyet-1911.md` cho 20 issue — phiên không tự đăng.
 3. Cấp `CRASH_ADMIN_TOKEN` cho một phiên để giải mã #385 (đã đủ lõi ghim + ký hiệu).
