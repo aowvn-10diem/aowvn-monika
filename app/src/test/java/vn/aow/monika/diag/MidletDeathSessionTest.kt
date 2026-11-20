@@ -149,6 +149,15 @@ class MidletDeathSessionTest {
         assertTrue("thành phần phải nêu lõi, hiện: ${report.component}", report.component.contains("melondsds"))
     }
 
+    /**
+     * Ảnh chụp phiên không khớp (processStateSummary lệch / đã bị dọn / PID được cấp lại) → báo cáo không có
+     * phiên, `core` rỗng, thành phần lùi về nhãn tiến trình.
+     *
+     * Đây **chính là** đường còn lại sinh được chữ ký cũ `unknown / resource / 2ba6b80864be…` của #302: bot
+     * tính `core` từ `session.core`, thiếu phiên thì `token("")` = `"unknown"`, và `frames` rỗng vì báo cáo
+     * `resource` không có stack. Không bịa lõi từ tên tiến trình (quy ước: `unknown` = thiếu bằng chứng),
+     * nên ca này được giữ nguyên và theo dõi qua số lượt của nhóm đó sau khi phát hành.
+     */
     @Test fun resourceExitWithoutSnapshotStillFallsBackToProcessComponent() {
         val pid = 4444
         val diedAt = System.currentTimeMillis() - 5_000
@@ -164,30 +173,39 @@ class MidletDeathSessionTest {
     }
 
     /**
-     * #302 (lỗ 2): `collect` gặp `exitInfo == null` (Android chưa ghi lý do chết, hoặc API < 30) thì **không
-     * được xoá** ảnh chụp phiên — lượt quét sau còn đọc được phiên, báo cáo `resource` thứ hai không mất lõi.
-     * Trước bản vá, ảnh chụp bị xoá ngay nên báo cáo quét ra có `session = null`, `core` rỗng.
+     * #302 (duyệt PR #692, điểm 1): một lần chết chỉ được ra **một** báo cáo.
+     *
+     * Chuỗi thật: `collect` chạy khi Android **chưa** ghi lý do chết (`exitInfo == null`) → lập báo cáo tạm
+     * `unknown` với `id = lastAlive`; lượt quét chạy ngay sau đó thấy `EXCESSIVE_RESOURCE_USAGE` → lập báo cáo
+     * `resource` với `id = mốc chết`. Hai `id` khác nhau nên cửa chặn theo `id` (`collectProcessDeaths`) không
+     * khớp → cả hai cùng nằm trong kho. Bản `resource` có phiên là bản đầy đủ hơn, nên phải **thay thế** bản
+     * tạm của đúng phiên đó (pid + startedAt), và hộp thoại phải trỏ sang bản đầy đủ.
      */
-    @Test fun collectWithoutExitInfoKeepsSnapshotForLaterResourceScan() {
+    @Test fun oneDeathYieldsExactlyOneReport() {
         val pid = 4646
         val diedAt = System.currentTimeMillis() - 5_000
         writeLiveSession(pid, core = "midlet", system = "J2ME", diedAt = diedAt)
         writeDeathSnapshot(pid, kind = "midlet", core = "midlet", system = "J2ME", diedAt = diedAt)
 
-        // Chưa có ApplicationExitInfo → `collect` xếp "unknown", nhưng phải giữ ảnh chụp phiên.
-        val first = Diagnostics.collect(context)
-        assertEquals("unknown", first?.kind)
+        // Lượt 1: chưa có lý do chết → báo cáo tạm `unknown`; ảnh chụp phiên phải được giữ cho lượt quét.
+        val fromCollect = Diagnostics.collect(context)
+        assertEquals("unknown", fromCollect?.kind)
         assertTrue("ảnh chụp phiên phải còn cho lượt quét sau: sessions/$pid.json", File(diag, "sessions/$pid.json").exists())
 
-        // Lượt sau Android đã ghi lý do chết → quét ra `resource` CÓ phiên.
+        // Lượt 2: Android đã ghi lý do chết → báo cáo `resource` có phiên, thay thế bản tạm.
         addProcessExit(pid, "${context.packageName}:midlet", ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE,
             diedAt, Diagnostics.deathProcessSummary(generation))
-        val scan = Diagnostics.collectProcessDeaths(context).single { it.kind == "resource" }
+        Diagnostics.collectProcessDeaths(context)
 
-        assertEquals("midlet", scan.session?.core)
-        assertEquals("midlet", scan.core)
-        assertEquals("J2ME", scan.session?.system)
-        assertEquals("engine:j2me", scan.component)
+        val forDeath = Diagnostics.list(context).filter { it.id in (diedAt - 60_000)..(diedAt + 60_000) }
+        assertEquals("mỗi lần chết chỉ được 1 báo cáo, hiện: ${forDeath.map { it.kind }}", 1, forDeath.size)
+        val only = forDeath.single()
+        assertEquals("resource", only.kind)
+        assertEquals("midlet", only.core)
+        assertEquals("midlet", only.session?.core)
+        assertEquals("J2ME", only.system)
+        assertEquals("engine:j2me", only.component)
+        assertEquals("hộp thoại phải trỏ bản đầy đủ", only.id, Diagnostics.pending.value?.id)
     }
 
     /** Lỗ 2, vế ngược: có `ApplicationExitInfo` thì dọn ảnh chụp như cũ — không để rác trong `diag/sessions`. */

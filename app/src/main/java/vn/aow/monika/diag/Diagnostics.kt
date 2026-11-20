@@ -828,6 +828,7 @@ object Diagnostics {
 
     /**
      * Lưu báo cáo mới; nếu cùng dấu vân tay với báo cáo trước (trong 30 báo cáo gần nhất) thì gộp: tăng đếm, giữ bản mới nhất.
+     * Nếu là bản đầy đủ của một lần chết đã có bản tạm `unknown` khác `id` thì xoá bản tạm (xem [supersededUnknownReport]).
      * `internal` để test gọi thẳng được đường ghi duy nhất này (xem `DeathKindAndSessionCarryTest`).
      */
     internal fun record(c: Context, r0: Report): Report {
@@ -837,12 +838,35 @@ object Diagnostics {
         val prev = existing.firstOrNull { it.fingerprint == fp }
         val r = safe.copy(fingerprint = fp, count = (prev?.count ?: 0) + 1, sent = false, seen = prev?.seen == true && prev.count >= 3)
         prev?.let { File(reportsDir(c), "${it.id}.json").delete() }
+        supersededUnknownReport(r, existing)?.let { old ->
+            File(reportsDir(c), "${old.id}.json").delete()
+            // Hộp thoại đang trỏ bản tạm: trỏ sang bản đầy đủ, nếu không `markSeen` sẽ ghi lại tệp vừa xoá.
+            if (pending.value?.id == old.id) pending.value = r
+        }
         save(c, r)
         return r
     }
 
     /** Loại báo cáo do một lần chết tiến trình sinh ra (mọi nguồn: [collect], [collectProcessDeaths], CrashReporter). */
     private val deathKinds = setOf("native", "java", "anr", "lowmem", "killed", "unknown", "resource", "initfail")
+
+    /**
+     * Một lần chết có thể sinh **hai báo cáo khác `id`**: bản tạm `unknown` của [collect] (`id = lastAlive`, khi
+     * Android chưa ghi lý do chết) và bản đúng `kind` của [collectProcessDeaths] (`id = mốc chết`). Cửa chặn theo
+     * `id` không khớp nên cả hai cùng nằm trong kho — 1 lần chết thành 2 báo cáo (#302).
+     *
+     * Lượt quét có phiên là bản đầy đủ hơn, nên bản tạm của **đúng phiên đó** (`pid` + `startedAt`) bị thay thế.
+     * Chỉ `unknown` nhường chỗ cho loại chết xác định được, và chỉ khi cùng phiên: `startedAt` là duy nhất cho
+     * một lượt chơi nên không thể trùng giữa hai lần chết, kể cả khi Android cấp lại PID.
+     */
+    internal fun supersededUnknownReport(next: Report, existing: List<Report>): Report? {
+        val s = next.session ?: return null
+        if (next.kind !in deathKinds || next.kind == "unknown") return null
+        return existing.firstOrNull {
+            it.id != next.id && it.kind == "unknown" &&
+                it.session?.pid == s.pid && it.session?.startedAt == s.startedAt
+        }
+    }
 
     /**
      * Một lần chết có thể bị ghi **hai lần với cùng `id`** (id là mốc chết): [collect] đọc phiên nên có lõi, còn
