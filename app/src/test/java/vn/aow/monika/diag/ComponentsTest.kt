@@ -28,6 +28,16 @@ class ComponentsTest {
         assertEquals("", Components.of(null, null, "không có gì liên quan"))
     }
 
+    /**
+     * #302: báo cáo `resource` của tiến trình `:midlet` đi đường `collect` (có phiên) từng ra component rỗng
+     * vì `Components` chỉ biết nhãn phiên `j2me`. Có phiên `midlet` thì phải là `engine:j2me`.
+     * Không có phiên thì giữ nguyên hành vi cũ: không đoán bừa từ chữ trong vệt.
+     */
+    @Test fun phienMidletLaEngineJ2me() {
+        assertEquals("engine:j2me", Components.of(null, phien("midlet", "midlet"), "begin: midlet · midlet · J2ME"))
+        assertEquals("", Components.of(null, null, "begin: midlet · midlet · J2ME"))
+    }
+
     /** Lõi citra libretro từng bị gắn `engine:azahar` vì luật khớp chữ "citra" chạy trước luật libretro (#610). */
     @Test fun loiCitraLibretroKhongPhaiAzahar() {
         assertEquals(

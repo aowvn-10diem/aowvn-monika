@@ -327,7 +327,9 @@ object Diagnostics {
             env = envLine(c), crumbs = crumbs,
         ))
         Breadcrumbs.drop(c, s.pid)
-        deathSessionFile(c, s.pid).delete()
+        // `exit == null` (API < 30, hoặc Android chưa ghi lý do chết): giữ ảnh chụp phiên để lượt quét sau
+        // (`collectProcessDeaths`) còn đọc được phiên — xoá ở đây thì báo cáo `resource` thứ hai mất lõi (#302).
+        if (exit != null) deathSessionFile(c, s.pid).delete()
         pending.value = r
         return r
     }
@@ -753,6 +755,10 @@ object Diagnostics {
     fun autoSend(c: Context, http: OkHttpClient, r: Report, endpoint: String, enabledByConfig: Boolean, enabledByUser: Boolean) {
         if (!enabledByConfig || !enabledByUser || endpoint.isBlank() || r.sent) return
         if (!autoSendAllowedHere()) return
+        // Bản tạm `unknown` chỉ giữ chỗ cho tới khi lượt quét tìm ra đúng `kind`: lúc đó bản đầy đủ thay thế
+        // nó và `record` xoá `reports/<id>.json`. Gửi/ghi lại bản đã bị thay thế sẽ dựng lại tệp vừa xoá và
+        // đẩy thêm một bản ghi ở Worker cho **cùng một lần chết** (#302) — nên bỏ qua khi tệp không còn.
+        if (replacedOrDeleted(c, r)) return
         // V194: hạn mức ghi KV của Worker chỉ 1000/ngày ↔ mỗi báo cáo là 1 lần ghi.
         // Cùng một dấu vân tay chỉ gửi 1 lần/giờ (nhớ qua lần mở app); lowmem chặt hơn: 1 lần mỗi phiên.
         // Bản gộp vẫn tăng `count` ở máy nhưng KHÔNG gửi lại — tránh kiểu mỗi lần mở app lại đẩy 1 lowmem y hệt.
@@ -778,7 +784,8 @@ object Diagnostics {
                 if (ok) {
                     markSent(c, fingerprint, sendClock())
                     sentThisSession.add(fingerprint)
-                    save(c, r.copy(sent = true))
+                    // Bản `unknown` có thể vừa bị bản đầy đủ thay thế trong lúc gửi: đừng dựng lại tệp đã xoá.
+                    if (!replacedOrDeleted(c, r)) save(c, r.copy(sent = true))
                 }
             } finally {
                 sendingInFlight.remove(fingerprint)
@@ -826,6 +833,7 @@ object Diagnostics {
 
     /**
      * Lưu báo cáo mới; nếu cùng dấu vân tay với báo cáo trước (trong 30 báo cáo gần nhất) thì gộp: tăng đếm, giữ bản mới nhất.
+     * Nếu là bản đầy đủ của một lần chết đã có bản tạm `unknown` khác `id` thì xoá bản tạm (xem [supersededUnknownReport]).
      * `internal` để test gọi thẳng được đường ghi duy nhất này (xem `DeathKindAndSessionCarryTest`).
      */
     internal fun record(c: Context, r0: Report): Report {
@@ -835,12 +843,43 @@ object Diagnostics {
         val prev = existing.firstOrNull { it.fingerprint == fp }
         val r = safe.copy(fingerprint = fp, count = (prev?.count ?: 0) + 1, sent = false, seen = prev?.seen == true && prev.count >= 3)
         prev?.let { File(reportsDir(c), "${it.id}.json").delete() }
+        supersededUnknownReport(r, existing)?.let { old ->
+            File(reportsDir(c), "${old.id}.json").delete()
+            // Hộp thoại đang trỏ bản tạm: trỏ sang bản đầy đủ, nếu không `markSeen` sẽ ghi lại tệp vừa xoá.
+            if (pending.value?.id == old.id) pending.value = r
+        }
         save(c, r)
         return r
     }
 
     /** Loại báo cáo do một lần chết tiến trình sinh ra (mọi nguồn: [collect], [collectProcessDeaths], CrashReporter). */
     private val deathKinds = setOf("native", "java", "anr", "lowmem", "killed", "unknown", "resource", "initfail")
+
+    /**
+     * Một lần chết có thể sinh **hai báo cáo khác `id`**: bản tạm `unknown` của [collect] (`id = lastAlive`, khi
+     * Android chưa ghi lý do chết) và bản đúng `kind` của [collectProcessDeaths] (`id = mốc chết`). Cửa chặn theo
+     * `id` không khớp nên cả hai cùng nằm trong kho — 1 lần chết thành 2 báo cáo (#302).
+     *
+     * Lượt quét có phiên là bản đầy đủ hơn, nên bản tạm của **đúng phiên đó** (`pid` + `startedAt`) bị thay thế.
+     * Chỉ `unknown` nhường chỗ cho loại chết xác định được, và chỉ khi cùng phiên: `startedAt` là duy nhất cho
+     * một lượt chơi nên không thể trùng giữa hai lần chết, kể cả khi Android cấp lại PID.
+     */
+    internal fun supersededUnknownReport(next: Report, existing: List<Report>): Report? {
+        val s = next.session ?: return null
+        if (next.kind !in deathKinds || next.kind == "unknown") return null
+        return existing.firstOrNull {
+            it.id != next.id && it.kind == "unknown" &&
+                it.session?.pid == s.pid && it.session?.startedAt == s.startedAt
+        }
+    }
+
+    /**
+     * Bản tạm `unknown` này đã bị bản đầy đủ cùng phiên thay thế (nên `record` đã xoá tệp) — hoặc người chơi
+     * đã xoá nó. Chỉ áp cho `unknown`: đây là loại **duy nhất** bị chính mã này xoá để nhường chỗ, nên tệp
+     * vắng mặt là dấu hiệu "đã thay thế"; loại khác chỉ mất tệp khi người chơi xoá tay.
+     */
+    private fun replacedOrDeleted(c: Context, r: Report): Boolean =
+        r.kind == "unknown" && !File(reportsDir(c), "${r.id}.json").isFile
 
     /**
      * Một lần chết có thể bị ghi **hai lần với cùng `id`** (id là mốc chết): [collect] đọc phiên nên có lõi, còn

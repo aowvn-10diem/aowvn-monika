@@ -33,7 +33,9 @@ object Components {
             libretro ->
                 "engine:libretro" + libretroCore(session, t).let { if (it.isEmpty()) "" else ":$it" }
             session?.kind == "web" -> "engine:onsyuri"
-            session?.kind == "j2me" -> "engine:j2me"
+            // Cùng engine Java, hai nhãn phiên: đường cũ dùng `j2me`, tiến trình `:midlet` (#302) dùng
+            // `midlet`. Thiếu vế thứ hai thì báo cáo `resource` của `:midlet` mất thành phần dù có phiên.
+            session?.kind == "j2me" || session?.kind == "midlet" -> "engine:j2me"
             has(t, "okhttp", "SocketException", "UnknownHostException", "SSLException", "SocketTimeout") -> "net"
             // Chữ "citra" còn lại (không có dấu hiệu engine Azahar, không phải lỗi mạng) = lõi citra libretro:
             // "citra_libretro_android", tên lõi trong vệt "begin: libretro · citra · …". Chỉ khớp chữ thường
