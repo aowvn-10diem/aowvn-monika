@@ -6,6 +6,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -89,8 +90,9 @@ class MidletDeathSessionTest {
         assertEquals("J2ME", report.session?.system)
         assertEquals("midlet", report.core)
         assertEquals("J2ME", report.system)
-        assertTrue("thành phần phải nêu tiến trình midlet, hiện: ${report.component}", report.component.contains("midlet"))
-        assertEquals("app:midlet", report.component)
+        assertTrue("thành phần phải nêu engine Java, hiện: ${report.component}", report.component.contains("j2me"))
+        // #302 (lỗ 1): có phiên `midlet` thì `Components` nhận ra engine, không rơi về fallback `app:midlet`.
+        assertEquals("engine:j2me", report.component)
         assertTrue(report.fromGame)
     }
 
@@ -159,5 +161,45 @@ class MidletDeathSessionTest {
         assertEquals("", report.core)
         assertEquals("app:midlet", report.component)
         assertEquals(false, report.fromGame)
+    }
+
+    /**
+     * #302 (lỗ 2): `collect` gặp `exitInfo == null` (Android chưa ghi lý do chết, hoặc API < 30) thì **không
+     * được xoá** ảnh chụp phiên — lượt quét sau còn đọc được phiên, báo cáo `resource` thứ hai không mất lõi.
+     * Trước bản vá, ảnh chụp bị xoá ngay nên báo cáo quét ra có `session = null`, `core` rỗng.
+     */
+    @Test fun collectWithoutExitInfoKeepsSnapshotForLaterResourceScan() {
+        val pid = 4646
+        val diedAt = System.currentTimeMillis() - 5_000
+        writeLiveSession(pid, core = "midlet", system = "J2ME", diedAt = diedAt)
+        writeDeathSnapshot(pid, kind = "midlet", core = "midlet", system = "J2ME", diedAt = diedAt)
+
+        // Chưa có ApplicationExitInfo → `collect` xếp "unknown", nhưng phải giữ ảnh chụp phiên.
+        val first = Diagnostics.collect(context)
+        assertEquals("unknown", first?.kind)
+        assertTrue("ảnh chụp phiên phải còn cho lượt quét sau: sessions/$pid.json", File(diag, "sessions/$pid.json").exists())
+
+        // Lượt sau Android đã ghi lý do chết → quét ra `resource` CÓ phiên.
+        addProcessExit(pid, "${context.packageName}:midlet", ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE,
+            diedAt, Diagnostics.deathProcessSummary(generation))
+        val scan = Diagnostics.collectProcessDeaths(context).single { it.kind == "resource" }
+
+        assertEquals("midlet", scan.session?.core)
+        assertEquals("midlet", scan.core)
+        assertEquals("J2ME", scan.session?.system)
+        assertEquals("engine:j2me", scan.component)
+    }
+
+    /** Lỗ 2, vế ngược: có `ApplicationExitInfo` thì dọn ảnh chụp như cũ — không để rác trong `diag/sessions`. */
+    @Test fun collectWithExitInfoStillClearsSnapshot() {
+        val pid = 4747
+        val diedAt = System.currentTimeMillis() - 5_000
+        writeLiveSession(pid, core = "midlet", system = "J2ME", diedAt = diedAt)
+        writeDeathSnapshot(pid, kind = "midlet", core = "midlet", system = "J2ME", diedAt = diedAt)
+        addProcessExit(pid, "${context.packageName}:midlet", ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE,
+            diedAt, Diagnostics.deathProcessSummary(generation))
+
+        assertEquals("resource", Diagnostics.collect(context)?.kind)
+        assertFalse("có lý do chết thì phải dọn ảnh chụp: sessions/$pid.json", File(diag, "sessions/$pid.json").exists())
     }
 }

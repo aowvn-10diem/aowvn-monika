@@ -327,7 +327,9 @@ object Diagnostics {
             env = envLine(c), crumbs = crumbs,
         ))
         Breadcrumbs.drop(c, s.pid)
-        deathSessionFile(c, s.pid).delete()
+        // `exit == null` (API < 30, hoặc Android chưa ghi lý do chết): giữ ảnh chụp phiên để lượt quét sau
+        // (`collectProcessDeaths`) còn đọc được phiên — xoá ở đây thì báo cáo `resource` thứ hai mất lõi (#302).
+        if (exit != null) deathSessionFile(c, s.pid).delete()
         pending.value = r
         return r
     }
