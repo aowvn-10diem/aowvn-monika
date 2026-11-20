@@ -150,3 +150,23 @@ so số `unknown/resource` của hai bản phát hành liên tiếp; kỳ vọng
 - Bản vá §3 **chưa chạy test trên nhánh này** (đã gỡ khỏi `Diagnostics.kt` theo yêu cầu phạm vi); test đã viết
   nhưng chưa áp lại — ghi [CHƯA KIỂM] thay vì trình bày như đã xanh.
 - Số lượt là số bot cộng dồn, không phải số người; ảnh chụp 13/11 (`TONG-HOP-1311.md`) nên không so trực tiếp.
+
+## 8. Cập nhật 20/11/2026 — trạng thái sau #655/#680 và PR #692
+
+Ba mắt xích ở §2 đã bịt trên `main`: #638 (gắn phiên cho `:midlet`), #655 (`resource`/`native`/
+`initfail` đọc phiên chết), #680 (`collectKind` trả `resource`, `carrySession` giữ phiên khi ghi lại).
+PR #692 vá ba điểm còn lại: `component` của phiên `midlet` → `engine:j2me`; giữ ảnh chụp phiên khi
+`exitInfo == null`; và `record` xoá bản tạm `unknown` khi bản đầy đủ của **đúng phiên**
+(`pid` + `startedAt`) đã tới — một lần chết chỉ còn một báo cáo.
+
+Còn lại **một** đường sinh được chữ ký cũ `unknown / resource / 2ba6b80864be…`:
+`collectProcessDeaths` khi **không khớp được ảnh chụp phiên** (`processStateSummary` lệch, ảnh chụp đã
+bị dọn, PID được cấp lại) ⇒ `session = null`, `core = ""`; bot tính `token("") = "unknown"` và
+`frames` rỗng (báo cáo `resource` không có stack). Không bịt bằng cách suy `core` từ tên tiến trình
+(quy ước: `unknown` = thiếu bằng chứng, không giả một `Session`) và không nới `matchingDeathSession`
+(mở lại lỗi gắn nhầm lõi khi Android cấp lại PID).
+
+Theo dõi sau phát hành: nhóm `midlet / resource` phải xuất hiện và tăng, còn nhóm
+`unknown / resource` phải **ngừng** tăng. Nhóm đó vẫn tăng ⇒ `processStateSummary` không khớp trên
+máy thật ⇒ mở việc riêng, đọc `/report?id=` để lấy bằng chứng. **#302 vẫn mở** cho tới khi có bản phát
+hành và số liệu theo dõi.
