@@ -164,6 +164,7 @@ object NdsContent {
     )
 
     /** Đọc 4 KiB header; `null` khi không đọc được (không kết luận, để lõi tự báo). */
+    // diag: bỏ qua lỗi đọc header — nhánh phụ: app không kết luận, không chặn; tệp không đọc được thì chính lõi báo mã 1 kèm dung lượng ROM trong báo cáo.
     private fun readHeader(game: File): Header? = runCatching {
         RandomAccessFile(game, "r").use { raf ->
             if (raf.length() < HEADER_BYTES) return null

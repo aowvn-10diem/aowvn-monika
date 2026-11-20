@@ -64,7 +64,7 @@ Chặn thì màn chờ hiện đúng lý do + "Quay lại" (`RetroActivity.kt:32
 `CoreLoadError` (mã 1, lõi `melondsds`): câu chẩn đoán đổi thành "đã kiểm header trước khi nạp" thay vì khuyên
 nhập lại game — tới được lõi nghĩa là kích thước/logo/ARM9 đều hợp lệ.
 
-Kiểm: `NdsContentTest` (13 ca, gồm ca không chặn oan homebrew + ROM hợp lệ), `CoreLoadErrorDiagTest` (+2 ca).
+Kiểm: `NdsContentTest` (15 ca, gồm ca không chặn oan homebrew + ROM hợp lệ), `CoreLoadErrorDiagTest` (+2 ca).
 `gradlew :app:testGithubDebugUnitTest --tests "vn.aow.monika.*"`: 1350 ca, 18 lỗi — **đúng 18 ca môi trường**
 Windows đã biết (`DeviceScannerTest`, `RarTest`, `ImporterTest`, `LibraryDocumentsTest`, `CorePreparationCacheTest`,
 `ConsoleSaveTransferTest`, `GameSaveTransferTest`), không ca nào của lượt này.
