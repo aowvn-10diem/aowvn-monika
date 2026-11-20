@@ -326,6 +326,24 @@ class RetroActivity : ComponentActivity() {
                     return@launch
                 }
             }
+            // ROM Nintendo DS: lõi `melondsds` trả `retro_load_game() == false` khi tệp là save, rỗng, quá nhỏ,
+            // sai logo/địa chỉ ARM9 hoặc bị cắt cụt (mã nguồn v1.4.0: core.cpp:926-936, console.cpp:676-708).
+            // Chặn ở đây để người chơi thấy đúng tệp sai ở đâu thay vì "mã lỗi 1" (#567). Đọc header là I/O.
+            if (vn.aow.monika.library.NdsContent.appliesTo(coreId)) {
+                val romProblem = withContext(Dispatchers.IO) { vn.aow.monika.library.NdsContent.inspect(File(gamePath)) }
+                if (romProblem != null) {
+                    Diagnostics.crumb(this@RetroActivity, "nds-rom", "certain=${romProblem.certain} · ${romProblem.cause}")
+                    if (romProblem.certain) {
+                        startup.finish()
+                        halted = true
+                        startupText = romProblem.message
+                        fallbackText = "Quay lại"
+                        fallbackAction = { finish() }
+                        Diagnostics.stage(this@RetroActivity, "nds-rom-invalid")
+                        return@launch
+                    }
+                }
+            }
             // V112: tải/chuẩn bị lõi là bước mở game → lỗi thật để lại op-fail; mất mạng chỉ ghi vệt.
             val core = Diagnostics.opSuspend(this@RetroActivity, Diagnostics.Op.OPEN_GAME, expected = Diagnostics::isOffline) {
                 step("tai-loi:$coreId")
