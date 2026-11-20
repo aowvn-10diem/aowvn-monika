@@ -55,7 +55,7 @@ Ba phần vá (`reset`, `resetCheat`/`setCheat`, `step`, `loadGame*`, `unseriali
 | #562 | 1 | 2026-11-09T08:06Z = `createdAt` | như trên |
 | #368 | 1 | 2026-10-26T20:38Z = `createdAt` | như trên |
 
-**Giới hạn phải nói rõ:** `scripts/crash-issue-bot.py:123` bỏ qua lần chạy có `delta < 5`, nên "thân issue không đổi" chỉ chứng minh **dưới 5 lượt mới mỗi lần chạy bot**, không chứng minh tuyệt đối 0 lượt.
+**Giới hạn phải nói rõ:** `scripts/crash-issue-bot.py:217` bỏ qua lần chạy có `delta < 5`, nên "thân issue không đổi" chỉ chứng minh **dưới 5 lượt mới mỗi lần chạy bot**, không chứng minh tuyệt đối 0 lượt.
 Bằng chứng mạnh hơn là phép trừ ở §2 của bảng tồn 19/11 — **PR #685 (chưa gộp)**, `docs/loi/TON-1911.md`: 23 issue đã đóng (508 lượt) + 792 lượt còn mở = **1 300**, trùng khít tổng bản 18/11 ⇒ trong cửa sổ 18/11 16:17Z → 19/11 07:40Z **không lượt nào được cộng**. Cửa sổ đó phủ trọn `v0.8.14` (17/11).
 **[CHƯA KIỂM]** Không có `CRASH_ADMIN_TOKEN` trong phiên này nên không đọc được `app` (bản app của từng báo cáo), `frames`, `signal`, `fault_addr`, `BuildId` — không biết lượt cuối của #369/#591 đến từ bản nào.
 
@@ -81,7 +81,7 @@ Bảng phủ của #644/#663 trên `45e1c754` (đọc mã, không đo):
 | `destroy` | 498–526 | `if (core)` trước `retro_unload_game`/`retro_deinit` | #606 |
 | `VFS::deinitialize` / `variableValueBuffer` | `vfs/vfs.cpp`, `environment.h:161` | khoá vector, `thread_local` | #663 |
 
-Ba chỗ **chưa phủ** (§5). Đã quét toàn bộ 30 lời gọi `core->` của tệp: mọi hàm gọi được từ JNI đều đã kiểm `core`; chỗ duy nhất còn lại là `afterGameLoad()` (`:784-786`, gọi nội bộ ở `:410` **sau** `retro_load_game` thành công, cùng hàm nạp nên `core` chắc chắn khác rỗng) — không phải lỗi, không cần vá.
+Ba chỗ **chưa phủ** (§5). Đã quét toàn bộ 29 lời gọi `core->` của tệp: mọi hàm gọi được từ JNI đều đã kiểm `core`; chỗ duy nhất còn lại là `afterGameLoad()` (`:784-786`, gọi nội bộ ở `:410` **sau** `retro_load_game` thành công, cùng hàm nạp nên `core` chắc chắn khác rỗng) — không phải lỗi, không cần vá.
 
 ## 5. Phần chưa phủ, và vì sao chưa vá
 
@@ -90,7 +90,7 @@ Ba chỗ **chưa phủ** (§5). Đã quét toàn bộ 30 lời gọi `core->` c�
 `renderers/es3/imagerendereres3.cpp:116-124` và `renderers/es2/imagerendereres2.cpp:105-113`: `const void *data` bị cast thành `uint16_t*` rồi **ghi đè ngay trên bộ đệm của lõi**. Chỉ chạy khi lõi đặt `SET_PIXEL_FORMAT = 0RGB1555` (`environment.cpp:268-272`).
 
 - Tin cậy **thấp** cho `desmume` (chưa biết DeSmuME dùng `RGB565` hay `0RGB1555`); nếu là `RGB565` thì nhánh này không chạy và không thể là nguyên nhân.
-- **Chưa vá** vì: (a) chưa có bằng chứng pixel format; (b) `libretrodroid/src/main/cpp/**` **không có khung test native** trong repo (chỉ có test JVM/Robolectric ở `app/src/test`), nên sửa đường dựng hình sẽ **không có test hồi quy** và không kiểm được bằng máy ảo.
+- **Chưa vá** vì: (a) chưa có bằng chứng pixel format; (b) `libretrodroid/src/main/cpp/**` **không có khung test native** trong repo (chỉ có test JVM/Robolectric ở `app/src/test` và `libretrodroid/src/test`), nên sửa đường dựng hình sẽ **không có test hồi quy** và không kiểm được bằng máy ảo.
 - Cách đo trước khi vá: `adb logcat -s Libretro\ Core | grep SET_PIXEL_FORMAT` khi nạp ROM `.nds`. Thấy `0RGB1555` mới xét.
 - Nếu đúng: sửa nhỏ — sao chép sang bộ đệm riêng (`std::vector<uint16_t>` giữ theo renderer) rồi đổi trên bản sao, không ghi vào `data` của lõi.
 
