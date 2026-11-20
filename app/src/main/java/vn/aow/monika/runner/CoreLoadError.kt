@@ -174,11 +174,23 @@ object CoreLoadError {
                     short = "Lõi ${f.coreId} không hỗ trợ đuôi .$ext — mở game bằng hệ máy đúng hoặc đổi lõi."
                 }
                 else -> {
-                    cause = "chưa rõ nguyên nhân — tệp game có thể hỏng, bị cắt cụt hoặc đổi đuôi từ tệp khác"
+                    // `melondsds`: app đã kiểm header NDS trước khi nạp (`NdsContent`) — tới được đây nghĩa là
+                    // kích thước, logo Nintendo và địa chỉ vào ARM9 đều hợp lệ, nên đừng khuyên nhập lại game.
+                    val ndsChecked = f.coreId == "melondsds"
+                    cause = if (ndsChecked) {
+                        "chưa rõ nguyên nhân — tệp ROM đã qua kiểm header trước khi nạp (kích thước, logo, địa chỉ ARM9)"
+                    } else {
+                        "chưa rõ nguyên nhân — tệp game có thể hỏng, bị cắt cụt hoặc đổi đuôi từ tệp khác"
+                    }
                     text = buildString {
                         append("Lõi ${f.coreId} không nạp được ${label(rom)}.\n")
                         if (system.isNotBlank()) append("Hệ suy từ đuôi .$ext: $system.\n")
-                        append("Chưa rõ nguyên nhân: tệp game có thể hỏng, bị cắt cụt hoặc đổi đuôi từ tệp khác.\n")
+                        append("Chưa rõ nguyên nhân")
+                        if (ndsChecked) {
+                            append(" — app đã kiểm tệp trước khi nạp: kích thước, logo Nintendo và địa chỉ vào ARM9 đều hợp lệ.\n")
+                        } else {
+                            append(": tệp game có thể hỏng, bị cắt cụt hoặc đổi đuôi từ tệp khác.\n")
+                        }
                         biosNotNeeded[f.systemId]?.let { append("$it\n") }
                         append("Hãy nhập lại game, hoặc thử đổi sang lõi khác. Báo cáo đã ghi mã lỗi, lõi, hệ và bước đang chạy.\n")
                         append("Bấm Quay lại để thoát.")

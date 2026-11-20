@@ -130,4 +130,27 @@ class CoreLoadErrorDiagTest {
         assertTrue(d.report, d.report.contains("chưa xác định"))
         assertTrue(d.report, d.report.contains(".xyz"))
     }
+
+    /**
+     * `melondsds` mã 1 tới được lõi nghĩa là tệp đã qua kiểm header trước khi nạp (`NdsContent`) — thông điệp
+     * phải nói rõ điều đó (issue #567) để người chơi không nhập lại game vô ích, và không khuyên đổi vì "tệp hỏng".
+     */
+    @Test fun melondsDsCode1SaysRomHeaderWasChecked() {
+        val d = CoreLoadError.diagnose(facts(
+            code = 1, systemId = "nds", systemName = "Nintendo DS", rom = "game.nds",
+            extensions = listOf("nds"), step = "core-load-game", biosMode = "builtin",
+        ))
+        assertTrue(d.text, d.text.contains("Chưa rõ nguyên nhân"))
+        assertTrue(d.text, d.text.contains("app đã kiểm tệp trước khi nạp"))
+        assertTrue(d.cause, d.cause.contains("qua kiểm header"))
+    }
+
+    /** Lõi khác không có bước kiểm header NDS ⇒ giữ câu "tệp có thể hỏng" như trước. */
+    @Test fun otherCoreCode1KeepsFileCouldBeBroken() {
+        val d = CoreLoadError.diagnose(
+            CoreLoadError.Facts(code = 1, coreId = "mgba", romName = "game.gba", systemId = "gba"),
+        )
+        assertTrue(d.text, d.text.contains("tệp game có thể hỏng"))
+        assertFalse(d.text, d.text.contains("app đã kiểm tệp trước khi nạp"))
+    }
 }
