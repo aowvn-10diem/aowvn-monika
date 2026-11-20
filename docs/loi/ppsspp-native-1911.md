@@ -45,7 +45,7 @@ Ngoài ra 11/11 `a0387ae4` (#601, trong **0.8.13** chính thức) hạ cấu hì
 
 > Mốc số dòng trong tệp này: **head `02bd03cc`**. Chỗ nào lấy theo mốc `61413abd` (bản #663 gộp) thì ghi rõ ngay cạnh, vì #684 đã làm dòng trôi.
 
-- 7 chỗ kiểm `core` trước khi gọi JNI (8 khối, vì `resetCheat` và `setCheat` tách hai khối): `unserializeSRAM`, `loadGameFromPath/Bytes/VirtualFiles`, `step`, `reset`, `resetCheat`/`setCheat` — theo head `libretrodroid.cpp:202`, `:372`, `:416`, `:448`, `:577`, `:719`, `:755`, `:766`; theo mốc `61413abd` là `:173-178`, `:369-375`, `:415-419`, `:446-451`, `:566-571`, `:708-713`, `:744-760` (hai mốc cuối trên head đã trôi thành cuối `pause()` `:566-571` và `handleGetCurrentFrameBuffer` `:708-713`).
+- 8 khối kiểm `core` trước khi gọi JNI (7 chỗ, vì `resetCheat` và `setCheat` tách hai khối), theo head `libretrodroid.cpp`: `unserializeSRAM` `:175` (guard của hàm, thân hàm `:171`; **`:202` là guard của `serializeSRAM`** do #644 thêm, không phải hàm này), `loadGameFromPath/Bytes/VirtualFiles` `:372`/`:416`/`:448`, `step` `:577`, `reset` `:719`, `resetCheat`/`setCheat` `:755`/`:766`. Theo mốc `61413abd` (bản #663 gộp) lần lượt là `:173-178`, `:369-375`, `:415-419`, `:446-451`, `:566-571` (**mốc 5**, `step`), `:708-713` (**mốc 6**, `reset`), `:744-760`; trên head mốc 5–6 đã trôi tới `:577`/`:719`, còn toạ độ cũ `:566-571`/`:708-713` nay rơi vào cuối `pause()` và cuối `handleGetCurrentFrameBuffer`.
 - Race `VFS::virtualFiles` (`virtualFilesLock` `vfs/vfs.h:79`, chú thích `:76-78`; `vfs/vfs.cpp:114-129`).
 - Race `variableValueBuffer` → `static thread_local` (`environment.h:164`, `environment.cpp:34-36`).
 
@@ -61,19 +61,19 @@ Ba đường đó **có thể** là đường chết của `ppsspp/native` (báo
 | VFS: handle đã cấp (`retro_vfs_file_handle*`) sau `deinitialize` | **đủ** | #663 khoá vector + giữ khoá suốt `virtualOpen`; handle do lõi giữ, `deinitialize` không free handle nên `read`/`close` sau đó không đọc bộ nhớ đã giải phóng. |
 | Thread sinh **sau** `dlopen-done` | **chỉ đo được** | #684 ghi `thr=` + tên thread ở 6 mốc, đánh dấu `*` cho thread sinh sau `dlopen-done`. Cần báo cáo mới rơi vào cửa sổ unload mới trả lời được. |
 
-⇒ **Không có phần nào sửa được ở app trong lượt này mà không vá mù.** Việc đúng là chờ dữ liệu #684 (0.8.15+) rồi mới quyết định: giữ handle (không `dlclose`) hay mở issue upstream `hrydgard/ppsspp` (commit ghim `9366aa7dc2d2fb1f49cde97ffbf5ab434d4d6ff9`).
+⇒ **Không có phần nào sửa được ở app trong lượt này mà không vá mù.** Việc đúng là chờ dữ liệu #684 (**0.8.16 trở đi** — v0.8.15 cắt trước #684) rồi mới quyết định: giữ handle (không `dlclose`) hay mở issue upstream `hrydgard/ppsspp` (commit ghim `9366aa7dc2d2fb1f49cde97ffbf5ab434d4d6ff9`).
 
 ## 6. Chốt chặn dữ liệu (vì sao vẫn chưa có khung)
 
 - Thân issue `crash-moi` chỉ có **băm chữ ký** (`lõi + loại + tối đa 3 frame đầu`), không chép stack/BuildId/bản app.
 - Phiên này **không có** `CRASH_ADMIN_TOKEN`.
 - Đường thay thế đã thử: `gh workflow run crash-insight.yml` (workflow đọc Worker, xuất bảng có cột **bản app / chứng thư / đời máy**) → **403 Resource not accessible by personal access token**; artifact lần chạy 08/11 đã hết hạn lưu 3 ngày.
-- Từ 0.8.15+, báo cáo mới **sẽ** có `bid=` nhờ #684, và #671 ghi `build_id` vào `info.txt` khi cài lõi ⇒ lần tái diễn đầu tiên là ghép được gói ký hiệu.
+- Từ **0.8.16 trở đi**, báo cáo mới **sẽ** có `bid=` nhờ #684, và #671 ghi `build_id` vào `info.txt` khi cài lõi ⇒ lần tái diễn đầu tiên là ghép được gói ký hiệu. (v0.8.15 `8466ed7c`, cắt 19/11 11:13 +07:00, gộp trước #684 17:14 +07:00 nên **không có** `diag.cpp` và `git grep dlclose-before v0.8.15` = 0 dòng.)
 
 ## 7. Điều kiện đóng / mở lại (đề xuất, chờ PM)
 
 - **Đóng `completed`** chỉ khi: có bản **chính thức** chứa #663 (≥ 0.8.16 hoặc 0.8.15 được thăng cấp) **và** ít nhất 14 ngày sau đó số lượt không tăng **và** không có báo cáo cùng chữ ký trên bản đó. Không đóng hôm nay: 0.8.15 còn là Pre-release, mốc dừng 06/11 nằm trước bản vá nên chưa nói được gì.
-- **Mở lại / tạo issue mới** khi có báo cáo `ppsspp/native` (hoặc `unknown`) trên 0.8.13+; kèm mã bản app, `bid=`, 3 frame đầu, và tên thread ở `dlclose-before` nếu có.
+- **Mở lại / tạo issue mới** khi có báo cáo `ppsspp/native` (hoặc `unknown`) trên 0.8.13+; kèm mã bản app, 3 frame đầu, và — **chỉ từ 0.8.16 trở đi** — `bid=` cùng tên thread ở `dlclose-before`.
 - **Ba issue lẻ** (#478 1 lượt, #520 1 lượt, #416 8 lượt — đều > 7 ngày): chờ PM duyệt luật "đóng issue tồn ≤ 3 lượt và > 7 ngày". Câu comment soạn sẵn ở mục 8.
 
 ## 8. Câu comment đóng sẵn cho #478 / #520 / #416 (CHƯA đăng, chờ PM)
@@ -86,7 +86,7 @@ Dùng chung khung; chỉ thay số liệu từng issue:
 >
 > Chưa kết luận được nguyên nhân: báo cáo `native` không mang khung/BuildId/bản app, và phiên này không có `CRASH_ADMIN_TOKEN` (chạy `crash-insight.yml` bị 403). Vì vậy đề xuất đóng theo **luật tồn ≤ 3 lượt / > 7 ngày**, không phải theo kết luận nguyên nhân.
 >
-> Mở lại nếu có báo cáo cùng chữ ký trên **0.8.13 trở lên**, kèm mã bản app + `bid=` + 3 frame đầu. Theo dõi nhóm tại `docs/loi/ppsspp-native-1911.md`.
+> Mở lại nếu có báo cáo cùng chữ ký trên **0.8.13 trở lên**, kèm mã bản app + 3 frame đầu (`bid=` chỉ có từ **0.8.16 trở đi**). Theo dõi nhóm tại `docs/loi/ppsspp-native-1911.md`.
 
 Riêng **#416** (`unknown`, 8 lượt) thêm một câu: báo cáo `unknown` là lần chết không có tombstone/`ApplicationExitInfo` đọc được, nên càng không thể quy nguyên nhân; nếu tái diễn, ưu tiên xem `Diagnostics` vệt sự kiện của phiên đó trước.
 
