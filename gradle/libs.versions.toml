@@ -3,7 +3,7 @@
 playwrightCi = "1.62.0" # công cụ kiểm Chromium trong CI, không đóng gói vào APK
 kover = "0.9.11"
 agp = "8.7.3"
-kotlin = "2.0.21"
+kotlin = "2.4.21"
 coreKtx = "1.15.0"
 splashscreen = "1.0.1"
 browser = "1.8.0"
