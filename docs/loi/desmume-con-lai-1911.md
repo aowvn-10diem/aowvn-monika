@@ -67,7 +67,7 @@ Kết luận cũ, giữ nguyên:
 2. Ứng viên phía app **đã vá**: bộ đệm 0 byte khi lưu state, `memcpy` SRAM từ con trỏ rỗng, gọi JNI sau `destroy()` — #644 + #663.
 3. `SET_MEMORY_MAPS` **đã loại trừ** (`environment.cpp` sao chép sâu descriptor + chuỗi `addrspace`).
 
-Bảng phủ của #644/#663 trên `45e1c754` (đọc mã, không đo):
+Bảng phủ của #644/#663 trên `origin/main` `3d8e1bcf` (số dòng kiểm lại 21/11; `libretrodroid.cpp` không đổi từ `02bd03cc` — xem §9 mục "Mốc toạ độ")
 
 | Hàm | Dòng | Kiểm gì | PR |
 |---|---|---|---|
@@ -78,10 +78,10 @@ Bảng phủ của #644/#663 trên `45e1c754` (đọc mã, không đo):
 | `setControllerType` / `reset` / `resetCheat` / `setCheat` | 148–157 / 715–725 / 751–761 / 763–774 | `!core` | #663 |
 | `loadGameFromPath` / `FromBytes` / `FromVirtualFiles` | 372 / 416 / 448 | `!core` → ném `std::runtime_error` | #663 |
 | `step` | 573–593 | `!core` | #663 |
-| `destroy` | 498–526 | `if (core)` trước `retro_unload_game`/`retro_deinit` | #606 |
-| `VFS::deinitialize` / `variableValueBuffer` | `vfs/vfs.cpp`, `environment.h:161` | khoá vector, `thread_local` | #663 |
+| `destroy` | 498–536 | `if (core)` trước `retro_unload_game`/`retro_deinit` | #606 |
+| `VFS::deinitialize` / `variableValueBuffer` | `vfs/vfs.cpp`, `environment.h:161-164` | khoá vector, `thread_local` | #663 |
 
-Ba chỗ **chưa phủ** (§5). Đã quét toàn bộ 29 lời gọi `core->` của tệp: mọi hàm gọi được từ JNI đều đã kiểm `core`; chỗ duy nhất còn lại là `afterGameLoad()` (`:784-786`, gọi nội bộ ở `:410` **sau** `retro_load_game` thành công, cùng hàm nạp nên `core` chắc chắn khác rỗng) — không phải lỗi, không cần vá.
+Ba chỗ **chưa phủ** (§5). Đã quét toàn bộ 29 lời gọi `core->` của tệp: mọi hàm gọi được từ JNI đều đã kiểm `core`; chỗ duy nhất còn lại là `afterGameLoad()` (`:784-786`, gọi nội bộ ở `:410`, `:442`, `:495` **sau** `retro_load_game` thành công, cùng hàm nạp nên `core` chắc chắn khác rỗng) — không phải lỗi, không cần vá.
 
 ## 5. Phần chưa phủ, và vì sao chưa vá
 
@@ -131,5 +131,24 @@ Ghi chú riêng cho #562 (1 lượt, 1 máy): cùng câu trên; nếu mở lại
 ## 9. Cách kiểm tài liệu này
 
 - Docs-only: theo `CLAUDE.md`, bỏ `testDebugUnitTest` (CI cũng bỏ qua `docs/**`).
-- Mọi `tệp:dòng` đọc từ `origin/main` `45e1c754`; mọi kết luận mốc phát hành kiểm bằng `git merge-base --is-ancestor` (§2), không suy từ tên tag.
+- Mọi `tệp:dòng` đọc từ `origin/main` `3d8e1bcf` (21/11) và bằng `45e1c754` với các tệp không đổi; mọi kết luận mốc phát hành kiểm bằng `git merge-base --is-ancestor` (§2), không suy từ tên tag.
 - Số lượt đọc từ khối `<!-- aow-crash-v100:… -->` trong thân 6 issue, đối chiếu `docs/loi/TON-1811.md` (đã ở `main`: 97 lượt `desmume/native` + 1 `op-fail`) và bảng tồn 19/11 ở PR #685 (**chưa gộp**, 98 lượt).
+
+### Mốc toạ độ (kiểm lại 21/11/2026)
+
+Đối chiếu `git rev-list --count 02bd03cc..origin/main -- <tệp>` cho từng tệp được dẫn:
+
+| Tệp | Số commit từ `02bd03cc` → `origin/main` `3d8e1bcf` | Mốc toạ độ |
+|---|---:|---|
+| `app/build.gradle.kts` | 0 | `02bd03cc`, đúng cả `3d8e1bcf` (`:47`) |
+| `config/monika-config.json` | 0 | `02bd03cc`, đúng cả `3d8e1bcf` (`:7`, `:821-835`) |
+| `scripts/crash-issue-bot.py` | 0 | `02bd03cc` (`:217`) |
+| `libretrodroid/src/main/cpp/libretrodroid.cpp` | 0 | `02bd03cc` — mọi dòng ở §4 giữ nguyên |
+| `libretrodroid/src/main/cpp/environment.cpp` / `.h` | 0 | `02bd03cc` (`environment.cpp:268-272`, `.h:161-164`) |
+| `libretrodroid/src/main/cpp/vfs/vfs.cpp` | 0 | `02bd03cc` |
+| `libretrodroid/src/main/cpp/renderers/es3/imagerendereres3.cpp` | 0 | `02bd03cc` (`:116-124`) |
+| `libretrodroid/src/main/cpp/renderers/es2/imagerendereres2.cpp` | 0 | `02bd03cc` (`:105-113`) |
+| `libretrodroid/src/main/cpp/core.cpp` | 0 | `02bd03cc` (`:78-80`) |
+| `app/.../runner/RetroActivity.kt`, `CoreLoadError.kt` | 1 mỗi tệp (#693) | **không dẫn toạ độ** vào hai tệp này — không bị lệch |
+
+Lượt kiểm này sửa 4 toạ độ cho khớp `origin/main`: `environment.h:161` → `:161-164` (khai báo `variableValueBuffer` nằm ở `:164`), `destroy` `498–526` → `498–536` (hết thân hàm), và chỗ gọi `afterGameLoad()` ghi đủ `:410`, `:442`, `:495`. Kết luận không đổi.
