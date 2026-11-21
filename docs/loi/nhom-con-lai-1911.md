@@ -61,7 +61,7 @@ Phiên này **không có `CRASH_ADMIN_TOKEN`** ⇒ không đọc được `reaso
 - `mgba`/`gambatte` `unknown` (#378, #513): máy API < 30 không có `ApplicationExitInfo` ⇒ không có dữ liệu để chẩn đoán, không phải lỗi mới.
 - `#464`/`#465` (`op-fail`, 1 lượt): lỗi tải/cài gói lõi, không phải lõi hỏng; `#665` (0.8.15) giảm báo sai lớp này.
 - `#448` (`snes9x`), `#563` (`melonds`): lõi `version=1` (buildbot nightly) và **không** có gói ký hiệu ⇒ không giải mã được khung. `#563` có ứng viên `#644` (0.8.14) nhưng chưa có bằng chứng khớp chữ ký ⇒ không đóng.
-- `#613` (`mkxp-z`): **không** thuộc nhóm `version=1` — engine **ghim** `engines-rgss-6` (`sha256`, `arm64-v8a`); cái thiếu là **ZIP ký hiệu** (`symbols-rgss-*` không tồn tại trong 54 release) ⇒ cùng bế tắc "không có ký hiệu" nhưng khác nguyên nhân. Đặc tả: `docs/loi/mkxp-z-thieu-ky-hieu-1911.md`.
+- `#613` (`mkxp-z`): **không** thuộc nhóm lõi trôi bản của buildbot — engine **ghim** `engines-rgss-6` (`sha256`, `arm64-v8a`); cái thiếu là **ZIP ký hiệu** (`symbols-rgss-*` không tồn tại trong 54 release) ⇒ cùng bế tắc "không có ký hiệu" nhưng khác nguyên nhân. Đặc tả: `docs/loi/mkxp-z-thieu-ky-hieu-1911.md`.
 - `#385` (`kirikiroid2-yuri`, 13 lượt): lõi đã ghim và **có** `symbols-kirikiroid-16-arm64-v8a.zip`; chỉ thiếu `CRASH_ADMIN_TOKEN` để giải mã. Đây là việc rẻ nhất còn lại của cả nhóm.
 
 ## 4. Việc cần PM
