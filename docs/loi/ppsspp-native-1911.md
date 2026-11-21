@@ -1,6 +1,6 @@
 # Nhóm `ppsspp` / `native` — chốt 19/11, cập nhật 21/11: đã đóng 5 issue, #663 chỉ có trong 0.8.15 (chính thức 19/11)
 
-Tiếp theo `docs/loi/ppsspp-native-1311.md` (13/11) và `docs/loi/native-cpp-hien-truong-1811.md` (#663). Tệp này trả lời ba câu: **số lượt còn tăng không**, **#316/#372 có cùng gốc với #663 không**, và **#663 còn hở đường nào**. Kèm khung câu comment đã dùng khi đóng ba issue lẻ (mục 8).
+Tiếp theo `docs/loi/ppsspp-native-1311.md` (13/11) và `docs/loi/native-cpp-hien-truong-1811.md` (#663). Tệp này trả lời ba câu: **số lượt còn tăng không**, **#316/#372 có cùng gốc với #663 không**, và **#663 còn hở đường nào**. Kèm **nguyên văn** comment đã đăng khi đóng và một khung soạn sẵn chưa dùng (mục 8).
 
 ## Cập nhật trạng thái 20–21/11
 
@@ -12,7 +12,7 @@ Tiếp theo `docs/loi/ppsspp-native-1311.md` (13/11) và `docs/loi/native-cpp-hi
 
 Người lập: phiên **LB2** (nhóm Lỗi B), 19/11/2026. Mọi kết luận đọc từ **thân issue + git + config**; **không** có khung native (mục 4).
 
-**Mốc toạ độ:** mọi `tệp:dòng` trong tệp này tính theo **`02bd03cc`**. Đã đối chiếu lại từng tham chiếu với `origin/main` **`3d8e1bcf`** (21/11): **9 tệp được dẫn không đổi một dòng nào** — #693 chỉ chạm `RetroActivity.kt` và `CoreLoadError.kt`, hai tệp này **không** được dẫn ở đây. Chỗ nào lấy theo mốc `61413abd` (bản #663 gộp) thì ghi rõ ngay cạnh.
+**Mốc toạ độ:** mọi `tệp:dòng` trong tệp này tính theo **`02bd03cc`**. Đã đối chiếu lại từng tham chiếu với `origin/main` **`3d8e1bcf`** (21/11): **9 tệp được dẫn ở đây không đổi một dòng nào** (`core.cpp`, `libretrodroid.cpp`, `vfs/vfs.h`, `vfs/vfs.cpp`, `environment.h`, `environment.cpp`, `GLRetroView.kt`, `crash-issue-bot.py`, `monika-config.json`; `.github/workflows/crash-insight.yml` cũng không đổi). #693 chạm **6 tệp** (`NdsContent.kt`, `NdsContentTest.kt`, `CoreLoadError.kt`, `CoreLoadErrorDiagTest.kt`, `RetroActivity.kt`, `docs/loi/melondsds-core-error-2011.md`) nhưng **không tệp nào** nằm trong danh sách trên. Chỗ nào lấy theo mốc `61413abd` (bản #663 gộp) thì ghi rõ ngay cạnh.
 
 ## 1. Số lượt và lần thông báo cuối
 
@@ -84,11 +84,31 @@ Ba đường đó **có thể** là đường chết của `ppsspp/native` (báo
 
 - **Đóng `completed`** chỉ khi: có bản **chính thức** chứa #663 (**0.8.15, phát 19/11 04:48Z**, `isPrerelease=false`) **và** ít nhất 14 ngày sau đó số lượt không tăng **và** không có báo cáo cùng chữ ký trên bản đó. Mốc 14 ngày **chạy từ 19/11 ⇒ sớm nhất 03/12** (không phải chờ 0.8.16). **Thực tế 4 issue đã đóng 20/11**, khi mốc 03/12 chưa tới và **ngày báo cáo cuối là [CHƯA KIỂM]** — xem mục "Cập nhật trạng thái 20–21/11" để biết giới hạn và việc PM cần quyết.
 - **Mở lại / tạo issue mới** khi có báo cáo `ppsspp/native` (hoặc `unknown`) trên 0.8.13+; kèm mã bản app, 3 frame đầu, và — **chỉ từ 0.8.16 trở đi** — `bid=` cùng tên thread ở `dlclose-before`.
-- **Ba issue lẻ** (#478 1 lượt, #520 1 lượt, #416 8 lượt): **đã đóng** — #478/#520 `completed` 20/11 06:18Z cùng đợt 4 issue `ppsspp`, #416 `not_planned` 21/11 02:45Z. Khung câu comment đã dùng ở mục 8.
+- **Ba issue lẻ** (#478 1 lượt, #520 1 lượt, #416 8 lượt): **đã đóng** — #478/#520 `completed` 20/11 06:18Z cùng đợt 4 issue `ppsspp`, #416 `not_planned` 21/11 02:45Z. Nguyên văn comment đã đăng ở mục 8.
 
-## 8. Khung câu comment đã dùng cho #478 / #520 / #416
+## 8. Nguyên văn comment đã đăng khi đóng (20–21/11)
 
-Dùng chung khung; chỉ thay số liệu từng issue. Bản đăng thật cho #316/#372/#478/#520 nêu vế "không tăng sau bản vá (đứng từ 13/11)" — giới hạn của vế đó ghi ở mục "Cập nhật trạng thái 20–21/11" (dưới 5 lượt mới thì bot không hiện; ngày báo cáo cuối `[CHƯA KIỂM]`).
+**#316 / #372 / #478 / #520** dùng **cùng một** comment (dưới đây chép nguyên văn từ #316 lúc `2026-11-20T06:17:50Z`; ba issue còn lại giống hệt). Comment này **không** có dòng chữ ký/số lượt và **không** nhắc "luật tồn ≤ 3 lượt / > 7 ngày":
+
+> Đã có bản vá trong **bản chính thức 0.8.15** (PR #663, nhóm `ppsspp/native`). Số lượt của chữ ký này **không tăng sau bản vá** (đứng từ 13/11), nên issue được đóng.
+>
+> #684 chỉ thêm vệt đo (trần 48 thread, `core=`/`bid=` đầu dòng) nên lần sau tái diễn sẽ có BuildId để đối chiếu.
+>
+> Nếu còn gặp trên bản **≥ 0.8.15**, bạn mở lại issue này kèm mã bản app (Cài đặt → Giới thiệu) và báo cáo lỗi trong app (Trợ giúp → Gửi báo cáo lỗi) — bản mới đã ghi thêm `bước`/`BuildId` nên sẽ lần được nguyên nhân.
+>
+> — [Lỗi B]
+
+**#416** đóng bằng comment riêng (`2026-11-21T02:45:39Z`), lý do `ApplicationExitInfo` rỗng chứ không phải "không tăng sau bản vá":
+
+> Báo cáo này rơi vào nhóm `unknown` vì máy không cung cấp được lý do tiến trình dừng (`ApplicationExitInfo` rỗng — thường gặp trên máy Android cũ hơn API 30), nên **không có thông tin nào để xác định nguyên nhân** và không có bản vá nào áp được.
+>
+> Đóng issue vì không đủ dữ liệu để chẩn đoán.
+>
+> Nếu lỗi tái diễn **trên bản 0.8.16 trở lên**, mở lại kèm mã bản app (Cài đặt → Giới thiệu) và thời điểm xảy ra — bản mới ghi thêm ngữ cảnh tiến trình nên sẽ phân loại được.
+
+### Khung soạn sẵn — **KHÔNG dùng nguyên văn**
+
+Khung dưới đây do phiên LB2 soạn để dùng cho luật "tồn ≤ 3 lượt / > 7 ngày" và **chưa từng được đăng**; giữ lại để lần sau có mẫu, đừng chép vào issue:
 
 > **[Lỗi B — đóng issue, kèm điều kiện mở lại]**
 >
@@ -97,8 +117,6 @@ Dùng chung khung; chỉ thay số liệu từng issue. Bản đăng thật cho 
 > Chưa kết luận được nguyên nhân: báo cáo `native` không mang khung/BuildId/bản app, và phiên này không có `CRASH_ADMIN_TOKEN` (chạy `crash-insight.yml` bị 403). Vì vậy đề xuất đóng theo **luật tồn ≤ 3 lượt / > 7 ngày**, không phải theo kết luận nguyên nhân.
 >
 > Mở lại nếu có báo cáo cùng chữ ký trên **0.8.13 trở lên**, kèm mã bản app + 3 frame đầu (`bid=` chỉ có từ **0.8.16 trở đi**). Theo dõi nhóm tại `docs/loi/ppsspp-native-1911.md`.
-
-Riêng **#416** (`unknown`, 8 lượt) thêm một câu: báo cáo `unknown` là lần chết không có tombstone/`ApplicationExitInfo` đọc được, nên càng không thể quy nguyên nhân; nếu tái diễn, ưu tiên xem `Diagnostics` vệt sự kiện của phiên đó trước.
 
 ## 9. Việc cần PM quyết
 
