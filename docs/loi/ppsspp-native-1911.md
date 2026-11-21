@@ -5,7 +5,7 @@ Tiếp theo `docs/loi/ppsspp-native-1311.md` (13/11) và `docs/loi/native-cpp-hi
 ## Cập nhật trạng thái 20–21/11
 
 - **Đã đóng**: #316, #372, #478, #520 → `completed` lúc **20/11 06:17–06:18Z**; #416 → `not_planned` lúc **21/11 02:45Z** (kiểm bằng `gh issue view <n> --json state,stateReason,closedAt`).
-- **Vế đã dùng khi đóng** (nguyên văn comment trên #316): "Đã có bản vá trong **bản chính thức 0.8.15** (PR #663 …). Số lượt của chữ ký này **không tăng sau bản vá** (đứng từ 13/11), nên issue được đóng." #416 đóng vì "không đủ dữ liệu để chẩn đoán" (`unknown`, `ApplicationExitInfo` rỗng).
+- **Căn cứ đã nêu khi đóng** (nguyên văn comment trên #316): "Đã có bản vá trong **bản chính thức 0.8.15** (PR #663 …). Số lượt của chữ ký này **không tăng sau bản vá** (đứng từ 13/11), nên issue được đóng." #416 đóng vì "không đủ dữ liệu để chẩn đoán" (`unknown`, `ApplicationExitInfo` rỗng).
 - **Giới hạn của vế đó** (đúng như mục 2 và mục 7): bot chỉ cộng khi `delta ≥ 5` (`scripts/crash-issue-bot.py:217`) nên mỗi chữ ký có thể còn **tới 4 báo cáo mới chưa hiện** trong `count`; **ngày báo cáo cuối vẫn [CHƯA KIỂM]** (thiếu token Worker). Lúc đóng mới **~26 giờ sau khi 0.8.15 phát hành** (19/11 04:48Z → 20/11 06:17Z), chưa đủ 14 ngày để quan sát hồi quy. Vì vậy "không tăng sau bản vá" ở đây là **vế yếu**, không phải bằng chứng hết lỗi.
 - Việc đóng nằm trong **chỉ đạo A102 của PM**; mục này chỉ ghi lại căn cứ và giới hạn để tra cứu, **không kết luận thay PM**. **PM quyết** có mở lại #316/#372/#478/#520 để đủ mốc 14 ngày (03/12) hay giữ đóng.
 - Nếu tái diễn: mở lại kèm mã bản app, `bid=` (**chỉ có từ 0.8.16**) và 3 frame đầu.
