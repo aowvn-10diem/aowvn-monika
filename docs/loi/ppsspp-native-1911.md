@@ -1,6 +1,14 @@
-# Nhóm `ppsspp` / `native` — chốt 19/11: chưa đủ căn cứ đóng, #663 chỉ có trong 0.8.15 (chính thức 19/11)
+# Nhóm `ppsspp` / `native` — chốt 19/11, cập nhật 21/11: đã đóng 5 issue, #663 chỉ có trong 0.8.15 (chính thức 19/11)
 
-Tiếp theo `docs/loi/ppsspp-native-1311.md` (13/11) và `docs/loi/native-cpp-hien-truong-1811.md` (#663). Tệp này trả lời ba câu: **số lượt còn tăng không**, **#316/#372 có cùng gốc với #663 không**, và **#663 còn hở đường nào**. Kèm câu comment đóng sẵn cho ba issue lẻ (chưa đóng — chờ PM duyệt luật đóng).
+Tiếp theo `docs/loi/ppsspp-native-1311.md` (13/11) và `docs/loi/native-cpp-hien-truong-1811.md` (#663). Tệp này trả lời ba câu: **số lượt còn tăng không**, **#316/#372 có cùng gốc với #663 không**, và **#663 còn hở đường nào**. Kèm khung câu comment đã dùng khi đóng ba issue lẻ (mục 8).
+
+## Cập nhật trạng thái 20–21/11
+
+- **Đã đóng**: #316, #372, #478, #520 → `completed` lúc **20/11 06:17–06:18Z**; #416 → `not_planned` lúc **21/11 02:45Z** (kiểm bằng `gh issue view <n> --json state,stateReason,closedAt`).
+- **Vế đã dùng khi đóng** (nguyên văn comment trên #316): "Đã có bản vá trong **bản chính thức 0.8.15** (PR #663 …). Số lượt của chữ ký này **không tăng sau bản vá** (đứng từ 13/11), nên issue được đóng." #416 đóng vì "không đủ dữ liệu để chẩn đoán" (`unknown`, `ApplicationExitInfo` rỗng).
+- **Giới hạn của vế đó** (đúng như mục 2 và mục 7): bot chỉ cộng khi `delta ≥ 5` (`scripts/crash-issue-bot.py:217`) nên mỗi chữ ký có thể còn **tới 4 báo cáo mới chưa hiện** trong `count`; **ngày báo cáo cuối vẫn [CHƯA KIỂM]** (thiếu token Worker). Lúc đóng mới **~26 giờ sau khi 0.8.15 phát hành** (19/11 04:48Z → 20/11 06:17Z), chưa đủ 14 ngày để quan sát hồi quy. Vì vậy "không tăng sau bản vá" ở đây là **vế yếu**, không phải bằng chứng hết lỗi.
+- Việc đóng nằm trong **chỉ đạo A102 của PM**; mục này chỉ ghi lại căn cứ và giới hạn để tra cứu, **không kết luận thay PM**. **PM quyết** có mở lại #316/#372/#478/#520 để đủ mốc 14 ngày (03/12) hay giữ đóng.
+- Nếu tái diễn: mở lại kèm mã bản app, `bid=` (**chỉ có từ 0.8.16**) và 3 frame đầu.
 
 Người lập: phiên **LB2** (nhóm Lỗi B), 19/11/2026. Mọi kết luận đọc từ **thân issue + git + config**; **không** có khung native (mục 4).
 
@@ -74,15 +82,15 @@ Ba đường đó **có thể** là đường chết của `ppsspp/native` (báo
 
 ## 7. Điều kiện đóng / mở lại (đề xuất, chờ PM)
 
-- **Đóng `completed`** chỉ khi: có bản **chính thức** chứa #663 (**0.8.15, phát 19/11 04:48Z**, `isPrerelease=false`) **và** ít nhất 14 ngày sau đó số lượt không tăng **và** không có báo cáo cùng chữ ký trên bản đó. Mốc 14 ngày **chạy từ 19/11 ⇒ sớm nhất 03/12** (không phải chờ 0.8.16). Không đóng hôm nay: mốc 03/12 chưa tới, và **ngày báo cáo cuối là [CHƯA KIỂM]** nên chưa nói được báo cáo đã hết trước hay sau bản vá.
+- **Đóng `completed`** chỉ khi: có bản **chính thức** chứa #663 (**0.8.15, phát 19/11 04:48Z**, `isPrerelease=false`) **và** ít nhất 14 ngày sau đó số lượt không tăng **và** không có báo cáo cùng chữ ký trên bản đó. Mốc 14 ngày **chạy từ 19/11 ⇒ sớm nhất 03/12** (không phải chờ 0.8.16). **Thực tế 4 issue đã đóng 20/11**, khi mốc 03/12 chưa tới và **ngày báo cáo cuối là [CHƯA KIỂM]** — xem mục "Cập nhật trạng thái 20–21/11" để biết giới hạn và việc PM cần quyết.
 - **Mở lại / tạo issue mới** khi có báo cáo `ppsspp/native` (hoặc `unknown`) trên 0.8.13+; kèm mã bản app, 3 frame đầu, và — **chỉ từ 0.8.16 trở đi** — `bid=` cùng tên thread ở `dlclose-before`.
-- **Ba issue lẻ** (#478 1 lượt, #520 1 lượt, #416 8 lượt — đều > 7 ngày): chờ PM duyệt luật "đóng issue tồn ≤ 3 lượt và > 7 ngày". Câu comment soạn sẵn ở mục 8.
+- **Ba issue lẻ** (#478 1 lượt, #520 1 lượt, #416 8 lượt): **đã đóng** — #478/#520 `completed` 20/11 06:18Z cùng đợt 4 issue `ppsspp`, #416 `not_planned` 21/11 02:45Z. Khung câu comment đã dùng ở mục 8.
 
-## 8. Câu comment đóng sẵn cho #478 / #520 / #416 (CHƯA đăng, chờ PM)
+## 8. Khung câu comment đã dùng cho #478 / #520 / #416
 
-Dùng chung khung; chỉ thay số liệu từng issue:
+Dùng chung khung; chỉ thay số liệu từng issue. Bản đăng thật cho #316/#372/#478/#520 nêu vế "không tăng sau bản vá (đứng từ 13/11)" — giới hạn của vế đó ghi ở mục "Cập nhật trạng thái 20–21/11" (dưới 5 lượt mới thì bot không hiện; ngày báo cáo cuối `[CHƯA KIỂM]`).
 
-> **[Lỗi B — đề xuất đóng, chờ PM duyệt]**
+> **[Lỗi B — đóng issue, kèm điều kiện mở lại]**
 >
 > Chữ ký `<sig>` (ppsspp `/` `<kind>`), **<N> lượt** đã thông báo, issue tạo **<ngày tạo>**. Số đã thông báo **không tăng ở mức ghi nhận**; bot chỉ cập nhật khi có ≥ 5 lượt mới và ngày báo cáo cuối là **[CHƯA KIỂM — thiếu token Worker]**, nên đề xuất đóng dựa trên luật tồn, không dựa trên kết luận "đã hết báo cáo".
 >
@@ -96,4 +104,4 @@ Riêng **#416** (`unknown`, 8 lượt) thêm một câu: báo cáo `unknown` là
 
 1. **Quyền đọc dữ liệu**: cho phép chạy `crash-insight.yml` (Actions write) **hoặc** cấp `CRASH_ADMIN_TOKEN` cho một phiên chẩn đoán. Không có một trong hai thì mọi kết luận về nhóm này mãi chỉ là "số lượt đứng".
 2. **Ngưỡng bot**: `delta < 5` (`scripts/crash-issue-bot.py:217`) làm câu "lượt không tăng" không đo chính xác. Đề xuất hạ còn `1`, **hoặc** thêm dòng "báo cáo mới nhất: <ngày>" vào thân issue. Đổi hành vi bot nên cần PM duyệt — chưa làm.
-3. **Luật đóng issue tồn**: duyệt để đóng #478/#520/#416 theo mục 8 (comment đã soạn, chưa đăng).
+3. **Mở lại hay giữ đóng**: #316/#372/#478/#520 đã đóng 20/11, chỉ ~26 giờ sau 0.8.15; nếu PM muốn đủ mốc 14 ngày (03/12) thì mở lại 4 issue này. Quyết định thuộc PM — tài liệu không kết luận thay.
