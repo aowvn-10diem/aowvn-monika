@@ -1,4 +1,4 @@
-# Nhóm `ppsspp` / `native` — chốt 19/11: chưa đủ căn cứ đóng, #663 chỉ có trong 0.8.15 Pre-release
+# Nhóm `ppsspp` / `native` — chốt 19/11: chưa đủ căn cứ đóng, #663 chỉ có trong 0.8.15 (chính thức 19/11)
 
 Tiếp theo `docs/loi/ppsspp-native-1311.md` (13/11) và `docs/loi/native-cpp-hien-truong-1811.md` (#663). Tệp này trả lời ba câu: **số lượt còn tăng không**, **#316/#372 có cùng gốc với #663 không**, và **#663 còn hở đường nào**. Kèm câu comment đóng sẵn cho ba issue lẻ (chưa đóng — chờ PM duyệt luật đóng).
 
@@ -43,7 +43,7 @@ Ngoài ra 11/11 `a0387ae4` (#601, trong **0.8.13** chính thức) hạ cấu hì
 
 ## 4. #316/#372 có cùng gốc với #663 không — chưa chứng minh
 
-#663 (gộp 19/11, **chỉ có trong 0.8.15 Pre-release**; bản chính thức sớm nhất 20/11) bịt:
+#663 (gộp 19/11, **có trong 0.8.15 — bản chính thức phát 19/11 04:48Z**, `isPrerelease=false`) bịt:
 
 > Mốc số dòng trong tệp này: **head `02bd03cc`**, đã đối chiếu lại vẫn đúng trên `3d8e1bcf` (`libretrodroid.cpp` không đổi trong khoảng này). Chỗ nào lấy theo mốc `61413abd` (bản #663 gộp) thì ghi rõ ngay cạnh, vì #684 đã làm dòng trôi.
 
@@ -74,7 +74,7 @@ Ba đường đó **có thể** là đường chết của `ppsspp/native` (báo
 
 ## 7. Điều kiện đóng / mở lại (đề xuất, chờ PM)
 
-- **Đóng `completed`** chỉ khi: có bản **chính thức** chứa #663 (≥ 0.8.16 hoặc 0.8.15 được thăng cấp) **và** ít nhất 14 ngày sau đó số lượt không tăng **và** không có báo cáo cùng chữ ký trên bản đó. Không đóng hôm nay: 0.8.15 còn là Pre-release, và **ngày báo cáo cuối là [CHƯA KIỂM]** nên chưa nói được báo cáo đã hết trước hay sau bản vá.
+- **Đóng `completed`** chỉ khi: có bản **chính thức** chứa #663 (**0.8.15, phát 19/11 04:48Z**, `isPrerelease=false`) **và** ít nhất 14 ngày sau đó số lượt không tăng **và** không có báo cáo cùng chữ ký trên bản đó. Mốc 14 ngày **chạy từ 19/11 ⇒ sớm nhất 03/12** (không phải chờ 0.8.16). Không đóng hôm nay: mốc 03/12 chưa tới, và **ngày báo cáo cuối là [CHƯA KIỂM]** nên chưa nói được báo cáo đã hết trước hay sau bản vá.
 - **Mở lại / tạo issue mới** khi có báo cáo `ppsspp/native` (hoặc `unknown`) trên 0.8.13+; kèm mã bản app, 3 frame đầu, và — **chỉ từ 0.8.16 trở đi** — `bid=` cùng tên thread ở `dlclose-before`.
 - **Ba issue lẻ** (#478 1 lượt, #520 1 lượt, #416 8 lượt — đều > 7 ngày): chờ PM duyệt luật "đóng issue tồn ≤ 3 lượt và > 7 ngày". Câu comment soạn sẵn ở mục 8.
 
