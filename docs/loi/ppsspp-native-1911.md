@@ -4,6 +4,8 @@ Tiếp theo `docs/loi/ppsspp-native-1311.md` (13/11) và `docs/loi/native-cpp-hi
 
 Người lập: phiên **LB2** (nhóm Lỗi B), 19/11/2026. Mọi kết luận đọc từ **thân issue + git + config**; **không** có khung native (mục 4).
 
+**Mốc toạ độ:** mọi `tệp:dòng` trong tệp này tính theo **`02bd03cc`**. Đã đối chiếu lại từng tham chiếu với `origin/main` **`3d8e1bcf`** (21/11): **9 tệp được dẫn không đổi một dòng nào** — #693 chỉ chạm `RetroActivity.kt` và `CoreLoadError.kt`, hai tệp này **không** được dẫn ở đây. Chỗ nào lấy theo mốc `61413abd` (bản #663 gộp) thì ghi rõ ngay cạnh.
+
 ## 1. Số lượt và ngày dừng
 
 | Issue | Chữ ký (12 hex) | Loại | Lượt | Khoá `seen` | Lượt lớn nhất / một khoá | Báo cáo đầu | Báo cáo mới nhất | Im lặng (19/11) |
@@ -21,7 +23,7 @@ Cột "lượt" là `count` trong khối `aow-crash-v100` của thân issue; ở
 
 **Tín hiệu thật:** bot `scripts/crash-issue-bot.py` chạy mỗi giờ trên `main`, và cùng ngày 19/11 các chữ ký khác vẫn được cập nhật: #322 `pcsx_rearmed/core-error` và #578 `pcsx_rearmed/core-error` cập nhật 19/11 **10:43**, #302 `unknown/resource` (tạo 20/10) cập nhật 19/11 06:48. Worker và bot còn sống ⇒ 5 chữ ký `ppsspp` đứng số vì **không còn báo cáo mới**, không phải mất đường gửi.
 
-**Giới hạn 1 — ngưỡng bot:** `scripts/crash-issue-bot.py:217` bỏ qua khi `delta < 5` (`elif delta < 5 and not rewrite: continue`). "Số không tăng" nghĩa là **dưới 5 lượt mới kể từ lần thông báo trước**, không chắc là 0. Với #316 (114) và #372 (90) mức nhiễu này không đổi kết luận; với #478/#520 (1 lượt) thì đó là giới hạn thật.
+**Giới hạn 1 — ngưỡng bot:** `scripts/crash-issue-bot.py:217` (theo `02bd03cc`) bỏ qua khi `delta < 5` (`elif delta < 5 and not rewrite: continue`). "Số không tăng" nghĩa là **dưới 5 lượt mới kể từ lần thông báo trước**, không chắc là 0. Với #316 (114) và #372 (90) mức nhiễu này không đổi kết luận; với #478/#520 (1 lượt) thì đó là giới hạn thật.
 
 **Giới hạn 2 — mốc dừng nằm TRƯỚC bản vá:** cả 5 issue ngừng nhận báo cáo **trước** 0.8.13 (13/11) và trước 0.8.15 (19/11). Vì vậy "lượt không tăng sau bản vá" **không** chứng minh bản vá có tác dụng — đúng ra là báo cáo đã hết từ trước. Không được dùng vế này để đóng issue.
 
@@ -37,13 +39,13 @@ Cột "lượt" là `count` trong khối `aow-crash-v100` của thân issue; ở
 
 206/206 lượt `native` nằm trong 20/10 → 06/11 03:29; lượt cuối (#520) cách mốc ghim **11,5 giờ** (máy chưa kịp nhận config 62); sau đó 13 ngày không có lượt nào. Giả thuyết khớp nhất — **chưa có khung để chứng minh từng chữ ký**: lõi lấy từ URL nightly không kiểm hash thì máy có thể cài đúng bản nightly hỏng/sai ABI, và báo cáo `native` khi đó không thể đối chiếu gói ký hiệu (không có BuildId). Đây là cùng một gốc với việc #671 đang mở rộng `validateElf`/`build_id` cho các lõi buildbot còn lại (`desmume`, `snes9x`, `melonds`, `melondsds`) — ppsspp đã được ghim trước.
 
-Ngoài ra 11/11 `a0387ae4` (#601, trong **0.8.13** chính thức) hạ cấu hình đồ hoạ: `options.ppsspp_vertex_cache = disabled` (mọi máy), `perf.lite` thêm `ppsspp_auto_frameskip = enabled` + `ppsspp_internal_resolution = 480x272`, `perf.full` giữ `960x544` — đúng như `config/monika-config.json` hiện tại (`:958-980`, `configVersion` 66).
+Ngoài ra 11/11 `a0387ae4` (#601, trong **0.8.13** chính thức) hạ cấu hình đồ hoạ: `options.ppsspp_vertex_cache = disabled` (mọi máy), `perf.lite` thêm `ppsspp_auto_frameskip = enabled` + `ppsspp_internal_resolution = 480x272`, `perf.full` giữ `960x544` — đúng như `config/monika-config.json` hiện tại (`config/monika-config.json:958-980`, `configVersion` 66, theo `02bd03cc`).
 
 ## 4. #316/#372 có cùng gốc với #663 không — chưa chứng minh
 
 #663 (gộp 19/11, **chỉ có trong 0.8.15 Pre-release**; bản chính thức sớm nhất 20/11) bịt:
 
-> Mốc số dòng trong tệp này: **head `02bd03cc`**. Chỗ nào lấy theo mốc `61413abd` (bản #663 gộp) thì ghi rõ ngay cạnh, vì #684 đã làm dòng trôi.
+> Mốc số dòng trong tệp này: **head `02bd03cc`**, đã đối chiếu lại vẫn đúng trên `3d8e1bcf` (`libretrodroid.cpp` không đổi trong khoảng này). Chỗ nào lấy theo mốc `61413abd` (bản #663 gộp) thì ghi rõ ngay cạnh, vì #684 đã làm dòng trôi.
 
 - 8 khối kiểm `core` trước khi gọi JNI (7 chỗ, vì `resetCheat` và `setCheat` tách hai khối), theo head `libretrodroid.cpp`: `unserializeSRAM` `:175` (guard của hàm, thân hàm `:171`; **`:202` là guard của `serializeSRAM`** do #644 thêm, không phải hàm này), `loadGameFromPath/Bytes/VirtualFiles` `:372`/`:416`/`:448`, `step` `:577`, `reset` `:719`, `resetCheat`/`setCheat` `:755`/`:766`. Theo mốc `61413abd` (bản #663 gộp) lần lượt là `:173-178`, `:369-375`, `:415-419`, `:446-451`, `:566-571` (**mốc 5**, `step`), `:708-713` (**mốc 6**, `reset`), `:744-760`; trên head mốc 5–6 đã trôi tới `:577`/`:719`, còn toạ độ cũ `:566-571`/`:708-713` nay rơi vào cuối `pause()` và cuối `handleGetCurrentFrameBuffer`.
 - Race `VFS::virtualFiles` (`virtualFilesLock` `vfs/vfs.h:79`, chú thích `:76-78`; `vfs/vfs.cpp:114-129`).
@@ -56,8 +58,8 @@ Ba đường đó **có thể** là đường chết của `ppsspp/native` (báo
 | Vùng | Trạng thái sau #663 / #684 | Ghi chú |
 |---|---|---|
 | `LibretroDroid::destroy()` → `core = nullptr` → `Core::~Core()` → `dlclose` (`libretrodroid.cpp:498-536`; `core.cpp:74-83` và `dlclose` `:79` theo head, mốc `61413abd` là `:69-78`) | **còn hở** | `dlclose` chạy **ngay** sau `retro_deinit()`; `Environment::deinitialize()` / `VFS::deinitialize()` chạy **sau** đó (`:534-535`). Lõi còn thread nền (ppsspp: `Emu`/`GPU`/`Audio`) thì thread chạy mã đã unmap → SIGSEGV trong `.so`. Đây là nghi phạm số một còn lại, và **chỉ đo được** bằng vệt #684 (`dlclose-before` + tên thread). Chưa vá: mọi cách vá (giữ handle, join, sleep) đều đổi hành vi bộ nhớ/thời gian mà chưa có bằng chứng. |
-| Dựng lại surface/EGL (`GLRetroView.kt:412-419` → `libretrodroid.cpp:231-279`) | **đã vá ở 0.8.13** (`25ca0688`): huỷ HW context cũ trước khi dựng `Video` mới, không nạp lại game | Đường "khoá/mở máy, đổi độ phân giải" — ứng viên cũ cho #316/#372/#520 — đã được phủ. |
-| `GLRetroView.kt:391` (`onDrawFrame` → `lifecycle?.coroutineScope?.launch { emit(FrameRendered) }` mỗi khung) | **không liên quan crash native** | `lifecycle = null` ở `onDestroy()` (`:155`) nên sau destroy không còn emit; đây là cấp phát mỗi khung (rác GC), không phải đường SIGSEGV. Không sửa trong lượt này. |
+| Dựng lại surface/EGL (`GLRetroView.kt:412-419`, theo `02bd03cc` → `libretrodroid.cpp:231-279`) | **đã vá ở 0.8.13** (`25ca0688`): huỷ HW context cũ trước khi dựng `Video` mới, không nạp lại game | Đường "khoá/mở máy, đổi độ phân giải" — ứng viên cũ cho #316/#372/#520 — đã được phủ. |
+| `GLRetroView.kt:391` (cùng mốc `02bd03cc`; `onDrawFrame` → `lifecycle?.coroutineScope?.launch { emit(FrameRendered) }` mỗi khung) | **không liên quan crash native** | `lifecycle = null` ở `onDestroy()` (`:155`) nên sau destroy không còn emit; đây là cấp phát mỗi khung (rác GC), không phải đường SIGSEGV. Không sửa trong lượt này. |
 | VFS: handle đã cấp (`retro_vfs_file_handle*`) sau `deinitialize` | **đủ** | #663 khoá vector + giữ khoá suốt `virtualOpen`; handle do lõi giữ, `deinitialize` không free handle nên `read`/`close` sau đó không đọc bộ nhớ đã giải phóng. |
 | Thread sinh **sau** `dlopen-done` | **chỉ đo được** | #684 ghi `thr=` + tên thread ở 6 mốc, đánh dấu `*` cho thread sinh sau `dlopen-done`. Cần báo cáo mới rơi vào cửa sổ unload mới trả lời được. |
 
