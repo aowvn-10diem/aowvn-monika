@@ -1,6 +1,6 @@
 # `desmume`: phần còn lại sau #644/#663 (19/11/2026)
 
-Nhánh `loi2/desmume`, nền `origin/main` `45e1c754` (configVersion 66; tại mốc này `app/build.gradle.kts:47` là `versionName = "0.8.15"`, versionCode 60, và `config/monika-config.json:7` là `"latestVersionName": "0.8.15"`). Bản **chính thức đang phát hành** là 0.8.14; 0.8.15 mới ở mức Pre-release.
+Nhánh `loi2/desmume`, nền `origin/main` `45e1c754` (configVersion 66; tại mốc này `app/build.gradle.kts:47` là `versionName = "0.8.15"`, versionCode 60, và `config/monika-config.json:7` là `"latestVersionName": "0.8.15"`). Bản **chính thức đang phát hành là 0.8.15** — phát hành 2026-11-19T04:48Z, `prerelease: false`, đang là `Latest`; 0.8.14 là bản chính thức trước đó.
 Chỉ **tài liệu**: không sửa mã, không đóng issue, không đụng tệp khoá.
 
 Tài liệu này **không làm lại** hai kết luận đã có, chỉ trích dẫn và đi tiếp phần còn thiếu:
@@ -12,8 +12,8 @@ Tài liệu này **không làm lại** hai kết luận đã có, chỉ trích d
 
 | Issue | Loại | Lượt | Bản vá đã phủ | Kết luận 19/11 |
 |---|---|---:|---|---|
-| [#369](https://github.com/aowvn-10diem/aowvn-monika/issues/369) `a093f6541c51` | native | 71 (31 máy) | #644 + #663 | **Chờ 0.8.15 chính thức** — không đóng |
-| [#591](https://github.com/aowvn-10diem/aowvn-monika/issues/591) `3ad0c6cc6d47` | native | 19 (2 máy) | #644 + #663 | **Chờ 0.8.15 chính thức** — không đóng |
+| [#369](https://github.com/aowvn-10diem/aowvn-monika/issues/369) `a093f6541c51` | native | 71 (31 máy) | #644 + #663 | **Giữ mở**: vá đã ở 0.8.15 chính thức, chờ cửa sổ ≥ 7 ngày + 0.8.16 |
+| [#591](https://github.com/aowvn-10diem/aowvn-monika/issues/591) `3ad0c6cc6d47` | native | 19 (2 máy) | #644 + #663 | **Giữ mở**: như #369 |
 | [#331](https://github.com/aowvn-10diem/aowvn-monika/issues/331) `c8765c891f30` | native | 3 (3 máy) | #644 + #663 | Soạn sẵn câu đóng (§6), **chưa đăng** |
 | [#377](https://github.com/aowvn-10diem/aowvn-monika/issues/377) `ce10c8fe6467` | native | 3 (2 máy) | #644 + #663 | Soạn sẵn câu đóng (§6), **chưa đăng** |
 | [#562](https://github.com/aowvn-10diem/aowvn-monika/issues/562) `10f53afc0448` | native | 1 (1 máy) | #644 + #663 | Soạn sẵn câu đóng (§6), **chưa đăng** |
@@ -30,19 +30,26 @@ Luật A102 cần **hai** điều: bản vá đã ở bản **chính thức** v�
 |---|---|---|
 | `v0.8.13` | 2026-11-13T08:46Z | không có vá `libretrodroid` nào của nhóm này |
 | #644 `ff775cb4` | 2026-11-14T02:24Z → **có trong `v0.8.14`** | `serializeState` / `unserializeState` / `serializeSRAM` |
-| `v0.8.14` | 2026-11-17T00:49Z | bản chính thức đang phát hành |
-| #663 `694b208c` | gộp 2026-11-19T00:38Z → **chỉ có trong `v0.8.15`** | 7 chỗ deref `core` rỗng + race VFS + race biến môi trường |
-| `v0.8.15` | 2026-11-19T04:48Z | **Pre-release** |
+| `v0.8.14` | 2026-11-17T00:49Z | bản chính thức trước đó |
+| #663 `694b208c` | gộp 2026-11-19T00:38Z → **có trong `v0.8.15`** | 7 chỗ deref `core` rỗng + race VFS + race biến môi trường |
+| `v0.8.15` | 2026-11-19T04:48Z, `prerelease: false`, `Latest` | **bản chính thức đang phát hành** |
 
 Kiểm bằng lệnh, không suy đoán:
 
 ```bash
-git merge-base --is-ancestor ff775cb4 v0.8.14   # 0 = có  → #644 đã phát hành
+git merge-base --is-ancestor ff775cb4 v0.8.14   # 0 = có  → #644 đã phát hành ở 0.8.14
 git merge-base --is-ancestor 694b208c v0.8.14   # 1 = không
-git merge-base --is-ancestor 694b208c v0.8.15   # 0 = có  → #663 chỉ ở Pre-release
+git merge-base --is-ancestor 694b208c v0.8.15   # 0 = có  → #663 đã phát hành ở 0.8.15 (chính thức)
+gh api repos/aowvn-10diem/aowvn-monika/releases/tags/v0.8.15 --jq '{prerelease,published_at}'  # false / 2026-11-19T04:48:12Z
 ```
 
-Ba phần vá (`reset`, `resetCheat`/`setCheat`, `step`, `loadGame*`, `unserializeSRAM`) **chỉ** nằm trong 0.8.15 Pre-release, nên nhóm này thuộc diện "chờ bản chính thức" — chính thức sớm nhất 20/11 12:40 (giờ VN).
+Ba phần vá (`reset`, `resetCheat`/`setCheat`, `step`, `loadGame*`, `unserializeSRAM`) **đã phát hành** trong 0.8.15 từ 2026-11-19T04:48Z, nên **nửa "bản chính thức" của luật A102 đã đạt**.
+
+Nhóm vẫn giữ mở vì **nửa còn lại** chưa đủ, không phải vì thiếu bản chính thức:
+
+1. **Cửa sổ im lặng sau 0.8.15 mới ~2 ngày** (19/11 → 21/11), chưa đạt mốc ≥ 7 ngày của luật đóng issue tồn; lượt cuối của #369/#591 là 13/11, tức trước cả 0.8.15.
+2. **Các bản vá còn đang mở của Lỗi B chỉ vào 0.8.16** — đóng bây giờ thì gần như chắc phải mở lại ngay khi 0.8.16 phát hành.
+3. **Chưa chứng minh nguyên nhân gốc** (§5): ứng viên số một vẫn là cấu hình `desmume_num_cores`, và chưa có bảng khung (thiếu `CRASH_ADMIN_TOKEN`).
 
 ## 3. Bằng chứng số lượt (có giới hạn, ghi rõ)
 
@@ -109,9 +116,9 @@ Ba chỗ **chưa phủ** (§5). Đã quét toàn bộ 29 lời gọi `core->` c�
 
 ## 6. Câu comment đóng soạn sẵn (chưa đăng, chờ PM duyệt luật đóng issue tồn)
 
-Chỉ dùng khi **cả hai** điều kiện đã đúng: 0.8.15 đã **chính thức**, và đã qua ≥ 7 ngày không có lượt mới.
+Chỉ dùng khi **cả hai** điều kiện đã đúng: các bản vá đã ở **bản chính thức** (0.8.15 đã đạt từ 19/11 04:48Z; bản vá còn đang mở của Lỗi B sẽ vào 0.8.16) và đã qua **≥ 7 ngày** không có lượt mới sau bản đó.
 
-> Bản vá đã phát hành: #644 (`serializeState`/`unserializeState`/`serializeSRAM`, trong v0.8.14) và #663 (`libretrodroid`: 7 chỗ gọi lõi khi `core` rỗng, khoá VFS, `variableValueBuffer` → `thread_local`, trong v0.8.15). Chữ ký `<sig>` không có lượt mới từ `<ngày>` (N lượt, M máy). Đóng `completed` theo luật đóng issue tồn (≤3 lượt, >7 ngày không tái diễn). **Mở lại nếu tái diễn trên bản ≥ 0.8.15**, kèm bản app trong báo cáo.
+> Bản vá đã phát hành: #644 (`serializeState`/`unserializeState`/`serializeSRAM`, trong v0.8.14) và #663 (`libretrodroid`: 7 chỗ gọi lõi khi `core` rỗng, khoá VFS, `variableValueBuffer` → `thread_local`, trong v0.8.15 chính thức). Chữ ký `<sig>` không có lượt mới từ `<ngày>` (N lượt, M máy). Đóng `completed` theo luật đóng issue tồn (≤3 lượt, >7 ngày không tái diễn). **Mở lại nếu tái diễn trên bản ≥ 0.8.16** (bản chứa nốt các bản vá đang mở của Lỗi B; nếu tái diễn trên 0.8.15 thì ghi rõ bản app trong báo cáo), kèm bản app trong báo cáo.
 
 Ghi chú riêng cho #562 (1 lượt, 1 máy): cùng câu trên; nếu mở lại mà vẫn 1 lượt/1 máy thì đó là ca của một thiết bị, không phải hồi quy.
 
@@ -125,7 +132,7 @@ Ghi chú riêng cho #562 (1 lượt, 1 máy): cùng câu trên; nếu mở lại
 
 1. **A/B `desmume_num_cores`** (§5.3) trên máy của #591: `2` so với `1`, cùng ROM ≥ 30 phút, đếm số lần chết tiến trình. Rẻ nhất, không cần sửa mã, và là ứng viên số một cho 97 lượt.
 2. **Ghim lõi `desmume`** (bỏ `nightly/latest`): nếu không ghim thì mọi bảng khung sau này vẫn không đối chiếu được với một `.so` cụ thể.
-3. **Luật đóng issue tồn** (≤3 lượt, >7 ngày): duyệt thì mới đăng câu ở §6 cho #331/#377/#562.
+3. **Luật đóng issue tồn** (≤3 lượt, >7 ngày): duyệt thì mới đăng câu ở §6 cho #331/#377/#562 — lưu ý mốc ">7 ngày" tính từ **0.8.15 (19/11)** và nên chờ 0.8.16 để mở lại đúng bản.
 4. **Không `dlclose`** (§5.2): chấp nhận rò handle để bịt đường sập do thread của lõi hay không.
 
 ## 9. Cách kiểm tài liệu này
