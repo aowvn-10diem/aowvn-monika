@@ -17,7 +17,7 @@ Tài liệu này **không làm lại** hai kết luận đã có, chỉ trích d
 | [#331](https://github.com/aowvn-10diem/aowvn-monika/issues/331) `c8765c891f30` | native | 3 (3 máy) | #644 + #663 | Soạn sẵn câu đóng (§6), **chưa đăng** |
 | [#377](https://github.com/aowvn-10diem/aowvn-monika/issues/377) `ce10c8fe6467` | native | 3 (2 máy) | #644 + #663 | Soạn sẵn câu đóng (§6), **chưa đăng** |
 | [#562](https://github.com/aowvn-10diem/aowvn-monika/issues/562) `10f53afc0448` | native | 1 (1 máy) | #644 + #663 | Soạn sẵn câu đóng (§6), **chưa đăng** |
-| [#368](https://github.com/aowvn-10diem/aowvn-monika/issues/368) `751363ed54f2` | op-fail | 1 (1 máy) | **Không** — ngoài `libretrodroid` | Chờ #671 + cần `op`/`bước` từ token |
+| [#368](https://github.com/aowvn-10diem/aowvn-monika/issues/368) `751363ed54f2` | op-fail | 1 (1 máy) | **Không** — ngoài `libretrodroid` | Chờ **0.8.16** (#671 đã gộp 19/11, chưa phát hành) + cần `op`/`bước` từ token |
 
 `desmume/native` = 5 issue · 97 lượt · tách 5 chữ ký; `desmume/op-fail` = 1 issue · 1 lượt.
 Tổng `desmume` = 98 lượt, khớp bảng tồn 18/11 `docs/loi/TON-1811.md` (đã ở `main`: `desmume/native` 97 + `desmume/op-fail` 1) và bảng tồn 19/11 ở **PR #685 (chưa gộp)**, `docs/loi/TON-1911.md` dòng 53: `desmume | 6 | 98`.
@@ -126,7 +126,7 @@ Ghi chú riêng cho #562 (1 lượt, 1 máy): cùng câu trên; nếu mở lại
 
 - **#591** (`3ad0c6cc6d47`, 19 lượt / 2 khoá `seen`): nằm trong **cùng nhóm chữ ký** với #369 và **trong phạm vi #663** — không có đường mã riêng. 19 lượt dồn 2 máy nghĩa là một người chơi lặp lại sau khi cập nhật; đây là ca tốt nhất để A/B `num_cores` (§5.3) vì biết đúng thiết bị.
 - **#368** (`751363ed54f2`, `op-fail`, 1 lượt): **ngoài phạm vi #663** — `op-fail` do `Diagnostics.op` phía Kotlin ghi, không đi qua `libretrodroid.cpp`. `docs/loi/op-fail-con-lai-1311.md` §2 xếp #368 vào nhóm "báo cáo phát sinh trong phiên game", ứng viên `mo-game`/`cai-goi-engine` **[CHƯA KIỂM]**. Lõi `desmume` xuất hiện trong báo cáo nghĩa là **đã có phiên chơi**, nên không phải lỗi tải/cài engine.
-  Cần để chẩn đoán: trường `op` + `bước` của báo cáo (`scripts/crash-reports.sh <id>` khi có token). Nếu `op = cai-goi-engine` thì #671 (kiểm ELF/ABI ở nhánh tải) là bản vá tương ứng, và chỉ đóng được **sau khi #671 gộp + phát hành**.
+  Cần để chẩn đoán: trường `op` + `bước` của báo cáo (`scripts/crash-reports.sh <id>` khi có token). Nếu `op = cai-goi-engine` thì #671 (kiểm ELF/ABI ở nhánh tải) là bản vá tương ứng — #671 **đã gộp 19/11** (`02bd03cc`) nhưng **chưa có trong `v0.8.15`**, nên chỉ đóng được **sau khi 0.8.16 phát hành**.
 
 ## 8. Việc cần PM quyết
 
