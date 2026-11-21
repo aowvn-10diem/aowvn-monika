@@ -68,7 +68,7 @@ Phiên này **không có `CRASH_ADMIN_TOKEN`** ⇒ không đọc được `reaso
 ## 4. Việc cần PM
 
 1. **Cắt bản kế tiếp (0.8.16) có `#683`** (tag `v0.8.15` đang phát không chứa bản vá) — nếu không, cả 7 issue `unknown/anr` phải chờ thêm một bản nữa.
-2. Duyệt và đăng giúp comment soạn sẵn trong `docs/loi/comment-cho-duyet-1911.md` cho 20 issue — phiên không tự đăng.
+2. Duyệt và đăng giúp comment soạn sẵn trong `docs/loi/comment-cho-duyet-1911.md` cho **15 issue còn mở** — phiên không tự đăng.
 3. Cấp `CRASH_ADMIN_TOKEN` cho một phiên để giải mã #385 (đã đủ lõi ghim + ký hiệu).
 
 ## 5. Mốc toạ độ (rà 21/11/2026)
