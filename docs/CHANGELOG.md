@@ -2,6 +2,15 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.16 (Bản thử)
+<!-- bien-tap: v0.8.16 -->
+> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+
+- **Sửa lỗi:** Chơi game Nintendo DS: tệp game hỏng hoặc thiếu thì app báo rõ, không còn hiện "mã lỗi 1". ([#693](https://github.com/aowvn-10diem/aowvn-monika/pull/693))
+- **Sửa lỗi:** Mở game bị lỗi thì thông báo dễ hiểu hơn: nêu mã lỗi và bước đang chạy. ([#686](https://github.com/aowvn-10diem/aowvn-monika/pull/686))
+- **Sửa lỗi:** Nhập game lỗi thì tệp gốc của bạn vẫn còn nguyên, app chỉ báo lỗi kèm bước cần làm. ([#689](https://github.com/aowvn-10diem/aowvn-monika/pull/689))
+- Nội bộ: thêm dấu vết khi app bị treo và khi game Java đóng ([#683](https://github.com/aowvn-10diem/aowvn-monika/pull/683), [#684](https://github.com/aowvn-10diem/aowvn-monika/pull/684), [#692](https://github.com/aowvn-10diem/aowvn-monika/pull/692)); một lần lỗi chỉ còn một báo cáo; báo cáo lỗi giữ nhãn, tên game và thông tin bản dựng ([#680](https://github.com/aowvn-10diem/aowvn-monika/pull/680), [#671](https://github.com/aowvn-10diem/aowvn-monika/pull/671)); cập nhật cấu hình và ngày phát hành ([#681](https://github.com/aowvn-10diem/aowvn-monika/pull/681), [#682](https://github.com/aowvn-10diem/aowvn-monika/pull/682)).
+
 ## v0.8.15 (Bản thử)
 <!-- bien-tap: v0.8.15 -->
 > Phát hành ngày 19/11/2026 (UTC), bản thử nghiệm.
