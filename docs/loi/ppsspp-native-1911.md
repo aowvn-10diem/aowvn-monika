@@ -84,7 +84,7 @@ Dùng chung khung; chỉ thay số liệu từng issue:
 
 > **[Lỗi B — đề xuất đóng, chờ PM duyệt]**
 >
-> Chữ ký `<sig>` (ppsspp `/` `<kind>`), **<N> lượt** đã thông báo, issue tạo **<ngày tạo>**. Số đã thông báo **không tăng ở mức ghi nhận**; bot chỉ cập nhật khi có ≥ 5 lượt mới và **ngày báo cáo cuối là [CHƯA KIỂM — thiếu token Worker]**, nên không khẳng định đây là "hết báo cáo thật".
+> Chữ ký `<sig>` (ppsspp `/` `<kind>`), **<N> lượt** đã thông báo, issue tạo **<ngày tạo>**. Số đã thông báo **không tăng ở mức ghi nhận**; bot chỉ cập nhật khi có ≥ 5 lượt mới và ngày báo cáo cuối là **[CHƯA KIỂM — thiếu token Worker]**, nên đề xuất đóng dựa trên luật tồn, không dựa trên kết luận "đã hết báo cáo".
 >
 > Chưa kết luận được nguyên nhân: báo cáo `native` không mang khung/BuildId/bản app, và phiên này không có `CRASH_ADMIN_TOKEN` (chạy `crash-insight.yml` bị 403). Vì vậy đề xuất đóng theo **luật tồn ≤ 3 lượt / > 7 ngày**, không phải theo kết luận nguyên nhân.
 >
