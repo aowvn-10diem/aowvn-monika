@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -154,4 +155,78 @@ class DownloadGuardTest {
         guard.intercept(chain)
         org.junit.Assert.assertEquals("github.com", chain.proceeded?.host)
     }
+
+    @Test fun choPhepCongG3Redirect1HopSangR2SigV4() {
+        val r2Host = "0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com"
+        assertTrue(vn.aow.monika.config.isAllowedDownloadHost("api.monika.aow.vn"))
+        assertTrue(vn.aow.monika.config.isAllowedDownloadHost(r2Host))
+        assertTrue(vn.aow.monika.config.isRedirectOnlyDownloadHost(r2Host))
+        assertFalse(vn.aow.monika.config.isAllowedDownloadHost("evil.r2.cloudflarestorage.com"))
+
+        // Config chứa URL cổng G3 `/pack/<tên>` phải parse thành công.
+        val hash = "c".repeat(64)
+        val json = """{"configVersion":1,"modules":{"x":{"version":"1","url":"https://api.monika.aow.vn/pack/ppsspp-1-arm64-v8a.zip","sha256":"$hash"}}}"""
+        val cfg = vn.aow.monika.config.ConfigValidation.parse(json, 0)
+        val packOrigin = cfg.modules.getValue("x").url
+
+        val guard = AppGraph.downloadHttp.networkInterceptors.filterIsInstance<DownloadGuard>().single()
+        // Hop 0: gọi vào cổng /pack/
+        val firstHop = FakeChain(packOrigin)
+        assertNotNull(guard.intercept(firstHop))
+        assertEquals("api.monika.aow.vn", firstHop.proceeded?.host)
+
+        // Hop 1 (302 từ cổng /pack/ sang R2 SigV4 hợp lệ trên cùng Call):
+        val r2SignedUrl = "https://$r2Host/monika-packs/ppsspp-1-arm64-v8a.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=deadbeef"
+        val redirectHop = FakeChain(r2SignedUrl, origin = packOrigin, sharedCall = firstHop.call())
+        assertNotNull(guard.intercept(redirectHop))
+        assertEquals(r2Host, redirectHop.proceeded?.host)
+    }
+
+    @Test fun chanMoiTruongHopG3VaR2SaiQuyTacVaRedirect2Hop() {
+        val r2Host = "0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com"
+        val r2SignedUrl = "https://$r2Host/monika-packs/core.zip?X-Amz-Signature=deadbeef"
+        val hash = "d".repeat(64)
+        val guard = AppGraph.downloadHttp.networkInterceptors.filterIsInstance<DownloadGuard>().single()
+
+        // 1) Đặt trực tiếp URL R2 hoặc đường dẫn ngoài /pack/ trên api.monika.aow.vn trong config → bị ConfigValidation bác bỏ.
+        for (badConfigUrl in listOf(
+            r2SignedUrl,
+            "https://api.monika.aow.vn/report",
+            "https://api.monika.aow.vn/pack/",
+            "https://api.monika.aow.vn/pack/../secret.zip",
+        )) {
+            val badJson = """{"configVersion":1,"modules":{"x":{"version":"1","url":"$badConfigUrl","sha256":"$hash"}}}"""
+            assertTrue(
+                badConfigUrl,
+                runCatching { vn.aow.monika.config.ConfigValidation.parse(badJson, 0) }.exceptionOrNull() is IllegalArgumentException,
+            )
+        }
+
+        // 2) Gọi trực tiếp R2 (không phải redirect từ /pack/), hoặc redirect chéo nguồn (github -> R2, /pack/ -> github CDN),
+        //    hoặc sai bucket, hoặc thiếu X-Amz-Signature → bị DownloadGuard chặn trước khi gửi.
+        for ((target, origin) in listOf(
+            r2SignedUrl to r2SignedUrl, // gọi thẳng R2
+            r2SignedUrl to "https://github.com/aowvn-10diem/aowvn-monika-packs/releases/download/v1/x.zip", // github -> R2
+            r2SignedUrl to "https://monika.aow.vn/config.json", // không phải /pack/
+            "https://release-assets.githubusercontent.com/github-production-release-asset/1/x.zip" to "https://api.monika.aow.vn/pack/x.zip", // /pack/ -> github CDN
+            "https://$r2Host/other-bucket/core.zip?X-Amz-Signature=deadbeef" to "https://api.monika.aow.vn/pack/core.zip", // sai bucket R2
+            "https://$r2Host/monika-packs/core.zip" to "https://api.monika.aow.vn/pack/core.zip", // thiếu X-Amz-Signature
+            "https://api.monika.aow.vn/report" to "https://api.monika.aow.vn/report", // ngoài /pack/
+        )) {
+            val chain = FakeChain(target, origin = origin)
+            assertTrue("$origin -> $target", runCatching { guard.intercept(chain) }.exceptionOrNull() is IOException)
+            assertNull("$origin -> $target", chain.proceeded)
+        }
+
+        // 3) Chặn redirect 2 hop trên cùng một Call (hop 0 -> hop 1 hợp lệ -> hop 2 bị chặn cứng).
+        val packOrigin = "https://api.monika.aow.vn/pack/core.zip"
+        val hop0 = FakeChain(packOrigin)
+        assertNotNull(guard.intercept(hop0))
+        val hop1 = FakeChain(r2SignedUrl, origin = packOrigin, sharedCall = hop0.call())
+        assertNotNull(guard.intercept(hop1))
+        val hop2 = FakeChain(r2SignedUrl, origin = packOrigin, sharedCall = hop0.call())
+        assertTrue("phải chặn hop redirect thứ 2", runCatching { guard.intercept(hop2) }.exceptionOrNull() is IOException)
+        assertNull("không được gửi hop thứ 2", hop2.proceeded)
+    }
 }
+
