@@ -1,4 +1,4 @@
-# Nhóm `ppsspp` / `native` — chốt 19/11: số lượt đứng từ 06/11, #663 chỉ có trong 0.8.15 Pre-release
+# Nhóm `ppsspp` / `native` — chốt 19/11: chưa đủ căn cứ đóng, #663 chỉ có trong 0.8.15 Pre-release
 
 Tiếp theo `docs/loi/ppsspp-native-1311.md` (13/11) và `docs/loi/native-cpp-hien-truong-1811.md` (#663). Tệp này trả lời ba câu: **số lượt còn tăng không**, **#316/#372 có cùng gốc với #663 không**, và **#663 còn hở đường nào**. Kèm câu comment đóng sẵn cho ba issue lẻ (chưa đóng — chờ PM duyệt luật đóng).
 
@@ -6,26 +6,26 @@ Người lập: phiên **LB2** (nhóm Lỗi B), 19/11/2026. Mọi kết luận �
 
 **Mốc toạ độ:** mọi `tệp:dòng` trong tệp này tính theo **`02bd03cc`**. Đã đối chiếu lại từng tham chiếu với `origin/main` **`3d8e1bcf`** (21/11): **9 tệp được dẫn không đổi một dòng nào** — #693 chỉ chạm `RetroActivity.kt` và `CoreLoadError.kt`, hai tệp này **không** được dẫn ở đây. Chỗ nào lấy theo mốc `61413abd` (bản #663 gộp) thì ghi rõ ngay cạnh.
 
-## 1. Số lượt và ngày dừng
+## 1. Số lượt và lần thông báo cuối
 
-| Issue | Chữ ký (12 hex) | Loại | Lượt | Khoá `seen` | Lượt lớn nhất / một khoá | Báo cáo đầu | Báo cáo mới nhất | Im lặng (19/11) |
-|---|---|---|---:|---:|---:|---|---|---:|
-| [#316](https://github.com/aowvn-10diem/aowvn-monika/issues/316) | `3f181942717a` | native | 114 | 51 | 6 | 20/10 07:43 | 20/10 | **30 ngày** |
-| [#372](https://github.com/aowvn-10diem/aowvn-monika/issues/372) | `7af5e6657638` | native | 90 | 12 | 13 | 27/10 06:24 | 27/10 | **23 ngày** |
-| [#478](https://github.com/aowvn-10diem/aowvn-monika/issues/478) | `4d2cb114a7aa` | native | 1 | 1 | 1 | 03/11 15:18 | 03/11 | **16 ngày** |
-| [#520](https://github.com/aowvn-10diem/aowvn-monika/issues/520) | `4e65d6ad0246` | native | 1 | 1 | 1 | 06/11 03:29 | 06/11 | **13 ngày** |
+| Issue | Chữ ký (12 hex) | Loại | Lượt | Khoá `seen` | Lượt lớn nhất / một khoá | Issue tạo (thông báo đầu) | Delta lần thông báo cuối | Ngày báo cáo cuối |
+|---|---|---|---:|---:|---:|---|---|---|
+| [#316](https://github.com/aowvn-10diem/aowvn-monika/issues/316) | `3f181942717a` | native | 114 | 51 | 6 | 20/10 07:43 | **+5** | **[CHƯA KIỂM]** |
+| [#372](https://github.com/aowvn-10diem/aowvn-monika/issues/372) | `7af5e6657638` | native | 90 | 12 | 13 | 27/10 06:24 | +90 | **[CHƯA KIỂM]** |
+| [#478](https://github.com/aowvn-10diem/aowvn-monika/issues/478) | `4d2cb114a7aa` | native | 1 | 1 | 1 | 03/11 15:18 | +1 | **[CHƯA KIỂM]** |
+| [#520](https://github.com/aowvn-10diem/aowvn-monika/issues/520) | `4e65d6ad0246` | native | 1 | 1 | 1 | 06/11 03:29 | +1 | **[CHƯA KIỂM]** |
 | **native, cộng** | | | **206** | | | | | |
-| [#416](https://github.com/aowvn-10diem/aowvn-monika/issues/416) | `4b0d4a9a9b0f` | unknown | 8 | 3 | 5 | 01/11 14:21 | 03/11 | **16 ngày** |
+| [#416](https://github.com/aowvn-10diem/aowvn-monika/issues/416) | `4b0d4a9a9b0f` | unknown | 8 | 3 | 5 | 01/11 14:21 | +5 | **[CHƯA KIỂM]** |
 
-Cột "lượt" là `count` trong khối `aow-crash-v100` của thân issue; ở cả 5 issue **`count` bằng đúng tổng các khoá `seen`** ⇒ chưa từng cộng thêm lượt nào sau lần tạo (riêng #416 được cộng một lần `+5` ngày 03/11). #372 có **12 khoá nhưng 90 lượt** (một khoá 13, một khoá 12…): 12 lần cài/báo cáo, mỗi lần gộp nhiều lần chết cùng dấu vân tay — **không phải 90 thiết bị**.
+Cột "lượt" là `count` trong khối `aow-crash-v100` của thân issue. `(+N)` là **delta của lần thông báo cuối**, không phải mức tăng hiện tại và cũng không phải mốc thời gian: #316 ghi `114 (+5)` nghĩa là **đã có** một lần cộng 5 lượt sau lần tạo, chỉ không biết lần đó ngày nào. `count` luôn bằng tổng các khoá `seen` vì bot tính `delta` rồi gộp `seen` và cộng vào `count` (`scripts/crash-issue-bot.py:212`, `:219`, `:223`) — đó là **hệ quả cách ghi**, không dùng để nói "chưa từng cộng lượt nào". Ngày báo cáo cuối thật của cả 5 issue: **[CHƯA KIỂM — thiếu token Worker]**. #372 có **12 khoá nhưng 90 lượt** (một khoá 13, một khoá 12…): 12 lần cài/báo cáo, mỗi lần gộp nhiều lần chết cùng dấu vân tay — **không phải 90 thiết bị**.
 
-## 2. "Số đứng" là tín hiệu thật, nhưng có hai giới hạn
+## 2. "Số đứng" chỉ đo được ở mức đã thông báo — hai giới hạn
 
-**Tín hiệu thật:** bot `scripts/crash-issue-bot.py` chạy mỗi giờ trên `main`, và cùng ngày 19/11 các chữ ký khác vẫn được cập nhật: #322 `pcsx_rearmed/core-error` và #578 `pcsx_rearmed/core-error` cập nhật 19/11 **10:43**, #302 `unknown/resource` (tạo 20/10) cập nhật 19/11 06:48. Worker và bot còn sống ⇒ 5 chữ ký `ppsspp` đứng số vì **không còn báo cáo mới**, không phải mất đường gửi.
+**Đối chứng bot còn sống:** bot `scripts/crash-issue-bot.py` chạy mỗi giờ trên `main`, và cùng ngày 19/11 các chữ ký khác vẫn được cập nhật: #322 `pcsx_rearmed/core-error` và #578 `pcsx_rearmed/core-error` cập nhật 19/11 **10:43**, #302 `unknown/resource` (tạo 20/10) cập nhật 19/11 06:48. Worker và bot còn sống. Nhưng với 5 chữ ký `ppsspp`, thứ đo được chỉ là **`count` không tăng ở mức đã thông báo** — chưa phân biệt được "hết báo cáo" với "có lượt mới nhưng dưới ngưỡng 5", và không biết lượt cuối là ngày nào.
 
-**Giới hạn 1 — ngưỡng bot:** `scripts/crash-issue-bot.py:217` (theo `02bd03cc`) bỏ qua khi `delta < 5` (`elif delta < 5 and not rewrite: continue`). "Số không tăng" nghĩa là **dưới 5 lượt mới kể từ lần thông báo trước**, không chắc là 0. Với #316 (114) và #372 (90) mức nhiễu này không đổi kết luận; với #478/#520 (1 lượt) thì đó là giới hạn thật.
+**Giới hạn 1 — ngưỡng bot:** `scripts/crash-issue-bot.py:217` (theo `02bd03cc`) bỏ qua khi `delta < 5` (`elif delta < 5 and not rewrite: continue`). "Số không tăng" nghĩa là **dưới 5 lượt mới kể từ lần thông báo trước**, không chắc là 0. #316 đang ghi `(+5)` cho thấy đúng là có lần cộng sau lần tạo, nên đây không phải giới hạn lý thuyết; với #478/#520 (1 lượt) nó là giới hạn thật.
 
-**Giới hạn 2 — mốc dừng nằm TRƯỚC bản vá:** cả 5 issue ngừng nhận báo cáo **trước** 0.8.13 (13/11) và trước 0.8.15 (19/11). Vì vậy "lượt không tăng sau bản vá" **không** chứng minh bản vá có tác dụng — đúng ra là báo cáo đã hết từ trước. Không được dùng vế này để đóng issue.
+**Giới hạn 2 — không biết mốc dừng so với bản vá:** ngày báo cáo cuối của cả 5 issue là **[CHƯA KIỂM]** (mục 1), nên **không** khẳng định được báo cáo đã hết trước hay sau 0.8.13 (13/11) và 0.8.15 (19/11). Vì vậy không được dùng vế "lượt không tăng sau bản vá" để đóng issue.
 
 ## 3. Mốc thời gian khớp: lõi PSP được ghim + băm ngày 05/11
 
@@ -37,7 +37,7 @@ Cột "lượt" là `count` trong khối `aow-crash-v100` của thân issue; ở
 | Kiểm toàn vẹn | **không có hash** — tệp đổi mỗi đêm | `sha256` từng ABI (`336f6bfe…` arm64-v8a, `194c8b3c…` armeabi-v7a) |
 | Đối chiếu gói ký hiệu | không thể | `cores-ppsspp-1` có `symbols-ppsspp-{abi}.zip` + `build-ids.tsv` |
 
-206/206 lượt `native` nằm trong 20/10 → 06/11 03:29; lượt cuối (#520) cách mốc ghim **11,5 giờ** (máy chưa kịp nhận config 62); sau đó 13 ngày không có lượt nào. Giả thuyết khớp nhất — **chưa có khung để chứng minh từng chữ ký**: lõi lấy từ URL nightly không kiểm hash thì máy có thể cài đúng bản nightly hỏng/sai ABI, và báo cáo `native` khi đó không thể đối chiếu gói ký hiệu (không có BuildId). Đây là cùng một gốc với việc #671 đang mở rộng `validateElf`/`build_id` cho các lõi buildbot còn lại (`desmume`, `snes9x`, `melonds`, `melondsds`) — ppsspp đã được ghim trước.
+Các issue được tạo trong khoảng 20/10 → 06/11 (mục 1); **ngày báo cáo cuối là [CHƯA KIỂM — thiếu token Worker]**, nên không nói được lượt cuối cách mốc ghim bao lâu, cũng không nói được "sau đó N ngày không có lượt nào" (#316 đang ghi `+5` ở lần thông báo cuối). Giả thuyết khớp nhất — **chưa có khung để chứng minh từng chữ ký**: lõi lấy từ URL nightly không kiểm hash thì máy có thể cài đúng bản nightly hỏng/sai ABI, và báo cáo `native` khi đó không thể đối chiếu gói ký hiệu (không có BuildId). Đây là cùng một gốc với việc #671 đang mở rộng `validateElf`/`build_id` cho các lõi buildbot còn lại (`desmume`, `snes9x`, `melonds`, `melondsds`) — ppsspp đã được ghim trước.
 
 Ngoài ra 11/11 `a0387ae4` (#601, trong **0.8.13** chính thức) hạ cấu hình đồ hoạ: `options.ppsspp_vertex_cache = disabled` (mọi máy), `perf.lite` thêm `ppsspp_auto_frameskip = enabled` + `ppsspp_internal_resolution = 480x272`, `perf.full` giữ `960x544` — đúng như `config/monika-config.json` hiện tại (`config/monika-config.json:958-980`, `configVersion` 66, theo `02bd03cc`).
 
@@ -74,7 +74,7 @@ Ba đường đó **có thể** là đường chết của `ppsspp/native` (báo
 
 ## 7. Điều kiện đóng / mở lại (đề xuất, chờ PM)
 
-- **Đóng `completed`** chỉ khi: có bản **chính thức** chứa #663 (≥ 0.8.16 hoặc 0.8.15 được thăng cấp) **và** ít nhất 14 ngày sau đó số lượt không tăng **và** không có báo cáo cùng chữ ký trên bản đó. Không đóng hôm nay: 0.8.15 còn là Pre-release, mốc dừng 06/11 nằm trước bản vá nên chưa nói được gì.
+- **Đóng `completed`** chỉ khi: có bản **chính thức** chứa #663 (≥ 0.8.16 hoặc 0.8.15 được thăng cấp) **và** ít nhất 14 ngày sau đó số lượt không tăng **và** không có báo cáo cùng chữ ký trên bản đó. Không đóng hôm nay: 0.8.15 còn là Pre-release, và **ngày báo cáo cuối là [CHƯA KIỂM]** nên chưa nói được báo cáo đã hết trước hay sau bản vá.
 - **Mở lại / tạo issue mới** khi có báo cáo `ppsspp/native` (hoặc `unknown`) trên 0.8.13+; kèm mã bản app, 3 frame đầu, và — **chỉ từ 0.8.16 trở đi** — `bid=` cùng tên thread ở `dlclose-before`.
 - **Ba issue lẻ** (#478 1 lượt, #520 1 lượt, #416 8 lượt — đều > 7 ngày): chờ PM duyệt luật "đóng issue tồn ≤ 3 lượt và > 7 ngày". Câu comment soạn sẵn ở mục 8.
 
@@ -84,7 +84,7 @@ Dùng chung khung; chỉ thay số liệu từng issue:
 
 > **[Lỗi B — đề xuất đóng, chờ PM duyệt]**
 >
-> Chữ ký `<sig>` (ppsspp `/` `<kind>`), **<N> lượt**, báo cáo mới nhất **<ngày>** — im lặng **<X> ngày** tính đến 19/11, trong khi các chữ ký khác vẫn được bot cập nhật hằng ngày (#322, #302 ngày 19/11) nên đây là hết báo cáo thật, không phải mất đường gửi.
+> Chữ ký `<sig>` (ppsspp `/` `<kind>`), **<N> lượt** đã thông báo, issue tạo **<ngày tạo>**. Số đã thông báo **không tăng ở mức ghi nhận**; bot chỉ cập nhật khi có ≥ 5 lượt mới và **ngày báo cáo cuối là [CHƯA KIỂM — thiếu token Worker]**, nên không khẳng định đây là "hết báo cáo thật".
 >
 > Chưa kết luận được nguyên nhân: báo cáo `native` không mang khung/BuildId/bản app, và phiên này không có `CRASH_ADMIN_TOKEN` (chạy `crash-insight.yml` bị 403). Vì vậy đề xuất đóng theo **luật tồn ≤ 3 lượt / > 7 ngày**, không phải theo kết luận nguyên nhân.
 >
