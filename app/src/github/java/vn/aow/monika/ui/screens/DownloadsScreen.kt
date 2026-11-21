@@ -55,7 +55,6 @@ import vn.aow.monika.R
 import vn.aow.monika.library.GameStorage
 import vn.aow.monika.ui.theme.CircleButton
 import vn.aow.monika.ui.theme.DarkButton
-import vn.aow.monika.ui.theme.DockClearance
 import vn.aow.monika.ui.theme.EmptyState
 import vn.aow.monika.ui.theme.GradientButton
 import vn.aow.monika.ui.theme.GradientProgress
@@ -126,7 +125,9 @@ fun DownloadsScreen(
     val dm = context.getSystemService(DownloadManager::class.java)
 
     Screen {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // V152 (targetSdk 36, edge-to-edge bắt buộc): cộng phần thanh hệ thống dưới vào khoảng chừa của menu nổi.
+        val bottomClearance = vn.aow.monika.ui.theme.dockContentClearance()
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottomClearance), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item { if (header != null) header() else MonikaHeader("Tải xuống") }
             storage?.let { s -> item { StorageCard(s) } }
             item { SoftPillButton("Tải từ link", { linkOpen = true }, R.drawable.ic_fluent_link_24_regular) }

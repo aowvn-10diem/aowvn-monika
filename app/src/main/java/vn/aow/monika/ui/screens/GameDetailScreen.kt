@@ -59,7 +59,7 @@ import vn.aow.monika.runner.LaunchResult
 import vn.aow.monika.ui.MainActivity
 import vn.aow.monika.ui.theme.CircleButton
 import vn.aow.monika.ui.theme.DarkButton
-import vn.aow.monika.ui.theme.DockClearance
+import vn.aow.monika.ui.theme.dockContentClearance
 import vn.aow.monika.ui.theme.EmptyState
 import vn.aow.monika.ui.theme.GradientButton
 import vn.aow.monika.ui.theme.Illustration
@@ -114,7 +114,7 @@ internal fun GameDetailScreen(game: Game, onPlay: (Game) -> Unit, onBack: () -> 
             )
             Column(
                 Modifier.fillMaxSize().verticalScroll(scroll)
-                    .padding(start = 16.dp, end = 16.dp, bottom = DockClearance),
+                    .padding(start = 16.dp, end = 16.dp, bottom = dockContentClearance()),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 GameArtwork(game)

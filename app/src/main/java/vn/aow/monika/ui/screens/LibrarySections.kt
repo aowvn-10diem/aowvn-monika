@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import vn.aow.monika.R
 import vn.aow.monika.library.LibraryDocument
-import vn.aow.monika.ui.theme.DockClearance
+import vn.aow.monika.ui.theme.dockContentClearance
 import vn.aow.monika.ui.theme.EmptyState
 import vn.aow.monika.ui.theme.Monika
 import vn.aow.monika.ui.theme.MonikaMenuSheet
@@ -54,7 +54,7 @@ internal fun LibraryReadPage(
     }
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = DockClearance),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = dockContentClearance()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
