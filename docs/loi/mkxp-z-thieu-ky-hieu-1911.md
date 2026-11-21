@@ -38,3 +38,7 @@
 ## 5. Điều kiện đóng #613
 
 Bản chính thức có ký hiệu (mục 3) **và** khung đã giải mã **và** không có chữ ký mới trong ≥ 1 tuần. Trước đó giữ mở, không vá mù engine.
+
+## 6. Mốc toạ độ
+
+Rà 21/11/2026 theo `origin/main` `3d8e1bcf`, so với mốc `02bd03cc`: `build-rgss.yml` **không đổi** (208 dòng) ⇒ dải `dòng 174–200` còn đúng; `build-kirikiri.yml` không đổi ⇒ rào chắn `[ -s "$SYM" ]` (dòng 218) còn hiệu lực; `libretrodroid/src/main/cpp/CMakeLists.txt` không đổi ⇒ `-Wl,--build-id=sha1` ở **dòng 114**; `scripts/package-native-symbols.py` (workflow gọi `self/scripts/…`) và `scripts/crash-reports.sh` không đổi. Bảng đầy đủ: `docs/loi/nhom-con-lai-1911.md` §5.

@@ -5,7 +5,7 @@ Dữ liệu chung: `docs/loi/nhom-con-lai-1911.md`.
 
 ## 1. #322 / #578 — `pcsx_rearmed` / `core-error` (37 + 18 = 55 lượt)
 
-Phạm vi bản vá `#668` (đã gộp, **chỉ có ở v0.8.15** — bản thử 19/11, chính thức sớm nhất 12:40 VN 20/11):
+Phạm vi bản vá `#668` (đã gộp, **có ở v0.8.15 chính thức** — phát hành 19/11 04:48Z):
 
 - `#668` sửa **phía nhập game**: `Importer`/`DiscSet`/`ArchiveExtractor` xếp `.cue` và các track vào **cùng một thư mục**, nên bộ đĩa nhiều tệp rời không còn sinh ra `.cue` trỏ tới tệp không tồn tại.
 - `#649` (đã có ở **v0.8.14 chính thức**) chỉ đổi **thông điệp** khi thiếu tệp đĩa/BIOS; nó không làm `retro_load_game` thành công.
@@ -40,9 +40,13 @@ Xem `docs/loi/mkxp-z-thieu-ky-hieu-1911.md`.
 | #398, #414, #415, #419 | "1 lượt, không tái hiện từ 01/11; đóng khi bản chính thức có `#683` và không có chữ ký mới." | `#683` vào bản chính thức |
 | #399 | "2 lượt / 2 máy; cùng lớp `unknown/anr`; đóng cùng #413 sau `#683`." | `#683` |
 | #534 | "5 lượt / 5 máy; cùng lớp; đóng sau `#683`." | `#683` |
-| #387 | "1 lượt; lõi sẽ được gắn từ phiên chết nhờ `ecdccd33` (có ở v0.8.15). Đóng khi 0.8.15 chính thức và không tái hiện." | 0.8.15 chính thức |
+| #387 | "1 lượt; lõi sẽ được gắn từ phiên chết nhờ `ecdccd33` (có ở v0.8.15 chính thức). Chờ lệnh trưởng nhóm và đo lượt sau bản vá." | lệnh trưởng nhóm |
 | #403 | "`mgba` đã ghim bản; cần mã lỗi để tách `0/1/-1` — chờ `#686`." | `#686` |
 | #418 | "1 lượt, chờ `#686`; dưới ngưỡng kết luận." | `#686` |
 | #448, #563 | "Lõi `version=1` nightly, không có gói ký hiệu ⇒ không giải mã được khung; chờ V198." | V198 / gói ký hiệu |
-| #464, #465 | "`op-fail` 1 lượt (tải/cài gói lõi); `#665` ở 0.8.15 giảm báo sai — đóng khi 0.8.15 chính thức." | 0.8.15 chính thức |
+| #464, #465 | "`op-fail` 1 lượt (tải/cài gói lõi); `#665` có ở v0.8.15 chính thức — chờ lệnh trưởng nhóm." | lệnh trưởng nhóm |
 | #378, #513 | "`unknown` vì máy API < 30 (không có `ApplicationExitInfo`); không phải lỗi mới — đóng khi hết hạn theo dõi." | quyết định của trưởng nhóm |
+
+## 5. Mốc toạ độ
+
+Rà 21/11/2026 theo `origin/main` `3d8e1bcf`: `scripts/crash-reports.sh` **không đổi** từ `02bd03cc` (còn retrace theo mapping + ghép native theo BuildId); các tệp còn lại của tệp này đều là tài liệu trong repo. Bảng đầy đủ: `docs/loi/nhom-con-lai-1911.md` §5.
