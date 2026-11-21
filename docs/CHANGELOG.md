@@ -4,7 +4,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 
 ## v0.8.16 (Bản thử)
 <!-- bien-tap: v0.8.16 -->
-> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+> Phát hành ngày 21/11/2026 (UTC), bản thử nghiệm.
 
 - **Sửa lỗi:** Chơi game Nintendo DS: tệp game hỏng thì app báo rõ, không còn hiện "mã lỗi 1". ([#693](https://github.com/aowvn-10diem/aowvn-monika/pull/693))
 - **Sửa lỗi:** Mở game bị lỗi thì thông báo dễ hiểu hơn: nêu mã lỗi và bước đang chạy. ([#686](https://github.com/aowvn-10diem/aowvn-monika/pull/686))
