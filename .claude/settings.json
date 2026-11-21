@@ -7,5 +7,16 @@
       "Bash(gh api -X PUT repos/aowvn-10diem/aowvn-monika/pulls/*/merge*)",
       "Bash(gh workflow run release.yml -R aowvn-10diem/aowvn-monika*)"
     ]
+  },
+  "extraKnownMarketplaces": {
+    "context-mode": {
+      "source": {
+        "source": "github",
+        "repo": "mksglu/context-mode"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "context-mode@context-mode": true
   }
 }
