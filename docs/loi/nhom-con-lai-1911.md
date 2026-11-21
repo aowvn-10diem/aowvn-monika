@@ -51,7 +51,7 @@ Phiên này **không có `CRASH_ADMIN_TOKEN`** ⇒ không đọc được `reaso
 ## 2. `unknown/anr` — 7 issue, 26 lượt
 
 - Chữ ký khác nhau hoàn toàn (7 mã băm) ⇒ **không phải issue trùng**; dùng chung một nguyên nhân *không chẩn đoán được*, không dùng chung một lỗi.
-- `unknown` sinh ở `Diagnostics.collect` (`Diagnostics.kt:306`) khi `exitInfo == null` (máy API < 30) hoặc khi tiến trình chết không có phiên. Từ `#694` (`origin/main` `5e1c0f73`) nhánh này đổi thành `null -> "noexit"` tại **`Diagnostics.kt:369`** (`#686` trước đó đã làm tệp đổi +41/−2 so với `02bd03cc`) ⇒ báo cáo **mới** mang loại `noexit`, các báo cáo cũ vẫn ghi `unknown`.
+- `unknown` sinh ở `Diagnostics.collect` (`Diagnostics.kt:306`) khi `exitInfo == null` (máy API < 30) hoặc khi tiến trình chết không có phiên — **trước `#694`**. Từ `#694` (`origin/main` `5e1c0f73`) nhánh này đổi thành `null -> "noexit"` tại **`Diagnostics.kt:369`** (`#692` `46d98c40` trước đó đã làm tệp đổi +41/−2 so với `02bd03cc`) ⇒ báo cáo **mới** mang loại `noexit`, các báo cáo cũ vẫn ghi `unknown`.
 - `#683` gộp 19/11 thêm `Diagnostics.startProcess` + `writeDeath(... PROCESS_KIND = "app")` cho tiến trình chính ⇒ ANR ở tiến trình chính **sau bản có #683** sẽ mang `core=app`, không còn `unknown`. Đây là bản vá đúng cho cả 7 issue.
 - Điều kiện đóng (A102): bản **chính thức** đầu tiên chứa `#683` + không tăng lượt. Hiện `#683` chưa vào tag nào.
 
@@ -77,7 +77,7 @@ Rà mọi tham chiếu tệp/dòng của 3 tệp `docs/loi/*1911.md` theo `origi
 
 | Toạ độ | Trạng thái từ `02bd03cc` | Đã kiểm |
 |---|---|---|
-| `app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:306` (`collect`) và `:369` (`null -> "noexit"`) | **Đổi** (+41/−2 do `#686` `fafd13fe`; nhánh cuối đổi `unknown` → `noexit` ở `#694` `5e1c0f73`, dòng 365 → 369) | `collect` ở 306, nhánh `null -> "noexit"` ở 369 |
+| `app/src/main/java/vn/aow/monika/diag/Diagnostics.kt:306` (`collect`) và `:369` (`null -> "noexit"`) | **Đổi** (+41/−2 do `#692` `46d98c40`, ba commit #302; nhánh cuối đổi `unknown` → `noexit` ở `#694` `5e1c0f73`, dòng 365 → 369) | `collect` ở 306, nhánh `null -> "noexit"` ở 369 |
 | `.github/workflows/build-rgss.yml` **dòng 174–200** | Không đổi (208 dòng) | 174 comment V24/G8 · 179 `package-native-symbols.py` · 181 `--output` · 196 `--draft` |
 | `.github/workflows/build-kirikiri.yml` | Không đổi | 190/192 dựng ZIP · 217–218 `[ -s "$SYM" ]` bắt buộc ký hiệu |
 | `libretrodroid/src/main/cpp/CMakeLists.txt` | Không đổi | `-Wl,--build-id=sha1` ở dòng 114 |
