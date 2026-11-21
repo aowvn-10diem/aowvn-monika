@@ -170,6 +170,7 @@ private fun causeHint(r: Report?): String {
         "anr" -> "Game bị treo. Thử lõi khác hoặc hạ độ phân giải."
         "killed" -> "Hệ thống tắt game (thường do thiếu RAM hoặc bạn thoát bằng đa nhiệm)."
         "java" -> "Lỗi trong chương trình Monika."
+        "noexit" -> "Máy không báo được lý do dừng (Android không ghi lại lý do). Báo lỗi vẫn giúp AowVN tìm ra."
         else -> "Không rõ nguyên nhân (máy Android cũ không cho biết). Báo lỗi vẫn giúp AowVN tìm ra."
     }
 }

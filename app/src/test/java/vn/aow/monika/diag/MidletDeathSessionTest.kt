@@ -191,7 +191,7 @@ class MidletDeathSessionTest {
      * #302 (duyệt PR #692, điểm 1): một lần chết chỉ được ra **một** báo cáo.
      *
      * Chuỗi thật: `collect` chạy khi Android **chưa** ghi lý do chết (`exitInfo == null`) → lập báo cáo tạm
-     * `unknown` với `id = lastAlive`; lượt quét chạy ngay sau đó thấy `EXCESSIVE_RESOURCE_USAGE` → lập báo cáo
+     * `noexit` với `id = lastAlive`; lượt quét chạy ngay sau đó thấy `EXCESSIVE_RESOURCE_USAGE` → lập báo cáo
      * `resource` với `id = mốc chết`. Hai `id` khác nhau nên cửa chặn theo `id` (`collectProcessDeaths`) không
      * khớp → cả hai cùng nằm trong kho. Bản `resource` có phiên là bản đầy đủ hơn, nên phải **thay thế** bản
      * tạm của đúng phiên đó (pid + startedAt), và hộp thoại phải trỏ sang bản đầy đủ.
@@ -202,9 +202,9 @@ class MidletDeathSessionTest {
         writeLiveSession(pid, core = "midlet", system = "J2ME", diedAt = diedAt)
         writeDeathSnapshot(pid, kind = "midlet", core = "midlet", system = "J2ME", diedAt = diedAt)
 
-        // Lượt 1: chưa có lý do chết → báo cáo tạm `unknown`; ảnh chụp phiên phải được giữ cho lượt quét.
+        // Lượt 1: chưa có lý do chết → báo cáo tạm `noexit`; ảnh chụp phiên phải được giữ cho lượt quét.
         val fromCollect = Diagnostics.collect(context)
-        assertEquals("unknown", fromCollect?.kind)
+        assertEquals("noexit", fromCollect?.kind)
         assertTrue("ảnh chụp phiên phải còn cho lượt quét sau: sessions/$pid.json", File(diag, "sessions/$pid.json").exists())
 
         // Lượt 2: Android đã ghi lý do chết → báo cáo `resource` có phiên, thay thế bản tạm.
@@ -240,7 +240,7 @@ class MidletDeathSessionTest {
      * Duyệt PR #692 (lần 3) — **đường thật**, không gọi `record` trực tiếp.
      *
      * `MainActivity.kt:88-89` gọi `collect` + `collectProcessDeaths` rồi `autoSend` **từng** báo cáo trong
-     * `fresh`. Bản tạm `unknown` bị bản `resource` thay thế ngay trong cùng lượt (tệp `<lastAlive>.json` bị
+     * `fresh`. Bản tạm `noexit` bị bản `resource` thay thế ngay trong cùng lượt (tệp `<lastAlive>.json` bị
      * `record` xoá), nhưng `autoSend` vẫn gửi nó và `save(c, r.copy(sent = true))`
      * (`Diagnostics.kt:783`, ghi tệp ở `:1141`) **dựng lại tệp vừa xoá** ⇒ một lần chết thành 2 báo cáo
      * trong kho **và** 2 bản ghi ở Worker (2 nhóm bot).
@@ -273,10 +273,10 @@ class MidletDeathSessionTest {
 
     /**
      * API < 30 (máy 9–10): **không có** `ApplicationExitInfo` nên lượt quét không bao giờ bù được — bản
-     * `unknown` là bằng chứng duy nhất. Hành vi phải giữ nguyên: đúng **1** báo cáo, có phiên, và vẫn được
+     * `noexit` là bằng chứng duy nhất. Hành vi phải giữ nguyên: đúng **1** báo cáo, có phiên, và vẫn được
      * `autoSend` gửi.
      */
-    @Test @Config(sdk = [29]) fun apiUnder30KeepsExactlyOneUnknownReportAndStillSendsIt() {
+    @Test @Config(sdk = [29]) fun apiUnder30KeepsExactlyOneNoexitReportAndStillSendsIt() {
         val pid = 4848
         val diedAt = System.currentTimeMillis() - 5_000
         writeLiveSession(pid, core = "midlet", system = "J2ME", diedAt = diedAt)
@@ -288,13 +288,13 @@ class MidletDeathSessionTest {
 
         val sends = Sends()
         fresh.forEach { Diagnostics.autoSend(context, sends.http, it, "https://crash.invalid/report", true, true) }
-        assertEquals("bản `unknown` vẫn phải được gửi", 1, sends.settle())
+        assertEquals("bản `noexit` vẫn phải được gửi", 1, sends.settle())
 
         val reports = Diagnostics.list(context)
         assertEquals("đúng 1 báo cáo", 1, reports.size)
-        assertEquals("unknown", reports.single().kind)
+        assertEquals("noexit", reports.single().kind)
         assertEquals("midlet", reports.single().session?.core)
-        assertEquals(listOf("unknown"), sends.kinds())
+        assertEquals(listOf("noexit"), sends.kinds())
     }
 
     /**
@@ -322,7 +322,7 @@ class MidletDeathSessionTest {
         }.build()
 
         val first = Diagnostics.collect(context)
-        assertEquals("unknown", first?.kind)
+        assertEquals("noexit", first?.kind)
         Diagnostics.autoSend(context, http, first!!, "https://crash.invalid/report", true, true)
 
         // Trong lúc request còn treo: Android ghi lý do chết, lượt quét thay thế bản tạm.
