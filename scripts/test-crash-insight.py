@@ -66,6 +66,14 @@ class Grouping(unittest.TestCase):
         self.assertEqual(["bbbbbbbbbbbb", "bbbbbbbbbbbb", "aaaaaaaaaaaa"], [g["signature"] for g in groups])
         self.assertEqual([9, 4, 1], [g["count"] for g in groups])
 
+    def test_noexit_gets_plain_vietnamese_guess_and_unknown_is_unchanged(self):
+        # L21: `noexit` (máy không báo được lý do dừng) là nhóm riêng, đọc được bằng chữ thường.
+        self.assertEqual("máy không báo được lý do dừng", insight.guess("noexit", "app:game"))
+        self.assertEqual("chưa đủ dữ liệu phân loại", insight.guess("unknown", "app:game"))
+        groups = insight.group_rows([row(k="noexit", c="midlet", component="engine:j2me"), row(k="unknown")])
+        self.assertEqual(2, len(groups))
+        self.assertEqual({"noexit", "unknown"}, {g["kind"] for g in groups})
+
     def test_missing_or_malformed_signature_is_dash_not_invented(self):
         # Không có chữ ký dùng được → gộp theo (lõi, loại, thành phần) và ghi `—`, không bịa băm.
         groups = insight.group_rows([row(fp=""), row(fp="không-phải-hex", count=2)])

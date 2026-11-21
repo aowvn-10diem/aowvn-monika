@@ -58,7 +58,25 @@ class DeathKindAndSessionCarryTest {
         assertEquals("anr", Diagnostics.collectKind(ApplicationExitInfo.REASON_ANR))
         assertEquals("lowmem", Diagnostics.collectKind(ApplicationExitInfo.REASON_LOW_MEMORY))
         assertEquals("killed", Diagnostics.collectKind(ApplicationExitInfo.REASON_OTHER))
-        assertEquals("unknown", Diagnostics.collectKind(null))
+    }
+
+    /**
+     * L21: máy không báo được lý do (không có `ApplicationExitInfo`) thành nhóm riêng `noexit`, không lẫn `unknown`.
+     * `unknown` chỉ còn là nhãn của báo cáo cũ đã ghi trước L21.
+     */
+    @Test
+    fun emptyExitInfoBecomesNoexitNotUnknown() {
+        assertEquals("noexit", Diagnostics.collectKind(null))
+    }
+
+    /** Báo cáo cũ trên đĩa mang `unknown` vẫn được bản đầy đủ thay thế như trước (không đổi nghĩa dữ liệu cũ). */
+    @Test
+    fun oldUnknownReportStaysSupersedable() {
+        val old = report(id = at - 1, kind = "unknown", session = midletSession)
+        val full = report(id = at, kind = "resource", session = midletSession)
+        assertEquals(old, Diagnostics.supersededUnknownReport(full, listOf(old)))
+        val placeholder = report(id = at - 2, kind = "noexit", session = midletSession)
+        assertEquals(placeholder, Diagnostics.supersededUnknownReport(full, listOf(placeholder)))
     }
 
     @Test

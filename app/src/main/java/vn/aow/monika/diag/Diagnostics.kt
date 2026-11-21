@@ -61,7 +61,7 @@ object Diagnostics {
     data class Report(
         val id: Long,
         val time: Long,
-        /** native | java | anr | lowmem | killed | unknown */
+        /** native | java | anr | lowmem | killed | noexit | unknown (báo cáo cũ) */
         val kind: String,
         val title: String,
         val app: String,
@@ -351,6 +351,10 @@ object Diagnostics {
      * `EXCESSIVE_RESOURCE_USAGE`/`INITIALIZATION_FAILURE` rơi vào `else -> "killed"`, nên cùng một lần chết
      * của tiến trình `:midlet` mang hai nhãn khác nhau tuỳ đường ghi — `resource` (#302) thành `killed`.
      * Hàm thuần để kiểm được bằng unit test, không cần `ApplicationExitInfo` thật.
+     *
+     * L21: máy **không báo được lý do** (API < 30, hoặc Android chưa ghi `ApplicationExitInfo`) trước đây gộp
+     * vào `unknown` — cùng nhóm với báo cáo thiếu dữ liệu phân loại, nên bot gộp cả cụm `core/unknown` đã
+     * đóng (#397 #416 #513 #378 #482). Nay tách riêng `noexit`; `unknown` vẫn giữ nguyên cho báo cáo cũ trên đĩa.
      */
     internal fun collectKind(reason: Int?): String? = when (reason) {
         ApplicationExitInfo.REASON_CRASH_NATIVE -> "native"
@@ -362,7 +366,7 @@ object Diagnostics {
         ApplicationExitInfo.REASON_USER_REQUESTED,
         ApplicationExitInfo.REASON_USER_STOPPED,
         ApplicationExitInfo.REASON_EXIT_SELF -> null
-        null -> "unknown" // API < 30: không có ApplicationExitInfo, giữ nguyên nhóm cũ
+        null -> "noexit" // API < 30 / Android không ghi lý do: máy không báo được lý do dừng
         else -> "killed"
     }
 
@@ -375,6 +379,7 @@ object Diagnostics {
             "anr" -> "Game bị treo (không phản hồi) $phase — $what"
             "lowmem" -> "Máy hết bộ nhớ, Android tắt game $phase — $what"
             "killed" -> "Game bị hệ thống tắt $phase — $what"
+            "noexit" -> "Máy không báo được lý do dừng $phase — $what"
             else -> "Game dừng đột ngột $phase — $what"
         }
     }
@@ -755,7 +760,7 @@ object Diagnostics {
     fun autoSend(c: Context, http: OkHttpClient, r: Report, endpoint: String, enabledByConfig: Boolean, enabledByUser: Boolean) {
         if (!enabledByConfig || !enabledByUser || endpoint.isBlank() || r.sent) return
         if (!autoSendAllowedHere()) return
-        // Bản tạm `unknown` chỉ giữ chỗ cho tới khi lượt quét tìm ra đúng `kind`: lúc đó bản đầy đủ thay thế
+        // Bản tạm `noexit` chỉ giữ chỗ cho tới khi lượt quét tìm ra đúng `kind`: lúc đó bản đầy đủ thay thế
         // nó và `record` xoá `reports/<id>.json`. Gửi/ghi lại bản đã bị thay thế sẽ dựng lại tệp vừa xoá và
         // đẩy thêm một bản ghi ở Worker cho **cùng một lần chết** (#302) — nên bỏ qua khi tệp không còn.
         if (replacedOrDeleted(c, r)) return
@@ -784,7 +789,7 @@ object Diagnostics {
                 if (ok) {
                     markSent(c, fingerprint, sendClock())
                     sentThisSession.add(fingerprint)
-                    // Bản `unknown` có thể vừa bị bản đầy đủ thay thế trong lúc gửi: đừng dựng lại tệp đã xoá.
+                    // Bản `noexit` có thể vừa bị bản đầy đủ thay thế trong lúc gửi: đừng dựng lại tệp đã xoá.
                     if (!replacedOrDeleted(c, r)) save(c, r.copy(sent = true))
                 }
             } finally {
@@ -833,7 +838,7 @@ object Diagnostics {
 
     /**
      * Lưu báo cáo mới; nếu cùng dấu vân tay với báo cáo trước (trong 30 báo cáo gần nhất) thì gộp: tăng đếm, giữ bản mới nhất.
-     * Nếu là bản đầy đủ của một lần chết đã có bản tạm `unknown` khác `id` thì xoá bản tạm (xem [supersededUnknownReport]).
+     * Nếu là bản đầy đủ của một lần chết đã có bản tạm `noexit` (hoặc `unknown` của báo cáo cũ) khác `id` thì xoá bản tạm (xem [supersededUnknownReport]).
      * `internal` để test gọi thẳng được đường ghi duy nhất này (xem `DeathKindAndSessionCarryTest`).
      */
     internal fun record(c: Context, r0: Report): Report {
@@ -853,33 +858,39 @@ object Diagnostics {
     }
 
     /** Loại báo cáo do một lần chết tiến trình sinh ra (mọi nguồn: [collect], [collectProcessDeaths], CrashReporter). */
-    private val deathKinds = setOf("native", "java", "anr", "lowmem", "killed", "unknown", "resource", "initfail")
+    private val deathKinds = setOf("native", "java", "anr", "lowmem", "killed", "noexit", "unknown", "resource", "initfail")
 
     /**
-     * Một lần chết có thể sinh **hai báo cáo khác `id`**: bản tạm `unknown` của [collect] (`id = lastAlive`, khi
-     * Android chưa ghi lý do chết) và bản đúng `kind` của [collectProcessDeaths] (`id = mốc chết`). Cửa chặn theo
-     * `id` không khớp nên cả hai cùng nằm trong kho — 1 lần chết thành 2 báo cáo (#302).
+     * Bản tạm của [collect] — máy không báo được lý do dừng. Từ L21 là `noexit`; `unknown` vẫn nhận để báo cáo
+     * **cũ** đã ghi trên đĩa trước L21 vẫn được thay thế như trước (không đổi nghĩa bản ghi cũ).
+     */
+    private val placeholderKinds = setOf("noexit", "unknown")
+
+    /**
+     * Một lần chết có thể sinh **hai báo cáo khác `id`**: bản tạm `noexit` của [collect] (`id = lastAlive`, khi
+     * Android chưa ghi lý do chết; báo cáo cũ trên đĩa là `unknown`) và bản đúng `kind` của [collectProcessDeaths]
+     * (`id = mốc chết`). Cửa chặn theo `id` không khớp nên cả hai cùng nằm trong kho — 1 lần chết thành 2 báo cáo (#302).
      *
      * Lượt quét có phiên là bản đầy đủ hơn, nên bản tạm của **đúng phiên đó** (`pid` + `startedAt`) bị thay thế.
-     * Chỉ `unknown` nhường chỗ cho loại chết xác định được, và chỉ khi cùng phiên: `startedAt` là duy nhất cho
-     * một lượt chơi nên không thể trùng giữa hai lần chết, kể cả khi Android cấp lại PID.
+     * Chỉ bản tạm ([placeholderKinds]) nhường chỗ cho loại chết xác định được, và chỉ khi cùng phiên: `startedAt`
+     * là duy nhất cho một lượt chơi nên không thể trùng giữa hai lần chết, kể cả khi Android cấp lại PID.
      */
     internal fun supersededUnknownReport(next: Report, existing: List<Report>): Report? {
         val s = next.session ?: return null
-        if (next.kind !in deathKinds || next.kind == "unknown") return null
+        if (next.kind !in deathKinds || next.kind in placeholderKinds) return null
         return existing.firstOrNull {
-            it.id != next.id && it.kind == "unknown" &&
+            it.id != next.id && it.kind in placeholderKinds &&
                 it.session?.pid == s.pid && it.session?.startedAt == s.startedAt
         }
     }
 
     /**
-     * Bản tạm `unknown` này đã bị bản đầy đủ cùng phiên thay thế (nên `record` đã xoá tệp) — hoặc người chơi
-     * đã xoá nó. Chỉ áp cho `unknown`: đây là loại **duy nhất** bị chính mã này xoá để nhường chỗ, nên tệp
-     * vắng mặt là dấu hiệu "đã thay thế"; loại khác chỉ mất tệp khi người chơi xoá tay.
+     * Bản tạm (`noexit`, hoặc `unknown` của báo cáo cũ) này đã bị bản đầy đủ cùng phiên thay thế (nên `record` đã
+     * xoá tệp) — hoặc người chơi đã xoá nó. Chỉ áp cho bản tạm: đây là loại **duy nhất** bị chính mã này xoá để
+     * nhường chỗ, nên tệp vắng mặt là dấu hiệu "đã thay thế"; loại khác chỉ mất tệp khi người chơi xoá tay.
      */
     private fun replacedOrDeleted(c: Context, r: Report): Boolean =
-        r.kind == "unknown" && !File(reportsDir(c), "${r.id}.json").isFile
+        r.kind in placeholderKinds && !File(reportsDir(c), "${r.id}.json").isFile
 
     /**
      * Một lần chết có thể bị ghi **hai lần với cùng `id`** (id là mốc chết): [collect] đọc phiên nên có lõi, còn
