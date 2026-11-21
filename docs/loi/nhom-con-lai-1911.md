@@ -10,7 +10,7 @@ Lượt của cả 20 issue **không tăng** so với `TON-1811.md` (18/11) và 
 |---|---|---|---|---|
 | v0.8.13 | chính thức | 13/11 08:46 | `v0.8.13` | |
 | v0.8.14 | chính thức | 17/11 00:49 | `v0.8.14` (`7b4d0e26`) | |
-| v0.8.15 | chính thức | 19/11 04:48 | `v0.8.15` (`8466ed7c`, cắt 11:13 +0700) | đổi nhãn từ bản thử sang chính thức **cùng ngày 19/11**; tag **không** chứa `#683` |
+| v0.8.15 | chính thức | 19/11 04:48 | `v0.8.15` (`8466ed7c`, cắt 11:13 +0700) | nhãn chính thức đặt ngay trong ngày 19/11 (sau lần phát hành 04:48Z); tag **không** chứa `#683` |
 
 **Phát hiện chặn:** `#683` (ANR có ngữ cảnh tiến trình) gộp lúc **17:14 +0700 19/11**, sau mốc cắt tag `v0.8.15` (11:13 +0700 cùng ngày).
 `git merge-base --is-ancestor 45e1c754 v0.8.15` → **không** là tổ tiên; `git tag --contains 45e1c754` → **rỗng**.

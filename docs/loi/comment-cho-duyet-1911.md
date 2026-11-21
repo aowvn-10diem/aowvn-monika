@@ -10,7 +10,7 @@ Phạm vi bản vá `#668` (đã gộp, **có ở v0.8.15 chính thức** — ph
 - `#668` sửa **phía nhập game**: `Importer`/`DiscSet`/`ArchiveExtractor` xếp `.cue` và các track vào **cùng một thư mục**, nên bộ đĩa nhiều tệp rời không còn sinh ra `.cue` trỏ tới tệp không tồn tại.
 - `#649` (đã có ở **v0.8.14 chính thức**) chỉ đổi **thông điệp** khi thiếu tệp đĩa/BIOS; nó không làm `retro_load_game` thành công.
 - **Không** vá: `.cue` đã nhập sai từ bản trước (phải nhập lại), `.chd`/`.pbp` mà lõi không đọc, track hỏng, và mã lỗi `0/1/-1` (chờ bản chính thức chứa `#686` — **0.8.16**; `#686` đã gộp `main` 19/11 12:14Z, `fafd13fe`).
-- Điều kiện đóng (A102): bản **chính thức** chứa `#668` + không có chữ ký mới trong ≥ 1 tuần. Hiện chưa đủ (0.8.15 còn là bản thử).
+- Điều kiện đóng (A102): bản **chính thức** chứa `#668` + không có chữ ký mới trong ≥ 1 tuần. Hiện chưa đủ: mới ~2 ngày kể từ 19/11, chưa đủ 1 tuần để đo.
 
 ## 2. #385 — `kirikiroid2-yuri` / `native` (13 lượt, 8 lần gửi)
 
