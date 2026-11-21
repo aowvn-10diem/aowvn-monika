@@ -8,7 +8,7 @@
 | Lõi / loại | `mkxp-z` / `native` |
 | Thành phần | `engine:rgss` (dòng `Thành phần` có sẵn — issue tạo 12/11, sau mốc bot thêm dòng này 08/11) |
 | Lượt / máy | 1 / 1 (khoá `6e0dbb24c62df952c484d4152f46ea54`) |
-| Ngày | 12/11/2026 — issue crash mới nhất của cả repo |
+| Ngày | 12/11/2026 03:54Z — issue **native** mới nhất của repo; issue crash muộn nhất nói chung là **#614 (12/11 20:55Z, `unknown`/`op-fail`)** |
 | Khung | **không có** (thân issue không chép stack) |
 
 ⇒ Đây là lần chết native trong **engine RGSS (mkxp-z)**, không phải trong lõi libretro. Một mẫu duy nhất, không tái diễn 7 ngày.
