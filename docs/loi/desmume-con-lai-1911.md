@@ -28,7 +28,7 @@ Ngày 2026-11-20T06:16–06:19Z, **Trưởng nhóm Lỗi B đã đóng `complete
 
 Vì vậy tài liệu này từ 20/11 là **hồ sơ chẩn đoán của nhóm đã đóng**, không còn là "kế hoạch đóng": việc còn lại chỉ là **#368** (op-fail) và ba chỗ chưa phủ ở §5. Bảng §1 ở trên đã cập nhật theo trạng thái này; §2 và §6 giữ lại nội dung tại thời điểm 19–20/11 kèm ghi chú khác biệt thực tế.
 
-## 2. Vì sao nhóm này từng giữ mở (nay đã đóng)
+## 2. Vì sao lượt 19/11 chưa đóng (nay cả 5 đã đóng)
 
 Luật A102 cần **hai** điều: bản vá đã ở bản **chính thức** và số lượt **không tăng** sau bản vá.
 
@@ -51,13 +51,13 @@ gh api repos/aowvn-10diem/aowvn-monika/releases/tags/v0.8.15 --jq '{prerelease,p
 
 Ba phần vá (`reset`, `resetCheat`/`setCheat`, `step`, `loadGame*`, `unserializeSRAM`) **đã phát hành** trong 0.8.15 từ 2026-11-19T04:48Z, nên **nửa "bản chính thức" của luật A102 đã đạt**.
 
-Lúc viết (19–20/11), nhóm giữ mở vì **nửa còn lại** của luật A102 chưa đủ, không phải vì thiếu bản chính thức:
+Lúc viết (19–20/11), nhóm để các issue mở vì **nửa còn lại** của luật A102 chưa đủ, không phải vì thiếu bản chính thức:
 
 1. **Cửa sổ im lặng sau 0.8.15 mới ~2 ngày** (19/11 → 21/11), chưa đạt mốc ≥ 7 ngày của luật đóng issue tồn; lượt cuối của #369/#591 là 13/11, tức trước cả 0.8.15.
 2. **Các bản vá còn đang mở của Lỗi B chỉ vào 0.8.16** — đóng bây giờ thì gần như chắc phải mở lại ngay khi 0.8.16 phát hành.
 3. **Chưa chứng minh nguyên nhân gốc** (§5): ứng viên số một vẫn là cấu hình `desmume_num_cores`, và chưa có bảng khung (thiếu `CRASH_ADMIN_TOKEN`).
 
-**Thực tế đã xảy ra:** 20/11 06:16–06:19Z cả 5 issue đã được đóng `completed` (xem "Cập nhật 20/11" ở §1) — tức nhóm chấp nhận đóng theo luật A102 ngay khi bản vá vào 0.8.15 chính thức, chấp nhận rằng phần chưa phủ (§5) sẽ có báo cáo mới nếu còn tái diễn. Ba lý do trên chỉ còn giá trị **giải thích vì sao lượt 19/11 chưa đóng**, không còn là lý do giữ mở.
+**Thực tế đã xảy ra:** 20/11 06:16–06:19Z cả 5 issue đã được đóng `completed` (xem "Cập nhật 20/11" ở §1) — tức nhóm chấp nhận đóng theo luật A102 ngay khi bản vá vào 0.8.15 chính thức, chấp nhận rằng phần chưa phủ (§5) sẽ có báo cáo mới nếu còn tái diễn. Ba lý do trên chỉ còn giá trị **giải thích vì sao lượt 19/11 chưa đóng**, không còn là lý do để mở issue.
 
 ## 3. Bằng chứng số lượt (có giới hạn, ghi rõ)
 
