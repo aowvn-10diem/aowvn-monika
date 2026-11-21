@@ -1,13 +1,13 @@
 {
   "documentExtensions": ["pdf", "doc", "docx", "txt", "epub"],
-  "configVersion": 66,
+  "configVersion": 67,
   "_huong_dan": "Sửa file này rồi push lên nhánh main là app tự cập nhật (không cần phát hành APK mới). Chi tiết: docs/CAP-NHAT.md",
   "app": {
-    "latestVersionCode": 60,
-    "latestVersionName": "0.8.15",
+    "latestVersionCode": 61,
+    "latestVersionName": "0.8.16",
     "minVersionCode": 1,
-    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.15/AowVN-Monika-v0.8.15.apk",
-    "changelog": "Bản thử 0.8.15: Nhập game PlayStation 1 gồm hai tệp rời nhau thì app xếp đúng vào cùng một thư mục và chơi được; một số game PSP và Nintendo DS không còn bị văng giữa lúc chơi; game không mở được thì app báo rõ lỗi và việc cần làm."
+    "apkUrl": "https://github.com/aowvn-10diem/aowvn-monika/releases/download/v0.8.16/AowVN-Monika-v0.8.16.apk",
+    "changelog": "Bản thử 0.8.16: Game Nintendo DS có tệp hỏng thì app báo rõ thay vì hiện mã lỗi 1; mở game bị lỗi thì thông báo dễ hiểu hơn và nêu bước đang chạy; nhập game lỗi không còn xoá tệp gốc của bạn."
   },
   "security": {
     "officialCertSha256": "c46902e97029a96593f43c38abd9871170a7519d90992a0b5466c752d45ab20c"
