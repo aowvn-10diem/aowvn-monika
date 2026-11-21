@@ -61,7 +61,7 @@ Lúc viết (19–20/11), nhóm để các issue mở vì **nửa còn lại** c
 
 ## 3. Bằng chứng số lượt (có giới hạn, ghi rõ)
 
-| Issue | `count` trong thân | `updatedAt` của issue | Diễn giải |
+| Issue | `count` trong thân | `updatedAt` lúc lập bảng 19/11 (trước khi có comment) | Diễn giải |
 |---|---:|---|---|
 | #369 | 71 | 2026-11-13T06:06Z | lượt cuối trước cả `v0.8.13` |
 | #591 | 19 | 2026-11-13T06:07Z | như trên; 19 lượt dồn 2 khoá `seen` |
@@ -69,6 +69,8 @@ Lúc viết (19–20/11), nhóm để các issue mở vì **nửa còn lại** c
 | #377 | 3 | 2026-10-27T19:29Z = `createdAt` | như trên |
 | #562 | 1 | 2026-11-09T08:06Z = `createdAt` | như trên |
 | #368 | 1 | 2026-10-26T20:38Z = `createdAt` | như trên |
+
+Cột `updatedAt` giữ số **lúc lập bảng 19/11** để đối chiếu lịch sử, **không** phải giá trị hiện tại của API: comment đóng ngày 20/11 đã đổi `updatedAt` của cả 5 issue, và comment của Lỗi B trên #368 đổi `updatedAt` issue đó từ 19/11. Giá trị hiện tại (`gh issue view <n> --json updatedAt`, đọc 21/11): #369 `2026-11-20T06:16:48Z`, #377 `2026-11-20T06:17:05Z`, #331 `2026-11-20T06:17:34Z`, #562 `2026-11-20T06:18:48Z`, #591 `2026-11-20T06:19:06Z` (đều là giờ comment đóng), #368 `2026-11-19T10:50:51Z` (comment, không phải lượt mới — `count` vẫn 1). Vì vậy `updatedAt` **không** dùng để suy "lượt mới"; chỉ `count` và phép trừ ở dòng dưới là bằng chứng.
 
 **Giới hạn phải nói rõ:** `scripts/crash-issue-bot.py:217` bỏ qua lần chạy có `delta < 5`, nên "thân issue không đổi" chỉ chứng minh **dưới 5 lượt mới mỗi lần chạy bot**, không chứng minh tuyệt đối 0 lượt.
 Bằng chứng mạnh hơn là phép trừ ở §2 của bảng tồn 19/11 — **PR #685 (chưa gộp)**, `docs/loi/TON-1911.md`: 23 issue đã đóng (508 lượt) + 792 lượt còn mở = **1 300**, trùng khít tổng bản 18/11 ⇒ trong cửa sổ 18/11 16:17Z → 19/11 07:40Z **không lượt nào được cộng**. Cửa sổ đó phủ trọn `v0.8.14` (17/11).
