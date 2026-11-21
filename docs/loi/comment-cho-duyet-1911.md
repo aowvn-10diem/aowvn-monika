@@ -9,7 +9,7 @@ Phạm vi bản vá `#668` (đã gộp, **có ở v0.8.15 chính thức** — ph
 
 - `#668` sửa **phía nhập game**: `Importer`/`DiscSet`/`ArchiveExtractor` xếp `.cue` và các track vào **cùng một thư mục**, nên bộ đĩa nhiều tệp rời không còn sinh ra `.cue` trỏ tới tệp không tồn tại.
 - `#649` (đã có ở **v0.8.14 chính thức**) chỉ đổi **thông điệp** khi thiếu tệp đĩa/BIOS; nó không làm `retro_load_game` thành công.
-- **Không** vá: `.cue` đã nhập sai từ bản trước (phải nhập lại), `.chd`/`.pbp` mà lõi không đọc, track hỏng, và mã lỗi `0/1/-1` (đang chờ `#686`).
+- **Không** vá: `.cue` đã nhập sai từ bản trước (phải nhập lại), `.chd`/`.pbp` mà lõi không đọc, track hỏng, và mã lỗi `0/1/-1` (chờ bản chính thức chứa `#686` — **0.8.16**; `#686` đã gộp `main` 19/11 12:14Z, `fafd13fe`).
 - Điều kiện đóng (A102): bản **chính thức** chứa `#668` + không có chữ ký mới trong ≥ 1 tuần. Hiện chưa đủ (0.8.15 còn là bản thử).
 
 ## 2. #385 — `kirikiroid2-yuri` / `native` (13 lượt, 8 lần gửi)
@@ -41,8 +41,8 @@ Xem `docs/loi/mkxp-z-thieu-ky-hieu-1911.md`.
 | #399 | "2 lượt / 2 máy; cùng lớp `unknown/anr`; đóng cùng #413 sau `#683`." | `#683` |
 | #534 | "5 lượt / 5 máy; cùng lớp; đóng sau `#683`." | `#683` |
 | #387 | "1 lượt; lõi sẽ được gắn từ phiên chết nhờ `ecdccd33` (có ở v0.8.15 chính thức). Chờ lệnh trưởng nhóm và đo lượt sau bản vá." | lệnh trưởng nhóm |
-| #403 | "`mgba` đã ghim bản; cần mã lỗi để tách `0/1/-1` — chờ `#686`." | `#686` |
-| #418 | "1 lượt, chờ `#686`; dưới ngưỡng kết luận." | `#686` |
+| #403 | "`mgba` đã ghim bản; cần mã lỗi để tách `0/1/-1` — `#686` đã gộp ở `main` 19/11, chờ bản chính thức chứa `#686`." | 0.8.16 |
+| #418 | "1 lượt; `#686` đã gộp ở `main` 19/11, chờ bản chính thức chứa `#686`; dưới ngưỡng kết luận." | 0.8.16 |
 | #448, #563 | "Lõi `version=1` nightly, không có gói ký hiệu ⇒ không giải mã được khung; chờ V198." | V198 / gói ký hiệu |
 | #464, #465 | "`op-fail` 1 lượt (tải/cài gói lõi); `#665` có ở v0.8.15 chính thức — chờ lệnh trưởng nhóm." | lệnh trưởng nhóm |
 | #378, #513 | "`unknown` vì máy API < 30 (không có `ApplicationExitInfo`); không phải lỗi mới — đóng khi hết hạn theo dõi." | quyết định của trưởng nhóm |
