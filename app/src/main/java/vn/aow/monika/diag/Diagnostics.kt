@@ -137,7 +137,22 @@ object Diagnostics {
 
     private fun dir(c: Context) = File(c.filesDir, "diag").apply { mkdirs() }
     private fun sessionFile(c: Context) = File(dir(c), "active-session.json")
-    private fun deathSessionFile(c: Context, pid: Int) = File(File(dir(c), "sessions").apply { mkdirs() }, "$pid.json")
+    private fun sessionsDir(c: Context) = File(dir(c), "sessions").apply { mkdirs() }
+
+    /** Ảnh chụp của tiến trình **đang chạy**. Bản của tiến trình cũ cùng PID được đổi tên `<pid>-<startedAt>.json`. */
+    private fun deathSessionFile(c: Context, pid: Int) = File(sessionsDir(c), "$pid.json")
+
+    /**
+     * Mọi ảnh chụp có thể của `pid`: kiểu mới `<pid>-<startedAt>.json` (giữ bản cũ khi PID cấp lại) và
+     * kiểu cũ `<pid>.json` (bản cũ trên máy vẫn phải đọc được). Việc khớp thế hệ nằm ở [matchingDeathSession].
+     */
+    private fun deathSessionFiles(c: Context, pid: Int): List<File> =
+        sessionsDir(c).listFiles()?.filter { it.isFile && it.extension == "json" && sessionPidOf(it.name) == pid }.orEmpty()
+
+    /** PID từ tên tệp ảnh chụp: `<pid>.json` (kiểu cũ) hoặc `<pid>-<startedAt>.json`. */
+    internal fun sessionPidOf(name: String): Int? =
+        name.removeSuffix(".json").substringBefore('-').toIntOrNull()
+
     private fun reportsDir(c: Context) = File(dir(c), "reports").apply { mkdirs() }
 
     /** Riêng từng lần khởi động tiến trình; Android lưu cùng ApplicationExitInfo. Không gửi token này. */
@@ -181,6 +196,8 @@ object Diagnostics {
             c.getSystemService(ActivityManager::class.java).setProcessStateSummary(deathProcessSummary(processGeneration))
         }
         writeDeath(c, Session(Process.myPid(), now, PROCESS_KIND, label, "", "", "", "app-start", now, now))
+        // Máy chỉ mở app cũng sinh 1 ảnh chụp mỗi lần khởi động (~0,3 KB) — phải có trần, nếu không sẽ tích vô hạn.
+        pruneDeathSessions(c)
     }
 
     /**
@@ -271,9 +288,7 @@ object Diagnostics {
             // V101: riêng từng PID, không dùng phiên game khác để giải thích chết của main/midlet.
             if (s.pid != Process.myPid() || s.startedAt != startedSession) return@runCatching
             writeDeath(c, s)
-            val target = deathSessionFile(c, s.pid)
-            target.parentFile?.listFiles()?.filter { it.extension == "json" }
-                ?.sortedByDescending { it.lastModified() }?.drop(30)?.forEach { it.delete() }
+            pruneDeathSessions(c)
         }
     }
 
@@ -281,9 +296,39 @@ object Diagnostics {
     private fun writeDeath(c: Context, s: Session) {
         runCatching {
             val target = deathSessionFile(c, s.pid)
+            keepDeathOfReusedPid(target, s.pid)
             val snapshot = File(target.parentFile, "${s.pid}.tmp")
             snapshot.writeText(scrubJson(c, json.encodeToJsonElement(DeathSnapshot.serializer(), DeathSnapshot(s, processGeneration))).toString())
             replaceFile(snapshot, target)
+        }
+    }
+
+    /** Số ảnh chụp chết giữ lại trong `diag/sessions/`. */
+    internal const val DEATH_SESSION_KEEP = 30
+
+    /** Dọn `diag/sessions/`: chỉ giữ [keep] ảnh chụp mới nhất. */
+    private fun pruneDeathSessions(c: Context, keep: Int = DEATH_SESSION_KEEP) {
+        sessionsDir(c).listFiles()?.filter { it.isFile && it.extension == "json" }
+            ?.sortedByDescending { it.lastModified() }?.drop(keep)?.forEach { runCatching { it.delete() } }
+    }
+
+    /**
+     * Android cấp lại PID cho tiến trình mới ⇒ `sessions/<pid>.json` của tiến trình **đã chết** bị ghi đè,
+     * ANR/native của nó mất bằng chứng và báo cáo quay về `unknown`/`noexit` (#683). Giữ bản cũ thành
+     * `sessions/<pid>-<startedAt>.json` trước khi ghi đè; [readDeathSession] đọc mọi bản của PID rồi khớp
+     * token thế hệ. Cùng thế hệ = cùng tiến trình đang cập nhật nhịp/chặng → ghi đè bình thường.
+     */
+    private fun keepDeathOfReusedPid(target: File, pid: Int) {
+        if (!target.isFile) return
+        val old = runCatching { json.decodeFromString(DeathSnapshot.serializer(), target.readText()) }.getOrNull() ?: return
+        if (old.generation == processGeneration) return
+        val startedAt = old.session.startedAt.takeIf { it > 0 } ?: target.lastModified()
+        val keep = File(target.parentFile, "$pid-$startedAt.json")
+        if (keep.exists()) return
+        runCatching {
+            target.copyTo(keep, overwrite = true)
+            // Dọn theo tuổi thật của ảnh chụp, không theo lúc chép tệp.
+            keep.setLastModified(startedAt)
         }
     }
 
@@ -1120,14 +1165,24 @@ object Diagnostics {
         }
     }
 
-    internal fun readDeathSession(c: Context, pid: Int, diedAt: Long, summary: ByteArray?): Session? = matchingDeathSession(
-        runCatching { json.decodeFromString(DeathSnapshot.serializer(), deathSessionFile(c, pid).readText()) }.getOrNull(), pid, diedAt, summary)
+    /**
+     * Đọc ảnh chụp của `pid` khớp đúng lần chết. PID cấp lại có thể để lại **nhiều** ảnh chụp của cùng PID
+     * (`<pid>.json` của tiến trình mới + `<pid>-<startedAt>.json` của tiến trình cũ): duyệt hết rồi chọn bản
+     * khớp token thế hệ và mới nhất — trước đây chỉ đọc `<pid>.json` nên ANR của tiến trình cũ mất lõi.
+     */
+    internal fun readDeathSession(c: Context, pid: Int, diedAt: Long, summary: ByteArray?): Session? =
+        deathSessionFiles(c, pid).mapNotNull { f ->
+            matchingDeathSession(
+                runCatching { json.decodeFromString(DeathSnapshot.serializer(), f.readText()) }.getOrNull(), pid, diedAt, summary)
+        }.maxByOrNull { it.startedAt }
 
     /** Một exit cũ không được xóa snapshot của tiến trình mới đang dùng lại PID. */
     internal fun clearDeathSession(c: Context, pid: Int, summary: ByteArray?) {
-        val f = deathSessionFile(c, pid)
-        val snapshot = runCatching { json.decodeFromString(DeathSnapshot.serializer(), f.readText()) }.getOrNull() ?: return
-        if (summary != null && summary.contentEquals(deathProcessSummary(snapshot.generation))) f.delete()
+        if (summary == null) return
+        deathSessionFiles(c, pid).forEach { f ->
+            val snapshot = runCatching { json.decodeFromString(DeathSnapshot.serializer(), f.readText()) }.getOrNull() ?: return@forEach
+            if (summary.contentEquals(deathProcessSummary(snapshot.generation))) f.delete()
+        }
     }
 
     /**
