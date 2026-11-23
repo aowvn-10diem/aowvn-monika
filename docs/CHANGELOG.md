@@ -2,6 +2,12 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
+## v0.8.17 (Bản thử)
+<!-- bien-tap: v0.8.17 -->
+> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+
+- Nội bộ: báo cáo lỗi giữ được thông tin khi app bị treo rồi mở lại ngay, và dữ liệu chẩn đoán cũ được dọn gọn ([#698](https://github.com/aowvn-10diem/aowvn-monika/pull/698)).
+
 ## v0.8.16 (Bản thử)
 <!-- bien-tap: v0.8.16 -->
 > Phát hành ngày 21/11/2026 (UTC), bản thử nghiệm.
