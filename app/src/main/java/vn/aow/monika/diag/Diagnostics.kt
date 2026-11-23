@@ -1,6 +1,7 @@
 package vn.aow.monika.diag
 
 import android.app.ActivityManager
+import android.app.Application
 import android.app.ApplicationExitInfo
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -60,7 +61,7 @@ object Diagnostics {
     data class Report(
         val id: Long,
         val time: Long,
-        /** native | java | anr | lowmem | killed | unknown */
+        /** native | java | anr | lowmem | killed | noexit | unknown (báo cáo cũ) */
         val kind: String,
         val title: String,
         val app: String,
@@ -136,16 +137,97 @@ object Diagnostics {
 
     private fun dir(c: Context) = File(c.filesDir, "diag").apply { mkdirs() }
     private fun sessionFile(c: Context) = File(dir(c), "active-session.json")
-    private fun deathSessionFile(c: Context, pid: Int) = File(File(dir(c), "sessions").apply { mkdirs() }, "$pid.json")
+    private fun sessionsDir(c: Context) = File(dir(c), "sessions").apply { mkdirs() }
+
+    /** Ảnh chụp của tiến trình **đang chạy**. Bản của tiến trình cũ cùng PID được đổi tên `<pid>-<startedAt>.json`. */
+    private fun deathSessionFile(c: Context, pid: Int) = File(sessionsDir(c), "$pid.json")
+
+    /**
+     * Mọi ảnh chụp có thể của `pid`: kiểu mới `<pid>-<startedAt>.json` (giữ bản cũ khi PID cấp lại) và
+     * kiểu cũ `<pid>.json` (bản cũ trên máy vẫn phải đọc được). Việc khớp thế hệ nằm ở [matchingDeathSession].
+     */
+    private fun deathSessionFiles(c: Context, pid: Int): List<File> =
+        sessionsDir(c).listFiles()?.filter { it.isFile && it.extension == "json" && sessionPidOf(it.name) == pid }.orEmpty()
+
+    /** PID từ tên tệp ảnh chụp: `<pid>.json` (kiểu cũ) hoặc `<pid>-<startedAt>.json`. */
+    internal fun sessionPidOf(name: String): Int? =
+        name.removeSuffix(".json").substringBefore('-').toIntOrNull()
+
     private fun reportsDir(c: Context) = File(dir(c), "reports").apply { mkdirs() }
 
     /** Riêng từng lần khởi động tiến trình; Android lưu cùng ApplicationExitInfo. Không gửi token này. */
-    private val processGeneration = UUID.randomUUID().toString()
+    internal val processGeneration = UUID.randomUUID().toString()
     @Volatile private var startedSession: Long? = null
     @Serializable
     internal data class DeathSnapshot(val session: Session, val generation: String)
     internal fun deathProcessSummary(generation: String): ByteArray =
         "monika-death-context:$generation".toByteArray(Charsets.UTF_8)
+
+    // ---------- Phiên mức tiến trình (ANR không có phiên chơi) ----------
+
+    /**
+     * Nhãn `kind` của phiên mức tiến trình. Không phải phiên chơi: `core` là nhãn tiến trình
+     * (`app`, `midlet`, `game`…) chứ không phải tên lõi giả lập.
+     */
+    internal const val PROCESS_KIND = "app"
+
+    /**
+     * Ghi ngữ cảnh tiến trình **ngay khi app khởi động**, ở mọi tiến trình và mọi API — để ANR xảy ra
+     * trước khi có phiên chơi (MainActivity, `:game` trước `begin`) vẫn có `core`/`stage` thay vì `unknown`.
+     *
+     * Chỉ ghi ảnh chụp chết `diag/sessions/<pid>.json`, **không** đụng `diag/active-session.json`
+     * (đường [collect] đọc tệp đó; ghi vào sẽ sinh báo cáo giả mỗi lần mở app).
+     * Phiên chơi vẫn thắng: [begin] ghi đè ảnh chụp của cùng PID sau đó.
+     *
+     * `Application.getProcessName()` chỉ có từ API 28; máy cũ đọc `/proc/self/cmdline` (có bắt lỗi).
+     */
+    fun startProcess(c: Context) {
+        val label = runCatching {
+            processLabel(
+                sdk = Build.VERSION.SDK_INT,
+                apiName = if (Build.VERSION.SDK_INT >= 28) Application.getProcessName() else null,
+                cmdline = if (Build.VERSION.SDK_INT >= 28) null else readCmdline(),
+                packageName = c.packageName,
+            )
+        }.getOrDefault("app")
+        val now = System.currentTimeMillis()
+        startedSession = now
+        if (Build.VERSION.SDK_INT >= 30) runCatching {
+            c.getSystemService(ActivityManager::class.java).setProcessStateSummary(deathProcessSummary(processGeneration))
+        }
+        writeDeath(c, Session(Process.myPid(), now, PROCESS_KIND, label, "", "", "", "app-start", now, now))
+        // Máy chỉ mở app cũng sinh 1 ảnh chụp mỗi lần khởi động (~0,3 KB) — phải có trần, nếu không sẽ tích vô hạn.
+        pruneDeathSessions(c)
+    }
+
+    /**
+     * Tên tiến trình → nhãn lõi của phiên mức tiến trình. Hàm thuần để kiểm bằng unit test:
+     * tiến trình chính (trùng `packageName`) → `"app"`, tiến trình phụ → phần sau dấu `:` (`midlet`, `game`…).
+     */
+    internal fun processLabel(sdk: Int, apiName: String?, cmdline: String?, packageName: String?): String {
+        val name = (if (sdk >= 28) apiName else cmdline)?.trim().orEmpty()
+        if (name.isEmpty() || name == packageName) return "app"
+        return name.substringAfter(':').ifBlank { "app" }
+    }
+
+    /** API < 28: `/proc/self/cmdline` (argv[0], kết thúc bằng NUL). Đọc lỗi → `null`, không ném. */
+    private fun readCmdline(): String? = runCatching {
+        java.io.FileInputStream("/proc/self/cmdline").use { it.readBytes().toString(Charsets.UTF_8) }
+            .trimEnd('\u0000').trim().ifBlank { null }
+    }.getOrNull()
+
+    /**
+     * Cập nhật chặng hiện tại của phiên mức tiến trình (gọi khi màn chính hiện lên), để ANR báo đúng
+     * "app-foreground" thay vì "app-start". Chỉ sửa khi ảnh chụp đúng là phiên mức tiến trình —
+     * phiên chơi có ưu tiên tuyệt đối, không bị đụng.
+     */
+    fun processStage(c: Context, stage: String) {
+        val f = deathSessionFile(c, Process.myPid())
+        val snapshot = runCatching { json.decodeFromString(DeathSnapshot.serializer(), f.readText()) }.getOrNull() ?: return
+        if (snapshot.session.kind != PROCESS_KIND) return
+        val now = System.currentTimeMillis()
+        writeDeath(c, snapshot.session.copy(stage = stage, stageAt = now, lastAlive = now))
+    }
 
     // ---------- Phiên chơi (chạy trong tiến trình game) ----------
 
@@ -202,16 +284,62 @@ object Diagnostics {
         runCatching {
             val tmp = File(dir(c), "active-session.tmp")
             tmp.writeText(scrubJson(c, json.encodeToJsonElement(Session.serializer(), s)).toString())
-            tmp.renameTo(sessionFile(c))
+            replaceFile(tmp, sessionFile(c))
             // V101: riêng từng PID, không dùng phiên game khác để giải thích chết của main/midlet.
             if (s.pid != Process.myPid() || s.startedAt != startedSession) return@runCatching
+            writeDeath(c, s)
+            pruneDeathSessions(c)
+        }
+    }
+
+    /** Ghi ảnh chụp chết của tiến trình hiện tại kèm token thế hệ; không đụng `active-session.json`. */
+    private fun writeDeath(c: Context, s: Session) {
+        runCatching {
             val target = deathSessionFile(c, s.pid)
+            keepDeathOfReusedPid(target, s.pid)
             val snapshot = File(target.parentFile, "${s.pid}.tmp")
             snapshot.writeText(scrubJson(c, json.encodeToJsonElement(DeathSnapshot.serializer(), DeathSnapshot(s, processGeneration))).toString())
-            snapshot.renameTo(target)
-            target.parentFile?.listFiles()?.filter { it.extension == "json" }
-                ?.sortedByDescending { it.lastModified() }?.drop(30)?.forEach { it.delete() }
+            replaceFile(snapshot, target)
         }
+    }
+
+    /** Số ảnh chụp chết giữ lại trong `diag/sessions/`. */
+    internal const val DEATH_SESSION_KEEP = 30
+
+    /** Dọn `diag/sessions/`: chỉ giữ [keep] ảnh chụp mới nhất. */
+    private fun pruneDeathSessions(c: Context, keep: Int = DEATH_SESSION_KEEP) {
+        sessionsDir(c).listFiles()?.filter { it.isFile && it.extension == "json" }
+            ?.sortedByDescending { it.lastModified() }?.drop(keep)?.forEach { runCatching { it.delete() } }
+    }
+
+    /**
+     * Android cấp lại PID cho tiến trình mới ⇒ `sessions/<pid>.json` của tiến trình **đã chết** bị ghi đè,
+     * ANR/native của nó mất bằng chứng và báo cáo quay về `unknown`/`noexit` (#683). Giữ bản cũ thành
+     * `sessions/<pid>-<startedAt>.json` trước khi ghi đè; [readDeathSession] đọc mọi bản của PID rồi khớp
+     * token thế hệ. Cùng thế hệ = cùng tiến trình đang cập nhật nhịp/chặng → ghi đè bình thường.
+     */
+    private fun keepDeathOfReusedPid(target: File, pid: Int) {
+        if (!target.isFile) return
+        val old = runCatching { json.decodeFromString(DeathSnapshot.serializer(), target.readText()) }.getOrNull() ?: return
+        if (old.generation == processGeneration) return
+        val startedAt = old.session.startedAt.takeIf { it > 0 } ?: target.lastModified()
+        val keep = File(target.parentFile, "$pid-$startedAt.json")
+        if (keep.exists()) return
+        runCatching {
+            target.copyTo(keep, overwrite = true)
+            // Dọn theo tuổi thật của ảnh chụp, không theo lúc chép tệp.
+            keep.setLastModified(startedAt)
+        }
+    }
+
+    /**
+     * Đổi tên đè tệp đích. `File.renameTo` đè được trên Android/Linux nhưng **không** trên Windows
+     * (nơi bộ test chạy) → xoá đích rồi đổi tên lần nữa. Chỉ dùng cho tệp chẩn đoán.
+     */
+    private fun replaceFile(tmp: File, target: File): Boolean {
+        if (tmp.renameTo(target)) return true
+        target.delete()
+        return tmp.renameTo(target)
     }
 
     // ---------- Thu báo cáo (chạy trong tiến trình chính) ----------
@@ -229,16 +357,7 @@ object Diagnostics {
 
         val exit = exitInfo(c, s.pid)
         val reason = exit?.let { describeReason(it) }.orEmpty()
-        val kind = when (exit?.reason) {
-            ApplicationExitInfo.REASON_CRASH_NATIVE -> "native"
-            ApplicationExitInfo.REASON_CRASH -> "java"
-            ApplicationExitInfo.REASON_ANR -> "anr"
-            ApplicationExitInfo.REASON_LOW_MEMORY -> "lowmem"
-            ApplicationExitInfo.REASON_USER_REQUESTED, ApplicationExitInfo.REASON_USER_STOPPED -> return null // người dùng vuốt tắt
-            ApplicationExitInfo.REASON_EXIT_SELF -> return null
-            null -> if (s.stage == "first-frame" || s.stage == "playing") "unknown" else "unknown"
-            else -> "killed"
-        }
+        val kind = collectKind(exit?.reason) ?: return null // người dùng vuốt tắt / tự thoát: không báo
         val trace = exit?.let { traceStrings(it) }.orEmpty()
         val whenDied = exit?.timestamp ?: s.lastAlive.takeIf { it > 0 } ?: System.currentTimeMillis()
         val log = logcat(s.pid, nativeDeathAt = whenDied.takeIf { kind == "native" })
@@ -253,7 +372,9 @@ object Diagnostics {
             env = envLine(c), crumbs = crumbs,
         ))
         Breadcrumbs.drop(c, s.pid)
-        deathSessionFile(c, s.pid).delete()
+        // `exit == null` (API < 30, hoặc Android chưa ghi lý do chết): giữ ảnh chụp phiên để lượt quét sau
+        // (`collectProcessDeaths`) còn đọc được phiên — xoá ở đây thì báo cáo `resource` thứ hai mất lõi (#302).
+        if (exit != null) deathSessionFile(c, s.pid).delete()
         pending.value = r
         return r
     }
@@ -268,6 +389,32 @@ object Diagnostics {
         else -> "lúc đang khởi động"
     }
 
+    /**
+     * Lý do chết Android → `kind` của báo cáo; `null` = người dùng tự thoát nên **không** lập báo cáo.
+     *
+     * Phải trùng nhãn với [collectProcessDeaths] (`kind` trong vòng lặp `ApplicationExitInfo`): trước đây hai lý do
+     * `EXCESSIVE_RESOURCE_USAGE`/`INITIALIZATION_FAILURE` rơi vào `else -> "killed"`, nên cùng một lần chết
+     * của tiến trình `:midlet` mang hai nhãn khác nhau tuỳ đường ghi — `resource` (#302) thành `killed`.
+     * Hàm thuần để kiểm được bằng unit test, không cần `ApplicationExitInfo` thật.
+     *
+     * L21: máy **không báo được lý do** (API < 30, hoặc Android chưa ghi `ApplicationExitInfo`) trước đây gộp
+     * vào `unknown` — cùng nhóm với báo cáo thiếu dữ liệu phân loại, nên bot gộp cả cụm `core/unknown` đã
+     * đóng (#397 #416 #513 #378 #482). Nay tách riêng `noexit`; `unknown` vẫn giữ nguyên cho báo cáo cũ trên đĩa.
+     */
+    internal fun collectKind(reason: Int?): String? = when (reason) {
+        ApplicationExitInfo.REASON_CRASH_NATIVE -> "native"
+        ApplicationExitInfo.REASON_CRASH -> "java"
+        ApplicationExitInfo.REASON_ANR -> "anr"
+        ApplicationExitInfo.REASON_LOW_MEMORY -> "lowmem"
+        ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE -> "resource"
+        ApplicationExitInfo.REASON_INITIALIZATION_FAILURE -> "initfail"
+        ApplicationExitInfo.REASON_USER_REQUESTED,
+        ApplicationExitInfo.REASON_USER_STOPPED,
+        ApplicationExitInfo.REASON_EXIT_SELF -> null
+        null -> "noexit" // API < 30 / Android không ghi lý do: máy không báo được lý do dừng
+        else -> "killed"
+    }
+
     private fun title(kind: String, s: Session): String {
         val what = "${s.game.ifBlank { "game" }} (${s.system.ifBlank { s.kind }}, lõi ${s.core.ifBlank { "?" }})"
         val phase = phaseLabel(s.stage)
@@ -277,6 +424,7 @@ object Diagnostics {
             "anr" -> "Game bị treo (không phản hồi) $phase — $what"
             "lowmem" -> "Máy hết bộ nhớ, Android tắt game $phase — $what"
             "killed" -> "Game bị hệ thống tắt $phase — $what"
+            "noexit" -> "Máy không báo được lý do dừng $phase — $what"
             else -> "Game dừng đột ngột $phase — $what"
         }
     }
@@ -315,11 +463,13 @@ object Diagnostics {
             val bytes = e.traceInputStream?.use { it.readNBytesCompat(400_000) } ?: return emptyList()
             // Android 12+: tombstone protobuf → đọc đúng trường (tín hiệu, luồng gây lỗi, ngăn xếp có build_id); không được thì nhặt chuỗi như trước.
             if (e.reason == ApplicationExitInfo.REASON_CRASH_NATIVE) TombstoneParser.parse(bytes)?.let { return TombstoneParser.toLines(it) }
+            val runs = ArrayList<String>()
             val out = LinkedHashSet<String>()
             val run = StringBuilder()
             fun flush() {
                 if (run.length >= 6) {
                     val s = run.toString()
+                    runs += s
                     if (INTERESTING.containsMatchIn(s)) out += s.take(200)
                 }
                 run.setLength(0)
@@ -329,7 +479,11 @@ object Diagnostics {
                 if (ch in 32..126) run.append(ch.toChar()) else flush()
             }
             flush()
-            out.take(80).toList()
+            val lines = out.take(80).toList()
+            // ANR: bộ lọc INTERESTING ở trên bỏ dòng tiêu đề luồng ("main" prio=…) và khung Java
+            // (at …) nên trace chỉ còn khung native, không biết Main Thread chờ ở chặng nào.
+            // Nối khối main vào CUỐI (chỉ khi đã đủ 3 khung) để không đổi chữ ký bot.
+            if (e.reason == ApplicationExitInfo.REASON_ANR) AnrTrace.appendMainThread(lines, runs) else lines
         }.getOrDefault(emptyList())
     }
 
@@ -651,6 +805,10 @@ object Diagnostics {
     fun autoSend(c: Context, http: OkHttpClient, r: Report, endpoint: String, enabledByConfig: Boolean, enabledByUser: Boolean) {
         if (!enabledByConfig || !enabledByUser || endpoint.isBlank() || r.sent) return
         if (!autoSendAllowedHere()) return
+        // Bản tạm `noexit` chỉ giữ chỗ cho tới khi lượt quét tìm ra đúng `kind`: lúc đó bản đầy đủ thay thế
+        // nó và `record` xoá `reports/<id>.json`. Gửi/ghi lại bản đã bị thay thế sẽ dựng lại tệp vừa xoá và
+        // đẩy thêm một bản ghi ở Worker cho **cùng một lần chết** (#302) — nên bỏ qua khi tệp không còn.
+        if (replacedOrDeleted(c, r)) return
         // V194: hạn mức ghi KV của Worker chỉ 1000/ngày ↔ mỗi báo cáo là 1 lần ghi.
         // Cùng một dấu vân tay chỉ gửi 1 lần/giờ (nhớ qua lần mở app); lowmem chặt hơn: 1 lần mỗi phiên.
         // Bản gộp vẫn tăng `count` ở máy nhưng KHÔNG gửi lại — tránh kiểu mỗi lần mở app lại đẩy 1 lowmem y hệt.
@@ -676,7 +834,8 @@ object Diagnostics {
                 if (ok) {
                     markSent(c, fingerprint, sendClock())
                     sentThisSession.add(fingerprint)
-                    save(c, r.copy(sent = true))
+                    // Bản `noexit` có thể vừa bị bản đầy đủ thay thế trong lúc gửi: đừng dựng lại tệp đã xoá.
+                    if (!replacedOrDeleted(c, r)) save(c, r.copy(sent = true))
                 }
             } finally {
                 sendingInFlight.remove(fingerprint)
@@ -722,15 +881,85 @@ object Diagnostics {
 
     // ---------- Gộp trùng, che thông tin riêng, chụp tình trạng máy ----------
 
-    /** Lưu báo cáo mới; nếu cùng dấu vân tay với báo cáo trước (trong 30 báo cáo gần nhất) thì gộp: tăng đếm, giữ bản mới nhất. */
-    private fun record(c: Context, r0: Report): Report {
-        val safe = sanitized(c, enrichDeathReport(r0))
+    /**
+     * Lưu báo cáo mới; nếu cùng dấu vân tay với báo cáo trước (trong 30 báo cáo gần nhất) thì gộp: tăng đếm, giữ bản mới nhất.
+     * Nếu là bản đầy đủ của một lần chết đã có bản tạm `noexit` (hoặc `unknown` của báo cáo cũ) khác `id` thì xoá bản tạm (xem [supersededUnknownReport]).
+     * `internal` để test gọi thẳng được đường ghi duy nhất này (xem `DeathKindAndSessionCarryTest`).
+     */
+    internal fun record(c: Context, r0: Report): Report {
+        val existing = list(c)
+        val safe = sanitized(c, enrichDeathReport(carrySession(r0, existing.firstOrNull { it.id == r0.id })))
         val fp = fingerprint(safe)
-        val prev = list(c).firstOrNull { it.fingerprint == fp }
+        val prev = existing.firstOrNull { it.fingerprint == fp }
         val r = safe.copy(fingerprint = fp, count = (prev?.count ?: 0) + 1, sent = false, seen = prev?.seen == true && prev.count >= 3)
         prev?.let { File(reportsDir(c), "${it.id}.json").delete() }
+        supersededUnknownReport(r, existing)?.let { old ->
+            File(reportsDir(c), "${old.id}.json").delete()
+            // Hộp thoại đang trỏ bản tạm: trỏ sang bản đầy đủ, nếu không `markSeen` sẽ ghi lại tệp vừa xoá.
+            if (pending.value?.id == old.id) pending.value = r
+        }
         save(c, r)
         return r
+    }
+
+    /** Loại báo cáo do một lần chết tiến trình sinh ra (mọi nguồn: [collect], [collectProcessDeaths], CrashReporter). */
+    private val deathKinds = setOf("native", "java", "anr", "lowmem", "killed", "noexit", "unknown", "resource", "initfail")
+
+    /**
+     * Bản tạm của [collect] — máy không báo được lý do dừng. Từ L21 là `noexit`; `unknown` vẫn nhận để báo cáo
+     * **cũ** đã ghi trên đĩa trước L21 vẫn được thay thế như trước (không đổi nghĩa bản ghi cũ).
+     */
+    private val placeholderKinds = setOf("noexit", "unknown")
+
+    /**
+     * Một lần chết có thể sinh **hai báo cáo khác `id`**: bản tạm `noexit` của [collect] (`id = lastAlive`, khi
+     * Android chưa ghi lý do chết; báo cáo cũ trên đĩa là `unknown`) và bản đúng `kind` của [collectProcessDeaths]
+     * (`id = mốc chết`). Cửa chặn theo `id` không khớp nên cả hai cùng nằm trong kho — 1 lần chết thành 2 báo cáo (#302).
+     *
+     * Lượt quét có phiên là bản đầy đủ hơn, nên bản tạm của **đúng phiên đó** (`pid` + `startedAt`) bị thay thế.
+     * Chỉ bản tạm ([placeholderKinds]) nhường chỗ cho loại chết xác định được, và chỉ khi cùng phiên: `startedAt`
+     * là duy nhất cho một lượt chơi nên không thể trùng giữa hai lần chết, kể cả khi Android cấp lại PID.
+     */
+    internal fun supersededUnknownReport(next: Report, existing: List<Report>): Report? {
+        val s = next.session ?: return null
+        if (next.kind !in deathKinds || next.kind in placeholderKinds) return null
+        return existing.firstOrNull {
+            it.id != next.id && it.kind in placeholderKinds &&
+                it.session?.pid == s.pid && it.session?.startedAt == s.startedAt
+        }
+    }
+
+    /**
+     * Bản tạm (`noexit`, hoặc `unknown` của báo cáo cũ) này đã bị bản đầy đủ cùng phiên thay thế (nên `record` đã
+     * xoá tệp) — hoặc người chơi đã xoá nó. Chỉ áp cho bản tạm: đây là loại **duy nhất** bị chính mã này xoá để
+     * nhường chỗ, nên tệp vắng mặt là dấu hiệu "đã thay thế"; loại khác chỉ mất tệp khi người chơi xoá tay.
+     */
+    private fun replacedOrDeleted(c: Context, r: Report): Boolean =
+        r.kind in placeholderKinds && !File(reportsDir(c), "${r.id}.json").isFile
+
+    /**
+     * Một lần chết có thể bị ghi **hai lần với cùng `id`** (id là mốc chết): [collect] đọc phiên nên có lõi, còn
+     * [collectProcessDeaths] đọc `ApplicationExitInfo` thường không có phiên. `save` ghi `<id>.json` nên lần sau
+     * **ghi đè** lần trước và xoá lõi vừa có (đường làm `resource` của `:midlet` thành `unknown` — #302, 261 lượt).
+     * #655 đã chặn đường chính bằng cách bỏ qua mốc đã có báo cáo; hàm này là chốt thứ hai ngay tại điểm ghi:
+     * bản ghi mới **thiếu phiên** thì giữ phiên (và `core`/`system`/`stage`/`thành phần`) của bản trước.
+     * Không bịa phiên mới, không đụng loại báo cáo khác (vd. `op-fail` trùng mili-giây).
+     */
+    internal fun carrySession(next: Report, prev: Report?): Report {
+        if (next.session != null || prev?.session == null) return next
+        if (next.kind !in deathKinds || prev.kind !in deathKinds) return next
+        val s = prev.session
+        val comp = if (next.component.isBlank() || next.component.startsWith("app:")) {
+            prev.component.ifBlank { next.component }
+        } else next.component
+        return next.copy(
+            session = s,
+            core = next.core.ifBlank { s.core },
+            system = next.system.ifBlank { s.system },
+            stage = next.stage.ifBlank { s.stage },
+            component = comp,
+            fromGame = prev.fromGame || next.fromGame,
+        )
     }
 
     /** Cùng loại + cùng thành phần + cùng 3 dòng stack đầu (bỏ số dòng/địa chỉ) → cùng lỗi. */
@@ -849,6 +1078,19 @@ object Diagnostics {
         if (trace.isNotBlank()) trace + "\n" + crumbs.joinToString("\n") else ""
 
     /**
+     * Các loại chết do Android báo (`ApplicationExitInfo`) có thể khớp ảnh chụp phiên của tiến trình
+     * đang chơi (`diag/sessions/<pid>.json`). Trước đây chỉ `anr`/`lowmem` đọc, nên `native`/`resource`
+     * mất lõi dù phiên có sẵn (xem `docs/loi/unknown-native-1311.md` mục 3.2(b)).
+     */
+    private val DEATH_SESSION_KINDS = setOf("anr", "lowmem", "native", "resource", "initfail")
+
+    /** Hai loại này giữ cách cũ: thiếu bằng chứng thì ghi rõ "unknown" thay vì để trống. */
+    private val EXPLICIT_UNKNOWN_KINDS = setOf("lowmem", "anr")
+
+    /** Có đọc ảnh chụp phiên cho loại chết này không. */
+    internal fun readsDeathSession(kind: String): Boolean = kind in DEATH_SESSION_KINDS
+
+    /**
      * Quét lý do chết của CHÍNH tiến trình chính (và ":midlet"/":crash") do Android ghi lại: native crash, ANR, hết RAM…
      * — những lần chết không có ngoại lệ Java để CrashReporter bắt. Gọi lúc mở app; chỉ tạo báo cáo cho lần chết mới.
      */
@@ -870,13 +1112,19 @@ object Diagnostics {
                 ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE -> "resource"
                 else -> continue // CRASH (Java) đã có CrashReporter; thoát bình thường / người dùng vuốt tắt thì bỏ qua
             }
-            // Tiến trình game đã được [collect] xử lý (có phiên) → tránh báo hai lần.
-            if (e.processName?.endsWith(":game") == true && File(reportsDir(c), "${e.timestamp}.json").exists()) continue
+            // Đã có báo cáo ở đúng mốc này — thường là [collect] vừa xử lý phiên của `:game`/`:midlet`
+            // (nó ghi báo cáo rồi xoá ảnh chụp phiên). Áp cho MỌI tiến trình, không chỉ `:game`: nếu chỉ
+            // chặn `:game` thì bản quét sau ghi đè tệp cùng `id` bằng bản không có phiên → mất lõi (#655).
+            if (File(reportsDir(c), "${e.timestamp}.json").exists()) continue
             val trace = scrub(c, traceStrings(e).joinToString("\n"))
             val crumbs = Breadcrumbs.read(c, e.pid)
-            val deathSession = if (kind == "anr" || kind == "lowmem") readDeathSession(c, e.pid, e.timestamp, e.processStateSummary) else null
+            val deathSession = if (readsDeathSession(kind)) readDeathSession(c, e.pid, e.timestamp, e.processStateSummary) else null
+            // V202 chỉ nới luật cho **phiên chơi** (tiến trình `:game`/`:midlet` còn quan trọng dù đang cached).
+            // Phiên mức tiến trình ([PROCESS_KIND]) có mặt ở MỌI tiến trình, kể cả tiến trình chính đang
+            // `IMPORTANCE_CACHED` — nếu tính nó là "có phiên" thì luật V202 mất tác dụng và lowmem nền bị gửi.
+            val playSession = deathSession?.takeIf { it.kind != PROCESS_KIND }
             // V202: bỏ ca Android dọn tiến trình nền bình thường; vẫn dọn trạng thái để không quét lại.
-            if (kind == "lowmem" && !shouldReportLowMem(e.importance, e.processName, deathSession != null)) {
+            if (kind == "lowmem" && !shouldReportLowMem(e.importance, e.processName, playSession != null)) {
                 Breadcrumbs.drop(c, e.pid)
                 clearDeathSession(c, e.pid, e.processStateSummary)
                 continue
@@ -895,7 +1143,10 @@ object Diagnostics {
                 log = if (kind == "native" && Build.VERSION.SDK_INT == 30)
                     logcat(e.pid, nativeDeathAt = e.timestamp).map { scrub(c, it) } else emptyList(),
                 component = comp, env = envLine(c), crumbs = crumbs,
-                session = deathSession, fromGame = deathSession != null,
+                session = deathSession,
+                // Phiên mức tiến trình ([PROCESS_KIND]) chỉ để báo có ngữ cảnh, không phải một lượt chơi
+                // → không mở hộp thoại "game chết" ở màn chính.
+                fromGame = playSession != null,
             ))
             Breadcrumbs.drop(c, e.pid)
             clearDeathSession(c, e.pid, e.processStateSummary)
@@ -914,22 +1165,51 @@ object Diagnostics {
         }
     }
 
-    internal fun readDeathSession(c: Context, pid: Int, diedAt: Long, summary: ByteArray?): Session? = matchingDeathSession(
-        runCatching { json.decodeFromString(DeathSnapshot.serializer(), deathSessionFile(c, pid).readText()) }.getOrNull(), pid, diedAt, summary)
+    /**
+     * Đọc ảnh chụp của `pid` khớp đúng lần chết. PID cấp lại có thể để lại **nhiều** ảnh chụp của cùng PID
+     * (`<pid>.json` của tiến trình mới + `<pid>-<startedAt>.json` của tiến trình cũ): duyệt hết rồi chọn bản
+     * khớp token thế hệ và mới nhất — trước đây chỉ đọc `<pid>.json` nên ANR của tiến trình cũ mất lõi.
+     */
+    internal fun readDeathSession(c: Context, pid: Int, diedAt: Long, summary: ByteArray?): Session? =
+        deathSessionFiles(c, pid).mapNotNull { f ->
+            matchingDeathSession(
+                runCatching { json.decodeFromString(DeathSnapshot.serializer(), f.readText()) }.getOrNull(), pid, diedAt, summary)
+        }.maxByOrNull { it.startedAt }
 
     /** Một exit cũ không được xóa snapshot của tiến trình mới đang dùng lại PID. */
     internal fun clearDeathSession(c: Context, pid: Int, summary: ByteArray?) {
-        val f = deathSessionFile(c, pid)
-        val snapshot = runCatching { json.decodeFromString(DeathSnapshot.serializer(), f.readText()) }.getOrNull() ?: return
-        if (summary != null && summary.contentEquals(deathProcessSummary(snapshot.generation))) f.delete()
+        if (summary == null) return
+        deathSessionFiles(c, pid).forEach { f ->
+            val snapshot = runCatching { json.decodeFromString(DeathSnapshot.serializer(), f.readText()) }.getOrNull() ?: return@forEach
+            if (summary.contentEquals(deathProcessSummary(snapshot.generation))) f.delete()
+        }
     }
 
+    /**
+     * Điền lõi/hệ/giai đoạn của lần chết từ phiên nếu có — **chỉ** cho các loại do Android báo
+     * (`readsDeathSession`: `anr`/`lowmem`/`native`/`resource`/`initfail`). `native`/`resource` trước đây
+     * bị bỏ nên lõi rỗng dù phiên có sẵn. Riêng `lowmem`/`anr` giữ cách cũ: thiếu bằng chứng thì ghi rõ
+     * "unknown" thay vì để trống. Mọi loại khác (`java`, `killed`, `op-fail`, `handled`, `user`…) trả
+     * nguyên báo cáo như trước.
+     */
     internal fun enrichDeathReport(r: Report): Report {
-        if (r.kind != "lowmem" && r.kind != "anr") return r
+        if (!readsDeathSession(r.kind)) return r
+        val sessionCore = r.session?.core?.takeIf { it.isNotBlank() }
+        val sessionSystem = r.session?.system?.takeIf { it.isNotBlank() }
+        val sessionStage = r.session?.stage?.takeIf { it.isNotBlank() }
+        if (r.kind !in EXPLICIT_UNKNOWN_KINDS) {
+            // Không tự thêm "unknown": loại khác giữ nguyên ô trống khi không có phiên (như trước).
+            if (sessionCore == null && sessionSystem == null && sessionStage == null) return r
+            return r.copy(
+                core = sessionCore ?: r.core,
+                system = sessionSystem ?: r.system,
+                stage = sessionStage ?: r.stage,
+            )
+        }
         return r.copy(
-            core = r.session?.core?.takeIf { it.isNotBlank() } ?: r.core.ifBlank { "unknown" },
-            system = r.session?.system?.takeIf { it.isNotBlank() } ?: r.system.ifBlank { "unknown" },
-            stage = r.session?.stage?.takeIf { it.isNotBlank() } ?: r.stage.ifBlank { "unknown" },
+            core = sessionCore ?: r.core.ifBlank { "unknown" },
+            system = sessionSystem ?: r.system.ifBlank { "unknown" },
+            stage = sessionStage ?: r.stage.ifBlank { "unknown" },
         )
     }
 

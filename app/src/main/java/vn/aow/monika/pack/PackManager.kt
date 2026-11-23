@@ -170,7 +170,9 @@ class PackWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             // Chỉ báo cáo khi hết lượt thử (retry còn thì chỉ ghi vệt) → không đẻ 3 báo cáo cho 1 lần tải lỗi.
             val last = runAttemptCount >= 2
             runCatching { vn.aow.monika.diag.Diagnostics.crumb(applicationContext, "pack", "$id lần ${runAttemptCount + 1} lỗi: ${e.javaClass.simpleName} ${e.message.orEmpty().take(80)}") }
-            if (last) vn.aow.monika.diag.Diagnostics.opFail(applicationContext, vn.aow.monika.diag.Diagnostics.Op.INSTALL_PACK, "pack:$id (sau ${runAttemptCount + 1} lần thử)", e, id)
+            // Bước dùng đúng `pack:<id>` như `EnginePrepActivity` để hai đường báo cùng một sự cố trùng khoá
+            // chống spam (khoá gồm cả `bước`); số lần thử đã có trong vệt ngay trên.
+            if (last) vn.aow.monika.diag.Diagnostics.opFail(applicationContext, vn.aow.monika.diag.Diagnostics.Op.INSTALL_PACK, "pack:$id", e, id)
             if (!last) Result.retry() else Result.failure()
         } finally { runCatching { nm.cancel(NOTI_ID) } }
     }

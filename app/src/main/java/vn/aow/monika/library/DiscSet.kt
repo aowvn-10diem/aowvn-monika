@@ -28,6 +28,20 @@ object DiscSet {
 
     private const val BOM = '\uFEFF'
 
+    /** Đuôi tệp có thể thuộc một bộ đĩa: nhập rời vẫn phải nằm chung thư mục với tệp danh sách. */
+    private val DISC_FILES = setOf(
+        "cue", "m3u", "bin", "iso", "img", "chd", "pbp", "ccd", "sub", "wav", "flac", "mp3", "ogg",
+    )
+
+    /** Đuôi tệp danh sách đĩa. */
+    private val LIST_EXTENSIONS = setOf("cue", "m3u")
+
+    /** Số tệp danh sách đọc nội dung tối đa cho một lần nhập: thư viện lớn vẫn nhập nhanh. */
+    private const val MAX_LIST_READS = 200
+
+    /** Hậu tố chống trùng tên thư mục do `Importer.newGameDir` thêm: "Game (2)". */
+    private val DEDUP_SUFFIX = Regex(""" \(\d+\)$""")
+
     private val CUE_FILE = Regex("""^file\s+(?:"([^"]+)"|(\S+))""", RegexOption.IGNORE_CASE)
     private val ABSOLUTE_WINDOWS = Regex("""^[A-Za-z]:[\\/]""")
 
@@ -43,11 +57,7 @@ object DiscSet {
      * gọi khi thật có tệp thiếu.
      */
     fun inspect(game: File, folderLabel: () -> String = { game.parentFile?.name.orEmpty() }): Suspicion? {
-        val references = when (game.extension.lowercase()) {
-            "cue" -> names(game) { line -> CUE_FILE.find(line)?.let { it.groupValues[1].ifEmpty { it.groupValues[2] } } }
-            "m3u" -> names(game) { line -> line.takeUnless { it.startsWith("#") } }
-            else -> return null
-        } ?: return null
+        val references = references(game) ?: return null
         if (references.isEmpty()) return null
         val dir = game.parentFile ?: return null
         val clean = references.filter(::resolvable)
@@ -59,6 +69,54 @@ object DiscSet {
         val message = "Thiếu tệp đĩa của game.\n\nTệp ${game.name} cần những tệp sau$where:\n$listed$more\n\n" +
             "Hãy nhập lại game kèm đủ tệp đĩa (.cue phải đi cùng tệp .bin của nó), rồi mở lại.\nBấm Quay lại để thoát."
         return Suspicion(message, certain = clean.size == references.size)
+    }
+
+    /**
+     * Thư mục game đã có trong thư viện mà tệp [name] thuộc về, hoặc `null` khi chưa có (người gọi tạo thư mục mới).
+     *
+     * Người chơi hay đưa `.cue` và `.bin` vào bằng hai lần chọn (hoặc chọn nhiều tệp): nếu mỗi tệp rơi vào một thư
+     * mục riêng thì `.cue` không thấy `.bin` của nó và lõi `pcsx_rearmed` báo "không nạp được game" (issue #322, #578).
+     * Chỉ gom khi **chắc chắn** cùng một bộ: cùng tên gốc, hoặc tệp danh sách trong thư mục nhắc đúng tên này.
+     * Thư mục đã có tệp cùng tên thì **không** gom (tránh ghi đè tệp đang có).
+     */
+    fun companionFolder(root: File, name: String): File? {
+        if (name.substringAfterLast('.', "").lowercase() !in DISC_FILES) return null
+        val stem = name.substringBeforeLast('.')
+        val free = root.listFiles().orEmpty().filter { it.isDirectory }
+            .filter { dir -> dir.listFiles().orEmpty().none { it.isFile && it.name.equals(name, ignoreCase = true) } }
+        // (1) Đã có tệp danh sách cùng tên gốc: "Game.bin" đi với "Game.cue".
+        free.firstOrNull { dir -> discLists(dir).any { it.nameWithoutExtension.equals(stem, ignoreCase = true) } }
+            ?.let { return it }
+        // (2) Thư mục mang đúng tên gốc và đã có tệp đĩa (nhập .bin trước, .cue sau — hoặc ngược lại).
+        //     Bỏ hậu tố chống trùng của [Importer.newGameDir] ("Game (2)") nhưng giữ tên đĩa thật ("Game (Disc 1)").
+        free.firstOrNull { dir ->
+            dir.name.replace(DEDUP_SUFFIX, "").equals(stem, ignoreCase = true) &&
+                dir.listFiles().orEmpty().any { it.isFile && it.extension.lowercase() in DISC_FILES }
+        }?.let { return it }
+        // (3) Tệp danh sách nhắc đúng tên tệp này ("Game (Track 1).bin" khác tên gốc với cue).
+        var reads = 0
+        for (dir in free) {
+            for (list in discLists(dir)) {
+                if (reads++ >= MAX_LIST_READS) return null // thư viện quá lớn: giữ cách cũ, không đoán
+                val referenced = references(list).orEmpty()
+                if (referenced.any { baseName(it).equals(name, ignoreCase = true) }) return dir
+            }
+        }
+        return null
+    }
+
+    /** Tệp danh sách đĩa (`.cue`/`.m3u`) trong [folder]. */
+    private fun discLists(folder: File): List<File> =
+        folder.listFiles().orEmpty().filter { it.isFile && it.extension.lowercase() in LIST_EXTENSIONS }
+
+    /** Tên tệp không kèm thư mục (cue có thể ghi "discs/Game.bin"). */
+    private fun baseName(name: String): String = name.replace('\\', '/').substringAfterLast('/')
+
+    /** Các tệp danh sách của [game] nhắc tới; `null` khi tệp không phải danh sách đĩa. */
+    private fun references(game: File): List<String>? = when (game.extension.lowercase()) {
+        "cue" -> names(game) { line -> CUE_FILE.find(line)?.let { it.groupValues[1].ifEmpty { it.groupValues[2] } } }
+        "m3u" -> names(game) { line -> line.takeUnless { it.startsWith("#") } }
+        else -> null
     }
 
     /** Các tên tệp được tệp danh sách nhắc tới; `null` khi không đọc chắc được (để lõi tự báo lỗi). */

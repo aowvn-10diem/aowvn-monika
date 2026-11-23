@@ -53,7 +53,7 @@ class BrowserDownloadRulesTest {
         val mgr = BrowserDownloads(app, status(404), Prefs(app))
         val job = mgr.start("https://host.test/missing", null, null, null, null)
         waitFor(job, DlState.FAILED)
-        assertEquals("Máy chủ trả lỗi 404", job.error)
+        assertEquals("Máy chủ trả lỗi 404 — liên kết có thể đã hỏng hoặc tệp đã bị xoá", job.error)
         assertFalse(job.part.exists())
         shadowOf(android.os.Looper.getMainLooper()).idle()
         assertTrue(mgr.jobs.contains(job))

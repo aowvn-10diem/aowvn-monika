@@ -16,7 +16,12 @@ object PlayLinks {
             share(context, attachment, listOfNotNull(message, url).joinToString("\n\n"))
             return
         }
-        vn.aow.monika.diag.Diagnostics.op(context, "mo-lien-ket") {
+        // Máy không có trình duyệt/app nhận liên kết là chuyện của máy người chơi, không phải lỗi app:
+        // `expected` để chỉ ghi vệt, không đẻ báo cáo `op:mo-lien-ket` (tên op này ngoài `Diagnostics.Op`).
+        vn.aow.monika.diag.Diagnostics.op(
+            context, "mo-lien-ket",
+            expected = { it is android.content.ActivityNotFoundException },
+        ) {
             context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }.onFailure {
             android.widget.Toast.makeText(context, "Không mở được liên kết trợ giúp.", android.widget.Toast.LENGTH_LONG).show()
@@ -25,7 +30,10 @@ object PlayLinks {
 
     /** Người chơi chọn ứng dụng nhận; quyền đọc chỉ cấp cho URI ảnh qua FileProvider. */
     fun share(context: Context, attachment: File?, message: String) {
-        vn.aow.monika.diag.Diagnostics.op(context, "chia-se-hoi-nhom") {
+        vn.aow.monika.diag.Diagnostics.op(
+            context, "chia-se-hoi-nhom",
+            expected = { it is android.content.ActivityNotFoundException },
+        ) {
             val send = Intent(Intent.ACTION_SEND)
                 .setType(if (attachment != null) "image/png" else "text/plain")
                 .putExtra(Intent.EXTRA_TEXT, message)

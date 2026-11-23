@@ -62,5 +62,7 @@ jobs:
         run: python3 scripts/test-ppsspp-snapshot.py
       - name: Kiểm tin sáng Telegram bằng dữ liệu giả (V177, offline)
         run: python3 scripts/test-telegram-tom-tat.py
+      - name: Cài PyYAML cho kiểm bảo mật workflow
+        run: python3 -m pip install --quiet --disable-pip-version-check pyyaml
       - name: Kiểm bảo mật tĩnh toàn bộ workflow (A85, offline)
         run: python3 scripts/test-workflow-security.py

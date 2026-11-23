@@ -50,13 +50,20 @@ object Importer {
         if (src.extension.equals("rar", true) && src.parentFile?.listFiles().orEmpty().any { MultiPart.parse(it.name)?.base == src.name.lowercase() }) {
             return importPart(context, src, MultiPart.Piece(src.name.lowercase(), 0), passwords, progress)
         }
-        val dir = newGameDir(context, src.name)
-        if (!ArchiveExtractor.isArchive(src)) {
+        val archive = ArchiveExtractor.isArchive(src)
+        val dir = gameDirFor(context, src.name, archive)
+        if (!archive) {
             val dest = File(dir, src.name)
-            if (!(deleteSource && src.renameTo(dest))) {
-                src.inputStream().use { input -> dest.outputStream().use { input.copyTo(it) } }
-                if (deleteSource) src.delete()
-            }
+            // Tệp thường (không phải file nén): chép thẳng vào thư mục game. Trước đây nhánh này không có báo cáo
+            // nên tệp không chép được (hết dung lượng, quyền, tệp nguồn biến mất) chỉ hiện lỗi chung chung.
+            vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.IMPORT, src.name) {
+                step("nhap-tep-thuong")
+                if (!(deleteSource && src.renameTo(dest))) {
+                    step("chep-file")
+                    src.inputStream().use { input -> dest.outputStream().use { input.copyTo(it) } }
+                    if (deleteSource) src.delete()
+                }
+            }.getOrThrow()
             return ImportResult(dir)
         }
         val error = extractOp(context, src.name) { ArchiveExtractor.extract(src, dir, passwords, progress) }
@@ -106,7 +113,7 @@ object Importer {
             copyUri(context, uri, tmp, name)
             return importFile(context, tmp, deleteSource = true, passwords = passwords, progress = progress)
         }
-        val dir = newGameDir(context, name)
+        val dir = gameDirFor(context, name, ArchiveExtractor.isArchiveName(name))
         val tmp = File(dir, name)
         copyUri(context, uri, tmp, name)
         if (!ArchiveExtractor.isArchive(tmp)) return ImportResult(dir)
@@ -136,10 +143,31 @@ object Importer {
             work.deleteRecursively()
             return ImportResult(dir, error.message)
         }
+        // Chuyển ra thư mục game TRƯỚC khi xoá bất cứ thứ gì: `renameTo` hỏng (thiếu quyền, tên đích đã bị chiếm)
+        // mà vẫn xoá thư mục tạm thì tệp vừa giải nén của người chơi mất luôn, không có đường lấy lại.
+        val moveError = moveOut(context, work, dir, archive.name)
+        if (moveError != null) {
+            return ImportResult(dir, moveError.message ?: "Không chuyển được tệp giải nén ra thư mục game")
+        }
         archive.delete()
-        work.listFiles().orEmpty().forEach { it.renameTo(File(dir, it.name)) }
         work.deleteRecursively()
         return ImportResult(dir)
+    }
+
+    /** Chuyển tệp đã giải nén từ thư mục tạm ra [dir]; dừng ở tệp lỗi đầu tiên và để nguyên phần còn lại trong tạm. */
+    private fun moveOut(context: Context?, work: File, dir: File, archiveName: String): Throwable? {
+        val move = {
+            work.listFiles().orEmpty().forEach { f ->
+                if (!f.renameTo(File(dir, f.name))) throw IOException("Không chuyển được \"${f.name}\" ra thư mục game")
+            }
+        }
+        // Không có Context thì không lập được báo cáo (Breadcrumbs/op-fail đều cần Context); mọi đường gọi thật
+        // (LibraryScreen, importFile → importFromUri) đều truyền Context nên ca chuyển hỏng vẫn thành op-fail.
+        if (context == null) return runCatching { move() }.exceptionOrNull() // diag: bỏ qua — thiếu Context, không có đường báo cáo
+        return vn.aow.monika.diag.Diagnostics.op(context, vn.aow.monika.diag.Diagnostics.Op.EXTRACT, archiveName) {
+            step("chuyen-ra-thu-muc-game")
+            move()
+        }.exceptionOrNull()
     }
 
     /** Giải nén zip từ luồng mạng (dùng cho file hệ thống của lõi giả lập). */
@@ -157,6 +185,14 @@ object Importer {
             }
         }
     }
+
+    /**
+     * Thư mục đích cho một tệp rời. Nhập riêng `.cue` rồi `.bin` (chọn từng tệp, hoặc chọn nhiều tệp) thì tệp thứ
+     * hai phải vào **cùng** thư mục với tệp danh sách — mỗi tệp một thư mục thì lõi PS1 không nạp được game
+     * (issue #322, #578). Gói nén luôn có thư mục riêng: giải nén ra nhiều tệp nên không gộp vào bộ đĩa đang có.
+     */
+    private fun gameDirFor(context: Context, name: String, archive: Boolean): File =
+        (if (archive) null else DiscSet.companionFolder(GameStorage.games(context), name)) ?: newGameDir(context, name)
 
     private fun newGameDir(context: Context, fileName: String): File {
         val base = fileName.substringBeforeLast('.').ifBlank { fileName }

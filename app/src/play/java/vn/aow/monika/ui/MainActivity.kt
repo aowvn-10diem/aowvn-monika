@@ -72,6 +72,8 @@ class MainActivity : ComponentActivity() {
         AppGraph.prefs.endSession()
         lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             vn.aow.monika.diag.Diagnostics.op(this@MainActivity, "doc-bao-loi") {
+                // Chặng hiện tại của phiên mức tiến trình, để ANR ở màn chính báo "app-foreground".
+                vn.aow.monika.diag.Diagnostics.processStage(applicationContext, "app-foreground")
                 val cr = AppGraph.config.current.crash
                 val fresh = listOfNotNull(vn.aow.monika.diag.Diagnostics.collect(applicationContext)) +
                     vn.aow.monika.diag.Diagnostics.collectProcessDeaths(applicationContext)

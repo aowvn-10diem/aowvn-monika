@@ -71,6 +71,7 @@ KIND_GUESS = {
     "handled": "lỗi app tự bắt, không sập",
     "resource": "vượt hạn mức tài nguyên",
     "initfail": "khởi tạo tiến trình thất bại",
+    "noexit": "máy không báo được lý do dừng",
     "unknown": "chưa đủ dữ liệu phân loại",
 }
 COMPONENT_GUESS = {

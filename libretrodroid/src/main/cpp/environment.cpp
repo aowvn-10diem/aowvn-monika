@@ -31,6 +31,9 @@
 #include "vfs/vfs.h"
 #include "microphone/microphoneinterface.h"
 
+// Aow Monika: định nghĩa cho biến thành viên static thread_local khai báo trong environment.h.
+thread_local std::string Environment::variableValueBuffer;
+
 void Environment::initialize(
     const std::string &requiredSystemDirectory,
     const std::string &requiredSavesDirectory,

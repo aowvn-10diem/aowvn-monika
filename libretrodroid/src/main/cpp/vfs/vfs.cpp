@@ -112,15 +112,20 @@ retro_vfs_interface * VFS::getInterface() {
 }
 
 void VFS::initialize(std::vector<VFSFile> files) {
+    std::lock_guard<std::mutex> lock(virtualFilesLock);
     this->virtualFiles = std::move(files);
 }
 
 void VFS::deinitialize() {
+    std::lock_guard<std::mutex> lock(virtualFilesLock);
     virtualFiles.clear();
 }
 
 struct retro_vfs_file_handle* VFS::virtualOpen(const char *path, unsigned int mode, unsigned int hints) {
     LOGV("VFS Calling open: %s %i", path, mode);
+
+    // Aow Monika: giữ khoá suốt lời gọi để deinitialize() không clear() vector dưới chân findVirtualFile.
+    std::lock_guard<std::mutex> lock(virtualFilesLock);
 
     VFSFile* virtualFile = findVirtualFile(path);
 
@@ -153,6 +158,7 @@ struct retro_vfs_file_handle* VFS::virtualOpen(const char *path, unsigned int mo
 }
 
 VFSFile* VFS::findVirtualFile(const char *path) {
+    // Chỉ gọi khi đã giữ virtualFilesLock (virtualOpen).
     for (auto& virtualFile : virtualFiles) {
         if (strcmp(path, virtualFile.getFileName().data()) == 0) {
             return &virtualFile;

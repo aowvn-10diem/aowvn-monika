@@ -76,14 +76,27 @@ def symbolize(report, args):
         return
     with index.open(encoding="utf-8", newline="") as source:
         rows = list(csv.DictReader(source, delimiter="\t"))
-    # Dạng khung của tombstone Android; không đoán PC hoặc dùng ký hiệu khác BuildId.
-    frame = re.compile(r"#\d+\s+pc\s+([0-9a-fA-F]+)\s+(\S+).*?\(BuildId:\s*([0-9a-fA-F]+)\)", re.I)
+    # Hai dạng khung có sẵn PC + BuildId; không đoán PC và không dùng ký hiệu khác BuildId.
+    # (a) tombstone protobuf do app tự dựng (TombstoneParser.toLines): PC là rel_pc, tức độ lệch
+    #     so với đầu vùng ánh xạ của .so — dạng duy nhất có trong `detail` của báo cáo do app gửi.
+    app_frame = re.compile(r"#\d+\s+(\S+)\+0x([0-9a-fA-F]+)\s.*?\[build_id\s+([0-9a-fA-F]+)\]", re.I)
+    # (b) dòng DEBUG của crash_dump trong logcat: PC là địa chỉ tuyệt đối.
+    logcat_frame = re.compile(r"#\d+\s+pc\s+([0-9a-fA-F]+)\s+(\S+).*?\(BuildId:\s*([0-9a-fA-F]+)\)", re.I)
     count = 0
+    rel_pc_noted = False
     for line in report.get("detail", "").splitlines():
-        match = frame.search(line)
-        if not match:
-            continue
-        pc, file, build_id = match.groups()
+        match = app_frame.search(line)
+        if match:
+            file, pc, build_id = match.groups()
+            if not rel_pc_noted:
+                print("Khung từ tombstone của app: địa chỉ giải = rel_pc (độ lệch so với đầu vùng "
+                      "ánh xạ .so), không phải địa chỉ tuyệt đối.")
+                rel_pc_noted = True
+        else:
+            match = logcat_frame.search(line)
+            if not match:
+                continue
+            pc, file, build_id = match.groups()
         name = Path(file).name
         matches = [row for row in rows if row["build_id"].lower() == build_id.lower() and row["file"] == name]
         if len(matches) != 1:
@@ -106,7 +119,8 @@ def symbolize(report, args):
         print(result.stdout.rstrip())
         count += 1
     if not count:
-        note("Chưa giải được khung native; cần rel_pc/file_name/BuildId từ tombstone đúng cấu trúc (V20 sau V19).")
+        note("Chưa giải được khung native; cần dòng khung có PC + BuildId "
+             "(tombstone của app: `tên.so+0x<pc> … [build_id <id>]`, hoặc dòng crash_dump: `#00 pc … (BuildId: …)`).")
 
 
 def main():

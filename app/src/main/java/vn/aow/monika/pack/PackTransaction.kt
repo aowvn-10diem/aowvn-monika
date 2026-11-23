@@ -6,6 +6,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.io.RandomAccessFile
 import java.security.MessageDigest
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -161,15 +162,123 @@ internal object PackTransaction {
             "libsync.so", "libneuralnetworks.so", "libOpenMAXAL.so", "libamidi.so", "libbinder_ndk.so")
         if (needed.isFile) needed.readLines().map { it.trim() }.filter { it.isNotEmpty() && it !in systemLibraries }
             .forEach { requiredFile(dir, File(dir, it)) }
-        dir.walkTopDown().filter { it.isFile && it.name.endsWith(".so") }.forEach { lib ->
-            val header = ByteArray(20)
-            val read = lib.inputStream().use { it.read(header) }
-            val machine = (header[18].toInt() and 255) or ((header[19].toInt() and 255) shl 8)
-            val expected = when (abi) { "arm64-v8a" -> 183; "armeabi-v7a" -> 40; "x86" -> 3; "x86_64" -> 62; else -> -1 }
-            val elfClass = if (abi in setOf("arm64-v8a", "x86_64")) 2 else 1
-            if (read != 20 || !header.copyOfRange(0, 4).contentEquals(byteArrayOf(127, 69, 76, 70)) ||
-                header[4].toInt() != elfClass || header[5].toInt() != 1 || machine != expected)
-                throw IOException("Thư viện ${lib.name} sai định dạng/ABI $abi")
+        dir.walkTopDown().filter { it.isFile && it.name.endsWith(".so") }.forEach { validateElf(it, abi) }
+    }
+
+    /**
+     * Kiểm một thư viện .so: magic ELF, lớp 32/64 bit và `e_machine` phải khớp [abi].
+     * Dùng cho cả nhánh gói ghim hash (kiểm trong [validate]) và nhánh tải buildbot nightly không có hash —
+     * để một ZIP cắt cụt hoặc một `.so` sai ABI bị chặn ngay lúc cài, thay vì cài xong rồi mới `dlopen` lỗi.
+     */
+    fun validateElf(lib: File, abi: String) {
+        val header = ByteArray(20)
+        val read = lib.inputStream().use { input ->
+            var n = 0
+            while (n < header.size) {
+                val r = input.read(header, n, header.size - n)
+                if (r < 0) break
+                n += r
+            }
+            n
+        }
+        val machine = (header[18].toInt() and 255) or ((header[19].toInt() and 255) shl 8)
+        val expected = when (abi) { "arm64-v8a" -> 183; "armeabi-v7a" -> 40; "x86" -> 3; "x86_64" -> 62; else -> -1 }
+        val elfClass = if (abi in setOf("arm64-v8a", "x86_64")) 2 else 1
+        if (read != 20 || !header.copyOfRange(0, 4).contentEquals(byteArrayOf(127, 69, 76, 70)) ||
+            header[4].toInt() != elfClass || header[5].toInt() != 1 || machine != expected)
+            throw IOException("Thư viện ${lib.name} sai định dạng/ABI $abi")
+    }
+
+    /**
+     * Đọc `NT_GNU_BUILD_ID` (note loại 3) trong segment `PT_NOTE` của một thư viện .so, trả về hex thường.
+     * Trả `null` khi không có note (phần lớn lõi buildbot đã bị strip) hoặc tệp không đọc được — đây chỉ là
+     * thông tin phụ để ghép khung khi có báo cáo `native`; thiếu nó không được làm hỏng bước cài lõi.
+     */
+    fun buildId(lib: File): String? = try {
+        readBuildId(lib)
+    } catch (e: IOException) { // diag: bỏ qua build_id là thông tin phụ trong info.txt, thiếu không chặn cài lõi
+        null
+    }
+
+    private fun readBuildId(lib: File): String? {
+        RandomAccessFile(lib, "r").use { file ->
+            val head = ByteArray(64)
+            if (readFully(file, 0, head) < 52) return null
+            if (!head.copyOfRange(0, 4).contentEquals(byteArrayOf(127, 69, 76, 70))) return null
+            val is64 = head[4].toInt() == 2
+            if (head[5].toInt() != 1) return null // .so của Android luôn little-endian; thà bỏ còn hơn đoán
+            val header = ElfBytes(head)
+            val phOff = if (is64) header.u64(32) else header.u32(28)
+            val phEnt = if (is64) header.u16(54) else header.u16(42)
+            val phNum = if (is64) header.u16(56) else header.u16(44)
+            val minimum = if (is64) 56L else 32L
+            if (phOff < 0 || phEnt < minimum || phNum <= 0 || phNum > 512) return null
+            val table = ByteArray((phEnt * phNum).toInt())
+            if (readFully(file, phOff, table) != table.size) return null
+            val ph = ElfBytes(table)
+            for (i in 0 until phNum.toInt()) {
+                val at = (i * phEnt).toInt()
+                if (ph.u32(at) != PT_NOTE) continue
+                val offset = if (is64) ph.u64(at + 8) else ph.u32(at + 4)
+                val size = if (is64) ph.u64(at + 32) else ph.u32(at + 16)
+                if (offset < 0 || size <= 0 || size > MAX_NOTE_SEGMENT) continue
+                val note = ByteArray(size.toInt())
+                if (readFully(file, offset, note) != note.size) continue
+                buildIdInNotes(note)?.let { return it }
+            }
+            return null
         }
     }
+
+    /** Một segment `PT_NOTE` là dãy note: `namesz, descsz, type, tên (đệm 4), mô tả (đệm 4)`. */
+    private fun buildIdInNotes(note: ByteArray): String? {
+        val bytes = ElfBytes(note)
+        var at = 0
+        while (at + 12 <= note.size) {
+            val namesz = bytes.u32(at).toInt()
+            val descsz = bytes.u32(at + 4).toInt()
+            val type = bytes.u32(at + 8)
+            if (namesz < 0 || descsz < 0) return null
+            val nameAt = at + 12
+            val name = bytes.copy(nameAt, namesz) ?: return null
+            val descAt = nameAt + align4(namesz)
+            val desc = bytes.copy(descAt, descsz) ?: return null
+            if (type == NT_GNU_BUILD_ID && name.contentEquals(GNU_NAME) && desc.isNotEmpty())
+                return desc.joinToString("") { "%02x".format(it) }
+            at = descAt + align4(descsz)
+        }
+        return null
+    }
+
+    private fun readFully(file: RandomAccessFile, at: Long, into: ByteArray): Int {
+        var done = 0
+        while (done < into.size) {
+            file.seek(at + done)
+            val n = file.read(into, done, into.size - done)
+            if (n <= 0) break
+            done += n
+        }
+        return done
+    }
+
+    private fun align4(n: Int) = (n + 3) and -4
+
+    /** Đọc số nguyên theo little-endian, luôn kiểm biên: ngoài phạm vi thì trả -1. */
+    private class ElfBytes(private val raw: ByteArray) {
+        fun u16(at: Int) = num(at, 2)
+        fun u32(at: Int) = num(at, 4)
+        fun u64(at: Int) = num(at, 8)
+        fun copy(at: Int, n: Int) = if (at >= 0 && n >= 0 && at + n <= raw.size) raw.copyOfRange(at, at + n) else null
+        private fun num(at: Int, n: Int): Long {
+            val part = copy(at, n) ?: return -1
+            var value = 0L
+            for (i in 0 until n) value = value or ((part[i].toLong() and 255) shl (8 * i))
+            return value
+        }
+    }
+
+    private const val PT_NOTE = 4L
+    private const val NT_GNU_BUILD_ID = 3L
+    private const val MAX_NOTE_SEGMENT = 1L shl 20
+    private val GNU_NAME = byteArrayOf('G'.code.toByte(), 'N'.code.toByte(), 'U'.code.toByte(), 0)
 }

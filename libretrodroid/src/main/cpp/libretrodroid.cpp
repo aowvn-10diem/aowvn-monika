@@ -45,6 +45,7 @@
 #include "utils/rect.h"
 #include "errorcodes.h"
 #include "vfs/vfs.h"
+#include "diag.h"
 
 namespace libretrodroid {
 
@@ -169,6 +170,12 @@ bool LibretroDroid::unserializeState(int8_t *data, size_t size) {
 
 JNIEXPORT jboolean JNICALL LibretroDroid::unserializeSRAM(int8_t* data, size_t size) {
     std::lock_guard<std::mutex> lock(coreLock);
+
+    // Aow Monika: nạp SRAM có thể tới sau destroy() hoặc sau create() lỗi — cùng lớp lỗi đã vá ở #644.
+    if (!core || data == nullptr || size == 0) {
+        LOGE("Cannot load SRAM: core is empty or the SRAM file is empty");
+        return false;
+    }
 
     size_t sramSize = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
     void *sramState = core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
@@ -360,6 +367,13 @@ void LibretroDroid::create(
 void LibretroDroid::loadGameFromPath(const std::string& gamePath, const std::function<void(const char*)>& progress) {
     if (progress) progress("rom-read");
     LOGD("Performing libretrodroid loadGameFromPath");
+
+    // Aow Monika: nạp game có thể tới khi create() đã lỗi hoặc sau destroy() — không deref con trỏ rỗng.
+    if (!core) {
+        LOGE("Cannot load game from path: the core is not loaded");
+        throw std::runtime_error("Cannot load game: the core is not loaded");
+    }
+
     struct retro_system_info system_info {};
     core->retro_get_system_info(&system_info);
 
@@ -399,6 +413,11 @@ void LibretroDroid::loadGameFromPath(const std::string& gamePath, const std::fun
 void LibretroDroid::loadGameFromBytes(const int8_t *data, size_t size) {
     LOGD("Performing libretrodroid loadGameFromBytes");
 
+    if (!core) {
+        LOGE("Cannot load game from bytes: the core is not loaded");
+        throw std::runtime_error("Cannot load game: the core is not loaded");
+    }
+
     struct retro_system_info system_info {};
     core->retro_get_system_info(&system_info);
 
@@ -425,6 +444,12 @@ void LibretroDroid::loadGameFromBytes(const int8_t *data, size_t size) {
 
 void LibretroDroid::loadGameFromVirtualFiles(std::vector<VFSFile> virtualFiles) {
     LOGD("Performing libretrodroid loadGameFromVirtualFiles");
+
+    if (!core) {
+        LOGE("Cannot load game from virtual files: the core is not loaded");
+        throw std::runtime_error("Cannot load game: the core is not loaded");
+    }
+
     struct retro_system_info system_info {};
     core->retro_get_system_info(&system_info);
 
@@ -475,6 +500,9 @@ void LibretroDroid::destroy() {
 
     LOGD("Performing libretrodroid destroy");
 
+    // Aow Monika: vệt đo cửa sổ unload (không đổi thứ tự gọi của lõi).
+    diag::mark("destroy-enter");
+
     if (Environment::getInstance().getHwContextDestroy() != nullptr) {
         Environment::getInstance().getHwContextDestroy()();
     }
@@ -487,7 +515,13 @@ void LibretroDroid::destroy() {
     // Aow Monika: destroy() có thể tới sau khi lõi đã lỗi/đã gỡ — không được gọi vào con trỏ rỗng.
     if (core) {
         core->retro_unload_game();
+        // Aow Monika: mốc ngay trước/sau retro_deinit() — nếu thread của lõi còn sống
+        // ở "deinit-done" thì dlclose ngay sau đó là vùng nguy hiểm (xem diag.h).
+        diag::mark("deinit-before");
         core->retro_deinit();
+        diag::mark("deinit-done");
+    } else {
+        diag::mark("core-null");
     }
 
     video = nullptr;
@@ -538,6 +572,12 @@ void LibretroDroid::pause() {
 
 void LibretroDroid::step() {
     std::lock_guard<std::mutex> lock(coreLock);
+
+    // Aow Monika: GLThread có thể chạy thêm một khung sau destroy() (đóng game, mất surface) — không deref con trỏ rỗng.
+    if (!core) {
+        LOGE("Cannot step: the core is not loaded");
+        return;
+    }
 
     LOGD("Stepping into retro_run()");
 
@@ -675,6 +715,12 @@ uintptr_t LibretroDroid::handleGetCurrentFrameBuffer() {
 void LibretroDroid::reset() {
     std::lock_guard<std::mutex> lock(coreLock);
 
+    // Aow Monika: "chơi lại" có thể tới sau destroy() — cùng lớp lỗi đã vá ở #644.
+    if (!core) {
+        LOGE("Cannot reset: the core is not loaded");
+        return;
+    }
+
     core->retro_reset();
 }
 
@@ -705,11 +751,22 @@ std::pair<int8_t*, size_t> LibretroDroid::serializeState() {
 void LibretroDroid::resetCheat() {
     std::lock_guard<std::mutex> lock(coreLock);
 
+    // Aow Monika: danh sách cheat có thể được dọn lúc Activity đã destroy() lõi.
+    if (!core) {
+        LOGE("Cannot reset cheats: the core is not loaded");
+        return;
+    }
+
     core->retro_cheat_reset();
 }
 
 void LibretroDroid::setCheat(unsigned index, bool enabled, const std::string& code) {
     std::lock_guard<std::mutex> lock(coreLock);
+
+    if (!core) {
+        LOGE("Cannot set a cheat: the core is not loaded");
+        return;
+    }
 
     // V202: cùng kiểu rò rỉ new[] như đường nạp game — giữ chủ sở hữu và giải phóng sau lời gọi.
     std::unique_ptr<const char[]> codeHolder(Utils::cloneToCString(code));

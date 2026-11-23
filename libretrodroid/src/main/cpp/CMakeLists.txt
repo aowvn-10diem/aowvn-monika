@@ -85,6 +85,8 @@ add_library(libretrodroid SHARED
         utils/rect.cpp
         errorcodes.h
         errorcodes.cpp
+        diag.h
+        diag.cpp
         vfs/vfs.h
         vfs/vfs.cpp
         vfs/vfsfile.h

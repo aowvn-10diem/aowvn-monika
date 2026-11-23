@@ -34,6 +34,8 @@ internal class StartupProgress(private val now: () -> Long, private val breadcru
         return isSlow()
     }
     @Synchronized fun text(): String = detail
+    /** Bước đang chạy (không kèm câu chữ) — để báo cáo `core-error` ghi đúng chỗ lõi dừng. */
+    @Synchronized fun stage(): String = stage
     @Synchronized fun describe(): String =
         (timings + "$stage=${now() - since}ms (hiện tại)" + "total=${now() - started}ms").joinToString("\n")
 

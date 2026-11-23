@@ -131,13 +131,18 @@ class CoreManager(
                 } finally {
                     archive.delete()
                 }
+                // Nhánh buildbot nightly không có sha256: vẫn phải chặn ZIP cắt cụt / .so sai ABI ở đây,
+                // nếu không nó được cài rồi `dlopen` lỗi → người chơi chỉ thấy `core-error` mã 0.
+                try {
+                    PackTransaction.validateElf(tmp, abi)
+                } catch (e: IOException) { // diag: bỏ qua lỗi không bị nuốt — ném lại kèm nguyên nhân, op mo-game đã ghi báo cáo
+                    // Giữ nguyên nhân gốc cho chẩn đoán, nhưng câu người chơi đọc phải nói đúng chuyện gì xảy ra.
+                    throw IOException("Gói lõi $id tải về hỏng hoặc sai ABI $abi — thử lại sau.", e)
+                }
                 if (!tmp.renameTo(so)) throw IOException("Không lưu được lõi $id")
                 versionFile(id).writeText(def.version)
-                runCatching {
-                    File(coreDir(id), "info.txt").writeText(
-                        "cfg v${def.version} · $abi · ${so.length() / 1024}KB · tải ${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.US).format(System.currentTimeMillis())}" +
-                            (if (serverDate.isNotBlank()) " · bản dựng $serverDate" else "")
-                    )
+                runCatching { // diag: bỏ qua info.txt chỉ là thông tin phụ, ghi hỏng không được chặn mở game
+                    writeCoreInfo(coreDir(id), def.version, so, serverDate)
                 }
             } else {
                 val url = artifact.url
@@ -165,10 +170,7 @@ class CoreManager(
                     PackTransaction.unzip(archive, candidate)
                     PackTransaction.validate(candidate, so.name, abi)
                     File(candidate, "version").writeText(wantedVersion)
-                    File(candidate, "info.txt").writeText(
-                        "cfg v$wantedVersion · $abi · ${File(candidate, so.name).length() / 1024}KB · tải ${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.US).format(System.currentTimeMillis())}" +
-                            (if (serverDate.isNotBlank()) " · bản dựng $serverDate" else "")
-                    )
+                    writeCoreInfo(candidate, wantedVersion, File(candidate, so.name), serverDate)
                 }
             }
         } else {
@@ -185,6 +187,20 @@ class CoreManager(
         // Đánh dấu vừa dùng → bộ dọn bộ đệm không xóa lõi đang dùng thường xuyên.
         coreDir(id).setLastModified(System.currentTimeMillis())
         so
+    }
+
+    /**
+     * Ghi `info.txt` — tệp được đính vào mọi báo cáo qua `Diagnostics.coreInfo`. Dòng cũ
+     * (`cfg v… · <abi> · …KB · tải <ngày>`) giữ nguyên từng chữ để bản cũ đọc lại vẫn như trước; chỉ **thêm**
+     * một dòng `build_id=<hex>` khi `.so` còn `NT_GNU_BUILD_ID`, nhờ đó báo cáo `native` ghép được đúng gói
+     * ký hiệu của lõi đã cài (kể cả lõi tải từ buildbot, vốn không có `sha256`).
+     */
+    private fun writeCoreInfo(dir: File, version: String, so: File, serverDate: String) {
+        val base = "cfg v$version · $abi · ${so.length() / 1024}KB · tải " +
+            java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.US).format(System.currentTimeMillis()) +
+            (if (serverDate.isNotBlank()) " · bản dựng $serverDate" else "")
+        val buildId = PackTransaction.buildId(so)
+        File(dir, "info.txt").writeText(if (buildId.isNullOrBlank()) base else "$base\nbuild_id=$buildId")
     }
 
     private suspend fun downloadCore(input: java.io.InputStream, archive: File, total: Long, progress: suspend (Long, Long) -> Unit) {
