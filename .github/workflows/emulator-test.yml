@@ -4,6 +4,9 @@ name: Emulator Test (máy ảo Android)
 # Build APK release (R8), cài lên máy ảo Android 11 và 14, chạy kịch bản Maestro (.maestro/*.yaml),
 # rồi chơi thử GBA/GB/NES bằng ROM kiểm thử nhỏ (scripts/ci-emulator-games.sh), bắt crash trong logcat, đính kèm ảnh chụp + log. Repo private nên mỗi lượt tốn phút Actions (~10–15 phút/máy).
 # Chưa phủ: Cách 3 (gỡ lỗi không dây) và HealthCheck trên máy tiết kiệm pin — cần máy thật.
+# V176: thêm 1 job "anh-truoc-sau" — chỉ chạy khi PR đụng runner/, ui/, library/, j2me/ (hoặc chạy tay
+# với inputs.shots): chụp màn Monika trước/sau + bàn phím ảo J2ME ngang/dọc. Job này độc lập, không phải
+# cổng bắt buộc; các job cũ chỉ chạy khi workflow_dispatch.
 on:
   workflow_dispatch:
     inputs:
@@ -20,10 +23,24 @@ on:
         description: "Tag release (repo này) chứa rgss-arm64-v8a.zip để thử RPG Maker nhúng; để trống = bỏ qua ca RGSS"
         required: false
         default: ""
+      shots:
+        description: "V176: chụp ảnh trước/sau (Monika UI + bàn phím ảo J2ME)"
+        type: boolean
+        required: false
+        default: false
+  pull_request:
+    # V176: chỉ PR giao diện/trình chạy/J2ME mới cần ảnh; không bật cho mọi PR.
+    paths:
+      - "app/src/main/java/vn/aow/monika/runner/**"
+      - "app/src/main/java/vn/aow/monika/ui/**"
+      - "app/src/main/java/vn/aow/monika/library/**"
+      - "j2me/**"
+      - ".github/workflows/emulator-test.yml"
+      - "scripts/ci-ui-shots.sh"
 
 jobs:
   build:
-    if: ${{ !inputs.user_path_only }}
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.user_path_only }}
     runs-on: ubuntu-latest
     permissions: { contents: read }
     steps:
@@ -45,6 +62,7 @@ jobs:
 
   emulator:
     needs: build
+    if: ${{ github.event_name == 'workflow_dispatch' && !inputs.user_path_only }}
     runs-on: ubuntu-latest
     # Chỉ GET release/asset RGSS nháp đã có; contents:read đủ quyền.
     permissions: { contents: read }
@@ -149,7 +167,7 @@ jobs:
           echo "Xanh: mở app hai lần không crash trên API ${{ matrix.api }}."
 
   user-path:
-    if: ${{ inputs.user_path_only }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.user_path_only }}
     runs-on: ubuntu-latest
     # Chỉ GET asset draft đã có; không tạo/sửa/xóa release hoặc tag.
     permissions: { contents: read }
@@ -195,3 +213,54 @@ jobs:
           name: v33-user-path-api-34
           path: out/user-path/
           retention-days: 3
+
+  # V176: ảnh trước/sau cho PR giao diện — ĐÚNG 1 job, không matrix. Job độc lập (không job nào
+  # `needs` nó) nên máy ảo có chết cũng không chặn job khác; timeout cắt lượt treo.
+  shots:
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.shots) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v6
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Cài NDK cho J2ME Loader
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;22.1.7171670" "cmake;3.22.1" > /dev/null
+      - name: Build APK debug (không R8, đủ để chụp giao diện)
+        run: ./gradlew assembleDebug --console=plain
+      # Hỏng ngay tại đây nếu Gradle đổi tên tệp/flavor, thay vì lỗi mơ hồ ở bước chụp ảnh.
+      # APK debug nằm dưới thư mục flavor (app/build/outputs/apk/<flavor>/debug/), ưu tiên bản universal.
+      - name: Kiểm APK debug có thật sau khi build
+        run: |
+          apk=$(find app/build/outputs/apk -path '*/debug/*' -name '*-universal-debug.apk' ! -name '*androidTest*' 2>/dev/null | sort | head -n1)
+          [ -n "$apk" ] || apk=$(find app/build/outputs/apk -path '*/debug/*' -name '*.apk' ! -name '*androidTest*' 2>/dev/null | sort | head -n1)
+          test -n "$apk" || { echo "::error::Không thấy APK debug sau assembleDebug (flavor/tên tệp đã đổi?)"; find app/build/outputs/apk -name '*.apk' || true; exit 1; }
+          echo "APK dùng để chụp ảnh: $apk"
+      - name: Bật KVM (máy ảo chạy nhanh)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Chụp ảnh trước/sau trên máy ảo API 34
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
+          script: |
+            # Một lệnh duy nhất: action chạy mỗi dòng bằng `sh -c` riêng nên biến không sống qua dòng;
+            # script tự tìm APK debug (find, không phụ thuộc tên `app-universal-debug.apk`).
+            bash scripts/ci-ui-shots.sh out/anh-truoc-sau
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: anh-truoc-sau
+          # Ảnh + ghi chú/nhật ký; không kèm APK, game hay gói tải.
+          path: out/anh-truoc-sau/
+          # Máy ảo chết trước khi chụp thì không có ảnh — cảnh báo thay vì đỏ thêm lần nữa.
+          if-no-files-found: warn
+          retention-days: 7
