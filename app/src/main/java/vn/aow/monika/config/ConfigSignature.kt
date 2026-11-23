@@ -25,9 +25,21 @@ object ConfigSignature {
     private const val PUBLIC_KEY_HEX_LENGTH = 64
     private const val SIGNATURE_HEX_LENGTH = 128
 
-    /** true khi đã cấu hình khoá công khai hợp lệ (đúng 64 ký tự hex). */
+    /**
+     * Nạp khoá công khai Ed25519 (32 byte = 64 hex): cắt khoảng trắng đầu/cuối, từ chối chuỗi rỗng,
+     * sai độ dài, ký tự ngoài hex, hoặc khoá giả toàn byte 0 (`"00".repeat(32)`).
+     */
+    fun loadPublicKey(publicKeyHex: String = OFFICIAL_CONFIG_ED25519_PUBKEY_HEX): ByteArray? {
+        val clean = publicKeyHex.trim()
+        if (clean.length != PUBLIC_KEY_HEX_LENGTH) return null
+        val bytes = decodeHex(clean) ?: return null
+        if (bytes.all { it == 0.toByte() }) return null
+        return bytes
+    }
+
+    /** true khi đã cấu hình khoá công khai hợp lệ (đúng 64 ký tự hex, không phải toàn 0). */
     fun hasPublicKey(publicKeyHex: String = OFFICIAL_CONFIG_ED25519_PUBKEY_HEX): Boolean =
-        publicKeyHex.length == PUBLIC_KEY_HEX_LENGTH && decodeHex(publicKeyHex) != null
+        loadPublicKey(publicKeyHex) != null
 
     /**
      * true khi bản đang chạy **phải** có chữ ký hợp lệ.
@@ -35,15 +47,16 @@ object ConfigSignature {
      * Dùng [OfficialCert.isForeignBuild] (không có hàm `isOfficialBuild`): bản debug hoặc chứng thư lạ
      * (tự build GPLv3) trả false để người chơi tự build vẫn dùng được.
      *
-     * Bản thuần (không đụng Android) để test được cả nhánh fail-closed: truyền chứng thư + cờ debug
-     * trực tiếp thay vì đọc từ máy đang chạy.
+     * Khi `publicKeyHex` còn rỗng/trắng (chưa cấp khoá C10) trả false. Khi đã điền giá trị khác rỗng
+     * (kể cả điền nhầm định dạng hoặc toàn 0), bản chính thức trả true để **fail-closed** (không âm thầm
+     * hạ cấp về `config.json` chưa ký).
      */
     fun signatureRequired(
         certSha256: String,
         publicKeyHex: String = OFFICIAL_CONFIG_ED25519_PUBKEY_HEX,
         debugBuild: Boolean = BuildConfig.DEBUG,
     ): Boolean {
-        if (!hasPublicKey(publicKeyHex)) return false
+        if (publicKeyHex.isBlank()) return false
         if (debugBuild) return false
         return !OfficialCert.isForeignBuild(certSha256, SecurityConfig.OFFICIAL_CERT_SHA256, debugBuild = false)
     }
@@ -62,7 +75,7 @@ object ConfigSignature {
         signedText: String,
         publicKeyHex: String = OFFICIAL_CONFIG_ED25519_PUBKEY_HEX,
     ): String? {
-        if (!hasPublicKey(publicKeyHex)) return null
+        val publicKey = loadPublicKey(publicKeyHex) ?: return null
         val headerEnd = signedText.indexOf('\n')
         if (headerEnd <= 0) return null
         val header = signedText.substring(0, headerEnd)
@@ -70,7 +83,6 @@ object ConfigSignature {
         val signatureHex = header.substring(HEADER_PREFIX.length)
         if (signatureHex.length != SIGNATURE_HEX_LENGTH) return null
         val signature = decodeHex(signatureHex) ?: return null
-        val publicKey = decodeHex(publicKeyHex) ?: return null
         val payload = signedText.substring(headerEnd + 1).toByteArray(Charsets.UTF_8)
         if (payload.isEmpty()) return null
         return if (verify(payload, signature, publicKey)) String(payload, Charsets.UTF_8) else null

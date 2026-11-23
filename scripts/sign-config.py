@@ -66,6 +66,31 @@ def sign(config_path, out_path, seed):
     return signature
 
 
+def validate_pubkey_hex(raw):
+    clean = (raw or "").strip().lower()
+    if len(clean) != SEED_BYTES * 2:
+        raise SystemExit(f"Khoá công khai phải đúng {SEED_BYTES * 2} ký tự hex (nhận {len(clean)})")
+    try:
+        data = bytes.fromhex(clean)
+    except ValueError:
+        raise SystemExit("Khoá công khai không phải chuỗi hex hợp lệ")
+    if all(b == 0 for b in data):
+        raise SystemExit("Từ chối khoá công khai giả toàn byte 0")
+    return clean
+
+
+def set_kotlin_pubkey(kotlin_path, pubkey_hex):
+    import re
+    clean = validate_pubkey_hex(pubkey_hex)
+    text = kotlin_path.read_text(encoding="utf-8")
+    pattern = r'(const val OFFICIAL_CONFIG_ED25519_PUBKEY_HEX\s*=\s*")[0-9a-fA-F]*(")'
+    updated, count = re.subn(pattern, rf"\g<1>{clean}\2", text, count=1)
+    if count != 1:
+        raise SystemExit(f"Không tìm thấy hằng OFFICIAL_CONFIG_ED25519_PUBKEY_HEX trong {kotlin_path}")
+    kotlin_path.write_text(updated, encoding="utf-8")
+    print(f"Đã ghi OFFICIAL_CONFIG_ED25519_PUBKEY_HEX ({len(clean)} hex) vào {kotlin_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="config/monika-config.json")
@@ -75,7 +100,21 @@ def main():
         action="store_true",
         help="in khoá công khai (hex) suy ra từ secret rồi thoát",
     )
+    parser.add_argument(
+        "--set-pubkey",
+        metavar="PUB_HEX",
+        help="kiểm tra và điền khoá công khai 64 hex vào ConfigSignature.kt rồi thoát",
+    )
+    parser.add_argument(
+        "--kotlin-file",
+        default="app/src/main/java/vn/aow/monika/config/ConfigSignature.kt",
+        help="đường dẫn ConfigSignature.kt cho --set-pubkey",
+    )
     args = parser.parse_args()
+
+    if args.set_pubkey is not None:
+        set_kotlin_pubkey(pathlib.Path(args.kotlin_file), args.set_pubkey)
+        return 0
 
     seed = load_seed()
     if args.print_pubkey:

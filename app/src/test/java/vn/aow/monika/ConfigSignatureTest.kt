@@ -320,4 +320,49 @@ class ConfigSignatureTest {
         // Bản debug/tự build (GPLv3) không bị chặn khi thiếu chữ ký.
         assertFalse(ConfigSignature.signatureRequired(app, publicKeyHex))
     }
+
+    @Test fun loadPublicKeyChuanHoaKhoangTrangVaTuChoiKhoaRongHoacToanKhong() {
+        assertNull("chuỗi rỗng", ConfigSignature.loadPublicKey(""))
+        assertNull("chỉ khoảng trắng", ConfigSignature.loadPublicKey("   \n\t  "))
+        assertNull("khoá giả toàn 0", ConfigSignature.loadPublicKey("00".repeat(32)))
+        assertNull("thiếu 1 ký tự hex", ConfigSignature.loadPublicKey(publicKeyHex.dropLast(1)))
+        assertNull("ký tự ngoài hex", ConfigSignature.loadPublicKey("z" + publicKeyHex.drop(1)))
+        assertFalse(ConfigSignature.hasPublicKey("00".repeat(32)))
+
+        val paddedUpper = "  ${publicKeyHex.uppercase()}\n"
+        assertTrue(ConfigSignature.hasPublicKey(paddedUpper))
+        val json = config(11, "chuan-hoa")
+        assertEquals(json, ConfigSignature.verifyAndExtract(sign(json.toByteArray()), paddedUpper))
+    }
+
+    @Test fun batBuocChuKyKhiKhoaRongHoacHongThiFailClosedKhongTaiBanChuaKy() = runBlocking {
+        val official = SecurityConfig.OFFICIAL_CERT_SHA256
+        assertTrue(
+            "đã điền chuỗi khác rỗng (kể cả sai định dạng/toàn 0) trên bản chính thức ⇒ vẫn bắt buộc chữ ký để fail-closed",
+            ConfigSignature.signatureRequired(official, "00".repeat(32), debugBuild = false),
+        )
+        assertTrue(
+            ConfigSignature.signatureRequired(official, "khoa-sai-dinh-dang", debugBuild = false),
+        )
+
+        for (badKey in listOf("", "   ", "00".repeat(32), "khoa-sai-dinh-dang")) {
+            clearFiles()
+            requests.clear()
+            cache.writeText(config(bundled + 5, "cache-khong-dau"))
+            val repository = repo(
+                badKey,
+                mapOf(
+                    ConfigEndpoints.PAGES_CONFIG_URL to config(bundled + 10, "chua-ky"),
+                    ConfigEndpoints.PAGES_SIGNED_CONFIG_URL to sign(config(bundled + 10, "da-ky").toByteArray()),
+                    ConfigEndpoints.WORKER_CONFIG_URL to config(bundled + 10, "worker-chua-ky"),
+                    ConfigEndpoints.WORKER_SIGNED_CONFIG_URL to sign(config(bundled + 10, "worker-da-ky").toByteArray()),
+                ),
+                batBuocChuKy = true,
+            )
+            assertEquals("bắt buộc chữ ký + khoá rỗng/hỏng ⇒ bỏ cache không dấu", bundled, repository.current.configVersion)
+            assertTrue("bắt buộc chữ ký + khoá rỗng/hỏng ⇒ refresh phải fail-closed", repository.refresh(true).isFailure)
+            assertEquals("giữ nguyên bản đóng gói trong APK", bundled, repository.current.configVersion)
+            assertTrue("tuyệt đối không gọi mạng tải config chưa ký: $requests", requests.isEmpty())
+        }
+    }
 }

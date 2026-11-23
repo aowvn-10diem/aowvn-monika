@@ -68,11 +68,12 @@ class ConfigRepository(
     }
 
     /**
-     * true khi được dùng cache trên đĩa: chưa có khoá công khai (hành vi trước V206), hoặc cache khớp
-     * dấu sha256 của đúng bytes đã ghi ở lượt tải hợp lệ gần nhất.
+     * true khi được dùng cache trên đĩa: chưa có khoá công khai và không bắt buộc chữ ký (hành vi trước V206),
+     * hoặc cache khớp dấu sha256 của đúng bytes đã ghi ở lượt tải hợp lệ gần nhất.
      */
     private fun cacheTrusted(bytes: ByteArray): Boolean {
-        if (!ConfigSignature.hasPublicKey(configPublicKeyHex)) return true
+        val mandatory = requireSignature(context, configPublicKeyHex)
+        if (!ConfigSignature.hasPublicKey(configPublicKeyHex)) return !mandatory
         // diag: bỏ qua lỗi đọc dấu — thiếu/hỏng dấu thì coi như cache không đáng tin
         val marker = runCatching { markerFile.readText().trim() }.getOrNull()
         return marker != null && marker == Diagnostics.sha256Hex(bytes)
@@ -135,19 +136,25 @@ class ConfigRepository(
     }
 
     /**
-     * V206: ưu tiên bản đã ký nếu đã có khoá công khai (1 lượt GET). Chữ ký sai/thiếu tệp thì:
-     * - bản chính thức ([ConfigSignature.signatureRequired]) ⇒ ném lỗi để rơi sang nguồn dự phòng;
-     * - bản debug/tự build ⇒ đọc `config.json` như cũ.
-     * Chưa có khoá công khai ⇒ luôn đọc `config.json` (hành vi trước V206).
+     * V206: ưu tiên bản đã ký nếu đã có khoá công khai (1 lượt GET). Chữ ký sai/thiếu tệp hoặc khoá lỗi khi
+     * bắt buộc chữ ký ([ConfigSignature.signatureRequired]) ⇒ ném lỗi (fail-closed);
+     * bản debug/tự build hoặc khi chưa cấp khoá ⇒ đọc `config.json` như cũ.
      */
     private fun fetchConfig(plainUrl: String, signedUrl: String): String {
-        if (!ConfigSignature.hasPublicKey(configPublicKeyHex)) return fetchText(plainUrl)
+        val mandatory = requireSignature(context, configPublicKeyHex)
+        if (!ConfigSignature.hasPublicKey(configPublicKeyHex)) {
+            if (mandatory) {
+                Diagnostics.crumb(context, "config", "Bắt buộc chữ ký nhưng khoá công khai rỗng/hỏng, từ chối bản chưa ký")
+                error("Bắt buộc chữ ký cấu hình nhưng khoá công khai thiếu hoặc không hợp lệ")
+            }
+            return fetchText(plainUrl)
+        }
         // diag: bỏ qua lỗi tải bản đã ký, ngay sau đây quyết định theo chính sách
         val payload = runCatching { fetchText(signedUrl) }
             .getOrNull()
             ?.let { ConfigSignature.verifyAndExtract(it, configPublicKeyHex) }
         if (payload != null) return payload
-        if (requireSignature(context, configPublicKeyHex)) {
+        if (mandatory) {
             // Bản chính thức: không có chữ ký hợp lệ thì KHÔNG rơi về config.json chưa ký (fail-closed);
             // ném lỗi để tầng gọi thử nguồn dự phòng khác, cuối cùng giữ cấu hình đang chạy.
             Diagnostics.crumb(context, "config", "config.signed.json không hợp lệ, từ chối bản chưa ký")
