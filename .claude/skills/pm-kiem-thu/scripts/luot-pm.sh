@@ -27,7 +27,7 @@ SENSITIVE_RE='^(\.github/workflows/|\.github/CODEOWNERS|build\.gradle|app/build\
 
 # 1. PR: kết luận mới nhất trên đúng head + CI bắt buộc (build, coverage, n04-tests, analyze).
 for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user.login|test("dependabot")|not)|.number'); do
-  read -r sha draft mst base < <(gh api "repos/$R/pulls/$p" --jq '"\(.head.sha) \(.draft) \(.mergeable_state) \(.base.ref)"')
+  read -r sha draft mst base href < <(gh api "repos/$R/pulls/$p" --jq '"\(.head.sha) \(.draft) \(.mergeable_state) \(.base.ref) \(.head.ref)"')
   [ "$base" != "main" ] && { out+=("PMXEM #$p base=$base (không phải main: KHÔNG gộp)"); continue; }
   grep -qw "$p" "$GIU_FILE" 2>/dev/null && continue
   [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || continue
@@ -36,16 +36,21 @@ for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user
            gh api "repos/$R/issues/$p/comments?per_page=100" --jq ".[]|select(.body|test(\"${sha:0:7}\"))|[.created_at,(.body|gsub(\"\\n\";\" \"))]|@tsv"; } | sort)
   verdicts=$(echo "$raw" | grep -oE 'Kết luận:?\**:? *(Đạt|Cần sửa|Cần PM xem)' | sed -E 's/.*(Đạt|Cần sửa|Cần PM xem)/\1/')
   last=$(echo "$verdicts" | tail -1)
-  # Chuẩn hóa định danh người duyệt trên đúng head: phân biệt rõ lượt 1 ([Duyệt DeepSeek → PR]) và lượt 2 ([Duyệt lượt hai DeepSeek → PR]), Argon, PM.
+  # Chuẩn hóa định danh người duyệt trên đúng head ([A104]: Argon, Hydro, PM + tương thích ngược DeepSeek L1/L2, Luna).
+  REVIEWER_RE='^ *(\[Duyệt lượt hai DeepSeek[^]]*\]|\[Duyệt DeepSeek[^]]*\]|\[Argon duyệt[^]]*\]|\[Hydro duyệt[^]]*\]|\[PM duyệt[^]]*\]|Luna [0-9A-Za-z]+)'
   conlai=$(echo "$raw" | grep -E 'Kết luận:?\**:? *(Đạt|Cần sửa|Cần PM xem)' | cut -f2- \
-    | sed -E 's/^ *(\[Duyệt lượt hai DeepSeek[^]]*\]|\[Duyệt DeepSeek[^]]*\]|\[Argon duyệt[^]]*\]|\[PM duyệt[^]]*\]|Luna [0-9A-Za-z]+|\[[^]]+\]|.{0,24}).*Kết luận:?\**:? *(Đạt|Cần sửa|Cần PM xem).*/\1\t\2/' \
+    | sed -E "s/${REVIEWER_RE}.*Kết luận:?\**:? *(Đạt|Cần sửa|Cần PM xem).*/\1\t\2/;t;s/^ *(\[[^]]+\]|.{0,24}).*Kết luận:?\**:? *(Đạt|Cần sửa|Cần PM xem).*/\1\t\2/" \
     | awk -F'\t' '{v[$1]=$2} END{for(k in v) if(v[k]!="Đạt") print k"="v[k]}' | paste -sd, -)
   [ -n "$conlai" ] && [ "$last" = "Đạt" ] && last="Cần sửa"
   files=$(gh api "repos/$R/pulls/$p/files?per_page=100" --jq '.[].filename')
   need=1; echo "$files" | grep -qvE '^(docs/|.*\.md$)' && need=2
+  # [A104] Không tự duyệt PR của chính mình (nhánh argon/* bỏ phiếu Argon, nhánh hydro/* bỏ phiếu Hydro).
+  self_re='^$'
+  [[ "$href" == argon/* ]] && self_re='^\[Argon duyệt'
+  [[ "$href" == hydro/* ]] && self_re='^\[Hydro duyệt'
   dat=$(echo "$raw" | grep -E 'Kết luận:?\**:? *Đạt' | cut -f2- \
-    | grep -oE '^ *(\[Duyệt lượt hai DeepSeek[^]]*\]|\[Duyệt DeepSeek[^]]*\]|\[Argon duyệt[^]]*\]|\[PM duyệt[^]]*\]|Luna [0-9A-Za-z]+)' \
-    | sed -E 's/ +$//' | sort -u | grep -c .)
+    | grep -oE "$REVIEWER_RE" \
+    | sed -E 's/^ +//; s/ +$//' | grep -vE "$self_re" | sort -u | grep -c .)
   if [ "$last" = "Cần PM xem" ]; then out+=("PMXEM #$p"); continue; fi
   echo "$ci" | grep -qE 'failure|cancelled|chay' && continue
   if [ "$last" = "Đạt" ] && [ "$dat" -ge "$need" ]; then
@@ -66,13 +71,13 @@ for p in $(gh api "repos/$R/pulls?state=open&per_page=50" --jq '.[]|select(.user
     fi
     continue
   fi
-  # Kẹt im lặng > 24h: nhắc đúng lượt duyệt còn thiếu (Duyet_L1 hoặc Duyet_L2).
+  # Kẹt im lặng > 24h: nhắc đúng lượt duyệt còn thiếu.
   if [ "$last" = "Đạt" ] && [ "$dat" -lt "$need" ]; then
     hage=$(( ( $(date -u +%s) - $(date -u -d "$(gh api "repos/$R/commits/$sha" --jq .commit.committer.date)" +%s) ) / 3600 ))
     if [ "$hage" -ge 24 ]; then
       dat_by=$(echo "$raw" | grep -E 'Kết luận:?\**:? *Đạt')
       miss=""
-      echo "$dat_by" | grep -q '\[Duyệt DeepSeek' || miss="Duyet_L1"
+      echo "$dat_by" | grep -qE '\[Duyệt DeepSeek|\[Hydro duyệt' || miss="Duyet_L1"
       echo "$dat_by" | grep -qE '\[Duyệt lượt hai DeepSeek|\[Argon duyệt|\[PM duyệt' || miss="${miss:+$miss+}Duyet_L2"
       out+=("CHO #$p ${sha:0:7} thieu-Dat ${miss:-Duyet_L2} tuoi=${hage}h")
     fi
@@ -90,13 +95,13 @@ if [ "$ahead" -gt 0 ] && [ "$age_h" -ge 44 ] && [ "${appchg:-0}" -gt 0 ]; then o
 elif [ "$pre" = "true" ] && [ "$age_h" -ge 24 ] && [ "$dl" -ge 3 ]; then out+=("TAU len-on-dinh $tag tai=$dl tuoi=${age_h}h (dùng promote-release.yml V209)")
 fi
 
-# 3. Hộp thư #337 (OpenCode Thi công / Duyệt / Lỗi + Argon gửi PM):
+# 3. Hộp thư #337 (Sonnet / Argon / Hydro / OpenCode gửi PM):
 #    Lọc bỏ nhịp tim thuần túy ("nhịp:" không kèm CẦN PM / CHẶN / Xong / Đề xuất) và in kèm 120 ký tự đầu để PM không phải gọi API đọc lại toàn bộ comment.
 since337=$(python3 -c "import json,time;print(json.load(open('$STATE')).get('mail337',time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime(time.time()-2*3600))))")
 rows337=""
 for pg in 1 2 3 4 5; do
   page=$(gh api "repos/$R/issues/337/comments?since=$since337&per_page=100&page=$pg" \
-    --jq ".[]|select(.created_at>\"$since337\")|select(.body|test(\"^\\\\[(Trưởng nhóm |Argon|DeepSeek)[^\\\\]]*→ *PM\\\\]\"))|select((.body|test(\"nhịp:\") and ((.body|test(\"CẦN PM|CHẶN|Xong|Đề xuất|DỪNG\";\"i\"))|not))|not)|\"\(.created_at) \(.html_url) | \(.body|gsub(\"[\\r\\n]+\";\" \")|.[0:120])\"" 2>/dev/null)
+    --jq ".[]|select(.created_at>\"$since337\")|select(.body|test(\"^\\\\[(Trưởng nhóm |Argon|Hydro|Sonnet|DeepSeek)[^\\\\]]*→ *PM\\\\]\"))|select((.body|test(\"nhịp:\") and ((.body|test(\"CẦN PM|CHẶN|Xong|Đề xuất|DỪNG\";\"i\"))|not))|not)|\"\(.created_at) \(.html_url) | \(.body|gsub(\"[\\r\\n]+\";\" \")|.[0:120])\"" 2>/dev/null)
   rows337+="${page:+$page$'\n'}"
   [ "$(gh api "repos/$R/issues/337/comments?since=$since337&per_page=100&page=$pg" --jq length 2>/dev/null || echo 0)" -lt 100 ] && break
 done

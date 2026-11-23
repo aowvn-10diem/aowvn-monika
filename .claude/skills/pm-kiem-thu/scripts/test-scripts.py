@@ -78,4 +78,10 @@ r.append(ok(b('task', 'V1', '--status', 'dang').returncode == 0, 'status hợp l
 x = b('task', 'V1', '--status', 'hoan-thanh'); r.append(ok(x.returncode != 0 and json.load(open(st))['tasks'][0]['status'] == 'dang', 'status sai bị từ chối, không ghi'))
 r.append(ok(b('module', 'm', 'build', 'xong').returncode == 0, 'bước module hợp lệ'))
 r.append(ok(b('module', 'm', 'build', 'lung-tung').returncode != 0 and json.load(open(st))['modules'][0]['steps']['build'] == 'xong', 'trạng thái bước sai bị từ chối'))
+
+luot_sh = os.path.join(D, 'luot-pm.sh')
+r.append(ok(subprocess.run(['bash', '-n', luot_sh]).returncode == 0, 'luot-pm.sh cú pháp bash hợp lệ'))
+luot_src = open(luot_sh, encoding='utf-8').read()
+r.append(ok('[Hydro duyệt' in luot_src and 'argon/*' in luot_src and 'hydro/*' in luot_src, 'luot-pm.sh hỗ trợ cổng gộp A104 và chặn tự duyệt'))
+r.append(ok('GOP-SAFE' in luot_src and 'GOP-NHAYCAM' in luot_src and 'Hydro|Sonnet' in luot_src, 'luot-pm.sh tách GOP-SAFE/GOP-NHAYCAM và hộp thư Sonnet/Hydro'))
 sys.exit(0 if all(r) else 1)
