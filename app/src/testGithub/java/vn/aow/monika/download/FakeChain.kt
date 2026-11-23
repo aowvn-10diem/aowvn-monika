@@ -17,9 +17,13 @@ import java.util.concurrent.TimeUnit
  * [proceeded] == null nghĩa là guard đã chặn trước khi request ra ngoài.
  * [origin] mô phỏng request gốc của cả chuỗi redirect (`Call.request()`).
  */
-internal class FakeChain(url: String, origin: String = url) : Interceptor.Chain {
+internal class FakeChain(
+    url: String,
+    origin: String = url,
+    sharedCall: Call? = null,
+) : Interceptor.Chain {
     private val urlText = url
-    private val call = OkHttpClient().newCall(Request.Builder().url(origin.toHttpUrl()).build())
+    private val call = sharedCall ?: OkHttpClient().newCall(Request.Builder().url(origin.toHttpUrl()).build())
     var proceeded: HttpUrl? = null
 
     override fun request(): Request = Request.Builder().url(urlText.toHttpUrl()).build()
