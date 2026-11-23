@@ -123,8 +123,9 @@ fi
 # 4b. Canh đội thi công (sếp 01/11): trong 7–23 giờ VN, đội im (không push nhánh, không comment) ≥ 2 giờ → DUNG.
 #     1 lượt gọi /activity + 1 lượt đọc comment mỗi hộp thư; nhãn giữ nguyên "tu=" nên chống lặp 12 giờ vẫn chặn báo trùng.
 h_vn=$(TZ=Asia/Ho_Chi_Minh date +%-H)
+NGHI_OPENCODE_DEN="2026-11-30T17:00:00Z"   # [A104] 23/11 sếp: hạn mức OpenCode hết tới 01/12 VN → không canh DUNG đội OpenCode
 TANG_CUONG_DEN="2026-11-02T00:00:00Z"   # đêm tăng cường (sếp 01/11): canh cả 0–7 giờ VN tới mốc này
-if { [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; } || [ "$(date -u +%s)" -lt "$(date -u -d "$TANG_CUONG_DEN" +%s)" ]; then
+if [ "$(date -u +%s)" -ge "$(date -u -d "$NGHI_OPENCODE_DEN" +%s)" ] && { { [ "$h_vn" -ge 7 ] && [ "$h_vn" -le 23 ]; } || [ "$(date -u +%s)" -lt "$(date -u -d "$TANG_CUONG_DEN" +%s)" ]; }; then
   act=$(gh api "repos/$R/activity?per_page=100" --jq '.[]|"\(.ref) \(.timestamp)"' 2>/dev/null)
   since=$(date -u -d '-24 hours' +%FT%TZ)
   # Đọc comment toàn repo 1 lượt (mới nhất trước): đội có thể báo ở hộp thư khác hoặc trên PR (Sol 2 báo #337, DeepSeek báo trên PR).
