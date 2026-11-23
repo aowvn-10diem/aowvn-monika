@@ -20,7 +20,9 @@ jobs:
           persist-credentials: false
       - name: Chặn handler nuốt lỗi mới (V113, offline)
         env:
-          DIAG_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          # Trên nhánh phụ (ref != refs/heads/main), luôn so với merge-base của origin/main (0000..00)
+          # để push và pull_request cùng một gốc so sánh, không vỡ khi rebase/force-push (#656) và không lọt lỗi ở commit thứ 2.
+          DIAG_BASE: ${{ github.event.pull_request.base.sha || (github.ref == 'refs/heads/main' && github.event.before) || '0000000000000000000000000000000000000000' }}
           DIAG_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
           DIAG_EVENT: ${{ github.event_name }}
         run: |

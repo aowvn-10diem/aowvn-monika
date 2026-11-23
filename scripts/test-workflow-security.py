@@ -599,6 +599,13 @@ class WorkflowSecurityTest(unittest.TestCase):
         self.assertFalse(job_has_repository_guard(unguarded["jobs"]["a"]))
         self.assertFalse(has_write_permission(read_only["permissions"]))
 
+    def test_v113_push_on_feature_branch_compares_against_main_merge_base(self):
+        build_yml = (WORKFLOWS_DIR / "build.yml").read_text(encoding="utf-8")
+        self.assertIn(
+            "(github.ref == 'refs/heads/main' && github.event.before) || '0000000000000000000000000000000000000000'",
+            build_yml,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
