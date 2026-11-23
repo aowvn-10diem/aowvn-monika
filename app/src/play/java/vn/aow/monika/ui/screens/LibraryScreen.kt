@@ -57,8 +57,8 @@ import vn.aow.monika.runner.LaunchResult
 import vn.aow.monika.ui.theme.ChipBar
 import vn.aow.monika.ui.theme.CircleButton
 import vn.aow.monika.ui.theme.DarkButton
-import vn.aow.monika.ui.theme.DockClearance
 import vn.aow.monika.ui.theme.EmptyState
+import vn.aow.monika.ui.theme.dockContentClearance
 import vn.aow.monika.ui.theme.GradientButton
 import vn.aow.monika.ui.theme.Monika
 import vn.aow.monika.ui.theme.MonikaCard
@@ -264,7 +264,9 @@ fun LibraryScreen(onSettings: () -> Unit) {
         }
         if (section == LibrarySection.PLAY) LazyVerticalGrid(
             GridCells.Fixed(2), Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = DockClearance),
+            // V152 (targetSdk 36, edge-to-edge bắt buộc): giống bản github — cộng inset thanh điều hướng
+            // vào khoảng chừa của menu nổi để hàng cuối của tab "Chơi" không bị che.
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = dockContentClearance()),
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // Game của lần cài trước chưa đọc được → mời chọn lại tệp (bản Play không xin quyền bộ nhớ).

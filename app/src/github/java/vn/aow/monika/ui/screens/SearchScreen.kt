@@ -62,7 +62,6 @@ import vn.aow.monika.feed.Post
 import vn.aow.monika.feed.Thumbs
 import vn.aow.monika.library.Game
 import vn.aow.monika.library.GameMeta
-import vn.aow.monika.ui.theme.DockClearance
 import vn.aow.monika.ui.theme.Monika
 import vn.aow.monika.ui.theme.Radius
 import vn.aow.monika.ui.theme.Screen
@@ -121,7 +120,9 @@ fun SearchScreen(onOpenPost: (Post) -> Unit, onOpenLibrary: () -> Unit) {
     }
 
     Screen {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = DockClearance)) {
+        // V152 (targetSdk 36, edge-to-edge bắt buộc): cộng phần thanh hệ thống dưới vào khoảng chừa của menu nổi.
+        val bottomClearance = vn.aow.monika.ui.theme.dockContentClearance()
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomClearance)) {
             item {
                 Column(Modifier.fillMaxWidth().statusBarsPadding().padding(16.dp)) {
                     Text("Tìm kiếm", style = Monika.type.pageTitle, color = c.text)

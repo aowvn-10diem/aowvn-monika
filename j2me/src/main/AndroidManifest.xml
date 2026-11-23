@@ -44,11 +44,15 @@
             android:name=".config.ConfigActivity"
             android:exported="true"
             android:windowSoftInputMode="stateHidden" />
+        <!-- [V152] Back của midlet vẫn đi key event (ánh xạ về phím menu/KEY_OPTIONS_MENU) nên chỉ
+             activity này opt-out predictive back; Android 16 vẫn giao KEYCODE_BACK. Thêm density/
+             layoutDirection/navigation để đổi kiểu điều hướng, mật độ màn hình không dựng lại midlet. -->
         <activity
             android:name="javax.microedition.shell.MicroActivity"
+            android:enableOnBackInvokedCallback="false"
             android:exported="false"
             android:theme="@style/AppTheme.NoActionBar"
-            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize|uiMode"
+            android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize|uiMode|density|layoutDirection|navigation"
             android:process=":midlet" />
         <activity
             android:theme="@style/AppTheme" android:name=".settings.SettingsActivity"

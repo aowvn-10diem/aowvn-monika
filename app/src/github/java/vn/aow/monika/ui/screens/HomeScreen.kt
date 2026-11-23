@@ -56,7 +56,6 @@ import vn.aow.monika.R
 import vn.aow.monika.feed.Post
 import vn.aow.monika.ui.Routes
 import vn.aow.monika.ui.theme.CircleButton
-import vn.aow.monika.ui.theme.DockClearance
 import vn.aow.monika.ui.theme.EmptyState
 import vn.aow.monika.ui.theme.GradientButton
 import vn.aow.monika.ui.theme.Monika
