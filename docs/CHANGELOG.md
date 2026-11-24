@@ -7,6 +7,7 @@ Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản
 > Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
 
 - Nội bộ: báo cáo lỗi giữ được thông tin khi app bị treo rồi mở lại ngay, và dữ liệu chẩn đoán cũ được dọn gọn ([#698](https://github.com/aowvn-10diem/aowvn-monika/pull/698)).
+- Nội bộ: bản chính thức sẽ chỉ nhận thiết lập mới tải về khi chắc chắn do nhóm phát hành gửi, giúp tránh bị đổi thiết lập trái phép ([#700](https://github.com/aowvn-10diem/aowvn-monika/pull/700), [#706](https://github.com/aowvn-10diem/aowvn-monika/pull/706)).
 
 ## [v0.8.16](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.16) (Bản ổn định)
 <!-- bien-tap: v0.8.16 -->
