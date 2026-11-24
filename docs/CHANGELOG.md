@@ -2,9 +2,16 @@
 
 Các thay đổi chính người dùng thấy được, từ v0.6.0 đến bản mới nhất. Mỗi mục liên kết tới tag phát hành; từng gạch đầu dòng dẫn tới commit làm thay đổi đó.
 
-## v0.8.16 (Bản thử)
+## v0.8.17 (Bản thử)
+<!-- bien-tap: v0.8.17 -->
+> Phát hành ngày (sẽ điền khi cắt tag) (UTC), bản thử nghiệm.
+
+- Nội bộ: báo cáo lỗi giữ được thông tin khi app bị treo rồi mở lại ngay, và dữ liệu chẩn đoán cũ được dọn gọn ([#698](https://github.com/aowvn-10diem/aowvn-monika/pull/698)).
+- Nội bộ: bản chính thức sẽ chỉ nhận thiết lập mới tải về khi chắc chắn do nhóm phát hành gửi, giúp tránh bị đổi thiết lập trái phép ([#700](https://github.com/aowvn-10diem/aowvn-monika/pull/700), [#706](https://github.com/aowvn-10diem/aowvn-monika/pull/706)).
+
+## [v0.8.16](https://github.com/aowvn-10diem/aowvn-monika/releases/tag/v0.8.16) (Bản ổn định)
 <!-- bien-tap: v0.8.16 -->
-> Phát hành ngày 21/11/2026 (UTC), bản thử nghiệm.
+> Phát hành ngày 21/11/2026 (UTC) dạng bản thử; lên bản ổn định ngày 22/11/2026 (UTC).
 
 - **Sửa lỗi:** Chơi game Nintendo DS: tệp game hỏng thì app báo rõ, không còn hiện "mã lỗi 1". ([#693](https://github.com/aowvn-10diem/aowvn-monika/pull/693))
 - **Sửa lỗi:** Mở game bị lỗi thì thông báo dễ hiểu hơn: nêu mã lỗi và bước đang chạy. ([#686](https://github.com/aowvn-10diem/aowvn-monika/pull/686))
