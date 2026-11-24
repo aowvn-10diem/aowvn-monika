@@ -47,7 +47,7 @@ class ConfigPagesFallbackTest {
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1)
                 .code(code).message(if (code == 200) "OK" else "Lỗi")
                 .body(text.toResponseBody("application/json".toMediaType())).build()
-        }.build())
+        }.build(), configPublicKeyHex = "")
 
     @Before fun clean() {
         calls.clear()

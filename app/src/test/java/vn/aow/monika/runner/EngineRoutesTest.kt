@@ -53,12 +53,12 @@ class EngineRoutesTest {
 
     /** Máy giả với ABI [abi] ("arm64" hoặc "arm" = thư mục thư viện native) và các gói [modules] trong config. */
     private fun device(abi: String, vararg modules: String) {
-        val base = ConfigRepository(app, OkHttpClient()).current.configVersion
+        val base = ConfigRepository(app, OkHttpClient(), configPublicKeyHex = "").current.configVersion
         File(app.filesDir, ConfigRepository.ASSET_NAME)
             .writeText("""{"configVersion":$base,"modules":{${modules.joinToString(",")}}}""")
         app.applicationInfo.nativeLibraryDir = "/fake/$abi"
         ReflectionHelpers.setStaticField(Build::class.java, "SUPPORTED_ABIS", arrayOf(if (abi == "arm64") "arm64-v8a" else "armeabi-v7a"))
-        val packs = SimpleModule(app, OkHttpClient(), ConfigRepository(app, OkHttpClient()))
+        val packs = SimpleModule(app, OkHttpClient(), ConfigRepository(app, OkHttpClient(), configPublicKeyHex = ""))
         ReflectionHelpers.setField(lazyPacks, "_value", packs)
         ReflectionHelpers.setField(lazyPacks, "initializer", null)
     }
@@ -114,7 +114,7 @@ class EngineRoutesTest {
 
     @Test fun productionConfigRoutesRgssToEmbeddedWithJoiplayFallback() {
         File(app.filesDir, ConfigRepository.ASSET_NAME).delete()
-        val cfg = ConfigRepository(app, OkHttpClient()).current
+        val cfg = ConfigRepository(app, OkHttpClient(), configPublicKeyHex = "").current
         val system = cfg.systems.first { it.id == "rgss" }
         assertEquals("rgss", system.engine)
         assertTrue("JoiPlay vẫn là đường dự phòng", system.allowExternalApp)

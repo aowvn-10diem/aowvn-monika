@@ -68,9 +68,9 @@ class ModuleInstallTest {
             .body(if (failNetwork) interruptedBody() else archive.toResponseBody()).build()
     }.build()
     private fun config(id: String, expected: String): ConfigRepository {
-        val base = ConfigRepository(app, OkHttpClient()).current.configVersion
+        val base = ConfigRepository(app, OkHttpClient(), configPublicKeyHex = "").current.configVersion
         File(app.filesDir, ConfigRepository.ASSET_NAME).writeText("""{"configVersion":$base,"modules":{"$id":{"version":"2","url":"https://buildbot.libretro.com/pack.zip","abis":["arm64-v8a"],"sha256":"$expected"}}}""")
-        return ConfigRepository(app, OkHttpClient())
+        return ConfigRepository(app, OkHttpClient(), configPublicKeyHex = "")
     }
     private fun old(dir: File, main: String) { File(dir, main).apply { parentFile!!.mkdirs(); writeText("old-good") }; File(dir, "version").writeText("1") }
     private fun assertOld(dir: File, main: String) { assertEquals("old-good", File(dir, main).readText()); assertEquals("1", File(dir, "version").readText()) }
