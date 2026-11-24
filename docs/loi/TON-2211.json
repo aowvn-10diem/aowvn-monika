@@ -91,7 +91,7 @@
         "luot": 0,
         "tao": "2026-11-08",
         "cap_nhat": "2026-11-13",
-        "vi_sao_mo": "Issue theo dõi lowmem/killed, không có khối aow-crash-v100; ba comment đều kết luận số cộng dồn chứ không phải tái diễn mạnh",
+        "vi_sao_mo": "Issue theo dõi lowmem/killed, không có khối aow-crash-v100; 3 comment đều kết luận số cộng dồn chứ không phải tái diễn mạnh",
         "can_de_dong": "Bằng chứng đo RAM thật + quyết định có chấp nhận unload_game/chụp state ở tiến trình :game hay không"
       }
     ],
