@@ -226,6 +226,15 @@ class ConfigSignatureTest {
         )
     }
 
+    @Test fun khoaCongKhaiTrongApkLa64HexVaKhongToanKhong() {
+        val key = ConfigSignature.OFFICIAL_CONFIG_ED25519_PUBKEY_HEX
+        assertEquals("khoá công khai phải đúng 64 ký tự", 64, key.length)
+        assertTrue("khoá công khai phải là hex", key.all { Character.digit(it, 16) >= 0 })
+        assertFalse("khoá công khai không được toàn 0", key.all { it == '0' })
+        assertTrue("loadPublicKey nạp được khoá mặc định", ConfigSignature.hasPublicKey())
+        assertEquals(32, ConfigSignature.loadPublicKey()?.size)
+    }
+
     @Test fun chuKySaiOMBanChinhThucThiBaoLoiKhongTaiBanChuaKy() = runBlocking {
         val repository = repo(
             publicKeyHex,
