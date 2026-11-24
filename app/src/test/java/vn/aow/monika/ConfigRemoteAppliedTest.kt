@@ -30,7 +30,7 @@ class ConfigRemoteAppliedTest {
     private fun repo() = ConfigRepository(app, OkHttpClient.Builder().addInterceptor { chain ->
         Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
             .body(reply.toResponseBody("application/json".toMediaType())).build()
-    }.build())
+    }.build(), configPublicKeyHex = "")
     private fun valid(version: Int) = """{"configVersion":$version,"feed":{"url":"https://example.test/feed"}}"""
 
     @Before fun clean() {

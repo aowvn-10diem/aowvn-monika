@@ -43,10 +43,10 @@ class CorePinTest {
             .body(payload.toResponseBody()).build()
     }.build()
     private fun cfg(version: String, expected: String, abi: String = "arm64-v8a", pinned: Boolean = true): ConfigRepository {
-        val base = ConfigRepository(app, OkHttpClient()).current.configVersion
+        val base = ConfigRepository(app, OkHttpClient(), configPublicKeyHex = "").current.configVersion
         val artifacts = if (pinned) """, "artifacts":{"$abi":{"url":"https://buildbot.libretro.com/$version-$abi.zip","sha256":"$expected","version":"$version"}}""" else ""
         File(app.filesDir, ConfigRepository.ASSET_NAME).writeText("""{"configVersion":$base,"cores":{"gambatte":{"version":"legacy","url":"https://buildbot.libretro.com/latest/{abi}.zip","abis":["arm64-v8a","armeabi-v7a"]$artifacts}}}""")
-        return ConfigRepository(app, OkHttpClient())
+        return ConfigRepository(app, OkHttpClient(), configPublicKeyHex = "")
     }
     private val dir get() = File(app.filesDir, "cores/gambatte")
     private val main get() = File(dir, "gambatte_libretro_android.so")
@@ -104,7 +104,7 @@ class CorePinTest {
     @Test fun bundledPspPinsRejectChangedZipAndPreserveLegacyCoreForBothArms() = runBlocking { onMain {
         val previousDir = app.applicationInfo.nativeLibraryDir
         try {
-            val config = ConfigRepository(app, OkHttpClient())
+            val config = ConfigRepository(app, OkHttpClient(), configPublicKeyHex = "")
             val psp = File(app.filesDir, "cores/ppsspp").apply { mkdirs() }
             val library = File(psp, "ppsspp_libretro_android.so").apply { writeText("old-psp") }
             File(psp, "version").writeText("1")

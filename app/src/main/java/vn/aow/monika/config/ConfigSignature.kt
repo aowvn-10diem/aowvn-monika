@@ -19,7 +19,7 @@ import vn.aow.monika.security.OfficialCert
  */
 object ConfigSignature {
     /** Khoá công khai Ed25519 (32 byte = 64 hex) của kênh config; điền ở bước tạo khoá. */
-    const val OFFICIAL_CONFIG_ED25519_PUBKEY_HEX = ""
+    const val OFFICIAL_CONFIG_ED25519_PUBKEY_HEX = "76e56eb5db325fdc43c02344c67276abb004861b0aaf0275b0a3d9ac2e063a7c"
 
     private const val HEADER_PREFIX = "v1:"
     private const val PUBLIC_KEY_HEX_LENGTH = 64
