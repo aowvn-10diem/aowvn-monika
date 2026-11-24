@@ -1,0 +1,215 @@
+{
+  "schema": "aowvn-monika/ton-chien-dich@1",
+  "repo": "aowvn-10diem/aowvn-monika",
+  "nhanh": "loi/bang-ton-2211",
+  "nen": "origin/main 76e07036",
+  "configVersion": 67,
+  "app": "0.8.16",
+  "chot": "2026-11-22",
+  "gio_utc": "13:01",
+  "nguon": "gh api --paginate repos/aowvn-10diem/aowvn-monika/issues?state=all (129 issue sau khi bỏ 568 mục có trường pull_request)",
+  "nguon_trang_thai": "gh api --paginate repos/.../issues/comments?since=2026-11-18 (431 comment); gh api repos/.../compare/<sha>...main cho từng PR được nêu; gh release list; gh issue view <n> --json comments; config/monika-config.json@76e07036",
+  "noi_tiep": "docs/loi/TON-1911.md (bảng chốt này thay thế; không sửa TON-1811.* và TON-1911.*)",
+  "tong": {
+    "issue_mo": 10,
+    "nhan_crash_mo": 2,
+    "khong_nhan": 8,
+    "co_khoi_mo": 1,
+    "tong_luot_mo": 13,
+    "dong_chien_dich": 73,
+    "dong_crash_moi": 72,
+    "dong_ban_va": 60,
+    "dong_thieu_du_lieu": 13,
+    "issue_moi": 0,
+    "crash_moi_moi_nhat": "2026-11-12"
+  },
+  "so_sanh_1911": {
+    "issue_mo": [59, 10],
+    "nhan_crash": [51, 2],
+    "khong_nhan": [8, 8],
+    "co_khoi": [50, 1],
+    "tong_luot": [792, 13]
+  },
+  "dong_theo_ngay": [
+    {
+      "ngay": "2026-11-19",
+      "dong": 23,
+      "completed": 23,
+      "not_planned": 0,
+      "lo": 1,
+      "gio": ["06:45-06:47"]
+    },
+    {
+      "ngay": "2026-11-20",
+      "dong": 27,
+      "completed": 27,
+      "not_planned": 0,
+      "lo": 1,
+      "gio": ["06:16-06:19"]
+    },
+    {
+      "ngay": "2026-11-21",
+      "dong": 5,
+      "completed": 0,
+      "not_planned": 5,
+      "lo": 1,
+      "gio": ["02:45"],
+      "issues": [397, 416, 513, 378, 482]
+    },
+    {
+      "ngay": "2026-11-22",
+      "dong": 18,
+      "completed": 10,
+      "not_planned": 8,
+      "lo": 4,
+      "gio": ["00:45", "01:15", "06:15", "11:45"],
+      "issues": [463, 368, 418, 464, 465, 613, 403, 448, 563, 302, 534, 419, 415, 414, 413, 399, 398, 567]
+    }
+  ],
+  "moc_doi_chieu": {
+    "20/11 dong 27": "khớp",
+    "21/11 dong 5": "khớp",
+    "22/11 dong 9": "khớp lô cuối 11:45Z; cả ngày là 18 (thêm 1 + 5 + 3)",
+    "19/11 dong 1": "KHÔNG tái lập: ngày 19/11 đóng 23 issue trong một lô 06:45-06:47Z"
+  },
+  "con_mo": {
+    "crash": [
+      {
+        "number": 385,
+        "loi": "kirikiroid2-yuri",
+        "loai": "native",
+        "luot": 13,
+        "tao": "2026-10-30",
+        "cap_nhat": "2026-11-19",
+        "vi_sao_mo": "Điều kiện kỹ thuật đã đủ (lõi ghim kirikiri.version = 6e61ce3-aow3 + sha256; release engines-kirikiroid-16 có symbols-kirikiroid-16-arm64-v8a.zip) nhưng phiên không có token nên chưa lấy được 3 khung đầu",
+        "can_de_dong": "CRASH_ADMIN_TOKEN + một lần chạy scripts/crash-reports.sh với --symbols-dir và --symbolizer"
+      },
+      {
+        "number": 549,
+        "loi": null,
+        "loai": null,
+        "luot": 0,
+        "tao": "2026-11-08",
+        "cap_nhat": "2026-11-13",
+        "vi_sao_mo": "Issue theo dõi lowmem/killed, không có khối aow-crash-v100; 3 comment đều kết luận số cộng dồn chứ không phải tái diễn mạnh",
+        "can_de_dong": "Bằng chứng đo RAM thật + quyết định có chấp nhận unload_game/chụp state ở tiến trình :game hay không"
+      }
+    ],
+    "khong_nhan": [
+      {"number": 507, "vai_tro": "bảng tiến độ, 0 comment", "tao": "2026-11-05", "cap_nhat": "2026-11-22", "can_de_dong": "PM chốt đóng/niêm phong khi chiến dịch kết thúc"},
+      {"number": 337, "vai_tro": "hộp thư PM ↔ DeepSeek, 544 comment", "tao": "2026-10-23", "cap_nhat": "2026-11-22", "can_de_dong": "Chuyển sang kênh mới rồi niêm phong"},
+      {"number": 119, "vai_tro": "hộp thư PM ↔ Luna Ultra, 1239 comment", "tao": "2026-10-08", "cap_nhat": "2026-11-20", "can_de_dong": "Chuyển sang kênh mới rồi niêm phong"},
+      {"number": 90, "vai_tro": "hộp thư PM ↔ Nova, 132 comment, im từ 09/11", "tao": "2026-10-06", "cap_nhat": "2026-11-09", "can_de_dong": "PM xác nhận đã ngưng rồi đóng"},
+      {"number": 94, "vai_tro": "hộp thư PM ↔ Haiku, 112 comment, im từ 08/11", "tao": "2026-10-06", "cap_nhat": "2026-11-08", "can_de_dong": "PM xác nhận đã ngưng rồi đóng"},
+      {"number": 120, "vai_tro": "hộp thư PM ↔ Haiku-2, 59 comment, im từ 13/10", "tao": "2026-10-08", "cap_nhat": "2026-10-13", "can_de_dong": "PM xác nhận đã ngưng rồi đóng"},
+      {"number": 339, "vai_tro": "hộp thư PM ↔ Cố vấn, 1 comment", "tao": "2026-10-24", "cap_nhat": "2026-11-02", "can_de_dong": "PM xác nhận đã ngưng rồi đóng"},
+      {"number": 65, "vai_tro": "điều phối tạm thời đã hết hiệu lực 05/10, 30 comment", "tao": "2026-10-04", "cap_nhat": "2026-10-05", "can_de_dong": "PM đóng vì hết hiệu lực"}
+    ]
+  },
+  "dong_theo_ban": [
+    {
+      "ban": "0.8.13",
+      "phat_hanh": "2026-11-13T08:46Z",
+      "so_issue": 20,
+      "ban_va": 20,
+      "thieu_du_lieu": 0,
+      "pr": [
+        {"so": 606, "so_issue": 20, "vai_tro": "bản vá"},
+        {"so": 619, "so_issue": 20, "vai_tro": "bản vá"},
+        {"so": 656, "so_issue": 20, "vai_tro": "chặng đo"},
+        {"so": 666, "so_issue": 20, "vai_tro": "chặng đo"}
+      ]
+    },
+    {
+      "ban": "0.8.14",
+      "phat_hanh": "2026-11-17T00:49Z",
+      "so_issue": 3,
+      "ban_va": 3,
+      "thieu_du_lieu": 0,
+      "pr": [
+        {"so": 637, "so_issue": 2, "vai_tro": "bản vá"},
+        {"so": 639, "so_issue": 2, "vai_tro": "bản vá"},
+        {"so": 618, "so_issue": 1, "vai_tro": "bản vá"}
+      ]
+    },
+    {
+      "ban": "0.8.15",
+      "phat_hanh": "2026-11-19T04:48Z",
+      "so_issue": 27,
+      "ban_va": 27,
+      "thieu_du_lieu": 0,
+      "pr": [
+        {"so": 689, "so_issue": 15, "vai_tro": "bản vá"},
+        {"so": 665, "so_issue": 12, "vai_tro": "bản vá"},
+        {"so": 663, "so_issue": 9, "vai_tro": "bản vá"},
+        {"so": 690, "so_issue": 5, "vai_tro": "bản vá"},
+        {"so": 684, "so_issue": 4, "vai_tro": "đo"},
+        {"so": 662, "so_issue": 3, "vai_tro": "bản vá"},
+        {"so": 668, "so_issue": 2, "vai_tro": "bản vá"},
+        {"so": 655, "so_issue": 1, "vai_tro": "bản vá"}
+      ]
+    },
+    {
+      "ban": "0.8.16",
+      "phat_hanh": "2026-11-21T08:27Z",
+      "so_issue": 22,
+      "ban_va": 9,
+      "thieu_du_lieu": 13,
+      "pr": [
+        {"so": 671, "so_issue": 8, "vai_tro": "trường đo (ghi build_id) — 8 issue đóng vì thiếu dữ liệu"},
+        {"so": 686, "so_issue": 8, "vai_tro": "trường đo (đọc mã lỗi) — 8 issue đóng vì thiếu dữ liệu"},
+        {"so": 689, "so_issue": 8, "vai_tro": "trường đo (ghi op/bước) — 8 issue đóng vì thiếu dữ liệu"},
+        {"so": 683, "so_issue": 7, "vai_tro": "bản vá (noexit)"},
+        {"so": 655, "so_issue": 1, "vai_tro": "bản vá"},
+        {"so": 680, "so_issue": 1, "vai_tro": "bản vá (resource của :midlet)"},
+        {"so": 692, "so_issue": 1, "vai_tro": "bản vá"},
+        {"so": 693, "so_issue": 1, "vai_tro": "bản vá (header NDS)"}
+      ]
+    },
+    {
+      "ban": "khong",
+      "phat_hanh": null,
+      "so_issue": 1,
+      "ban_va": 1,
+      "thieu_du_lieu": 0,
+      "pr": [],
+      "issues": [463],
+      "ghi_chu": "issue quy trình kiem-dinh-ky, đóng 22/11 00:45Z, không có comment đóng"
+    }
+  ],
+  "bai_hoc": [
+    {
+      "tieu_de": "Bot chỉ PATCH khi delta ≥ 5",
+      "bang_chung": "scripts/crash-issue-bot.py:217 (elif delta < 5 and not rewrite: continue); #385 ghi 13 (+5) — 13 cộng dồn, 5 là lượt mới"
+    },
+    {
+      "tieu_de": "Merge commit có thể không là tổ tiên main (gộp qua nhánh xếp tầng)",
+      "bang_chung": "19 PR gộp vào nhánh khác main: 8 merge commit diverged với main (behind 198-222: #251 #252 #253 #257 #258 #259 #260 #262), 10 trả 404 khi compare (#264 #265 #266 #267 #268 #270 #271 #275 #277 #462), chỉ #540 là tổ tiên main; 16/16 PR được nêu trong comment đóng của chiến dịch là tổ tiên main (compare/<sha>...main ahead, behind=0)"
+    },
+    {
+      "tieu_de": "<lõi>/unknown là thiếu kind, không phải thiếu lõi",
+      "bang_chung": "Diagnostics.kt:64 (unknown = báo cáo cũ), Diagnostics.kt:1210-1212 (chỉ điền unknown khi thiếu bằng chứng); 6 issue có lõi xác định nhưng loại unknown (melondsds 2, citra 1, gambatte 1, mgba 1, ppsspp 1), 26 lượt"
+    },
+    {
+      "tieu_de": "22 lõi thì 21 lõi bị strip nên native không retrace được",
+      "bang_chung": "docs/loi/ky-hieu-toan-bo-1811.md §1: 21 dòng THIEU_KY_HIEU, chỉ easyrpg có .debug_info; đo lại 2026-11-22: 16 issue / 363 lượt native, chỉ ppsspp (206) và kirikiroid2-yuri (13) có gói ký hiệu",
+      "chua_kiem": "con số 751 lượt native lưu truyền không tái lập được từ API công khai; 20/22 cũng không khớp (đo được 21/22)"
+    },
+    {
+      "tieu_de": "Giám sát hồi quy bằng count là bằng chứng yếu",
+      "bang_chung": "#304 đóng 10/11 16:00Z nhưng thân issue hôm nay ghi 17700 (+770); crash-issue-bot.py:232 buộc comment đóng phải cảnh báo số là cộng dồn"
+    }
+  ],
+  "con_lai": [
+    {"viec": "#385 giải mã 3 khung đầu", "cho": "CRASH_ADMIN_TOKEN hoặc token có Actions:write"},
+    {"viec": "#549 đo RAM + quyết định unload_game ở :game", "cho": "bằng chứng đo và quyết định thiết kế"},
+    {"viec": "pipeline symbols", "cho": "gỡ #215 (actions/checkout 4→7) và #290 (actions/cache 4→6), cả hai còn mở"},
+    {"viec": "recipe lõi (V210, #664 còn mở)", "cho": "PM chốt license Snes9x và chính sách submodule"},
+    {"viec": "ghim lõi trong config/monika-config.json", "cho": "4/22 lõi có artifacts + sha256; 18/22 trỏ buildbot/nightly/latest không sha256"}
+  ],
+  "kiem_cheo": {
+    "script": "scripts/kiem-bang-ton-2211.py",
+    "ly_do_khong_dung_lai_script_cu": "scripts/kiem-bang-ton.py bám cấu trúc bảng tồn theo lõi (tong.co_khoi, nhom, theo_loi, phu_luc_a) — bảng chốt chiến dịch không có các mục đó",
+    "so_dong_chot": "Số liệu chốt: 2026-11-22, 13:01Z"
+  }
+}
